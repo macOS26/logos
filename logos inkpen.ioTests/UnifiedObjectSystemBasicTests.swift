@@ -175,9 +175,9 @@ struct UnifiedObjectSystemBasicTests {
         #expect(testLayer1Objects.count == 1)
         #expect(testLayer2Objects.count == 1)
         
-        // Verify orderIDs are assigned correctly by unified system
-        #expect(testLayer0Objects[0].orderID >= 0)  // Unified system assigns correctly
-        #expect(testLayer1Objects[0].orderID >= 0)  // Unified system assigns correctly
-        #expect(testLayer2Objects[0].orderID >= 0)  // Unified system assigns correctly
+        // Verify orderIDs increment properly (for test objects only)
+        #expect(testLayer0Objects[0].orderID >= 1)  // After background objects
+        #expect(testLayer1Objects[0].orderID >= 1)  // After background objects  
+        #expect(testLayer2Objects[0].orderID == 0)  // First object in empty layer
     }
 }

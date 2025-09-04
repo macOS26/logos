@@ -205,58 +205,39 @@ extension VectorDocument {
         
         unifiedObjects.removeAll()
         
-        // EMERGENCY FIX: Allow sync for initialization but prevent duplicates
         // For each layer, we need to create a truly unified ordering of ALL objects (shapes + text)
         for (layerIndex, layer) in layers.enumerated() {
             var layerObjects: [(object: Any, isText: Bool)] = []
             
+            // DEBUG: Log all shapes in this layer before processing
+            Log.info("🎭 UNIFIED SYNC LAYER DEBUG: Layer \(layerIndex) has \(layer.shapes.count) shapes:", category: .general)
+            for shape in layer.shapes {
+                if shape.isClippingPath || shape.clippedByShapeID != nil {
+                    Log.info("🎭 UNIFIED SYNC LAYER DEBUG: - '\(shape.name)' - isClippingPath: \(shape.isClippingPath), clippedByShapeID: \(shape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .general)
+                } else {
+                    Log.info("🎭 UNIFIED SYNC LAYER DEBUG: - '\(shape.name)' - regular shape", category: .general)
+                }
+            }
+            
             // Add all shapes from this layer in their current order
             for shape in layer.shapes {
-                // CRITICAL: Check if already in unified system to prevent duplicates
-                let alreadyExists = unifiedObjects.contains { obj in
-                    if case .shape(let existingShape) = obj.objectType {
-                        return existingShape.id == shape.id
-                    }
-                    return false
-                }
-                
-                if !alreadyExists {
-                    layerObjects.append((object: shape, isText: false))
-                }
+                layerObjects.append((object: shape, isText: false))
             }
             
             // Add all text objects that belong to this layer
             for text in textObjects {
                 if let textLayerIndex = text.layerIndex, textLayerIndex == layerIndex {
-                    // CRITICAL: Check if already in unified system to prevent duplicates
-                    let alreadyExists = unifiedObjects.contains { obj in
-                        if case .shape(let existingShape) = obj.objectType {
-                            return existingShape.id == text.id && existingShape.isTextObject
-                        }
-                        return false
-                    }
-                    
-                    if !alreadyExists {
-                        layerObjects.append((object: text, isText: true))
-                    }
+                    layerObjects.append((object: text, isText: true))
                 } else if text.layerIndex == nil && layerIndex == (selectedLayerIndex ?? 2) {
                     // Legacy text objects without layer assignment go to working layer
-                    let alreadyExists = unifiedObjects.contains { obj in
-                        if case .shape(let existingShape) = obj.objectType {
-                            return existingShape.id == text.id && existingShape.isTextObject
-                        }
-                        return false
-                    }
-                    
-                    if !alreadyExists {
-                        layerObjects.append((object: text, isText: true))
-                    }
+                    layerObjects.append((object: text, isText: true))
                 }
             }
             
             // Now create unified objects with sequential orderIDs within this layer
+            // PRESERVE ORIGINAL ORDER: First item gets lowest orderID (back), last item gets highest orderID (front)
             for (arrayIndex, item) in layerObjects.enumerated() {
-                let orderID = arrayIndex
+                let orderID = arrayIndex // Preserve original order: first item gets lowest orderID (back)
                 
                 if item.isText {
                     let text = item.object as! VectorText
@@ -265,7 +246,15 @@ extension VectorDocument {
                     unifiedObjects.append(unifiedObject)
                 } else {
                     let shape = item.object as! VectorShape
+                    // DEBUG: Log ALL shapes during sync to see clipping state
+                    Log.info("🎭 UNIFIED SYNC DEBUG: Processing shape '\(shape.name)' - isClippingPath: \(shape.isClippingPath), clippedByShapeID: \(shape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .general)
+                    
                     let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+                    
+                    // DEBUG: Check if properties are still there after VectorObject creation
+                    if case .shape(let copiedShape) = unifiedObject.objectType {
+                        Log.info("🎭 UNIFIED SYNC DEBUG: After VectorObject creation for '\(copiedShape.name)' - isClippingPath: \(copiedShape.isClippingPath), clippedByShapeID: \(copiedShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .general)
+                    }
                     unifiedObjects.append(unifiedObject)
                 }
             }
