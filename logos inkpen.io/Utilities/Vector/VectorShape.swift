@@ -296,7 +296,7 @@ struct VectorShape: Codable, Hashable, Identifiable {
     var areaSize: CGSize? = nil // Area size for area text (nil for point text)
     var isEditing: Bool? = nil // For inline text editing
     
-    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isCompoundPath: Bool = false, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = [], isTextObject: Bool = false, textContent: String? = nil, typography: TypographyProperties? = nil, isPointText: Bool? = nil, cursorPosition: Int? = nil, areaSize: CGSize? = nil, isEditing: Bool? = nil) {
+    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isCompoundPath: Bool = false, isClippingPath: Bool = false, clippedByShapeID: UUID? = nil, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = [], isTextObject: Bool = false, textContent: String? = nil, typography: TypographyProperties? = nil, isPointText: Bool? = nil, cursorPosition: Int? = nil, areaSize: CGSize? = nil, isEditing: Bool? = nil) {
         self.id = UUID()
         self.name = name
         self.path = path
@@ -313,8 +313,8 @@ struct VectorShape: Codable, Hashable, Identifiable {
         self.groupedShapes = groupedShapes
         self.groupTransform = groupTransform
         self.isCompoundPath = isCompoundPath
-        self.isClippingPath = false
-        self.clippedByShapeID = nil
+        self.isClippingPath = isClippingPath
+        self.clippedByShapeID = clippedByShapeID
         self.isWarpObject = isWarpObject
         self.originalPath = originalPath
         self.warpEnvelope = warpEnvelope

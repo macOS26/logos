@@ -230,34 +230,11 @@ extension VectorDocument {
         // PERFORMANCE FIX: Don't save to undo stack on every keystroke - only when editing ends
         // saveToUndoStack() - REMOVED to prevent performance issues during typing
         
-        if let index = textObjects.firstIndex(where: { $0.id == textID }) {
-            textObjects[index].content = content
-            // CRITICAL FIX: Don't call updateBounds() - text canvas manages bounds now
-            // textObjects[index].updateBounds() - REMOVED because it uses old single-line algorithm
-            updateUnifiedObjectsOptimized()
-        }
+        // Use unified helper instead of direct property access
+        updateTextContentInUnified(id: textID, content: content)
     }
     
-    func setTextEditing(_ textID: UUID, isEditing: Bool) {
-        // PERFORMANCE FIX: No undo saving for text editing state changes
-        // User doesn't want text changes saved to undo stack
-        
-        if let index = textObjects.firstIndex(where: { $0.id == textID }) {
-            textObjects[index].isEditing = isEditing
-        }
-    }
     
-    func updateTextTypography(_ textID: UUID, update: (inout TypographyProperties) -> Void) {
-        // PERFORMANCE FIX: No undo saving for typography changes - user doesn't want text changes saved
-        // saveToUndoStack() - REMOVED per user request
-        
-        if let index = textObjects.firstIndex(where: { $0.id == textID }) {
-            update(&textObjects[index].typography)
-            // CRITICAL FIX: Don't call updateBounds() - text canvas manages bounds now  
-            // textObjects[index].updateBounds() - REMOVED because it uses old single-line algorithm
-            updateUnifiedObjectsOptimized()
-        }
-    }
     
     // CRITICAL PROFESSIONAL FEATURE: Text to Outlines Conversion
     func convertTextToOutlines(_ textID: UUID) {

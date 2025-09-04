@@ -544,6 +544,10 @@ extension DrawingCanvas {
                     // Regular shapes - find in layers array
                     if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
                        let updatedShape = document.layers[layerIndex].shapes.first(where: { $0.id == oldShape.id }) {
+                        // DEBUG: Check clipping properties before and after sync
+                        if oldShape.clippedByShapeID != nil || updatedShape.clippedByShapeID != nil {
+                            Log.info("🎭 DRAG SYNC DEBUG: Shape '\(oldShape.name)' - old clippedByShapeID: \(oldShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil"), new clippedByShapeID: \(updatedShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .general)
+                        }
                         // CRITICAL FIX: Preserve original orderID - DO NOT reorder during drag
                         document.unifiedObjects[i] = VectorObject(
                             shape: updatedShape,

@@ -1161,27 +1161,27 @@ class MetalComputeEngine {
     
     /// Test if the Metal engine is working properly
     static func testMetalEngine() -> Bool {
-        Log.info("🔧 Metal Engine Test: Starting diagnostic...", category: .metal)
+        Log.debug("🔧 Metal Engine Test: Starting diagnostic...", category: .metal)
         
         // Check if Metal device is available
         guard let device = MTLCreateSystemDefaultDevice() else {
             Log.info("❌ Metal Engine Test: No Metal device available", category: .metal)
             return false
         }
-        Log.info("✅ Metal Engine Test: Metal device found: \(device.name)", category: .metal)
+        Log.debug("✅ Metal Engine Test: Metal device found: \(device.name)", category: .metal)
         
         // Check if command queue can be created
         guard device.makeCommandQueue() != nil else {
             Log.info("❌ Metal Engine Test: Cannot create command queue", category: .metal)
             return false
         }
-        Log.info("✅ Metal Engine Test: Command queue created successfully", category: .fileOperations)
+        Log.debug("✅ Metal Engine Test: Command queue created successfully", category: .metal)
         
         // Initialize a single engine instance for testing
         let engine: MetalComputeEngine
         do {
             engine = try MetalComputeEngine()
-            Log.info("✅ Metal Engine Test: Engine initialized successfully", category: .metal)
+            Log.debug("✅ Metal Engine Test: Engine initialized successfully", category: .metal)
         } catch {
             Log.info("❌ Metal Engine Test: Engine not initialized - \(error)", category: .metal)
             return false
@@ -1197,7 +1197,7 @@ class MetalComputeEngine {
         switch distanceResult {
         case .success(let distance):
             if abs(distance - expectedDistance) < 0.1 {
-                Log.info("✅ Metal Engine Test: Distance calculation working (got \(distance), expected \(expectedDistance))", category: .metal)
+                Log.debug("✅ Metal Engine Test: Distance calculation working (got \(distance), expected \(expectedDistance))", category: .metal)
                 return true
             } else {
                 Log.info("❌ Metal Engine Test: Distance calculation failed (got \(distance), expected \(expectedDistance))", category: .metal)

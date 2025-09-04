@@ -37,7 +37,7 @@ class DocumentState: ObservableObject {
     private var isTerminating = false
     
     init() {
-        Log.startup("🎯 DocumentState initialized with automatic menu state updates")
+        Log.info("🎯 DocumentState initialized with automatic menu state updates")
         // Defer observer setup until document is set to prevent blocking during launch
         
         // Register with central registry (no notifications)
@@ -47,7 +47,7 @@ class DocumentState: ObservableObject {
     deinit {
         // CRITICAL: Clean up all subscriptions to prevent retain cycles
         cancellables.removeAll()
-        Log.startup("🎯 DocumentState deallocated - subscriptions cleaned up")
+        Log.info("🎯 DocumentState deallocated - subscriptions cleaned up")
     }
     
     func setDocument(_ document: VectorDocument) {
@@ -67,12 +67,12 @@ class DocumentState: ObservableObject {
         // Explicit cleanup method for app shutdown
         cancellables.removeAll()
         document = nil
-        Log.startup("🎯 DocumentState cleanup completed")
+        Log.info("🎯 DocumentState cleanup completed")
     }
     
     func forceCleanup() {
         // Force cleanup called from app termination
-        Log.startup("🎯 DocumentState force cleanup initiated")
+        Log.info("🎯 DocumentState force cleanup initiated")
         isTerminating = true
         cancellables.removeAll()
         
@@ -97,7 +97,7 @@ class DocumentState: ObservableObject {
         canUnwrapWarpObject = false
         canExpandWarpObject = false
         
-        Log.startup("🎯 DocumentState force cleanup completed")
+        Log.info("🎯 DocumentState force cleanup completed")
     }
     
     private func setupDocumentObserversAsync() async {
@@ -121,7 +121,7 @@ class DocumentState: ObservableObject {
     private func updateAllStates() {
         // CRITICAL: Don't update states during app termination to prevent SwiftUI constraint crashes
         guard !isTerminating else {
-            Log.startup("🎯 DocumentState: Skipping state update during termination")
+            Log.info("🎯 DocumentState: Skipping state update during termination")
             return
         }
         

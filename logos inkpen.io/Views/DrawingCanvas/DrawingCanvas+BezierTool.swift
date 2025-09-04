@@ -34,11 +34,11 @@ extension DrawingCanvas {
         for shapeIndex in document.layers[layerIndex].shapes.indices {
             if document.layers[layerIndex].shapes[shapeIndex].id == shape.id {
                 // Ensure stroke has proper colors and is visible
-                document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
+                document.createStrokeStyleInUnified(
+                    id: shape.id,
                     color: document.defaultStrokeColor,
                     width: document.defaultStrokeWidth,
                     placement: document.defaultStrokePlacement,
-                    dashPattern: [],
                     lineCap: document.defaultStrokeLineCap,
                     lineJoin: document.defaultStrokeLineJoin,
                     miterLimit: document.defaultStrokeMiterLimit,
@@ -46,7 +46,8 @@ extension DrawingCanvas {
                 )
                 
                 // Ensure fill has proper colors and is visible
-                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
+                document.createFillStyleInUnified(
+                    id: shape.id,
                     color: document.defaultFillColor,
                     opacity: document.defaultFillOpacity
                 )
@@ -445,21 +446,22 @@ extension DrawingCanvas {
                 document.layers[layerIndex].shapes[shapeIndex].path = updatedPath
                 
                 // Update stroke color to match current toolbar selection (real-time)
-                document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
+                document.createStrokeStyleInUnified(
+                    id: activeBezierShape.id,
                     color: document.defaultStrokeColor,
-                    width: document.defaultStrokeWidth, // Use user's default stroke width
-                    placement: document.defaultStrokePlacement, // Use user's default placement
-                    dashPattern: [], // No dash pattern during drawing
-                    lineCap: document.defaultStrokeLineCap, // Use user's default line cap
-                    lineJoin: document.defaultStrokeLineJoin, // Use user's default line join
-                    miterLimit: document.defaultStrokeMiterLimit, // Use user's default miter limit
+                    width: document.defaultStrokeWidth,
+                    placement: document.defaultStrokePlacement,
+                    lineCap: document.defaultStrokeLineCap,
+                    lineJoin: document.defaultStrokeLineJoin,
+                    miterLimit: document.defaultStrokeMiterLimit,
                     opacity: document.defaultStrokeOpacity
                 )
                 
                 // CRITICAL FIX: Ensure fill and stroke are visible during drawing for incomplete paths
-                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
+                document.createFillStyleInUnified(
+                    id: activeBezierShape.id,
                     color: document.defaultFillColor,
-                    opacity: document.defaultFillOpacity // Use full opacity during drawing for visibility
+                    opacity: document.defaultFillOpacity
                 )
                 
                 document.layers[layerIndex].shapes[shapeIndex].updateBounds()
@@ -493,20 +495,21 @@ extension DrawingCanvas {
             for shapeIndex in document.layers[layerIndex].shapes.indices {
                 if document.layers[layerIndex].shapes[shapeIndex].id == activeBezierShape.id {
                     // Update the existing shape to have proper fill and stroke from toolbar
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
+                    document.createStrokeStyleInUnified(
+                        id: activeBezierShape.id,
                         color: document.defaultStrokeColor,
-                        width: document.defaultStrokeWidth, // Use user's default stroke width
-                        placement: document.defaultStrokePlacement, // Use user's default placement
-                        dashPattern: [], // No dash pattern for finished paths
-                        lineCap: document.defaultStrokeLineCap, // Use user's default line cap
-                        lineJoin: document.defaultStrokeLineJoin, // Use user's default line join
-                        miterLimit: document.defaultStrokeMiterLimit, // Use user's default miter limit
+                        width: document.defaultStrokeWidth,
+                        placement: document.defaultStrokePlacement,
+                        lineCap: document.defaultStrokeLineCap,
+                        lineJoin: document.defaultStrokeLineJoin,
+                        miterLimit: document.defaultStrokeMiterLimit,
                         opacity: document.defaultStrokeOpacity
                     )
                     // FINAL FILL: Make fully opaque when path is finished
-                    document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
+                    document.createFillStyleInUnified(
+                        id: activeBezierShape.id,
                         color: document.defaultFillColor,
-                        opacity: document.defaultFillOpacity // Full opacity (usually 1.0)
+                        opacity: document.defaultFillOpacity
                     )
                     document.layers[layerIndex].shapes[shapeIndex].updateBounds()
                     

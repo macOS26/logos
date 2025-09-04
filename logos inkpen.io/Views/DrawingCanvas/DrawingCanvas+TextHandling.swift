@@ -132,7 +132,7 @@ extension DrawingCanvas {
                 editingCount += 1
                 Log.fileOperation("🔄 STOPPING EDIT: Text box \(document.textObjects[textIndex].id.uuidString.prefix(8)) was in edit mode", level: .info)
             }
-            document.textObjects[textIndex].isEditing = false
+            document.setTextEditingInUnified(id: document.textObjects[textIndex].id, isEditing: false)
         }
         
         if editingCount > 0 {
@@ -150,7 +150,7 @@ extension DrawingCanvas {
             Log.info("  - Click location: (\(String(format: "%.1f", location.x)), \(String(format: "%.1f", location.y)))", category: .general)
             
             // CRITICAL: Set editing state BEFORE updating selection
-            document.textObjects[textIndex].isEditing = true
+            document.setTextEditingInUnified(id: document.textObjects[textIndex].id, isEditing: true)
             
             // Clear other selections and select this text
             document.selectedShapeIDs.removeAll()
@@ -166,7 +166,7 @@ extension DrawingCanvas {
             currentSelectionRange = NSRange(location: cursorPosition, length: 0)
             
             // CRITICAL: Also update the VectorText's cursor position directly
-            document.textObjects[textIndex].cursorPosition = cursorPosition
+            document.updateTextCursorPositionInUnified(id: document.textObjects[textIndex].id, cursorPosition: cursorPosition)
             
             Log.info("🎯 CURSOR POSITIONING: Set cursor position \(cursorPosition) for click at (\(String(format: "%.1f", location.x)), \(String(format: "%.1f", location.y)))", category: .general)
             Log.info("🎯 CURSOR POSITIONING: Updated VectorText.cursorPosition = \(cursorPosition)", category: .general)
@@ -540,7 +540,7 @@ extension DrawingCanvas {
         if let editingID = editingTextID {
             // Mark text as not editing
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == editingID }) {
-                document.textObjects[textIndex].isEditing = false
+                document.setTextEditingInUnified(id: document.textObjects[textIndex].id, isEditing: false)
                 document.textObjects[textIndex].updateBounds()
                 
                 // If text is empty, remove it
@@ -577,7 +577,7 @@ extension DrawingCanvas {
                     document.textObjects.remove(at: textIndex)
                     document.selectedTextIDs.remove(editingID)
                 } else {
-                    document.textObjects[textIndex].isEditing = false
+                    document.setTextEditingInUnified(id: document.textObjects[textIndex].id, isEditing: false)
                 }
             }
         }
@@ -673,7 +673,7 @@ extension DrawingCanvas {
             
             // Mark text as editing in document
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                document.textObjects[textIndex].isEditing = true
+                document.setTextEditingInUnified(id: document.textObjects[textIndex].id, isEditing: true)
             }
             
             // Select the text
@@ -684,7 +684,7 @@ extension DrawingCanvas {
         } else {
             // Stop editing
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                document.textObjects[textIndex].isEditing = false
+                document.setTextEditingInUnified(id: document.textObjects[textIndex].id, isEditing: false)
                 
                 // If text is empty, remove it
                 if document.textObjects[textIndex].content.isEmpty {
@@ -711,7 +711,7 @@ extension DrawingCanvas {
         guard let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
         
         // Update text content
-        document.textObjects[textIndex].content = newContent
+        document.updateTextContentInUnified(id: document.textObjects[textIndex].id, content: newContent)
         document.textObjects[textIndex].updateBounds()
         
         Log.fileOperation("📝 NEW TEXT BOX: Updated text content to '\(newContent)'", level: .info)
@@ -725,7 +725,7 @@ extension DrawingCanvas {
         document.saveToUndoStack()
         
         // Update text position
-        document.textObjects[textIndex].position = newPosition
+        document.updateTextPositionInUnified(id: document.textObjects[textIndex].id, position: newPosition)
         
         Log.info("📍 NEW TEXT BOX: Updated text position to \(newPosition)", category: .general)
         document.objectWillChange.send()
@@ -738,7 +738,7 @@ extension DrawingCanvas {
         document.saveToUndoStack()
         
         // Update text bounds
-        document.textObjects[textIndex].bounds = newBounds
+        document.updateTextBoundsInUnified(id: document.textObjects[textIndex].id, bounds: newBounds)
         
         Log.info("📏 NEW TEXT BOX: Updated text bounds to \(newBounds)", category: .general)
         document.objectWillChange.send()

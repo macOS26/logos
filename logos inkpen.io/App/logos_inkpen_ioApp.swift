@@ -26,9 +26,9 @@ struct logos_inken_ioApp: App {
         ])
         
         // Test Metal Compute Engine on app startup
-        Log.metal("🔧 Testing Metal Compute Engine...", level: .info)
+        Log.metal("🔧 Testing Metal Compute Engine...", level: .debug)
         let metalWorking = MetalComputeEngine.testMetalEngine()
-        Log.metal("🔧 Metal Engine Status: \(metalWorking ? "✅ Working" : "❌ Failed")", level: .info)
+        Log.metal("🔧 Metal Engine Status: \(metalWorking ? "✅ Working" : "❌ Failed")", level: .debug)
     }
     
     var body: some Scene {

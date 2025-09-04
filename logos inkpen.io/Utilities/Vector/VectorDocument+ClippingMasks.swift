@@ -45,6 +45,7 @@ extension VectorDocument {
             if let i = layers[layerIndex].shapes.firstIndex(where: { $0.id == s.id }) {
                 layers[layerIndex].shapes[i].clippedByShapeID = maskID
                 Log.info("🎭 CLIPPING MASK: Applied clipping to shape '\(s.name)'", category: .general)
+                Log.info("🎭 CLIPPING MASK DEBUG: Set clippedByShapeID=\(maskID.uuidString.prefix(8)) for shape '\(s.name)' in layers array", category: .general)
             }
         }
         
@@ -60,10 +61,40 @@ extension VectorDocument {
             syncSelectionArrays() // Keep legacy arrays in sync
         }
         
-        // CRITICAL: Sync unified objects after property changes
-        updateUnifiedObjectsOptimized()
+        // CRITICAL: Force SwiftUI refresh by slightly modifying bounds to trigger view ID change
+        for s in selectedShapes {
+            if let layerIdx = layers.firstIndex(where: { $0.shapes.contains { $0.id == s.id } }),
+               let shapeIdx = layers[layerIdx].shapes.firstIndex(where: { $0.id == s.id }) {
+                // Force bounds recalculation to change the hashValue and trigger view refresh
+                var updatedShape = layers[layerIdx].shapes[shapeIdx]
+                let originalBounds = updatedShape.bounds
+                updatedShape.bounds = CGRect(x: originalBounds.minX, y: originalBounds.minY, 
+                                           width: originalBounds.width + 0.0001, 
+                                           height: originalBounds.height + 0.0001)
+                layers[layerIdx].shapes[shapeIdx] = updatedShape
+                
+                // Restore original bounds after a tiny delay to avoid visual artifacts
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.001) {
+                    self.layers[layerIdx].shapes[shapeIdx].bounds = originalBounds
+                }
+            }
+        }
+        
+        // DEBUG: Check layers array before unified sync
+        Log.info("🎭 CLIPPING MASK DEBUG: Before unified sync - checking layers array:", category: .general)
+        for (idx, layer) in layers.enumerated() {
+            for shape in layer.shapes {
+                if shape.id == maskID || selectedShapes.dropLast().contains(where: { $0.id == shape.id }) {
+                    Log.info("🎭 CLIPPING MASK DEBUG: Layer \(idx) shape '\(shape.name)' - isClippingPath: \(shape.isClippingPath), clippedByShapeID: \(shape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .general)
+                }
+            }
+        }
+        
+        // CRITICAL: Full unified object sync after clipping mask changes (affects non-selected shapes)
+        populateUnifiedObjectsFromLayersPreservingOrder()
         
         // DEBUG: Check if unified objects were synced correctly
+        Log.info("🎭 CLIPPING MASK DEBUG: After unified sync - checking unified objects:", category: .general)
         for unifiedObject in unifiedObjects {
             if case .shape(let shape) = unifiedObject.objectType {
                 if shape.id == maskID {
@@ -74,6 +105,7 @@ extension VectorDocument {
             }
         }
         
+        // Force immediate UI update
         objectWillChange.send()
         
         Log.info("✅ CLIPPING MASK: Created successfully with \(selectedShapes.count - 1) clipped shapes", category: .general)

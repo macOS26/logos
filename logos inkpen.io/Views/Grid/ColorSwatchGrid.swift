@@ -349,14 +349,9 @@ struct ColorSwatchGrid: View {
             if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
-                    // Find the shape in the layers array and update it
-                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                        if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
-                        } else {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
-                        }
+                    // UNIFIED HELPER: Use unified system helper instead of direct manipulation  
+                    if !shape.isTextObject {
+                        document.updateShapeStrokeColorInUnified(id: shape.id, color: color)
                         hasChanges = true
                     }
                     

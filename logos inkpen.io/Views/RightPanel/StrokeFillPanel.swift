@@ -327,15 +327,9 @@ struct StrokeFillPanel: View {
                         hasChanges = true
                     } else {
                         // Find the shape in the layers array and update it
-                        if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                            if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
-                                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color, opacity: document.defaultFillOpacity)
-                            } else {
-                                document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
-                            }
-                            hasChanges = true
-                        }
+                        // Use unified helper instead of direct property access
+                        document.updateShapeFillColorInUnified(id: shape.id, color: color)
+                        hasChanges = true
                     }
                 }
             }
@@ -391,12 +385,9 @@ struct StrokeFillPanel: View {
                     } else {
                         // Find the shape in the layers array and update it
                         if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                            if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
-                                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: document.defaultFillColor, opacity: opacity)
-                            } else {
-                                document.layers[layerIndex].shapes[shapeIndex].fillStyle?.opacity = opacity
-                            }
+                           let _ = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                            // Use unified helper instead of direct property access
+                            document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
                             hasChanges = true
                         }
                     }
@@ -454,12 +445,9 @@ struct StrokeFillPanel: View {
                     } else {
                         // Find the shape in the layers array and update it
                         if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                            if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
-                            } else {
-                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
-                            }
+                           let _ = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                            // Use unified helper instead of direct property access
+                            document.updateShapeStrokeColorInUnified(id: shape.id, color: color)
                             hasChanges = true
                         }
                     }
@@ -517,12 +505,9 @@ struct StrokeFillPanel: View {
                     } else {
                         // Find the shape in the layers array and update it
                         if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                            if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: width, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
-                            } else {
-                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.width = width
-                            }
+                           let _ = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                            // Use unified helper instead of direct property access
+                            document.updateShapeStrokeWidthInUnified(id: shape.id, width: width)
                             hasChanges = true
                         }
                     }
@@ -569,12 +554,9 @@ struct StrokeFillPanel: View {
         for shapeID in activeShapeIDs {
             // Find the shape across all layers
             for layerIndex in document.layers.indices {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, placement: placement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
-                    } else {
-                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.placement = placement
-                    }
+                if document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) != nil {
+                    // Use unified helper instead of direct property access
+                    document.updateShapeStrokePlacementInUnified(id: shapeID, placement: placement)
                     break // Found the shape, no need to check other layers
                 }
             }
@@ -616,12 +598,9 @@ struct StrokeFillPanel: View {
             for shapeID in activeShapeIDs {
                 // Find the shape across all layers
                 for layerIndex in document.layers.indices {
-                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                        if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: opacity)
-                        } else {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.opacity = opacity
-                        }
+                    if document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) != nil {
+                        // Use unified helper instead of direct property access
+                        document.updateShapeStrokeOpacityInUnified(id: shapeID, opacity: opacity)
                         break // Found the shape, no need to check other layers
                     }
                 }
@@ -668,12 +647,9 @@ struct StrokeFillPanel: View {
             for shapeID in activeShapeIDs {
                 // Find the shape across all layers
                 for layerIndex in document.layers.indices {
-                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                        if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineJoin: lineJoin, opacity: document.defaultStrokeOpacity)
-                        } else {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.lineJoin = lineJoin
-                        }
+                    if document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) != nil {
+                        // Use unified helper instead of direct property access
+                        document.updateShapeStrokeLineJoinInUnified(id: shapeID, lineJoin: lineJoin)
                         break // Found the shape, no need to check other layers
                     }
                 }
@@ -716,12 +692,9 @@ struct StrokeFillPanel: View {
             for shapeID in activeShapeIDs {
                 // Find the shape across all layers
                 for layerIndex in document.layers.indices {
-                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                        if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: lineCap, opacity: document.defaultStrokeOpacity)
-                        } else {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.lineCap = lineCap
-                        }
+                    if document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) != nil {
+                        // Use unified helper instead of direct property access
+                        document.updateShapeStrokeLineCapInUnified(id: shapeID, lineCap: lineCap)
                         break // Found the shape, no need to check other layers
                     }
                 }
@@ -764,12 +737,9 @@ struct StrokeFillPanel: View {
             for shapeID in activeShapeIDs {
                 // Find the shape across all layers
                 for layerIndex in document.layers.indices {
-                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                        if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, miterLimit: miterLimit, opacity: document.defaultStrokeOpacity)
-                        } else {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.miterLimit = miterLimit
-                        }
+                    if document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) != nil {
+                        // Use unified helper instead of direct property access
+                        document.updateShapeStrokeMiterLimitInUnified(id: shapeID, miterLimit: miterLimit)
                         break // Found the shape, no need to check other layers
                     }
                 }
@@ -809,7 +779,8 @@ struct StrokeFillPanel: View {
                 let shape = document.layers[layerIndex].shapes[shapeIndex]
                 // Only update image shapes
                 if ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
-                    document.layers[layerIndex].shapes[shapeIndex].opacity = opacity
+                    // Use unified helper instead of direct property access
+                    document.updateShapeOpacityInUnified(id: shape.id, opacity: opacity)
                 }
             }
         }
@@ -822,16 +793,7 @@ struct StrokeFillPanel: View {
         document.saveToUndoStack()
         
         for shapeID in activeShapeIDs {
-            // Find the shape across all layers
-            for layerIndex in document.layers.indices {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
-                        color: selectedFillColor,
-                        opacity: fillOpacity
-                    )
-                    break // Found the shape, no need to check other layers
-                }
-            }
+            document.createFillStyleInUnified(id: shapeID, color: selectedFillColor, opacity: fillOpacity)
         }
     }
     
@@ -842,21 +804,7 @@ struct StrokeFillPanel: View {
         document.saveToUndoStack()
         
         for shapeID in activeShapeIDs {
-            // Find the shape across all layers
-            for layerIndex in document.layers.indices {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
-                        color: selectedStrokeColor,
-                        width: strokeWidth,
-                        placement: strokePlacement,
-                        lineCap: document.defaultStrokeLineCap,
-                        lineJoin: document.defaultStrokeLineJoin,
-                        miterLimit: document.defaultStrokeMiterLimit,
-                        opacity: strokeOpacity // PROFESSIONAL STROKE TRANSPARENCY
-                    )
-                    break // Found the shape, no need to check other layers
-                }
-            }
+            document.createStrokeStyleInUnified(id: shapeID, color: selectedStrokeColor, width: strokeWidth, placement: strokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: strokeOpacity)
         }
     }
     

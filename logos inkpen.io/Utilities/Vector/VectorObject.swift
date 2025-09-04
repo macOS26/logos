@@ -22,10 +22,22 @@ struct VectorObject: Identifiable, Codable, Hashable {
     }
     
     init(shape: VectorShape, layerIndex: Int, orderID: Int) {
+        // DEBUG: Log clipping properties during VectorObject creation
+        if shape.isClippingPath || shape.clippedByShapeID != nil {
+            print("🎭 VECTOROBJECT INIT DEBUG: Input shape '\(shape.name)' - isClippingPath: \(shape.isClippingPath), clippedByShapeID: \(shape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")")
+        }
+        
         self.id = shape.id
         self.orderID = orderID
         self.layerIndex = layerIndex
         self.objectType = .shape(shape)
+        
+        // DEBUG: Check if properties are preserved after storing in enum
+        if case .shape(let storedShape) = self.objectType {
+            if storedShape.isClippingPath || storedShape.clippedByShapeID != nil {
+                print("🎭 VECTOROBJECT INIT DEBUG: Stored shape '\(storedShape.name)' - isClippingPath: \(storedShape.isClippingPath), clippedByShapeID: \(storedShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")")
+            }
+        }
     }
     
     

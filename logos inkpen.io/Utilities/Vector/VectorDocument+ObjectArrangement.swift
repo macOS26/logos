@@ -10,6 +10,49 @@ import Foundation
 // MARK: - Object Arrangement
 extension VectorDocument {
     
+    // MARK: - Helper Methods
+    
+    /// Expands selection to include complete clipping mask units (mask + all clipped shapes)
+    private func expandSelectionForClippingMasks(_ selectedIDs: Set<UUID>, in layerObjects: [VectorObject]) -> Set<UUID> {
+        var expandedSelectedIDs = selectedIDs
+        
+        for selectedID in selectedIDs {
+            if let selectedObject = layerObjects.first(where: { $0.id == selectedID }),
+               case .shape(let selectedShape) = selectedObject.objectType {
+                
+                // If selected object is a mask, include all its clipped shapes
+                if selectedShape.isClippingPath {
+                    for obj in layerObjects {
+                        if case .shape(let shape) = obj.objectType,
+                           shape.clippedByShapeID == selectedShape.id {
+                            expandedSelectedIDs.insert(obj.id)
+                        }
+                    }
+                }
+                // If selected object is clipped, include its mask
+                else if let maskID = selectedShape.clippedByShapeID {
+                    if let maskObject = layerObjects.first(where: { 
+                        if case .shape(let maskShape) = $0.objectType {
+                            return maskShape.id == maskID
+                        }
+                        return false
+                    }) {
+                        expandedSelectedIDs.insert(maskObject.id)
+                        // Also include all other shapes clipped by the same mask
+                        for obj in layerObjects {
+                            if case .shape(let shape) = obj.objectType,
+                               shape.clippedByShapeID == maskID {
+                                expandedSelectedIDs.insert(obj.id)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return expandedSelectedIDs
+    }
+    
     // MARK: - Object Arrangement Methods
     
     /// Bring selected objects to front (unified system)
@@ -25,9 +68,12 @@ extension VectorDocument {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
             guard !layerObjects.isEmpty else { continue }
             
-            // Separate selected and unselected objects
-            let selectedObjects = layerObjects.filter { selectedObjectIDs.contains($0.id) }
-            let unselectedObjects = layerObjects.filter { !selectedObjectIDs.contains($0.id) }
+            // CLIPPING MASK FIX: Expand selection to include complete clipping mask units
+            let expandedSelectedIDs = expandSelectionForClippingMasks(selectedObjectIDs, in: layerObjects)
+            
+            // Separate selected and unselected objects using expanded selection
+            let selectedObjects = layerObjects.filter { expandedSelectedIDs.contains($0.id) }
+            let unselectedObjects = layerObjects.filter { !expandedSelectedIDs.contains($0.id) }
             
             guard !selectedObjects.isEmpty else { continue }
             
@@ -88,8 +134,11 @@ extension VectorDocument {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
             guard !layerObjects.isEmpty else { continue }
             
-            // Separate selected and unselected objects
-            let selectedObjects = layerObjects.filter { selectedObjectIDs.contains($0.id) }
+            // CLIPPING MASK FIX: Expand selection to include complete clipping mask units
+            let expandedSelectedIDs = expandSelectionForClippingMasks(selectedObjectIDs, in: layerObjects)
+            
+            // Separate selected and unselected objects using expanded selection
+            let selectedObjects = layerObjects.filter { expandedSelectedIDs.contains($0.id) }
             
             guard !selectedObjects.isEmpty else { continue }
             
@@ -156,8 +205,11 @@ extension VectorDocument {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
             guard !layerObjects.isEmpty else { continue }
             
-            // Separate selected and unselected objects
-            let selectedObjects = layerObjects.filter { selectedObjectIDs.contains($0.id) }
+            // CLIPPING MASK FIX: Expand selection to include complete clipping mask units
+            let expandedSelectedIDs = expandSelectionForClippingMasks(selectedObjectIDs, in: layerObjects)
+            
+            // Separate selected and unselected objects using expanded selection
+            let selectedObjects = layerObjects.filter { expandedSelectedIDs.contains($0.id) }
             
             guard !selectedObjects.isEmpty else { continue }
             
@@ -229,9 +281,12 @@ extension VectorDocument {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
             guard !layerObjects.isEmpty else { continue }
             
-            // Separate selected and unselected objects
-            let selectedObjects = layerObjects.filter { selectedObjectIDs.contains($0.id) }
-            let unselectedObjects = layerObjects.filter { !selectedObjectIDs.contains($0.id) }
+            // CLIPPING MASK FIX: Expand selection to include complete clipping mask units
+            let expandedSelectedIDs = expandSelectionForClippingMasks(selectedObjectIDs, in: layerObjects)
+            
+            // Separate selected and unselected objects using expanded selection
+            let selectedObjects = layerObjects.filter { expandedSelectedIDs.contains($0.id) }
+            let unselectedObjects = layerObjects.filter { !expandedSelectedIDs.contains($0.id) }
             
             guard !selectedObjects.isEmpty else { continue }
             

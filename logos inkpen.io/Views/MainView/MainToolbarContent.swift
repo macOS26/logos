@@ -106,8 +106,7 @@ struct MainToolbarContent: ToolbarContent {
                             newElements.append(.close)
                             
                             let newPath = VectorPath(elements: newElements, isClosed: true)
-                            document.layers[layerIndex].shapes[shapeIndex].path = newPath
-                            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                            document.updateShapePathUnified(id: shape.id, path: newPath)
                             Log.info("🎯 Closed selected path for shape \(shape.name)", category: .shapes)
                         }
                     }
@@ -424,7 +423,7 @@ struct MainToolbarContent: ToolbarContent {
                         // Find the shape in the layers array and lock it
                         if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
                            let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                            document.layers[layerIndex].shapes[shapeIndex].isLocked = true
+                            document.lockShapeInUnified(id: shape.id)
                         }
                     }
                 }
@@ -443,7 +442,7 @@ struct MainToolbarContent: ToolbarContent {
         // Unlock all shapes in all layers
         for layerIndex in document.layers.indices {
             for shapeIndex in document.layers[layerIndex].shapes.indices {
-                document.layers[layerIndex].shapes[shapeIndex].isLocked = false
+                document.unlockShapeInUnified(id: shape.id)
             }
         }
         
@@ -470,7 +469,7 @@ struct MainToolbarContent: ToolbarContent {
                         // Find the shape in the layers array and hide it
                         if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
                            let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                            document.layers[layerIndex].shapes[shapeIndex].isVisible = false
+                            document.hideShapeInUnified(id: shape.id)
                         }
                     }
                 }
@@ -489,7 +488,7 @@ struct MainToolbarContent: ToolbarContent {
         // Show all shapes in all layers
         for layerIndex in document.layers.indices {
             for shapeIndex in document.layers[layerIndex].shapes.indices {
-                document.layers[layerIndex].shapes[shapeIndex].isVisible = true
+                document.showShapeInUnified(id: shape.id)
             }
         }
         

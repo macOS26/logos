@@ -184,7 +184,7 @@ struct ProfessionalTextCanvas: View {
                 // Stop editing on all other text boxes first
                 for textIndex in document.textObjects.indices {
                     if document.textObjects[textIndex].id != viewModel.textObject.id && document.textObjects[textIndex].isEditing {
-                        document.textObjects[textIndex].isEditing = false
+                        document.setTextEditingInUnified(id: document.textObjects[textIndex].id, isEditing: false)
                         Log.fileOperation("🔄 STOPPING EDIT: Text box \(document.textObjects[textIndex].id.uuidString.prefix(8)) was in edit mode", level: .info)
                     }
                 }
@@ -194,7 +194,7 @@ struct ProfessionalTextCanvas: View {
                 
                 // Update document editing state
                 if let textIndex = document.textObjects.firstIndex(where: { $0.id == viewModel.textObject.id }) {
-                    document.textObjects[textIndex].isEditing = true
+                    document.setTextEditingInUnified(id: document.textObjects[textIndex].id, isEditing: true)
                 }
                 
                 // CRITICAL FIX: Force immediate state update and sync
@@ -213,7 +213,7 @@ struct ProfessionalTextCanvas: View {
                 
                 // Update document editing state
                 if let textIndex = document.textObjects.firstIndex(where: { $0.id == viewModel.textObject.id }) {
-                    document.textObjects[textIndex].isEditing = false
+                    document.setTextEditingInUnified(id: document.textObjects[textIndex].id, isEditing: false)
                 }
                 
                 textBoxState = .gray
@@ -350,7 +350,7 @@ struct ProfessionalTextCanvas: View {
             textBoxState = .green
             viewModel.stopEditing()
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == viewModel.textObject.id }) {
-                document.textObjects[textIndex].isEditing = false
+                document.setTextEditingInUnified(id: document.textObjects[textIndex].id, isEditing: false)
             }
             return .handled
         }
@@ -1208,14 +1208,14 @@ class ProfessionalTextViewModel: ObservableObject {
         // CRITICAL: Update VectorText bounds to match user's manual resize
         // This ensures operations like convert to paths use the actual size
         if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-            document.textObjects[textIndex].bounds = CGRect(
+            document.updateTextBoundsInUnified(id: document.textObjects[textIndex].id, bounds: CGRect(
                 x: 0, y: 0,
                 width: newFrame.width,
                 height: newFrame.height
-            )
+            ))
             
             // Also update position if changed
-            document.textObjects[textIndex].position = CGPoint(x: newFrame.origin.x, y: newFrame.origin.y)
+            document.updateTextPositionInUnified(id: document.textObjects[textIndex].id, position: CGPoint(x: newFrame.origin.x, y: newFrame.origin.y))
             
             Log.fileOperation("📋 UPDATED VECTORTEXT to match manual resize: bounds=\(document.textObjects[textIndex].bounds), position=\(document.textObjects[textIndex].position)", level: .info)
             
@@ -1280,11 +1280,11 @@ class ProfessionalTextViewModel: ObservableObject {
             // CRITICAL FIX: Update VectorText bounds to match the actual text box size
             // This ensures the document knows the real size for operations like convert to paths
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-                document.textObjects[textIndex].bounds = CGRect(
+                document.updateTextBoundsInUnified(id: document.textObjects[textIndex].id, bounds: CGRect(
                     x: 0, y: 0,
                     width: textBoxFrame.width,  // ACTUAL WIDTH matches text box
                     height: newHeight          // ACTUAL HEIGHT matches text box
-                )
+                ))
                 Log.fileOperation("📋 UPDATED VECTORTEXT BOUNDS to match text box: \(document.textObjects[textIndex].bounds)", level: .info)
             }
         } else {
@@ -1365,14 +1365,14 @@ class ProfessionalTextViewModel: ObservableObject {
     public func updateDocumentTextBounds(_ frame: CGRect) {
         // Update the document VectorText position and bounds to match actual text canvas
         if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-            document.textObjects[textIndex].position = CGPoint(x: frame.minX, y: frame.minY)
-            document.textObjects[textIndex].bounds = CGRect(
+            document.updateTextPositionInUnified(id: document.textObjects[textIndex].id, position: CGPoint(x: frame.minX, y: frame.minY))
+            document.updateTextBoundsInUnified(id: document.textObjects[textIndex].id, bounds: CGRect(
                 x: 0, y: 0, 
                 width: frame.width, 
                 height: frame.height
-            )
+            ))
             // CRITICAL FIX: Update areaSize to match new dimensions for proper copy/paste
-            document.textObjects[textIndex].areaSize = CGSize(width: frame.width, height: frame.height)
+            document.updateTextAreaSizeInUnified(id: document.textObjects[textIndex].id, areaSize: CGSize(width: frame.width, height: frame.height))
             Log.fileOperation("📐 UPDATED VECTORTEXT BOUNDS: position=\(document.textObjects[textIndex].position), bounds=\(document.textObjects[textIndex].bounds), areaSize=\(document.textObjects[textIndex].areaSize?.debugDescription ?? "nil")", level: .info)
         }
     }
@@ -1684,7 +1684,7 @@ class ProfessionalTextViewModel: ObservableObject {
         var editingCount = 0
         for textIndex in document.textObjects.indices {
             if document.textObjects[textIndex].isEditing {
-                document.textObjects[textIndex].isEditing = false
+                document.setTextEditingInUnified(id: document.textObjects[textIndex].id, isEditing: false)
                 editingCount += 1
             }
         }
@@ -1704,7 +1704,7 @@ class ProfessionalTextViewModel: ObservableObject {
             Log.info("  - Click location: (\(String(format: "%.1f", location.x)), \(String(format: "%.1f", location.y)))", category: .general)
             
             // CRITICAL: Set editing state BEFORE updating selection
-            document.textObjects[textIndex].isEditing = true
+            document.setTextEditingInUnified(id: document.textObjects[textIndex].id, isEditing: true)
             
             // Clear other selections and select this text
             document.selectedShapeIDs.removeAll()
@@ -1715,7 +1715,7 @@ class ProfessionalTextViewModel: ObservableObject {
                 let cursorPosition = calculateCursorPosition(in: textObject, at: location)
                 
                 // CRITICAL: Update the VectorText's cursor position directly
-                document.textObjects[textIndex].cursorPosition = cursorPosition
+                document.updateTextCursorPositionInUnified(id: document.textObjects[textIndex].id, cursorPosition: cursorPosition)
                 
                 Log.info("🎯 CURSOR POSITIONING: Set cursor position \(cursorPosition) for click at (\(String(format: "%.1f", location.x)), \(String(format: "%.1f", location.y)))", category: .general)
                 Log.info("🎯 CURSOR POSITIONING: Updated VectorText.cursorPosition = \(cursorPosition)", category: .general)
