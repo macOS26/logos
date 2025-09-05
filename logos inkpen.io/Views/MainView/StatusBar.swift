@@ -39,12 +39,12 @@ struct StatusBar: View {
             
             // Selection Info with Object Dimensions (single line)
             HStack {
-                if document.selectedShapeIDs.isEmpty && document.selectedTextIDs.isEmpty {
+                if document.selectedObjectIDs.isEmpty {
                     Text("No selection")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 } else {
-                    let totalSelected = document.selectedShapeIDs.count + document.selectedTextIDs.count
+                    let totalSelected = document.selectedObjectIDs.count
                     
                     // Show selection count and dimensions on one line
                     if let bounds = getSelectionBounds() {

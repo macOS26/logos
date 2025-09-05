@@ -41,8 +41,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Task {
             await StartupCoordinator.shared.performStartupTasks()
             
-            // DISABLED: Document Setup window logic is broken - never show it
-            AppState.shared.shouldShowDocumentSetup = false
+            // FIXED: Only show Document Setup window if NO document windows exist
+            // Check after a brief delay to let the app fully initialize
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 100_000_000) // 100ms delay
+                
+                // Check if any document windows are open
+                let hasDocumentWindows = NSDocumentController.shared.documents.count > 0 ||
+                                        NSApplication.shared.windows.contains { window in
+                                            // Check for document windows (not setup or other utility windows)
+                                            return window.contentViewController != nil &&
+                                                   !window.title.contains("Setup") &&
+                                                   !window.title.contains("Preferences") &&
+                                                   window.isVisible
+                                        }
+                
+                // Only show setup if no documents are open
+                AppState.shared.shouldShowDocumentSetup = !hasDocumentWindows
+                
+                if !hasDocumentWindows {
+                    // Open the Document Setup window
+                    if let openWindow = AppState.shared.openWindowAction {
+                        openWindow("onboarding-setup")
+                    }
+                }
+            }
         }
         
         // Set up a fallback timer to ensure the app doesn't hang

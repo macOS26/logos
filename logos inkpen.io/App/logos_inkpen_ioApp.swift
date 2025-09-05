@@ -32,7 +32,9 @@ struct logos_inken_ioApp: App {
     }
     
     var body: some Scene {
-        // ONBOARDING: Show New Document Setup Window only when no document windows exist
+        // Document Setup Window - Shows ONLY when:
+        // 1. No document windows exist on startup
+        // 2. User selects New from menu (MainView handles this)
         WindowGroup("Document Setup", id: "onboarding-setup") {
             NewDocumentSetupView(
                 isPresented: .constant(true),
