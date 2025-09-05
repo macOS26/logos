@@ -127,6 +127,27 @@ extension VectorDocument {
         }
     }
     
+    // MARK: - Helper method for updating text in unified system
+    func updateTextInUnified(_ updatedText: VectorText) {
+        // Find and update in unified objects
+        if let unifiedIndex = unifiedObjects.firstIndex(where: { $0.id == updatedText.id }),
+           case .shape(_) = unifiedObjects[unifiedIndex].objectType {
+            
+            // Convert to shape and update
+            let updatedShape = VectorShape.from(updatedText)
+            unifiedObjects[unifiedIndex] = VectorObject(
+                shape: updatedShape,
+                layerIndex: unifiedObjects[unifiedIndex].layerIndex,
+                orderID: unifiedObjects[unifiedIndex].orderID
+            )
+            
+            // Keep legacy textObjects array in sync
+            if let legacyIndex = textObjects.firstIndex(where: { $0.id == updatedText.id }) {
+                textObjects[legacyIndex] = updatedText
+            }
+        }
+    }
+    
     // PROFESSIONAL TEXT TO OUTLINES CONVERSION - USES WORKING PROFESSIONALTEXT IMPLEMENTATION
     func convertSelectedTextToOutlines() {
         guard !selectedTextIDs.isEmpty else { return }
