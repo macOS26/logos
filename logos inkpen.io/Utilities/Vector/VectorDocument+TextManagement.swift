@@ -56,7 +56,13 @@ extension VectorDocument {
     
     func removeSelectedText() {
         saveToUndoStack()
+        
+        // Remove from unified system
+        unifiedObjects.removeAll { selectedTextIDs.contains($0.id) }
+        
+        // Keep legacy textObjects array in sync
         textObjects.removeAll { selectedTextIDs.contains($0.id) }
+        
         selectedTextIDs.removeAll()
     }
     
@@ -67,7 +73,7 @@ extension VectorDocument {
         var newTextIDs: Set<UUID> = []
         
         for textID in selectedTextIDs {
-            if let originalText = textObjects.first(where: { $0.id == textID }) {
+            if let originalText = allTextObjects.first(where: { $0.id == textID }) {
                 // Create duplicate with slight offset
                 var duplicateText = originalText
                 duplicateText.id = UUID() // New unique ID
@@ -93,11 +99,30 @@ extension VectorDocument {
     
     func updateSelectedTextProperty<T>(_ keyPath: WritableKeyPath<VectorText, T>, value: T) {
         saveToUndoStack()
-        for i in textObjects.indices {
-            if selectedTextIDs.contains(textObjects[i].id) {
-                textObjects[i][keyPath: keyPath] = value
-                // CRITICAL FIX: Don't call updateBounds() - text canvas manages bounds now
-                // textObjects[i].updateBounds() - REMOVED because it uses old single-line algorithm
+        
+        // Update in unified system
+        for textID in selectedTextIDs {
+            // Find the text in unified objects
+            if let unifiedIndex = unifiedObjects.firstIndex(where: { $0.id == textID }),
+               case .shape(let shape) = unifiedObjects[unifiedIndex].objectType,
+               shape.isTextObject,
+               var vectorText = VectorText.from(shape) {
+                
+                // Update the property
+                vectorText[keyPath: keyPath] = value
+                
+                // Convert back to shape and update unified object
+                let updatedShape = VectorShape.from(vectorText)
+                unifiedObjects[unifiedIndex] = VectorObject(
+                    shape: updatedShape,
+                    layerIndex: unifiedObjects[unifiedIndex].layerIndex,
+                    orderID: unifiedObjects[unifiedIndex].orderID
+                )
+                
+                // Keep legacy textObjects array in sync
+                if let legacyIndex = textObjects.firstIndex(where: { $0.id == textID }) {
+                    textObjects[legacyIndex] = vectorText
+                }
             }
         }
     }
@@ -107,7 +132,7 @@ extension VectorDocument {
         guard !selectedTextIDs.isEmpty else { return }
         saveToUndoStack()
         
-        let selectedTexts = textObjects.filter { selectedTextIDs.contains($0.id) }
+        let selectedTexts = allTextObjects.filter { selectedTextIDs.contains($0.id) }
         var newShapeIDs: Set<UUID> = []
         
         // CRITICAL FIX: Track total shapes across all layers before conversion
@@ -144,7 +169,13 @@ extension VectorDocument {
         
         // Remove the original text objects
         let removedTextCount = getTextCount()
+        
+        // Remove from unified system
+        unifiedObjects.removeAll { selectedTextIDs.contains($0.id) }
+        
+        // Keep legacy textObjects array in sync
         textObjects.removeAll { selectedTextIDs.contains($0.id) }
+        
         let actuallyRemovedCount = removedTextCount - getTextCount()
         
         Log.fileOperation("🗑️ TEXT REMOVAL: Removed \(actuallyRemovedCount) text objects from textObjects array", level: .info)
@@ -237,13 +268,13 @@ extension VectorDocument {
     func convertTextToOutlines(_ textID: UUID) {
         saveToUndoStack()
         
-        guard let textIndex = textObjects.firstIndex(where: { $0.id == textID }),
+        guard let textObject = allTextObjects.first(where: { $0.id == textID }),
               let layerIndex = selectedLayerIndex else {
             Log.error("❌ Failed to find text or layer for conversion", category: .error)
             return
         }
         
-        let textObject = textObjects[textIndex]
+        let textIndex = textObjects.firstIndex(where: { $0.id == textID }) // Keep for legacy removal
         
         // VALIDATION: Check for empty text content
         guard !textObject.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -351,8 +382,13 @@ extension VectorDocument {
             // UNIFIED SYSTEM: Use unified helper instead of direct manipulation
             addShapeToUnifiedSystem(outlineShape, layerIndex: layerIndex)
             
-            // Remove original text object
-            textObjects.remove(at: textIndex)
+            // Remove original text object from unified system
+            unifiedObjects.removeAll { $0.id == textID }
+            
+            // Keep legacy textObjects array in sync
+            if let textIndex = textIndex {
+                textObjects.remove(at: textIndex)
+            }
             selectedTextIDs.remove(textID)
             
             // Select the created outline shape
@@ -461,7 +497,7 @@ extension VectorDocument {
             layers[layerIndex].shapes.removeAll()
         }
         
-        // Clear all text objects
+        // Clear all text objects (legacy array will be cleared by unified system)
         textObjects.removeAll()
         
         // Clear all selections
