@@ -61,25 +61,6 @@ extension VectorDocument {
             syncSelectionArrays() // Keep legacy arrays in sync
         }
         
-        // CRITICAL: Force SwiftUI refresh by slightly modifying bounds to trigger view ID change
-        for s in selectedShapes {
-            if let layerIdx = layers.firstIndex(where: { $0.shapes.contains { $0.id == s.id } }),
-               let shapeIdx = layers[layerIdx].shapes.firstIndex(where: { $0.id == s.id }) {
-                // Force bounds recalculation to change the hashValue and trigger view refresh
-                var updatedShape = layers[layerIdx].shapes[shapeIdx]
-                let originalBounds = updatedShape.bounds
-                updatedShape.bounds = CGRect(x: originalBounds.minX, y: originalBounds.minY, 
-                                           width: originalBounds.width + 0.0001, 
-                                           height: originalBounds.height + 0.0001)
-                layers[layerIdx].shapes[shapeIdx] = updatedShape
-                
-                // Restore original bounds after a tiny delay to avoid visual artifacts
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.001) {
-                    self.layers[layerIdx].shapes[shapeIdx].bounds = originalBounds
-                }
-            }
-        }
-        
         // DEBUG: Check layers array before unified sync
         Log.info("🎭 CLIPPING MASK DEBUG: Before unified sync - checking layers array:", category: .general)
         for (idx, layer) in layers.enumerated() {
@@ -90,8 +71,8 @@ extension VectorDocument {
             }
         }
         
-        // CRITICAL: Full unified object sync after clipping mask changes (affects non-selected shapes)
-        populateUnifiedObjectsFromLayersPreservingOrder()
+        // CRITICAL FIX: Use full resync for clipping mask changes since they affect object relationships
+        forceResyncUnifiedObjects()
         
         // DEBUG: Check if unified objects were synced correctly
         Log.info("🎭 CLIPPING MASK DEBUG: After unified sync - checking unified objects:", category: .general)
@@ -170,8 +151,8 @@ extension VectorDocument {
             }
         }
         
-        // CRITICAL: Sync unified objects after property changes
-        updateUnifiedObjectsOptimized()
+        // CRITICAL FIX: Use full resync for clipping mask changes
+        forceResyncUnifiedObjects()
         objectWillChange.send()
         
         Log.info("✅ CLIPPING MASK: Released successfully", category: .general)
@@ -199,8 +180,8 @@ extension VectorDocument {
             }
         }
         
-        // CRITICAL: Sync unified objects after property changes
-        updateUnifiedObjectsOptimized()
+        // CRITICAL FIX: Use full resync for clipping mask changes
+        forceResyncUnifiedObjects()
         objectWillChange.send()
         
         Log.info("🎭 CLIPPING MASK: Moved mask and clipped content by \(offset)", category: .general)

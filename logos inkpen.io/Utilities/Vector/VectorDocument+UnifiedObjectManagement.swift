@@ -50,9 +50,12 @@ extension VectorDocument {
             }
         }
         
-        // Add to legacy layers array
+        // CRITICAL FIX: Only add to legacy layers array if shape doesn't already exist there
         if layerIndex < layers.count {
-            layers[layerIndex].shapes.append(shape)
+            let shapeExists = layers[layerIndex].shapes.contains { $0.id == shape.id }
+            if !shapeExists {
+                layers[layerIndex].shapes.append(shape)
+            }
         }
         
         let orderID = getNextOrderID(for: layerIndex)
