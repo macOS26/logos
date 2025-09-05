@@ -45,12 +45,12 @@ struct UnifiedObjectSystemToolbarTests {
         #expect(unlockedText?.isLocked == false, "Unselected text should remain unlocked")
         
         // Test unlock all functionality
-        for textObject in document.textObjects {
+        for textObject in document.getAllTextObjects() {
             document.unlockTextInUnified(id: textObject.id)
         }
         
         // Verify all unlocked
-        for textObject in document.textObjects {
+        for textObject in document.getAllTextObjects() {
             #expect(textObject.isLocked == false, "All text should be unlocked via unified helpers")
         }
     }
@@ -88,12 +88,12 @@ struct UnifiedObjectSystemToolbarTests {
         #expect(visibleText?.isVisible == true, "Unselected text should remain visible")
         
         // Test show all functionality
-        for textObject in document.textObjects {
+        for textObject in document.getAllTextObjects() {
             document.showTextInUnified(id: textObject.id)
         }
         
         // Verify all visible
-        for textObject in document.textObjects {
+        for textObject in document.getAllTextObjects() {
             #expect(textObject.isVisible == true, "All text should be visible via unified helpers")
         }
     }

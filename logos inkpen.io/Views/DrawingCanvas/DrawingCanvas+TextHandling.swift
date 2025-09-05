@@ -72,7 +72,7 @@ extension DrawingCanvas {
             document.selectedShapeIDs.removeAll()
             
             // Stop all editing
-            for textObject in document.textObjects {
+            for textObject in document.getAllTextObjects() {
                 if textObject.isEditing {
                     document.setTextEditingInUnified(id: textObject.id, isEditing: false)
                 }
@@ -88,7 +88,7 @@ extension DrawingCanvas {
     func findTextAt(location: CGPoint) -> UUID? {
         Log.info("🔍 FIND TEXT: Looking for text at location \(location)", category: .general)
         
-        for textObj in document.textObjects {
+        for textObj in document.getAllTextObjects() {
             if !textObj.isVisible || textObj.isLocked { continue }
             
             // ACCURATE HIT TESTING: Use precise text bounds with minimal tolerance
@@ -127,12 +127,13 @@ extension DrawingCanvas {
         
         // CRITICAL: Ensure only one text box can be in edit mode at a time
         var editingCount = 0
-        for textIndex in document.textObjects.indices {
-            if document.textObjects[textIndex].isEditing {
+        let allTextObjects = document.getAllTextObjects()
+        for textObject in allTextObjects {
+            if textObject.isEditing {
                 editingCount += 1
-                Log.fileOperation("🔄 STOPPING EDIT: Text box \(document.textObjects[textIndex].id.uuidString.prefix(8)) was in edit mode", level: .info)
+                Log.fileOperation("🔄 STOPPING EDIT: Text box \(textObject.id.uuidString.prefix(8)) was in edit mode", level: .info)
             }
-            document.setTextEditingInUnified(id: document.textObjects[textIndex].id, isEditing: false)
+            document.setTextEditingInUnified(id: textObject.id, isEditing: false)
         }
         
         if editingCount > 0 {
@@ -766,7 +767,7 @@ extension DrawingCanvas {
             document.selectedShapeIDs.removeAll()
             
             // Stop editing any text that might be in edit mode
-            for textObject in document.textObjects {
+            for textObject in document.getAllTextObjects() {
                 if textObject.isEditing {
                     document.setTextEditingInUnified(id: textObject.id, isEditing: false)
                 }
@@ -907,7 +908,7 @@ extension DrawingCanvas {
         
         Log.info("🔍 RESIZE HANDLE CHECK: Testing location \(location)", category: .general)
         
-        for textObj in document.textObjects {
+        for textObj in document.getAllTextObjects() {
             if !textObj.isVisible || textObj.isLocked { continue }
             
             // Check ALL text boxes - editing, selected, and even unselected ones

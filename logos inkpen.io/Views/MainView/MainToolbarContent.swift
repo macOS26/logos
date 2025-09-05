@@ -447,7 +447,7 @@ struct MainToolbarContent: ToolbarContent {
         }
         
         // Unlock all text objects using unified helpers
-        for textObject in document.textObjects {
+        for textObject in document.getAllTextObjects() {
             document.unlockTextInUnified(id: textObject.id)
         }
         
@@ -493,7 +493,7 @@ struct MainToolbarContent: ToolbarContent {
         }
         
         // Show all text objects using unified helpers
-        for textObject in document.textObjects {
+        for textObject in document.getAllTextObjects() {
             document.showTextInUnified(id: textObject.id)
         }
         
