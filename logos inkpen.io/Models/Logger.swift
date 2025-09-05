@@ -39,6 +39,7 @@ struct Log {
     
     // Create loggers for each category
     private static var loggers: [LogCategory: Logger] = [:]
+    private static let loggersQueue = DispatchQueue(label: "com.logos.logger.queue", attributes: .concurrent)
     
     // Simple spam suppression - count occurrences and block after 3 times
     private static var messageCounters: [String: Int] = [:]
@@ -57,13 +58,27 @@ struct Log {
     ]
     
     private static func logger(for category: LogCategory) -> Logger {
-        if let existing = loggers[category] {
+        // Try to read with concurrent access
+        var existingLogger: Logger?
+        loggersQueue.sync {
+            existingLogger = loggers[category]
+        }
+        
+        if let existing = existingLogger {
             return existing
         }
         
-        let logger = Logger(subsystem: subsystem, category: category.rawValue)
-        loggers[category] = logger
-        return logger
+        // Need to create new logger - use barrier for thread-safe write
+        return loggersQueue.sync(flags: .barrier) {
+            // Double-check in case another thread created it
+            if let existing = loggers[category] {
+                return existing
+            }
+            
+            let logger = Logger(subsystem: subsystem, category: category.rawValue)
+            loggers[category] = logger
+            return logger
+        }
     }
     
     // Check if message should be suppressed due to spam (more than 3 occurrences and not font-related)
