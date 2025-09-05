@@ -14,7 +14,7 @@ struct UnifiedObjectSystemCopyPasteTests {
     
     // MARK: - Copy/Paste System Tests
     
-    @Test func testCopyPastePreservesAllTextAttributes() async throws {
+    @Test @MainActor func testCopyPastePreservesAllTextAttributes() async throws {
         let document = VectorDocument()
         
         // Create text with complex typography

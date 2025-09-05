@@ -440,16 +440,21 @@ struct RotateHandles: View {
         // Create new path with transformed coordinates
         let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
         
-        // Update the shape with transformed path and reset transform to identity
-        document.layers[layerIndex].shapes[shapeIndex].path = transformedPath
-        document.layers[layerIndex].shapes[shapeIndex].transform = .identity
-        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+        // Get the current shape for corner radius check
+        let currentShape = document.layers[layerIndex].shapes[shapeIndex]
         
         // CORNER RADIUS SCALING: Apply transform to corner radii if this shape has them
-        var updatedShape = document.layers[layerIndex].shapes[shapeIndex]
-        if !updatedShape.cornerRadii.isEmpty && updatedShape.isRoundedRectangle {
+        if !currentShape.cornerRadii.isEmpty && currentShape.isRoundedRectangle {
+            var updatedShape = currentShape
+            updatedShape.path = transformedPath
+            updatedShape.transform = .identity
             applyTransformToCornerRadiiLocal(shape: &updatedShape, transform: currentTransform)
-            document.layers[layerIndex].shapes[shapeIndex] = updatedShape
+            
+            // Use unified helper to update both path and corner radii
+            document.updateShapeCornerRadiiInUnified(id: updatedShape.id, cornerRadii: updatedShape.cornerRadii, path: updatedShape.path)
+        } else {
+            // Use unified helper for regular shape update
+            document.updateShapeTransformAndPathInUnified(id: currentShape.id, path: transformedPath, transform: .identity)
         }
         
         Log.info("✅ Shape coordinates updated after rotation - object origin stays with object", category: .fileOperations)

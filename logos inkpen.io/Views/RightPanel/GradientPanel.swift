@@ -616,27 +616,10 @@ struct GradientFillSection: View {
                 if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
                     if case .shape(let shape) = unifiedObject.objectType,
                        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                       document.layers[layerIndex].shapes.contains(where: { $0.id == shape.id }) {
                         
-                        // Update the shape in the layer
-                        var updatedShape = shape
-                        switch document.activeColorTarget {
-                        case .fill:
-                            updatedShape.fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
-                        case .stroke:
-                            updatedShape.strokeStyle = StrokeStyle(gradient: gradient, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: 1.0)
-                        }
-                        document.layers[layerIndex].shapes[shapeIndex] = updatedShape
-                        
-                        // CRITICAL: Update the specific unified object with the new shape data
-                        if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
-                            if case .shape(let unifiedShape) = unifiedObj.objectType {
-                                return unifiedShape.id == shape.id
-                            }
-                            return false
-                        }) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: updatedShape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                        }
+                        // Use unified helper to update gradient
+                        document.updateShapeGradientInUnified(id: shape.id, gradient: gradient, target: document.activeColorTarget)
                     }
                 }
             }

@@ -516,9 +516,11 @@ class DocumentState: ObservableObject {
                     embedded = rep.representation(using: .png, properties: [:])
                 }
                 guard let data = embedded else { continue }
-                shape.embeddedImageData = data
-                // Keep link path for reference; user can manually clear if desired
-                document.layers[layerIndex].shapes[shapeIndex] = shape
+                // Use unified helper to update shape with embedded image data
+                document.updateEntireShapeInUnified(id: shape.id) { updatedShape in
+                    updatedShape.embeddedImageData = data
+                    // Keep link path for reference; user can manually clear if desired
+                }
                 anyEmbedded = true
             }
         }

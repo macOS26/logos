@@ -481,8 +481,8 @@ extension DrawingCanvas {
     
     /// PERFORMANCE OPTIMIZED: Update shape with live drag optimization
     private func updateShapeWithOptimizedSync(_ shape: VectorShape, layerIndex: Int, shapeIndex: Int, isLiveDrag: Bool) {
-        // Update the shape in the document
-        document.layers[layerIndex].shapes[shapeIndex] = shape
+        // Use unified helper to update shape
+        document.updateShapeCornerRadiiInUnified(id: shape.id, cornerRadii: shape.cornerRadii, path: shape.path)
         
         if isLiveDrag {
             // OPTIMIZED: During live drag, update only the specific shape in unified objects for targeted rendering
@@ -558,8 +558,8 @@ extension DrawingCanvas {
                 // Update originalBounds to current bounds for consistency
                 shape.originalBounds = currentBounds
                 
-                // Update the shape in the document
-                document.layers[layerIndex].shapes[shapeIndex] = shape
+                // Use unified helper to update shape
+                document.updateShapeCornerRadiiInUnified(id: shape.id, cornerRadii: shape.cornerRadii, path: shape.path)
                 
                 // PERFORMANCE OPTIMIZED: Use live drag optimization for smooth corner radius editing
                 updateShapeWithOptimizedSync(shape, layerIndex: layerIndex, shapeIndex: shapeIndex, isLiveDrag: true)
@@ -602,8 +602,8 @@ extension DrawingCanvas {
                 // Update originalBounds to current bounds for consistency
                 shape.originalBounds = currentBounds
                 
-                // Update the shape in the document
-                document.layers[layerIndex].shapes[shapeIndex] = shape
+                // Use unified helper to update shape
+                document.updateShapeCornerRadiiInUnified(id: shape.id, cornerRadii: shape.cornerRadii, path: shape.path)
                 
                 // PERFORMANCE OPTIMIZED: Use live drag optimization for smooth corner radius editing
                 updateShapeWithOptimizedSync(shape, layerIndex: layerIndex, shapeIndex: shapeIndex, isLiveDrag: true)
@@ -643,8 +643,8 @@ extension DrawingCanvas {
                 // Update originalBounds to current bounds for consistency
                 shape.originalBounds = currentBounds
                 
-                // Update the shape in the document
-                document.layers[layerIndex].shapes[shapeIndex] = shape
+                // Use unified helper to update shape
+                document.updateShapeCornerRadiiInUnified(id: shape.id, cornerRadii: shape.cornerRadii, path: shape.path)
                 
                 // PERFORMANCE OPTIMIZED: Use live drag optimization for smooth corner radius editing
                 updateShapeWithOptimizedSync(shape, layerIndex: layerIndex, shapeIndex: shapeIndex, isLiveDrag: true)

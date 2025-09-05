@@ -136,12 +136,22 @@ struct UnifiedHelperCoverageTests {
         document.hideTextInUnified(id: textObject.id)
         
         // Verify through unified system
-        let hiddenUnifiedObj = document.unifiedObjects.first { $0.id == textObject.id }
+        let hiddenUnifiedObj = document.unifiedObjects.first { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.id == textObject.id && shape.isTextObject
+            }
+            return false
+        }
         #expect(hiddenUnifiedObj?.isVisible == false, "Text visibility should use unified helper")
         
         document.showTextInUnified(id: textObject.id)
         
-        let visibleUnifiedObj = document.unifiedObjects.first { $0.id == textObject.id }
+        let visibleUnifiedObj = document.unifiedObjects.first { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.id == textObject.id && shape.isTextObject
+            }
+            return false
+        }
         #expect(visibleUnifiedObj?.isVisible == true, "Text visibility should use unified helper")
     }
     

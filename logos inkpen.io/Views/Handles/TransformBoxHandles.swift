@@ -301,7 +301,7 @@ struct TransformBoxHandles: View {
 
     // Apply preview transform to actual coordinates then reset transform (local implementation)
     private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int, transform: CGAffineTransform) {
-        var targetShape = document.layers[layerIndex].shapes[shapeIndex]
+        let targetShape = document.layers[layerIndex].shapes[shapeIndex]
         let t = transform
         if t.isIdentity { return }
 
@@ -329,9 +329,7 @@ struct TransformBoxHandles: View {
             }
         }
 
-        targetShape.path = VectorPath(elements: transformedElements, isClosed: targetShape.path.isClosed)
-        targetShape.transform = .identity
-        targetShape.updateBounds()
-        document.layers[layerIndex].shapes[shapeIndex] = targetShape
+        let newPath = VectorPath(elements: transformedElements, isClosed: targetShape.path.isClosed)
+        document.updateShapeTransformAndPathInUnified(id: targetShape.id, path: newPath, transform: .identity)
     }
 }

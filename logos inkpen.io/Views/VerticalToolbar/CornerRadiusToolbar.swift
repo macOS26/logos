@@ -273,17 +273,9 @@ struct CornerRadiusToolbar: View {
                     rect: currentBounds,
                     cornerRadii: updatedRadii
                 )
-                shape.path = newPath
-                shape.updateBounds()
                 
-                // Update originalBounds to current bounds for consistency
-                shape.originalBounds = currentBounds
-                
-                // Update the shape in the document
-                document.layers[layerIndex].shapes[shapeIndex] = shape
-                
-                // OPTIMIZED: Update unified objects without full sync
-                document.updateUnifiedObjectsOptimized()
+                // Use unified helper to update shape
+                document.updateShapeCornerRadiiInUnified(id: shape.id, cornerRadii: updatedRadii, path: newPath)
                 
                 print("🔄 Updated corner \(index + 1) radius to \(String(format: "%.1f", value))pt")
                 break

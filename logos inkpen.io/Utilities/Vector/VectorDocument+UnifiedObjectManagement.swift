@@ -1211,4 +1211,105 @@ extension VectorDocument {
             }
         }
     }
+    
+    func updateShapeCornerRadiiInUnified(id: UUID, cornerRadii: [Double], path: VectorPath) {
+        // Check if shape exists in unified system
+        if unifiedObjects.contains(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return !shape.isTextObject && shape.id == id
+            }
+            return false
+        }) {
+            // Find in legacy layer arrays
+            for layerIndex in 0..<layers.count {
+                if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id }) {
+                    layers[layerIndex].shapes[shapeIndex].cornerRadii = cornerRadii
+                    layers[layerIndex].shapes[shapeIndex].path = path
+                    layers[layerIndex].shapes[shapeIndex].updateBounds()
+                    updateUnifiedObjectsOptimized()
+                    break
+                }
+            }
+        }
+    }
+    
+    func updateShapeGradientInUnified(id: UUID, gradient: VectorGradient, target: ColorTarget) {
+        // Check if shape exists in unified system
+        if unifiedObjects.contains(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return !shape.isTextObject && shape.id == id
+            }
+            return false
+        }) {
+            // Find in legacy layer arrays
+            for layerIndex in 0..<layers.count {
+                if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id }) {
+                    switch target {
+                    case .fill:
+                        layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
+                    case .stroke:
+                        let currentStroke = layers[layerIndex].shapes[shapeIndex].strokeStyle
+                        layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
+                            gradient: gradient, 
+                            width: currentStroke?.width ?? defaultStrokeWidth,
+                            placement: currentStroke?.placement ?? defaultStrokePlacement,
+                            lineCap: currentStroke?.lineCap ?? defaultStrokeLineCap,
+                            lineJoin: currentStroke?.lineJoin ?? defaultStrokeLineJoin,
+                            miterLimit: currentStroke?.miterLimit ?? defaultStrokeMiterLimit,
+                            opacity: currentStroke?.opacity ?? 1.0
+                        )
+                    }
+                    updateUnifiedObjectsOptimized()
+                    break
+                }
+            }
+        }
+    }
+    
+    /// Generic shape update helper for complex transformations
+    func updateShapeTransformAndPathInUnified(id: UUID, path: VectorPath? = nil, transform: CGAffineTransform? = nil) {
+        // Check if shape exists in unified system
+        if unifiedObjects.contains(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return !shape.isTextObject && shape.id == id
+            }
+            return false
+        }) {
+            // Find in legacy layer arrays
+            for layerIndex in 0..<layers.count {
+                if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id }) {
+                    if let path = path {
+                        layers[layerIndex].shapes[shapeIndex].path = path
+                    }
+                    if let transform = transform {
+                        layers[layerIndex].shapes[shapeIndex].transform = transform
+                    }
+                    layers[layerIndex].shapes[shapeIndex].updateBounds()
+                    updateUnifiedObjectsOptimized()
+                    break
+                }
+            }
+        }
+    }
+    
+    /// Update entire shape object in unified system (use sparingly)
+    func updateEntireShapeInUnified(id: UUID, updater: (inout VectorShape) -> Void) {
+        // Check if shape exists in unified system
+        if unifiedObjects.contains(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return !shape.isTextObject && shape.id == id
+            }
+            return false
+        }) {
+            // Find in legacy layer arrays
+            for layerIndex in 0..<layers.count {
+                if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id }) {
+                    updater(&layers[layerIndex].shapes[shapeIndex])
+                    layers[layerIndex].shapes[shapeIndex].updateBounds()
+                    updateUnifiedObjectsOptimized()
+                    break
+                }
+            }
+        }
+    }
 }

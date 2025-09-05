@@ -150,7 +150,7 @@ struct CornerRadiusPanel: View {
         if let layerIndex = document.selectedLayerIndex,
            let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == selectedShape.id }) {
             
-            var shape = document.layers[layerIndex].shapes[shapeIndex]
+            let shape = document.layers[layerIndex].shapes[shapeIndex]
             var updatedRadii = shape.cornerRadii
             
             // Ensure array has enough elements
@@ -159,7 +159,6 @@ struct CornerRadiusPanel: View {
             }
             
             updatedRadii[index] = max(0.0, value) // Ensure non-negative
-            shape.cornerRadii = updatedRadii
             
             // Regenerate path from current bounds + new radii
             let currentBounds = shape.path.cgPath.boundingBox
@@ -167,16 +166,9 @@ struct CornerRadiusPanel: View {
                 rect: currentBounds,
                 cornerRadii: updatedRadii
             )
-            shape.path = newPath
-            shape.updateBounds()
             
-            // Update originalBounds to current bounds for consistency
-            shape.originalBounds = currentBounds
-            
-            document.layers[layerIndex].shapes[shapeIndex] = shape
-            
-            // OPTIMIZED: Update unified objects without full sync
-            document.updateUnifiedObjectsOptimized()
+            // Use unified helper to update shape
+            document.updateShapeCornerRadiiInUnified(id: selectedShape.id, cornerRadii: updatedRadii, path: newPath)
         }
     }
     

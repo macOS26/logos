@@ -231,25 +231,12 @@ extension DrawingCanvas {
         
         // Log.fileOperation("🎯 GRADIENT TOOL: updateShapeGradientOptimized called with isLiveDrag: \(isLiveDrag)", level: .info) // Disabled for performance
         
-        // Find and update the shape in the document
-        if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-            var updatedShape = shape
-            updatedShape.fillStyle = FillStyle(color: .gradient(newGradient))
-            document.layers[layerIndex].shapes[shapeIndex] = updatedShape
+        // Find and update the shape in the document using unified helper
+        if document.layers[layerIndex].shapes.contains(where: { $0.id == shape.id }) {
+            document.updateShapeGradientInUnified(id: shape.id, gradient: newGradient, target: .fill)
             
             if isLiveDrag {
-                // OPTIMIZED: During live drag, update only the specific shape in unified objects for targeted rendering
-                if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
-                    if case .shape(let unifiedShape) = unifiedObj.objectType {
-                        return unifiedShape.id == shape.id
-                    }
-                    return false
-                }) {
-                    // Update the specific unified object with the new shape data
-                    document.unifiedObjects[unifiedIndex] = VectorObject(shape: updatedShape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                }
-                
-                // Force immediate UI update for visual responsiveness
+                // Force immediate UI update for visual responsiveness during live drag
                 document.objectWillChange.send()
             } else {
                 // FULL UPDATE: On drag end, do full sync for consistency

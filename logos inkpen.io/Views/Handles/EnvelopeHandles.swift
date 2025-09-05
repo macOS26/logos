@@ -662,7 +662,8 @@ struct EnvelopeHandles: View {
                 updatedWarpObject.updateBounds()
             }
             
-            document.layers[layerIndex].shapes[shapeIndex] = updatedWarpObject
+            // Use unified helper to update warped shape
+            document.updateShapePathUnified(id: updatedWarpObject.id, path: updatedWarpObject.path)
             Log.info("   ✅ Updated existing warp object coordinates in real-time", category: .general)
         } else {
             // First-time warp: create warp object
@@ -708,7 +709,8 @@ struct EnvelopeHandles: View {
                 warpObject.updateBounds()
             }
             
-                    document.layers[layerIndex].shapes[shapeIndex] = warpObject
+            // Use unified helper to update warped shape
+            document.updateShapePathUnified(id: warpObject.id, path: warpObject.path)
         
         // CRITICAL FIX: Update selection to use unified objects system
         document.selectedObjectIDs.remove(currentShape.id)
