@@ -38,7 +38,7 @@ struct UnifiedObjectSystemUtilityTests {
         document.updateTextStrokeWidthInUnified(id: testText.id, width: 2.5)
         
         // Verify updates worked
-        let updatedText = document.textObjects.first { $0.id == testText.id }
+        let updatedText = document.getTextByID(testText.id)
         #expect(updatedText?.typography.fillOpacity == 0.9, "Fill opacity migration failed")
         #expect(updatedText?.typography.strokeWidth == 2.5, "Stroke width migration failed")
     }
@@ -64,7 +64,7 @@ struct UnifiedObjectSystemUtilityTests {
         
         // Verify both arrays updated
         let expectedPosition = CGPoint(x: 150, y: 170)
-        let updatedText = document.textObjects.first { $0.id == testText.id }
+        let updatedText = document.getTextByID(testText.id)
         #expect(updatedText?.position == expectedPosition, "Legacy textObjects position not updated")
         
         let updatedUnifiedShape = document.unifiedObjects.first { obj in
@@ -105,8 +105,8 @@ struct UnifiedObjectSystemUtilityTests {
         document.translateAllTextInUnified(delta: delta)
         
         // Verify all texts updated
-        let updatedText1 = document.textObjects.first { $0.id == text1.id }
-        let updatedText2 = document.textObjects.first { $0.id == text2.id }
+        let updatedText1 = document.getTextByID(text1.id)
+        let updatedText2 = document.getTextByID(text2.id)
         
         #expect(updatedText1?.position == CGPoint(x: 125, y: 50), "Text 1 position not updated")
         #expect(updatedText2?.position == CGPoint(x: 225, y: 250), "Text 2 position not updated")
@@ -141,7 +141,7 @@ struct UnifiedObjectSystemUtilityTests {
         document.updateTextLayerInUnified(id: testText.id, layerIndex: 3)
         
         // Verify both arrays updated
-        let updatedText = document.textObjects.first { $0.id == testText.id }
+        let updatedText = document.getTextByID(testText.id)
         #expect(updatedText?.layerIndex == 3, "Legacy textObjects layerIndex not updated")
         
         let updatedUnified = document.unifiedObjects.first { obj in

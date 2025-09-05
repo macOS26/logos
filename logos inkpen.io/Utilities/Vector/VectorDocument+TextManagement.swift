@@ -167,7 +167,7 @@ extension VectorDocument {
         // Remove any unified objects that reference text objects that no longer exist
         unifiedObjects.removeAll { unifiedObject in
             if case .shape(let shape) = unifiedObject.objectType, shape.isTextObject {
-                let textStillExists = textObjects.contains { $0.id == shape.id }
+                let textStillExists = getTextByID(shape.id) != nil
                 if !textStillExists {
                     Log.fileOperation("🗑️ CLEANUP: Removing unified object for deleted text '\(shape.textContent ?? "")' (ID: \(shape.id.uuidString.prefix(8)))", level: .info)
                 }

@@ -39,7 +39,7 @@ struct UnifiedObjectSystemPasteBugTests {
         let newAreaSize = CGSize(width: 500, height: 250)
         
         // Simulate the resize operation that updateDocumentTextBounds handles
-        if let textIndex = document.textObjects.firstIndex(where: { $0.id == originalText.id }) {
+        if let textIndex = document.getTextIndex(where: { $0.id == originalText.id }) {
             document.textObjects[textIndex].position = CGPoint(x: newResizedFrame.minX, y: newResizedFrame.minY)
             document.textObjects[textIndex].bounds = CGRect(
                 x: 0, y: 0, 
@@ -73,7 +73,7 @@ struct UnifiedObjectSystemPasteBugTests {
         #expect(document.getTextCount() == 2, "Should have original + pasted text")
         
         // Verify the pasted text (we know it's the one we just created)
-        #expect(document.textObjects.contains { $0.id == pastedText.id }, "Pasted text not found in document")
+        #expect(document.getTextByID(pastedText.id) != nil, "Pasted text not found in document")
         
         // Test the pasted text properties
         // CRITICAL: Pasted text must have the RESIZED dimensions, not original

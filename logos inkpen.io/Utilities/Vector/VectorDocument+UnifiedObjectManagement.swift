@@ -1460,4 +1460,69 @@ extension VectorDocument {
         // This will be migrated later to extract from unified objects
         return textObjects
     }
+    
+    /// Gets a text object by ID from the unified system
+    func getTextByID(_ id: UUID) -> VectorText? {
+        return textObjects.first { $0.id == id }
+    }
+    
+    /// Gets the first text object matching a condition from the unified system
+    func getFirstText(where predicate: (VectorText) -> Bool) -> VectorText? {
+        return textObjects.first(where: predicate)
+    }
+    
+    /// Gets the index of the first text object matching a condition
+    func getTextIndex(where predicate: (VectorText) -> Bool) -> Int? {
+        return textObjects.firstIndex(where: predicate)
+    }
+    
+    /// Checks if any text object matches a condition
+    func containsText(where predicate: (VectorText) -> Bool) -> Bool {
+        return textObjects.contains(where: predicate)
+    }
+    
+    /// Gets text object at a specific index
+    func getTextAt(index: Int) -> VectorText? {
+        guard index >= 0 && index < textObjects.count else { return nil }
+        return textObjects[index]
+    }
+    
+    /// Removes all text objects from the unified system
+    func removeAllText() {
+        // Remove from legacy array
+        textObjects.removeAll()
+        
+        // Remove from unified objects
+        unifiedObjects.removeAll { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject
+            }
+            return false
+        }
+        
+        // Remove text shapes from layers
+        for layerIndex in layers.indices {
+            layers[layerIndex].shapes.removeAll { $0.isTextObject }
+        }
+    }
+    
+    /// Removes text objects matching a condition
+    func removeText(where predicate: (VectorText) -> Bool) {
+        let idsToRemove = textObjects.filter(predicate).map { $0.id }
+        for id in idsToRemove {
+            removeTextFromUnifiedSystem(id: id)
+        }
+    }
+    
+    /// Updates a text object at a specific index
+    func updateTextAt(index: Int, update: (inout VectorText) -> Void) {
+        guard index >= 0 && index < textObjects.count else { return }
+        update(&textObjects[index])
+        
+        // Sync to unified system
+        let text = textObjects[index]
+        updateEntireTextInUnified(id: text.id) { _ in
+            // Already updated in textObjects
+        }
+    }
 }

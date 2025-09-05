@@ -283,7 +283,7 @@ struct UnifiedSystemMigrationTests {
         
         // New unified check for text
         let hasTextSelection = doc.selectedObjectIDs.contains { id in
-            doc.textObjects.contains { $0.id == id }
+            doc.getTextByID(id) != nil
         }
         #expect(hasTextSelection)
     }
