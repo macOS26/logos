@@ -70,7 +70,7 @@ struct UnifiedObjectSystemPasteBugTests {
         document.selectedObjectIDs.insert(pastedText.id)
         
         // Verify we now have 2 text objects
-        #expect(document.textObjects.count == 2, "Should have original + pasted text")
+        #expect(document.getTextCount() == 2, "Should have original + pasted text")
         
         // Verify the pasted text (we know it's the one we just created)
         #expect(document.textObjects.contains { $0.id == pastedText.id }, "Pasted text not found in document")

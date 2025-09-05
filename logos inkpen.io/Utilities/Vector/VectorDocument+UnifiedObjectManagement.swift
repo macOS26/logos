@@ -176,6 +176,14 @@ extension VectorDocument {
         // Convert VectorText to VectorShape
         let textShape = VectorShape.from(textWithLayer)
         
+        // CRITICAL: Also add the text shape to the layer's shapes array
+        if layerIndex < layers.count {
+            // Remove any existing shape with same ID to prevent duplicates
+            layers[layerIndex].shapes.removeAll { $0.id == text.id }
+            // Add the text as a shape
+            layers[layerIndex].shapes.append(textShape)
+        }
+        
         // CRITICAL FIX: During undo/redo operations, preserve the original orderID if available
         if isUndoRedoOperation {
             // Try to find an existing unified object for this text to preserve its orderID
@@ -1376,6 +1384,11 @@ extension VectorDocument {
         // Remove from textObjects array
         textObjects.removeAll { $0.id == id }
         
+        // CRITICAL: Also remove the text shape from layers
+        for layerIndex in layers.indices {
+            layers[layerIndex].shapes.removeAll { $0.id == id && $0.isTextObject }
+        }
+        
         // Remove from unified objects (text is stored as shape with isTextObject = true)
         unifiedObjects.removeAll { obj in
             if case .shape(let shape) = obj.objectType {
@@ -1417,5 +1430,34 @@ extension VectorDocument {
                 )
             }
         }
+    }
+    
+    // MARK: - Unified Read-Only Helpers
+    
+    /// Gets the count of text objects in the unified system
+    func getTextCount() -> Int {
+        return unifiedObjects.filter { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject
+            }
+            return false
+        }.count
+    }
+    
+    /// Checks if there are any text objects in the unified system
+    func hasTextObjects() -> Bool {
+        return unifiedObjects.contains { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject
+            }
+            return false
+        }
+    }
+    
+    /// Gets all text objects from the unified system as VectorText objects
+    func getAllTextObjects() -> [VectorText] {
+        // For now, return the legacy array to maintain compatibility
+        // This will be migrated later to extract from unified objects
+        return textObjects
     }
 }

@@ -143,9 +143,9 @@ extension VectorDocument {
         }
         
         // Remove the original text objects
-        let removedTextCount = textObjects.count
+        let removedTextCount = getTextCount()
         textObjects.removeAll { selectedTextIDs.contains($0.id) }
-        let actuallyRemovedCount = removedTextCount - textObjects.count
+        let actuallyRemovedCount = removedTextCount - getTextCount()
         
         Log.fileOperation("🗑️ TEXT REMOVAL: Removed \(actuallyRemovedCount) text objects from textObjects array", level: .info)
         

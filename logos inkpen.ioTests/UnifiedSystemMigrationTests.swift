@@ -7,7 +7,9 @@
 
 import Testing
 @testable import logos_inkpen_io
+import Foundation
 import CoreGraphics
+import SwiftUI
 
 @Suite("Unified System Migration Tests")
 struct UnifiedSystemMigrationTests {
@@ -19,19 +21,17 @@ struct UnifiedSystemMigrationTests {
         
         // Add test shapes to layer 2 (default drawing layer)
         let shape1 = VectorShape(
-            id: UUID(),
             name: "Test Shape 1",
-            path: SimplePath(commands: [.move(to: .zero), .line(to: CGPoint(x: 100, y: 100))]),
-            fillColor: .red,
-            strokeColor: .black
+            path: VectorPath(elements: [.move(to: VectorPoint(0, 0)), .line(to: VectorPoint(100, 100))], isClosed: false),
+            strokeStyle: StrokeStyle(color: .black, width: 1.0, placement: .center, opacity: 1.0),
+            fillStyle: FillStyle(color: .rgb(RGBColor(red: 1, green: 0, blue: 0, alpha: 1)), opacity: 1.0)
         )
         
         let shape2 = VectorShape(
-            id: UUID(),
             name: "Test Shape 2",
-            path: SimplePath(commands: [.move(to: CGPoint(x: 50, y: 50)), .line(to: CGPoint(x: 150, y: 150))]),
-            fillColor: .blue,
-            strokeColor: .black
+            path: VectorPath(elements: [.move(to: VectorPoint(50, 50)), .line(to: VectorPoint(150, 150))], isClosed: false),
+            strokeStyle: StrokeStyle(color: .black, width: 1.0, placement: .center, opacity: 1.0),
+            fillStyle: FillStyle(color: .rgb(RGBColor(red: 0, green: 0, blue: 1, alpha: 1)), opacity: 1.0)
         )
         
         // Add test text
@@ -86,8 +86,8 @@ struct UnifiedSystemMigrationTests {
     func testCountOperations() {
         let doc = createTestDocument()
         
-        // Select multiple shapes
-        for shape in doc.layers[2].shapes {
+        // Select multiple shapes (excluding text shapes)
+        for shape in doc.layers[2].shapes where !shape.isTextObject {
             doc.selectedObjectIDs.insert(shape.id)
         }
         doc.syncSelectionArrays()
@@ -114,7 +114,7 @@ struct UnifiedSystemMigrationTests {
         
         // Old way
         doc.selectedShapeIDs.insert(shapeID)
-        doc.syncSelectionArrays()
+        doc.syncUnifiedSelectionFromLegacy()
         
         #expect(doc.selectedObjectIDs.contains(shapeID))
         #expect(doc.selectedShapeIDs.contains(shapeID))
@@ -143,7 +143,7 @@ struct UnifiedSystemMigrationTests {
         
         // Old way - clear shape selection only
         doc.selectedShapeIDs.removeAll()
-        doc.syncSelectionArrays()
+        doc.syncUnifiedSelectionFromLegacy()
         
         #expect(doc.selectedObjectIDs.count == 1) // Only text remains
         #expect(doc.selectedShapeIDs.isEmpty)
@@ -184,8 +184,10 @@ struct UnifiedSystemMigrationTests {
         for objectID in doc.selectedObjectIDs {
             if let object = doc.unifiedObjects.first(where: { $0.id == objectID }) {
                 switch object.objectType {
-                case .shape:
-                    newWayCount += 1
+                case .shape(let shape):
+                    if !shape.isTextObject {
+                        newWayCount += 1
+                    }
                 }
             }
         }
@@ -295,22 +297,21 @@ struct UnifiedSystemMigrationTests {
         // Add 100 shapes
         for i in 0..<100 {
             let shape = VectorShape(
-                id: UUID(),
                 name: "Shape \(i)",
-                path: SimplePath(commands: [.move(to: CGPoint(x: Double(i), y: Double(i)))]),
-                fillColor: .red,
-                strokeColor: .black
+                path: VectorPath(elements: [.move(to: VectorPoint(Double(i), Double(i)))], isClosed: false),
+                strokeStyle: StrokeStyle(color: .black, width: 1.0, placement: .center, opacity: 1.0),
+                fillStyle: FillStyle(color: .rgb(RGBColor(red: 1, green: 0, blue: 0, alpha: 1)), opacity: 1.0)
             )
             doc.addShape(shape, to: 2)
         }
         
         // Measure old way
-        let startOld = Date()
+        let startOld = Foundation.Date()
         for shape in doc.layers[2].shapes {
             doc.selectedShapeIDs.insert(shape.id)
         }
         doc.syncSelectionArrays()
-        let oldTime = Date().timeIntervalSince(startOld)
+        let oldTime = Foundation.Date().timeIntervalSince(startOld)
         
         // Clear
         doc.selectedObjectIDs.removeAll()
@@ -318,12 +319,12 @@ struct UnifiedSystemMigrationTests {
         doc.syncSelectionArrays()
         
         // Measure new unified way
-        let startNew = Date()
+        let startNew = Foundation.Date()
         for shape in doc.layers[2].shapes {
             doc.selectedObjectIDs.insert(shape.id)
         }
         doc.syncSelectionArrays()
-        let newTime = Date().timeIntervalSince(startNew)
+        let newTime = Foundation.Date().timeIntervalSince(startNew)
         
         // Unified should be comparable or faster
         print("Old way: \(oldTime)s, New way: \(newTime)s")
@@ -346,7 +347,7 @@ struct UnifiedSystemMigrationTests {
         
         // Remove shape from layer but not from selection
         doc.layers[2].shapes.removeAll { $0.id == shapeID }
-        doc.rebuildUnifiedObjectsSystem()
+        doc.populateUnifiedObjectsFromLayersPreservingOrder()
         
         // Unified system should handle orphaned selections gracefully
         #expect(doc.selectedObjectIDs.contains(shapeID)) // Still in selection
@@ -359,11 +360,10 @@ struct UnifiedSystemMigrationTests {
         
         // Add shape to different layer
         let shape3 = VectorShape(
-            id: UUID(),
             name: "Layer 3 Shape",
-            path: SimplePath(commands: [.move(to: .zero)]),
-            fillColor: .green,
-            strokeColor: .black
+            path: VectorPath(elements: [.move(to: VectorPoint(0, 0))], isClosed: false),
+            strokeStyle: StrokeStyle(color: .black, width: 1.0, placement: .center, opacity: 1.0),
+            fillStyle: FillStyle(color: .rgb(RGBColor(red: 0, green: 1, blue: 0, alpha: 1)), opacity: 1.0)
         )
         
         // Add new layer if needed
@@ -440,6 +440,9 @@ struct UnifiedSystemMigrationTests {
         // Verify selection restored correctly
         #expect(loadedDoc.selectedShapeIDs == originalShapeIDs)
         #expect(loadedDoc.selectedTextIDs == originalTextIDs)
+        
+        // selectedObjectIDs needs to be rebuilt from legacy arrays after loading
+        loadedDoc.syncUnifiedSelectionFromLegacy()
         #expect(loadedDoc.selectedObjectIDs == originalObjectIDs)
     }
 }
