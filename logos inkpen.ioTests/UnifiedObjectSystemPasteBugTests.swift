@@ -28,7 +28,6 @@ struct UnifiedObjectSystemPasteBugTests {
         )
         
         // Add to document
-        document.textObjects.append(originalText)
         document.addTextToUnifiedSystem(originalText, layerIndex: 1)
         
         // Verify original areaSize
@@ -65,7 +64,6 @@ struct UnifiedObjectSystemPasteBugTests {
         
         // Clear selection and "paste" (add the copied text)
         document.selectedObjectIDs.removeAll()
-        document.textObjects.append(pastedText)
         document.addTextToUnifiedSystem(pastedText, layerIndex: 1)
         document.selectedObjectIDs.insert(pastedText.id)
         

@@ -26,8 +26,7 @@ struct UnifiedObjectSystemUtilityTests {
             position: CGPoint(x: 100, y: 100)
         )
         
-        // Add to document and unified system
-        document.textObjects.append(testText)
+        // Add to unified system (text is now stored as shapes)
         document.addTextToUnifiedSystem(testText, layerIndex: 1)
         document.selectedObjectIDs.insert(testText.id)
         
@@ -54,8 +53,7 @@ struct UnifiedObjectSystemUtilityTests {
             position: originalPosition
         )
         
-        // Add to document and unified system
-        document.textObjects.append(testText)
+        // Add to unified system (text is now stored as shapes)
         document.addTextToUnifiedSystem(testText, layerIndex: 1)
         
         // Use unified helper to translate
@@ -94,9 +92,7 @@ struct UnifiedObjectSystemUtilityTests {
             position: CGPoint(x: 200, y: 300)
         )
         
-        // Add to document and unified system
-        document.textObjects.append(text1)
-        document.textObjects.append(text2)
+        // Add to unified system (text is now stored as shapes)
         document.addTextToUnifiedSystem(text1, layerIndex: 1)
         document.addTextToUnifiedSystem(text2, layerIndex: 1)
         
@@ -123,8 +119,7 @@ struct UnifiedObjectSystemUtilityTests {
             layerIndex: 1
         )
         
-        // Add to document and unified system
-        document.textObjects.append(testText)
+        // Add to unified system (text is now stored as shapes)
         document.addTextToUnifiedSystem(testText, layerIndex: 1)
         
         // Verify initial layer

@@ -34,7 +34,6 @@ struct UnifiedObjectSystemRegressionTests {
         
         // Add to unified system
         document.addTextToUnifiedSystem(textObject, layerIndex: 1)
-        document.textObjects.append(textObject)
         document.selectedObjectIDs.insert(textObject.id)
         
         // Simulate drag operation - update position in textObjects array
@@ -99,7 +98,6 @@ struct UnifiedObjectSystemRegressionTests {
         
         // Add to unified system
         document.addTextToUnifiedSystem(textObject, layerIndex: 1)
-        document.textObjects.append(textObject)
         document.selectedObjectIDs.insert(textObject.id)
         
         // Update fill color using unified helper
@@ -144,7 +142,6 @@ struct UnifiedObjectSystemRegressionTests {
         
         // Add to unified system
         document.addTextToUnifiedSystem(textObject, layerIndex: 1)
-        document.textObjects.append(textObject)
         
         // Move text object in textObjects array (simulating drag)
         let draggedPosition = CGPoint(x: 200, y: 300)
@@ -226,7 +223,6 @@ struct UnifiedObjectSystemRegressionTests {
         
         // Add to unified system
         document.addTextToUnifiedSystem(textObject, layerIndex: 1)
-        document.textObjects.append(textObject)
         document.selectedObjectIDs.insert(textObject.id)
         
         let positions = [

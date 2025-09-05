@@ -141,7 +141,7 @@ struct MainView: View {
                     document.selectedLayerIndex = newDocument.selectedLayerIndex
                     document.selectedShapeIDs = newDocument.selectedShapeIDs
                     document.selectedTextIDs = newDocument.selectedTextIDs
-                    document.textObjects = newDocument.textObjects
+                    // MIGRATION: Text is now stored as shapes in layers
                     document.currentTool = newDocument.currentTool
                     document.viewMode = newDocument.viewMode
                     document.zoomLevel = newDocument.zoomLevel
@@ -358,7 +358,8 @@ struct MainView: View {
         document.selectedLayerIndex = importedDoc.selectedLayerIndex
         document.selectedShapeIDs = importedDoc.selectedShapeIDs
         document.selectedTextIDs = importedDoc.selectedTextIDs
-        document.textObjects = importedDoc.textObjects
+        // MIGRATION: Text is now stored as shapes in layers, not in textObjects array
+        // textObjects will be populated from layers during updateUnifiedObjectsOptimized()
         
         // CRITICAL FIX: Sync unified objects system to ensure imported images are properly registered
         document.updateUnifiedObjectsOptimized()
@@ -440,7 +441,7 @@ struct MainView: View {
                         document.selectedLayerIndex = loadedDocument.selectedLayerIndex
                         document.selectedShapeIDs = loadedDocument.selectedShapeIDs
                         document.selectedTextIDs = loadedDocument.selectedTextIDs
-                        document.textObjects = loadedDocument.textObjects
+                        // MIGRATION: Text is now stored as shapes in layers
                         document.currentTool = loadedDocument.currentTool
                         document.viewMode = loadedDocument.viewMode
                         // DON'T copy zoom/offset - we'll set them to fit-to-page

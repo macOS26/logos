@@ -34,7 +34,6 @@ struct UnifiedObjectSystemBugPreventionTests {
         
         // Add to unified system
         document.addTextToUnifiedSystem(textObject, layerIndex: 1)
-        document.textObjects.append(textObject)
         document.selectedObjectIDs.insert(textObject.id)
         
         // SIMULATE THE EXACT BUG SCENARIO:
@@ -124,7 +123,6 @@ struct UnifiedObjectSystemBugPreventionTests {
         
         // Add to unified system
         document.addTextToUnifiedSystem(textObject, layerIndex: 1)
-        document.textObjects.append(textObject)
         
         // Simulate multiple drag operations
         let positions = [
@@ -200,7 +198,6 @@ struct UnifiedObjectSystemBugPreventionTests {
         
         // Add to unified system
         document.addTextToUnifiedSystem(textObject, layerIndex: 1)
-        document.textObjects.append(textObject)
         document.selectedObjectIDs.insert(textObject.id)
         
         // EXACT BUG SCENARIO from logs:

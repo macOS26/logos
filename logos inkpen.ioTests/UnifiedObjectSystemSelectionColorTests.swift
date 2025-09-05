@@ -79,7 +79,6 @@ struct UnifiedObjectSystemSelectionColorTests {
         
         // Add to document using proper helper methods
         document.addTextToUnifiedSystem(textObject, layerIndex: 1)
-        document.textObjects.append(textObject) // Keep legacy in sync
         
         // Simulate ColorPanel stroke color update
         let newStrokeColor = VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 0))
@@ -159,7 +158,6 @@ struct UnifiedObjectSystemSelectionColorTests {
         
         // Add to document using proper helper methods
         document.addTextToUnifiedSystem(textObject, layerIndex: 1)
-        document.textObjects.append(textObject) // Keep legacy in sync
         
         // Test the ACTUAL ColorSwatchGrid fill color update
         let newFillColor = VectorColor.rgb(RGBColor(red: 0, green: 0, blue: 1))

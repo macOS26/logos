@@ -36,7 +36,11 @@ class VectorDocument: ObservableObject, Codable {
     
     // CRITICAL FIX: Shared state to prevent double transformations  
     @Published var isHandleScalingActive = false // Set by SelectionHandles, checked by canvas gesture
-    @Published var textObjects: [VectorText] = [] // PROFESSIONAL TEXT OBJECTS
+    
+    // DEPRECATED: Legacy text objects array - kept for backward compatibility only
+    // Text is now stored as VectorShape with isTextObject=true in the layers array
+    // This array is maintained automatically for compatibility but should not be used directly
+    @Published var textObjects: [VectorText] = []
     
     // NEW: Unified objects array for proper layer ordering
     @Published var unifiedObjects: [VectorObject] = [] // All objects (shapes + text) with proper ordering
@@ -362,7 +366,12 @@ class VectorDocument: ObservableObject, Codable {
         selectedLayerIndex = try container.decodeIfPresent(Int.self, forKey: .selectedLayerIndex)
         selectedShapeIDs = try container.decode(Set<UUID>.self, forKey: .selectedShapeIDs)
         selectedTextIDs = try container.decodeIfPresent(Set<UUID>.self, forKey: .selectedTextIDs) ?? []
-        textObjects = try container.decodeIfPresent([VectorText].self, forKey: .textObjects) ?? []
+        
+        // MIGRATION: Try to decode legacy textObjects array for backward compatibility
+        // But we'll extract text from shapes in layers as the primary source
+        let legacyTextObjects = try container.decodeIfPresent([VectorText].self, forKey: .textObjects) ?? []
+        textObjects = [] // Will be populated from layers
+        
         currentTool = try container.decode(DrawingTool.self, forKey: .currentTool)
         viewMode = try container.decodeIfPresent(ViewMode.self, forKey: .viewMode) ?? .color
         zoomLevel = try container.decode(Double.self, forKey: .zoomLevel)
@@ -387,6 +396,26 @@ class VectorDocument: ObservableObject, Codable {
         // CRITICAL FIX: Load unified objects array to preserve order during undo/redo
         unifiedObjects = try container.decodeIfPresent([VectorObject].self, forKey: .unifiedObjects) ?? []
         
+        // MIGRATION: If we have legacy text objects but no text shapes in layers, migrate them
+        if !legacyTextObjects.isEmpty {
+            for text in legacyTextObjects {
+                // Check if this text already exists as a shape in layers
+                let textExistsAsShape = layers.flatMap { $0.shapes }.contains { $0.id == text.id && $0.isTextObject }
+                
+                if !textExistsAsShape {
+                    // Convert legacy text to shape and add to appropriate layer
+                    let textShape = VectorShape.from(text)
+                    let layerIndex = text.layerIndex ?? 2 // Default to working layer
+                    if layerIndex < layers.count {
+                        layers[layerIndex].shapes.append(textShape)
+                    }
+                }
+                
+                // Keep legacy array in sync for backward compatibility
+                textObjects.append(text)
+            }
+        }
+        
         // CRITICAL FIX: Only populate unified objects if they don't exist (for new documents)
         if unifiedObjects.isEmpty {
             populateUnifiedObjectsFromLayersPreservingOrder()
@@ -408,7 +437,11 @@ class VectorDocument: ObservableObject, Codable {
         try container.encodeIfPresent(selectedLayerIndex, forKey: .selectedLayerIndex)
         try container.encode(selectedShapeIDs, forKey: .selectedShapeIDs)
         try container.encode(selectedTextIDs, forKey: .selectedTextIDs)
-        try container.encode(textObjects, forKey: .textObjects)
+        
+        // MIGRATION: Don't encode textObjects - text is now stored as shapes in layers
+        // Only encode empty array for backward compatibility with older versions
+        try container.encode([VectorText](), forKey: .textObjects)
+        
         try container.encode(currentTool, forKey: .currentTool)
         try container.encode(viewMode, forKey: .viewMode)
         try container.encode(zoomLevel, forKey: .zoomLevel)

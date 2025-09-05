@@ -72,7 +72,6 @@ struct UnifiedObjectSystemMigrationTests {
         
         // Add to unified system
         document.addTextToUnifiedSystem(textObject, layerIndex: 1)
-        document.textObjects.append(textObject)
         document.selectedObjectIDs.insert(textObject.id)
         
         // Test migration from StrokeFillPanel line 327 violation
@@ -103,7 +102,6 @@ struct UnifiedObjectSystemMigrationTests {
         
         // Add to unified system
         document.addTextToUnifiedSystem(textObject, layerIndex: 1)
-        document.textObjects.append(textObject)
         document.selectedObjectIDs.insert(textObject.id)
         
         // Test migration from StrokeFillPanel line 458 violation
@@ -135,7 +133,6 @@ struct UnifiedObjectSystemMigrationTests {
         
         // Add to unified system
         document.addTextToUnifiedSystem(textObject, layerIndex: 1)
-        document.textObjects.append(textObject)
         document.selectedTextIDs.insert(textObject.id)
         
         // Test migration from ColorPanel line 449 violation
@@ -167,7 +164,6 @@ struct UnifiedObjectSystemMigrationTests {
         
         // Add to unified system
         document.addTextToUnifiedSystem(textObject, layerIndex: 1)
-        document.textObjects.append(textObject)
         document.selectedObjectIDs.insert(textObject.id)
         
         // Test migration from ColorSwatchGrid line 371 violation
@@ -199,7 +195,6 @@ struct UnifiedObjectSystemMigrationTests {
         
         // Add to unified system
         document.addTextToUnifiedSystem(textObject, layerIndex: 1)
-        document.textObjects.append(textObject)
         document.selectedObjectIDs.insert(textObject.id)
         
         // Test migration from VectorDocument+ColorManagement line 102 violation
@@ -230,7 +225,6 @@ struct UnifiedObjectSystemMigrationTests {
         
         // Add to unified system
         document.addTextToUnifiedSystem(textObject, layerIndex: 1)
-        document.textObjects.append(textObject)
         document.selectedObjectIDs.insert(textObject.id)
         
         // Test migration from VectorDocument+ColorManagement line 106 violation

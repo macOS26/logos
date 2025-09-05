@@ -149,6 +149,8 @@ extension VectorDocument {
     
     /// Adds a text object as VectorShape to the unified objects system
     func addTextToUnifiedSystem(_ text: VectorText, layerIndex: Int) {
+        // MIGRATION: Text is now stored as VectorShape in unified system
+        
         // CRITICAL FIX: Check for existing object to prevent duplicates
         let existingIndex = unifiedObjects.firstIndex { unifiedObject in
             if case .shape(let existingShape) = unifiedObject.objectType {
@@ -162,27 +164,25 @@ extension VectorDocument {
             unifiedObjects.remove(at: existingIndex)
         }
         
-        // CRITICAL FIX: Also add to legacy textObjects array
-        let existingTextIndex = textObjects.firstIndex { $0.id == text.id }
-        if let existingTextIndex = existingTextIndex {
-            textObjects.remove(at: existingTextIndex)
-        }
-        
-        // Set the layer index on the text object
+        // Convert VectorText to VectorShape
         var textWithLayer = text
         textWithLayer.layerIndex = layerIndex
-        textObjects.append(textWithLayer)
-        
-        // Convert VectorText to VectorShape
         let textShape = VectorShape.from(textWithLayer)
         
-        // CRITICAL: Also add the text shape to the layer's shapes array
+        // CRITICAL: Add the text shape to the layer's shapes array
         if layerIndex < layers.count {
             // Remove any existing shape with same ID to prevent duplicates
             layers[layerIndex].shapes.removeAll { $0.id == text.id }
             // Add the text as a shape
             layers[layerIndex].shapes.append(textShape)
         }
+        
+        // MIGRATION: Keep legacy textObjects array in sync for backward compatibility
+        let existingTextIndex = textObjects.firstIndex { $0.id == text.id }
+        if let existingTextIndex = existingTextIndex {
+            textObjects.remove(at: existingTextIndex)
+        }
+        textObjects.append(textWithLayer)
         
         // CRITICAL FIX: During undo/redo operations, preserve the original orderID if available
         if isUndoRedoOperation {
@@ -406,28 +406,22 @@ extension VectorDocument {
                 case .shape(let shape):
                     let layerIndex = unifiedObjects[unifiedIndex].layerIndex
                     
-                    // CRITICAL FIX: Handle text objects differently - sync from textObjects array
-                    if shape.isTextObject {
-                        if let textObject = textObjects.first(where: { $0.id == shape.id }) {
-                            // Convert updated VectorText to VectorShape and preserve orderID
-                            let updatedShape = VectorShape.from(textObject)
-                            unifiedObjects[unifiedIndex] = VectorObject(
-                                shape: updatedShape, 
-                                layerIndex: layerIndex, 
-                                orderID: unifiedObjects[unifiedIndex].orderID
-                            )
-                            Log.info("🔄 SYNC: Updated text object '\(textObject.content.prefix(20))' with areaSize=\(textObject.areaSize?.debugDescription ?? "nil")", category: .general)
-                        }
-                    } else {
-                        // Regular shapes - find updated shape data in layers
-                        if layerIndex < layers.count,
-                           let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                            // Update with latest shape data while preserving orderID
-                            unifiedObjects[unifiedIndex] = VectorObject(
-                                shape: layers[layerIndex].shapes[shapeIndex], 
-                                layerIndex: layerIndex, 
-                                orderID: unifiedObjects[unifiedIndex].orderID
-                            )
+                    // MIGRATION: Sync all shapes (including text) from layers
+                    if layerIndex < layers.count,
+                       let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                        // Update with latest shape data while preserving orderID
+                        let updatedShape = layers[layerIndex].shapes[shapeIndex]
+                        unifiedObjects[unifiedIndex] = VectorObject(
+                            shape: updatedShape, 
+                            layerIndex: layerIndex, 
+                            orderID: unifiedObjects[unifiedIndex].orderID
+                        )
+                        
+                        // Keep legacy textObjects array in sync for text shapes
+                        if shape.isTextObject, let vectorText = VectorText.from(updatedShape) {
+                            if let textIndex = textObjects.firstIndex(where: { $0.id == shape.id }) {
+                                textObjects[textIndex] = vectorText
+                            }
                         }
                     }
                 }
@@ -752,19 +746,38 @@ extension VectorDocument {
             }
             return false
         }) {
-            // Recreate VectorObject with new layerIndex (layerIndex is let constant)
+            // Get the existing object and shape
             let existingObject = unifiedObjects[objectIndex]
             if case .shape(let shape) = existingObject.objectType {
+                // Find and remove the shape from its current layer
+                for layerIdx in layers.indices {
+                    if let shapeIdx = layers[layerIdx].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                        layers[layerIdx].shapes.remove(at: shapeIdx)
+                        break
+                    }
+                }
+                
+                // Add the shape to the new layer
+                if layerIndex < layers.count {
+                    layers[layerIndex].shapes.append(shape)
+                }
+                
+                // Update the unified object with new layerIndex
                 unifiedObjects[objectIndex] = VectorObject(
                     shape: shape,
                     layerIndex: layerIndex,
                     orderID: existingObject.orderID
                 )
-            }
-            
-            // Sync to legacy array
-            if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                textObjects[legacyIndex].layerIndex = layerIndex
+                
+                // Sync to legacy array
+                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
+                    textObjects[legacyIndex].layerIndex = layerIndex
+                } else if let vectorText = VectorText.from(shape) {
+                    // If not in legacy array yet, add it
+                    var textWithLayer = vectorText
+                    textWithLayer.layerIndex = layerIndex
+                    textObjects.append(textWithLayer)
+                }
             }
         }
     }
@@ -772,17 +785,34 @@ extension VectorDocument {
     // MARK: - UNIFIED CONTENT HELPERS
     
     func updateTextContentInUnified(id: UUID, content: String) {
-        // Check if text exists in unified system
-        if unifiedObjects.contains(where: { obj in
+        // MIGRATION: Update text directly in unified system
+        if let unifiedIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.isTextObject && shape.id == id
             }
             return false
         }) {
-            // Sync to legacy array
-            if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                textObjects[legacyIndex].content = content
-                updateUnifiedObjectsOptimized()
+            // Update in unified objects
+            if case .shape(var shape) = unifiedObjects[unifiedIndex].objectType {
+                shape.textContent = content
+                unifiedObjects[unifiedIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[unifiedIndex].layerIndex,
+                    orderID: unifiedObjects[unifiedIndex].orderID
+                )
+                
+                // Update in layers
+                for layerIdx in layers.indices {
+                    if let shapeIdx = layers[layerIdx].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                        layers[layerIdx].shapes[shapeIdx].textContent = content
+                        break
+                    }
+                }
+                
+                // Keep legacy array in sync for backward compatibility
+                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
+                    textObjects[legacyIndex].content = content
+                }
             }
         }
     }
@@ -803,16 +833,34 @@ extension VectorDocument {
     }
     
     func updateTextPositionInUnified(id: UUID, position: CGPoint) {
-        // Check if text exists in unified system
-        if unifiedObjects.contains(where: { obj in
+        // MIGRATION: Update position directly in unified system
+        if let unifiedIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.isTextObject && shape.id == id
             }
             return false
         }) {
-            // Sync to legacy array
-            if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                textObjects[legacyIndex].position = position
+            // Update in unified objects
+            if case .shape(var shape) = unifiedObjects[unifiedIndex].objectType {
+                shape.transform = CGAffineTransform(translationX: position.x, y: position.y)
+                unifiedObjects[unifiedIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[unifiedIndex].layerIndex,
+                    orderID: unifiedObjects[unifiedIndex].orderID
+                )
+                
+                // Update in layers
+                for layerIdx in layers.indices {
+                    if let shapeIdx = layers[layerIdx].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                        layers[layerIdx].shapes[shapeIdx].transform = CGAffineTransform(translationX: position.x, y: position.y)
+                        break
+                    }
+                }
+                
+                // Keep legacy array in sync for backward compatibility
+                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
+                    textObjects[legacyIndex].position = position
+                }
             }
         }
     }
@@ -1472,7 +1520,9 @@ extension VectorDocument {
         return unifiedObjects.compactMap { unifiedObject in
             if case .shape(let shape) = unifiedObject.objectType, 
                shape.isTextObject,
-               let vectorText = VectorText.from(shape) {
+               var vectorText = VectorText.from(shape) {
+                // Set the layerIndex from the unified object wrapper
+                vectorText.layerIndex = unifiedObject.layerIndex
                 return vectorText
             }
             return nil
@@ -1486,7 +1536,9 @@ extension VectorDocument {
             if case .shape(let shape) = unifiedObject.objectType, 
                shape.isTextObject,
                shape.id == id,
-               let vectorText = VectorText.from(shape) {
+               var vectorText = VectorText.from(shape) {
+                // Set the layerIndex from the unified object wrapper
+                vectorText.layerIndex = unifiedObject.layerIndex
                 return vectorText
             }
         }
@@ -1499,9 +1551,12 @@ extension VectorDocument {
         for unifiedObject in unifiedObjects {
             if case .shape(let shape) = unifiedObject.objectType, 
                shape.isTextObject,
-               let vectorText = VectorText.from(shape),
-               predicate(vectorText) {
-                return vectorText
+               var vectorText = VectorText.from(shape) {
+                // Set the layerIndex from the unified object wrapper
+                vectorText.layerIndex = unifiedObject.layerIndex
+                if predicate(vectorText) {
+                    return vectorText
+                }
             }
         }
         return nil

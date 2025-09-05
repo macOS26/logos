@@ -57,10 +57,22 @@ extension VectorDocument {
     func removeSelectedText() {
         saveToUndoStack()
         
-        // Remove from unified system
-        unifiedObjects.removeAll { selectedTextIDs.contains($0.id) }
+        // MIGRATION: Remove text shapes from layers
+        for textID in selectedTextIDs {
+            for layerIndex in layers.indices {
+                layers[layerIndex].shapes.removeAll { $0.id == textID && $0.isTextObject }
+            }
+        }
         
-        // Keep legacy textObjects array in sync
+        // Remove from unified system
+        unifiedObjects.removeAll { obj in
+            if case .shape(let shape) = obj.objectType {
+                return selectedTextIDs.contains(shape.id) && shape.isTextObject
+            }
+            return false
+        }
+        
+        // MIGRATION: Keep legacy textObjects array in sync for backward compatibility
         textObjects.removeAll { selectedTextIDs.contains($0.id) }
         
         selectedTextIDs.removeAll()

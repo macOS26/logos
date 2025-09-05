@@ -23,11 +23,11 @@ struct UnifiedObjectSystemHelperMethodTests {
         )
         
         // Add to document and unified system
-        document.textObjects.append(testText)
         document.addTextToUnifiedSystem(testText, layerIndex: 1)
         
         // Verify initially unlocked
-        #expect(document.textObjects.first?.isLocked == false)
+        let initialText = document.getAllTextObjects().first { $0.id == testText.id }
+        #expect(initialText?.isLocked == false)
         let initialUnifiedShape = document.unifiedObjects.first { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.isTextObject && shape.id == testText.id
@@ -41,9 +41,9 @@ struct UnifiedObjectSystemHelperMethodTests {
         // Use unified helper to lock
         document.lockTextInUnified(id: testText.id)
         
-        // Verify both arrays are locked
-        let lockedText = document.textObjects.first { $0.id == testText.id }
-        #expect(lockedText?.isLocked == true, "Legacy textObjects array not updated")
+        // Verify text is locked in unified system
+        let lockedText = document.getAllTextObjects().first { $0.id == testText.id }
+        #expect(lockedText?.isLocked == true, "Text not locked in unified system")
         
         let lockedUnifiedShape = document.unifiedObjects.first { obj in
             if case .shape(let shape) = obj.objectType {
@@ -68,15 +68,14 @@ struct UnifiedObjectSystemHelperMethodTests {
         )
         
         // Add to document and unified system
-        document.textObjects.append(testText)
         document.addTextToUnifiedSystem(testText, layerIndex: 1)
         
         // Use unified helper to unlock
         document.unlockTextInUnified(id: testText.id)
         
-        // Verify both arrays are unlocked
-        let unlockedText = document.textObjects.first { $0.id == testText.id }
-        #expect(unlockedText?.isLocked == false, "Legacy textObjects array not updated")
+        // Verify text is unlocked in unified system
+        let unlockedText = document.getAllTextObjects().first { $0.id == testText.id }
+        #expect(unlockedText?.isLocked == false, "Text not unlocked in unified system")
         
         let unlockedUnifiedShape = document.unifiedObjects.first { obj in
             if case .shape(let shape) = obj.objectType {
@@ -100,18 +99,18 @@ struct UnifiedObjectSystemHelperMethodTests {
         )
         
         // Add to document and unified system
-        document.textObjects.append(testText)
         document.addTextToUnifiedSystem(testText, layerIndex: 1)
         
         // Verify initially visible
-        #expect(document.textObjects.first?.isVisible == true)
+        let initialVisibleText = document.getAllTextObjects().first { $0.id == testText.id }
+        #expect(initialVisibleText?.isVisible == true)
         
         // Use unified helper to hide
         document.hideTextInUnified(id: testText.id)
         
-        // Verify both arrays are hidden
-        let hiddenText = document.textObjects.first { $0.id == testText.id }
-        #expect(hiddenText?.isVisible == false, "Legacy textObjects array not updated")
+        // Verify text is hidden in unified system
+        let hiddenText = document.getAllTextObjects().first { $0.id == testText.id }
+        #expect(hiddenText?.isVisible == false, "Text not hidden in unified system")
         
         let hiddenUnifiedShape = document.unifiedObjects.first { obj in
             if case .shape(let shape) = obj.objectType {
@@ -136,15 +135,14 @@ struct UnifiedObjectSystemHelperMethodTests {
         )
         
         // Add to document and unified system
-        document.textObjects.append(testText)
         document.addTextToUnifiedSystem(testText, layerIndex: 1)
         
         // Use unified helper to show
         document.showTextInUnified(id: testText.id)
         
-        // Verify both arrays are visible
-        let visibleText = document.textObjects.first { $0.id == testText.id }
-        #expect(visibleText?.isVisible == true, "Legacy textObjects array not updated")
+        // Verify text is visible in unified system
+        let visibleText = document.getAllTextObjects().first { $0.id == testText.id }
+        #expect(visibleText?.isVisible == true, "Text not visible in unified system")
         
         let visibleUnifiedShape = document.unifiedObjects.first { obj in
             if case .shape(let shape) = obj.objectType {

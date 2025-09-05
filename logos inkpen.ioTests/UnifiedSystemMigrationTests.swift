@@ -43,7 +43,6 @@ struct UnifiedSystemMigrationTests {
         
         doc.addShape(shape1, to: 2)
         doc.addShape(shape2, to: 2)
-        doc.textObjects.append(text1)
         doc.addTextToUnifiedSystem(text1, layerIndex: 2)
         
         return doc

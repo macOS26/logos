@@ -43,7 +43,6 @@ struct UnifiedObjectSystemCopyPasteTests {
         )
         
         // Add to document and unified system
-        document.textObjects.append(originalText)
         document.addTextToUnifiedSystem(originalText, layerIndex: 1)
         document.selectedObjectIDs.insert(originalText.id)
         

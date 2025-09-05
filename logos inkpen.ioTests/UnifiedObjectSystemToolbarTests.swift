@@ -28,8 +28,6 @@ struct UnifiedObjectSystemToolbarTests {
         )
         
         // Add to document
-        document.textObjects.append(testText1)
-        document.textObjects.append(testText2)
         document.addTextToUnifiedSystem(testText1, layerIndex: 1)
         document.addTextToUnifiedSystem(testText2, layerIndex: 1)
         
@@ -71,8 +69,6 @@ struct UnifiedObjectSystemToolbarTests {
         )
         
         // Add to document
-        document.textObjects.append(testText1)
-        document.textObjects.append(testText2)
         document.addTextToUnifiedSystem(testText1, layerIndex: 1)
         document.addTextToUnifiedSystem(testText2, layerIndex: 1)
         
@@ -113,7 +109,6 @@ struct UnifiedObjectSystemToolbarTests {
         )
         
         // Add to document and unified system
-        document.textObjects.append(testText)
         document.addTextToUnifiedSystem(testText, layerIndex: 1)
         
         // Use unified helper to update opacity
@@ -150,7 +145,6 @@ struct UnifiedObjectSystemToolbarTests {
         )
         
         // Add to document and unified system
-        document.textObjects.append(testText)
         document.addTextToUnifiedSystem(testText, layerIndex: 1)
         
         // Use unified helper to update stroke width
