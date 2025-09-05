@@ -164,8 +164,8 @@ extension DrawingCanvas {
         }.count
         
         if pathPointCount <= 2 {
-            // Delete entire shape if too few points remain
-            document.layers[layerIndex].shapes.remove(at: shapeIndex)
+            // Delete entire shape if too few points remain using unified helper
+            document.removeShapeFromUnifiedSystem(id: shape.id)
             Log.info("Pen +/-: Deleted entire shape (too few points)", category: .general)
         } else {
             // Attempt to merge neighboring curves for smooth deletion

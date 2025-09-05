@@ -592,11 +592,10 @@ struct PathOperationsPanel: View {
             
             // Update the shape with the cleaned path
             if let layerIndex = document.layers.firstIndex(where: { $0.shapes.contains { $0.id == shape.id } }),
-               let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+               document.layers[layerIndex].shapes.contains(where: { $0.id == shape.id }) {
                 
-                var updatedShape = document.layers[layerIndex].shapes[shapeIndex]
-                updatedShape.path = VectorPath(cgPath: cleanedPath)
-                document.layers[layerIndex].shapes[shapeIndex] = updatedShape
+                // Use unified helper to update shape path
+                document.updateShapePathUnified(id: shape.id, path: VectorPath(cgPath: cleanedPath))
                 
                 Log.info("✅ REMOVE OVERLAP: Successfully cleaned shape: \(shape.name)", category: .fileOperations)
                 return true

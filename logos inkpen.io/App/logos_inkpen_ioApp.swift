@@ -925,8 +925,7 @@ class ClipboardManager {
                     var newShape = shape
                     newShape.id = UUID()
                     // PASTE AT EXACT ORIGINAL COORDINATES - no offset
-                    document.layers[layerIndex].shapes.append(newShape)
-                    // CRITICAL FIX: Add to unified objects system for visibility
+                    // Use unified system to add shape (handles both layers array and unified objects)
                     document.addShapeToUnifiedSystem(newShape, layerIndex: layerIndex)
                     document.selectedObjectIDs.insert(newShape.id)
                 }
@@ -1023,9 +1022,6 @@ class ClipboardManager {
                 for (offset, shape) in clipboardData.shapes.enumerated() {
                     var newShape = shape
                     newShape.id = UUID()
-                    
-                    // Add to layer first
-                    document.layers[layerIndex].shapes.append(newShape)
                     
                     // Add to unified objects system with orderID that places it behind selected objects
                     let newOrderID = insertionPoint + offset

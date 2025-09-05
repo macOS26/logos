@@ -27,14 +27,13 @@ extension DrawingCanvas {
                     }.count
                     
                     if points.count >= pathPointCount || pathPointCount <= 2 {
-                        // Delete entire shape
-                        document.layers[layerIndex].shapes.remove(at: shapeIndex)
+                        // Delete entire shape using unified helper
+                        document.removeShapeFromUnifiedSystem(id: shape.id)
                         Log.info("Deleted entire shape", category: .general)
                     } else {
                         // Delete specific points while maintaining path integrity
                         let updatedPath = deletePointsFromPath(shape.path, selectedPoints: points)
-                        document.layers[layerIndex].shapes[shapeIndex].path = updatedPath
-                        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                        document.updateShapePathUnified(id: shape.id, path: updatedPath)
                         Log.info("Deleted \(points.count) points from path, \(updatedPath.elements.count) elements remain", category: .general)
                     }
                     break

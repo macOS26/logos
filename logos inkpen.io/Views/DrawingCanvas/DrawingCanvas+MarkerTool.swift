@@ -796,7 +796,11 @@ extension DrawingCanvas {
                         opacity: markerStroke.strokeStyle!.opacity
                     )
                     
-                    document.layers[layerIndex].shapes[shapeIndex] = updatedShape
+                    // Use unified helper to update shape
+                    document.updateEntireShapeInUnified(id: updatedShape.id) { shape in
+                        shape.path = updatedShape.path
+                        shape.fillStyle = updatedShape.fillStyle
+                    }
                     
                     // CRITICAL FIX: Sync unified objects system to ensure the updated shape is rendered
                     document.updateUnifiedObjectsOptimized()
@@ -842,11 +846,11 @@ extension DrawingCanvas {
                         originalShape.path = VectorPath(cgPath: cleanedFillPath)
                     }
                     
-                    // Update the original shape (now fill-only)
-                    document.layers[layerIndex].shapes[shapeIndex] = originalShape
+                    // Use unified helper to update the original shape (now fill-only)
+                    document.updateShapePathUnified(id: originalShape.id, path: originalShape.path)
                     
-                    // Add the stroke shape
-                    document.layers[layerIndex].shapes.append(strokeShape)
+                    // Add the stroke shape using unified system
+                    document.addShapeToUnifiedSystem(strokeShape, layerIndex: layerIndex)
                     
                     Log.fileOperation("🖊️ MARKER: Applied dual union - separated stroke and fill with different colors", level: .info)
                 } else {

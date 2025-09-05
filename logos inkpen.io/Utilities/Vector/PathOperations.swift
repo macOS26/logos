@@ -870,7 +870,7 @@ extension ProfessionalPathOperations {
                 let cleanedShape = mergeDuplicatePoints(in: originalShape, tolerance: tolerance)
                 
                 if cleanedShape.path.elements.count != originalShape.path.elements.count {
-                    document.layers[layerIndex].shapes[shapeIndex] = cleanedShape
+                    document.updateShapePathUnified(id: cleanedShape.id, path: cleanedShape.path)
                     totalCleaned += 1
                     Log.info("   Cleaned shape '\(originalShape.name)': \(originalShape.path.elements.count) → \(cleanedShape.path.elements.count) elements", category: .general)
                 }
@@ -907,7 +907,7 @@ extension ProfessionalPathOperations {
                     let cleanedShape = mergeDuplicatePoints(in: originalShape, tolerance: tolerance)
                     
                     if cleanedShape.path.elements.count != originalShape.path.elements.count {
-                        document.layers[layerIndex].shapes[shapeIndex] = cleanedShape
+                        document.updateShapePathUnified(id: cleanedShape.id, path: cleanedShape.path)
                         totalCleaned += 1
                         Log.info("   Cleaned selected shape '\(originalShape.name)': \(originalShape.path.elements.count) → \(cleanedShape.path.elements.count) elements", category: .general)
                     }

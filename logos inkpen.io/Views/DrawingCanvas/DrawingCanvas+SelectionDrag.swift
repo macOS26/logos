@@ -241,7 +241,7 @@ extension DrawingCanvas {
             }
             
             // Bounds for images are their rectangular path; keep as-is (transform applied at render time)
-            document.layers[layerIndex].shapes[shapeIndex] = updatedShape
+            document.updateShapeTransformAndPathInUnified(id: updatedShape.id, transform: updatedShape.transform)
             return
         }
         
@@ -503,7 +503,7 @@ extension DrawingCanvas {
         if !updatedShape.cornerRadii.isEmpty && updatedShape.isRoundedRectangle {
             updatedShape.transform = transform // Temporarily restore transform for scaling calculation
             applyTransformToCornerRadii(shape: &updatedShape)
-            document.layers[layerIndex].shapes[shapeIndex] = updatedShape
+            document.updateShapeCornerRadiiInUnified(id: updatedShape.id, cornerRadii: updatedShape.cornerRadii, path: updatedShape.path)
         }
         
         Log.info("✅ Shape coordinates updated after movement - object origin stays with object", category: .fileOperations)
