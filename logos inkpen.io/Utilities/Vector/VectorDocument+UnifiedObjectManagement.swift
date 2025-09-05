@@ -242,17 +242,13 @@ extension VectorDocument {
             }
             
             // Add all shapes from this layer in their current order
+            // MIGRATION: Shapes now include text objects (when isTextObject = true)
             for shape in layer.shapes {
-                layerObjects.append((object: shape, isText: false))
-            }
-            
-            // Add all text objects that belong to this layer
-            for text in textObjects {
-                if let textLayerIndex = text.layerIndex, textLayerIndex == layerIndex {
-                    layerObjects.append((object: text, isText: true))
-                } else if text.layerIndex == nil && layerIndex == (selectedLayerIndex ?? 2) {
-                    // Legacy text objects without layer assignment go to working layer
-                    layerObjects.append((object: text, isText: true))
+                if shape.isTextObject {
+                    // Text objects are already in the shapes array as VectorShape
+                    layerObjects.append((object: shape, isText: true))
+                } else {
+                    layerObjects.append((object: shape, isText: false))
                 }
             }
             
@@ -262,9 +258,9 @@ extension VectorDocument {
                 let orderID = arrayIndex // Preserve original order: first item gets lowest orderID (back)
                 
                 if item.isText {
-                    let text = item.object as! VectorText
-                    let textShape = VectorShape.from(text)
-                    let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex, orderID: orderID)
+                    // MIGRATION: Text is now stored as VectorShape with isTextObject = true
+                    let shape = item.object as! VectorShape
+                    let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
                     unifiedObjects.append(unifiedObject)
                 } else {
                     let shape = item.object as! VectorShape
@@ -1379,15 +1375,15 @@ extension VectorDocument {
         }
     }
     
-    /// Remove text from both textObjects array and unified system
+    /// Remove text from unified system
     func removeTextFromUnifiedSystem(id: UUID) {
-        // Remove from textObjects array
-        textObjects.removeAll { $0.id == id }
-        
-        // CRITICAL: Also remove the text shape from layers
+        // MIGRATION: Remove text shape from layers (text is now stored as shapes)
         for layerIndex in layers.indices {
             layers[layerIndex].shapes.removeAll { $0.id == id && $0.isTextObject }
         }
+        
+        // MIGRATION: Also remove from legacy textObjects array for backward compatibility
+        textObjects.removeAll { $0.id == id }
         
         // Remove from unified objects (text is stored as shape with isTextObject = true)
         unifiedObjects.removeAll { obj in
@@ -1409,25 +1405,41 @@ extension VectorDocument {
     
     /// Update entire text object in unified system
     func updateEntireTextInUnified(id: UUID, updater: (inout VectorText) -> Void) {
-        // Update in textObjects array
-        if let textIndex = textObjects.firstIndex(where: { $0.id == id }) {
-            updater(&textObjects[textIndex])
-            
-            // Update the specific unified object
-            if let unifiedIndex = unifiedObjects.firstIndex(where: { obj in
-                if case .shape(let shape) = obj.objectType {
-                    return shape.id == id && shape.isTextObject
-                }
-                return false
-            }) {
-                // Convert updated text to shape and update unified object
-                let updatedShape = VectorShape.from(textObjects[textIndex])
+        // MIGRATION: Find and update text directly in unified objects
+        if let unifiedIndex = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.id == id && shape.isTextObject
+            }
+            return false
+        }) {
+            // Extract text from shape
+            if case .shape(let shape) = unifiedObjects[unifiedIndex].objectType,
+               var vectorText = VectorText.from(shape) {
+                
+                // Apply the update
+                updater(&vectorText)
+                
+                // Convert back to shape and update unified object
+                let updatedShape = VectorShape.from(vectorText)
                 let layerIndex = unifiedObjects[unifiedIndex].layerIndex
                 unifiedObjects[unifiedIndex] = VectorObject(
                     shape: updatedShape,
                     layerIndex: layerIndex,
                     orderID: unifiedObjects[unifiedIndex].orderID
                 )
+                
+                // MIGRATION: Also update in layers array
+                for layerIdx in layers.indices {
+                    if let shapeIdx = layers[layerIdx].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                        layers[layerIdx].shapes[shapeIdx] = updatedShape
+                        break
+                    }
+                }
+                
+                // MIGRATION: Keep legacy textObjects array in sync for backward compatibility
+                if let textIndex = textObjects.firstIndex(where: { $0.id == id }) {
+                    textObjects[textIndex] = vectorText
+                }
             }
         }
     }
@@ -1456,35 +1468,65 @@ extension VectorDocument {
     
     /// Gets all text objects from the unified system as VectorText objects
     func getAllTextObjects() -> [VectorText] {
-        // For now, return the legacy array to maintain compatibility
-        // This will be migrated later to extract from unified objects
-        return textObjects
+        // MIGRATION: Extract text objects from unified system instead of legacy array
+        return unifiedObjects.compactMap { unifiedObject in
+            if case .shape(let shape) = unifiedObject.objectType, 
+               shape.isTextObject,
+               let vectorText = VectorText.from(shape) {
+                return vectorText
+            }
+            return nil
+        }
     }
     
     /// Gets a text object by ID from the unified system
     func getTextByID(_ id: UUID) -> VectorText? {
-        return textObjects.first { $0.id == id }
+        // MIGRATION: Extract from unified system instead of legacy array
+        for unifiedObject in unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType, 
+               shape.isTextObject,
+               shape.id == id,
+               let vectorText = VectorText.from(shape) {
+                return vectorText
+            }
+        }
+        return nil
     }
     
     /// Gets the first text object matching a condition from the unified system
     func getFirstText(where predicate: (VectorText) -> Bool) -> VectorText? {
-        return textObjects.first(where: predicate)
+        // MIGRATION: Extract from unified system instead of legacy array
+        for unifiedObject in unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType, 
+               shape.isTextObject,
+               let vectorText = VectorText.from(shape),
+               predicate(vectorText) {
+                return vectorText
+            }
+        }
+        return nil
     }
     
     /// Gets the index of the first text object matching a condition
     func getTextIndex(where predicate: (VectorText) -> Bool) -> Int? {
-        return textObjects.firstIndex(where: predicate)
+        // MIGRATION: Extract from unified system instead of legacy array
+        let allTextObjects = getAllTextObjects()
+        return allTextObjects.firstIndex(where: predicate)
     }
     
     /// Checks if any text object matches a condition
     func containsText(where predicate: (VectorText) -> Bool) -> Bool {
-        return textObjects.contains(where: predicate)
+        // MIGRATION: Extract from unified system instead of legacy array
+        let allTextObjects = getAllTextObjects()
+        return allTextObjects.contains(where: predicate)
     }
     
     /// Gets text object at a specific index
     func getTextAt(index: Int) -> VectorText? {
-        guard index >= 0 && index < textObjects.count else { return nil }
-        return textObjects[index]
+        // MIGRATION: Extract from unified system instead of legacy array
+        let allTextObjects = getAllTextObjects()
+        guard index >= 0 && index < allTextObjects.count else { return nil }
+        return allTextObjects[index]
     }
     
     /// Removes all text objects from the unified system
