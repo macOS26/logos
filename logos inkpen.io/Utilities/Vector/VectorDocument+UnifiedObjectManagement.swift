@@ -480,9 +480,18 @@ extension VectorDocument {
             return false
         }) {
             if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
-                // Update typography fill color in the shape
-                shape.typography?.fillColor = color
-                shape.typography?.fillOpacity = defaultFillOpacity
+                // CRITICAL: Only update color, preserve ALL other typography properties
+                if shape.typography != nil {
+                    shape.typography?.fillColor = color
+                    shape.typography?.fillOpacity = defaultFillOpacity
+                } else {
+                    // If typography is nil, we need to get it from textObjects to preserve font settings
+                    if let legacyText = textObjects.first(where: { $0.id == id }) {
+                        shape.typography = legacyText.typography
+                        shape.typography?.fillColor = color
+                        shape.typography?.fillOpacity = defaultFillOpacity
+                    }
+                }
                 
                 // Update unified objects
                 unifiedObjects[objectIndex] = VectorObject(
@@ -491,8 +500,18 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
-                // CRITICAL FIX: Only update the color properties in legacy array, preserve position
+                // CRITICAL: Update the shape in the layers array - ONLY COLOR
+                let layerIndex = unifiedObjects[objectIndex].layerIndex
+                if layerIndex < layers.count,
+                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                    // Preserve existing typography, only update color
+                    layers[layerIndex].shapes[shapeIndex].typography?.fillColor = color
+                    layers[layerIndex].shapes[shapeIndex].typography?.fillOpacity = defaultFillOpacity
+                }
+                
+                // CRITICAL FIX: Only update the color properties in legacy array, preserve ALL other properties
                 if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
+                    // ONLY update color - preserve font, size, weight, style, alignment, etc.
                     textObjects[legacyIndex].typography.fillColor = color
                     textObjects[legacyIndex].typography.fillOpacity = defaultFillOpacity
                 }
@@ -521,6 +540,14 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
+                // CRITICAL: Update the shape in the layers array
+                let layerIndex = unifiedObjects[objectIndex].layerIndex
+                if layerIndex < layers.count,
+                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                    layers[layerIndex].shapes[shapeIndex].typography?.hasStroke = true
+                    layers[layerIndex].shapes[shapeIndex].typography?.strokeColor = color
+                }
+                
                 // CRITICAL FIX: Only update the color properties in legacy array, preserve position
                 if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
                     textObjects[legacyIndex].typography.hasStroke = true
@@ -548,6 +575,13 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
+                // CRITICAL: Update the shape in the layers array
+                let layerIndex = unifiedObjects[objectIndex].layerIndex
+                if layerIndex < layers.count,
+                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                    layers[layerIndex].shapes[shapeIndex].isLocked = true
+                }
+                
                 // Sync to legacy array
                 if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
                     textObjects[legacyIndex].isLocked = true
@@ -571,6 +605,13 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                     orderID: unifiedObjects[objectIndex].orderID
                 )
+                
+                // CRITICAL: Update the shape in the layers array
+                let layerIndex = unifiedObjects[objectIndex].layerIndex
+                if layerIndex < layers.count,
+                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                    layers[layerIndex].shapes[shapeIndex].isLocked = false
+                }
                 
                 // Sync to legacy array
                 if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
@@ -598,6 +639,13 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
+                // CRITICAL: Update the shape in the layers array
+                let layerIndex = unifiedObjects[objectIndex].layerIndex
+                if layerIndex < layers.count,
+                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                    layers[layerIndex].shapes[shapeIndex].isVisible = false
+                }
+                
                 // Sync to legacy array
                 if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
                     textObjects[legacyIndex].isVisible = false
@@ -621,6 +669,13 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                     orderID: unifiedObjects[objectIndex].orderID
                 )
+                
+                // CRITICAL: Update the shape in the layers array
+                let layerIndex = unifiedObjects[objectIndex].layerIndex
+                if layerIndex < layers.count,
+                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                    layers[layerIndex].shapes[shapeIndex].isVisible = true
+                }
                 
                 // Sync to legacy array
                 if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
@@ -648,6 +703,13 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
+                // CRITICAL: Update the shape in the layers array
+                let layerIndex = unifiedObjects[objectIndex].layerIndex
+                if layerIndex < layers.count,
+                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                    layers[layerIndex].shapes[shapeIndex].typography?.fillOpacity = opacity
+                }
+                
                 // Sync to legacy array
                 if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
                     textObjects[legacyIndex].typography.fillOpacity = opacity
@@ -672,6 +734,14 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                     orderID: unifiedObjects[objectIndex].orderID
                 )
+                
+                // CRITICAL: Update the shape in the layers array
+                let layerIndex = unifiedObjects[objectIndex].layerIndex
+                if layerIndex < layers.count,
+                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                    layers[layerIndex].shapes[shapeIndex].typography?.strokeWidth = width
+                    layers[layerIndex].shapes[shapeIndex].typography?.hasStroke = width > 0
+                }
                 
                 // Sync to legacy array
                 if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {

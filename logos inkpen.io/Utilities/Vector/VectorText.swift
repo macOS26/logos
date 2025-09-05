@@ -561,6 +561,10 @@ struct VectorText: Identifiable, Codable, Hashable {
         // CRITICAL FIX: Preserve the original VectorShape ID so object lookups work
         vectorText.id = vectorShape.id
         
+        // CRITICAL FIX: Preserve lock and visibility states from the shape
+        vectorText.isLocked = vectorShape.isLocked
+        vectorText.isVisible = vectorShape.isVisible
+        
         return vectorText
     }
 }
