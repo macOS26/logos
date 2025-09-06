@@ -313,12 +313,12 @@ struct TextObjectMigrationTests {
         document.addTextToUnifiedSystem(text, layerIndex: 0)
         
         // Check legacy array is synced
-        #expect(document.textObjects.count == 1, "Legacy textObjects array should be synced")
-        #expect(document.textObjects.first?.id == text.id, "Legacy array should contain the same text")
+        #expect(document.allTextObjects.count == 1, "Text should be in unified system")
+        #expect(document.allTextObjects.first?.id == text.id, "Unified system should contain the same text")
         
         // Both should return the same text
         let fromUnified = document.allTextObjects.first
-        let fromLegacy = document.textObjects.first
+        let fromLegacy = document.allTextObjects.first
         
         #expect(fromUnified?.id == fromLegacy?.id, "Both systems should return same text object")
     }

@@ -327,8 +327,8 @@ struct UnifiedTextSystemMigrationTests {
         // Add text using unified system
         document.addTextToUnifiedSystem(text, layerIndex: 2)
         
-        #expect(document.textObjects.count == 1, "Should have one text in legacy array")
-        #expect(document.textObjects[0].content == "Test Text", "Text should have correct content")
+        #expect(document.allTextObjects.count == 1, "Should have one text in unified system")
+        #expect(document.allTextObjects[0].content == "Test Text", "Text should have correct content")
         #expect(document.unifiedObjects.count == 3, "Should have 3 objects in unified (2 backgrounds + text)")
         
         // Verify text is properly stored in unified system

@@ -567,7 +567,7 @@ class TemplateManager {
         document.selectedLayerIndex = 2  // Index 2 since Canvas is at index 0 and Pasteboard is at index 1
         document.selectedShapeIDs.removeAll()
         document.selectedTextIDs.removeAll()
-        document.textObjects.removeAll()
+        document.removeAllText()  // Use unified system method
         
         // Apply the default tool setting
         document.currentTool = defaultTool

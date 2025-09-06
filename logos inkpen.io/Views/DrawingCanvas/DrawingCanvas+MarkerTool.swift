@@ -873,7 +873,7 @@ extension DrawingCanvas {
     private func getCurrentFillColor() -> VectorColor {
         // PRIORITY 1: If text objects are selected, use their fill color
         if let firstSelectedTextID = document.selectedTextIDs.first,
-           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
+           let textObject = document.findText(by: firstSelectedTextID) {
             return textObject.typography.fillColor
         }
         
@@ -893,7 +893,7 @@ extension DrawingCanvas {
     private func getCurrentFillOpacity() -> Double {
         // PRIORITY 1: If text objects are selected, use their fill opacity
         if let firstSelectedTextID = document.selectedTextIDs.first,
-           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
+           let textObject = document.findText(by: firstSelectedTextID) {
             return textObject.typography.fillOpacity
         }
         
@@ -913,7 +913,7 @@ extension DrawingCanvas {
     private func getCurrentStrokeColor() -> VectorColor {
         // PRIORITY 1: If text objects are selected, use their stroke color
         if let firstSelectedTextID = document.selectedTextIDs.first,
-           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
+           let textObject = document.findText(by: firstSelectedTextID) {
             return textObject.typography.strokeColor
         }
         
@@ -933,7 +933,7 @@ extension DrawingCanvas {
     private func getCurrentStrokeOpacity() -> Double {
         // PRIORITY 1: If text objects are selected, use their stroke opacity
         if let firstSelectedTextID = document.selectedTextIDs.first,
-           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
+           let textObject = document.findText(by: firstSelectedTextID) {
             return textObject.typography.strokeOpacity
         }
         
@@ -953,7 +953,7 @@ extension DrawingCanvas {
     private func getCurrentStrokeWidth() -> Double {
         // PRIORITY 1: If text objects are selected, use their stroke width
         if let firstSelectedTextID = document.selectedTextIDs.first,
-           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
+           let textObject = document.findText(by: firstSelectedTextID) {
             return textObject.typography.strokeWidth
         }
         

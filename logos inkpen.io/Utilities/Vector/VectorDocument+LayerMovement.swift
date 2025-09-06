@@ -64,7 +64,8 @@ extension VectorDocument {
             return
         }
         
-        guard let textIndex = textObjects.firstIndex(where: { $0.id == textId }) else {
+        // Check if text exists in unified system
+        guard findText(by: textId) != nil else {
             Log.error("❌ Text object not found", category: .error)
             return
         }
@@ -72,7 +73,7 @@ extension VectorDocument {
         saveToUndoStack()
         
         // Update the text object's layer association using unified helper
-        updateTextLayerInUnified(id: textObjects[textIndex].id, layerIndex: toLayerIndex)
+        updateTextLayerInUnified(id: textId, layerIndex: toLayerIndex)
         
         // Update selection to the target layer
         selectedTextIDs = [textId]

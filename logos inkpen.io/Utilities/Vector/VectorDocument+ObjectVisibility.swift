@@ -56,7 +56,7 @@ extension VectorDocument {
         }
         
         // Unlock all text objects using unified helpers
-        for textObject in textObjects {
+        for textObject in allTextObjects {
             if textObject.isLocked {
                 unlockTextInUnified(id: textObject.id)
                 unlockedCount += 1
@@ -112,7 +112,7 @@ extension VectorDocument {
         }
         
         // Show all text objects using unified helpers
-        for textObject in textObjects {
+        for textObject in allTextObjects {
             if !textObject.isVisible {
                 showTextInUnified(id: textObject.id)
                 shownCount += 1

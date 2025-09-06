@@ -47,7 +47,7 @@ extension VectorDocument {
         }
         
         // Include all visible text objects
-        for textObj in textObjects {
+        for textObj in allTextObjects {
             guard textObj.isVisible else { continue }
             
             let textBounds = textObj.bounds
@@ -88,7 +88,7 @@ extension VectorDocument {
         }
 
         // Include visible text objects that belong to user layers (>= 2)
-        for textObj in textObjects where textObj.isVisible {
+        for textObj in allTextObjects where textObj.isVisible {
             if let li = textObj.layerIndex, li >= 2 {
                 let textBounds = CGRect(
                     x: textObj.position.x + textObj.bounds.minX,

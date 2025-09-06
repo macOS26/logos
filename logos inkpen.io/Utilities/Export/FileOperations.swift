@@ -379,8 +379,8 @@ class FileOperations {
                 // Update bounds for proper selection box
                 placedText.updateBounds()
                 
-                // Add to document (global text object list)
-                document.textObjects.append(placedText)
+                // Add to unified system
+                document.addTextToUnifiedSystem(placedText, layerIndex: 2)
             }
         }
         
@@ -556,7 +556,8 @@ class FileOperations {
                     placedText.layerIndex = 2
                 }
                 placedText.updateBounds()
-                document.textObjects.append(placedText)
+                // Add to unified system
+                document.addTextToUnifiedSystem(placedText, layerIndex: 2)
             }
         }
         

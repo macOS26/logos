@@ -50,14 +50,14 @@ class DocumentChangeNotificationTests: XCTestCase {
         
         document.updateTextTypographyInUnified(id: textID, typography: newTypography)
         
-        // Verify the legacy textObjects array was updated
-        if let updatedText = document.textObjects.first(where: { $0.id == textID }) {
-            XCTAssertEqual(updatedText.typography.fontFamily, "Herculanum", "Font family should be updated in textObjects array")
-            XCTAssertEqual(updatedText.typography.fontSize, 36, "Font size should be updated in textObjects array")
-            XCTAssertEqual(updatedText.typography.fontWeight, FontWeight.bold, "Font weight should be updated in textObjects array")
-            XCTAssertEqual(updatedText.typography.alignment, TextAlignment.center, "Alignment should be updated in textObjects array")
+        // Verify the text was updated in unified system
+        if let updatedText = document.allTextObjects.first(where: { $0.id == textID }) {
+            XCTAssertEqual(updatedText.typography.fontFamily, "Herculanum", "Font family should be updated in unified system")
+            XCTAssertEqual(updatedText.typography.fontSize, 36, "Font size should be updated in unified system")
+            XCTAssertEqual(updatedText.typography.fontWeight, FontWeight.bold, "Font weight should be updated in unified system")
+            XCTAssertEqual(updatedText.typography.alignment, TextAlignment.center, "Alignment should be updated in unified system")
         } else {
-            XCTFail("Text object should exist in textObjects array after typography update")
+            XCTFail("Text object should exist in unified system after typography update")
         }
     }
     

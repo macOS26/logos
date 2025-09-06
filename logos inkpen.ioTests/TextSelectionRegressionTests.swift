@@ -110,7 +110,7 @@ struct TextSelectionRegressionTests {
             // This test needs to be updated to work with the actual API
             
             // Get the newest text
-            if let pastedText = document.textObjects.last {
+            if let pastedText = document.allTextObjects.last {
                 // Move it (user was dragging texts around)
                 let newPosition = CGPoint(x: 100 + Double(i * 50), y: 100 + Double(i * 50))
                 document.translateTextInUnified(id: pastedText.id, 
@@ -132,7 +132,7 @@ struct TextSelectionRegressionTests {
         }
         
         // Verify all texts are still selectable
-        for textObj in document.textObjects {
+        for textObj in document.allTextObjects {
             #expect(!textObj.bounds.isInfinite, "Text \(textObj.id) has infinity bounds")
             #expect(textObj.bounds.width > 0, "Text \(textObj.id) has invalid width")
         }

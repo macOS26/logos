@@ -42,7 +42,7 @@ extension VectorDocument {
         var modifiedText = text
         modifiedText.layerIndex = layerIndex
         
-        // Add to unified system (this will also update the textObjects array)
+        // Add to unified system
         addTextToUnifiedSystem(modifiedText, layerIndex: layerIndex)
         
         selectedTextIDs = [text.id]
@@ -72,8 +72,7 @@ extension VectorDocument {
             return false
         }
         
-        // MIGRATION: Keep legacy textObjects array in sync for backward compatibility
-        textObjects.removeAll { selectedTextIDs.contains($0.id) }
+        // Text is now fully managed in unified system
         
         selectedTextIDs.removeAll()
     }
@@ -131,10 +130,7 @@ extension VectorDocument {
                     orderID: unifiedObjects[unifiedIndex].orderID
                 )
                 
-                // Keep legacy textObjects array in sync
-                if let legacyIndex = textObjects.firstIndex(where: { $0.id == textID }) {
-                    textObjects[legacyIndex] = vectorText
-                }
+                // Text is now fully managed in unified system
             }
         }
     }
@@ -153,10 +149,7 @@ extension VectorDocument {
                 orderID: unifiedObjects[unifiedIndex].orderID
             )
             
-            // Keep legacy textObjects array in sync
-            if let legacyIndex = textObjects.firstIndex(where: { $0.id == updatedText.id }) {
-                textObjects[legacyIndex] = updatedText
-            }
+            // Text is now fully managed in unified system
         }
     }
     
@@ -206,12 +199,11 @@ extension VectorDocument {
         // Remove from unified system
         unifiedObjects.removeAll { selectedTextIDs.contains($0.id) }
         
-        // Keep legacy textObjects array in sync
-        textObjects.removeAll { selectedTextIDs.contains($0.id) }
+        // Text is now fully managed in unified system
         
         let actuallyRemovedCount = removedTextCount - getTextCount()
         
-        Log.fileOperation("🗑️ TEXT REMOVAL: Removed \(actuallyRemovedCount) text objects from textObjects array", level: .info)
+        Log.fileOperation("🗑️ TEXT REMOVAL: Removed \(actuallyRemovedCount) text objects from unified system", level: .info)
         
         selectedTextIDs.removeAll()
         
@@ -307,7 +299,7 @@ extension VectorDocument {
             return
         }
         
-        let textIndex = textObjects.firstIndex(where: { $0.id == textID }) // Keep for legacy removal
+        // Text removal is handled in unified system
         
         // VALIDATION: Check for empty text content
         guard !textObject.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -418,10 +410,7 @@ extension VectorDocument {
             // Remove original text object from unified system
             unifiedObjects.removeAll { $0.id == textID }
             
-            // Keep legacy textObjects array in sync
-            if let textIndex = textIndex {
-                textObjects.remove(at: textIndex)
-            }
+            // Text is now fully managed in unified system
             selectedTextIDs.remove(textID)
             
             // Select the created outline shape
@@ -531,7 +520,8 @@ extension VectorDocument {
         }
         
         // Clear all text objects (legacy array will be cleared by unified system)
-        textObjects.removeAll()
+        // Remove all text from unified system
+        removeAllText()
         
         // Clear all selections
         selectedObjectIDs.removeAll()

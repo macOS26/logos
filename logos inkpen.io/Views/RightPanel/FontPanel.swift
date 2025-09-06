@@ -20,12 +20,12 @@ struct FontPanel: View {
     
     // FIXED: Simple computed property that doesn't modify state during view update
     private var selectedText: VectorText? {
-        document.textObjects.first { document.selectedTextIDs.contains($0.id) }
+        document.allTextObjects.first { document.selectedTextIDs.contains($0.id) }
     }
     
     // FIXED: Simple computed property that doesn't modify state during view update
     private var editingText: VectorText? {
-        document.textObjects.first { $0.isEditing }
+        document.allTextObjects.first { $0.isEditing }
     }
     
     // GET CURRENT TEXT BOX STATE
@@ -575,7 +575,8 @@ struct FontPanel: View {
                 }
             }
         }
-        .onChange(of: document.textObjects) { oldTextObjects, newTextObjects in
+        // Monitor unified objects for text changes  
+        .onChange(of: document.unifiedObjects.map { $0.id }) { _, _ in
             // Update last logged editing state safely
             if let newEditingText = editingText {
                 if newEditingText.id != lastLoggedEditing {
@@ -654,8 +655,8 @@ struct FontPanel: View {
                 continue
             }
             
-            // Get text object from unified system (read from textObjects for now)
-            if let textObj = document.textObjects.first(where: { $0.id == textID }) {
+            // Get text object from unified system
+            if let textObj = document.allTextObjects.first(where: { $0.id == textID }) {
                 let originalTypography = textObj.typography
                 
                 // Create a mutable copy to update

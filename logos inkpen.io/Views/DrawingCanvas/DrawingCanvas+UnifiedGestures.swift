@@ -63,8 +63,7 @@ extension DrawingCanvas {
             #endif
             
             // Additional: Position cursor in text at click location
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                let textObj = document.textObjects[textIndex]
+            if let textObj = document.allTextObjects.first(where: { $0.id == textID }) {
                 
                 // Calculate relative position within the text box
                 let relativeX = canvasLocation.x - textObj.position.x

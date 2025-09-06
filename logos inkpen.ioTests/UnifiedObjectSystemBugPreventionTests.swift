@@ -37,14 +37,12 @@ struct UnifiedObjectSystemBugPreventionTests {
         document.selectedObjectIDs.insert(textObject.id)
         
         // SIMULATE THE EXACT BUG SCENARIO:
-        // 1. User drags text box - position updates in textObjects array
+        // 1. User drags text box - position updates in unified system
         let draggedPosition = CGPoint(x: 500, y: 600)
-        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-            document.textObjects[textIndex].position = draggedPosition
-        }
+        document.updateTextPositionInUnified(id: textObject.id, position: draggedPosition)
         
         // Verify textObjects has new position after drag
-        let textAfterDrag = document.textObjects.first { $0.id == textObject.id }
+        let textAfterDrag = document.allTextObjects.first { $0.id == textObject.id }
         #expect(textAfterDrag?.position.x == draggedPosition.x)
         #expect(textAfterDrag?.position.y == draggedPosition.y)
         
@@ -71,7 +69,7 @@ struct UnifiedObjectSystemBugPreventionTests {
             }
             return false
         }) {
-            if let updatedText = document.textObjects.first(where: { $0.id == textObject.id }) {
+            if let updatedText = document.allTextObjects.first(where: { $0.id == textObject.id }) {
                 let updatedShape = VectorShape.from(updatedText)
                 document.unifiedObjects[objectIndex] = VectorObject(
                     shape: updatedShape,
@@ -83,7 +81,7 @@ struct UnifiedObjectSystemBugPreventionTests {
         
         // CRITICAL TEST: After sync, BOTH arrays must have the dragged position
         // This test would FAIL with the old buggy sync direction!
-        let finalText = document.textObjects.first { $0.id == textObject.id }
+        let finalText = document.allTextObjects.first { $0.id == textObject.id }
         #expect(finalText?.position.x == draggedPosition.x)
         #expect(finalText?.position.y == draggedPosition.y)
         
@@ -133,9 +131,8 @@ struct UnifiedObjectSystemBugPreventionTests {
         
         for (index, newPosition) in positions.enumerated() {
             // Update textObjects array (like drag does)
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-                document.textObjects[textIndex].position = newPosition
-            }
+            // Update position using unified system
+            document.updateTextPositionInUnified(id: textObject.id, position: newPosition)
             
             // WRONG WAY (this was the bug): Sync textObjects FROM unified (backwards!)
             // This test ensures we DON'T do this anymore
@@ -148,7 +145,7 @@ struct UnifiedObjectSystemBugPreventionTests {
                 }
                 return false
             }) {
-                if let updatedText = document.textObjects.first(where: { $0.id == textObject.id }) {
+                if let updatedText = document.allTextObjects.first(where: { $0.id == textObject.id }) {
                     let updatedShape = VectorShape.from(updatedText)
                     document.unifiedObjects[objectIndex] = VectorObject(
                         shape: updatedShape,
@@ -159,7 +156,7 @@ struct UnifiedObjectSystemBugPreventionTests {
             }
             
             // After each sync, verify both arrays match (no reversion!)
-            let currentText = document.textObjects.first { $0.id == textObject.id }
+            let currentText = document.allTextObjects.first { $0.id == textObject.id }
             #expect(currentText?.position.x == newPosition.x, "Position reverted at step \(index + 1)")
             #expect(currentText?.position.y == newPosition.y, "Position reverted at step \(index + 1)")
             
@@ -207,12 +204,11 @@ struct UnifiedObjectSystemBugPreventionTests {
         let draggedPosition = CGPoint(x: 253.50453066914497, y: 337.14625929368026)
         
         // Simulate drag finish - textObjects array gets updated
-        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-            document.textObjects[textIndex].position = draggedPosition
-        }
+        // Simulate drag using unified system
+        document.updateTextPositionInUnified(id: textObject.id, position: draggedPosition)
         
         // Verify drag worked
-        let draggedText = document.textObjects.first { $0.id == textObject.id }
+        let draggedText = document.allTextObjects.first { $0.id == textObject.id }
         #expect(draggedText?.position.x == draggedPosition.x)
         #expect(draggedText?.position.y == draggedPosition.y)
         
@@ -228,7 +224,7 @@ struct UnifiedObjectSystemBugPreventionTests {
             }
             return false
         }) {
-            if let updatedText = document.textObjects.first(where: { $0.id == textObject.id }) {
+            if let updatedText = document.allTextObjects.first(where: { $0.id == textObject.id }) {
                 let updatedShape = VectorShape.from(updatedText)
                 document.unifiedObjects[objectIndex] = VectorObject(
                     shape: updatedShape,
@@ -239,7 +235,7 @@ struct UnifiedObjectSystemBugPreventionTests {
         }
         
         // CRITICAL: Position must NOT revert to original!
-        let finalText = document.textObjects.first { $0.id == textObject.id }
+        let finalText = document.allTextObjects.first { $0.id == textObject.id }
         #expect(finalText?.position.x == draggedPosition.x, "BUG: Position reverted to original after sync!")
         #expect(finalText?.position.y == draggedPosition.y, "BUG: Position reverted to original after sync!")
         

@@ -36,8 +36,8 @@ struct UnifiedObjectSystemToolbarTests {
         document.lockTextInUnified(id: testText1.id)
         
         // Verify only selected text is locked
-        let lockedText = document.textObjects.first { $0.id == testText1.id }
-        let unlockedText = document.textObjects.first { $0.id == testText2.id }
+        let lockedText = document.allTextObjects.first { $0.id == testText1.id }
+        let unlockedText = document.allTextObjects.first { $0.id == testText2.id }
         
         #expect(lockedText?.isLocked == true, "Selected text should be locked via unified helper")
         #expect(unlockedText?.isLocked == false, "Unselected text should remain unlocked")
@@ -77,8 +77,8 @@ struct UnifiedObjectSystemToolbarTests {
         document.hideTextInUnified(id: testText1.id)
         
         // Verify only selected text is hidden
-        let hiddenText = document.textObjects.first { $0.id == testText1.id }
-        let visibleText = document.textObjects.first { $0.id == testText2.id }
+        let hiddenText = document.allTextObjects.first { $0.id == testText1.id }
+        let visibleText = document.allTextObjects.first { $0.id == testText2.id }
         
         #expect(hiddenText?.isVisible == false, "Selected text should be hidden via unified helper")
         #expect(visibleText?.isVisible == true, "Unselected text should remain visible")
@@ -116,7 +116,7 @@ struct UnifiedObjectSystemToolbarTests {
         document.updateTextFillOpacityInUnified(id: testText.id, opacity: newOpacity)
         
         // Verify both arrays updated
-        let updatedText = document.textObjects.first { $0.id == testText.id }
+        let updatedText = document.allTextObjects.first { $0.id == testText.id }
         #expect(updatedText?.typography.fillOpacity == newOpacity, "Legacy textObjects opacity not updated")
         
         let updatedUnifiedShape = document.unifiedObjects.first { obj in
@@ -152,7 +152,7 @@ struct UnifiedObjectSystemToolbarTests {
         document.updateTextStrokeWidthInUnified(id: testText.id, width: newWidth)
         
         // Verify both arrays updated
-        let updatedText = document.textObjects.first { $0.id == testText.id }
+        let updatedText = document.allTextObjects.first { $0.id == testText.id }
         #expect(updatedText?.typography.strokeWidth == newWidth, "Legacy textObjects stroke width not updated")
         #expect(updatedText?.typography.hasStroke == true, "Legacy textObjects hasStroke not updated")
         
@@ -170,7 +170,7 @@ struct UnifiedObjectSystemToolbarTests {
         // Test setting stroke width to 0 (should disable stroke)
         document.updateTextStrokeWidthInUnified(id: testText.id, width: 0.0)
         
-        let noStrokeText = document.textObjects.first { $0.id == testText.id }
+        let noStrokeText = document.allTextObjects.first { $0.id == testText.id }
         #expect(noStrokeText?.typography.hasStroke == false, "hasStroke should be false when width is 0")
     }
 }

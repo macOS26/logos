@@ -842,9 +842,9 @@ class ClipboardManager {
                     if shape.isTextObject {
                         // CRITICAL FIX: Convert VectorShape back to VectorText for proper copy/paste
                         if let textContent = shape.textContent {
-                            // CRITICAL: Get ALL properties from original textObjects array, not the unified shape
-                            let originalText = document.textObjects.first { $0.id == objectID }
-                            let originalAreaSize = originalText?.areaSize
+                            // Get properties from unified system
+                            let originalText = document.findText(by: objectID)
+                            let originalAreaSize = originalText?.areaSize ?? shape.areaSize
                             let typography = originalText?.typography ?? shape.typography ?? TypographyProperties(strokeColor: .black, fillColor: .black)
                             
                             // DEBUG: Log what we're copying to identify the issue

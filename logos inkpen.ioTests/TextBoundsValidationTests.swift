@@ -347,7 +347,7 @@ struct TextBoundsValidationTests {
         #expect(originalText.bounds.height > 0, "Original text should have valid height")
         
         // Find the pasted text (should be the newest one)
-        let pastedText = document.textObjects.last
+        let pastedText = document.allTextObjects.last
         
         #expect(pastedText != nil, "Should have pasted text")
         

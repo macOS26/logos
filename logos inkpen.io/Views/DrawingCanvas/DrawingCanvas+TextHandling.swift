@@ -385,6 +385,9 @@ extension DrawingCanvas {
         document.selectedTextIDs = [newText.id]
         document.selectedShapeIDs.removeAll()
         
+        // CRITICAL: Set editing state in unified system so text box shows as BLUE
+        document.setTextEditingInUnified(id: newText.id, isEditing: true)
+        
         // Set editing state for compatibility with existing system
         isEditingText = true
         editingTextID = newText.id

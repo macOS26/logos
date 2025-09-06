@@ -110,11 +110,7 @@ struct UnifiedObjectSystemSelectionColorTests {
                     orderID: document.unifiedObjects[objectIndex].orderID
                 )
                 
-                // Keep legacy array in sync
-                if let legacyIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }),
-                   let vectorText = VectorText.from(shape) {
-                    document.textObjects[legacyIndex] = vectorText
-                }
+                // Text is now fully managed in unified system
             }
         }
         
@@ -126,7 +122,7 @@ struct UnifiedObjectSystemSelectionColorTests {
         #expect(updatedTextInUnified?.typography.strokeOpacity == document.defaultStrokeOpacity)
         
         // Verify legacy array was kept in sync
-        let updatedTextInLegacy = document.textObjects.first { $0.id == textObject.id }
+        let updatedTextInLegacy = document.allTextObjects.first { $0.id == textObject.id }
         #expect(updatedTextInLegacy != nil)
         #expect(updatedTextInLegacy?.typography.hasStroke == true)
         #expect(updatedTextInLegacy?.typography.strokeColor == newStrokeColor)
@@ -199,7 +195,7 @@ struct UnifiedObjectSystemSelectionColorTests {
         #expect(updatedTextInUnified?.typography.fillOpacity == document.defaultFillOpacity)
         
         // Verify legacy array was kept in sync
-        let updatedTextInLegacy = document.textObjects.first { $0.id == textObject.id }
+        let updatedTextInLegacy = document.allTextObjects.first { $0.id == textObject.id }
         #expect(updatedTextInLegacy != nil)
         #expect(updatedTextInLegacy?.typography.fillColor == newFillColor)
         #expect(updatedTextInLegacy?.typography.fillOpacity == document.defaultFillOpacity)

@@ -37,10 +37,7 @@ class VectorDocument: ObservableObject, Codable {
     // CRITICAL FIX: Shared state to prevent double transformations  
     @Published var isHandleScalingActive = false // Set by SelectionHandles, checked by canvas gesture
     
-    // DEPRECATED: Legacy text objects array - kept for backward compatibility only
-    // Text is now stored as VectorShape with isTextObject=true in the layers array
-    // This array is maintained automatically for compatibility but should not be used directly
-    @Published var textObjects: [VectorText] = []
+    // Text is now stored as VectorShape with isTextObject=true in the unified system
     
     // NEW: Unified objects array for proper layer ordering
     @Published var unifiedObjects: [VectorObject] = [] // All objects (shapes + text) with proper ordering
@@ -60,11 +57,15 @@ class VectorDocument: ObservableObject, Codable {
         }
     }
     
+    // Get all text objects from unified system
     var allTextObjects: [VectorText] {
         return unifiedObjects.compactMap { unifiedObject in
             if case .shape(let shape) = unifiedObject.objectType, shape.isTextObject {
                 // Convert VectorShape back to VectorText
-                return VectorText.from(shape)
+                if var vectorText = VectorText.from(shape) {
+                    vectorText.layerIndex = unifiedObject.layerIndex
+                    return vectorText
+                }
             }
             return nil
         }
@@ -84,7 +85,16 @@ class VectorDocument: ObservableObject, Codable {
     }
     
     func findText(by id: UUID) -> VectorText? {
-        return allTextObjects.first { $0.id == id }
+        for unifiedObject in unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType, 
+               shape.isTextObject,
+               shape.id == id,
+               var vectorText = VectorText.from(shape) {
+                vectorText.layerIndex = unifiedObject.layerIndex
+                return vectorText
+            }
+        }
+        return nil
     }
     
     func getObjectsInLayer(_ layerIndex: Int) -> [VectorObject] {
@@ -202,7 +212,7 @@ class VectorDocument: ObservableObject, Codable {
         self.selectedLayerIndex = nil // Will be set after layer creation
         self.selectedShapeIDs = []
         self.selectedTextIDs = [] // PROFESSIONAL TEXT SUPPORT
-        self.textObjects = [] // PROFESSIONAL TEXT OBJECTS
+        // Text is now stored in unified system
         self.currentTool = .brush
         self.scalingAnchor = .center
         self.viewMode = .color
@@ -370,7 +380,7 @@ class VectorDocument: ObservableObject, Codable {
         // MIGRATION: Try to decode legacy textObjects array for backward compatibility
         // But we'll extract text from shapes in layers as the primary source
         let legacyTextObjects = try container.decodeIfPresent([VectorText].self, forKey: .textObjects) ?? []
-        textObjects = [] // Will be populated from layers
+        // Text is now stored in unified system
         
         currentTool = try container.decode(DrawingTool.self, forKey: .currentTool)
         viewMode = try container.decodeIfPresent(ViewMode.self, forKey: .viewMode) ?? .color
@@ -410,9 +420,6 @@ class VectorDocument: ObservableObject, Codable {
                         layers[layerIndex].shapes.append(textShape)
                     }
                 }
-                
-                // Keep legacy array in sync for backward compatibility
-                textObjects.append(text)
             }
         }
         

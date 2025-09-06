@@ -42,7 +42,8 @@
       "Bash(rm:*)",
       "mcp__xcf-server__apply_undo_diff_to_doc",
       "Bash(sed:*)",
-      "Bash(swift test:*)"
+      "Bash(swift test:*)",
+      "Bash(awk:*)"
     ],
     "deny": [],
     "ask": []

@@ -169,20 +169,20 @@ extension VectorDocument {
         textWithLayer.layerIndex = layerIndex
         let textShape = VectorShape.from(textWithLayer)
         
+        // DEBUG: Log the editing state
+        Log.fileOperation("🔍 addTextToUnifiedSystem: text.isEditing=\(text.isEditing), textShape.isEditing=\(textShape.isEditing ?? false)", level: .info)
+        
         // CRITICAL: Add the text shape to the layer's shapes array
         if layerIndex < layers.count {
             // Remove any existing shape with same ID to prevent duplicates
             layers[layerIndex].shapes.removeAll { $0.id == text.id }
-            // Add the text as a shape
-            layers[layerIndex].shapes.append(textShape)
+            // Add the text as a shape (make sure editing state is preserved)
+            var shapeToAdd = textShape
+            shapeToAdd.isEditing = text.isEditing  // Ensure editing state is preserved
+            layers[layerIndex].shapes.append(shapeToAdd)
         }
         
-        // MIGRATION: Keep legacy textObjects array in sync for backward compatibility
-        let existingTextIndex = textObjects.firstIndex { $0.id == text.id }
-        if let existingTextIndex = existingTextIndex {
-            textObjects.remove(at: existingTextIndex)
-        }
-        textObjects.append(textWithLayer)
+        // MIGRATION: textObjects is now rebuilt from unified, no direct modification needed
         
         // CRITICAL FIX: During undo/redo operations, preserve the original orderID if available
         if isUndoRedoOperation {
@@ -203,6 +203,8 @@ extension VectorDocument {
         let orderID = getNextOrderID(for: layerIndex)
         let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex, orderID: orderID)
         unifiedObjects.append(unifiedObject)
+        
+        // Text is now fully managed in unified system
     }
     
     /// ⚠️ DEPRECATED: This function REVERSES layer order and should NOT be used!
@@ -280,8 +282,7 @@ extension VectorDocument {
         
         Log.info("🔧 UNIFIED OBJECTS: Populated with \(unifiedObjects.count) objects preserving original order", category: .general)
         
-        // MIGRATION: Rebuild textObjects from unified to keep UI components working
-        rebuildTextObjectsFromUnified()
+        // Text is now fully managed in unified system
     }
     
     /// Sync selection arrays to maintain compatibility with existing code
@@ -344,90 +345,31 @@ extension VectorDocument {
         Log.fileOperation("🔧 UNIFIED OBJECTS: Updated ordering to match layer changes", level: .info)
     }
     
-    /// Rebuild textObjects array from unified objects (read-only sync)
-    /// This keeps textObjects populated for UI components that still read from it
-    func rebuildTextObjectsFromUnified() {
-        // Clear and rebuild textObjects array from unified
-        textObjects.removeAll()
-        
-        for unifiedObject in unifiedObjects.sorted(by: { $0.orderID < $1.orderID }) {
-            if case .shape(let shape) = unifiedObject.objectType, shape.isTextObject {
-                if let textContent = shape.textContent, let typography = shape.typography {
-                    // Use stored textPosition if available, otherwise extract from transform
-                    let position = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
-                    var vectorText = VectorText(
-                        content: textContent,
-                        typography: typography,
-                        position: position,
-                        transform: .identity,
-                        isVisible: shape.isVisible,
-                        isLocked: shape.isLocked,
-                        isEditing: shape.isEditing ?? false,
-                        layerIndex: unifiedObject.layerIndex,
-                        isPointText: shape.isPointText ?? true,
-                        cursorPosition: shape.cursorPosition ?? 0,
-                        areaSize: shape.areaSize
-                    )
-                    // Preserve the original ID
-                    vectorText.id = shape.id
-                    textObjects.append(vectorText)
-                }
-            }
-        }
-        
-        Log.fileOperation("🔄 Rebuilt textObjects from unified: \(textObjects.count) text objects", level: .info)
-    }
+    // Text rebuild no longer needed - all text is accessed directly from unified system
     
-    /// CRITICAL FIX: Sync legacy arrays from unified objects array
-    private func syncLegacyArraysFromUnified() {
-        // CRITICAL FIX: Preserve original objects before clearing arrays to maintain state
-        _ = textObjects
+    /// CRITICAL FIX: Sync layer shapes from unified objects array
+    private func syncLayerShapesFromUnified() {
         let originalShapes = layers.map { $0.shapes }
         
-        // Clear existing legacy arrays
+        // Clear existing shapes in layers
         for layerIndex in layers.indices {
             layers[layerIndex].shapes.removeAll()
         }
-        textObjects.removeAll()
         
-        // Rebuild legacy arrays from unified objects, maintaining order
+        // Rebuild layer shapes from unified objects, maintaining order
         for unifiedObject in unifiedObjects.sorted(by: { $0.orderID < $1.orderID }) {
             switch unifiedObject.objectType {
             case .shape(let shape):
-                if shape.isTextObject {
-                    // Convert VectorShape back to VectorText for legacy textObjects array
-                    if let textContent = shape.textContent, let typography = shape.typography {
-                        // Use stored textPosition if available, otherwise extract from transform
-                        let position = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
-                        var vectorText = VectorText(
-                            content: textContent,
-                            typography: typography,
-                            position: position,
-                            transform: .identity,
-                            isVisible: shape.isVisible,
-                            isLocked: shape.isLocked,
-                            isEditing: shape.isEditing ?? false,
-                            layerIndex: unifiedObject.layerIndex,
-                            isPointText: shape.isPointText ?? true,
-                            cursorPosition: shape.cursorPosition ?? 0,
-                            areaSize: shape.areaSize
-                        )
-                        // Preserve the original ID
-                        vectorText.id = shape.id
-                        textObjects.append(vectorText)
-                    }
+                // Use original shape from layers array to preserve all state if available
+                if let originalShape = originalShapes[unifiedObject.layerIndex].first(where: { $0.id == shape.id }) {
+                    layers[unifiedObject.layerIndex].shapes.append(originalShape)
                 } else {
-                    // Regular shape - use original shape from layers array to preserve all state
-                    if let originalShape = originalShapes[unifiedObject.layerIndex].first(where: { $0.id == shape.id }) {
-                        layers[unifiedObject.layerIndex].shapes.append(originalShape)
-                    } else {
-                        layers[unifiedObject.layerIndex].shapes.append(shape)
-                    }
+                    layers[unifiedObject.layerIndex].shapes.append(shape)
                 }
             }
         }
         
-        Log.fileOperation("🔧 LEGACY ARRAYS: Synced from unified objects", level: .info)
+        Log.fileOperation("🔧 LAYER SHAPES: Synced from unified objects", level: .info)
     }
     
     /// OPTIMIZED: Update unified objects without full sync - preserves text object order and IDs
@@ -455,12 +397,7 @@ extension VectorDocument {
                             orderID: unifiedObjects[unifiedIndex].orderID
                         )
                         
-                        // Keep legacy textObjects array in sync for text shapes
-                        if shape.isTextObject, let vectorText = VectorText.from(updatedShape) {
-                            if let textIndex = textObjects.firstIndex(where: { $0.id == shape.id }) {
-                                textObjects[textIndex] = vectorText
-                            }
-                        }
+                        // Text is now fully managed in unified system
                     }
                 }
             }
@@ -514,16 +451,16 @@ extension VectorDocument {
         Log.fileOperation("🔍 updateTextFillColorInUnified START - id: \(id), color: \(color)", level: .info)
         
         // LOG INITIAL STATE
-        if let legacyText = textObjects.first(where: { $0.id == id }) {
-            Log.fileOperation("📝 BEFORE COLOR CHANGE - Legacy Text Typography:", level: .info)
-            Log.fileOperation("  - Font: \(legacyText.typography.fontFamily)", level: .info)
-            Log.fileOperation("  - Size: \(legacyText.typography.fontSize)", level: .info)
-            Log.fileOperation("  - Weight: \(String(describing: legacyText.typography.fontWeight))", level: .info)
-            Log.fileOperation("  - Style: \(String(describing: legacyText.typography.fontStyle))", level: .info)
-            Log.fileOperation("  - Alignment: \(legacyText.typography.alignment)", level: .info)
-            Log.fileOperation("  - Current Fill Color: \(legacyText.typography.fillColor)", level: .info)
+        if let textObject = findText(by: id) {
+            Log.fileOperation("📝 BEFORE COLOR CHANGE - Text Typography:", level: .info)
+            Log.fileOperation("  - Font: \(textObject.typography.fontFamily)", level: .info)
+            Log.fileOperation("  - Size: \(textObject.typography.fontSize)", level: .info)
+            Log.fileOperation("  - Weight: \(String(describing: textObject.typography.fontWeight))", level: .info)
+            Log.fileOperation("  - Style: \(String(describing: textObject.typography.fontStyle))", level: .info)
+            Log.fileOperation("  - Alignment: \(textObject.typography.alignment)", level: .info)
+            Log.fileOperation("  - Current Fill Color: \(textObject.typography.fillColor)", level: .info)
         } else {
-            Log.fileOperation("⚠️ NO LEGACY TEXT FOUND WITH ID: \(id)", level: .warning)
+            Log.fileOperation("⚠️ NO TEXT FOUND WITH ID: \(id)", level: .warning)
         }
         
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
@@ -552,15 +489,15 @@ extension VectorDocument {
                     shape.typography?.fillColor = color
                     shape.typography?.fillOpacity = defaultFillOpacity
                 } else {
-                    // If typography is nil, we need to get it from textObjects to preserve font settings
-                    Log.fileOperation("⚠️ Typography was NIL - restoring from legacy text", level: .warning)
-                    if let legacyText = textObjects.first(where: { $0.id == id }) {
-                        shape.typography = legacyText.typography
+                    // If typography is nil, we need to get it from the text object
+                    Log.fileOperation("⚠️ Typography was NIL - restoring from text object", level: .warning)
+                    if let textObject = findText(by: id) {
+                        shape.typography = textObject.typography
                         shape.typography?.fillColor = color
                         shape.typography?.fillOpacity = defaultFillOpacity
-                        Log.fileOperation("✅ Restored typography from legacy with font: \(legacyText.typography.fontFamily)", level: .info)
+                        Log.fileOperation("✅ Restored typography with font: \(textObject.typography.fontFamily)", level: .info)
                     } else {
-                        Log.fileOperation("❌ COULD NOT RESTORE TYPOGRAPHY - NO LEGACY TEXT!", level: .error)
+                        Log.fileOperation("❌ COULD NOT RESTORE TYPOGRAPHY - NO TEXT OBJECT!", level: .error)
                     }
                 }
                 
@@ -599,21 +536,7 @@ extension VectorDocument {
                     Log.fileOperation("⚠️ Could not find shape in layers array!", level: .warning)
                 }
                 
-                // CRITICAL FIX: Only update the color properties in legacy array, preserve ALL other properties
-                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                    Log.fileOperation("📝 Updating legacy textObjects array at index \(legacyIndex)", level: .info)
-                    Log.fileOperation("  - BEFORE legacy font: \(textObjects[legacyIndex].typography.fontFamily)", level: .info)
-                    
-                    // ONLY update color - preserve font, size, weight, style, alignment, etc.
-                    textObjects[legacyIndex].typography.fillColor = color
-                    textObjects[legacyIndex].typography.fillOpacity = defaultFillOpacity
-                    
-                    Log.fileOperation("  - AFTER legacy font: \(textObjects[legacyIndex].typography.fontFamily)", level: .info)
-                    Log.fileOperation("  - AFTER legacy size: \(textObjects[legacyIndex].typography.fontSize)", level: .info)
-                    Log.fileOperation("  - AFTER legacy weight: \(String(describing: textObjects[legacyIndex].typography.fontWeight))", level: .info)
-                } else {
-                    Log.fileOperation("⚠️ Could not find text in legacy textObjects array!", level: .warning)
-                }
+                // Text is now fully managed in unified system
             } else {
                 Log.fileOperation("❌ Failed to cast unified object to shape!", level: .error)
             }
@@ -670,19 +593,7 @@ extension VectorDocument {
                     Log.fileOperation("  - AFTER layer font: \(layers[layerIndex].shapes[shapeIndex].typography?.fontFamily ?? "nil")", level: .info)
                 }
                 
-                // CRITICAL: Update the legacy textObjects array to keep it in sync
-                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                    Log.fileOperation("📝 Updating legacy textObjects array at index \(legacyIndex)", level: .info)
-                    Log.fileOperation("  - BEFORE legacy font: \(textObjects[legacyIndex].typography.fontFamily)", level: .info)
-                    
-                    // Update the entire typography object
-                    textObjects[legacyIndex].typography = typography
-                    
-                    Log.fileOperation("  - AFTER legacy font: \(textObjects[legacyIndex].typography.fontFamily)", level: .info)
-                    Log.fileOperation("  - AFTER legacy size: \(textObjects[legacyIndex].typography.fontSize)", level: .info)
-                } else {
-                    Log.fileOperation("⚠️ Could not find text in legacy textObjects array!", level: .warning)
-                }
+                // Text is now fully managed in unified system
             }
         } else {
             Log.fileOperation("⚠️ Could not find text in unified objects with id: \(id)", level: .warning)
@@ -697,17 +608,17 @@ extension VectorDocument {
         Log.fileOperation("🔍 updateTextStrokeColorInUnified START - id: \(id), color: \(color)", level: .info)
         
         // LOG INITIAL STATE
-        if let legacyText = textObjects.first(where: { $0.id == id }) {
-            Log.fileOperation("📝 BEFORE STROKE COLOR CHANGE - Legacy Text Typography:", level: .info)
-            Log.fileOperation("  - Font: \(legacyText.typography.fontFamily)", level: .info)
-            Log.fileOperation("  - Size: \(legacyText.typography.fontSize)", level: .info)
-            Log.fileOperation("  - Weight: \(String(describing: legacyText.typography.fontWeight))", level: .info)
-            Log.fileOperation("  - Style: \(String(describing: legacyText.typography.fontStyle))", level: .info)
-            Log.fileOperation("  - Alignment: \(legacyText.typography.alignment)", level: .info)
-            Log.fileOperation("  - Current Stroke Color: \(legacyText.typography.strokeColor)", level: .info)
-            Log.fileOperation("  - Has Stroke: \(legacyText.typography.hasStroke)", level: .info)
+        if let textObject = findText(by: id) {
+            Log.fileOperation("📝 BEFORE STROKE COLOR CHANGE - Text Typography:", level: .info)
+            Log.fileOperation("  - Font: \(textObject.typography.fontFamily)", level: .info)
+            Log.fileOperation("  - Size: \(textObject.typography.fontSize)", level: .info)
+            Log.fileOperation("  - Weight: \(String(describing: textObject.typography.fontWeight))", level: .info)
+            Log.fileOperation("  - Style: \(String(describing: textObject.typography.fontStyle))", level: .info)
+            Log.fileOperation("  - Alignment: \(textObject.typography.alignment)", level: .info)
+            Log.fileOperation("  - Current Stroke Color: \(textObject.typography.strokeColor)", level: .info)
+            Log.fileOperation("  - Has Stroke: \(textObject.typography.hasStroke)", level: .info)
         } else {
-            Log.fileOperation("⚠️ NO LEGACY TEXT FOUND WITH ID: \(id)", level: .warning)
+            Log.fileOperation("⚠️ NO TEXT FOUND WITH ID: \(id)", level: .warning)
         }
         
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
@@ -737,15 +648,15 @@ extension VectorDocument {
                     shape.typography?.hasStroke = true
                     shape.typography?.strokeColor = color
                 } else {
-                    // If typography is nil, we need to get it from textObjects to preserve font settings
-                    Log.fileOperation("⚠️ Typography was NIL - restoring from legacy text", level: .warning)
-                    if let legacyText = textObjects.first(where: { $0.id == id }) {
-                        shape.typography = legacyText.typography
+                    // If typography is nil, we need to get it from the text object
+                    Log.fileOperation("⚠️ Typography was NIL - restoring from text object", level: .warning)
+                    if let textObject = findText(by: id) {
+                        shape.typography = textObject.typography
                         shape.typography?.hasStroke = true
                         shape.typography?.strokeColor = color
-                        Log.fileOperation("✅ Restored typography from legacy with font: \(legacyText.typography.fontFamily)", level: .info)
+                        Log.fileOperation("✅ Restored typography with font: \(textObject.typography.fontFamily)", level: .info)
                     } else {
-                        Log.fileOperation("❌ COULD NOT RESTORE TYPOGRAPHY - NO LEGACY TEXT!", level: .error)
+                        Log.fileOperation("❌ COULD NOT RESTORE TYPOGRAPHY - NO TEXT OBJECT!", level: .error)
                     }
                 }
                 
@@ -785,21 +696,7 @@ extension VectorDocument {
                     Log.fileOperation("⚠️ Could not find shape in layers array!", level: .warning)
                 }
                 
-                // CRITICAL FIX: Only update the stroke properties in legacy array, preserve ALL other properties
-                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                    Log.fileOperation("📝 Updating legacy textObjects array at index \(legacyIndex)", level: .info)
-                    Log.fileOperation("  - BEFORE legacy font: \(textObjects[legacyIndex].typography.fontFamily)", level: .info)
-                    
-                    // ONLY update stroke color - preserve font, size, weight, style, alignment, etc.
-                    textObjects[legacyIndex].typography.hasStroke = true
-                    textObjects[legacyIndex].typography.strokeColor = color
-                    
-                    Log.fileOperation("  - AFTER legacy font: \(textObjects[legacyIndex].typography.fontFamily)", level: .info)
-                    Log.fileOperation("  - AFTER legacy size: \(textObjects[legacyIndex].typography.fontSize)", level: .info)
-                    Log.fileOperation("  - AFTER legacy weight: \(String(describing: textObjects[legacyIndex].typography.fontWeight))", level: .info)
-                } else {
-                    Log.fileOperation("⚠️ Could not find text in legacy textObjects array!", level: .warning)
-                }
+                // Text is now fully managed in unified system
             } else {
                 Log.fileOperation("❌ Failed to cast unified object to shape!", level: .error)
             }
@@ -836,11 +733,6 @@ extension VectorDocument {
                    let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
                     layers[layerIndex].shapes[shapeIndex].isLocked = true
                 }
-                
-                // Sync to legacy array
-                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                    textObjects[legacyIndex].isLocked = true
-                }
             }
         }
     }
@@ -866,11 +758,6 @@ extension VectorDocument {
                 if layerIndex < layers.count,
                    let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
                     layers[layerIndex].shapes[shapeIndex].isLocked = false
-                }
-                
-                // Sync to legacy array
-                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                    textObjects[legacyIndex].isLocked = false
                 }
             }
         }
@@ -900,11 +787,6 @@ extension VectorDocument {
                    let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
                     layers[layerIndex].shapes[shapeIndex].isVisible = false
                 }
-                
-                // Sync to legacy array
-                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                    textObjects[legacyIndex].isVisible = false
-                }
             }
         }
     }
@@ -930,11 +812,6 @@ extension VectorDocument {
                 if layerIndex < layers.count,
                    let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
                     layers[layerIndex].shapes[shapeIndex].isVisible = true
-                }
-                
-                // Sync to legacy array
-                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                    textObjects[legacyIndex].isVisible = true
                 }
             }
         }
@@ -964,11 +841,6 @@ extension VectorDocument {
                    let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
                     layers[layerIndex].shapes[shapeIndex].typography?.fillOpacity = opacity
                 }
-                
-                // Sync to legacy array
-                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                    textObjects[legacyIndex].typography.fillOpacity = opacity
-                }
             }
         }
     }
@@ -997,12 +869,6 @@ extension VectorDocument {
                     layers[layerIndex].shapes[shapeIndex].typography?.strokeWidth = width
                     layers[layerIndex].shapes[shapeIndex].typography?.hasStroke = width > 0
                 }
-                
-                // Sync to legacy array
-                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                    textObjects[legacyIndex].typography.strokeWidth = width
-                    textObjects[legacyIndex].typography.hasStroke = width > 0
-                }
             }
         }
     }
@@ -1026,19 +892,18 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                     orderID: unifiedObjects[objectIndex].orderID
                 )
-                
-                // Sync to legacy array
-                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                    textObjects[legacyIndex].position.x += delta.x
-                    textObjects[legacyIndex].position.y += delta.y
-                }
             }
         }
     }
     
     func translateAllTextInUnified(delta: CGPoint) {
-        // Get all text IDs first to avoid mutation during iteration
-        let textIDs = textObjects.map { $0.id }
+        // Get all text IDs from unified system
+        let textIDs = unifiedObjects.compactMap { obj -> UUID? in
+            if case .shape(let shape) = obj.objectType, shape.isTextObject {
+                return shape.id
+            }
+            return nil
+        }
         
         // Use unified helper for each text
         for textID in textIDs {
@@ -1049,17 +914,30 @@ extension VectorDocument {
     // MARK: - UNIFIED EDITING STATE HELPERS
     
     func setTextEditingInUnified(id: UUID, isEditing: Bool) {
-        // Check if text exists in unified system
-        if unifiedObjects.contains(where: { obj in
+        // Update in unified objects
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.isTextObject && shape.id == id
             }
             return false
         }) {
-            // Note: isEditing is stored in textObjects only, not in unified shapes
-            // Sync to legacy array
-            if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                textObjects[legacyIndex].isEditing = isEditing
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                // Update the isEditing state in the shape
+                shape.isEditing = isEditing
+                
+                // Update unified objects
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Update the shape in the layers array
+                let layerIndex = unifiedObjects[objectIndex].layerIndex
+                if layerIndex < layers.count,
+                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                    layers[layerIndex].shapes[shapeIndex].isEditing = isEditing
+                }
             }
         }
     }
@@ -1093,16 +971,6 @@ extension VectorDocument {
                     layerIndex: layerIndex,
                     orderID: existingObject.orderID
                 )
-                
-                // Sync to legacy array
-                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                    textObjects[legacyIndex].layerIndex = layerIndex
-                } else if let vectorText = VectorText.from(shape) {
-                    // If not in legacy array yet, add it
-                    var textWithLayer = vectorText
-                    textWithLayer.layerIndex = layerIndex
-                    textObjects.append(textWithLayer)
-                }
             }
         }
     }
@@ -1133,11 +1001,6 @@ extension VectorDocument {
                         break
                     }
                 }
-                
-                // Keep legacy array in sync for backward compatibility
-                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                    textObjects[legacyIndex].content = content
-                }
             }
         }
     }
@@ -1150,10 +1013,7 @@ extension VectorDocument {
             }
             return false
         }) {
-            // Sync to legacy array
-            if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                textObjects[legacyIndex].cursorPosition = cursorPosition
-            }
+            // Cursor position is now stored in unified system
         }
     }
     
@@ -1181,41 +1041,60 @@ extension VectorDocument {
                         break
                     }
                 }
-                
-                // Keep legacy array in sync for backward compatibility
-                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                    textObjects[legacyIndex].position = position
-                }
             }
         }
     }
     
     func updateTextBoundsInUnified(id: UUID, bounds: CGRect) {
-        // Check if text exists in unified system
-        if unifiedObjects.contains(where: { obj in
+        // Update bounds in unified system
+        if let unifiedIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.isTextObject && shape.id == id
             }
             return false
         }) {
-            // Sync to legacy array
-            if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                textObjects[legacyIndex].bounds = bounds
+            if case .shape(var shape) = unifiedObjects[unifiedIndex].objectType {
+                shape.bounds = bounds
+                unifiedObjects[unifiedIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[unifiedIndex].layerIndex,
+                    orderID: unifiedObjects[unifiedIndex].orderID
+                )
+                
+                // Update in layers
+                for layerIdx in layers.indices {
+                    if let shapeIdx = layers[layerIdx].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                        layers[layerIdx].shapes[shapeIdx].bounds = bounds
+                        break
+                    }
+                }
             }
         }
     }
     
     func updateTextAreaSizeInUnified(id: UUID, areaSize: CGSize) {
-        // Check if text exists in unified system
-        if unifiedObjects.contains(where: { obj in
+        // Update area size in unified system
+        if let unifiedIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.isTextObject && shape.id == id
             }
             return false
         }) {
-            // Sync to legacy array
-            if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                textObjects[legacyIndex].areaSize = areaSize
+            if case .shape(var shape) = unifiedObjects[unifiedIndex].objectType {
+                shape.areaSize = areaSize
+                unifiedObjects[unifiedIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[unifiedIndex].layerIndex,
+                    orderID: unifiedObjects[unifiedIndex].orderID
+                )
+                
+                // Update in layers
+                for layerIdx in layers.indices {
+                    if let shapeIdx = layers[layerIdx].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                        layers[layerIdx].shapes[shapeIdx].areaSize = areaSize
+                        break
+                    }
+                }
             }
         }
     }
@@ -1755,8 +1634,7 @@ extension VectorDocument {
             layers[layerIndex].shapes.removeAll { $0.id == id && $0.isTextObject }
         }
         
-        // MIGRATION: Also remove from legacy textObjects array for backward compatibility
-        textObjects.removeAll { $0.id == id }
+        // MIGRATION: textObjects is rebuilt from unified, no direct removal needed
         
         // Remove from unified objects (text is stored as shape with isTextObject = true)
         unifiedObjects.removeAll { obj in
@@ -1774,6 +1652,8 @@ extension VectorDocument {
         }) {
             selectedObjectIDs.remove(unifiedObj.id)
         }
+        
+        // Text is now fully managed in unified system
     }
     
     /// Update entire text object in unified system
@@ -1809,10 +1689,7 @@ extension VectorDocument {
                     }
                 }
                 
-                // MIGRATION: Keep legacy textObjects array in sync for backward compatibility
-                if let textIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                    textObjects[textIndex] = vectorText
-                }
+                // Text is now fully managed in unified system
             }
         }
     }
@@ -1911,9 +1788,6 @@ extension VectorDocument {
     
     /// Removes all text objects from the unified system
     func removeAllText() {
-        // Remove from legacy array
-        textObjects.removeAll()
-        
         // Remove from unified objects
         unifiedObjects.removeAll { obj in
             if case .shape(let shape) = obj.objectType {
@@ -1930,7 +1804,8 @@ extension VectorDocument {
     
     /// Removes text objects matching a condition
     func removeText(where predicate: (VectorText) -> Bool) {
-        let idsToRemove = textObjects.filter(predicate).map { $0.id }
+        let allTextObjects = getAllTextObjects()
+        let idsToRemove = allTextObjects.filter(predicate).map { $0.id }
         for id in idsToRemove {
             removeTextFromUnifiedSystem(id: id)
         }
@@ -1938,13 +1813,15 @@ extension VectorDocument {
     
     /// Updates a text object at a specific index
     func updateTextAt(index: Int, update: (inout VectorText) -> Void) {
-        guard index >= 0 && index < textObjects.count else { return }
-        update(&textObjects[index])
+        let allTextObjects = getAllTextObjects()
+        guard index >= 0 && index < allTextObjects.count else { return }
         
-        // Sync to unified system
-        let text = textObjects[index]
-        updateEntireTextInUnified(id: text.id) { _ in
-            // Already updated in textObjects
+        var text = allTextObjects[index]
+        update(&text)
+        
+        // Update in unified system
+        updateEntireTextInUnified(id: text.id) { updatedText in
+            updatedText = text
         }
     }
 }

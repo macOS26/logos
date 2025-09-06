@@ -26,7 +26,8 @@ struct StableProfessionalTextCanvas: View {
         self.dragPreviewTrigger = dragPreviewTrigger
         
         // Create view model ONCE and reuse it
-        if let textObject = document.textObjects.first(where: { $0.id == textObjectID }) {
+        // Use allTextObjects computed property instead of textObjects array
+        if let textObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
             self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: textObject, document: document))
         } else {
             // MIGRATION FIX: Create fallback text with proper content
@@ -47,7 +48,15 @@ struct StableProfessionalTextCanvas: View {
             .onAppear {
                 updateViewModelFromDocument()
             }
-            .onChange(of: document.textObjects) { _, _ in
+            // Monitor unified objects for text changes - check actual content not just IDs
+            .onChange(of: document.unifiedObjects.compactMap { obj -> String? in
+                guard case .shape(let shape) = obj.objectType,
+                      shape.isTextObject,
+                      shape.id == textObjectID else { return nil }
+                // Create a hash of all relevant properties that should trigger updates
+                let colorHash = shape.typography?.fillColor.hashValue ?? 0
+                return "\(shape.textContent ?? "")-\(colorHash)-\(shape.typography?.fontSize ?? 0)-\(shape.typography?.fontFamily ?? "")-\(shape.typography?.fontWeight.rawValue ?? "")-\(shape.typography?.alignment.rawValue ?? "")"
+            }.first ?? "") { _, _ in
                 updateViewModelFromDocument()
             }
             // Additional fix: Use id to force view refresh when text content changes
@@ -56,20 +65,20 @@ struct StableProfessionalTextCanvas: View {
     }
     
     private func updateViewModelFromDocument() {
-        // MIGRATION FIX: Find text object in textObjects array (legacy system still used for editing)
-        if let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) {
+        // Use allTextObjects from unified system
+        if let currentTextObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
             viewModel.syncFromVectorText(currentTextObject)
             Log.fileOperation("✅ TEXT CANVAS: Found text object \(textObjectID.uuidString.prefix(8)) content: '\(currentTextObject.content)'", level: .info)
         } else {
-            // FALLBACK: If text object missing from textObjects, log issue with debugging info
-            Log.fileOperation("⚠️ TEXT CANVAS: Text object \(textObjectID.uuidString.prefix(8)) not found in textObjects array", level: .info)
+            // FALLBACK: If text object missing from unified objects, log issue with debugging info
+            Log.fileOperation("⚠️ TEXT CANVAS: Text object \(textObjectID.uuidString.prefix(8)) not found in unified objects", level: .info)
             Log.fileOperation("🔍 DEBUG: Available text object IDs: \(document.allTextObjects.map { $0.id.uuidString.prefix(8) })", level: .info)
             Log.fileOperation("🔍 DEBUG: Total text objects: \(document.allTextObjects.count)", level: .info)
         }
     }
     
     private func getDocumentMode() -> String {
-        if let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) {
+        if let currentTextObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
             // PROFESSIONAL UX: Stable view while font tool is active
             // Create compact typography hash to avoid super long strings
             
@@ -164,7 +173,7 @@ struct ProfessionalTextCanvas: View {
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
         }
         // CRITICAL FIX: Monitor document text objects for editing state changes
-        .onChange(of: document.textObjects.map { $0.isEditing }) { _, _ in
+        .onChange(of: document.allTextObjects.map { $0.isEditing }) { _, _ in
             Log.fileOperation("🔧 ANY TEXT EDITING STATE CHANGED - refreshing state", level: .info)
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
         }
@@ -230,7 +239,7 @@ struct ProfessionalTextCanvas: View {
         let oldState = textBoxState
         
         // CRITICAL FIX: Always use current document text object, not potentially stale view model reference
-        guard let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) else {
+        guard let currentTextObject = document.allTextObjects.first(where: { $0.id == textObjectID }) else {
             textBoxState = .gray
             Log.info("  → GRAY (text object not found in document)", category: .general)
             return
@@ -345,9 +354,8 @@ struct ProfessionalTextCanvas: View {
             
             textBoxState = .green
             viewModel.stopEditing()
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == viewModel.textObject.id }) {
-                document.setTextEditingInUnified(id: document.textObjects[textIndex].id, isEditing: false)
-            }
+            // Use unified system directly
+            document.setTextEditingInUnified(id: viewModel.textObject.id, isEditing: false)
             return .handled
         }
         
@@ -1013,13 +1021,13 @@ class ProfessionalTextViewModel: ObservableObject {
         
         Log.info("📦 TEXT BOX INITIALIZATION: Frame = \(self.textBoxFrame)", category: .general)
         
-        // No longer using notifications - font panel updates via document.textObjects changes
+        // No longer using notifications - font panel updates via unified objects changes
     }
     
     // No longer using notifications - cleanup not needed
     
     private func syncFromVectorText() {
-        guard let currentTextObject = document.textObjects.first(where: { $0.id == textObject.id }) else { return }
+        guard let currentTextObject = document.allTextObjects.first(where: { $0.id == textObject.id }) else { return }
         
         // SELECTIVE BLOCKING: Only block content changes during auto-resize, allow other updates
         if isAutoResizing && currentTextObject.content == self.text {
@@ -1212,7 +1220,7 @@ class ProfessionalTextViewModel: ObservableObject {
         // Also update position if changed
         document.updateTextPositionInUnified(id: textObject.id, position: CGPoint(x: newFrame.origin.x, y: newFrame.origin.y))
         
-        if let textObj = document.textObjects.first(where: { $0.id == textObject.id }) {
+        if let textObj = document.findText(by: textObject.id) {
             Log.fileOperation("📋 UPDATED VECTORTEXT to match manual resize: bounds=\(textObj.bounds), position=\(textObj.position)", level: .info)
         }
         
@@ -1275,13 +1283,13 @@ class ProfessionalTextViewModel: ObservableObject {
             
             // CRITICAL FIX: Update VectorText bounds to match the actual text box size
             // This ensures the document knows the real size for operations like convert to paths
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-                document.updateTextBoundsInUnified(id: document.textObjects[textIndex].id, bounds: CGRect(
-                    x: 0, y: 0,
-                    width: textBoxFrame.width,  // ACTUAL WIDTH matches text box
-                    height: newHeight          // ACTUAL HEIGHT matches text box
-                ))
-                Log.fileOperation("📋 UPDATED VECTORTEXT BOUNDS to match text box: \(document.textObjects[textIndex].bounds)", level: .info)
+            document.updateTextBoundsInUnified(id: textObject.id, bounds: CGRect(
+                x: 0, y: 0,
+                width: textBoxFrame.width,  // ACTUAL WIDTH matches text box
+                height: newHeight          // ACTUAL HEIGHT matches text box
+            ))
+            if let textObj = document.findText(by: textObject.id) {
+                Log.fileOperation("📋 UPDATED VECTORTEXT BOUNDS to match text box: \(textObj.bounds)", level: .info)
             }
         } else {
             Log.info("⚡ AUTO-RESIZE: Height change too small (\(abs(textBoxFrame.height - newHeight))pt) - skipping", category: .general)
@@ -1360,16 +1368,16 @@ class ProfessionalTextViewModel: ObservableObject {
     
     public func updateDocumentTextBounds(_ frame: CGRect) {
         // Update the document VectorText position and bounds to match actual text canvas
-        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-            document.updateTextPositionInUnified(id: document.textObjects[textIndex].id, position: CGPoint(x: frame.minX, y: frame.minY))
-            document.updateTextBoundsInUnified(id: document.textObjects[textIndex].id, bounds: CGRect(
-                x: 0, y: 0, 
-                width: frame.width, 
-                height: frame.height
-            ))
-            // CRITICAL FIX: Update areaSize to match new dimensions for proper copy/paste
-            document.updateTextAreaSizeInUnified(id: document.textObjects[textIndex].id, areaSize: CGSize(width: frame.width, height: frame.height))
-            Log.fileOperation("📐 UPDATED VECTORTEXT BOUNDS: position=\(document.textObjects[textIndex].position), bounds=\(document.textObjects[textIndex].bounds), areaSize=\(document.textObjects[textIndex].areaSize?.debugDescription ?? "nil")", level: .info)
+        document.updateTextPositionInUnified(id: textObject.id, position: CGPoint(x: frame.minX, y: frame.minY))
+        document.updateTextBoundsInUnified(id: textObject.id, bounds: CGRect(
+            x: 0, y: 0, 
+            width: frame.width, 
+            height: frame.height
+        ))
+        // CRITICAL FIX: Update areaSize to match new dimensions for proper copy/paste
+        document.updateTextAreaSizeInUnified(id: textObject.id, areaSize: CGSize(width: frame.width, height: frame.height))
+        if let textObj = document.findText(by: textObject.id) {
+            Log.fileOperation("📐 UPDATED VECTORTEXT BOUNDS: position=\(textObj.position), bounds=\(textObj.bounds), areaSize=\(textObj.areaSize?.debugDescription ?? "nil")", level: .info)
         }
     }
     
@@ -1527,22 +1535,9 @@ class ProfessionalTextViewModel: ObservableObject {
         document.selectedShapeIDs = [outlineShape.id]
         document.selectedTextIDs.removeAll()
         
-        // Remove original text object
-        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-            let removedText = document.textObjects.remove(at: textIndex)
-            Log.info("🗑️ REMOVED ORIGINAL TEXT OBJECT: '\(removedText.content)' (ID: \(removedText.id.uuidString.prefix(8)))", category: .general)
-            
-            // CRITICAL: Also remove from unified objects system
-            document.unifiedObjects.removeAll { unifiedObject in
-                if case .shape(let shape) = unifiedObject.objectType, shape.isTextObject {
-                    return shape.id == textObject.id
-                }
-                return false
-            }
-            Log.info("🗑️ REMOVED FROM UNIFIED OBJECTS: Text object \(textObject.id.uuidString.prefix(8))", category: .general)
-        } else {
-            Log.error("❌ TEXT REMOVAL FAILED: Could not find text object with ID \(textObject.id.uuidString.prefix(8))", category: .error)
-        }
+        // Remove from unified system (which will also update textObjects array)
+        document.removeTextFromUnifiedSystem(id: textObject.id)
+        Log.info("🗑️ REMOVED TEXT OBJECT FROM UNIFIED: ID \(textObject.id.uuidString.prefix(8))", category: .general)
         
         // Force UI update
         document.objectWillChange.send()
@@ -1597,12 +1592,10 @@ class ProfessionalTextViewModel: ObservableObject {
     func handleTextBoxInteraction(textID: UUID, isDoubleClick: Bool = false, isCornerClick: Bool = false) {
         Log.fileOperation("🎯 TEXT BOX INTERACTION: textID=\(textID.uuidString.prefix(8)), doubleClick=\(isDoubleClick), cornerClick=\(isCornerClick)", level: .info)
         
-        guard let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else {
+        guard let textObject = document.findText(by: textID) else {
             Log.error("❌ TEXT NOT FOUND: ID \(textID)", category: .error)
             return
         }
-        
-        let textObject = document.textObjects[textIndex]
         let currentState = textObject.getState(in: document)
         
         Log.fileOperation("📊 CURRENT STATE: \(currentState.description)", level: .info)
@@ -1690,8 +1683,7 @@ class ProfessionalTextViewModel: ObservableObject {
         }
         
         // Find and start editing the target text
-        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-            let textObject = document.textObjects[textIndex]
+        if let textObject = document.findText(by: textID) {
             
             Log.info("✏️ STARTING EDIT MODE:", category: .general)
             Log.info("  - Text: '\(textObject.content)'", category: .general)
@@ -1711,7 +1703,7 @@ class ProfessionalTextViewModel: ObservableObject {
                 let cursorPosition = calculateCursorPosition(in: textObject, at: location)
                 
                 // CRITICAL: Update the VectorText's cursor position directly
-                document.updateTextCursorPositionInUnified(id: document.textObjects[textIndex].id, cursorPosition: cursorPosition)
+                document.updateTextCursorPositionInUnified(id: textObject.id, cursorPosition: cursorPosition)
                 
                 Log.info("🎯 CURSOR POSITIONING: Set cursor position \(cursorPosition) for click at (\(String(format: "%.1f", location.x)), \(String(format: "%.1f", location.y)))", category: .general)
                 Log.info("🎯 CURSOR POSITIONING: Updated VectorText.cursorPosition = \(cursorPosition)", category: .general)

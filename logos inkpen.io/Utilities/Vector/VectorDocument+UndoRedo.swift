@@ -56,7 +56,7 @@ extension VectorDocument {
         selectedShapeIDs = previousState.selectedShapeIDs
         selectedTextIDs = previousState.selectedTextIDs
         selectedObjectIDs = previousState.selectedObjectIDs
-        textObjects = previousState.textObjects
+        // Text is now stored in unified system
         unifiedObjects = previousState.unifiedObjects
         currentTool = previousState.currentTool
         zoomLevel = previousState.zoomLevel
@@ -152,7 +152,7 @@ extension VectorDocument {
         selectedShapeIDs = nextState.selectedShapeIDs
         selectedTextIDs = nextState.selectedTextIDs
         selectedObjectIDs = nextState.selectedObjectIDs
-        textObjects = nextState.textObjects
+        // Text is now stored in unified system
         unifiedObjects = nextState.unifiedObjects
         currentTool = nextState.currentTool
         zoomLevel = nextState.zoomLevel
@@ -364,17 +364,15 @@ extension VectorDocument {
         
         defer { isUndoRedoOperation = wasUndoRedoOperation }
         
-        // CRITICAL FIX: Preserve original shapes and text objects for proper restoration
+        // CRITICAL FIX: Preserve original shapes for proper restoration
         let originalShapes = layers.map { $0.shapes }
-        let originalTextObjects = textObjects
         
         // Clear existing shapes arrays to rebuild from unified objects
         for layerIndex in layers.indices {
             layers[layerIndex].shapes.removeAll()
         }
         
-        // Clear textObjects to rebuild from unified objects
-        textObjects.removeAll()
+        // Text is now fully managed in unified system
         
         // CRITICAL FIX: Rebuild legacy arrays from unified objects, maintaining order
         // Sort by orderID to ensure proper stacking order
@@ -384,39 +382,8 @@ extension VectorDocument {
             switch unifiedObject.objectType {
             case .shape(let shape):
                 if shape.isTextObject {
-                    // CRITICAL FIX: Restore text objects from the original array
-                    // The unified object has the shape representation, but we need the actual VectorText
-                    if let originalText = originalTextObjects.first(where: { $0.id == shape.id }) {
-                        // Restore the original text object with all its properties
-                        textObjects.append(originalText)
-                        Log.info("🔧 UNDO SYNC: Restored text object '\(originalText.content)' with ID \(originalText.id)", category: .general)
-                    } else {
-                        // If not found in original, create from shape data
-                        Log.warning("⚠️ UNDO SYNC: Text object \(shape.id) not found in original array, reconstructing from shape", category: .general)
-                        // Reconstruct VectorText from shape if needed
-                        if let textContent = shape.textContent,
-                           let typography = shape.typography {
-                            // Use stored textPosition if available, otherwise extract from transform
-                            let position = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
-                            var reconstructedText = VectorText(
-                                content: textContent,
-                                typography: typography,
-                                position: position,
-                                transform: .identity,  // Position is already in the position field, don't apply transform twice
-                                areaSize: shape.areaSize
-                            )
-                            // CRITICAL: Preserve the original ID from the shape
-                            reconstructedText.id = shape.id
-                            reconstructedText.layerIndex = unifiedObject.layerIndex
-                            reconstructedText.bounds = shape.bounds
-                            reconstructedText.isVisible = shape.isVisible
-                            reconstructedText.isLocked = shape.isLocked
-                            
-                            textObjects.append(reconstructedText)
-                            Log.info("🔧 UNDO SYNC: Reconstructed text object '\(textContent)' with ID \(shape.id) from shape", category: .general)
-                        }
-                    }
-                    // Also add to shapes array for unified system
+                    // Text objects are already rebuilt from unified via rebuildTextObjectsFromUnified()
+                    // Just add to shapes array for unified system
                     layers[unifiedObject.layerIndex].shapes.append(shape)
                 } else {
                     // Regular shape - restore from original or use from unified
@@ -429,6 +396,6 @@ extension VectorDocument {
             }
         }
         
-        Log.info("🔧 UNDO SYNC: Legacy arrays synced - \(textObjects.count) text objects, shapes in layers", category: .general)
+        Log.info("🔧 UNDO SYNC: Shapes synced to layers from unified system", category: .general)
     }
 }

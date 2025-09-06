@@ -31,26 +31,24 @@ struct UnifiedObjectSystemPasteBugTests {
         document.addTextToUnifiedSystem(originalText, layerIndex: 1)
         
         // Verify original areaSize
-        #expect(document.textObjects[0].areaSize == originalAreaSize)
+        #expect(document.allTextObjects[0].areaSize == originalAreaSize)
         
         // SIMULATE MANUAL RESIZE: User drags resize handle
         let newResizedFrame = CGRect(x: 50, y: 100, width: 500, height: 250)
         let newAreaSize = CGSize(width: 500, height: 250)
         
         // Simulate the resize operation that updateDocumentTextBounds handles
-        if let textIndex = document.getTextIndex(where: { $0.id == originalText.id }) {
-            document.textObjects[textIndex].position = CGPoint(x: newResizedFrame.minX, y: newResizedFrame.minY)
-            document.textObjects[textIndex].bounds = CGRect(
-                x: 0, y: 0, 
-                width: newResizedFrame.width, 
-                height: newResizedFrame.height
-            )
-            // CRITICAL: This line prevents the paste bug
-            document.textObjects[textIndex].areaSize = CGSize(width: newResizedFrame.width, height: newResizedFrame.height)
-        }
+        document.updateTextPositionInUnified(id: originalText.id, position: CGPoint(x: newResizedFrame.minX, y: newResizedFrame.minY))
+        document.updateTextBoundsInUnified(id: originalText.id, bounds: CGRect(
+            x: 0, y: 0, 
+            width: newResizedFrame.width, 
+            height: newResizedFrame.height
+        ))
+        // CRITICAL: This line prevents the paste bug
+        document.updateTextAreaSizeInUnified(id: originalText.id, areaSize: CGSize(width: newResizedFrame.width, height: newResizedFrame.height))
         
         // Verify areaSize was updated after resize
-        let resizedText = document.textObjects.first { $0.id == originalText.id }
+        let resizedText = document.allTextObjects.first { $0.id == originalText.id }
         #expect(resizedText?.areaSize == newAreaSize, "REGRESSION: areaSize not updated after resize - will cause paste bug!")
         
         // Select the resized text
@@ -58,7 +56,7 @@ struct UnifiedObjectSystemPasteBugTests {
         
         // SIMULATE COPY/PASTE without using real clipboard (to avoid test crashes)
         // Manually create a copy of the text with new ID to simulate paste behavior
-        let originalResizedText = document.textObjects.first { $0.id == originalText.id }!
+        let originalResizedText = document.allTextObjects.first { $0.id == originalText.id }!
         var pastedText = originalResizedText
         pastedText.id = UUID() // New ID for pasted text
         

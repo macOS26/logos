@@ -37,14 +37,14 @@ struct TextToOutlineUndoTests {
         let textID = originalText.id
         
         // Verify text was added
-        #expect(document.textObjects.count == 1, "Should have one text object")
-        #expect(document.textObjects[0].content == originalContent, "Text content should match")
+        #expect(document.allTextObjects.count == 1, "Should have one text object")
+        #expect(document.allTextObjects[0].content == originalContent, "Text content should match")
         
         // Convert text to outlines
         document.convertTextToOutlines(textID)
         
         // Verify text was removed and shape was added
-        #expect(document.textObjects.isEmpty, "Text objects should be empty after conversion")
+        #expect(document.allTextObjects.isEmpty, "Text objects should be empty after conversion")
         let shapesInLayer = document.layers[2].shapes
         #expect(!shapesInLayer.isEmpty, "Should have shape in layer after conversion")
         
@@ -56,9 +56,9 @@ struct TextToOutlineUndoTests {
         document.undo()
         
         // CRITICAL: Verify text is properly restored
-        #expect(document.textObjects.count == 1, "Should have restored text object after undo")
+        #expect(document.allTextObjects.count == 1, "Should have restored text object after undo")
         
-        if let restoredText = document.textObjects.first {
+        if let restoredText = document.allTextObjects.first {
             // Verify ALL properties are restored correctly
             #expect(restoredText.id == textID, "Text ID should be preserved")
             #expect(restoredText.content == originalContent, "Original content should be restored, not default 'Text'")
@@ -107,7 +107,7 @@ struct TextToOutlineUndoTests {
             document.convertTextToOutlines(textID)
         }
         
-        #expect(document.textObjects.isEmpty, "All text should be converted to outlines")
+        #expect(document.allTextObjects.isEmpty, "All text should be converted to outlines")
         
         // Undo all conversions
         for _ in textIDs {
@@ -115,10 +115,10 @@ struct TextToOutlineUndoTests {
         }
         
         // Verify all text objects are restored with correct content
-        #expect(document.textObjects.count == texts.count, "All text objects should be restored")
+        #expect(document.allTextObjects.count == texts.count, "All text objects should be restored")
         
         for (index, (expectedContent, _)) in texts.enumerated() {
-            let restoredText = document.textObjects.first { $0.id == textIDs[index] }
+            let restoredText = document.allTextObjects.first { $0.id == textIDs[index] }
             #expect(restoredText != nil, "Text \(index) should be restored")
             #expect(restoredText?.content == expectedContent, "Text \(index) content should be '\(expectedContent)', not default 'Text'")
         }
@@ -128,7 +128,7 @@ struct TextToOutlineUndoTests {
             document.redo()
         }
         
-        #expect(document.textObjects.isEmpty, "All text should be converted back to outlines")
+        #expect(document.allTextObjects.isEmpty, "All text should be converted back to outlines")
         
         // Undo again to verify consistency
         for _ in textIDs {
@@ -136,7 +136,7 @@ struct TextToOutlineUndoTests {
         }
         
         for (index, (expectedContent, _)) in texts.enumerated() {
-            let restoredText = document.textObjects.first { $0.id == textIDs[index] }
+            let restoredText = document.allTextObjects.first { $0.id == textIDs[index] }
             #expect(restoredText?.content == expectedContent, "Text \(index) content should still be '\(expectedContent)' after second undo")
         }
     }
@@ -162,8 +162,8 @@ struct TextToOutlineUndoTests {
         document.convertTextToOutlines(textID)
         
         // Empty text should not be converted
-        #expect(document.textObjects.count == 1, "Empty text should not be converted")
-        #expect(document.textObjects[0].content == "", "Content should still be empty")
+        #expect(document.allTextObjects.count == 1, "Empty text should not be converted")
+        #expect(document.allTextObjects[0].content == "", "Content should still be empty")
     }
     
     @Test func testUndoPreservesTypographyProperties() async throws {
@@ -204,7 +204,7 @@ struct TextToOutlineUndoTests {
         document.undo()
         
         // Verify typography is fully restored
-        if let restoredText = document.textObjects.first {
+        if let restoredText = document.allTextObjects.first {
             let restoredTypo = restoredText.typography
             #expect(restoredTypo.fontFamily == customTypography.fontFamily, "Font family should be preserved")
             #expect(restoredTypo.fontWeight == customTypography.fontWeight, "Font weight should be preserved")
@@ -253,7 +253,7 @@ struct TextToOutlineUndoTests {
         document.addTextToUnifiedSystem(text3, layerIndex: 2)
         
         // Now we should have: 1 outline shape, 2 text objects (text2 and text3)
-        #expect(document.textObjects.count == 2, "Should have 2 text objects")
+        #expect(document.allTextObjects.count == 2, "Should have 2 text objects")
         
         // Undo adding text3
         document.undo()
@@ -261,26 +261,26 @@ struct TextToOutlineUndoTests {
         // After undoing text3, we have text2 and the outline from text1
         // But the undo system reconstructs both text1 and text2 from shapes
         // This is actually correct behavior - the undo restores the complete state
-        let hasText2 = document.textObjects.contains { $0.content == "Operation2" }
+        let hasText2 = document.allTextObjects.contains { $0.content == "Operation2" }
         #expect(hasText2, "Should have text2 after undo")
         
         // Undo converting text1 to outlines
         document.undo()
         
         // Verify the correct texts are present
-        let hasText1 = document.textObjects.contains { $0.content == "Operation1" }
-        let hasText2Again = document.textObjects.contains { $0.content == "Operation2" }
+        let hasText1 = document.allTextObjects.contains { $0.content == "Operation1" }
+        let hasText2Again = document.allTextObjects.contains { $0.content == "Operation2" }
         
         #expect(hasText1, "Text1 should be restored with correct content")
         #expect(hasText2Again, "Text2 should remain with correct content")
         
         // Redo operations
         document.redo() // Convert text1 to outlines
-        let hasText2AfterRedo = document.textObjects.contains { $0.content == "Operation2" }
+        let hasText2AfterRedo = document.allTextObjects.contains { $0.content == "Operation2" }
         #expect(hasText2AfterRedo, "Should have text2 after redo")
         
         document.redo() // Add text3
-        let hasText3 = document.textObjects.contains { $0.content == "Operation3" }
+        let hasText3 = document.allTextObjects.contains { $0.content == "Operation3" }
         #expect(hasText3, "Should have text3 after second redo")
     }
     
@@ -320,15 +320,15 @@ struct TextToOutlineUndoTests {
         document.convertTextToOutlines(textID)
         
         // Verify conversion worked
-        #expect(document.textObjects.isEmpty, "Text should be converted to outline")
+        #expect(document.allTextObjects.isEmpty, "Text should be converted to outline")
         
         // Undo to force reconstruction
         document.undo()
         
         // The text should be reconstructed from the shape data
-        #expect(!document.textObjects.isEmpty, "Text objects should not be empty after undo")
+        #expect(!document.allTextObjects.isEmpty, "Text objects should not be empty after undo")
         
-        if let reconstructed = document.textObjects.first {
+        if let reconstructed = document.allTextObjects.first {
             #expect(reconstructed.id == textID, "ID should be preserved during reconstruction")
             #expect(reconstructed.content == "ComplexTextObject", "Content should be preserved")
             #expect(reconstructed.position == complexText.position, "Position should be preserved")

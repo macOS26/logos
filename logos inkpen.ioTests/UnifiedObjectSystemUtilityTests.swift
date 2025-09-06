@@ -123,7 +123,7 @@ struct UnifiedObjectSystemUtilityTests {
         document.addTextToUnifiedSystem(testText, layerIndex: 1)
         
         // Verify initial layer
-        #expect(document.textObjects.first?.layerIndex == 1)
+        #expect(document.allTextObjects.first?.layerIndex == 1)
         let initialUnified = document.unifiedObjects.first { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.isTextObject && shape.id == testText.id

@@ -103,10 +103,7 @@ extension VectorDocument {
         for objectToDelete in protectedObjects {
             switch objectToDelete.objectType {
             case .shape(let shape):
-                if shape.isTextObject {
-                    // Remove from textObjects array for text objects
-                    textObjects.removeAll { $0.id == shape.id }
-                } else {
+                if !shape.isTextObject {
                     // Remove from layers array for regular shapes
                     if let layerIndex = objectToDelete.layerIndex < layers.count ? objectToDelete.layerIndex : nil {
                         layers[layerIndex].shapes.removeAll { $0.id == shape.id }

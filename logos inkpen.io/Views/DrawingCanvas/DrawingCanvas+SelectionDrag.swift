@@ -40,8 +40,8 @@ extension DrawingCanvas {
                 Log.error("🚨 DRAG DEBUG: Processing shape id=\(shape.id), isTextObject=\(shape.isTextObject)", category: .debug)
                 
                 if shape.isTextObject {
-                    // CRITICAL FIX: For text objects, use actual position from textObjects array + center offset
-                    if let textObject = document.textObjects.first(where: { $0.id == shape.id }) {
+                    // CRITICAL FIX: For text objects, use actual position from unified system + center offset
+                    if let textObject = document.findText(by: shape.id) {
                         Log.error("🚨 DRAG DEBUG: Found textObject position=\(textObject.position), bounds=\(textObject.bounds)", category: .debug)
                         let centerX = textObject.position.x + textObject.bounds.width/2  
                         let centerY = textObject.position.y + textObject.bounds.height/2
@@ -170,20 +170,20 @@ extension DrawingCanvas {
                         }
                     }
                     
-                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == unifiedObject.id }),
+                    if let textObj = document.allTextObjects.first(where: { $0.id == unifiedObject.id }),
                        let initialCenter = initialObjectPositions[unifiedObject.id] {
                         // CRITICAL FIX: Use absolute positioning from initial reference, not delta accumulation
                         // Convert from center-based reference to position-based coordinates
-                        let textBounds = document.textObjects[textIndex].bounds
+                        let textBounds = textObj.bounds
                         let newPositionX = initialCenter.x - textBounds.width/2 + currentDragDelta.x
                         let newPositionY = initialCenter.y - textBounds.height/2 + currentDragDelta.y
                         
                         Log.error("🚨 FINISH DRAG: textID=\(unifiedObject.id)", category: .debug)
-                        Log.error("🚨 FINISH DRAG: OLD position=\(document.textObjects[textIndex].position)", category: .debug)
+                        Log.error("🚨 FINISH DRAG: OLD position=\(textObj.position)", category: .debug)
                         Log.error("🚨 FINISH DRAG: NEW position=(\(newPositionX), \(newPositionY))", category: .debug)
                         Log.error("🚨 FINISH DRAG: initialCenter=\(initialCenter), dragDelta=\(currentDragDelta)", category: .debug)
                         
-                        let delta = CGPoint(x: newPositionX - document.textObjects[textIndex].position.x, y: newPositionY - document.textObjects[textIndex].position.y)
+                        let delta = CGPoint(x: newPositionX - textObj.position.x, y: newPositionY - textObj.position.y)
                         document.translateTextInUnified(id: unifiedObject.id, delta: delta)
                         
                         Log.error("🚨 FINISH DRAG: Updated textObject position to (\(newPositionX), \(newPositionY))", category: .debug)
@@ -523,9 +523,8 @@ extension DrawingCanvas {
             case .shape(let oldShape):
                 // CRITICAL FIX: Handle text objects - sync unified objects FROM textObjects (after drag)
                 if oldShape.isTextObject {
-                    Log.error("🚨 SYNC DEBUG: Text object - syncing unified objects FROM textObjects (CORRECTED)", category: .debug)
-                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == oldShape.id }) {
-                        let updatedText = document.textObjects[textIndex]
+                    Log.error("🚨 SYNC DEBUG: Text object - syncing unified objects FROM allTextObjects (CORRECTED)", category: .debug)
+                    if let updatedText = document.allTextObjects.first(where: { $0.id == oldShape.id }) {
                         Log.error("🚨 SYNC DEBUG: Updating unified object position to (\(updatedText.position.x), \(updatedText.position.y))", category: .debug)
                         
                         // CRITICAL FIX: Update unified object FROM textObjects array (textObjects has new position)

@@ -565,6 +565,9 @@ struct VectorText: Identifiable, Codable, Hashable {
         vectorText.isLocked = vectorShape.isLocked
         vectorText.isVisible = vectorShape.isVisible
         
+        // CRITICAL FIX: Preserve editing state from the shape
+        vectorText.isEditing = vectorShape.isEditing ?? false
+        
         return vectorText
     }
 }
