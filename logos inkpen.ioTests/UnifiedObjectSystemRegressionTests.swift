@@ -36,31 +36,13 @@ struct UnifiedObjectSystemRegressionTests {
         document.addTextToUnifiedSystem(textObject, layerIndex: 1)
         document.selectedObjectIDs.insert(textObject.id)
         
-        // Simulate drag operation - update position in textObjects array
+        // Simulate drag operation - update position using unified system method
         let newPosition = CGPoint(x: 300, y: 400)
-        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-            document.textObjects[textIndex].position = newPosition
-        }
-        
-        // Simulate what happens after drag - sync unified objects from textObjects
-        if let objectIndex = document.unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject && shape.id == textObject.id
-            }
-            return false
-        }) {
-            if let updatedText = document.textObjects.first(where: { $0.id == textObject.id }) {
-                let updatedShape = VectorShape.from(updatedText)
-                document.unifiedObjects[objectIndex] = VectorObject(
-                    shape: updatedShape,
-                    layerIndex: document.unifiedObjects[objectIndex].layerIndex,
-                    orderID: document.unifiedObjects[objectIndex].orderID
-                )
-            }
-        }
+        let delta = CGPoint(x: newPosition.x - textObject.position.x, y: newPosition.y - textObject.position.y)
+        document.translateTextInUnified(id: textObject.id, delta: delta)
         
         // CRITICAL TEST: Position must persist after sync
-        let finalText = document.textObjects.first { $0.id == textObject.id }
+        let finalText = document.allTextObjects.first { $0.id == textObject.id }
         #expect(finalText?.position.x == newPosition.x)
         #expect(finalText?.position.y == newPosition.y)
         
@@ -105,7 +87,7 @@ struct UnifiedObjectSystemRegressionTests {
         document.updateTextFillColorInUnified(id: textObject.id, color: newFillColor)
         
         // CRITICAL TEST: Position must be preserved after color update
-        let updatedText = document.textObjects.first { $0.id == textObject.id }
+        let updatedText = document.allTextObjects.first { $0.id == textObject.id }
         #expect(updatedText?.position.x == initialPosition.x)
         #expect(updatedText?.position.y == initialPosition.y)
         #expect(updatedText?.typography.fillColor == newFillColor)
@@ -115,7 +97,7 @@ struct UnifiedObjectSystemRegressionTests {
         document.updateTextStrokeColorInUnified(id: textObject.id, color: newStrokeColor)
         
         // CRITICAL TEST: Position must still be preserved after stroke color update
-        let finalText = document.textObjects.first { $0.id == textObject.id }
+        let finalText = document.allTextObjects.first { $0.id == textObject.id }
         #expect(finalText?.position.x == initialPosition.x)
         #expect(finalText?.position.y == initialPosition.y)
         #expect(finalText?.typography.strokeColor == newStrokeColor)
@@ -145,9 +127,9 @@ struct UnifiedObjectSystemRegressionTests {
         
         // Move text object in textObjects array (simulating drag)
         let draggedPosition = CGPoint(x: 200, y: 300)
-        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-            document.textObjects[textIndex].position = draggedPosition
-        }
+        // Update position using unified system
+        let dragDelta = CGPoint(x: draggedPosition.x - textObject.position.x, y: draggedPosition.y - textObject.position.y)
+        document.translateTextInUnified(id: textObject.id, delta: dragDelta)
         
         // Get initial unified object position (should be old position)
         var unifiedPosition: CGPoint?
@@ -162,10 +144,10 @@ struct UnifiedObjectSystemRegressionTests {
             }
         }
         
-        // BEFORE sync: unified object should have old position, textObject should have new position
-        #expect(unifiedPosition?.x == initialPosition.x)
-        #expect(unifiedPosition?.y == initialPosition.y)
-        let textBeforeSync = document.textObjects.first { $0.id == textObject.id }
+        // AFTER translate: both unified object and textObject should have new position
+        #expect(unifiedPosition?.x == draggedPosition.x)
+        #expect(unifiedPosition?.y == draggedPosition.y)
+        let textBeforeSync = document.allTextObjects.first { $0.id == textObject.id }
         #expect(textBeforeSync?.position.x == draggedPosition.x)
         #expect(textBeforeSync?.position.y == draggedPosition.y)
         
@@ -176,7 +158,7 @@ struct UnifiedObjectSystemRegressionTests {
             }
             return false
         }) {
-            if let updatedText = document.textObjects.first(where: { $0.id == textObject.id }) {
+            if let updatedText = document.allTextObjects.first(where: { $0.id == textObject.id }) {
                 let updatedShape = VectorShape.from(updatedText)
                 document.unifiedObjects[objectIndex] = VectorObject(
                     shape: updatedShape,
@@ -187,7 +169,7 @@ struct UnifiedObjectSystemRegressionTests {
         }
         
         // AFTER sync: both should have new position
-        let finalText = document.textObjects.first { $0.id == textObject.id }
+        let finalText = document.allTextObjects.first { $0.id == textObject.id }
         #expect(finalText?.position.x == draggedPosition.x)
         #expect(finalText?.position.y == draggedPosition.y)
         
@@ -235,8 +217,10 @@ struct UnifiedObjectSystemRegressionTests {
         // Simulate multiple drag operations
         for newPosition in positions {
             // Update position in textObjects (drag operation)
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-                document.textObjects[textIndex].position = newPosition
+            // Update position using unified system
+            if let currentText = document.allTextObjects.first(where: { $0.id == textObject.id }) {
+                let dragDelta = CGPoint(x: newPosition.x - currentText.position.x, y: newPosition.y - currentText.position.y)
+                document.translateTextInUnified(id: textObject.id, delta: dragDelta)
             }
             
             // Sync unified object FROM textObjects (correct direction)
@@ -246,7 +230,7 @@ struct UnifiedObjectSystemRegressionTests {
                 }
                 return false
             }) {
-                if let updatedText = document.textObjects.first(where: { $0.id == textObject.id }) {
+                if let updatedText = document.allTextObjects.first(where: { $0.id == textObject.id }) {
                     let updatedShape = VectorShape.from(updatedText)
                     document.unifiedObjects[objectIndex] = VectorObject(
                         shape: updatedShape,
@@ -257,14 +241,14 @@ struct UnifiedObjectSystemRegressionTests {
             }
             
             // CRITICAL TEST: Position must persist after each operation
-            let currentText = document.textObjects.first { $0.id == textObject.id }
+            let currentText = document.allTextObjects.first { $0.id == textObject.id }
             #expect(currentText?.position.x == newPosition.x)
             #expect(currentText?.position.y == newPosition.y)
         }
         
         // Final position should be the last drag position
         let finalPosition = positions.last!
-        let finalText = document.textObjects.first { $0.id == textObject.id }
+        let finalText = document.allTextObjects.first { $0.id == textObject.id }
         #expect(finalText?.position.x == finalPosition.x)
         #expect(finalText?.position.y == finalPosition.y)
     }

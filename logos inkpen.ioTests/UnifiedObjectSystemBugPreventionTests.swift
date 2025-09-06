@@ -46,7 +46,7 @@ struct UnifiedObjectSystemBugPreventionTests {
         #expect(textAfterDrag?.position.x == draggedPosition.x)
         #expect(textAfterDrag?.position.y == draggedPosition.y)
         
-        // Verify unified object still has OLD position (this is expected before sync)
+        // Verify unified object has NEW position (updateTextPositionInUnified updates both)
         var unifiedBeforeSync: CGPoint?
         if let unifiedObj = document.unifiedObjects.first(where: { obj in
             if case .shape(let shape) = obj.objectType {
@@ -58,8 +58,8 @@ struct UnifiedObjectSystemBugPreventionTests {
                 unifiedBeforeSync = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
             }
         }
-        #expect(unifiedBeforeSync?.x == initialPosition.x)
-        #expect(unifiedBeforeSync?.y == initialPosition.y)
+        #expect(unifiedBeforeSync?.x == draggedPosition.x)
+        #expect(unifiedBeforeSync?.y == draggedPosition.y)
         
         // 2. Now syncUnifiedObjectsAfterMovement() is called (like in the real drag code)
         // This MUST sync unified objects FROM textObjects (not the other way around!)

@@ -170,9 +170,19 @@ struct UnifiedObjectSystemTextUpdateTests {
         let newBounds = CGRect(x: 0, y: 0, width: 200, height: 50)
         document.updateTextBoundsInUnified(id: testText.id, bounds: newBounds)
         
-        // Verify legacy array updated
-        let updatedText = document.allTextObjects.first { $0.id == testText.id }
-        #expect(updatedText?.bounds == newBounds, "Legacy textObjects bounds not updated")
+        // Verify bounds updated in unified system
+        let unifiedObject = document.unifiedObjects.first { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject && shape.id == testText.id
+            }
+            return false
+        }
+        
+        if case .shape(let shape) = unifiedObject?.objectType {
+            #expect(shape.bounds == newBounds, "Unified system bounds not updated")
+        } else {
+            Issue.record("Text object not found in unified system")
+        }
         
         // Verify unified system knows about the text
         let unifiedExists = document.unifiedObjects.contains { obj in

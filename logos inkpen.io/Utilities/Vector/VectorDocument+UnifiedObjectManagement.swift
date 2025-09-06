@@ -887,11 +887,28 @@ extension VectorDocument {
                 shape.transform.tx += delta.x
                 shape.transform.ty += delta.y
                 
+                // Also update textPosition if it exists
+                if let textPos = shape.textPosition {
+                    shape.textPosition = CGPoint(x: textPos.x + delta.x, y: textPos.y + delta.y)
+                }
+                
                 unifiedObjects[objectIndex] = VectorObject(
                     shape: shape,
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                     orderID: unifiedObjects[objectIndex].orderID
                 )
+                
+                // Update in layers
+                for layerIdx in layers.indices {
+                    if let shapeIdx = layers[layerIdx].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                        layers[layerIdx].shapes[shapeIdx].transform.tx += delta.x
+                        layers[layerIdx].shapes[shapeIdx].transform.ty += delta.y
+                        if let textPos = layers[layerIdx].shapes[shapeIdx].textPosition {
+                            layers[layerIdx].shapes[shapeIdx].textPosition = CGPoint(x: textPos.x + delta.x, y: textPos.y + delta.y)
+                        }
+                        break
+                    }
+                }
             }
         }
     }
@@ -1006,14 +1023,30 @@ extension VectorDocument {
     }
     
     func updateTextCursorPositionInUnified(id: UUID, cursorPosition: Int) {
-        // Check if text exists in unified system
-        if unifiedObjects.contains(where: { obj in
+        // Update cursor position in unified system
+        if let unifiedIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.isTextObject && shape.id == id
             }
             return false
         }) {
-            // Cursor position is now stored in unified system
+            // Update in unified objects
+            if case .shape(var shape) = unifiedObjects[unifiedIndex].objectType {
+                shape.cursorPosition = cursorPosition
+                unifiedObjects[unifiedIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[unifiedIndex].layerIndex,
+                    orderID: unifiedObjects[unifiedIndex].orderID
+                )
+                
+                // Update in layers
+                for layerIdx in layers.indices {
+                    if let shapeIdx = layers[layerIdx].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                        layers[layerIdx].shapes[shapeIdx].cursorPosition = cursorPosition
+                        break
+                    }
+                }
+            }
         }
     }
     
@@ -1028,6 +1061,7 @@ extension VectorDocument {
             // Update in unified objects
             if case .shape(var shape) = unifiedObjects[unifiedIndex].objectType {
                 shape.transform = CGAffineTransform(translationX: position.x, y: position.y)
+                shape.textPosition = position  // Update textPosition for proper reconstruction
                 unifiedObjects[unifiedIndex] = VectorObject(
                     shape: shape,
                     layerIndex: unifiedObjects[unifiedIndex].layerIndex,
@@ -1038,6 +1072,7 @@ extension VectorDocument {
                 for layerIdx in layers.indices {
                     if let shapeIdx = layers[layerIdx].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
                         layers[layerIdx].shapes[shapeIdx].transform = CGAffineTransform(translationX: position.x, y: position.y)
+                        layers[layerIdx].shapes[shapeIdx].textPosition = position
                         break
                     }
                 }

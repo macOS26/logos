@@ -179,11 +179,7 @@ struct UnifiedObjectSystemSelectionColorTests {
                         orderID: document.unifiedObjects[objectIndex].orderID
                     )
                     
-                    // Keep legacy textObjects array in sync
-                    if let legacyIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }),
-                       let vectorText = VectorText.from(shape) {
-                        document.textObjects[legacyIndex] = vectorText
-                    }
+                    // Legacy textObjects array no longer exists - unified system handles everything
                 }
             }
         }

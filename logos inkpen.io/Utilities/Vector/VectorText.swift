@@ -551,10 +551,12 @@ struct VectorText: Identifiable, Codable, Hashable {
         
         // Extract VectorText data from VectorShape
         // This is a reverse conversion from VectorShape.from(_:VectorText)
+        // Use textPosition if available (preserved from original text), otherwise use transform
+        let position = vectorShape.textPosition ?? CGPoint(x: vectorShape.transform.tx, y: vectorShape.transform.ty)
         var vectorText = VectorText(
             content: vectorShape.textContent ?? "", // Use the actual text content
             typography: typography,
-            position: CGPoint(x: vectorShape.transform.tx, y: vectorShape.transform.ty),
+            position: position,
             areaSize: vectorShape.areaSize
         )
         
@@ -567,6 +569,9 @@ struct VectorText: Identifiable, Codable, Hashable {
         
         // CRITICAL FIX: Preserve editing state from the shape
         vectorText.isEditing = vectorShape.isEditing ?? false
+        
+        // CRITICAL FIX: Preserve cursor position from the shape
+        vectorText.cursorPosition = vectorShape.cursorPosition ?? 0
         
         return vectorText
     }

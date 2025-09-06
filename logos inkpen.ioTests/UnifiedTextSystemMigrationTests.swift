@@ -40,10 +40,10 @@ struct UnifiedTextSystemMigrationTests {
             Issue.record("Last object is not a shape")
         }
         
-        // Verify legacy array is synchronized
-        #expect(document.textObjects.count == 1, "Legacy textObjects should have 1 text")
-        #expect(document.textObjects[0].id == text.id, "Legacy text should have same ID")
-        #expect(document.textObjects[0].content == "Unified Text", "Legacy text should have same content")
+        // Verify text is accessible through allTextObjects computed property
+        #expect(document.allTextObjects.count == 1, "Should have 1 text object")
+        #expect(document.allTextObjects[0].id == text.id, "Text should have same ID")
+        #expect(document.allTextObjects[0].content == "Unified Text", "Text should have same content")
     }
     
     @Test func testTextUpdateUsesUnifiedSystem() async throws {
@@ -67,8 +67,8 @@ struct UnifiedTextSystemMigrationTests {
             Issue.record("Last object is not a shape with text")
         }
         
-        // Verify legacy array is synchronized
-        #expect(document.textObjects[0].content == "Updated", "Legacy text should be updated")
+        // Verify text is updated in unified system
+        #expect(document.allTextObjects[0].content == "Updated", "Text should be updated")
     }
     
     @Test func testTextColorChangeUsesUnifiedSystem() async throws {
@@ -94,8 +94,8 @@ struct UnifiedTextSystemMigrationTests {
             #expect(shape.typography?.fillColor == newColor, "Unified object should have new color")
         }
         
-        // Verify legacy array is synchronized
-        #expect(document.textObjects[0].typography.fillColor == newColor, "Legacy text should have new color")
+        // Verify color is updated in unified system
+        #expect(document.allTextObjects[0].typography.fillColor == newColor, "Text should have new color")
     }
     
     @Test func testTextDeletionUsesUnifiedSystem() async throws {
@@ -108,11 +108,12 @@ struct UnifiedTextSystemMigrationTests {
         document.addTextToUnifiedSystem(text2, layerIndex: 2)
         
         #expect(document.unifiedObjects.count == 4, "Should have 4 objects (2 backgrounds + 2 texts)")
-        #expect(document.textObjects.count == 2, "Should have 2 legacy texts")
+        #expect(document.allTextObjects.count == 2, "Should have 2 text objects")
         
         // Delete first text through unified system
         document.unifiedObjects.removeAll { $0.id == text1.id }
-        document.textObjects.removeAll { $0.id == text1.id }
+        // Remove text using unified system
+        document.removeTextFromUnifiedSystem(id: text1.id)
         
         // Verify unified system
         #expect(document.unifiedObjects.count == 3, "Should have 3 objects after deletion")
@@ -126,8 +127,8 @@ struct UnifiedTextSystemMigrationTests {
         #expect(remainingTextIds.contains(text2.id), "Text2 should remain in unified")
         
         // Verify legacy array is synchronized
-        #expect(document.textObjects.count == 1, "Should have 1 legacy text")
-        #expect(document.textObjects[0].id == text2.id, "Remaining text should be text2")
+        #expect(document.allTextObjects.count == 1, "Should have 1 text object")
+        #expect(document.allTextObjects[0].id == text2.id, "Remaining text should be text2")
     }
     
     @Test func testTextVisibilityToggleUsesUnifiedSystem() async throws {
@@ -150,7 +151,7 @@ struct UnifiedTextSystemMigrationTests {
         }
         
         // Verify legacy array
-        #expect(document.textObjects[0].isVisible == false, "Legacy text should be hidden")
+        #expect(document.allTextObjects[0].isVisible == false, "Text should be hidden")
         
         // Show text through unified system
         document.showTextInUnified(id: text.id)
@@ -159,7 +160,7 @@ struct UnifiedTextSystemMigrationTests {
         if case .shape(let shape) = document.unifiedObjects.last?.objectType {
             #expect(shape.isVisible == true, "Unified object should be visible")
         }
-        #expect(document.textObjects[0].isVisible == true, "Legacy text should be visible")
+        #expect(document.allTextObjects[0].isVisible == true, "Text should be visible")
     }
     
     @Test func testTextLockToggleUsesUnifiedSystem() async throws {
@@ -182,7 +183,7 @@ struct UnifiedTextSystemMigrationTests {
         }
         
         // Verify legacy array
-        #expect(document.textObjects[0].isLocked == true, "Legacy text should be locked")
+        #expect(document.allTextObjects[0].isLocked == true, "Text should be locked")
         
         // Unlock text through unified system
         document.unlockTextInUnified(id: text.id)
@@ -191,7 +192,7 @@ struct UnifiedTextSystemMigrationTests {
         if case .shape(let shape) = document.unifiedObjects.last?.objectType {
             #expect(shape.isLocked == false, "Unified object should be unlocked")
         }
-        #expect(document.textObjects[0].isLocked == false, "Legacy text should be unlocked")
+        #expect(document.allTextObjects[0].isLocked == false, "Text should be unlocked")
     }
     
     @Test func testTextOpacityChangeUsesUnifiedSystem() async throws {
@@ -214,7 +215,7 @@ struct UnifiedTextSystemMigrationTests {
         }
         
         // Verify legacy array
-        #expect(document.textObjects[0].typography.fillOpacity == 0.5, "Legacy text should have new opacity")
+        #expect(document.allTextObjects[0].typography.fillOpacity == 0.5, "Text should have new opacity")
     }
     
     @Test func testTextStrokeChangeUsesUnifiedSystem() async throws {
@@ -239,8 +240,8 @@ struct UnifiedTextSystemMigrationTests {
         }
         
         // Verify legacy array
-        #expect(document.textObjects[0].typography.hasStroke == true, "Legacy text should have stroke")
-        #expect(document.textObjects[0].typography.strokeColor == strokeColor, "Legacy text should have stroke color")
+        #expect(document.allTextObjects[0].typography.hasStroke == true, "Text should have stroke")
+        #expect(document.allTextObjects[0].typography.strokeColor == strokeColor, "Text should have stroke color")
     }
     
     @Test func testBulkTextOperationsUseUnifiedSystem() async throws {
@@ -258,7 +259,7 @@ struct UnifiedTextSystemMigrationTests {
         texts.forEach { document.addTextToUnifiedSystem($0, layerIndex: 2) }
         
         #expect(document.unifiedObjects.count == 7, "Should have 7 objects (2 backgrounds + 5 texts)")
-        #expect(document.textObjects.count == 5, "Should have 5 legacy texts")
+        #expect(document.allTextObjects.count == 5, "Should have 5 text objects")
         
         // Select all texts
         let textIds = texts.map { $0.id }
@@ -268,13 +269,16 @@ struct UnifiedTextSystemMigrationTests {
         textIds.forEach { id in
             document.unifiedObjects.removeAll { $0.id == id }
         }
-        document.textObjects.removeAll()
+        // Remove all text objects from unified system
+        for text in document.allTextObjects {
+            document.removeTextFromUnifiedSystem(id: text.id)
+        }
         
         // Verify unified system
         #expect(document.unifiedObjects.count == 2, "Should only have 2 background objects")
         
         // Verify legacy array
-        #expect(document.textObjects.isEmpty, "Legacy texts should be empty")
+        #expect(document.allTextObjects.isEmpty, "Text objects should be empty")
     }
     
     @Test func testTextLayerChangeUsesUnifiedSystem() async throws {

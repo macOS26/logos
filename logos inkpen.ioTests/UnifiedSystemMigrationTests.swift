@@ -72,7 +72,7 @@ struct UnifiedSystemMigrationTests {
         doc.selectedObjectIDs.removeAll()
         doc.syncSelectionArrays()
         
-        let textID = doc.textObjects[0].id
+        let textID = doc.allTextObjects[0].id
         doc.selectedObjectIDs.insert(textID)
         doc.syncSelectionArrays()
         
@@ -96,7 +96,7 @@ struct UnifiedSystemMigrationTests {
         #expect(doc.selectedTextIDs.count == 0)
         
         // Add text to selection
-        doc.selectedObjectIDs.insert(doc.textObjects[0].id)
+        doc.selectedObjectIDs.insert(doc.allTextObjects[0].id)
         doc.syncSelectionArrays()
         
         #expect(doc.selectedObjectIDs.count == 3)
@@ -135,7 +135,7 @@ struct UnifiedSystemMigrationTests {
         for shape in doc.layers[2].shapes {
             doc.selectedObjectIDs.insert(shape.id)
         }
-        doc.selectedObjectIDs.insert(doc.textObjects[0].id)
+        doc.selectedObjectIDs.insert(doc.allTextObjects[0].id)
         doc.syncSelectionArrays()
         
         #expect(doc.selectedObjectIDs.count == 3)
@@ -199,7 +199,7 @@ struct UnifiedSystemMigrationTests {
         
         // Select one shape and one text
         doc.selectedObjectIDs.insert(doc.layers[2].shapes[0].id)
-        doc.selectedObjectIDs.insert(doc.textObjects[0].id)
+        doc.selectedObjectIDs.insert(doc.allTextObjects[0].id)
         doc.syncSelectionArrays()
         
         let selectedShapes = doc.getSelectedShapes()
@@ -228,7 +228,7 @@ struct UnifiedSystemMigrationTests {
         
         // Clear and select text
         doc.selectedObjectIDs.removeAll()
-        doc.selectedObjectIDs.insert(doc.textObjects[0].id)
+        doc.selectedObjectIDs.insert(doc.allTextObjects[0].id)
         doc.syncSelectionArrays()
         
         #expect(!(doc.selectedShapeIDs.isEmpty && doc.selectedTextIDs.isEmpty))
@@ -274,7 +274,7 @@ struct UnifiedSystemMigrationTests {
         
         // Test text duplication
         doc.selectedObjectIDs.removeAll()
-        doc.selectedObjectIDs.insert(doc.textObjects[0].id)
+        doc.selectedObjectIDs.insert(doc.allTextObjects[0].id)
         doc.syncSelectionArrays()
         
         // Old check: !selectedTextIDs.isEmpty
@@ -395,7 +395,7 @@ struct UnifiedSystemMigrationTests {
         #expect(doc.selectedTextIDs.isEmpty)
         
         // Select text
-        doc.selectedObjectIDs.insert(doc.textObjects[0].id)
+        doc.selectedObjectIDs.insert(doc.allTextObjects[0].id)
         doc.syncSelectionArrays()
         
         #expect(!doc.selectedTextIDs.isEmpty)
@@ -404,11 +404,11 @@ struct UnifiedSystemMigrationTests {
         // FontPanel uses selectedTextIDs.first frequently
         let firstTextID = doc.selectedTextIDs.first
         #expect(firstTextID != nil)
-        #expect(firstTextID == doc.textObjects[0].id)
+        #expect(firstTextID == doc.allTextObjects[0].id)
         
         // Verify text object retrieval
         if let textID = firstTextID {
-            let textObject = doc.textObjects.first { $0.id == textID }
+            let textObject = doc.allTextObjects.first { $0.id == textID }
             #expect(textObject != nil)
             #expect(textObject?.content == "Test Text 1")
         }
@@ -422,7 +422,7 @@ struct UnifiedSystemMigrationTests {
         
         // Select mixed objects
         doc.selectedObjectIDs.insert(doc.layers[2].shapes[0].id)
-        doc.selectedObjectIDs.insert(doc.textObjects[0].id)
+        doc.selectedObjectIDs.insert(doc.allTextObjects[0].id)
         doc.syncSelectionArrays()
         
         let originalShapeIDs = doc.selectedShapeIDs
