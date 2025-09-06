@@ -532,9 +532,8 @@ extension DrawingCanvas {
                 
                 // If text is empty, remove it
                 if textObj.content.isEmpty {
-                    document.unifiedObjects.removeAll { $0.id == editingID }
-                    document.textObjects.removeAll { $0.id == editingID }
-                    document.selectedTextIDs.remove(editingID)
+                    // Use unified helper to remove text (handles unified objects, legacy array, and selection)
+                    document.removeTextFromUnifiedSystem(id: editingID)
                     Log.info("🗑️ Removed empty text object", category: .general)
                 }
             }
@@ -562,9 +561,8 @@ extension DrawingCanvas {
             // If text is empty or was just created, remove it
             if let textObj = document.allTextObjects.first(where: { $0.id == editingID }) {
                 if textObj.content.isEmpty {
-                    document.unifiedObjects.removeAll { $0.id == editingID }
-                    document.textObjects.removeAll { $0.id == editingID }
-                    document.selectedTextIDs.remove(editingID)
+                    // Use unified helper to remove text
+                    document.removeTextFromUnifiedSystem(id: editingID)
                 } else {
                     document.setTextEditingInUnified(id: textObj.id, isEditing: false)
                 }
@@ -676,7 +674,8 @@ extension DrawingCanvas {
                 // If text is empty, remove it
                 if textObj.content.isEmpty {
                     document.unifiedObjects.removeAll { $0.id == textID }
-                    document.textObjects.removeAll { $0.id == textID }
+                    // Use unified helper to remove text
+                    document.removeTextFromUnifiedSystem(id: textID)
                     document.selectedTextIDs.remove(textID)
                     Log.info("🗑️ NEW TEXT BOX: Removed empty text object", category: .general)
                 }

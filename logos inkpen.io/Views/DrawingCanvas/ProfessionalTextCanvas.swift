@@ -193,9 +193,7 @@ struct ProfessionalTextCanvas: View {
                 viewModel.startEditing()
                 
                 // Update document editing state
-                if let textIndex = document.textObjects.firstIndex(where: { $0.id == viewModel.textObject.id }) {
-                    document.setTextEditingInUnified(id: document.textObjects[textIndex].id, isEditing: true)
-                }
+                document.setTextEditingInUnified(id: viewModel.textObject.id, isEditing: true)
                 
                 // CRITICAL FIX: Force immediate state update and sync
                 textBoxState = .blue
@@ -212,9 +210,7 @@ struct ProfessionalTextCanvas: View {
                 viewModel.stopEditing()
                 
                 // Update document editing state
-                if let textIndex = document.textObjects.firstIndex(where: { $0.id == viewModel.textObject.id }) {
-                    document.setTextEditingInUnified(id: document.textObjects[textIndex].id, isEditing: false)
-                }
+                document.setTextEditingInUnified(id: viewModel.textObject.id, isEditing: false)
                 
                 textBoxState = .gray
             }
@@ -1207,21 +1203,21 @@ class ProfessionalTextViewModel: ObservableObject {
         
         // CRITICAL: Update VectorText bounds to match user's manual resize
         // This ensures operations like convert to paths use the actual size
-        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-            document.updateTextBoundsInUnified(id: document.textObjects[textIndex].id, bounds: CGRect(
-                x: 0, y: 0,
-                width: newFrame.width,
-                height: newFrame.height
-            ))
-            
-            // Also update position if changed
-            document.updateTextPositionInUnified(id: document.textObjects[textIndex].id, position: CGPoint(x: newFrame.origin.x, y: newFrame.origin.y))
-            
-            Log.fileOperation("📋 UPDATED VECTORTEXT to match manual resize: bounds=\(document.textObjects[textIndex].bounds), position=\(document.textObjects[textIndex].position)", level: .info)
-            
-            // Force document update
-            document.objectWillChange.send()
+        document.updateTextBoundsInUnified(id: textObject.id, bounds: CGRect(
+            x: 0, y: 0,
+            width: newFrame.width,
+            height: newFrame.height
+        ))
+        
+        // Also update position if changed
+        document.updateTextPositionInUnified(id: textObject.id, position: CGPoint(x: newFrame.origin.x, y: newFrame.origin.y))
+        
+        if let textObj = document.textObjects.first(where: { $0.id == textObject.id }) {
+            Log.fileOperation("📋 UPDATED VECTORTEXT to match manual resize: bounds=\(textObj.bounds), position=\(textObj.position)", level: .info)
         }
+        
+        // Force document update
+        document.objectWillChange.send()
     }
     
     // MARK: - Working Auto-Resize Logic (FIXED with debouncing)
@@ -1704,7 +1700,7 @@ class ProfessionalTextViewModel: ObservableObject {
             Log.info("  - Click location: (\(String(format: "%.1f", location.x)), \(String(format: "%.1f", location.y)))", category: .general)
             
             // CRITICAL: Set editing state BEFORE updating selection
-            document.setTextEditingInUnified(id: document.textObjects[textIndex].id, isEditing: true)
+            document.setTextEditingInUnified(id: textObject.id, isEditing: true)
             
             // Clear other selections and select this text
             document.selectedShapeIDs.removeAll()
