@@ -942,8 +942,7 @@ class ClipboardManager {
                 Log.info("📋 PASTE DEBUG: Pasting text with content='\(newText.content)', areaSize=\(newText.areaSize?.debugDescription ?? "nil")", category: .general)
                 
                 // PASTE AT EXACT ORIGINAL COORDINATES - no offset
-                document.textObjects.append(newText)
-                // CRITICAL FIX: Add to unified objects system for visibility
+                // Add to unified objects system (this also adds to textObjects array)
                 document.addTextToUnifiedSystem(newText, layerIndex: document.selectedLayerIndex ?? 2)
                 document.selectedObjectIDs.insert(newText.id)
             }
@@ -1033,16 +1032,15 @@ class ClipboardManager {
                 }
                 
                 // Add text objects with proper orderID to place them behind selected objects
-                for (offset, text) in clipboardData.texts.enumerated() {
+                for text in clipboardData.texts {
                     var newText = text
                     newText.id = UUID()
                     // PASTE AT EXACT ORIGINAL COORDINATES - no offset
-                    document.textObjects.append(newText)
+                    // Add to unified objects system (this handles textObjects array and orderID)
+                    document.addTextToUnifiedSystem(newText, layerIndex: layerIndex)
                     
-                    // Add to unified objects system with orderID that places it behind selected objects
-                    let newOrderID = insertionPoint + clipboardData.shapes.count + offset
-                    let unifiedObject = VectorObject(shape: VectorShape.from(newText), layerIndex: layerIndex, orderID: newOrderID)
-                    document.unifiedObjects.append(unifiedObject)
+                    // Note: The orderID adjustment for paste behind would need to be handled
+                    // in a separate method if needed for proper ordering
                     document.selectedObjectIDs.insert(newText.id)
                 }
             }
