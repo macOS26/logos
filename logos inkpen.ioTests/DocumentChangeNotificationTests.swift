@@ -123,7 +123,7 @@ class DocumentChangeNotificationTests: XCTestCase {
             .store(in: &cancellables)
         
         // Update fill color
-        document.updateTextFillColorInUnified(id: textID, color: .red)
+        document.updateTextFillColorInUnified(id: textID, color: .rgb(RGBColor(red: 1.0, green: 0.0, blue: 0.0)))
         
         // Wait for notification
         wait(for: [expectation], timeout: 1.0)
@@ -153,7 +153,7 @@ class DocumentChangeNotificationTests: XCTestCase {
             .store(in: &cancellables)
         
         // Update stroke color
-        document.updateTextStrokeColorInUnified(id: textID, color: .blue)
+        document.updateTextStrokeColorInUnified(id: textID, color: .rgb(RGBColor(red: 0.0, green: 0.0, blue: 1.0)))
         
         // Wait for notification
         wait(for: [expectation], timeout: 1.0)
@@ -173,9 +173,17 @@ class DocumentChangeNotificationTests: XCTestCase {
         document.addText(textObj)
         let textID = textObj.id
         
-        // Count notifications
+        // Count notifications - start counting AFTER setup
         var notificationCount = 0
         
+        // Wait a moment for initial setup notifications to complete
+        let setupExpectation = XCTestExpectation(description: "Setup complete")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            setupExpectation.fulfill()
+        }
+        wait(for: [setupExpectation], timeout: 0.2)
+        
+        // Now start counting notifications from updates
         document.objectWillChange
             .sink { _ in
                 notificationCount += 1
@@ -195,11 +203,11 @@ class DocumentChangeNotificationTests: XCTestCase {
         XCTAssertEqual(notificationCount, 1, "First update should send notification")
         
         // Update fill color
-        document.updateTextFillColorInUnified(id: textID, color: .red)
+        document.updateTextFillColorInUnified(id: textID, color: .rgb(RGBColor(red: 1.0, green: 0.0, blue: 0.0)))
         XCTAssertEqual(notificationCount, 2, "Second update should send notification")
         
         // Update stroke color
-        document.updateTextStrokeColorInUnified(id: textID, color: .blue)
+        document.updateTextStrokeColorInUnified(id: textID, color: .rgb(RGBColor(red: 0.0, green: 0.0, blue: 1.0)))
         XCTAssertEqual(notificationCount, 3, "Third update should send notification")
     }
 }
