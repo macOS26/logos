@@ -335,30 +335,10 @@ struct StrokeFillPanel: View {
             }
         }
         
-        // Save to undo stack and optimize sync if we made changes
+        // Save to undo stack if we made changes
         if hasChanges {
             document.saveToUndoStack()
-            
-            // OPTIMIZED: Direct unified object updates for smooth performance
-            for objectID in document.selectedObjectIDs {
-                if let unifiedIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
-                    switch document.unifiedObjects[unifiedIndex].objectType {
-                    case .shape(let shape):
-                        if shape.isTextObject {
-                            // Find updated text data
-                            if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
-                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: VectorShape.from(document.textObjects[textIndex]), layerIndex: document.unifiedObjects[unifiedIndex].layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                            }
-                        } else {
-                            // Find updated shape data
-                            if let layerIndex = document.unifiedObjects[unifiedIndex].layerIndex < document.layers.count ? document.unifiedObjects[unifiedIndex].layerIndex : nil,
-                               let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                            }
-                        }
-                    }
-                }
-            }
+            // The unified helpers already update the unified objects, so no manual refresh needed
             
             // Force immediate UI update for visual responsiveness
             document.objectWillChange.send()
@@ -395,30 +375,10 @@ struct StrokeFillPanel: View {
             }
         }
         
-        // Save to undo stack and optimize sync if we made changes
+        // Save to undo stack if we made changes
         if hasChanges {
             document.saveToUndoStack()
-            
-            // OPTIMIZED: Direct unified object updates for smooth performance
-            for objectID in document.selectedObjectIDs {
-                if let unifiedIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
-                    switch document.unifiedObjects[unifiedIndex].objectType {
-                    case .shape(let shape):
-                        if shape.isTextObject {
-                            // Find updated text data
-                            if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
-                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: VectorShape.from(document.textObjects[textIndex]), layerIndex: document.unifiedObjects[unifiedIndex].layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                            }
-                        } else {
-                            // Find updated shape data
-                            if let layerIndex = document.unifiedObjects[unifiedIndex].layerIndex < document.layers.count ? document.unifiedObjects[unifiedIndex].layerIndex : nil,
-                               let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                            }
-                        }
-                    }
-                }
-            }
+            // The unified helpers already update the unified objects, so no manual refresh needed
             
             // Force immediate UI update for visual responsiveness
             document.objectWillChange.send()
@@ -455,30 +415,10 @@ struct StrokeFillPanel: View {
             }
         }
         
-        // Save to undo stack and optimize sync if we made changes
+        // Save to undo stack if we made changes
         if hasChanges {
             document.saveToUndoStack()
-            
-            // OPTIMIZED: Direct unified object updates for smooth performance
-            for objectID in document.selectedObjectIDs {
-                if let unifiedIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
-                    switch document.unifiedObjects[unifiedIndex].objectType {
-                    case .shape(let shape):
-                        if shape.isTextObject {
-                            // Find updated text data
-                            if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
-                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: VectorShape.from(document.textObjects[textIndex]), layerIndex: document.unifiedObjects[unifiedIndex].layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                            }
-                        } else {
-                            // Find updated shape data
-                            if let layerIndex = document.unifiedObjects[unifiedIndex].layerIndex < document.layers.count ? document.unifiedObjects[unifiedIndex].layerIndex : nil,
-                               let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                            }
-                        }
-                    }
-                }
-            }
+            // The unified helpers already update the unified objects, so no manual refresh needed
             
             // Force immediate UI update for visual responsiveness
             document.objectWillChange.send()
@@ -515,30 +455,10 @@ struct StrokeFillPanel: View {
             }
         }
         
-        // Save to undo stack and optimize sync if we made changes
+        // Save to undo stack if we made changes
         if hasChanges {
             document.saveToUndoStack()
-            
-            // OPTIMIZED: Direct unified object updates for smooth performance
-            for objectID in document.selectedObjectIDs {
-                if let unifiedIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
-                    switch document.unifiedObjects[unifiedIndex].objectType {
-                    case .shape(let shape):
-                        if shape.isTextObject {
-                            // Find updated text data
-                            if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
-                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: VectorShape.from(document.textObjects[textIndex]), layerIndex: document.unifiedObjects[unifiedIndex].layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                            }
-                        } else {
-                            // Find updated shape data
-                            if let layerIndex = document.unifiedObjects[unifiedIndex].layerIndex < document.layers.count ? document.unifiedObjects[unifiedIndex].layerIndex : nil,
-                               let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                            }
-                        }
-                    }
-                }
-            }
+            // The unified helpers already update the unified objects, so no manual refresh needed
             
             // Force immediate UI update for visual responsiveness
             document.objectWillChange.send()
