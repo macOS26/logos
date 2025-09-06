@@ -654,10 +654,14 @@ struct FontPanel: View {
                 continue
             }
             
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                let originalTypography = document.textObjects[textIndex].typography
-                update(&document.textObjects[textIndex])
-                let updatedTypography = document.textObjects[textIndex].typography
+            // Get text object from unified system (read from textObjects for now)
+            if let textObj = document.textObjects.first(where: { $0.id == textID }) {
+                let originalTypography = textObj.typography
+                
+                // Create a mutable copy to update
+                var updatedText = textObj
+                update(&updatedText)
+                let updatedTypography = updatedText.typography
                 
                 // Log the specific changes for this UUID
                 if originalTypography != updatedTypography {
@@ -666,7 +670,7 @@ struct FontPanel: View {
                     Log.info("  - Font: \(updatedTypography.fontFamily) \(updatedTypography.fontWeight.rawValue) \(updatedTypography.fontStyle.rawValue)", category: .general)
                     Log.info("  - Size: \(updatedTypography.fontSize)pt", category: .general)
                     
-                    // CRITICAL FIX: Update typography in unified objects and layers array to prevent reset on color change
+                    // Update typography through unified system
                     document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
                 } else {
                     Log.fileOperation("🎯 NO CHANGE: UUID \(textID.uuidString.prefix(8)) - font settings unchanged", level: .info)
