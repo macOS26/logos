@@ -295,8 +295,9 @@ struct VectorShape: Hashable, Identifiable {
     var cursorPosition: Int? = nil // Current cursor position for inline editing
     var areaSize: CGSize? = nil // Area size for area text (nil for point text)
     var isEditing: Bool? = nil // For inline text editing
+    var textPosition: CGPoint? = nil // Original text position (preserved for undo/redo)
     
-    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isCompoundPath: Bool = false, isClippingPath: Bool = false, clippedByShapeID: UUID? = nil, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = [], isTextObject: Bool = false, textContent: String? = nil, typography: TypographyProperties? = nil, isPointText: Bool? = nil, cursorPosition: Int? = nil, areaSize: CGSize? = nil, isEditing: Bool? = nil) {
+    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isCompoundPath: Bool = false, isClippingPath: Bool = false, clippedByShapeID: UUID? = nil, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = [], isTextObject: Bool = false, textContent: String? = nil, typography: TypographyProperties? = nil, isPointText: Bool? = nil, cursorPosition: Int? = nil, areaSize: CGSize? = nil, isEditing: Bool? = nil, textPosition: CGPoint? = nil) {
         self.id = UUID()
         self.name = name
         self.path = path
@@ -329,6 +330,7 @@ struct VectorShape: Hashable, Identifiable {
         self.cursorPosition = cursorPosition
         self.areaSize = areaSize
         self.isEditing = isEditing
+        self.textPosition = textPosition
     }
     
     var transformedPath: CGPath {
@@ -526,7 +528,8 @@ struct VectorShape: Hashable, Identifiable {
             isPointText: isPointText,
             cursorPosition: content.count,
             areaSize: areaSize,
-            isEditing: false
+            isEditing: false,
+            textPosition: position  // Store original position for undo/redo
         )
     }
     
@@ -552,7 +555,8 @@ struct VectorShape: Hashable, Identifiable {
             isPointText: vectorText.isPointText,
             cursorPosition: vectorText.cursorPosition,
             areaSize: vectorText.areaSize,
-            isEditing: vectorText.isEditing
+            isEditing: vectorText.isEditing,
+            textPosition: vectorText.position  // Store original position for undo/redo
         )
         
         // CRITICAL FIX: Preserve the original VectorText ID so ProfessionalTextCanvas can find it
@@ -589,7 +593,7 @@ extension VectorShape: Codable {
         case isWarpObject, originalPath, warpEnvelope, originalEnvelope
         case isRoundedRectangle, originalBounds, cornerRadii
         case isTextObject, textContent, typography
-        case isPointText, cursorPosition, areaSize, isEditing
+        case isPointText, cursorPosition, areaSize, isEditing, textPosition
     }
     
     func encode(to encoder: Encoder) throws {
@@ -651,6 +655,7 @@ extension VectorShape: Codable {
         try container.encode(cursorPosition, forKey: .cursorPosition)
         try container.encodeIfPresent(areaSize, forKey: .areaSize)
         try container.encode(isEditing, forKey: .isEditing)
+        try container.encodeIfPresent(textPosition, forKey: .textPosition)
     }
     
     init(from decoder: Decoder) throws {
@@ -706,6 +711,7 @@ extension VectorShape: Codable {
         cursorPosition = try container.decodeIfPresent(Int.self, forKey: .cursorPosition) ?? 0
         areaSize = try container.decodeIfPresent(CGSize.self, forKey: .areaSize)
         isEditing = try container.decodeIfPresent(Bool.self, forKey: .isEditing) ?? false
+        textPosition = try container.decodeIfPresent(CGPoint.self, forKey: .textPosition)
     }
 }
 
