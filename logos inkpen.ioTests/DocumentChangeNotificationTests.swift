@@ -20,18 +20,52 @@ class DocumentChangeNotificationTests: XCTestCase {
         super.tearDown()
     }
     
-    func testTypographyUpdateSendsObjectWillChange() {
+    func testTypographyUpdateSyncsToLegacyArray() {
+        // This test would catch the bug where typography wasn't syncing to textObjects array
         // Create text
         let textObj = VectorText(
             content: "Test",
             typography: TypographyProperties(
                 fontFamily: "Helvetica",
                 fontSize: 24,
-                fontWeight: .regular,
-                fontStyle: .normal,
-                underlineStyle: .none,
-                strikethroughStyle: .none,
                 alignment: .left,
+                strokeColor: .black,
+                fillColor: .black
+            ),
+            position: CGPoint(x: 100, y: 100)
+        )
+        
+        document.addText(textObj)
+        let textID = textObj.id
+        
+        // Update typography through unified system
+        let newTypography = TypographyProperties(
+            fontFamily: "Herculanum",
+            fontWeight: .bold,
+            fontSize: 36,
+            alignment: .center,
+            strokeColor: .black,
+            fillColor: .black
+        )
+        
+        document.updateTextTypographyInUnified(id: textID, typography: newTypography)
+        
+        // Verify the legacy textObjects array was updated
+        if let updatedText = document.textObjects.first(where: { $0.id == textID }) {
+            XCTAssertEqual(updatedText.typography.fontFamily, "Herculanum", "Font family should be updated in textObjects array")
+            XCTAssertEqual(updatedText.typography.fontSize, 36, "Font size should be updated in textObjects array")
+            XCTAssertEqual(updatedText.typography.fontWeight, FontWeight.bold, "Font weight should be updated in textObjects array")
+            XCTAssertEqual(updatedText.typography.alignment, TextAlignment.center, "Alignment should be updated in textObjects array")
+        } else {
+            XCTFail("Text object should exist in textObjects array after typography update")
+        }
+    }
+    
+    func testTypographyUpdateSendsObjectWillChange() {
+        // Create text
+        let textObj = VectorText(
+            content: "Test",
+            typography: TypographyProperties(
                 strokeColor: .black,
                 fillColor: .black
             ),
@@ -53,12 +87,8 @@ class DocumentChangeNotificationTests: XCTestCase {
         // Update typography
         let newTypography = TypographyProperties(
             fontFamily: "Herculanum",
-            fontSize: 36,
             fontWeight: .bold,
-            fontStyle: .normal,
-            underlineStyle: .none,
-            strikethroughStyle: .none,
-            alignment: .left,
+            fontSize: 36,
             strokeColor: .black,
             fillColor: .black
         )
@@ -74,13 +104,6 @@ class DocumentChangeNotificationTests: XCTestCase {
         let textObj = VectorText(
             content: "Test",
             typography: TypographyProperties(
-                fontFamily: "Helvetica",
-                fontSize: 24,
-                fontWeight: .regular,
-                fontStyle: .normal,
-                underlineStyle: .none,
-                strikethroughStyle: .none,
-                alignment: .left,
                 strokeColor: .black,
                 fillColor: .black
             ),
@@ -111,13 +134,6 @@ class DocumentChangeNotificationTests: XCTestCase {
         let textObj = VectorText(
             content: "Test",
             typography: TypographyProperties(
-                fontFamily: "Helvetica",
-                fontSize: 24,
-                fontWeight: .regular,
-                fontStyle: .normal,
-                underlineStyle: .none,
-                strikethroughStyle: .none,
-                alignment: .left,
                 strokeColor: .black,
                 fillColor: .black
             ),
@@ -148,13 +164,6 @@ class DocumentChangeNotificationTests: XCTestCase {
         let textObj = VectorText(
             content: "Test",
             typography: TypographyProperties(
-                fontFamily: "Helvetica",
-                fontSize: 24,
-                fontWeight: .regular,
-                fontStyle: .normal,
-                underlineStyle: .none,
-                strikethroughStyle: .none,
-                alignment: .left,
                 strokeColor: .black,
                 fillColor: .black
             ),
@@ -176,12 +185,8 @@ class DocumentChangeNotificationTests: XCTestCase {
         // Update typography
         let newTypography = TypographyProperties(
             fontFamily: "Herculanum",
-            fontSize: 36,
             fontWeight: .bold,
-            fontStyle: .normal,
-            underlineStyle: .none,
-            strikethroughStyle: .none,
-            alignment: .left,
+            fontSize: 36,
             strokeColor: .black,
             fillColor: .black
         )
