@@ -14,7 +14,6 @@ struct VectorImportResult: Identifiable {
     let id = UUID()
     let success: Bool
     let shapes: [VectorShape]
-    let textObjects: [VectorText]
     let metadata: VectorImportMetadata
     let errors: [VectorImportError]
     let warnings: [String]

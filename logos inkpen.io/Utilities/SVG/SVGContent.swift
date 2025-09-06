@@ -12,7 +12,6 @@ import SwiftUI
 // These would be implemented with proper parsing libraries
 struct SVGContent {
     let shapes: [VectorShape]
-    let textObjects: [VectorText]
     let documentSize: CGSize
     let colorSpace: String
     let units: VectorUnit
@@ -41,7 +40,6 @@ func parseSVGContent(_ data: Data, useExtremeValueHandling: Bool = false) throws
     
     return SVGContent(
         shapes: result.shapes,
-        textObjects: result.textObjects,
         documentSize: result.documentSize,
         colorSpace: "RGB",
         units: .points,

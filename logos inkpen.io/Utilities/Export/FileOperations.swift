@@ -338,51 +338,7 @@ class FileOperations {
             importedLayer.addShape(centeredShape)
         }
 
-        // Add imported text objects (apply transform to position and scale font metrics)
-        if !result.textObjects.isEmpty {
-            let centeringTransform = CGAffineTransform(translationX: translateX, y: translateY)
-            for text in result.textObjects {
-                var placedText = text
-                // Compose final transform with centering
-                let finalTransform = text.transform.concatenating(centeringTransform)
-                
-                // Transform position by full transform
-                let transformedPosition = CGPoint(x: text.position.x, y: text.position.y).applying(finalTransform)
-                placedText.position = transformedPosition
-                
-                // Extract approximate scale from transform (handles rotation+scale)
-                let scaleX = hypot(finalTransform.a, finalTransform.c)
-                let scaleY = hypot(finalTransform.b, finalTransform.d)
-                let averageScale = max(0.0001, (scaleX + scaleY) / 2.0)
-                
-                // Scale typography metrics to preserve visual size under viewBox scaling
-                var typography = placedText.typography
-                typography.fontSize *= averageScale
-                typography.lineHeight *= averageScale
-                typography.lineSpacing *= averageScale
-                typography.letterSpacing *= averageScale
-                typography.strokeWidth *= averageScale
-                placedText.typography = typography
-                
-                // Clear transform after baking into coordinates and metrics
-                placedText.transform = .identity
-                placedText.isLocked = false
-                placedText.isVisible = true
-                
-                // Associate with imported layer index
-                if let importedIndex = document.layers.firstIndex(where: { $0.name == "Imported SVG" }) {
-                    placedText.layerIndex = importedIndex
-                } else {
-                    placedText.layerIndex = 2
-                }
-                
-                // Update bounds for proper selection box
-                placedText.updateBounds()
-                
-                // Add to unified system
-                document.addTextToUnifiedSystem(placedText, layerIndex: 2)
-            }
-        }
+        // Text objects are now imported as shapes with isTextObject=true
         
         // Update the layer in the document
         if let importedIndex = document.layers.firstIndex(where: { $0.name == "Imported SVG" }) {
@@ -529,37 +485,7 @@ class FileOperations {
             importedLayer.addShape(centeredShape)
         }
 
-        // Add imported text objects (apply transform to position and scale font metrics)
-        if !result.textObjects.isEmpty {
-            let centeringTransform = CGAffineTransform(translationX: translateX, y: translateY)
-            for text in result.textObjects {
-                var placedText = text
-                let finalTransform = text.transform.concatenating(centeringTransform)
-                let transformedPosition = CGPoint(x: text.position.x, y: text.position.y).applying(finalTransform)
-                placedText.position = transformedPosition
-                let scaleX = hypot(finalTransform.a, finalTransform.c)
-                let scaleY = hypot(finalTransform.b, finalTransform.d)
-                let averageScale = max(0.0001, (scaleX + scaleY) / 2.0)
-                var typography = placedText.typography
-                typography.fontSize *= averageScale
-                typography.lineHeight *= averageScale
-                typography.lineSpacing *= averageScale
-                typography.letterSpacing *= averageScale
-                typography.strokeWidth *= averageScale
-                placedText.typography = typography
-                placedText.transform = .identity
-                placedText.isLocked = false
-                placedText.isVisible = true
-                if let importedIndex = document.layers.firstIndex(where: { $0.name == "Imported SVG (Extreme Value Handling)" }) {
-                    placedText.layerIndex = importedIndex
-                } else {
-                    placedText.layerIndex = 2
-                }
-                placedText.updateBounds()
-                // Add to unified system
-                document.addTextToUnifiedSystem(placedText, layerIndex: 2)
-            }
-        }
+        // Text objects are now imported as shapes with isTextObject=true
         
         // Update the layer in the document
         if let importedIndex = document.layers.firstIndex(where: { $0.name == "Imported SVG (Extreme Value Handling)" }) {

@@ -360,7 +360,7 @@ class VectorDocument: ObservableObject, Codable {
     
     // MARK: - Codable Implementation
     enum CodingKeys: CodingKey {
-        case settings, layers, rgbSwatches, cmykSwatches, hsbSwatches, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, textObjects, currentTool, viewMode, zoomLevel, canvasOffset, showRulers, snapToGrid, defaultFillColor, defaultStrokeColor, defaultFillOpacity, defaultStrokeOpacity, defaultStrokeWidth, defaultStrokePlacement, defaultStrokeLineJoin, defaultStrokeLineCap, defaultStrokeMiterLimit, unifiedObjects
+        case settings, layers, rgbSwatches, cmykSwatches, hsbSwatches, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, currentTool, viewMode, zoomLevel, canvasOffset, showRulers, snapToGrid, defaultFillColor, defaultStrokeColor, defaultFillOpacity, defaultStrokeOpacity, defaultStrokeWidth, defaultStrokePlacement, defaultStrokeLineJoin, defaultStrokeLineCap, defaultStrokeMiterLimit, unifiedObjects
     }
     
     required init(from decoder: Decoder) throws {
@@ -377,9 +377,6 @@ class VectorDocument: ObservableObject, Codable {
         selectedShapeIDs = try container.decode(Set<UUID>.self, forKey: .selectedShapeIDs)
         selectedTextIDs = try container.decodeIfPresent(Set<UUID>.self, forKey: .selectedTextIDs) ?? []
         
-        // MIGRATION: Try to decode legacy textObjects array for backward compatibility
-        // But we'll extract text from shapes in layers as the primary source
-        let legacyTextObjects = try container.decodeIfPresent([VectorText].self, forKey: .textObjects) ?? []
         // Text is now stored in unified system
         
         currentTool = try container.decode(DrawingTool.self, forKey: .currentTool)
@@ -406,23 +403,6 @@ class VectorDocument: ObservableObject, Codable {
         // CRITICAL FIX: Load unified objects array to preserve order during undo/redo
         unifiedObjects = try container.decodeIfPresent([VectorObject].self, forKey: .unifiedObjects) ?? []
         
-        // MIGRATION: If we have legacy text objects but no text shapes in layers, migrate them
-        if !legacyTextObjects.isEmpty {
-            for text in legacyTextObjects {
-                // Check if this text already exists as a shape in layers
-                let textExistsAsShape = layers.flatMap { $0.shapes }.contains { $0.id == text.id && $0.isTextObject }
-                
-                if !textExistsAsShape {
-                    // Convert legacy text to shape and add to appropriate layer
-                    let textShape = VectorShape.from(text)
-                    let layerIndex = text.layerIndex ?? 2 // Default to working layer
-                    if layerIndex < layers.count {
-                        layers[layerIndex].shapes.append(textShape)
-                    }
-                }
-            }
-        }
-        
         // CRITICAL FIX: Only populate unified objects if they don't exist (for new documents)
         if unifiedObjects.isEmpty {
             populateUnifiedObjectsFromLayersPreservingOrder()
@@ -445,9 +425,6 @@ class VectorDocument: ObservableObject, Codable {
         try container.encode(selectedShapeIDs, forKey: .selectedShapeIDs)
         try container.encode(selectedTextIDs, forKey: .selectedTextIDs)
         
-        // MIGRATION: Don't encode textObjects - text is now stored as shapes in layers
-        // Only encode empty array for backward compatibility with older versions
-        try container.encode([VectorText](), forKey: .textObjects)
         
         try container.encode(currentTool, forKey: .currentTool)
         try container.encode(viewMode, forKey: .viewMode)

@@ -31,7 +31,6 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
-                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.unsupportedFormat(.svg)],
                 warnings: ["Could not detect file format"]
@@ -45,7 +44,6 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
-                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.commercialLicenseRequired(format)],
                 warnings: ["Professional CAD formats require commercial licensing"]
@@ -66,7 +64,6 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
-                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.commercialLicenseRequired(format)],
                 warnings: ["DWG/DXF support requires Open Design Alliance licensing"]
@@ -84,7 +81,6 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
-                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.unsupportedFormat(.svg)],
                 warnings: ["Could not detect file format"]
@@ -98,7 +94,6 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
-                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.commercialLicenseRequired(format)],
                 warnings: ["Professional CAD formats require commercial licensing"]
@@ -119,7 +114,6 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
-                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.commercialLicenseRequired(format)],
                 warnings: ["DWG/DXF support requires Open Design Alliance licensing"]
@@ -203,7 +197,6 @@ class VectorImportManager {
         var errors: [VectorImportError] = []
         var warnings: [String] = []
         var shapes: [VectorShape] = []
-        var importedTextObjects: [VectorText] = []
         
         Log.fileOperation("📊 Importing SVG using professional SVG parser...", level: .info)
         if useExtremeValueHandling {
@@ -218,7 +211,7 @@ class VectorImportManager {
             // Parse SVG using professional XML parser
             let svgContent = try parseSVGContent(data, useExtremeValueHandling: useExtremeValueHandling)
             shapes = svgContent.shapes
-            importedTextObjects = svgContent.textObjects
+            // Text objects are now imported as shapes with isTextObject=true
             
             if !svgContent.missingFonts.isEmpty {
                 warnings.append("Missing fonts: \(svgContent.missingFonts.joined(separator: ", "))")
@@ -232,7 +225,7 @@ class VectorImportManager {
                 dpi: svgContent.dpi,
                 layerCount: 1, // SVG doesn't have layers like AI
                 shapeCount: shapes.count,
-                textObjectCount: svgContent.textObjects.count,
+                textObjectCount: 0, // Text is now stored as shapes
                 importDate: Date(),
                 sourceApplication: svgContent.creator,
                 documentVersion: svgContent.version
@@ -243,7 +236,6 @@ class VectorImportManager {
             return VectorImportResult(
                 success: true,
                 shapes: shapes,
-                textObjects: importedTextObjects,
                 metadata: metadata,
                 errors: errors,
                 warnings: warnings
@@ -256,7 +248,6 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
-                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
                 warnings: warnings
@@ -271,7 +262,6 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
-                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.parsingError("Failed to open image", line: nil)],
                 warnings: []
@@ -322,7 +312,7 @@ class VectorImportManager {
             sourceApplication: nil,
             documentVersion: nil
         )
-        return VectorImportResult(success: true, shapes: [rectShape], textObjects: [], metadata: meta, errors: [], warnings: [])
+        return VectorImportResult(success: true, shapes: [rectShape], metadata: meta, errors: [], warnings: [])
     }
     
     // MARK: - PDF Import (Professional Standard)
@@ -339,7 +329,6 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
-                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
                 warnings: warnings
@@ -352,7 +341,6 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
-                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
                 warnings: warnings
@@ -385,7 +373,6 @@ class VectorImportManager {
             return VectorImportResult(
                 success: true,
                 shapes: shapes,
-                textObjects: [],
                 metadata: metadata,
                 errors: errors,
                 warnings: warnings
@@ -398,7 +385,6 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
-                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
                 warnings: warnings
@@ -441,7 +427,6 @@ class VectorImportManager {
                 return VectorImportResult(
                     success: pdfResult.success,
                     shapes: pdfResult.shapes,
-                    textObjects: pdfResult.textObjects,
                     metadata: metadata,
                     errors: pdfResult.errors,
                     warnings: pdfResult.warnings + ["Imported via embedded PDF data"]
@@ -457,7 +442,6 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
-                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
                 warnings: warnings
@@ -497,7 +481,6 @@ class VectorImportManager {
             return VectorImportResult(
                 success: true,
                 shapes: epsContent.shapes,
-                textObjects: [],
                 metadata: metadata,
                 errors: errors,
                 warnings: warnings
@@ -510,7 +493,6 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
-                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
                 warnings: warnings
@@ -550,7 +532,6 @@ class VectorImportManager {
             return VectorImportResult(
                 success: true,
                 shapes: psContent.shapes,
-                textObjects: [],
                 metadata: metadata,
                 errors: errors,
                 warnings: warnings
@@ -563,7 +544,6 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
-                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
                 warnings: warnings
@@ -621,7 +601,6 @@ class VectorImportManager {
             return VectorImportResult(
                 success: true,
                 shapes: shapes,
-                textObjects: [],
                 metadata: metadata,
                 errors: errors,
                 warnings: warnings
@@ -634,7 +613,6 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
-                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
                 warnings: warnings
