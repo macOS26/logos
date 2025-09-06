@@ -473,27 +473,71 @@ extension VectorDocument {
     /// MIGRATED FROM ColorSwatchGrid - Update text fill color using unified system 
     /// NO MORE DUPLICATES - USE THIS ONE HELPER EVERYWHERE
     func updateTextFillColorInUnified(id: UUID, color: VectorColor) {
+        Log.fileOperation("🔍 updateTextFillColorInUnified START - id: \(id), color: \(color)", level: .info)
+        
+        // LOG INITIAL STATE
+        if let legacyText = textObjects.first(where: { $0.id == id }) {
+            Log.fileOperation("📝 BEFORE COLOR CHANGE - Legacy Text Typography:", level: .info)
+            Log.fileOperation("  - Font: \(legacyText.typography.fontFamily)", level: .info)
+            Log.fileOperation("  - Size: \(legacyText.typography.fontSize)", level: .info)
+            Log.fileOperation("  - Weight: \(String(describing: legacyText.typography.fontWeight))", level: .info)
+            Log.fileOperation("  - Style: \(String(describing: legacyText.typography.fontStyle))", level: .info)
+            Log.fileOperation("  - Alignment: \(legacyText.typography.alignment)", level: .info)
+            Log.fileOperation("  - Current Fill Color: \(legacyText.typography.fillColor)", level: .info)
+        } else {
+            Log.fileOperation("⚠️ NO LEGACY TEXT FOUND WITH ID: \(id)", level: .warning)
+        }
+        
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.isTextObject && shape.id == id
             }
             return false
         }) {
+            Log.fileOperation("✅ Found object at unified index: \(objectIndex)", level: .info)
+            
             if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                Log.fileOperation("📊 BEFORE - Unified Shape Typography:", level: .info)
+                if let typo = shape.typography {
+                    Log.fileOperation("  - Font: \(typo.fontFamily)", level: .info)
+                    Log.fileOperation("  - Size: \(typo.fontSize)", level: .info)
+                    Log.fileOperation("  - Weight: \(String(describing: typo.fontWeight))", level: .info)
+                    Log.fileOperation("  - Style: \(String(describing: typo.fontStyle))", level: .info)
+                    Log.fileOperation("  - Alignment: \(typo.alignment)", level: .info)
+                } else {
+                    Log.fileOperation("  ⚠️ Typography is NIL in unified shape!", level: .warning)
+                }
+                
                 // CRITICAL: Only update color, preserve ALL other typography properties
                 if shape.typography != nil {
+                    Log.fileOperation("📝 Updating existing typography - ONLY changing fillColor", level: .info)
                     shape.typography?.fillColor = color
                     shape.typography?.fillOpacity = defaultFillOpacity
                 } else {
                     // If typography is nil, we need to get it from textObjects to preserve font settings
+                    Log.fileOperation("⚠️ Typography was NIL - restoring from legacy text", level: .warning)
                     if let legacyText = textObjects.first(where: { $0.id == id }) {
                         shape.typography = legacyText.typography
                         shape.typography?.fillColor = color
                         shape.typography?.fillOpacity = defaultFillOpacity
+                        Log.fileOperation("✅ Restored typography from legacy with font: \(legacyText.typography.fontFamily)", level: .info)
+                    } else {
+                        Log.fileOperation("❌ COULD NOT RESTORE TYPOGRAPHY - NO LEGACY TEXT!", level: .error)
                     }
                 }
                 
+                Log.fileOperation("📊 AFTER COLOR UPDATE - Shape Typography:", level: .info)
+                if let typo = shape.typography {
+                    Log.fileOperation("  - Font: \(typo.fontFamily)", level: .info)
+                    Log.fileOperation("  - Size: \(typo.fontSize)", level: .info)
+                    Log.fileOperation("  - Weight: \(String(describing: typo.fontWeight))", level: .info)
+                    Log.fileOperation("  - Style: \(String(describing: typo.fontStyle))", level: .info)
+                    Log.fileOperation("  - Alignment: \(typo.alignment)", level: .info)
+                    Log.fileOperation("  - New Fill Color: \(typo.fillColor)", level: .info)
+                }
+                
                 // Update unified objects
+                Log.fileOperation("🔄 Creating new VectorObject to update unified array", level: .info)
                 unifiedObjects[objectIndex] = VectorObject(
                     shape: shape,
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
@@ -502,26 +546,55 @@ extension VectorDocument {
                 
                 // CRITICAL: Update the shape in the layers array - ONLY COLOR
                 let layerIndex = unifiedObjects[objectIndex].layerIndex
+                Log.fileOperation("📋 Updating layer \(layerIndex) shapes array", level: .info)
                 if layerIndex < layers.count,
                    let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                    Log.fileOperation("  - Found shape at index \(shapeIndex)", level: .info)
+                    Log.fileOperation("  - BEFORE layer shape font: \(layers[layerIndex].shapes[shapeIndex].typography?.fontFamily ?? "nil")", level: .info)
+                    
                     // Preserve existing typography, only update color
                     layers[layerIndex].shapes[shapeIndex].typography?.fillColor = color
                     layers[layerIndex].shapes[shapeIndex].typography?.fillOpacity = defaultFillOpacity
+                    
+                    Log.fileOperation("  - AFTER layer shape font: \(layers[layerIndex].shapes[shapeIndex].typography?.fontFamily ?? "nil")", level: .info)
+                } else {
+                    Log.fileOperation("⚠️ Could not find shape in layers array!", level: .warning)
                 }
                 
                 // CRITICAL FIX: Only update the color properties in legacy array, preserve ALL other properties
                 if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
+                    Log.fileOperation("📝 Updating legacy textObjects array at index \(legacyIndex)", level: .info)
+                    Log.fileOperation("  - BEFORE legacy font: \(textObjects[legacyIndex].typography.fontFamily)", level: .info)
+                    
                     // ONLY update color - preserve font, size, weight, style, alignment, etc.
                     textObjects[legacyIndex].typography.fillColor = color
                     textObjects[legacyIndex].typography.fillOpacity = defaultFillOpacity
+                    
+                    Log.fileOperation("  - AFTER legacy font: \(textObjects[legacyIndex].typography.fontFamily)", level: .info)
+                    Log.fileOperation("  - AFTER legacy size: \(textObjects[legacyIndex].typography.fontSize)", level: .info)
+                    Log.fileOperation("  - AFTER legacy weight: \(String(describing: textObjects[legacyIndex].typography.fontWeight))", level: .info)
+                } else {
+                    Log.fileOperation("⚠️ Could not find text in legacy textObjects array!", level: .warning)
                 }
+            } else {
+                Log.fileOperation("❌ Failed to cast unified object to shape!", level: .error)
             }
+        } else {
+            Log.fileOperation("❌ Could not find object in unified array with id: \(id)", level: .error)
         }
+        
+        Log.fileOperation("🔍 updateTextFillColorInUnified END", level: .info)
     }
     
     /// MIGRATED FROM ColorPanel - Update text stroke color using unified system
     /// NO MORE DUPLICATES - USE THIS ONE HELPER EVERYWHERE  
-    func updateTextStrokeColorInUnified(id: UUID, color: VectorColor) {
+    /// CRITICAL FIX: Update text typography in unified objects and layers to keep them in sync
+    /// This prevents typography from being reset when color changes
+    func updateTextTypographyInUnified(id: UUID, typography: TypographyProperties) {
+        Log.fileOperation("🔍 updateTextTypographyInUnified START - id: \(id)", level: .info)
+        Log.fileOperation("  - New Font: \(typography.fontFamily) \(typography.fontSize)pt", level: .info)
+        
+        // Update in unified objects array
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.isTextObject && shape.id == id
@@ -529,9 +602,14 @@ extension VectorDocument {
             return false
         }) {
             if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
-                // Update typography stroke color in the shape
-                shape.typography?.hasStroke = true
-                shape.typography?.strokeColor = color
+                Log.fileOperation("📊 BEFORE - Unified Shape Typography:", level: .info)
+                Log.fileOperation("  - Old Font: \(shape.typography?.fontFamily ?? "nil") \(shape.typography?.fontSize ?? 0)pt", level: .info)
+                
+                // Update the typography
+                shape.typography = typography
+                
+                Log.fileOperation("📊 AFTER - Unified Shape Typography:", level: .info)
+                Log.fileOperation("  - New Font: \(shape.typography?.fontFamily ?? "nil") \(shape.typography?.fontSize ?? 0)pt", level: .info)
                 
                 // Update unified objects
                 unifiedObjects[objectIndex] = VectorObject(
@@ -540,21 +618,140 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
-                // CRITICAL: Update the shape in the layers array
+                // Update the shape in the layers array
                 let layerIndex = unifiedObjects[objectIndex].layerIndex
                 if layerIndex < layers.count,
                    let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
-                    layers[layerIndex].shapes[shapeIndex].typography?.hasStroke = true
-                    layers[layerIndex].shapes[shapeIndex].typography?.strokeColor = color
-                }
-                
-                // CRITICAL FIX: Only update the color properties in legacy array, preserve position
-                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
-                    textObjects[legacyIndex].typography.hasStroke = true
-                    textObjects[legacyIndex].typography.strokeColor = color
+                    Log.fileOperation("📋 Updating layer \(layerIndex) shape typography", level: .info)
+                    Log.fileOperation("  - BEFORE layer font: \(layers[layerIndex].shapes[shapeIndex].typography?.fontFamily ?? "nil")", level: .info)
+                    
+                    layers[layerIndex].shapes[shapeIndex].typography = typography
+                    
+                    Log.fileOperation("  - AFTER layer font: \(layers[layerIndex].shapes[shapeIndex].typography?.fontFamily ?? "nil")", level: .info)
                 }
             }
+        } else {
+            Log.fileOperation("⚠️ Could not find text in unified objects with id: \(id)", level: .warning)
         }
+        
+        Log.fileOperation("🔍 updateTextTypographyInUnified END", level: .info)
+    }
+    
+    func updateTextStrokeColorInUnified(id: UUID, color: VectorColor) {
+        Log.fileOperation("🔍 updateTextStrokeColorInUnified START - id: \(id), color: \(color)", level: .info)
+        
+        // LOG INITIAL STATE
+        if let legacyText = textObjects.first(where: { $0.id == id }) {
+            Log.fileOperation("📝 BEFORE STROKE COLOR CHANGE - Legacy Text Typography:", level: .info)
+            Log.fileOperation("  - Font: \(legacyText.typography.fontFamily)", level: .info)
+            Log.fileOperation("  - Size: \(legacyText.typography.fontSize)", level: .info)
+            Log.fileOperation("  - Weight: \(String(describing: legacyText.typography.fontWeight))", level: .info)
+            Log.fileOperation("  - Style: \(String(describing: legacyText.typography.fontStyle))", level: .info)
+            Log.fileOperation("  - Alignment: \(legacyText.typography.alignment)", level: .info)
+            Log.fileOperation("  - Current Stroke Color: \(legacyText.typography.strokeColor)", level: .info)
+            Log.fileOperation("  - Has Stroke: \(legacyText.typography.hasStroke)", level: .info)
+        } else {
+            Log.fileOperation("⚠️ NO LEGACY TEXT FOUND WITH ID: \(id)", level: .warning)
+        }
+        
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject && shape.id == id
+            }
+            return false
+        }) {
+            Log.fileOperation("✅ Found object at unified index: \(objectIndex)", level: .info)
+            
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                Log.fileOperation("📊 BEFORE - Unified Shape Typography:", level: .info)
+                if let typo = shape.typography {
+                    Log.fileOperation("  - Font: \(typo.fontFamily)", level: .info)
+                    Log.fileOperation("  - Size: \(typo.fontSize)", level: .info)
+                    Log.fileOperation("  - Weight: \(String(describing: typo.fontWeight))", level: .info)
+                    Log.fileOperation("  - Style: \(String(describing: typo.fontStyle))", level: .info)
+                    Log.fileOperation("  - Alignment: \(typo.alignment)", level: .info)
+                    Log.fileOperation("  - Has Stroke: \(typo.hasStroke)", level: .info)
+                } else {
+                    Log.fileOperation("  ⚠️ Typography is NIL in unified shape!", level: .warning)
+                }
+                
+                // CRITICAL: Only update stroke color, preserve ALL other typography properties
+                if shape.typography != nil {
+                    Log.fileOperation("📝 Updating existing typography - ONLY changing strokeColor", level: .info)
+                    shape.typography?.hasStroke = true
+                    shape.typography?.strokeColor = color
+                } else {
+                    // If typography is nil, we need to get it from textObjects to preserve font settings
+                    Log.fileOperation("⚠️ Typography was NIL - restoring from legacy text", level: .warning)
+                    if let legacyText = textObjects.first(where: { $0.id == id }) {
+                        shape.typography = legacyText.typography
+                        shape.typography?.hasStroke = true
+                        shape.typography?.strokeColor = color
+                        Log.fileOperation("✅ Restored typography from legacy with font: \(legacyText.typography.fontFamily)", level: .info)
+                    } else {
+                        Log.fileOperation("❌ COULD NOT RESTORE TYPOGRAPHY - NO LEGACY TEXT!", level: .error)
+                    }
+                }
+                
+                Log.fileOperation("📊 AFTER STROKE COLOR UPDATE - Shape Typography:", level: .info)
+                if let typo = shape.typography {
+                    Log.fileOperation("  - Font: \(typo.fontFamily)", level: .info)
+                    Log.fileOperation("  - Size: \(typo.fontSize)", level: .info)
+                    Log.fileOperation("  - Weight: \(String(describing: typo.fontWeight))", level: .info)
+                    Log.fileOperation("  - Style: \(String(describing: typo.fontStyle))", level: .info)
+                    Log.fileOperation("  - Alignment: \(typo.alignment)", level: .info)
+                    Log.fileOperation("  - New Stroke Color: \(typo.strokeColor)", level: .info)
+                    Log.fileOperation("  - Has Stroke: \(typo.hasStroke)", level: .info)
+                }
+                
+                // Update unified objects
+                Log.fileOperation("🔄 Creating new VectorObject to update unified array", level: .info)
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // CRITICAL: Update the shape in the layers array - ONLY STROKE COLOR
+                let layerIndex = unifiedObjects[objectIndex].layerIndex
+                Log.fileOperation("📋 Updating layer \(layerIndex) shapes array", level: .info)
+                if layerIndex < layers.count,
+                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                    Log.fileOperation("  - Found shape at index \(shapeIndex)", level: .info)
+                    Log.fileOperation("  - BEFORE layer shape font: \(layers[layerIndex].shapes[shapeIndex].typography?.fontFamily ?? "nil")", level: .info)
+                    
+                    // Preserve existing typography, only update stroke color
+                    layers[layerIndex].shapes[shapeIndex].typography?.hasStroke = true
+                    layers[layerIndex].shapes[shapeIndex].typography?.strokeColor = color
+                    
+                    Log.fileOperation("  - AFTER layer shape font: \(layers[layerIndex].shapes[shapeIndex].typography?.fontFamily ?? "nil")", level: .info)
+                } else {
+                    Log.fileOperation("⚠️ Could not find shape in layers array!", level: .warning)
+                }
+                
+                // CRITICAL FIX: Only update the stroke properties in legacy array, preserve ALL other properties
+                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
+                    Log.fileOperation("📝 Updating legacy textObjects array at index \(legacyIndex)", level: .info)
+                    Log.fileOperation("  - BEFORE legacy font: \(textObjects[legacyIndex].typography.fontFamily)", level: .info)
+                    
+                    // ONLY update stroke color - preserve font, size, weight, style, alignment, etc.
+                    textObjects[legacyIndex].typography.hasStroke = true
+                    textObjects[legacyIndex].typography.strokeColor = color
+                    
+                    Log.fileOperation("  - AFTER legacy font: \(textObjects[legacyIndex].typography.fontFamily)", level: .info)
+                    Log.fileOperation("  - AFTER legacy size: \(textObjects[legacyIndex].typography.fontSize)", level: .info)
+                    Log.fileOperation("  - AFTER legacy weight: \(String(describing: textObjects[legacyIndex].typography.fontWeight))", level: .info)
+                } else {
+                    Log.fileOperation("⚠️ Could not find text in legacy textObjects array!", level: .warning)
+                }
+            } else {
+                Log.fileOperation("❌ Failed to cast unified object to shape!", level: .error)
+            }
+        } else {
+            Log.fileOperation("❌ Could not find object in unified array with id: \(id)", level: .error)
+        }
+        
+        Log.fileOperation("🔍 updateTextStrokeColorInUnified END", level: .info)
     }
     
     // MARK: - UNIFIED LOCK/UNLOCK HELPERS

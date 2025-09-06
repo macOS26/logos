@@ -665,6 +665,9 @@ struct FontPanel: View {
                     Log.info("  - Action: \(action)", category: .general)
                     Log.info("  - Font: \(updatedTypography.fontFamily) \(updatedTypography.fontWeight.rawValue) \(updatedTypography.fontStyle.rawValue)", category: .general)
                     Log.info("  - Size: \(updatedTypography.fontSize)pt", category: .general)
+                    
+                    // CRITICAL FIX: Update typography in unified objects and layers array to prevent reset on color change
+                    document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
                 } else {
                     Log.fileOperation("🎯 NO CHANGE: UUID \(textID.uuidString.prefix(8)) - font settings unchanged", level: .info)
                 }

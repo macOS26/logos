@@ -240,7 +240,7 @@ enum GeometricShapeType: String, CaseIterable, Codable {
 }
 
 // MARK: - Vector Shape
-struct VectorShape: Codable, Hashable, Identifiable {
+struct VectorShape: Hashable, Identifiable {
     var id: UUID
     var name: String
     var path: VectorPath
@@ -337,6 +337,19 @@ struct VectorShape: Codable, Hashable, Identifiable {
     }
     
     mutating func updateBounds() {
+        // CRITICAL FIX: For text objects, use areaSize if available to avoid infinity bounds
+        if isTextObject {
+            if let areaSize = areaSize {
+                // Use the user-defined area size for text boxes
+                bounds = CGRect(x: 0, y: 0, width: areaSize.width, height: areaSize.height)
+            } else {
+                // Fallback to a default size for text without area size
+                // This prevents infinity bounds which make text unselectable
+                bounds = CGRect(x: 0, y: 0, width: 200, height: 50)
+            }
+            return
+        }
+        
         // FLATTENED SHAPE FIX: For flattened groups, calculate bounds from grouped shapes, not container path
         if isGroup && !groupedShapes.isEmpty {
             // Flattened shape: Use union of all grouped shapes' bounds
@@ -353,7 +366,13 @@ struct VectorShape: Codable, Hashable, Identifiable {
         } else {
             // Regular shape: Use original path bounds, not transformed bounds
             // This prevents double transformation issues during rendering
-            bounds = path.cgPath.boundingBoxOfPath
+            let pathBounds = path.cgPath.boundingBoxOfPath
+            // Check for invalid bounds (infinity or NaN)
+            if pathBounds.isInfinite || pathBounds.isNull || pathBounds.isEmpty {
+                bounds = CGRect(x: 0, y: 0, width: 100, height: 100) // Default fallback
+            } else {
+                bounds = pathBounds
+            }
             // Transform is applied separately during rendering via .transformEffect()
         }
     }
@@ -539,16 +558,158 @@ struct VectorShape: Codable, Hashable, Identifiable {
         // CRITICAL FIX: Preserve the original VectorText ID so ProfessionalTextCanvas can find it
         shape.id = vectorText.id
         
-        // CRITICAL FIX: Set proper bounds for text objects (empty paths have zero bounds)
-        shape.bounds = CGRect(
-            x: 0, y: 0, 
-            width: vectorText.bounds.width, 
-            height: vectorText.bounds.height
-        )
+        // CRITICAL FIX: Set proper bounds for text objects
+        // Use areaSize if available, otherwise use vectorText bounds with validation
+        if let areaSize = vectorText.areaSize {
+            shape.bounds = CGRect(x: 0, y: 0, width: areaSize.width, height: areaSize.height)
+        } else if !vectorText.bounds.isInfinite && !vectorText.bounds.isNull && 
+                  vectorText.bounds.width > 0 && vectorText.bounds.height > 0 {
+            shape.bounds = CGRect(
+                x: 0, y: 0, 
+                width: vectorText.bounds.width, 
+                height: vectorText.bounds.height
+            )
+        } else {
+            // Fallback to default size if bounds are invalid
+            shape.bounds = CGRect(x: 0, y: 0, width: 200, height: 50)
+        }
         
         return shape
     }
+}
+
+// MARK: - Codable Implementation with Bounds Validation
+extension VectorShape: Codable {
+    enum CodingKeys: String, CodingKey {
+        case id, name, path, geometricType, strokeStyle, fillStyle
+        case transform, isVisible, isLocked, opacity, blendMode, bounds
+        case embeddedImageData, linkedImagePath, linkedImageBookmarkData
+        case isGroup, groupedShapes, groupTransform
+        case isCompoundPath, isClippingPath, clippedByShapeID
+        case isWarpObject, originalPath, warpEnvelope, originalEnvelope
+        case isRoundedRectangle, originalBounds, cornerRadii
+        case isTextObject, textContent, typography
+        case isPointText, cursorPosition, areaSize, isEditing
+    }
     
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(path, forKey: .path)
+        try container.encodeIfPresent(geometricType, forKey: .geometricType)
+        try container.encodeIfPresent(strokeStyle, forKey: .strokeStyle)
+        try container.encodeIfPresent(fillStyle, forKey: .fillStyle)
+        try container.encode(transform, forKey: .transform)
+        try container.encode(isVisible, forKey: .isVisible)
+        try container.encode(isLocked, forKey: .isLocked)
+        try container.encode(opacity, forKey: .opacity)
+        try container.encode(blendMode, forKey: .blendMode)
+        
+        // CRITICAL FIX: Validate bounds before encoding to prevent infinity/NaN errors
+        let validBounds: CGRect
+        if bounds.isInfinite || bounds.isNull || 
+           bounds.width.isInfinite || bounds.height.isInfinite ||
+           bounds.width.isNaN || bounds.height.isNaN {
+            // Use fallback bounds for invalid values
+            if isTextObject {
+                validBounds = CGRect(x: 0, y: 0, width: areaSize?.width ?? 200, height: areaSize?.height ?? 50)
+            } else {
+                validBounds = CGRect(x: 0, y: 0, width: 100, height: 100)
+            }
+        } else {
+            validBounds = bounds
+        }
+        try container.encode(validBounds, forKey: .bounds)
+        
+        try container.encodeIfPresent(embeddedImageData, forKey: .embeddedImageData)
+        try container.encodeIfPresent(linkedImagePath, forKey: .linkedImagePath)
+        try container.encodeIfPresent(linkedImageBookmarkData, forKey: .linkedImageBookmarkData)
+        
+        try container.encode(isGroup, forKey: .isGroup)
+        try container.encode(groupedShapes, forKey: .groupedShapes)
+        try container.encode(groupTransform, forKey: .groupTransform)
+        
+        try container.encode(isCompoundPath, forKey: .isCompoundPath)
+        try container.encode(isClippingPath, forKey: .isClippingPath)
+        try container.encodeIfPresent(clippedByShapeID, forKey: .clippedByShapeID)
+        
+        try container.encode(isWarpObject, forKey: .isWarpObject)
+        try container.encodeIfPresent(originalPath, forKey: .originalPath)
+        try container.encode(warpEnvelope, forKey: .warpEnvelope)
+        try container.encode(originalEnvelope, forKey: .originalEnvelope)
+        
+        try container.encode(isRoundedRectangle, forKey: .isRoundedRectangle)
+        try container.encodeIfPresent(originalBounds, forKey: .originalBounds)
+        try container.encode(cornerRadii, forKey: .cornerRadii)
+        
+        try container.encode(isTextObject, forKey: .isTextObject)
+        try container.encodeIfPresent(textContent, forKey: .textContent)
+        try container.encodeIfPresent(typography, forKey: .typography)
+        try container.encode(isPointText, forKey: .isPointText)
+        try container.encode(cursorPosition, forKey: .cursorPosition)
+        try container.encodeIfPresent(areaSize, forKey: .areaSize)
+        try container.encode(isEditing, forKey: .isEditing)
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        path = try container.decode(VectorPath.self, forKey: .path)
+        geometricType = try container.decodeIfPresent(GeometricShapeType.self, forKey: .geometricType)
+        strokeStyle = try container.decodeIfPresent(StrokeStyle.self, forKey: .strokeStyle)
+        fillStyle = try container.decodeIfPresent(FillStyle.self, forKey: .fillStyle)
+        transform = try container.decode(CGAffineTransform.self, forKey: .transform)
+        isVisible = try container.decode(Bool.self, forKey: .isVisible)
+        isLocked = try container.decode(Bool.self, forKey: .isLocked)
+        opacity = try container.decode(Double.self, forKey: .opacity)
+        blendMode = try container.decode(BlendMode.self, forKey: .blendMode)
+        
+        // CRITICAL FIX: Validate bounds after decoding
+        let decodedBounds = try container.decode(CGRect.self, forKey: .bounds)
+        if decodedBounds.isInfinite || decodedBounds.isNull ||
+           decodedBounds.width.isInfinite || decodedBounds.height.isInfinite ||
+           decodedBounds.width.isNaN || decodedBounds.height.isNaN {
+            bounds = CGRect(x: 0, y: 0, width: 100, height: 100)
+        } else {
+            bounds = decodedBounds
+        }
+        
+        embeddedImageData = try container.decodeIfPresent(Data.self, forKey: .embeddedImageData)
+        linkedImagePath = try container.decodeIfPresent(String.self, forKey: .linkedImagePath)
+        linkedImageBookmarkData = try container.decodeIfPresent(Data.self, forKey: .linkedImageBookmarkData)
+        
+        isGroup = try container.decode(Bool.self, forKey: .isGroup)
+        groupedShapes = try container.decode([VectorShape].self, forKey: .groupedShapes)
+        groupTransform = try container.decode(CGAffineTransform.self, forKey: .groupTransform)
+        
+        isCompoundPath = try container.decode(Bool.self, forKey: .isCompoundPath)
+        isClippingPath = try container.decodeIfPresent(Bool.self, forKey: .isClippingPath) ?? false
+        clippedByShapeID = try container.decodeIfPresent(UUID.self, forKey: .clippedByShapeID)
+        
+        isWarpObject = try container.decode(Bool.self, forKey: .isWarpObject)
+        originalPath = try container.decodeIfPresent(VectorPath.self, forKey: .originalPath)
+        warpEnvelope = try container.decode([CGPoint].self, forKey: .warpEnvelope)
+        originalEnvelope = try container.decode([CGPoint].self, forKey: .originalEnvelope)
+        
+        isRoundedRectangle = try container.decodeIfPresent(Bool.self, forKey: .isRoundedRectangle) ?? false
+        originalBounds = try container.decodeIfPresent(CGRect.self, forKey: .originalBounds)
+        cornerRadii = try container.decodeIfPresent([Double].self, forKey: .cornerRadii) ?? []
+        
+        isTextObject = try container.decodeIfPresent(Bool.self, forKey: .isTextObject) ?? false
+        textContent = try container.decodeIfPresent(String.self, forKey: .textContent)
+        typography = try container.decodeIfPresent(TypographyProperties.self, forKey: .typography)
+        isPointText = try container.decodeIfPresent(Bool.self, forKey: .isPointText) ?? true
+        cursorPosition = try container.decodeIfPresent(Int.self, forKey: .cursorPosition) ?? 0
+        areaSize = try container.decodeIfPresent(CGSize.self, forKey: .areaSize)
+        isEditing = try container.decodeIfPresent(Bool.self, forKey: .isEditing) ?? false
+    }
+}
+
+extension VectorShape {
     // MARK: - Factory methods for common shapes
     static func rectangle(at origin: CGPoint, size: CGSize) -> VectorShape {
         let rect = CGRect(origin: origin, size: size)
@@ -620,6 +781,7 @@ struct VectorShape: Codable, Hashable, Identifiable {
         return VectorShape(name: "Star", path: path, geometricType: .star, strokeStyle: StrokeStyle(placement: .center), fillStyle: FillStyle(color: .white))
     }
         
+    /* REMOVED DUPLICATE - Using the one in Codable extension
     /// Custom decoder to handle documents created before corner radius feature
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -667,7 +829,9 @@ struct VectorShape: Codable, Hashable, Identifiable {
         
         // Removed excessive logging for performance
     }
+    */
     
+    /* REMOVED DUPLICATE - Using the one in Codable extension
     private enum CodingKeys: String, CodingKey {
         case id, name, path, geometricType, strokeStyle, fillStyle, transform, isVisible, isLocked, opacity, blendMode, bounds
         case isGroup, groupedShapes, groupTransform, isCompoundPath, isWarpObject, originalPath, warpEnvelope, originalEnvelope
@@ -676,6 +840,7 @@ struct VectorShape: Codable, Hashable, Identifiable {
         case embeddedImageData, linkedImagePath, linkedImageBookmarkData
         case isTextObject, textContent, typography, isPointText, cursorPosition, areaSize, isEditing
     }
+    */
 }
 
 // MARK: - Vector Layer
