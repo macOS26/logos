@@ -583,6 +583,9 @@ extension VectorDocument {
             Log.fileOperation("❌ Could not find object in unified array with id: \(id)", level: .error)
         }
         
+        // Notify SwiftUI that the document has changed
+        objectWillChange.send()
+        
         Log.fileOperation("🔍 updateTextFillColorInUnified END", level: .info)
     }
     
@@ -629,10 +632,27 @@ extension VectorDocument {
                     
                     Log.fileOperation("  - AFTER layer font: \(layers[layerIndex].shapes[shapeIndex].typography?.fontFamily ?? "nil")", level: .info)
                 }
+                
+                // CRITICAL: Update the legacy textObjects array to keep it in sync
+                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
+                    Log.fileOperation("📝 Updating legacy textObjects array at index \(legacyIndex)", level: .info)
+                    Log.fileOperation("  - BEFORE legacy font: \(textObjects[legacyIndex].typography.fontFamily)", level: .info)
+                    
+                    // Update the entire typography object
+                    textObjects[legacyIndex].typography = typography
+                    
+                    Log.fileOperation("  - AFTER legacy font: \(textObjects[legacyIndex].typography.fontFamily)", level: .info)
+                    Log.fileOperation("  - AFTER legacy size: \(textObjects[legacyIndex].typography.fontSize)", level: .info)
+                } else {
+                    Log.fileOperation("⚠️ Could not find text in legacy textObjects array!", level: .warning)
+                }
             }
         } else {
             Log.fileOperation("⚠️ Could not find text in unified objects with id: \(id)", level: .warning)
         }
+        
+        // Notify SwiftUI that the document has changed
+        objectWillChange.send()
         
         Log.fileOperation("🔍 updateTextTypographyInUnified END", level: .info)
     }
@@ -750,6 +770,9 @@ extension VectorDocument {
         } else {
             Log.fileOperation("❌ Could not find object in unified array with id: \(id)", level: .error)
         }
+        
+        // Notify SwiftUI that the document has changed
+        objectWillChange.send()
         
         Log.fileOperation("🔍 updateTextStrokeColorInUnified END", level: .info)
     }
