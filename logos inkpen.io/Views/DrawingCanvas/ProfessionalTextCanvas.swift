@@ -63,7 +63,7 @@ struct StableProfessionalTextCanvas: View {
         } else {
             // FALLBACK: If text object missing from textObjects, log issue with debugging info
             Log.fileOperation("⚠️ TEXT CANVAS: Text object \(textObjectID.uuidString.prefix(8)) not found in textObjects array", level: .info)
-            Log.fileOperation("🔍 DEBUG: Available text object IDs: \(document.textObjects.map { $0.id.uuidString.prefix(8) })", level: .info)
+            Log.fileOperation("🔍 DEBUG: Available text object IDs: \(document.allTextObjects.map { $0.id.uuidString.prefix(8) })", level: .info)
             Log.fileOperation("🔍 DEBUG: Total text objects: \(document.allTextObjects.count)", level: .info)
         }
     }

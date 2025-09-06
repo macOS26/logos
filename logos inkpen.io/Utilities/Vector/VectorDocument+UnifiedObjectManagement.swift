@@ -279,6 +279,9 @@ extension VectorDocument {
         }
         
         Log.info("🔧 UNIFIED OBJECTS: Populated with \(unifiedObjects.count) objects preserving original order", category: .general)
+        
+        // MIGRATION: Rebuild textObjects from unified to keep UI components working
+        rebuildTextObjectsFromUnified()
     }
     
     /// Sync selection arrays to maintain compatibility with existing code
@@ -341,6 +344,40 @@ extension VectorDocument {
         Log.fileOperation("🔧 UNIFIED OBJECTS: Updated ordering to match layer changes", level: .info)
     }
     
+    /// Rebuild textObjects array from unified objects (read-only sync)
+    /// This keeps textObjects populated for UI components that still read from it
+    func rebuildTextObjectsFromUnified() {
+        // Clear and rebuild textObjects array from unified
+        textObjects.removeAll()
+        
+        for unifiedObject in unifiedObjects.sorted(by: { $0.orderID < $1.orderID }) {
+            if case .shape(let shape) = unifiedObject.objectType, shape.isTextObject {
+                if let textContent = shape.textContent, let typography = shape.typography {
+                    // Use stored textPosition if available, otherwise extract from transform
+                    let position = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                    var vectorText = VectorText(
+                        content: textContent,
+                        typography: typography,
+                        position: position,
+                        transform: .identity,
+                        isVisible: shape.isVisible,
+                        isLocked: shape.isLocked,
+                        isEditing: shape.isEditing ?? false,
+                        layerIndex: unifiedObject.layerIndex,
+                        isPointText: shape.isPointText ?? true,
+                        cursorPosition: shape.cursorPosition ?? 0,
+                        areaSize: shape.areaSize
+                    )
+                    // Preserve the original ID
+                    vectorText.id = shape.id
+                    textObjects.append(vectorText)
+                }
+            }
+        }
+        
+        Log.fileOperation("🔄 Rebuilt textObjects from unified: \(textObjects.count) text objects", level: .info)
+    }
+    
     /// CRITICAL FIX: Sync legacy arrays from unified objects array
     private func syncLegacyArraysFromUnified() {
         // CRITICAL FIX: Preserve original objects before clearing arrays to maintain state
@@ -360,8 +397,9 @@ extension VectorDocument {
                 if shape.isTextObject {
                     // Convert VectorShape back to VectorText for legacy textObjects array
                     if let textContent = shape.textContent, let typography = shape.typography {
-                        let position = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
-                        let vectorText = VectorText(
+                        // Use stored textPosition if available, otherwise extract from transform
+                        let position = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                        var vectorText = VectorText(
                             content: textContent,
                             typography: typography,
                             position: position,
@@ -374,8 +412,8 @@ extension VectorDocument {
                             cursorPosition: shape.cursorPosition ?? 0,
                             areaSize: shape.areaSize
                         )
-                        // Note: VectorText.id is let, so we can't change it
-                        // We'll need to update VectorText.id to be var if we want to preserve IDs
+                        // Preserve the original ID
+                        vectorText.id = shape.id
                         textObjects.append(vectorText)
                     }
                 } else {
