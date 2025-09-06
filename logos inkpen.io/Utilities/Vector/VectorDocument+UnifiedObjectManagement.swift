@@ -583,8 +583,7 @@ extension VectorDocument {
             Log.fileOperation("❌ Could not find object in unified array with id: \(id)", level: .error)
         }
         
-        // Notify SwiftUI that the document has changed
-        objectWillChange.send()
+        // No need for explicit objectWillChange.send() - @Published properties handle this
         
         Log.fileOperation("🔍 updateTextFillColorInUnified END", level: .info)
     }
@@ -651,8 +650,7 @@ extension VectorDocument {
             Log.fileOperation("⚠️ Could not find text in unified objects with id: \(id)", level: .warning)
         }
         
-        // Notify SwiftUI that the document has changed
-        objectWillChange.send()
+        // No need for explicit objectWillChange.send() - @Published properties handle this
         
         Log.fileOperation("🔍 updateTextTypographyInUnified END", level: .info)
     }
@@ -771,8 +769,7 @@ extension VectorDocument {
             Log.fileOperation("❌ Could not find object in unified array with id: \(id)", level: .error)
         }
         
-        // Notify SwiftUI that the document has changed
-        objectWillChange.send()
+        // No need for explicit objectWillChange.send() - @Published properties handle this
         
         Log.fileOperation("🔍 updateTextStrokeColorInUnified END", level: .info)
     }
