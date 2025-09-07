@@ -13,9 +13,8 @@ extension VectorDocument {
     func addShape(_ shape: VectorShape) {
         guard let layerIndex = selectedLayerIndex else { return }
         saveToUndoStack()
-        layers[layerIndex].addShape(shape)
         
-        // Add to unified system
+        // Add only to unified system
         addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
         
         selectedShapeIDs = [shape.id]
@@ -27,7 +26,6 @@ extension VectorDocument {
     func addShapeToFront(_ shape: VectorShape) {
         guard let layerIndex = selectedLayerIndex else { return }
         saveToUndoStack()
-        layers[layerIndex].addShape(shape)
         
         // Add to front of unified system
         addShapeToFrontOfUnifiedSystem(shape, layerIndex: layerIndex)
@@ -41,9 +39,8 @@ extension VectorDocument {
     func addShape(_ shape: VectorShape, to layerIndex: Int) {
         guard layerIndex >= 0 && layerIndex < layers.count else { return }
         saveToUndoStack()
-        layers[layerIndex].addShape(shape)
         
-        // Add to unified system
+        // Add only to unified system
         addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
     }
     

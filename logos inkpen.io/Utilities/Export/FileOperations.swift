@@ -284,8 +284,8 @@ class FileOperations {
         pasteboardShape.fillStyle = FillStyle(color: .black, opacity: 0.2)  // 20% black
         pasteboardShape.strokeStyle = nil
         pasteboardShape.name = "Pasteboard Background"
-        pasteboardLayer.addShape(pasteboardShape)
         document.layers.append(pasteboardLayer)
+        document.addShapeToUnifiedSystem(pasteboardShape, layerIndex: 0)
         
         // Create canvas layer SECOND (index 1) so it's above pasteboard
         var canvasLayer = VectorLayer(name: "Canvas")
@@ -298,8 +298,8 @@ class FileOperations {
         backgroundShape.fillStyle = FillStyle(color: .white, opacity: 1.0)
         backgroundShape.strokeStyle = nil
         backgroundShape.name = "Canvas Background"
-        canvasLayer.addShape(backgroundShape)
         document.layers.append(canvasLayer)
+        document.addShapeToUnifiedSystem(backgroundShape, layerIndex: 1)
         
         // Create imported layer THIRD (index 2) so it's on top
         var importedLayer = VectorLayer(name: "Imported SVG")
@@ -337,7 +337,7 @@ class FileOperations {
             centeredShape.isLocked = false
             centeredShape.isVisible = true
             
-            importedLayer.addShape(centeredShape)
+            // Shape will be added to unified system after layer is added
         }
 
         // Text objects are now imported as shapes with isTextObject=true
@@ -431,8 +431,8 @@ class FileOperations {
         pasteboardShape.fillStyle = FillStyle(color: .black, opacity: 0.2)  // 20% black
         pasteboardShape.strokeStyle = nil
         pasteboardShape.name = "Pasteboard Background"
-        pasteboardLayer.addShape(pasteboardShape)
         document.layers.append(pasteboardLayer)
+        document.addShapeToUnifiedSystem(pasteboardShape, layerIndex: 0)
         
         // Create canvas layer SECOND (index 1) so it's above pasteboard
         var canvasLayer = VectorLayer(name: "Canvas")
@@ -445,8 +445,8 @@ class FileOperations {
         backgroundShape.fillStyle = FillStyle(color: .white, opacity: 1.0)
         backgroundShape.strokeStyle = nil
         backgroundShape.name = "Canvas Background"
-        canvasLayer.addShape(backgroundShape)
         document.layers.append(canvasLayer)
+        document.addShapeToUnifiedSystem(backgroundShape, layerIndex: 1)
         
         // Create imported layer THIRD (index 2) so it's on top
         var importedLayer = VectorLayer(name: "Imported SVG (Extreme Value Handling)")
@@ -484,7 +484,7 @@ class FileOperations {
             centeredShape.isLocked = false
             centeredShape.isVisible = true
             
-            importedLayer.addShape(centeredShape)
+            // Shape will be added to unified system after layer is added
         }
 
         // Text objects are now imported as shapes with isTextObject=true
@@ -645,8 +645,8 @@ class FileOperations {
         pasteboardShape.fillStyle = FillStyle(color: .black, opacity: 0.2)  // 20% black
         pasteboardShape.strokeStyle = nil
         pasteboardShape.name = "Pasteboard Background"
-        pasteboardLayer.addShape(pasteboardShape)
         document.layers.append(pasteboardLayer)
+        document.addShapeToUnifiedSystem(pasteboardShape, layerIndex: 0)
         
         // Create canvas layer SECOND (index 1) so it's above pasteboard
         var canvasLayer = VectorLayer(name: "Canvas")
@@ -659,8 +659,8 @@ class FileOperations {
         backgroundShape.fillStyle = FillStyle(color: .white, opacity: 1.0)
         backgroundShape.strokeStyle = nil
         backgroundShape.name = "Canvas Background"
-        canvasLayer.addShape(backgroundShape)
         document.layers.append(canvasLayer)
+        document.addShapeToUnifiedSystem(backgroundShape, layerIndex: 1)
         
         // Create imported layer THIRD (index 2) so it's on top
         var importedLayer = VectorLayer(name: "Imported PDF")
@@ -674,7 +674,7 @@ class FileOperations {
             importedShape.isLocked = false
             importedShape.isVisible = true
             
-            importedLayer.addShape(importedShape)
+            // Shape will be added to unified system after layer is added
         }
 
         // Update the layer in the document

@@ -10,6 +10,38 @@ import CoreGraphics
 
 // MARK: - Core Unified Object Management
 extension VectorDocument {
+    
+    /// Get shape at specific index (compatibility wrapper)
+    func getShapeAtIndex(layerIndex: Int, shapeIndex: Int) -> VectorShape? {
+        let shapes = getShapesForLayer(layerIndex)
+        guard shapeIndex >= 0 && shapeIndex < shapes.count else { return nil }
+        return shapes[shapeIndex]
+    }
+    
+    /// Get shape count for a layer
+    func getShapeCount(layerIndex: Int) -> Int {
+        return getShapesForLayer(layerIndex).count
+    }
+    
+    /// Set shape at specific index (compatibility wrapper)
+    func setShapeAtIndex(layerIndex: Int, shapeIndex: Int, shape: VectorShape) {
+        let shapes = getShapesForLayer(layerIndex)
+        guard shapeIndex >= 0 && shapeIndex < shapes.count else { return }
+        let oldShape = shapes[shapeIndex]
+        
+        // Find and update in unified objects
+        if let index = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let s) = obj.objectType {
+                return s.id == oldShape.id
+            }
+            return false
+        }) {
+            let orderID = unifiedObjects[index].orderID
+            unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+            objectWillChange.send()
+        }
+    }
+    
     /// Gets shapes for a specific layer from the unified objects system
     func getShapesForLayer(_ layerIndex: Int) -> [VectorShape] {
         return unifiedObjects
