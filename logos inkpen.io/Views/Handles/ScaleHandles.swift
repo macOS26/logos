@@ -381,19 +381,25 @@ struct ScaleHandles: View {
             }
             return false
         }),
-        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-        let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
+        
+        let shapes = document.getShapesForLayer(layerIndex)
+        if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }),
+           var updatedShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
             
-            _ = document.layers[layerIndex].shapes[shapeIndex].bounds
+            _ = updatedShape.bounds
             // Removed excessive logging during drag operations
             
             // CRITICAL FIX: Reset to initial transform first to prevent drift accumulation
-            document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
+            updatedShape.transform = initialTransform
+            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
             
             // Apply the final transform to coordinates and reset transform to identity
             applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
             
-            _ = document.layers[layerIndex].shapes[shapeIndex].bounds
+            if let finalShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                _ = finalShape.bounds
+            }
             // Removed excessive logging during drag operations
             
             // Reset preview transform and marquee bounds
@@ -410,6 +416,7 @@ struct ScaleHandles: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.updatePathPointsAfterScaling()
             }
+        }
         } else {
             Log.error("❌ SCALING FAILED: Could not find shape in unified objects system", category: .error)
         }
@@ -693,7 +700,7 @@ struct ScaleHandles: View {
     /// PROFESSIONAL COORDINATE SYSTEM FIX: Apply transform to actual coordinates
     /// This ensures object origin moves with the object (Professional behavior)
     private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int, transform: CGAffineTransform? = nil) {
-        let shape = document.layers[layerIndex].shapes[shapeIndex]
+        guard var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         let currentTransform = transform ?? shape.transform
         
         // Don't apply identity transforms
@@ -754,9 +761,10 @@ struct ScaleHandles: View {
             }
             
             // Update the flattened group with the transformed individual shapes
-            document.layers[layerIndex].shapes[shapeIndex].groupedShapes = transformedGroupedShapes
-            document.layers[layerIndex].shapes[shapeIndex].transform = .identity
-            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            shape.groupedShapes = transformedGroupedShapes
+            shape.transform = .identity
+            shape.updateBounds()
+            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
             
             Log.info("✅ Flattened group coordinates updated - transformed \(transformedGroupedShapes.count) individual shapes", category: .fileOperations)
             return
@@ -803,7 +811,7 @@ struct ScaleHandles: View {
         
         // Update the shape with transformed path and reset transform to identity
         // Get the current shape for corner radius check
-        let currentShape = document.layers[layerIndex].shapes[shapeIndex]
+        guard let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         
         // CORNER RADIUS SCALING: Apply transform to corner radii if this shape has them
         if !currentShape.cornerRadii.isEmpty && currentShape.isRoundedRectangle {

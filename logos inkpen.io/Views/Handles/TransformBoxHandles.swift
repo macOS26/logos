@@ -275,17 +275,23 @@ struct TransformBoxHandles: View {
             }
             return false
         }),
-        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-        let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
+        
+        let shapes = document.getShapesForLayer(layerIndex)
+        if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }),
+           let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
             
+            var updatedShape = currentShape
             // SPECIAL-CASE RASTER IMAGES: Keep transforms on transform property instead of baking into path
-            if ImageContentRegistry.containsImage(document.layers[layerIndex].shapes[shapeIndex]) {
+            if ImageContentRegistry.containsImage(currentShape) {
                 // Commit the preview transform as the shape.transform
-                document.layers[layerIndex].shapes[shapeIndex].transform = previewTransform
-                document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                updatedShape.transform = previewTransform
+                updatedShape.updateBounds()
+                document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
             } else {
                 // Reset to initial transform to avoid drift and apply final preview to path coordinates
-                document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
+                updatedShape.transform = initialTransform
+                document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                 applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
             }
             previewTransform = .identity
@@ -294,6 +300,7 @@ struct TransformBoxHandles: View {
             
             // CRITICAL FIX: Sync unified objects after scaling to ensure UI updates
             document.updateUnifiedObjectsOptimized()
+        }
         } else {
             Log.error("❌ SCALING FAILED: Could not find shape in unified objects system", category: .error)
         }
@@ -301,7 +308,7 @@ struct TransformBoxHandles: View {
 
     // Apply preview transform to actual coordinates then reset transform (local implementation)
     private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int, transform: CGAffineTransform) {
-        let targetShape = document.layers[layerIndex].shapes[shapeIndex]
+        guard let targetShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         let t = transform
         if t.isIdentity { return }
 
