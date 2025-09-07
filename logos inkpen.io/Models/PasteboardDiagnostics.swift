@@ -226,7 +226,8 @@ class PasteboardDiagnostics {
             
             if !layer.isVisible { continue }
             
-            for shape in layer.shapes.reversed() {
+            let shapesInLayer = document.getShapesForLayer(layerIndex)
+            for shape in shapesInLayer.reversed() {
                 if !shape.isVisible { continue }
                 
                 testedShapes.append("Layer \(layerIndex) - Shape: \(shape.name)")
@@ -430,7 +431,8 @@ class PasteboardDiagnostics {
             
             if !layer.isVisible { continue }
             
-            for shape in layer.shapes.reversed() {
+            let shapesInLayer = document.getShapesForLayer(layerIndex)
+            for shape in shapesInLayer.reversed() {
                 if !shape.isVisible { continue }
                 
                 testedShapes.append("Layer \(layerIndex) - Shape: \(shape.name)")
