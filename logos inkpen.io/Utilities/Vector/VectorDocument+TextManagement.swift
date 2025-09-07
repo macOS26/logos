@@ -60,7 +60,7 @@ extension VectorDocument {
         // MIGRATION: Remove text shapes from layers
         for textID in selectedTextIDs {
             for layerIndex in layers.indices {
-                layers[layerIndex].shapes.removeAll { $0.id == textID && $0.isTextObject }
+                removeShapesUnified(layerIndex: layerIndex, where: { $0.id == textID && $0.isTextObject })
             }
         }
         
@@ -516,7 +516,7 @@ extension VectorDocument {
         
         // Clear all shapes from all layers
         for layerIndex in layers.indices {
-            layers[layerIndex].shapes.removeAll()
+            removeShapesUnified(layerIndex: layerIndex, where: { _ in true })
         }
         
         // Clear all text objects (legacy array will be cleared by unified system)

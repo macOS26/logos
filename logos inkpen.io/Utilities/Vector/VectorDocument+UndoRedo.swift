@@ -369,7 +369,7 @@ extension VectorDocument {
         
         // Clear existing shapes arrays to rebuild from unified objects
         for layerIndex in layers.indices {
-            layers[layerIndex].shapes.removeAll()
+            removeShapesUnified(layerIndex: layerIndex, where: { _ in true })
         }
         
         // Text is now fully managed in unified system
@@ -384,13 +384,13 @@ extension VectorDocument {
                 if shape.isTextObject {
                     // Text objects are already rebuilt from unified via rebuildTextObjectsFromUnified()
                     // Just add to shapes array for unified system
-                    layers[unifiedObject.layerIndex].shapes.append(shape)
+                    appendShapeToLayerUnified(layerIndex: unifiedObject.layerIndex, shape: shape)
                 } else {
                     // Regular shape - restore from original or use from unified
                     if let originalShape = originalShapes[unifiedObject.layerIndex].first(where: { $0.id == shape.id }) {
-                        layers[unifiedObject.layerIndex].shapes.append(originalShape)
+                        appendShapeToLayerUnified(layerIndex: unifiedObject.layerIndex, shape: originalShape)
                     } else {
-                        layers[unifiedObject.layerIndex].shapes.append(shape)
+                        appendShapeToLayerUnified(layerIndex: unifiedObject.layerIndex, shape: shape)
                     }
                 }
             }

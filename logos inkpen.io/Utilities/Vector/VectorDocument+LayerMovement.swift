@@ -34,15 +34,23 @@ extension VectorDocument {
         }
         
         // Find and remove the shape from source layer
-        guard let shapeIndex = layers[fromLayerIndex].shapes.firstIndex(where: { $0.id == shapeId }) else {
+        let shapes = getShapesForLayer(fromLayerIndex)
+        guard let shapeIndex = shapes.firstIndex(where: { $0.id == shapeId }) else {
             Log.error("❌ Shape not found in source layer \(fromLayerIndex)", category: .error)
             return
         }
         
         saveToUndoStack()
         
-        let shape = layers[fromLayerIndex].shapes.remove(at: shapeIndex)
-        layers[toLayerIndex].shapes.append(shape)
+        // Get the shape before removing it
+        guard let shape = getShapeAtIndex(layerIndex: fromLayerIndex, shapeIndex: shapeIndex) else {
+            Log.error("❌ Failed to get shape from source layer", category: .error)
+            return
+        }
+        
+        // Remove from source layer and add to destination layer
+        removeShapeAtIndexUnified(layerIndex: fromLayerIndex, shapeIndex: shapeIndex)
+        appendShapeToLayerUnified(layerIndex: toLayerIndex, shape: shape)
         
         // Update selection to follow the moved shape
         selectedShapeIDs = [shapeId]
