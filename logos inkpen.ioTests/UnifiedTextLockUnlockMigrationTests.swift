@@ -5,7 +5,7 @@
 //  Testing migration of lock/unlock text methods to eliminate layers[].shapes
 //
 
-import Testing
+// import Testing
 @testable import logos_inkpen_io
 import Foundation
 import CoreGraphics

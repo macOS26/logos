@@ -6,7 +6,7 @@
 //  This was a MAJOR BUG that reset font, size, weight, style when changing colors
 //
 
-import Testing
+// import Testing
 @testable import logos_inkpen_io
 import SwiftUI
 

@@ -6,7 +6,7 @@
 //  This prevents the critical bug where undo creates default "Text" instead of restoring original
 //
 
-import Testing
+// import Testing
 import CoreGraphics
 @testable import logos_inkpen_io
 import Foundation

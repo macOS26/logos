@@ -5,7 +5,7 @@
 //  Testing the migration from direct textObjects array to unified system
 //
 
-import Testing
+// import Testing
 import Foundation
 import CoreGraphics
 @testable import logos_inkpen_io

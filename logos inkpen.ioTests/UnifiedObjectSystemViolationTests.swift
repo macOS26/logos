@@ -6,7 +6,7 @@
 //  Tests for shape migrations to unified object system
 //
 
-import Testing
+// import Testing
 import CoreGraphics
 @testable import logos_inkpen_io
 import Foundation

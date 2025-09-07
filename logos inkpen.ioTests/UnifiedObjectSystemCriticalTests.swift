@@ -5,7 +5,7 @@
 //  CRITICAL TEMPORAL STABILITY TESTS
 //
 
-import Testing
+// import Testing
 import CoreGraphics
 @testable import logos_inkpen_io
 import Foundation

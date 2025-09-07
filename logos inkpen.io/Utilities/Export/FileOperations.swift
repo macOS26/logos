@@ -261,9 +261,7 @@ class FileOperations {
         }
         
         // VectorDocument init already created Pasteboard, Canvas and Working layers with backgrounds
-        // We only need to update the canvas size in settings
-        document.settings.width = canvasWidth
-        document.settings.height = canvasHeight
+        // Canvas size already set above in inches - don't override with raw pixel values
         
         // FIXED: Position objects at viewBox origin (0,0), not artwork bounds origin
         // This preserves the intended positioning from the SVG file
@@ -289,13 +287,23 @@ class FileOperations {
             let centeringTransform = CGAffineTransform(translationX: translateX, y: translateY)
             let finalTransform = shape.transform.concatenating(centeringTransform)
             
-            // Apply the complete transform to coordinates and reset transform to identity
-            centeredShape = applyTransformToShapeCoordinates(shape: centeredShape, transform: finalTransform)
-            centeredShape.transform = .identity
+            // CRITICAL FIX: Only apply transform if it's not identity
+            // This preserves the original shape's properties and bounds
+            if !finalTransform.isIdentity {
+                centeredShape = applyTransformToShapeCoordinates(shape: centeredShape, transform: finalTransform)
+                centeredShape.transform = .identity
+            }
             
             // Ensure the shape is editable
             centeredShape.isLocked = false
             centeredShape.isVisible = true
+            
+            // Debug: Log shape being added with bounds
+            Log.fileOperation("✅ Adding SVG shape '\(centeredShape.name)' to unified system at layer 2", level: .debug)
+            Log.fileOperation("   📐 Shape bounds: \(centeredShape.bounds)", level: .debug)
+            Log.fileOperation("   👁️ Shape visible: \(centeredShape.isVisible)", level: .debug)
+            Log.fileOperation("   🎨 Fill: \(centeredShape.fillStyle != nil ? String(describing: centeredShape.fillStyle!.color) : "none")", level: .debug)
+            Log.fileOperation("   🖌️ Stroke: \(centeredShape.strokeStyle != nil ? String(describing: centeredShape.strokeStyle!.color) : "none")", level: .debug)
             
             // Add shape to unified system (layer index 2 for imported layer)
             document.addShapeToUnifiedSystem(centeredShape, layerIndex: 2)
@@ -364,9 +372,7 @@ class FileOperations {
         }
         
         // VectorDocument init already created Pasteboard, Canvas and Working layers with backgrounds
-        // We only need to update the canvas size in settings
-        document.settings.width = canvasWidth
-        document.settings.height = canvasHeight
+        // Canvas size already set above in inches - don't override with raw pixel values
         
         // FIXED: Position objects at viewBox origin (0,0), not artwork bounds origin
         // This preserves the intended positioning from the SVG file
@@ -392,13 +398,23 @@ class FileOperations {
             let centeringTransform = CGAffineTransform(translationX: translateX, y: translateY)
             let finalTransform = shape.transform.concatenating(centeringTransform)
             
-            // Apply the complete transform to coordinates and reset transform to identity
-            centeredShape = applyTransformToShapeCoordinates(shape: centeredShape, transform: finalTransform)
-            centeredShape.transform = .identity
+            // CRITICAL FIX: Only apply transform if it's not identity
+            // This preserves the original shape's properties and bounds
+            if !finalTransform.isIdentity {
+                centeredShape = applyTransformToShapeCoordinates(shape: centeredShape, transform: finalTransform)
+                centeredShape.transform = .identity
+            }
             
             // Ensure the shape is editable
             centeredShape.isLocked = false
             centeredShape.isVisible = true
+            
+            // Debug: Log shape being added with bounds
+            Log.fileOperation("✅ Adding SVG shape '\(centeredShape.name)' to unified system at layer 2", level: .debug)
+            Log.fileOperation("   📐 Shape bounds: \(centeredShape.bounds)", level: .debug)
+            Log.fileOperation("   👁️ Shape visible: \(centeredShape.isVisible)", level: .debug)
+            Log.fileOperation("   🎨 Fill: \(centeredShape.fillStyle != nil ? String(describing: centeredShape.fillStyle!.color) : "none")", level: .debug)
+            Log.fileOperation("   🖌️ Stroke: \(centeredShape.strokeStyle != nil ? String(describing: centeredShape.strokeStyle!.color) : "none")", level: .debug)
             
             // Add shape to unified system (layer index 2 for imported layer)
             document.addShapeToUnifiedSystem(centeredShape, layerIndex: 2)
@@ -414,6 +430,8 @@ class FileOperations {
             Log.fileOperation("⚠️ SVG Import Warning: \(warning)", level: .info)
         }
         
+        // CRITICAL: Log the unified objects count to verify they were added
+        Log.info("🔧 UNIFIED OBJECTS after SVG import: \(document.unifiedObjects.count) objects", category: .fileOperations)
         Log.info("✅ Successfully imported SVG document with extreme value handling: \(result.shapes.count) shapes", category: .fileOperations)
         Log.fileOperation("📐 Canvas sized to exact artwork dimensions: \(canvasWidth) × \(canvasHeight) pts", level: .info)
         return document
@@ -813,6 +831,8 @@ class FileOperations {
         if transform.isIdentity {
             return shape
         }
+        
+        Log.fileOperation("🔄 Applying transform to SVG shape: \(shape.name)", level: .debug)
         
         // Transform all path elements
         var transformedElements: [PathElement] = []

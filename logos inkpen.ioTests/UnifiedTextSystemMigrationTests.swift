@@ -6,7 +6,7 @@
 //  and that legacy textObjects array stays synchronized
 //
 
-import Testing
+// import Testing
 import CoreGraphics
 import Foundation
 @testable import logos_inkpen_io

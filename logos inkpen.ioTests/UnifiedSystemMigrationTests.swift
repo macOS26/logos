@@ -5,7 +5,7 @@
 //  Comprehensive test suite for migrating from legacy arrays to unified system
 //
 
-import Testing
+// import Testing
 @testable import logos_inkpen_io
 import Foundation
 import CoreGraphics

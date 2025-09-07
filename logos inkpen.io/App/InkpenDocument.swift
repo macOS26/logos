@@ -41,9 +41,15 @@ struct InkpenDocument: FileDocument {
             do {
                 self.document = try FileOperations.importFromSVGData(data)
                 
+                // Debug: Check unified objects before and after population
+                Log.info("🔍 DEBUG: Unified objects BEFORE populate: \(self.document.unifiedObjects.count)", category: .fileOperations)
+                
                 // CRITICAL FIX: Populate unified objects system after SVG import for proper rendering
                 // For SVG imports, we want to preserve the original stacking order from the SVG
                 self.document.populateUnifiedObjectsFromLayersPreservingOrder()
+                
+                Log.info("🔍 DEBUG: Unified objects AFTER populate: \(self.document.unifiedObjects.count)", category: .fileOperations)
+                
                 self.document.updateUnifiedObjectsOptimized()
                 self.document.objectWillChange.send()
                 
