@@ -141,8 +141,8 @@ struct DocumentBasedMainView: View {
             // Hydrate linked images when opened via DocumentGroup (where init lacks URL context)
             if let url = fileURL {
                 ImageContentRegistry.setBaseDirectoryURL(url.deletingLastPathComponent())
-                for layer in document.layers {
-                    for shape in layer.shapes {
+                for unifiedObject in document.unifiedObjects {
+                    if case .shape(let shape) = unifiedObject.objectType {
                         _ = ImageContentRegistry.hydrateImageIfAvailable(for: shape)
                     }
                 }
