@@ -27,7 +27,7 @@ struct UnifiedClippingMaskTests {
         document.addShapeToUnifiedSystem(circle, layerIndex: 2)
         
         // Verify initial state - no duplicates
-        let initialShapeCount = document.layers[2].shapes.count
+        let initialShapeCount = document.getShapeCount(layerIndex: 2)
         let initialUnifiedCount = document.unifiedObjects.count
         #expect(initialShapeCount == 2, "Should have exactly 2 shapes in layer")
         
@@ -46,15 +46,15 @@ struct UnifiedClippingMaskTests {
         document.makeClippingMaskFromSelection()
         
         // Verify no duplicates were created
-        let afterShapeCount = document.layers[2].shapes.count
+        let afterShapeCount = document.getShapeCount(layerIndex: 2)
         let afterUnifiedCount = document.unifiedObjects.count
         
         #expect(afterShapeCount == 2, "Should still have exactly 2 shapes after clipping mask creation")
         #expect(afterUnifiedCount == initialUnifiedCount, "Unified object count should not change")
         
         // Verify clipping relationships are correct
-        let maskShape = document.layers[2].shapes.first { $0.id == circle.id }
-        let clippedShape = document.layers[2].shapes.first { $0.id == rect.id }
+        let maskShape = document.getShapesForLayer(2).first { $0.id == circle.id }
+        let clippedShape = document.getShapesForLayer(2).first { $0.id == rect.id }
         
         #expect(maskShape?.isClippingPath == true, "Circle should be marked as clipping path")
         #expect(clippedShape?.clippedByShapeID == circle.id, "Rectangle should be clipped by circle")
@@ -98,9 +98,9 @@ struct UnifiedClippingMaskTests {
         document.makeClippingMaskFromSelection()
         
         // Verify clipping relationships
-        let mask = document.layers[2].shapes.first { $0.id == maskShape.id }
-        let clipped1 = document.layers[2].shapes.first { $0.id == rect1.id }
-        let clipped2 = document.layers[2].shapes.first { $0.id == rect2.id }
+        let mask = document.getShapesForLayer(2).first { $0.id == maskShape.id }
+        let clipped1 = document.getShapesForLayer(2).first { $0.id == rect1.id }
+        let clipped2 = document.getShapesForLayer(2).first { $0.id == rect2.id }
         
         #expect(mask?.isClippingPath == true, "Ellipse should be clipping path")
         #expect(clipped1?.clippedByShapeID == maskShape.id, "First rectangle should be clipped")
@@ -143,15 +143,15 @@ struct UnifiedClippingMaskTests {
         document.makeClippingMaskFromSelection()
         
         // Verify mask was created
-        let maskBefore = document.layers[2].shapes.first { $0.id == circle.id }
+        let maskBefore = document.getShapesForLayer(2).first { $0.id == circle.id }
         #expect(maskBefore?.isClippingPath == true, "Mask should be created")
         
         // Release clipping mask
         document.releaseClippingMaskForSelection()
         
         // Verify mask was released
-        let maskAfter = document.layers[2].shapes.first { $0.id == circle.id }
-        let clippedAfter = document.layers[2].shapes.first { $0.id == rect.id }
+        let maskAfter = document.getShapesForLayer(2).first { $0.id == circle.id }
+        let clippedAfter = document.getShapesForLayer(2).first { $0.id == rect.id }
         
         #expect(maskAfter?.isClippingPath == false, "Mask flag should be cleared")
         #expect(clippedAfter?.clippedByShapeID == nil, "Clipping relationship should be cleared")
@@ -193,8 +193,8 @@ struct UnifiedClippingMaskTests {
         document.makeClippingMaskFromSelection()
         
         // Get initial positions
-        let maskBefore = document.layers[2].shapes.first { $0.id == circle.id }!
-        let clippedBefore = document.layers[2].shapes.first { $0.id == rect.id }!
+        let maskBefore = document.getShapesForLayer(2).first { $0.id == circle.id }!
+        let clippedBefore = document.getShapesForLayer(2).first { $0.id == rect.id }!
         let maskInitialBounds = maskBefore.bounds
         let clippedInitialBounds = clippedBefore.bounds
         
@@ -203,8 +203,8 @@ struct UnifiedClippingMaskTests {
         document.moveClippingMask(circle.id, by: offset)
         
         // Verify both shapes moved
-        let maskAfter = document.layers[2].shapes.first { $0.id == circle.id }!
-        let clippedAfter = document.layers[2].shapes.first { $0.id == rect.id }!
+        let maskAfter = document.getShapesForLayer(2).first { $0.id == circle.id }!
+        let clippedAfter = document.getShapesForLayer(2).first { $0.id == rect.id }!
         
         let expectedMaskBounds = CGRect(
             x: maskInitialBounds.minX + offset.x,
@@ -310,7 +310,7 @@ struct UnifiedClippingMaskTests {
         document.makeClippingMaskFromSelection()
         
         // Verify nothing changed
-        let shape = document.layers[2].shapes.first { $0.id == rect.id }
+        let shape = document.getShapesForLayer(2).first { $0.id == rect.id }
         #expect(shape?.isClippingPath == false, "Single shape should not become clipping path")
         #expect(shape?.clippedByShapeID == nil, "Single shape should not be clipped")
     }
@@ -350,7 +350,7 @@ struct UnifiedClippingMaskTests {
         }.count <= 4, "Should not have duplicate unified objects") // 2 shapes + 2 system layers = 4 max
         
         // Verify clipping still works
-        let maskShape = document.layers[2].shapes.first { $0.id == circle.id }
+        let maskShape = document.getShapesForLayer(2).first { $0.id == circle.id }
         #expect(maskShape?.isClippingPath == true, "Mask should still be set")
     }
 }

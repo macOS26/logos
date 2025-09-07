@@ -219,14 +219,14 @@ class TextObjectsMigrationTests: XCTestCase {
         
         document.addTextToUnifiedSystem(text, layerIndex: 2)
         
-        // Text should be in layer as shape
-        let shapeInLayer = document.layers[2].shapes.first { shape in
+        // Text should be in unified objects as shape
+        let shapeInUnified = document.getShapesForLayer(2).first { shape in
             shape.id == text.id && shape.isTextObject
         }
         
-        XCTAssertNotNil(shapeInLayer)
-        XCTAssertTrue(shapeInLayer?.isTextObject ?? false)
-        XCTAssertEqual(shapeInLayer?.textContent, "Layer Text")
+        XCTAssertNotNil(shapeInUnified)
+        XCTAssertTrue(shapeInUnified?.isTextObject ?? false)
+        XCTAssertEqual(shapeInUnified?.textContent, "Layer Text")
     }
     
     // MARK: - Migration Path Tests

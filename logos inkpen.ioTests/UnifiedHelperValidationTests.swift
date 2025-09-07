@@ -31,10 +31,6 @@ struct UnifiedHelperValidationTests {
         // Use unified helper
         document.updateShapeCornerRadiiInUnified(id: shape.id, cornerRadii: newRadii, path: newPath)
         
-        // Verify shape was updated in layers array
-        let updatedShape = document.layers[0].shapes.first { $0.id == shape.id }
-        #expect(updatedShape?.cornerRadii == newRadii, "Corner radii should be updated in layers array")
-        
         // Verify unified object was updated
         let unifiedObj = document.unifiedObjects.first { obj in
             if case .shape(let s) = obj.objectType { return s.id == shape.id }
@@ -68,14 +64,6 @@ struct UnifiedHelperValidationTests {
         
         // Use unified helper
         document.updateShapeGradientInUnified(id: shape.id, gradient: gradient, target: .fill)
-        
-        // Verify shape was updated in layers array
-        let updatedShape = document.layers[0].shapes.first { $0.id == shape.id }
-        if case .gradient(let shapeGradient) = updatedShape?.fillStyle?.color {
-            #expect(shapeGradient == gradient, "Gradient should be updated in layers array")
-        } else {
-            Issue.record("Gradient not applied to shape in layers array")
-        }
         
         // Verify unified object was updated
         let unifiedObj = document.unifiedObjects.first { obj in
@@ -113,10 +101,7 @@ struct UnifiedHelperValidationTests {
         // Use unified helper
         document.updateShapeTransformAndPathInUnified(id: shape.id, path: newPath, transform: newTransform)
         
-        // Verify shape was updated in layers array
-        let updatedShape = document.layers[0].shapes.first { $0.id == shape.id }
-        #expect(updatedShape?.path.elements.count == newPath.elements.count, "Path should be updated in layers array")
-        #expect(updatedShape?.transform == newTransform, "Transform should be updated in layers array")
+        // Shape updates are now only in unified objects
         
         // Verify unified object was updated
         let unifiedObj = document.unifiedObjects.first { obj in
@@ -151,11 +136,7 @@ struct UnifiedHelperValidationTests {
             shape.opacity = 0.5
         }
         
-        // Verify shape was updated in layers array
-        let updatedShape = document.layers[0].shapes.first { $0.id == shape.id }
-        #expect(updatedShape?.embeddedImageData == testData, "Embedded data should be updated in layers array")
-        #expect(updatedShape?.name == testName, "Name should be updated in layers array")
-        #expect(updatedShape?.opacity == 0.5, "Opacity should be updated in layers array")
+        // Shape updates are now only in unified objects
         
         // Verify unified object was updated
         let unifiedObj = document.unifiedObjects.first { obj in
@@ -189,9 +170,7 @@ struct UnifiedHelperValidationTests {
         // Use unified helper
         document.updateShapePathUnified(id: shape.id, path: newPath)
         
-        // Verify shape was updated in layers array
-        let updatedShape = document.layers[0].shapes.first { $0.id == shape.id }
-        #expect(updatedShape?.path.elements.count == 2, "Path should be updated to line in layers array")
+        // Shape updates are now only in unified objects
         
         // Verify unified object was updated
         let unifiedObj = document.unifiedObjects.first { obj in
