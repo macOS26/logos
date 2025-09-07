@@ -37,8 +37,9 @@ extension VectorDocument {
         pasteboardShape.fillStyle = FillStyle(color: .black, opacity: 0.2)  // 20% black
         pasteboardShape.strokeStyle = nil
         pasteboardShape.name = "Pasteboard Background"
-        pasteboardLayer.addShape(pasteboardShape)
         layers.append(pasteboardLayer)
+        // Add pasteboard background directly to unified objects
+        addShapeToUnifiedSystem(pasteboardShape, layerIndex: 0)
         // Logging removed
         
         // Create Canvas layer SECOND (index 1) - canvas layer, LOCKED by default
@@ -52,8 +53,9 @@ extension VectorDocument {
         backgroundShape.fillStyle = FillStyle(color: settings.backgroundColor, opacity: 1.0)
         backgroundShape.strokeStyle = nil
         backgroundShape.name = "Canvas Background"
-        canvasLayer.addShape(backgroundShape)
         layers.append(canvasLayer)
+        // Add canvas background directly to unified objects
+        addShapeToUnifiedSystem(backgroundShape, layerIndex: 1)
         // Logging removed
         
         // Create working layer THIRD (index 2) - for actual drawing
