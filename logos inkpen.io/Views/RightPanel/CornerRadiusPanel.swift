@@ -147,10 +147,10 @@ struct CornerRadiusPanel: View {
         document.saveToUndoStack()
         
         // Update the corner radius for the selected shape
-        if let layerIndex = document.selectedLayerIndex,
-           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == selectedShape.id }) {
-            
-            let shape = document.layers[layerIndex].shapes[shapeIndex]
+        if let layerIndex = document.selectedLayerIndex {
+            let shapes = document.getShapesForLayer(layerIndex)
+            if let shapeIndex = shapes.firstIndex(where: { $0.id == selectedShape.id }),
+               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
             var updatedRadii = shape.cornerRadii
             
             // Ensure array has enough elements
@@ -169,6 +169,7 @@ struct CornerRadiusPanel: View {
             
             // Use unified helper to update shape
             document.updateShapeCornerRadiiInUnified(id: selectedShape.id, cornerRadii: updatedRadii, path: newPath)
+            }
         }
     }
     
@@ -205,8 +206,12 @@ struct CornerRadiusPanel: View {
     
     private func getSelectedRoundedRectangle() -> VectorShape? {
         guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first,
-              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }) else {
+              let firstSelectedID = document.selectedShapeIDs.first else {
+            return nil
+        }
+        
+        let shapes = document.getShapesForLayer(layerIndex)
+        guard let shape = shapes.first(where: { $0.id == firstSelectedID }) else {
             return nil
         }
         
