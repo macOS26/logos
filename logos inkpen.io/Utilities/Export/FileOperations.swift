@@ -152,8 +152,9 @@ class FileOperations {
             Log.info("✅ Successfully imported JSON document with \(document.layers.count) layers", category: .fileOperations)
             // After decoding, hydrate raster images from embedded data or linked paths
             ImageContentRegistry.setBaseDirectoryURL(url.deletingLastPathComponent())
-            for layer in document.layers {
-                for shape in layer.shapes {
+            // Use unified objects to hydrate all shapes
+            for unifiedObject in document.unifiedObjects {
+                if case .shape(let shape) = unifiedObject.objectType {
                     _ = ImageContentRegistry.hydrateImageIfAvailable(for: shape)
                 }
             }
@@ -180,8 +181,9 @@ class FileOperations {
             Log.info("✅ Successfully imported JSON document with \(document.layers.count) layers", category: .fileOperations)
             // Note: Without a file URL, we cannot resolve relative paths. Embedded images will still load.
             ImageContentRegistry.setBaseDirectoryURL(nil)
-            for layer in document.layers {
-                for shape in layer.shapes {
+            // Use unified objects to hydrate all shapes
+            for unifiedObject in document.unifiedObjects {
+                if case .shape(let shape) = unifiedObject.objectType {
                     _ = ImageContentRegistry.hydrateImageIfAvailable(for: shape)
                 }
             }
@@ -742,8 +744,9 @@ class FileOperations {
             
             Log.fileOperation("🎨 Rendering layer: \(layer.name)", level: .info)
             
-            // Render shapes in layer
-            for shape in layer.shapes where shape.isVisible {
+            // Render shapes in layer using unified objects
+            let shapesInLayer = document.getShapesForLayer(index)
+            for shape in shapesInLayer where shape.isVisible {
                 try renderShapeToPDF(shape: shape, context: context)
             }
         }
@@ -912,8 +915,9 @@ class FileOperations {
             // CRITICAL FIX: Hydrate images after SVG import so embedded images are loaded
             // This ensures SVG images are properly imported when opening through File > Open
             ImageContentRegistry.setBaseDirectoryURL(tempURL.deletingLastPathComponent())
-            for layer in document.layers {
-                for shape in layer.shapes {
+            // Use unified objects to hydrate all shapes
+            for unifiedObject in document.unifiedObjects {
+                if case .shape(let shape) = unifiedObject.objectType {
                     _ = ImageContentRegistry.hydrateImageIfAvailable(for: shape)
                 }
             }
@@ -1024,10 +1028,9 @@ class FileOperations {
         var gradientToIdMapping: [VectorGradient: String] = [:]
         var gradientCounter = 1
         
-        // Pre-analyze all shapes to find gradients
-        for layer in document.layers {
-            if !layer.isVisible { continue }
-            for shape in layer.shapes {
+        // Pre-analyze all shapes to find gradients using unified objects
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
                 if !shape.isVisible { continue }
                 
                 // Check fill for gradients
