@@ -74,11 +74,13 @@ extension DrawingCanvas {
     private func movePointToAbsolutePositionOptimized(_ pointID: PointID, to newPosition: CGPoint, isLiveDrag: Bool) {
         // Find the shape and update the point position
         for layerIndex in document.layers.indices {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == pointID.shapeID }) {
-                guard pointID.elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
+            let shapes = document.getShapesForLayer(layerIndex)
+            if let shapeIndex = shapes.firstIndex(where: { $0.id == pointID.shapeID }),
+               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                guard pointID.elementIndex < shape.path.elements.count else { return }
                 
                 let newPoint = VectorPoint(newPosition.x, newPosition.y)
-                var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
+                var elements = shape.path.elements
                 
                 // Get the original point position before moving
                 let originalPosition: CGPoint
@@ -139,7 +141,8 @@ extension DrawingCanvas {
                 // Neighboring points and their handles stay stationary
                 // Coincident points are handled by selection logic, not automatic movement
                 
-                document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
+                var updatedShape = shape
+                updatedShape.path.elements = elements
                 
                 if isLiveDrag {
                     // Skip expensive updateBounds during live drag for smoother performance
@@ -151,14 +154,17 @@ extension DrawingCanvas {
                         return false
                     }) {
                         // Update the specific unified object with the new shape data
-                        document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                        if let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: currentShape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                        }
                     }
                     
                     // Force immediate UI update for visual responsiveness
                     document.objectWillChange.send()
                 } else {
                     // FULL UPDATE: On drag end, update bounds and do full sync for consistency
-                    document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                    updatedShape.updateBounds()
+                    document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                     document.updateUnifiedObjectsOptimized()
                     document.objectWillChange.send()
                 }
@@ -240,11 +246,13 @@ extension DrawingCanvas {
     private func moveHandleToAbsolutePositionOptimized(_ handleID: HandleID, to newPosition: CGPoint, isLiveDrag: Bool) {
         // Find the shape and update the handle position
         for layerIndex in document.layers.indices {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == handleID.shapeID }) {
-                guard handleID.elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
+            let shapes = document.getShapesForLayer(layerIndex)
+            if let shapeIndex = shapes.firstIndex(where: { $0.id == handleID.shapeID }),
+               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                guard handleID.elementIndex < shape.path.elements.count else { return }
                 
                 let newHandle = VectorPoint(newPosition.x, newPosition.y)
-                var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
+                var elements = shape.path.elements
                 
                 // STEP 1: Update the dragged handle
                 switch elements[handleID.elementIndex] {
@@ -271,7 +279,8 @@ extension DrawingCanvas {
                     )
                 }
                 
-                document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
+                var updatedShape = shape
+                updatedShape.path.elements = elements
                 
                 if isLiveDrag {
                     // Skip expensive updateBounds during live drag for smoother performance
@@ -283,14 +292,17 @@ extension DrawingCanvas {
                         return false
                     }) {
                         // Update the specific unified object with the new shape data
-                        document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                        if let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: currentShape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                        }
                     }
                     
                     // Force immediate UI update for visual responsiveness
                     document.objectWillChange.send()
                 } else {
                     // FULL UPDATE: On drag end, update bounds and do full sync for consistency
-                    document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                    updatedShape.updateBounds()
+                    document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                     document.updateUnifiedObjectsOptimized()
                     document.objectWillChange.send()
                 }

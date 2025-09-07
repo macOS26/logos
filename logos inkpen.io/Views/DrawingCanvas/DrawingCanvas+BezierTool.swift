@@ -31,8 +31,10 @@ extension DrawingCanvas {
         guard let layerIndex = document.selectedLayerIndex else { return }
         
         // Find the shape in the document and ensure it has proper colors
-        for shapeIndex in document.layers[layerIndex].shapes.indices {
-            if document.layers[layerIndex].shapes[shapeIndex].id == shape.id {
+        let shapes = document.getShapesForLayer(layerIndex)
+        for shapeIndex in shapes.indices {
+            if let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
+               currentShape.id == shape.id {
                 // Ensure stroke has proper colors and is visible
                 document.createStrokeStyleInUnified(
                     id: shape.id,
@@ -52,7 +54,9 @@ extension DrawingCanvas {
                     opacity: document.defaultFillOpacity
                 )
                 
-                document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                var updatedShape = currentShape
+                updatedShape.updateBounds()
+                document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                 break
             }
         }
@@ -440,10 +444,13 @@ extension DrawingCanvas {
               let layerIndex = document.selectedLayerIndex else { return }
         
         // Find the shape in the document and update it
-        for shapeIndex in document.layers[layerIndex].shapes.indices {
-            if document.layers[layerIndex].shapes[shapeIndex].id == activeBezierShape.id {
+        let shapes = document.getShapesForLayer(layerIndex)
+        for shapeIndex in shapes.indices {
+            if let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
+               currentShape.id == activeBezierShape.id {
                 // Update the path with the latest bezier path data
-                document.layers[layerIndex].shapes[shapeIndex].path = updatedPath
+                var updatedShape = currentShape
+                updatedShape.path = updatedPath
                 
                 // Update stroke color to match current toolbar selection (real-time)
                 document.createStrokeStyleInUnified(
@@ -464,7 +471,8 @@ extension DrawingCanvas {
                     opacity: document.defaultFillOpacity
                 )
                 
-                document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                updatedShape.updateBounds()
+                document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                 break
             }
         }
@@ -492,8 +500,10 @@ extension DrawingCanvas {
         // PROFESSIONAL REAL-TIME PATH COMPLETION: Apply final colors like professional software
         // Open paths should get both stroke AND fill using document defaults (toolbar selection)
         if let layerIndex = document.selectedLayerIndex {
-            for shapeIndex in document.layers[layerIndex].shapes.indices {
-                if document.layers[layerIndex].shapes[shapeIndex].id == activeBezierShape.id {
+            let shapes = document.getShapesForLayer(layerIndex)
+            for shapeIndex in shapes.indices {
+                if let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
+                   currentShape.id == activeBezierShape.id {
                     // Update the existing shape to have proper fill and stroke from toolbar
                     document.createStrokeStyleInUnified(
                         id: activeBezierShape.id,
@@ -511,7 +521,9 @@ extension DrawingCanvas {
                         color: document.defaultFillColor,
                         opacity: document.defaultFillOpacity
                     )
-                    document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                    var updatedShape = currentShape
+                    updatedShape.updateBounds()
+                    document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                     
                     // CRITICAL FIX: Update the unified objects system to ensure the shape is visible
                     // The shape exists in layers but might not be visible due to unified system not being updated
@@ -560,11 +572,15 @@ extension DrawingCanvas {
               let layerIndex = document.selectedLayerIndex else { return }
         
         // Find the shape in the document and update it
-        for shapeIndex in document.layers[layerIndex].shapes.indices {
-            if document.layers[layerIndex].shapes[shapeIndex].id == activeBezierShape.id {
+        let shapes = document.getShapesForLayer(layerIndex)
+        for shapeIndex in shapes.indices {
+            if let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
+               currentShape.id == activeBezierShape.id {
                 // Update the path with the live preview path
-                document.layers[layerIndex].shapes[shapeIndex].path = path
-                document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                var updatedShape = currentShape
+                updatedShape.path = path
+                updatedShape.updateBounds()
+                document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                 break
             }
         }

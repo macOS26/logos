@@ -39,10 +39,12 @@ extension DrawingCanvas {
         
         // PRIORITY 2: If shapes are selected, use their color
         if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
-           let fillColor = shape.fillStyle?.color {
-            return fillColor
+           let firstSelectedID = document.selectedShapeIDs.first {
+            let shapes = document.getShapesForLayer(layerIndex)
+            if let shape = shapes.first(where: { $0.id == firstSelectedID }),
+               let fillColor = shape.fillStyle?.color {
+                return fillColor
+            }
         }
         
         // PRIORITY 3: Use default color for new shapes
@@ -59,10 +61,12 @@ extension DrawingCanvas {
         
         // PRIORITY 2: If shapes are selected, use their opacity
         if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
-           let opacity = shape.fillStyle?.opacity {
-            return opacity
+           let firstSelectedID = document.selectedShapeIDs.first {
+            let shapes = document.getShapesForLayer(layerIndex)
+            if let shape = shapes.first(where: { $0.id == firstSelectedID }),
+               let opacity = shape.fillStyle?.opacity {
+                return opacity
+            }
         }
         
         // PRIORITY 3: Use default opacity for new shapes
@@ -79,10 +83,12 @@ extension DrawingCanvas {
         
         // PRIORITY 2: If shapes are selected, use their color
         if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
-           let strokeColor = shape.strokeStyle?.color {
-            return strokeColor
+           let firstSelectedID = document.selectedShapeIDs.first {
+            let shapes = document.getShapesForLayer(layerIndex)
+            if let shape = shapes.first(where: { $0.id == firstSelectedID }),
+               let strokeColor = shape.strokeStyle?.color {
+                return strokeColor
+            }
         }
         
         // PRIORITY 3: Use default color for new shapes
@@ -99,10 +105,12 @@ extension DrawingCanvas {
         
         // PRIORITY 2: If shapes are selected, use their opacity
         if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
-           let opacity = shape.strokeStyle?.opacity {
-            return opacity
+           let firstSelectedID = document.selectedShapeIDs.first {
+            let shapes = document.getShapesForLayer(layerIndex)
+            if let shape = shapes.first(where: { $0.id == firstSelectedID }),
+               let opacity = shape.strokeStyle?.opacity {
+                return opacity
+            }
         }
         
         // PRIORITY 3: Use default opacity for new shapes
@@ -113,10 +121,12 @@ extension DrawingCanvas {
     private func getCurrentStrokeWidth() -> Double {
         // If shapes are selected, use their stroke width
         if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
-           let width = shape.strokeStyle?.width {
-            return width
+           let firstSelectedID = document.selectedShapeIDs.first {
+            let shapes = document.getShapesForLayer(layerIndex)
+            if let shape = shapes.first(where: { $0.id == firstSelectedID }),
+               let width = shape.strokeStyle?.width {
+                return width
+            }
         }
         
         // Use default width for new shapes
@@ -479,12 +489,16 @@ extension DrawingCanvas {
     /// Apply self-union operation to remove overlapping areas within the single brush stroke
     private func applySelfUnionToBrushStroke(shapeIndex: Int, layerIndex: Int) {
         
-        guard shapeIndex < document.layers[layerIndex].shapes.count else { 
-            Log.fileOperation("🚨 BRUSH ERROR: Shape index \(shapeIndex) out of bounds! Layer has \(document.layers[layerIndex].shapes.count) shapes", level: .info)
+        let shapes = document.getShapesForLayer(layerIndex)
+        guard shapeIndex < shapes.count else { 
+            Log.fileOperation("🚨 BRUSH ERROR: Shape index \(shapeIndex) out of bounds! Layer has \(shapes.count) shapes", level: .info)
             return 
         }
         
-        let brushStroke = document.layers[layerIndex].shapes[shapeIndex]
+        guard let brushStroke = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else {
+            Log.fileOperation("🚨 BRUSH ERROR: Could not get shape at index \(shapeIndex)", level: .info)
+            return
+        }
         
         // VERIFY: Make sure we're operating on the correct shape
         guard brushStroke.id == activeBrushShape?.id else {
@@ -523,7 +537,9 @@ extension DrawingCanvas {
             let cleanedVectorPath = VectorPath(cgPath: cleanedPath)
             
             // Update the brush stroke with the cleaned path
-            document.layers[layerIndex].shapes[shapeIndex].path = cleanedVectorPath
+            var updatedShape = brushStroke
+            updatedShape.path = cleanedVectorPath
+            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
             
             // CRITICAL FIX: Sync unified objects system to ensure the updated shape is rendered
             document.updateUnifiedObjectsOptimized()

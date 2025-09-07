@@ -53,7 +53,8 @@ extension DrawingCanvas {
                 continue
             }
             
-            for (shapeIndex, shape) in layer.shapes.enumerated().reversed() {
+            let shapes = document.getShapesForLayer(layerIndex)
+            for (shapeIndex, shape) in shapes.enumerated().reversed() {
                 if !shape.isVisible || shape.isLocked { continue }
                 
                 // FIRST: Check if clicking on any anchor point that has collapsed handles
@@ -141,7 +142,8 @@ extension DrawingCanvas {
                 continue
             }
             
-            for (shapeIndex, shape) in layer.shapes.enumerated().reversed() {
+            let shapes = document.getShapesForLayer(layerIndex)
+            for (shapeIndex, shape) in shapes.enumerated().reversed() {
                 if !shape.isVisible || shape.isLocked { continue }
                 
                 // Check each path element for handles
@@ -223,14 +225,14 @@ extension DrawingCanvas {
     /// Collapses the control1 handle of a curve element to its anchor point
     func collapseControl1Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
-              shapeIndex < document.layers[layerIndex].shapes.count,
-              elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
+              let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
+              elementIndex < shape.path.elements.count else { return }
         
         // Save to undo stack before making changes
         document.saveToUndoStack()
         
-        let element = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex]
-        var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
+        let element = shape.path.elements[elementIndex]
+        var elements = shape.path.elements
         
         switch element {
         case .curve(let to, let originalControl1, let control2):
@@ -259,8 +261,10 @@ extension DrawingCanvas {
             let collapsedControl1 = VectorPoint(currentAnchorPoint.x, currentAnchorPoint.y)
             elements[elementIndex] = .curve(to: to, control1: collapsedControl1, control2: control2)
             
-            document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
-            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            var updatedShape = shape
+            updatedShape.path.elements = elements
+            updatedShape.updateBounds()
+            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
             
             // Sync unified objects system after path changes
             document.updateUnifiedObjectsOptimized()
@@ -272,8 +276,10 @@ extension DrawingCanvas {
             // For quadCurve, collapsing the handle converts it to a line
             elements[elementIndex] = .line(to: to)
             
-            document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
-            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            var updatedShape = shape
+            updatedShape.path.elements = elements
+            updatedShape.updateBounds()
+            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
             
             // Sync unified objects system after path changes
             document.updateUnifiedObjectsOptimized()
@@ -289,14 +295,14 @@ extension DrawingCanvas {
     /// Collapses the control2 handle of a curve element to its anchor point
     func collapseControl2Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
-              shapeIndex < document.layers[layerIndex].shapes.count,
-              elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
+              let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
+              elementIndex < shape.path.elements.count else { return }
         
         // Save to undo stack before making changes
         document.saveToUndoStack()
         
-        let element = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex]
-        var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
+        let element = shape.path.elements[elementIndex]
+        var elements = shape.path.elements
         
         switch element {
         case .curve(let to, let control1, let originalControl2):
@@ -308,8 +314,10 @@ extension DrawingCanvas {
             let collapsedControl2 = VectorPoint(to.x, to.y)
             elements[elementIndex] = .curve(to: to, control1: control1, control2: collapsedControl2)
             
-            document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
-            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            var updatedShape = shape
+            updatedShape.path.elements = elements
+            updatedShape.updateBounds()
+            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
             
             // Sync unified objects system after path changes
             document.updateUnifiedObjectsOptimized()
@@ -321,8 +329,10 @@ extension DrawingCanvas {
             // For quadCurve, collapsing the handle converts it to a line
             elements[elementIndex] = .line(to: to)
             
-            document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
-            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            var updatedShape = shape
+            updatedShape.path.elements = elements
+            updatedShape.updateBounds()
+            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
             
             // Sync unified objects system after path changes
             document.updateUnifiedObjectsOptimized()
@@ -338,14 +348,14 @@ extension DrawingCanvas {
     /// Collapses the control1 handle of the NEXT element (for line/move elements)
     func collapseNextElementControl1Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
-              shapeIndex < document.layers[layerIndex].shapes.count,
-              elementIndex + 1 < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
+              let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
+              elementIndex + 1 < shape.path.elements.count else { return }
         
         // Save to undo stack before making changes
         document.saveToUndoStack()
         
-        let nextElement = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex + 1]
-        var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
+        let nextElement = shape.path.elements[elementIndex + 1]
+        var elements = shape.path.elements
         
         switch nextElement {
         case .curve(let to, let originalControl1, let control2):
@@ -370,8 +380,10 @@ extension DrawingCanvas {
             // Collapse the control1 handle to the source anchor point (where it's coming from)
             elements[elementIndex + 1] = .curve(to: to, control1: sourceAnchorPoint, control2: control2)
             
-            document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
-            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            var updatedShape = shape
+            updatedShape.path.elements = elements
+            updatedShape.updateBounds()
+            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
             
             // Sync unified objects system after path changes
             document.updateUnifiedObjectsOptimized()
@@ -389,14 +401,14 @@ extension DrawingCanvas {
     /// Restores handles for a curve element to their original positions
     func restoreHandlesForCurveElement(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
-              shapeIndex < document.layers[layerIndex].shapes.count,
-              elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
+              let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
+              elementIndex < shape.path.elements.count else { return }
         
         // Save to undo stack before making changes
         document.saveToUndoStack()
         
-        let element = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex]
-        var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
+        let element = shape.path.elements[elementIndex]
+        var elements = shape.path.elements
         
         switch element {
         case .curve(let to, let control1, let control2):
@@ -432,8 +444,10 @@ extension DrawingCanvas {
             
             elements[elementIndex] = .curve(to: to, control1: restoredControl1, control2: restoredControl2)
             
-            document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
-            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            var updatedShape = shape
+            updatedShape.path.elements = elements
+            updatedShape.updateBounds()
+            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
             
             // Sync unified objects system after path changes
             document.updateUnifiedObjectsOptimized()
@@ -449,14 +463,14 @@ extension DrawingCanvas {
     /// Restores the control1 handle of the NEXT element (for line/move elements)
     func restoreNextElementControl1Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
-              shapeIndex < document.layers[layerIndex].shapes.count,
-              elementIndex + 1 < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
+              let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
+              elementIndex + 1 < shape.path.elements.count else { return }
         
         // Save to undo stack before making changes
         document.saveToUndoStack()
         
-        let nextElement = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex + 1]
-        var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
+        let nextElement = shape.path.elements[elementIndex + 1]
+        var elements = shape.path.elements
         
         switch nextElement {
         case .curve(let to, _, let control2):
@@ -496,8 +510,10 @@ extension DrawingCanvas {
             
             elements[elementIndex + 1] = .curve(to: to, control1: restoredControl1, control2: control2)
             
-            document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
-            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            var updatedShape = shape
+            updatedShape.path.elements = elements
+            updatedShape.updateBounds()
+            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
             
             // Sync unified objects system after path changes
             document.updateUnifiedObjectsOptimized()
@@ -513,13 +529,13 @@ extension DrawingCanvas {
     /// Restores all handles that belong to a specific anchor point
     func restoreAllHandlesForAnchorPoint(layerIndex: Int, shapeIndex: Int, elementIndex: Int, anchorPoint: VectorPoint) {
         guard layerIndex < document.layers.count,
-              shapeIndex < document.layers[layerIndex].shapes.count,
-              elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
+              let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
+              elementIndex < shape.path.elements.count else { return }
         
         // Save to undo stack before making changes
         document.saveToUndoStack()
         
-        var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
+        var elements = shape.path.elements
         var needsUpdate = false
         
         // Restore handles from ALL elements that have handles collapsed to this anchor point
@@ -561,8 +577,10 @@ extension DrawingCanvas {
         }
         
         if needsUpdate {
-            document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
-            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            var updatedShape = shape
+            updatedShape.path.elements = elements
+            updatedShape.updateBounds()
+            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
             
             // Sync unified objects system after path changes
             document.updateUnifiedObjectsOptimized()
@@ -575,13 +593,13 @@ extension DrawingCanvas {
     /// Collapses both handles of an anchor point at once (like manually clicking both handles)
     func collapseBothHandlesForAnchorPoint(layerIndex: Int, shapeIndex: Int, elementIndex: Int, anchorPoint: VectorPoint) {
         guard layerIndex < document.layers.count,
-              shapeIndex < document.layers[layerIndex].shapes.count,
-              elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
+              let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
+              elementIndex < shape.path.elements.count else { return }
         
         // Save to undo stack before making changes
         document.saveToUndoStack()
         
-        var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
+        var elements = shape.path.elements
         var needsUpdate = false
         
         // Collapse handles from ALL elements that have handles belonging to this anchor point
@@ -629,8 +647,10 @@ extension DrawingCanvas {
         }
         
         if needsUpdate {
-            document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
-            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            var updatedShape = shape
+            updatedShape.path.elements = elements
+            updatedShape.updateBounds()
+            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
             
             // Sync unified objects system after path changes
             document.updateUnifiedObjectsOptimized()
@@ -654,7 +674,8 @@ extension DrawingCanvas {
                 continue
             }
             
-            for shape in layer.shapes.reversed() {
+            let shapes = document.getShapesForLayer(layerIndex)
+            for shape in shapes.reversed() {
                 if !shape.isVisible { continue }
                 
                 var isHit = false

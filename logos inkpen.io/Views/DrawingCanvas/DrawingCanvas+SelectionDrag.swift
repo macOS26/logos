@@ -210,12 +210,12 @@ extension DrawingCanvas {
     
     /// BLAZING FAST: Apply drag delta to actual coordinates (only called at end of drag)
     private func applyDragDeltaToShapeCoordinates(layerIndex: Int, shapeIndex: Int, delta: CGPoint) {
-        let shape = document.layers[layerIndex].shapes[shapeIndex]
+        guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         
         // SPECIAL CASE: Raster image shapes are rendered using their transform, not path coordinates.
         // Move them by updating the transform translation rather than rewriting path points.
         if ImageContentRegistry.containsImage(shape) {
-            var updatedShape = document.layers[layerIndex].shapes[shapeIndex]
+            var updatedShape = shape
             
             // CRITICAL FIX: For transformed images, we need to handle the coordinate system properly
             // to prevent jumping when the image has scaling, rotation, or other transforms
@@ -295,7 +295,8 @@ extension DrawingCanvas {
             }
             
             // Update the flattened group with the moved individual shapes
-            document.layers[layerIndex].shapes[shapeIndex].groupedShapes = updatedGroupedShapes
+            var groupShape = shape
+            groupShape.groupedShapes = updatedGroupedShapes
             
             // CRITICAL FIX: Update warp envelope coordinates for warp objects in groups
             if shape.isWarpObject && !shape.warpEnvelope.isEmpty {
@@ -304,13 +305,14 @@ extension DrawingCanvas {
                     let movedCorner = CGPoint(x: corner.x + delta.x, y: corner.y + delta.y)
                     updatedWarpEnvelope.append(movedCorner)
                 }
-                document.layers[layerIndex].shapes[shapeIndex].warpEnvelope = updatedWarpEnvelope
+                groupShape.warpEnvelope = updatedWarpEnvelope
                 
                 // CRITICAL FIX: DO NOT move originalEnvelope - it must stay as reference coordinate system
                 Log.fileOperation("🔧 GROUP WARP ENVELOPE MOVED: Updated \(updatedWarpEnvelope.count) current coordinates (original envelope preserved)", level: .info)
             }
             
-            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            groupShape.updateBounds()
+            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: groupShape)
             return
         }
         
@@ -354,7 +356,8 @@ extension DrawingCanvas {
         let updatedPath = VectorPath(elements: updatedElements, isClosed: shape.path.isClosed)
         
         // Update the shape with moved path
-        document.layers[layerIndex].shapes[shapeIndex].path = updatedPath
+        var movedShape = shape
+        movedShape.path = updatedPath
         
         // CRITICAL FIX: Update warp envelope coordinates for warp objects
         if shape.isWarpObject && !shape.warpEnvelope.isEmpty {
@@ -363,7 +366,7 @@ extension DrawingCanvas {
                 let movedCorner = CGPoint(x: corner.x + delta.x, y: corner.y + delta.y)
                 updatedWarpEnvelope.append(movedCorner)
             }
-            document.layers[layerIndex].shapes[shapeIndex].warpEnvelope = updatedWarpEnvelope
+            movedShape.warpEnvelope = updatedWarpEnvelope
             
             // CRITICAL FIX: DO NOT move originalEnvelope - it must stay as reference coordinate system
             // The originalEnvelope represents the coordinate system before ANY transformations
@@ -380,12 +383,13 @@ extension DrawingCanvas {
             }
         }
         
-        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+        movedShape.updateBounds()
+        document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: movedShape)
     }
 
     /// PERFORMANCE OPTIMIZED: Apply transform to actual coordinates (only called at end of drag)
     private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int) {
-        let shape = document.layers[layerIndex].shapes[shapeIndex]
+        guard var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         let transform = shape.transform
         
         // Don't apply identity transforms
@@ -446,9 +450,10 @@ extension DrawingCanvas {
             }
             
             // Update the flattened group with the transformed individual shapes
-            document.layers[layerIndex].shapes[shapeIndex].groupedShapes = transformedGroupedShapes
-            document.layers[layerIndex].shapes[shapeIndex].transform = .identity
-            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            shape.groupedShapes = transformedGroupedShapes
+            shape.transform = .identity
+            shape.updateBounds()
+            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
             
             Log.info("✅ Flattened group coordinates updated - transformed \(transformedGroupedShapes.count) individual shapes", category: .fileOperations)
             return
@@ -494,12 +499,12 @@ extension DrawingCanvas {
         let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
         
         // Update the shape with transformed path and reset transform to identity
-        document.layers[layerIndex].shapes[shapeIndex].path = transformedPath
-        document.layers[layerIndex].shapes[shapeIndex].transform = .identity
-        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+        shape.path = transformedPath
+        shape.transform = .identity
+        shape.updateBounds()
         
         // CORNER RADIUS SCALING: Apply transform to corner radii if this shape has them
-        var updatedShape = document.layers[layerIndex].shapes[shapeIndex]
+        var updatedShape = shape
         if !updatedShape.cornerRadii.isEmpty && updatedShape.isRoundedRectangle {
             updatedShape.transform = transform // Temporarily restore transform for scaling calculation
             applyTransformToCornerRadii(shape: &updatedShape)
