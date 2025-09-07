@@ -35,15 +35,21 @@ extension VectorDocument {
         }
         
         // Mark mask
-        if let idx = layers[layerIndex].shapes.firstIndex(where: { $0.id == maskID }) {
-            layers[layerIndex].shapes[idx].isClippingPath = true
-            Log.info("🎭 CLIPPING MASK DEBUG: Set isClippingPath=true for shape '\(layers[layerIndex].shapes[idx].name)' in layers array", category: .general)
+        let shapes = getShapesForLayer(layerIndex)
+        if let idx = shapes.firstIndex(where: { $0.id == maskID }),
+           var maskShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: idx) {
+            maskShape.isClippingPath = true
+            setShapeAtIndex(layerIndex: layerIndex, shapeIndex: idx, shape: maskShape)
+            Log.info("🎭 CLIPPING MASK DEBUG: Set isClippingPath=true for shape '\(maskShape.name)' in layers array", category: .general)
         }
         
         // Apply clipping to others
         for s in selectedShapes.dropLast() {
-            if let i = layers[layerIndex].shapes.firstIndex(where: { $0.id == s.id }) {
-                layers[layerIndex].shapes[i].clippedByShapeID = maskID
+            let shapes = getShapesForLayer(layerIndex)
+            if let i = shapes.firstIndex(where: { $0.id == s.id }),
+               var clippedShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: i) {
+                clippedShape.clippedByShapeID = maskID
+                setShapeAtIndex(layerIndex: layerIndex, shapeIndex: i, shape: clippedShape)
                 Log.info("🎭 CLIPPING MASK: Applied clipping to shape '\(s.name)'", category: .general)
                 Log.info("🎭 CLIPPING MASK DEBUG: Set clippedByShapeID=\(maskID.uuidString.prefix(8)) for shape '\(s.name)' in layers array", category: .general)
             }
@@ -111,42 +117,51 @@ extension VectorDocument {
         
         // 1) Clear clipping relationship on selected shapes themselves
         for s in selectedShapes {
-            if let i = layers[layerIndex].shapes.firstIndex(where: { $0.id == s.id }) {
-                layers[layerIndex].shapes[i].clippedByShapeID = nil
+            let shapes = getShapesForLayer(layerIndex)
+            if let i = shapes.firstIndex(where: { $0.id == s.id }),
+               var shape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: i) {
+                shape.clippedByShapeID = nil
                 // If this shape is a mask and was selected, clear its mask flag
-                if layers[layerIndex].shapes[i].isClippingPath { layers[layerIndex].shapes[i].isClippingPath = false }
+                if shape.isClippingPath { shape.isClippingPath = false }
+                setShapeAtIndex(layerIndex: layerIndex, shapeIndex: i, shape: shape)
             }
         }
         
         // 2) If any selected shape(s) are masks, clear all references to them
         if !maskIDsToRelease.isEmpty {
-            for idx in layers[layerIndex].shapes.indices {
-                if let clipID = layers[layerIndex].shapes[idx].clippedByShapeID, maskIDsToRelease.contains(clipID) {
-                    layers[layerIndex].shapes[idx].clippedByShapeID = nil
+            let shapes = getShapesForLayer(layerIndex)
+            for (idx, shape) in shapes.enumerated() {
+                if let clipID = shape.clippedByShapeID, maskIDsToRelease.contains(clipID) {
+                    var updatedShape = shape
+                    updatedShape.clippedByShapeID = nil
                     
                     // CRITICAL FIX: Restore proper bounds for image shapes after releasing clipping mask
-                    let shape = layers[layerIndex].shapes[idx]
                     if ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
                         // Force bounds recalculation for image shapes
-                        layers[layerIndex].shapes[idx].updateBounds()
+                        updatedShape.updateBounds()
                         Log.info("🎭 CLIPPING MASK: Restored bounds for image shape '\(shape.name)'", category: .general)
                     }
+                    setShapeAtIndex(layerIndex: layerIndex, shapeIndex: idx, shape: updatedShape)
                 }
             }
             // Clear mask flags on the mask shapes
-            for idx in layers[layerIndex].shapes.indices {
-                if maskIDsToRelease.contains(layers[layerIndex].shapes[idx].id) {
-                    layers[layerIndex].shapes[idx].isClippingPath = false
+            for (idx, shape) in shapes.enumerated() {
+                if maskIDsToRelease.contains(shape.id) {
+                    var updatedShape = shape
+                    updatedShape.isClippingPath = false
+                    setShapeAtIndex(layerIndex: layerIndex, shapeIndex: idx, shape: updatedShape)
                 }
             }
         }
         
         // 3) CRITICAL FIX: Also restore bounds for any shapes that were clipped by the released masks
-        for idx in layers[layerIndex].shapes.indices {
-            let shape = layers[layerIndex].shapes[idx]
+        let allShapes = getShapesForLayer(layerIndex)
+        for (idx, shape) in allShapes.enumerated() {
             if shape.clippedByShapeID == nil && (ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil) {
                 // This image shape is no longer clipped, ensure its bounds are correct
-                layers[layerIndex].shapes[idx].updateBounds()
+                var updatedShape = shape
+                updatedShape.updateBounds()
+                setShapeAtIndex(layerIndex: layerIndex, shapeIndex: idx, shape: updatedShape)
                 Log.info("🎭 CLIPPING MASK: Restored bounds for unclipped image shape '\(shape.name)'", category: .general)
             }
         }
@@ -164,18 +179,22 @@ extension VectorDocument {
         saveToUndoStack()
         
         // Find the mask shape
-        guard let maskIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == maskID }) else { return }
+        let shapes = getShapesForLayer(layerIndex)
+        guard let maskIndex = shapes.firstIndex(where: { $0.id == maskID }),
+              var maskShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: maskIndex) else { return }
         
         // CRITICAL FIX: Update the mask shape's transform property for proper synchronization
         // This ensures the ClippingMaskNSView renders the mask in the correct position
-        layers[layerIndex].shapes[maskIndex].transform = layers[layerIndex].shapes[maskIndex].transform.translatedBy(x: offset.x, y: offset.y)
+        maskShape.transform = maskShape.transform.translatedBy(x: offset.x, y: offset.y)
+        setShapeAtIndex(layerIndex: layerIndex, shapeIndex: maskIndex, shape: maskShape)
         
         // Move the mask shape by updating its path coordinates (for selection bounds)
         moveShapeByPathCoordinates(layerIndex: layerIndex, shapeIndex: maskIndex, by: offset)
         
         // Move all clipped content by the same amount
-        for idx in layers[layerIndex].shapes.indices {
-            if layers[layerIndex].shapes[idx].clippedByShapeID == maskID {
+        let allShapes = getShapesForLayer(layerIndex)
+        for (idx, shape) in allShapes.enumerated() {
+            if shape.clippedByShapeID == maskID {
                 moveShapeByPathCoordinates(layerIndex: layerIndex, shapeIndex: idx, by: offset)
             }
         }
@@ -189,12 +208,12 @@ extension VectorDocument {
     
     /// Helper function to move a shape by updating its path coordinates
     private func moveShapeByPathCoordinates(layerIndex: Int, shapeIndex: Int, by offset: CGPoint) {
-        let shape = layers[layerIndex].shapes[shapeIndex]
+        guard var shape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         
         // For images and complex shapes, update the path coordinates directly
         if ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
             // For image shapes, update both transform and path coordinates
-            layers[layerIndex].shapes[shapeIndex].transform = shape.transform.translatedBy(x: offset.x, y: offset.y)
+            shape.transform = shape.transform.translatedBy(x: offset.x, y: offset.y)
             
             // Also update the path coordinates for the image bounds
             var updatedElements: [PathElement] = []
@@ -226,7 +245,7 @@ extension VectorDocument {
                     updatedElements.append(.close)
                 }
             }
-            layers[layerIndex].shapes[shapeIndex].path = VectorPath(elements: updatedElements, isClosed: shape.path.isClosed)
+            shape.path = VectorPath(elements: updatedElements, isClosed: shape.path.isClosed)
         } else {
             // For regular shapes, update path coordinates directly
             var updatedElements: [PathElement] = []
@@ -258,11 +277,12 @@ extension VectorDocument {
                     updatedElements.append(.close)
                 }
             }
-            layers[layerIndex].shapes[shapeIndex].path = VectorPath(elements: updatedElements, isClosed: shape.path.isClosed)
+            shape.path = VectorPath(elements: updatedElements, isClosed: shape.path.isClosed)
         }
         
         // Update bounds after moving
-        layers[layerIndex].shapes[shapeIndex].updateBounds()
+        shape.updateBounds()
+        setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
     }
     
     /// Checks if a shape is part of a clipping mask (either as mask or clipped content)

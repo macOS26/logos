@@ -20,9 +20,12 @@ extension VectorDocument {
         
         // Lock selected shapes
         for layerIndex in layers.indices {
-            for shapeIndex in layers[layerIndex].shapes.indices {
-                if selectedShapeIDs.contains(layers[layerIndex].shapes[shapeIndex].id) {
-                    layers[layerIndex].shapes[shapeIndex].isLocked = true
+            let shapes = getShapesForLayer(layerIndex)
+            for (shapeIndex, shape) in shapes.enumerated() {
+                if selectedShapeIDs.contains(shape.id) {
+                    var updatedShape = shape
+                    updatedShape.isLocked = true
+                    setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                 }
             }
         }
@@ -48,9 +51,12 @@ extension VectorDocument {
         var unlockedCount = 0
         
         // Unlock all shapes on current layer
-        for shapeIndex in layers[layerIndex].shapes.indices {
-            if layers[layerIndex].shapes[shapeIndex].isLocked {
-                layers[layerIndex].shapes[shapeIndex].isLocked = false
+        let shapes = getShapesForLayer(layerIndex)
+        for (shapeIndex, shape) in shapes.enumerated() {
+            if shape.isLocked {
+                var updatedShape = shape
+                updatedShape.isLocked = false
+                setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                 unlockedCount += 1
             }
         }
@@ -76,9 +82,12 @@ extension VectorDocument {
         
         // Hide selected shapes
         for layerIndex in layers.indices {
-            for shapeIndex in layers[layerIndex].shapes.indices {
-                if selectedShapeIDs.contains(layers[layerIndex].shapes[shapeIndex].id) {
-                    layers[layerIndex].shapes[shapeIndex].isVisible = false
+            let shapes = getShapesForLayer(layerIndex)
+            for (shapeIndex, shape) in shapes.enumerated() {
+                if selectedShapeIDs.contains(shape.id) {
+                    var updatedShape = shape
+                    updatedShape.isVisible = false
+                    setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                 }
             }
         }
@@ -104,9 +113,12 @@ extension VectorDocument {
         var shownCount = 0
         
         // Show all shapes on current layer
-        for shapeIndex in layers[layerIndex].shapes.indices {
-            if !layers[layerIndex].shapes[shapeIndex].isVisible {
-                layers[layerIndex].shapes[shapeIndex].isVisible = true
+        let shapes = getShapesForLayer(layerIndex)
+        for (shapeIndex, shape) in shapes.enumerated() {
+            if !shape.isVisible {
+                var updatedShape = shape
+                updatedShape.isVisible = true
+                setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                 shownCount += 1
             }
         }

@@ -63,7 +63,7 @@ extension VectorDocument {
                     let shapes = getShapesForLayer(layerIndex)
                     if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
                         // Replace original shape with fill-only version
-                        layers[layerIndex].shapes[shapeIndex] = fillShape
+                        setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: fillShape)
                         originalShapeIDs.insert(fillShape.id)
                         
                         // Add stroke shape ABOVE the fill shape
@@ -75,7 +75,7 @@ extension VectorDocument {
                     // No fill, just replace with stroke outline
                     let shapes = getShapesForLayer(layerIndex)
                     if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
-                        layers[layerIndex].shapes[shapeIndex] = strokeShape
+                        setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: strokeShape)
                         addShapeToUnifiedSystem(strokeShape, layerIndex: layerIndex)
                         newShapeIDs.insert(strokeShape.id)
                     }

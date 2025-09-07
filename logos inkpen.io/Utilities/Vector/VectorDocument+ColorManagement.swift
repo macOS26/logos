@@ -105,24 +105,28 @@ extension VectorDocument {
                         hasChanges = true
                     } else {
                         // Handle regular shapes in layers array
-                        if let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil,
-                           let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                            saveToUndoStack()
-                            switch activeColorTarget {
-                            case .fill:
-                                if layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
-                                    layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color)
-                                } else {
-                                    layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
+                        if let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil {
+                            let shapes = getShapesForLayer(layerIndex)
+                            if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }),
+                               var updatedShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                                saveToUndoStack()
+                                switch activeColorTarget {
+                                case .fill:
+                                    if updatedShape.fillStyle == nil {
+                                        updatedShape.fillStyle = FillStyle(color: color)
+                                    } else {
+                                        updatedShape.fillStyle?.color = color
+                                    }
+                                case .stroke:
+                                    if updatedShape.strokeStyle == nil {
+                                        updatedShape.strokeStyle = StrokeStyle(color: color, placement: .center)
+                                    } else {
+                                        updatedShape.strokeStyle?.color = color
+                                    }
                                 }
-                            case .stroke:
-                                if layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                                    layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, placement: .center)
-                                } else {
-                                    layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
-                                }
+                                setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
+                                hasChanges = true
                             }
-                            hasChanges = true
                         }
                     }
                 }

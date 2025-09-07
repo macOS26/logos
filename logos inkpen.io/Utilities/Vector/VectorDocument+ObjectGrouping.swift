@@ -27,10 +27,10 @@ extension VectorDocument {
         let groupShape = VectorShape.group(from: selectedShapes, name: "Group")
         
         // Remove individual shapes
-        layers[layerIndex].shapes.removeAll { selectedShapeIDs.contains($0.id) }
+        removeShapesUnified(layerIndex: layerIndex, where: { selectedShapeIDs.contains($0.id) })
         
         // Add group
-        layers[layerIndex].shapes.append(groupShape)
+        appendShapeToLayerUnified(layerIndex: layerIndex, shape: groupShape)
         selectedShapeIDs = [groupShape.id]
         
         // CRITICAL FIX: Update unified objects system after grouping
@@ -129,10 +129,12 @@ extension VectorDocument {
         }
         
         // Remove groups
-        layers[layerIndex].shapes.removeAll { shapesToRemove.contains($0.id) }
+        removeShapesUnified(layerIndex: layerIndex, where: { shapesToRemove.contains($0.id) })
         
         // Add ungrouped shapes
-        layers[layerIndex].shapes.append(contentsOf: shapesToAdd)
+        for shape in shapesToAdd {
+            appendShapeToLayerUnified(layerIndex: layerIndex, shape: shape)
+        }
         
         // Update selection
         selectedShapeIDs = newSelectedShapeIDs
@@ -178,10 +180,12 @@ extension VectorDocument {
         }
         
         // Remove flattened group
-        layers[layerIndex].shapes.remove(at: shapeIndex)
+        removeShapeAtIndexUnified(layerIndex: layerIndex, shapeIndex: shapeIndex)
         
         // Add restored individual shapes
-        layers[layerIndex].shapes.append(contentsOf: shapesToAdd)
+        for shape in shapesToAdd {
+            appendShapeToLayerUnified(layerIndex: layerIndex, shape: shape)
+        }
         selectedShapeIDs = newSelectedIDs
         
         // CRITICAL FIX: Update unified objects system after unflattening
@@ -225,7 +229,7 @@ extension VectorDocument {
         removeSelectedShapes()
         
         // Add compound path
-        layers[layerIndex].shapes.append(compoundShape)
+        appendShapeToLayerUnified(layerIndex: layerIndex, shape: compoundShape)
         selectedShapeIDs = [compoundShape.id]
         
         // CRITICAL FIX: Update unified objects system after creating compound path
@@ -267,7 +271,7 @@ extension VectorDocument {
         removeSelectedShapes()
         
         // Add looping path
-        layers[layerIndex].shapes.append(loopingShape)
+        appendShapeToLayerUnified(layerIndex: layerIndex, shape: loopingShape)
         selectedShapeIDs = [loopingShape.id]
         
         // CRITICAL FIX: Update unified objects system after creating looping path
@@ -312,10 +316,12 @@ extension VectorDocument {
         }
         
         // Remove compound path
-        layers[layerIndex].shapes.remove(at: shapeIndex)
+        removeShapeAtIndexUnified(layerIndex: layerIndex, shapeIndex: shapeIndex)
         
         // Add individual paths
-        layers[layerIndex].shapes.append(contentsOf: newShapes)
+        for shape in newShapes {
+            appendShapeToLayerUnified(layerIndex: layerIndex, shape: shape)
+        }
         selectedShapeIDs = newSelectedIDs
         
         // CRITICAL FIX: Update unified objects system after releasing compound path
@@ -360,10 +366,12 @@ extension VectorDocument {
         }
         
         // Remove looping path
-        layers[layerIndex].shapes.remove(at: shapeIndex)
+        removeShapeAtIndexUnified(layerIndex: layerIndex, shapeIndex: shapeIndex)
         
         // Add individual paths
-        layers[layerIndex].shapes.append(contentsOf: newShapes)
+        for shape in newShapes {
+            appendShapeToLayerUnified(layerIndex: layerIndex, shape: shape)
+        }
         selectedShapeIDs = newSelectedIDs
         
         // CRITICAL FIX: Update unified objects system after releasing looping path

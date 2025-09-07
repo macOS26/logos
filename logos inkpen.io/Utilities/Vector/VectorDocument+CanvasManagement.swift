@@ -99,7 +99,7 @@ extension VectorDocument {
             updatedPasteboardShape.name = "Pasteboard Background"
             updatedPasteboardShape.id = pasteboardShape.id  // Keep the same ID
             
-            layers[0].shapes[pasteboardIndex] = updatedPasteboardShape
+            setShapeAtIndex(layerIndex: 0, shapeIndex: pasteboardIndex, shape: updatedPasteboardShape)
             
             Log.fileOperation("📐 Updated pasteboard: \(pasteboardSize) at \(pasteboardOrigin)", level: .info)
         }
@@ -139,8 +139,9 @@ extension VectorDocument {
         updatedCanvasShape.fillStyle = FillStyle(color: settings.backgroundColor, opacity: 1.0)
         updatedCanvasShape.strokeStyle = nil
         updatedCanvasShape.name = "Canvas Background"
-        updatedCanvasShape.id = layers[1].shapes[canvasIndex].id
-        layers[1].shapes[canvasIndex] = updatedCanvasShape
+        guard let existingCanvas = getShapeAtIndex(layerIndex: 1, shapeIndex: canvasIndex) else { return }
+        updatedCanvasShape.id = existingCanvas.id
+        setShapeAtIndex(layerIndex: 1, shapeIndex: canvasIndex, shape: updatedCanvasShape)
         Log.fileOperation("📐 Updated canvas layer to size: \(settings.sizeInPoints)", level: .info)
     }
     
@@ -151,13 +152,15 @@ extension VectorDocument {
 
         // Translate shapes across all layers
         for layerIndex in layers.indices {
-            for shapeIndex in layers[layerIndex].shapes.indices {
-                let shapeName = layers[layerIndex].shapes[shapeIndex].name
+            let shapes = getShapesForLayer(layerIndex)
+            for (shapeIndex, shape) in shapes.enumerated() {
+                let shapeName = shape.name
                 if !includeBackgrounds && backgroundNames.contains(shapeName) { continue }
 
                 // Apply translation via transform, then bake into coordinates
-                layers[layerIndex].shapes[shapeIndex].transform = layers[layerIndex].shapes[shapeIndex].transform
-                    .translatedBy(x: delta.x, y: delta.y)
+                var updatedShape = shape
+                updatedShape.transform = updatedShape.transform.translatedBy(x: delta.x, y: delta.y)
+                setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                 applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex)
             }
         }
