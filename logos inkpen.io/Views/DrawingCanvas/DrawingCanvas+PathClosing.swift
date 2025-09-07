@@ -15,8 +15,9 @@ extension DrawingCanvas {
         for shapeID in selectedShapeIDs {
             // Find the shape and close its path if it's open
             for layerIndex in document.layers.indices {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    let shape = document.layers[layerIndex].shapes[shapeIndex]
+                let shapes = document.getShapesForLayer(layerIndex)
+                if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }) {
+                    guard var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
                     
                     // Check if path is already closed
                     let hasCloseElement = shape.path.elements.contains { element in
@@ -30,8 +31,11 @@ extension DrawingCanvas {
                         newElements.append(.close)
                         
                         let newPath = VectorPath(elements: newElements, isClosed: true)
-                        document.layers[layerIndex].shapes[shapeIndex].path = newPath
-                        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                        shape.path = newPath
+                        shape.updateBounds()
+                        
+                        // Update using unified setter
+                        document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
                         
                         Log.info("Closed path for shape \(shape.name)", category: .general)
                     }

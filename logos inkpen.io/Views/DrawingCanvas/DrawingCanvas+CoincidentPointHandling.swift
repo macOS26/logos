@@ -264,10 +264,13 @@ extension DrawingCanvas {
             
             // Find and update the coincident point
             for layerIndex in document.layers.indices {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == coincidentPointID.shapeID }) {
-                    guard coincidentPointID.elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { continue }
+                let shapes = document.getShapesForLayer(layerIndex)
+                if let shapeIndex = shapes.firstIndex(where: { $0.id == coincidentPointID.shapeID }) {
+                    guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
+                    guard coincidentPointID.elementIndex < shape.path.elements.count else { continue }
                     
-                    var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
+                    var updatedShape = shape
+                    var elements = shape.path.elements
                     let newPoint = VectorPoint(newPosition.x, newPosition.y)
                     
                     // Move the coincident point to the same new position
@@ -291,8 +294,9 @@ extension DrawingCanvas {
                     }
                     
                     // Update the shape
-                    document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
-                    document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                    updatedShape.path.elements = elements
+                    updatedShape.updateBounds()
+                    document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                     break
                 }
             }

@@ -68,6 +68,9 @@ extension VectorDocument {
         // Insert the duplicated layer right after the original
         layers.insert(duplicatedLayer, at: index + 1)
         
+        // Update unified objects after layer structure change
+        updateUnifiedObjectsOptimized()
+        
         // Select the new layer
         selectedLayerIndex = index + 1
         

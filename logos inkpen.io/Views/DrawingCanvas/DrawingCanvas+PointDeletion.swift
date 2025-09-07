@@ -107,22 +107,21 @@ extension DrawingCanvas {
         // PROFESSIONAL REAL-TIME CLOSED PATH: Update the existing shape with closed path and default fill
         // Closed paths get both stroke AND fill using document defaults
         if let layerIndex = document.selectedLayerIndex {
-            for shapeIndex in document.layers[layerIndex].shapes.indices {
-                if document.layers[layerIndex].shapes[shapeIndex].id == activeShape.id {
-                    // Update the existing shape to be closed with fill
-                    document.layers[layerIndex].shapes[shapeIndex].path = closedPath
-                    // FINAL FILL: Make fully opaque when path is closed
-                    document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
-                        color: document.defaultFillColor,
-                        opacity: document.defaultFillOpacity // Full opacity (usually 1.0)
-                    )
-                    document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-                    
-                    // CRITICAL FIX: Update the unified objects system to ensure the shape is visible
-                    // The shape exists in layers but might not be visible due to unified system not being updated
-                    document.updateUnifiedObjectsOptimized()
-                    break
-                }
+            let shapes = document.getShapesForLayer(layerIndex)
+            if let shapeIndex = shapes.firstIndex(where: { $0.id == activeShape.id }) {
+                guard var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
+                
+                // Update the existing shape to be closed with fill
+                shape.path = closedPath
+                // FINAL FILL: Make fully opaque when path is closed
+                shape.fillStyle = FillStyle(
+                    color: document.defaultFillColor,
+                    opacity: document.defaultFillOpacity // Full opacity (usually 1.0)
+                )
+                shape.updateBounds()
+                
+                // Update the shape using unified setter
+                document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
             }
         }
         

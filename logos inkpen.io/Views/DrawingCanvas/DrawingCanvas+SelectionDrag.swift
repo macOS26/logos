@@ -375,8 +375,9 @@ extension DrawingCanvas {
         
         // CLIPPING MASK: If this is a mask shape, also move all its clipped content
         if shape.isClippingPath {
-            for idx in document.layers[layerIndex].shapes.indices {
-                if document.layers[layerIndex].shapes[idx].clippedByShapeID == shape.id {
+            let shapes = document.getShapesForLayer(layerIndex)
+            for (idx, checkShape) in shapes.enumerated() {
+                if checkShape.clippedByShapeID == shape.id {
                     // Move the clipped shape by the same delta
                     applyDragDeltaToShapeCoordinates(layerIndex: layerIndex, shapeIndex: idx, delta: delta)
                 }

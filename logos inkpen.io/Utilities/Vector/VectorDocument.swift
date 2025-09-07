@@ -283,7 +283,9 @@ class VectorDocument: ObservableObject, Codable {
                 let newTransform = initialTransform.concatenating(scaleTransform)
                 
                 // Update the shape's transform
-                layers[layerIndex].shapes[shapeIndex].transform = newTransform
+                guard var shape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
+                shape.transform = newTransform
+                setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
                 
                 // CRITICAL FIX: Apply transform to actual coordinates after scaling
                 // This ensures object origin stays with object
@@ -299,7 +301,7 @@ class VectorDocument: ObservableObject, Codable {
     /// PROFESSIONAL COORDINATE SYSTEM FIX: Apply transform to actual coordinates
     /// This ensures object origin moves with the object
     internal func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int) {
-        let shape = layers[layerIndex].shapes[shapeIndex]
+        guard var shape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         let transform = shape.transform
         
         // Don't apply identity transforms
@@ -349,9 +351,10 @@ class VectorDocument: ObservableObject, Codable {
         let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
         
         // Update the shape with transformed path and reset transform to identity
-        layers[layerIndex].shapes[shapeIndex].path = transformedPath
-        layers[layerIndex].shapes[shapeIndex].transform = .identity
-        layers[layerIndex].shapes[shapeIndex].updateBounds()
+        shape.path = transformedPath
+        shape.transform = .identity
+        shape.updateBounds()
+        setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
         
         Log.info("✅ Shape coordinates updated - object origin now follows object position", category: .fileOperations)
     }
