@@ -712,17 +712,17 @@ extension DrawingCanvas {
     /// Gets the shape that contains a specific point (including grouped shapes)
     /// This supports the ability to continue drawing from existing path points
     private func getShapeForPoint(_ pointID: PointID) -> VectorShape? {
-        // Find the shape that contains this point (including grouped shapes)
-        for layer in document.layers {
-            // First check top-level shapes
-            if let shape = layer.shapes.first(where: { $0.id == pointID.shapeID }) {
-                return shape
-            }
-            
-            // Then check grouped shapes within group containers
-            for containerShape in layer.shapes {
-                if containerShape.isGroupContainer {
-                    if let groupedShape = containerShape.groupedShapes.first(where: { $0.id == pointID.shapeID }) {
+        // Find the shape that contains this point using unified objects
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
+                // First check if this is the shape we're looking for
+                if shape.id == pointID.shapeID {
+                    return shape
+                }
+                
+                // Then check grouped shapes within group containers
+                if shape.isGroupContainer {
+                    if let groupedShape = shape.groupedShapes.first(where: { $0.id == pointID.shapeID }) {
                         return groupedShape
                     }
                 }
