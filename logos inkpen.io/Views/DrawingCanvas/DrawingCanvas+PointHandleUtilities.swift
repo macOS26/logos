@@ -28,9 +28,10 @@ extension DrawingCanvas {
     }
     
     internal func getPointPosition(_ pointID: PointID) -> VectorPoint? {
-        // Find the shape and get the point position
-        for layer in document.layers {
-            if let shape = layer.shapes.first(where: { $0.id == pointID.shapeID }) {
+        // Find the shape and get the point position using unified objects
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType,
+               shape.id == pointID.shapeID {
                 guard pointID.elementIndex < shape.path.elements.count else { return nil }
                 let element = shape.path.elements[pointID.elementIndex]
                 
@@ -48,9 +49,10 @@ extension DrawingCanvas {
     }
     
     internal func getHandlePosition(_ handleID: HandleID) -> VectorPoint? {
-        // Find the shape and get the handle position
-        for layer in document.layers {
-            if let shape = layer.shapes.first(where: { $0.id == handleID.shapeID }) {
+        // Find the shape and get the handle position using unified objects
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType,
+               shape.id == handleID.shapeID {
                 guard handleID.elementIndex < shape.path.elements.count else { return nil }
                 let element = shape.path.elements[handleID.elementIndex]
                 
@@ -72,11 +74,15 @@ extension DrawingCanvas {
     }
     
     private func movePointToAbsolutePositionOptimized(_ pointID: PointID, to newPosition: CGPoint, isLiveDrag: Bool) {
-        // Find the shape and update the point position
-        for layerIndex in document.layers.indices {
-            let shapes = document.getShapesForLayer(layerIndex)
-            if let shapeIndex = shapes.firstIndex(where: { $0.id == pointID.shapeID }),
-               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+        // Find the shape and update the point position using unified objects
+        if let unifiedIndex = document.unifiedObjects.firstIndex(where: { 
+            if case .shape(let shape) = $0.objectType {
+                return shape.id == pointID.shapeID
+            }
+            return false
+        }) {
+            guard case .shape(let shape) = document.unifiedObjects[unifiedIndex].objectType else { return }
+            let layerIndex = document.unifiedObjects[unifiedIndex].layerIndex
                 guard pointID.elementIndex < shape.path.elements.count else { return }
                 
                 let newPoint = VectorPoint(newPosition.x, newPosition.y)
@@ -146,30 +152,22 @@ extension DrawingCanvas {
                 
                 if isLiveDrag {
                     // Skip expensive updateBounds during live drag for smoother performance
-                    // OPTIMIZED: During live drag, update only the specific shape in unified objects for targeted rendering
-                    if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
-                        if case .shape(let unifiedShape) = unifiedObj.objectType {
-                            return unifiedShape.id == pointID.shapeID
-                        }
-                        return false
-                    }) {
-                        // Update the specific unified object with the new shape data
-                        if let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: currentShape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                        }
-                    }
+                    // Update the unified object directly
+                    document.unifiedObjects[unifiedIndex] = VectorObject(shape: updatedShape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
                     
                     // Force immediate UI update for visual responsiveness
                     document.objectWillChange.send()
                 } else {
-                    // FULL UPDATE: On drag end, update bounds and do full sync for consistency
+                    // FULL UPDATE: On drag end, update bounds and do full sync
                     updatedShape.updateBounds()
-                    document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
+                    // Find shape index in layer to update properly
+                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == updatedShape.id }) {
+                        document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
+                    }
                     document.updateUnifiedObjectsOptimized()
                     document.objectWillChange.send()
                 }
                 return
-            }
         }
     }
     
@@ -244,11 +242,15 @@ extension DrawingCanvas {
     }
     
     private func moveHandleToAbsolutePositionOptimized(_ handleID: HandleID, to newPosition: CGPoint, isLiveDrag: Bool) {
-        // Find the shape and update the handle position
-        for layerIndex in document.layers.indices {
-            let shapes = document.getShapesForLayer(layerIndex)
-            if let shapeIndex = shapes.firstIndex(where: { $0.id == handleID.shapeID }),
-               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+        // Find the shape and update the handle position using unified objects
+        if let unifiedIndex = document.unifiedObjects.firstIndex(where: { 
+            if case .shape(let shape) = $0.objectType {
+                return shape.id == handleID.shapeID
+            }
+            return false
+        }) {
+            guard case .shape(let shape) = document.unifiedObjects[unifiedIndex].objectType else { return }
+            let layerIndex = document.unifiedObjects[unifiedIndex].layerIndex
                 guard handleID.elementIndex < shape.path.elements.count else { return }
                 
                 let newHandle = VectorPoint(newPosition.x, newPosition.y)
@@ -284,30 +286,22 @@ extension DrawingCanvas {
                 
                 if isLiveDrag {
                     // Skip expensive updateBounds during live drag for smoother performance
-                    // OPTIMIZED: During live drag, update only the specific shape in unified objects for targeted rendering
-                    if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
-                        if case .shape(let unifiedShape) = unifiedObj.objectType {
-                            return unifiedShape.id == handleID.shapeID
-                        }
-                        return false
-                    }) {
-                        // Update the specific unified object with the new shape data
-                        if let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: currentShape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                        }
-                    }
+                    // Update the unified object directly
+                    document.unifiedObjects[unifiedIndex] = VectorObject(shape: updatedShape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
                     
                     // Force immediate UI update for visual responsiveness
                     document.objectWillChange.send()
                 } else {
-                    // FULL UPDATE: On drag end, update bounds and do full sync for consistency
+                    // FULL UPDATE: On drag end, update bounds and do full sync
                     updatedShape.updateBounds()
-                    document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
+                    // Find shape index in layer to update properly
+                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == updatedShape.id }) {
+                        document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
+                    }
                     document.updateUnifiedObjectsOptimized()
                     document.objectWillChange.send()
                 }
                 return
-            }
         }
     }
 } 
