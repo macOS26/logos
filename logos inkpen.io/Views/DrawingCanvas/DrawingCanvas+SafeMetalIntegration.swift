@@ -159,10 +159,11 @@ extension DrawingCanvas {
         )
     }
     
-    /// Helper: Find shape by ID in all layers
+    /// Helper: Find shape by ID using unified objects
     private func findShape(by id: UUID) -> VectorShape? {
-        for layer in document.layers {
-            if let shape = layer.shapes.first(where: { $0.id == id }) {
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType,
+               shape.id == id {
                 return shape
             }
         }
@@ -180,10 +181,13 @@ extension DrawingCanvas {
     private func countActiveDrawElements() -> Int {
         var count = 0
         
-        // Count visible shapes in all layers
-        for layer in document.layers where layer.isVisible {
-            count += layer.shapes.count
-        }
+        // Count visible shapes from unified objects
+        count += document.unifiedObjects.compactMap { unifiedObject -> VectorShape? in
+            if case .shape(let shape) = unifiedObject.objectType {
+                return shape.isVisible ? shape : nil
+            }
+            return nil
+        }.count
         
         // Count text objects from unified system
         count += document.allTextObjects.filter { $0.isVisible }.count
