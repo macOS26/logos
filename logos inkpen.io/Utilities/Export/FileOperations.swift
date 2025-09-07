@@ -337,7 +337,8 @@ class FileOperations {
             centeredShape.isLocked = false
             centeredShape.isVisible = true
             
-            // Shape will be added to unified system after layer is added
+            // Add shape to unified system (layer index 2 for imported layer)
+            document.addShapeToUnifiedSystem(centeredShape, layerIndex: 2)
         }
 
         // Text objects are now imported as shapes with isTextObject=true
@@ -484,7 +485,8 @@ class FileOperations {
             centeredShape.isLocked = false
             centeredShape.isVisible = true
             
-            // Shape will be added to unified system after layer is added
+            // Add shape to unified system (layer index 2 for imported layer)
+            document.addShapeToUnifiedSystem(centeredShape, layerIndex: 2)
         }
 
         // Text objects are now imported as shapes with isTextObject=true
@@ -674,7 +676,8 @@ class FileOperations {
             importedShape.isLocked = false
             importedShape.isVisible = true
             
-            // Shape will be added to unified system after layer is added
+            // Add shape to unified system (layer index 2 for imported layer)
+            document.addShapeToUnifiedSystem(importedShape, layerIndex: 2)
         }
 
         // Update the layer in the document
