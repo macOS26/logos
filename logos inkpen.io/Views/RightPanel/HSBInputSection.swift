@@ -511,12 +511,13 @@ struct HSBInputSection: View {
                 for shapeID in activeShapeIDs {
                     // Find the shape across all layers
                     for layerIndex in document.layers.indices {
-                        if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                        let shapes = document.getShapesForLayer(layerIndex)
+                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
+                           let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
                             // Only update non-gradient fills/strokes
                             switch document.activeColorTarget {
                             case .fill:
                                 // UNIFIED HELPER: Use unified system helper instead of direct manipulation
-                                let shape = document.layers[layerIndex].shapes[shapeIndex]
                                 if let fillStyle = shape.fillStyle, case .gradient = fillStyle.color {
                                     // Skip gradient fills - they should only be updated via explicit gradient callbacks
                                     continue
@@ -525,7 +526,6 @@ struct HSBInputSection: View {
                                 }
                             case .stroke:
                                 // UNIFIED HELPER: Use unified system helper instead of direct manipulation
-                                let shape = document.layers[layerIndex].shapes[shapeIndex]
                                 document.updateShapeStrokeColorInUnified(id: shape.id, color: vectorColor)
                             }
                             break // Found the shape, no need to check other layers
