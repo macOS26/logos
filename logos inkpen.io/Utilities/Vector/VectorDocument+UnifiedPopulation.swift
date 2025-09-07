@@ -34,7 +34,7 @@ extension VectorDocument {
         unifiedObjects.removeAll()
         
         // After populating, sync back to layers
-        defer { syncLayerShapesFromUnified() }
+        // No longer syncing with layers[].shapes
         
         // For each layer, we need to create a truly unified ordering of ALL objects (shapes + text)
         for (layerIndex, layer) in layers.enumerated() {

@@ -23,13 +23,6 @@ extension VectorDocument {
             }
     }
     
-    /// Syncs the legacy layer.shapes array with unified objects (temporary during migration)
-    func syncLayerShapesFromUnified() {
-        for (index, _) in layers.enumerated() {
-            layers[index].shapes = getShapesForLayer(index)
-        }
-    }
-    
     /// Gets the next available orderID for a layer
     private func getNextOrderID(for layerIndex: Int) -> Int {
         let existingOrderIDs = unifiedObjects
@@ -70,13 +63,7 @@ extension VectorDocument {
             }
         }
         
-        // CRITICAL FIX: Only add to legacy layers array if shape doesn't already exist there
-        if layerIndex < layers.count {
-            let shapeExists = layers[layerIndex].shapes.contains { $0.id == shape.id }
-            if !shapeExists {
-                layers[layerIndex].shapes.append(shape)
-            }
-        }
+        // Shape is now only in unified objects
         
         let orderID = getNextOrderID(for: layerIndex)
         let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
@@ -192,15 +179,7 @@ extension VectorDocument {
         // DEBUG: Log the editing state
         Log.fileOperation("🔍 addTextToUnifiedSystem: text.isEditing=\(text.isEditing), textShape.isEditing=\(textShape.isEditing ?? false)", level: .info)
         
-        // CRITICAL: Add the text shape to the layer's shapes array
-        if layerIndex < layers.count {
-            // Remove any existing shape with same ID to prevent duplicates
-            layers[layerIndex].shapes.removeAll { $0.id == text.id }
-            // Add the text as a shape (make sure editing state is preserved)
-            var shapeToAdd = textShape
-            shapeToAdd.isEditing = text.isEditing  // Ensure editing state is preserved
-            layers[layerIndex].shapes.append(shapeToAdd)
-        }
+        // Text shape is now only in unified objects
         
         // MIGRATION: textObjects is now rebuilt from unified, no direct modification needed
         
