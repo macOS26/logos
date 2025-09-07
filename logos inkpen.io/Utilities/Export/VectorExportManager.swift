@@ -186,8 +186,9 @@ class VectorExportManager {
             // Add layer definition
             opcodes.append(.layerDefinition(name: layer.name, index: layerIndex))
             
-            // Export shapes from this layer
-            for shape in layer.shapes {
+            // Export shapes from this layer using unified objects
+            let shapesInLayer = document.getShapesForLayer(layerIndex)
+            for shape in shapesInLayer {
                 guard shape.isVisible else { continue }
                 
                 var mutableTransformation = transformation
@@ -464,8 +465,9 @@ class VectorExportManager {
                 lineType: options.defaultLineType
             ))
             
-            // Export shapes from this layer
-            for shape in layer.shapes {
+            // Export shapes from this layer using unified objects
+            let shapesInLayer = document.getShapesForLayer(layerIndex)
+            for shape in shapesInLayer {
                 guard shape.isVisible else { continue }
                 
                 var mutableTransformation = transformation
@@ -1104,8 +1106,9 @@ class VectorExportManager {
             ))
             entityCount += 1
             
-            // Export shapes with millimeter precision
-            for shape in layer.shapes {
+            // Export shapes with millimeter precision using unified objects
+            let shapesInLayer = document.getShapesForLayer(layerIndex)
+            for shape in shapesInLayer {
                 guard shape.isVisible else { continue }
                 
                 let shapeEntities = try convertShapeToMillimeterPrecisionDWGEntities(
@@ -1151,8 +1154,9 @@ class VectorExportManager {
             // Add layer definition
             opcodes.append(.layerDefinition(name: layer.name, index: layerIndex))
             
-            // Export shapes with millimeter precision
-            for shape in layer.shapes {
+            // Export shapes with millimeter precision using unified objects
+            let shapesInLayer = document.getShapesForLayer(layerIndex)
+            for shape in shapesInLayer {
                 guard shape.isVisible else { continue }
                 
                 let shapeOpcodes = try convertShapeToMillimeterPrecisionDWFOpcodes(
