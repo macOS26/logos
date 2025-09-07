@@ -185,7 +185,7 @@ extension DrawingCanvas {
                         Log.error("🚨 FINISH DRAG: initialCenter=\(initialCenter), dragDelta=\(currentDragDelta)", category: .debug)
                         
                         let delta = CGPoint(x: newPositionX - textObj.position.x, y: newPositionY - textObj.position.y)
-                        document.translateTextInUnified(id: unifiedObject.id, delta: delta)
+                        document.translateTextInUnified(id: unifiedObject.id, delta: CGVector(dx: delta.x, dy: delta.y))
                         
                         Log.error("🚨 FINISH DRAG: Updated textObject position to (\(newPositionX), \(newPositionY))", category: .debug)
                     }
@@ -242,7 +242,7 @@ extension DrawingCanvas {
             }
             
             // Bounds for images are their rectangular path; keep as-is (transform applied at render time)
-            document.updateShapeTransformAndPathInUnified(id: updatedShape.id, transform: updatedShape.transform)
+            document.updateShapeTransformAndPathInUnified(id: updatedShape.id, path: updatedShape.path, transform: updatedShape.transform)
             return
         }
         
