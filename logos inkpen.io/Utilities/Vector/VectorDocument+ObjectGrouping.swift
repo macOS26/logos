@@ -81,7 +81,7 @@ extension VectorDocument {
         removeSelectedShapes()
         
         // Add flattened group
-        layers[layerIndex].shapes.append(flattenedShape)
+        appendShapeToLayerUnified(layerIndex: layerIndex, shape: flattenedShape)
         selectedShapeIDs = [flattenedShape.id]
         
         // CRITICAL FIX: Update unified objects system after flattening

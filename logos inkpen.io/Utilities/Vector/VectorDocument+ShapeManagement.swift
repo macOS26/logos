@@ -52,7 +52,7 @@ extension VectorDocument {
         saveToUndoStack()
         
         // CRITICAL PROTECTION: Filter out background shapes that should never be deleted
-        let shapesToRemove = layers[layerIndex].shapes.filter { shape in
+        let shapesToRemove = getShapesForLayer(layerIndex).filter { shape in
             if selectedShapeIDs.contains(shape.id) {
                 // NEVER allow deletion of Canvas or Pasteboard background shapes
                 if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
@@ -66,7 +66,7 @@ extension VectorDocument {
         
         // Remove only the non-protected shapes
         for shape in shapesToRemove {
-            layers[layerIndex].shapes.removeAll { $0.id == shape.id }
+            removeShapesUnified(layerIndex: layerIndex, where: { $0.id == shape.id })
         }
         
         selectedShapeIDs.removeAll()
@@ -106,7 +106,7 @@ extension VectorDocument {
                 if !shape.isTextObject {
                     // Remove from layers array for regular shapes
                     if let layerIndex = objectToDelete.layerIndex < layers.count ? objectToDelete.layerIndex : nil {
-                        layers[layerIndex].shapes.removeAll { $0.id == shape.id }
+                        removeShapesUnified(layerIndex: layerIndex, where: { $0.id == shape.id })
                     }
                 }
             }

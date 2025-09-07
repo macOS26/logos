@@ -17,7 +17,7 @@ extension VectorDocument {
         guard let layerIndex = selectedLayerIndex else { return }
         saveToUndoStack()
         
-        let shapesToOutline = layers[layerIndex].shapes.filter { selectedShapeIDs.contains($0.id) && $0.strokeStyle != nil }
+        let shapesToOutline = getShapesForLayer(layerIndex).filter { selectedShapeIDs.contains($0.id) && $0.strokeStyle != nil }
         var newShapeIDs: Set<UUID> = []
         var originalShapeIDs: Set<UUID> = []
         
@@ -60,19 +60,21 @@ extension VectorDocument {
                     fillShape.updateBounds()
                     
                     // Find the index of the original shape
-                    if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                    let shapes = getShapesForLayer(layerIndex)
+                    if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
                         // Replace original shape with fill-only version
                         layers[layerIndex].shapes[shapeIndex] = fillShape
                         originalShapeIDs.insert(fillShape.id)
                         
                         // Add stroke shape ABOVE the fill shape
-                        layers[layerIndex].shapes.insert(strokeShape, at: shapeIndex + 1)
+                        insertShapeUnified(layerIndex: layerIndex, shape: strokeShape, at: shapeIndex + 1)
                         addShapeToUnifiedSystem(strokeShape, layerIndex: layerIndex)
                         newShapeIDs.insert(strokeShape.id)
                     }
                 } else {
                     // No fill, just replace with stroke outline
-                    if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                    let shapes = getShapesForLayer(layerIndex)
+                    if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
                         layers[layerIndex].shapes[shapeIndex] = strokeShape
                         addShapeToUnifiedSystem(strokeShape, layerIndex: layerIndex)
                         newShapeIDs.insert(strokeShape.id)
@@ -95,7 +97,7 @@ extension VectorDocument {
     var canOutlineStrokes: Bool {
         guard let layerIndex = selectedLayerIndex else { return false }
         
-        let shapesWithStrokes = layers[layerIndex].shapes.filter {
+        let shapesWithStrokes = getShapesForLayer(layerIndex).filter {
             selectedShapeIDs.contains($0.id) && $0.strokeStyle != nil
         }
         
@@ -109,7 +111,7 @@ extension VectorDocument {
     var outlineableStrokesCount: Int {
         guard let layerIndex = selectedLayerIndex else { return 0 }
         
-        return layers[layerIndex].shapes.filter { shape in
+        return getShapesForLayer(layerIndex).filter { shape in
             selectedShapeIDs.contains(shape.id) &&
             shape.strokeStyle != nil &&
             PathOperations.canOutlineStroke(path: shape.path.cgPath, strokeStyle: shape.strokeStyle!)
