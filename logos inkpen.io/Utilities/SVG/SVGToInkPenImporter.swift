@@ -500,7 +500,7 @@ struct SVGImportView: View {
                     VStack(alignment: .leading, spacing: 5) {
                         Text("Size: \(Int(document.settings.width)) × \(Int(document.settings.height)) \(document.settings.unit.rawValue)")
                         Text("Layers: \(document.layers.count)")
-                        Text("Total Shapes: \(document.unifiedObjects.filter { if case .shape = $0.objectType { return true } else { return false } }.count)")
+                        Text("Total Shapes: \(document.layers.reduce(0) { $0 + $1.shapes.count })")
                     }
                     .font(.caption)
                     .foregroundColor(.secondary)

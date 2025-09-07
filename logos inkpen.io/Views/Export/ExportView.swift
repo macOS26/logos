@@ -123,7 +123,7 @@ struct ExportView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    let totalShapes = document.unifiedObjects.filter { if case .shape = $0.objectType { return true } else { return false } }.count
+                    let totalShapes = document.layers.reduce(0) { $0 + $1.shapes.count }
                     Text("Shapes: \(totalShapes)")
                         .font(.caption)
                         .foregroundColor(.secondary)
