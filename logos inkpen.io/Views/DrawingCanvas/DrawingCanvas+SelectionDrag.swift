@@ -158,7 +158,8 @@ extension DrawingCanvas {
             for unifiedObject in selectedObjects {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
-                    if let shapeIndex = document.layers[unifiedObject.layerIndex].shapes.firstIndex(where: { $0.id == unifiedObject.id }) {
+                    let shapes = document.getShapesForLayer(unifiedObject.layerIndex)
+                    if let shapeIndex = shapes.firstIndex(where: { $0.id == unifiedObject.id }) {
                         // CLIPPING MASK MOVEMENT: Use normal drag system (preview already handled movement)
                         if shape.isClippingPath {
                             // Clipping masks use the same drag system as regular shapes
@@ -546,19 +547,21 @@ extension DrawingCanvas {
                         Log.error("🚨 SYNC DEBUG: TEXT OBJECT NOT FOUND in textObjects array!", category: .debug)
                     }
                 } else {
-                    // Regular shapes - find in layers array
-                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                       let updatedShape = document.layers[layerIndex].shapes.first(where: { $0.id == oldShape.id }) {
-                        // DEBUG: Check clipping properties before and after sync
-                        if oldShape.clippedByShapeID != nil || updatedShape.clippedByShapeID != nil {
-                            Log.info("🎭 DRAG SYNC DEBUG: Shape '\(oldShape.name)' - old clippedByShapeID: \(oldShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil"), new clippedByShapeID: \(updatedShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .general)
+                    // Regular shapes - find in unified objects
+                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
+                        let shapes = document.getShapesForLayer(layerIndex)
+                        if let updatedShape = shapes.first(where: { $0.id == oldShape.id }) {
+                            // DEBUG: Check clipping properties before and after sync
+                            if oldShape.clippedByShapeID != nil || updatedShape.clippedByShapeID != nil {
+                                Log.info("🎭 DRAG SYNC DEBUG: Shape '\(oldShape.name)' - old clippedByShapeID: \(oldShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil"), new clippedByShapeID: \(updatedShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .general)
+                            }
+                            // CRITICAL FIX: Preserve original orderID - DO NOT reorder during drag
+                            document.unifiedObjects[i] = VectorObject(
+                                shape: updatedShape,
+                                layerIndex: unifiedObject.layerIndex,
+                                orderID: unifiedObject.orderID  // Keep same orderID = no reordering
+                            )
                         }
-                        // CRITICAL FIX: Preserve original orderID - DO NOT reorder during drag
-                        document.unifiedObjects[i] = VectorObject(
-                            shape: updatedShape,
-                            layerIndex: unifiedObject.layerIndex,
-                            orderID: unifiedObject.orderID  // Keep same orderID = no reordering
-                        )
                     }
                 }
             }

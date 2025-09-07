@@ -29,8 +29,9 @@ extension VectorDocument {
         
         for unifiedObject in selectedWarpObjects {
             if case .shape(let shape) = unifiedObject.objectType,
-               let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil,
-               let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+               let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil {
+               let shapes = getShapesForLayer(layerIndex)
+               if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
                 
                 if let unwrappedShape = shape.unwrapWarpObject() {
                     // Replace warp object with unwrapped shape
@@ -47,6 +48,7 @@ extension VectorDocument {
                     
                     Log.info("✅ UNWRAPPED WARP OBJECT: \(shape.name) → \(unwrappedShape.name)", category: .fileOperations)
                 }
+               }
             }
         }
         
@@ -72,8 +74,9 @@ extension VectorDocument {
         
         for unifiedObject in selectedWarpObjects {
             if case .shape(let shape) = unifiedObject.objectType,
-               let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil,
-               let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+               let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil {
+               let shapes = getShapesForLayer(layerIndex)
+               if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
                 
                 if let expandedShape = shape.expandWarpObject() {
                     // Replace warp object with expanded shape
@@ -90,6 +93,7 @@ extension VectorDocument {
                     
                     Log.info("✅ EXPANDED WARP OBJECT: \(shape.name) → \(expandedShape.name)", category: .fileOperations)
                 }
+               }
             }
         }
         

@@ -266,9 +266,10 @@ class VectorDocument: ObservableObject, Codable {
         initialTransform: CGAffineTransform,
         initialBounds: CGRect
     ) {
-        // Find the shape across all layers
+        // Find the shape across all layers using unified objects
         for layerIndex in layers.indices {
-            if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeId }) {
+            let shapes = getShapesForLayer(layerIndex)
+            if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeId }) {
                 // Calculate center point of original bounds for scaling origin
                 let centerX = initialBounds.midX
                 let centerY = initialBounds.midY

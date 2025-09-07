@@ -30,8 +30,9 @@ extension VectorDocument {
         guard let maskID = selectedShapes.last?.id else { return }
         
         // Log clipping mask creation for debugging
-        if layers[layerIndex].shapes.first(where: { $0.id == maskID }) != nil {
-            Log.info("🎭 CLIPPING MASK: Creating mask with shape '\(layers[layerIndex].shapes.first(where: { $0.id == maskID })?.name ?? "Unknown")'", category: .general)
+        let shapesForLogging = getShapesForLayer(layerIndex)
+        if shapesForLogging.first(where: { $0.id == maskID }) != nil {
+            Log.info("🎭 CLIPPING MASK: Creating mask with shape '\(shapesForLogging.first(where: { $0.id == maskID })?.name ?? "Unknown")'", category: .general)
         }
         
         // Mark mask
@@ -289,7 +290,8 @@ extension VectorDocument {
     func isShapeInClippingMask(_ shapeID: UUID) -> Bool {
         guard let layerIndex = selectedLayerIndex else { return false }
         
-        if let shape = layers[layerIndex].shapes.first(where: { $0.id == shapeID }) {
+        let shapes = getShapesForLayer(layerIndex)
+        if let shape = shapes.first(where: { $0.id == shapeID }) {
             return shape.isClippingPath || shape.clippedByShapeID != nil
         }
         return false
@@ -302,12 +304,13 @@ extension VectorDocument {
         var group: [VectorShape] = []
         
         // Add the mask shape
-        if let maskShape = layers[layerIndex].shapes.first(where: { $0.id == maskID && $0.isClippingPath }) {
+        let shapes = getShapesForLayer(layerIndex)
+        if let maskShape = shapes.first(where: { $0.id == maskID && $0.isClippingPath }) {
             group.append(maskShape)
         }
         
         // Add all clipped content
-        for shape in layers[layerIndex].shapes {
+        for shape in shapes {
             if shape.clippedByShapeID == maskID {
                 group.append(shape)
             }

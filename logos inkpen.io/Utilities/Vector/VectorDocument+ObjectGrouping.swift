@@ -20,8 +20,8 @@ extension VectorDocument {
         
         saveToUndoStack()
         
-        // Get selected shapes
-        let selectedShapes = layers[layerIndex].shapes.filter { selectedShapeIDs.contains($0.id) }
+        // Get selected shapes from unified objects
+        let selectedShapes = getShapesForLayer(layerIndex).filter { selectedShapeIDs.contains($0.id) }
         
         // Create group from selected shapes
         let groupShape = VectorShape.group(from: selectedShapes, name: "Group")
@@ -157,8 +157,10 @@ extension VectorDocument {
     func unflattenSelectedObjects() {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count == 1,
-              let selectedShapeID = selectedShapeIDs.first,
-              let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == selectedShapeID }) else { return }
+              let selectedShapeID = selectedShapeIDs.first else { return }
+        
+        let shapes = getShapesForLayer(layerIndex)
+        guard let shapeIndex = shapes.firstIndex(where: { $0.id == selectedShapeID }) else { return }
         
         guard let flattenedGroup = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         
