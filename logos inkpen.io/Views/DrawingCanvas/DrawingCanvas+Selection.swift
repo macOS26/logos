@@ -41,8 +41,8 @@ extension DrawingCanvas {
                         }
                         continue // Skip the regular shape handling for text objects
                     }
-                    // Check if the shape's layer is visible
-                    if unifiedObject.layerIndex >= document.layers.count || !document.layers[unifiedObject.layerIndex].isVisible {
+                    // Check if the shape is visible
+                    if !shape.isVisible {
                         continue
                     }
                     

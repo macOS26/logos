@@ -1502,34 +1502,15 @@ class ProfessionalTextViewModel: ObservableObject {
             isGroup: false
         )
         
-        // CRITICAL FIX: Handle case where no layer is selected
-        let targetLayerIndex: Int
-        if let selectedLayerIndex = document.selectedLayerIndex {
-            targetLayerIndex = selectedLayerIndex
-            Log.fileOperation("🎯 USING SELECTED LAYER: Index \(targetLayerIndex) ('\(document.layers[targetLayerIndex].name)')", level: .info)
-        } else {
-            // Fallback to first available working layer (skip pasteboard and canvas layers)
-            if document.layers.count > 2 {
-                targetLayerIndex = 2 // First working layer (index 2)
-                document.selectedLayerIndex = targetLayerIndex
-                Log.fileOperation("🎯 NO LAYER SELECTED: Using fallback layer index \(targetLayerIndex) ('\(document.layers[targetLayerIndex].name)')", level: .info)
-            } else {
-                Log.error("❌ CONVERT TO OUTLINES FAILED: No suitable layer available", category: .error)
-                return
-            }
-        }
+        // Add outline shape to unified system
+        // For now, use a default layer index (2 for working layer) until layers are fully removed
+        let targetLayerIndex = document.selectedLayerIndex ?? 2
         
-        // Check if target layer is locked
-        if document.layers[targetLayerIndex].isLocked {
-            Log.error("❌ CONVERT TO OUTLINES FAILED: Target layer '\(document.layers[targetLayerIndex].name)' is locked", category: .error)
-            return
-        }
-        
-        // Add to the target layer with unified system support
+        // Add to the unified system
         document.addShape(outlineShape, to: targetLayerIndex)
         
         Log.info("✅ MULTILINE TEXT CONVERSION COMPLETE: Using original working method", category: .fileOperations)
-        Log.fileOperation("🎯 ADDED OUTLINE SHAPE: '\(outlineShape.name)' to layer '\(document.layers[targetLayerIndex].name)'", level: .info)
+        Log.fileOperation("🎯 ADDED OUTLINE SHAPE: '\(outlineShape.name)' to unified system", level: .info)
         
         // Select the converted shape
         document.selectedShapeIDs = [outlineShape.id]
