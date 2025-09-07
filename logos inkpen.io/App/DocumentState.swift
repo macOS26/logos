@@ -494,8 +494,9 @@ class DocumentState: ObservableObject {
         guard let document = document else { return }
         var anyEmbedded = false
         for layerIndex in document.layers.indices {
-            for shapeIndex in document.layers[layerIndex].shapes.indices {
-                let shape = document.layers[layerIndex].shapes[shapeIndex]
+            let shapes = document.getShapesForLayer(layerIndex)
+            for shapeIndex in shapes.indices {
+                guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
                 guard document.selectedShapeIDs.contains(shape.id) else { continue }
                 // Obtain image either from registry or from linked path
                 var nsImage: NSImage? = ImageContentRegistry.image(for: shape.id)
