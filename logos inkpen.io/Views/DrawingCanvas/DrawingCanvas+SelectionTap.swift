@@ -39,10 +39,8 @@ extension DrawingCanvas {
             var hitShape: VectorShape?
             var hitLayerIndex: Int?
             // STRICT OBJECT-BASED hit test (no bounds fallback) when Command is held
-            outerHit: for layerIndex in document.layers.indices.reversed() {
-                let layer = document.layers[layerIndex]
-                if !layer.isVisible { continue }
-                for shape in layer.shapes.reversed() {
+            outerHit: for unifiedObject in document.unifiedObjects.reversed() {
+                if case .shape(let shape) = unifiedObject.objectType {
                     if !shape.isVisible { continue }
                     let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
                     if isBackgroundShape { continue }
@@ -53,7 +51,7 @@ extension DrawingCanvas {
                     let isHit = PathOperations.hitTest(shape.transformedPath, point: validatedLocation, tolerance: tolerance)
                     if isHit {
                         hitShape = shape
-                        hitLayerIndex = layerIndex
+                        hitLayerIndex = unifiedObject.layerIndex
                         break outerHit
                     }
                 }
@@ -95,12 +93,9 @@ extension DrawingCanvas {
             // Find the clicked shape using improved hit detection
             var clickedShape: VectorShape?
             
-            // Search through layers from top to bottom
-            for layerIndex in document.layers.indices.reversed() {
-                let layer = document.layers[layerIndex]
-                if !layer.isVisible { continue }
-                
-                for shape in layer.shapes.reversed() {
+            // Search through unified objects from top to bottom
+            for unifiedObject in document.unifiedObjects.reversed() {
+                if case .shape(let shape) = unifiedObject.objectType {
                     if !shape.isVisible { continue }
                     
                     // Skip background shapes
@@ -115,8 +110,6 @@ extension DrawingCanvas {
                         break
                     }
                 }
-                
-                if clickedShape != nil { break }
             }
             
             // Check if the clicked shape is a rectangle-based shape that can have corner radius
@@ -512,8 +505,9 @@ extension DrawingCanvas {
     
     /// Helper function to find a shape by ID
     private func findShapeByID(_ shapeID: UUID) -> VectorShape? {
-        for layer in document.layers {
-            if let shape = layer.shapes.first(where: { $0.id == shapeID }) {
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType,
+               shape.id == shapeID {
                 return shape
             }
         }
