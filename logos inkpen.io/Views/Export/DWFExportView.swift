@@ -280,10 +280,11 @@ struct DWFExportView: View {
     
     private func getTotalShapeCount() -> Int {
         var count = 0
-        for layer in document.layers {
-            count += layer.shapes.count
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(_) = unifiedObject.objectType {
+                count += 1
+            }
         }
-        count += document.allTextObjects.count
         return count
     }
 }
