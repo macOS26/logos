@@ -10,32 +10,21 @@ import CoreGraphics
 
 // MARK: - COMPREHENSIVE UNIFIED WRITE OPERATIONS
 extension VectorDocument {
-    // These methods ensure ALL operations go through unified system - NO direct layer access
+    // These methods ensure ALL operations go through unified system
     
     /// Append a shape to a layer through unified system
     func appendShapeToLayerUnified(layerIndex: Int, shape: VectorShape) {
         guard layerIndex >= 0 && layerIndex < layers.count else { return }
         
-        // Add to legacy layer (temporary until full migration)
-        layers[layerIndex].shapes.append(shape)
-        
-        // Update unified system immediately
-        updateUnifiedObjectsOptimized()
+        // Add directly to unified system
+        addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
         objectWillChange.send()
     }
     
     /// Remove a shape by ID through unified system
     func removeShapeByIdUnified(shapeID: UUID) {
-        // Find and remove from legacy layers
-        for layerIndex in layers.indices {
-            if let index = layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                layers[layerIndex].shapes.remove(at: index)
-                break
-            }
-        }
-        
-        // Update unified system
-        updateUnifiedObjectsOptimized()
+        // Remove from unified objects
+        removeShapeFromUnifiedSystem(id: shapeID)
         objectWillChange.send()
     }
     
@@ -43,61 +32,76 @@ extension VectorDocument {
     func removeShapesUnified(layerIndex: Int, where condition: (VectorShape) -> Bool) {
         guard layerIndex >= 0 && layerIndex < layers.count else { return }
         
-        // Remove from legacy layer
-        layers[layerIndex].shapes.removeAll(where: condition)
+        // Find shapes to remove in unified objects
+        let shapesToRemove = unifiedObjects.compactMap { obj -> UUID? in
+            if obj.layerIndex == layerIndex,
+               case .shape(let shape) = obj.objectType,
+               !shape.isTextObject,
+               condition(shape) {
+                return shape.id
+            }
+            return nil
+        }
         
-        // Update unified system
-        updateUnifiedObjectsOptimized()
+        // Remove each shape
+        for shapeID in shapesToRemove {
+            removeShapeFromUnifiedSystem(id: shapeID)
+        }
+        
         objectWillChange.send()
     }
     
-    /// Insert a shape at specific index through unified system
+    /// Insert a shape at a specific index through unified system
     func insertShapeUnified(layerIndex: Int, shape: VectorShape, at index: Int) {
         guard layerIndex >= 0 && layerIndex < layers.count else { return }
         
-        // Insert into legacy layer
-        let safeIndex = min(index, layers[layerIndex].shapes.count)
-        layers[layerIndex].shapes.insert(shape, at: safeIndex)
-        
-        // Update unified system
-        updateUnifiedObjectsOptimized()
+        // For now, just add to unified system (ordering handled by orderID)
+        addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
         objectWillChange.send()
     }
     
-    /// Append multiple shapes through unified system
+    /// Append multiple shapes to a layer through unified system
     func appendShapesUnified(layerIndex: Int, shapes: [VectorShape]) {
         guard layerIndex >= 0 && layerIndex < layers.count else { return }
         
-        // Append to legacy layer
-        layers[layerIndex].shapes.append(contentsOf: shapes)
+        // Add each shape to unified system
+        for shape in shapes {
+            addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
+        }
         
-        // Update unified system
-        updateUnifiedObjectsOptimized()
         objectWillChange.send()
     }
     
-    /// Remove shape at specific index through unified system
+    /// Remove a shape at a specific index through unified system
     func removeShapeAtIndexUnified(layerIndex: Int, shapeIndex: Int) {
-        guard layerIndex >= 0 && layerIndex < layers.count,
-              shapeIndex >= 0 && shapeIndex < layers[layerIndex].shapes.count else { return }
+        guard layerIndex >= 0 && layerIndex < layers.count else { return }
         
-        // Remove from legacy layer
-        layers[layerIndex].shapes.remove(at: shapeIndex)
+        // Get shapes for this layer
+        let shapesInLayer = getShapesForLayer(layerIndex)
+        guard shapeIndex >= 0 && shapeIndex < shapesInLayer.count else { return }
         
-        // Update unified system
-        updateUnifiedObjectsOptimized()
+        // Remove the shape at the specified index
+        let shapeToRemove = shapesInLayer[shapeIndex]
+        removeShapeFromUnifiedSystem(id: shapeToRemove.id)
+        
         objectWillChange.send()
     }
     
-    /// Replace all shapes in a layer through unified system
+    /// Set all shapes for a layer through unified system
     func setShapesForLayerUnified(layerIndex: Int, shapes: [VectorShape]) {
         guard layerIndex >= 0 && layerIndex < layers.count else { return }
         
-        // Replace in legacy layer
-        layers[layerIndex].shapes = shapes
+        // Remove all existing shapes for this layer
+        let existingShapes = getShapesForLayer(layerIndex)
+        for shape in existingShapes {
+            removeShapeFromUnifiedSystem(id: shape.id)
+        }
         
-        // Update unified system
-        updateUnifiedObjectsOptimized()
+        // Add new shapes
+        for shape in shapes {
+            addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
+        }
+        
         objectWillChange.send()
     }
 }

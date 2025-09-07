@@ -46,7 +46,8 @@
       "Bash(awk:*)",
       "Bash(mcp__xcf-server__build_project:*)",
       "Bash(git checkout:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(do echo \"=== $file ===\")"
     ],
     "deny": [],
     "ask": []
