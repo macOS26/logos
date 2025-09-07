@@ -11,7 +11,8 @@ import CoreGraphics
 import UniformTypeIdentifiers
 
 struct LayerView: View {
-    let layer: VectorLayer
+    @ObservedObject var document: VectorDocument
+    let layerIndex: Int
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let selectedShapeIDs: Set<UUID>
@@ -19,6 +20,10 @@ struct LayerView: View {
     let isShiftPressed: Bool  // Passed from DrawingCanvas for transform tool constraints
     let dragPreviewDelta: CGPoint  // Passed for 60fps drag preview
     let dragPreviewTrigger: Bool  // Trigger for efficient preview updates
+    
+    private var layer: VectorLayer {
+        document.layers[layerIndex]
+    }
     
     // CANVAS LAYER PROTECTION: Check if this is the Canvas layer
     private var isCanvasLayer: Bool {
@@ -31,13 +36,14 @@ struct LayerView: View {
     }
     
     var body: some View {
-        ZStack {
-            ForEach(layer.shapes.indices, id: \.self) { shapeIndex in
-                let currentShape = layer.shapes[shapeIndex]
+        let shapes = document.getShapesForLayer(layerIndex)
+        return ZStack {
+            ForEach(shapes.indices, id: \.self) { shapeIndex in
+                let currentShape = shapes[shapeIndex]
                 // Do not render clipping path shapes themselves
                 if currentShape.isClippingPath {
                     EmptyView()
-                } else if let clipID = currentShape.clippedByShapeID, let maskShape = layer.shapes.first(where: { $0.id == clipID }) {
+                } else if let clipID = currentShape.clippedByShapeID, let maskShape = shapes.first(where: { $0.id == clipID }) {
                     // FIXED CLIPPING MASK: Use NSView approach like gradient fills
                     // Create pre-transformed paths for the clipping mask
                     let clippedPath = createPreTransformedPath(for: currentShape)
