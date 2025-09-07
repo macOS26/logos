@@ -12,3 +12,5 @@
 - DO NOT BREAK TEXTBOXES!
 - DO NOT STOP!!!!! YOU KEEP STOPPING WITHOUT MY PERMISSION
 - QUIT ASKING TO PROCEED, JUST DO
+- we do not need an backwqard compability
+- be sure to create and run unit tests... buold and run suing xcf and always commit after the tests pass, make baby micro steps!!!! UNDERSTOOD?
