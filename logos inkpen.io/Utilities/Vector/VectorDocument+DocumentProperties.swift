@@ -33,7 +33,9 @@ extension VectorDocument {
         for layer in layers {
             guard layer.isVisible else { continue }
             
-            for shape in layer.shapes {
+            let layerIndex = layers.firstIndex(where: { $0.id == layer.id }) ?? 0
+            let shapesInLayer = getShapesForLayer(layerIndex)
+            for shape in shapesInLayer {
                 guard shape.isVisible else { continue }
                 
                 let shapeBounds = shape.bounds
@@ -76,7 +78,8 @@ extension VectorDocument {
         // Consider only layers beyond index 1 (skip 0: Pasteboard, 1: Canvas)
         for (layerIndex, layer) in layers.enumerated() where layerIndex >= 2 {
             guard layer.isVisible else { continue }
-            for shape in layer.shapes where shape.isVisible {
+            let shapesInLayer = getShapesForLayer(layerIndex)
+            for shape in shapesInLayer where shape.isVisible {
                 let shapeBounds = shape.bounds.applying(shape.transform)
                 if !hasContent {
                     artworkBounds = shapeBounds
