@@ -199,7 +199,7 @@ extension VectorDocument {
         }
 
         // Translate text objects' positions using unified helper
-        translateAllTextInUnified(delta: CGVector(dx: delta.x, dy: delta.y))
+        translateAllTextInUnified(delta: delta)
 
         objectWillChange.send()
     }

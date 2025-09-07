@@ -8,250 +8,288 @@
 import Foundation
 import CoreGraphics
 
-// MARK: - Unified Text Helper Functions
+// MARK: - UNIFIED TEXT LOCK/UNLOCK AND VISIBILITY HELPERS
 extension VectorDocument {
     
+    // MARK: - UNIFIED LOCK/UNLOCK HELPERS
+    
     func lockTextInUnified(id: UUID) {
-        // Lock text object in unified system
-        if let index = unifiedObjects.firstIndex(where: { obj in
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.isTextObject && shape.id == id
             }
             return false
         }) {
-            var updatedObject = unifiedObjects[index]
-            if case .shape(var shape) = updatedObject.objectType {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
                 shape.isLocked = true
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
-                unifiedObjects[index] = updatedObject
-                objectWillChange.send()
+                
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // CRITICAL: Update the shape in the layers array
+                let layerIndex = unifiedObjects[objectIndex].layerIndex
+                if layerIndex < layers.count,
+                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                    layers[layerIndex].shapes[shapeIndex].isLocked = true
+                }
             }
         }
     }
     
     func unlockTextInUnified(id: UUID) {
-        // Unlock text object in unified system
-        if let index = unifiedObjects.firstIndex(where: { obj in
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.isTextObject && shape.id == id
             }
             return false
         }) {
-            var updatedObject = unifiedObjects[index]
-            if case .shape(var shape) = updatedObject.objectType {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
                 shape.isLocked = false
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
-                unifiedObjects[index] = updatedObject
-                objectWillChange.send()
+                
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // CRITICAL: Update the shape in the layers array
+                let layerIndex = unifiedObjects[objectIndex].layerIndex
+                if layerIndex < layers.count,
+                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                    layers[layerIndex].shapes[shapeIndex].isLocked = false
+                }
             }
         }
     }
     
+    // MARK: - UNIFIED VISIBILITY HELPERS
+    
     func hideTextInUnified(id: UUID) {
-        // Hide text object in unified system
-        if let index = unifiedObjects.firstIndex(where: { obj in
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.isTextObject && shape.id == id
             }
             return false
         }) {
-            var updatedObject = unifiedObjects[index]
-            if case .shape(var shape) = updatedObject.objectType {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
                 shape.isVisible = false
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
-                unifiedObjects[index] = updatedObject
-                objectWillChange.send()
+                
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // CRITICAL: Update the shape in the layers array
+                let layerIndex = unifiedObjects[objectIndex].layerIndex
+                if layerIndex < layers.count,
+                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                    layers[layerIndex].shapes[shapeIndex].isVisible = false
+                }
             }
         }
     }
     
     func showTextInUnified(id: UUID) {
-        // Show text object in unified system
-        if let index = unifiedObjects.firstIndex(where: { obj in
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.isTextObject && shape.id == id
             }
             return false
         }) {
-            var updatedObject = unifiedObjects[index]
-            if case .shape(var shape) = updatedObject.objectType {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
                 shape.isVisible = true
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
-                unifiedObjects[index] = updatedObject
-                objectWillChange.send()
+                
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // CRITICAL: Update the shape in the layers array
+                let layerIndex = unifiedObjects[objectIndex].layerIndex
+                if layerIndex < layers.count,
+                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                    layers[layerIndex].shapes[shapeIndex].isVisible = true
+                }
             }
         }
     }
     
+    // MARK: - UNIFIED OPACITY AND STROKE HELPERS
+    
     func updateTextFillOpacityInUnified(id: UUID, opacity: Double) {
-        // Text fill opacity is not currently stored on VectorShape
-        // This would need to be implemented with a proper text styling system
-        objectWillChange.send()
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject && shape.id == id
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                shape.typography?.fillOpacity = opacity
+                
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // CRITICAL: Update the shape in the layers array
+                let layerIndex = unifiedObjects[objectIndex].layerIndex
+                if layerIndex < layers.count,
+                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                    layers[layerIndex].shapes[shapeIndex].typography?.fillOpacity = opacity
+                }
+            }
+        }
     }
     
     func updateTextStrokeWidthInUnified(id: UUID, width: Double) {
-        // Text stroke width is not currently stored on VectorShape
-        // This would need to be implemented with a proper text styling system
-        objectWillChange.send()
-    }
-    
-    func translateAllTextInUnified(delta: CGVector) {
-        // Translate all text objects in unified system
-        for index in unifiedObjects.indices {
-            if case .shape(var shape) = unifiedObjects[index].objectType, shape.isTextObject {
-                var transform = shape.transform
-                transform.tx += delta.dx
-                transform.ty += delta.dy
-                shape.transform = transform
-                let updatedObject = VectorObject(shape: shape, layerIndex: unifiedObjects[index].layerIndex, orderID: unifiedObjects[index].orderID)
-                unifiedObjects[index] = updatedObject
-            }
-        }
-        objectWillChange.send()
-    }
-    
-    func translateTextInUnified(id: UUID, delta: CGVector) {
-        // Translate text position in unified system
-        if let index = unifiedObjects.firstIndex(where: { obj in
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.isTextObject && shape.id == id
             }
             return false
         }) {
-            var updatedObject = unifiedObjects[index]
-            if case .shape(var shape) = updatedObject.objectType {
-                var transform = shape.transform
-                transform.tx += delta.dx
-                transform.ty += delta.dy
-                shape.transform = transform
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
-                unifiedObjects[index] = updatedObject
-                objectWillChange.send()
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                shape.typography?.strokeWidth = width
+                shape.typography?.hasStroke = width > 0
+                
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // CRITICAL: Update the shape in the layers array
+                let layerIndex = unifiedObjects[objectIndex].layerIndex
+                if layerIndex < layers.count,
+                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                    layers[layerIndex].shapes[shapeIndex].typography?.strokeWidth = width
+                    layers[layerIndex].shapes[shapeIndex].typography?.hasStroke = width > 0
+                }
             }
         }
     }
+    
+    // MARK: - UNIFIED POSITION HELPERS
+    
+    func translateTextInUnified(id: UUID, delta: CGPoint) {
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject && shape.id == id
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                // Update position in transform
+                shape.transform.tx += delta.x
+                shape.transform.ty += delta.y
+                
+                // Also update textPosition if it exists
+                if let textPos = shape.textPosition {
+                    shape.textPosition = CGPoint(x: textPos.x + delta.x, y: textPos.y + delta.y)
+                }
+                
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Update in layers
+                for layerIdx in layers.indices {
+                    if let shapeIdx = layers[layerIdx].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                        layers[layerIdx].shapes[shapeIdx].transform.tx += delta.x
+                        layers[layerIdx].shapes[shapeIdx].transform.ty += delta.y
+                        if let textPos = layers[layerIdx].shapes[shapeIdx].textPosition {
+                            layers[layerIdx].shapes[shapeIdx].textPosition = CGPoint(x: textPos.x + delta.x, y: textPos.y + delta.y)
+                        }
+                        break
+                    }
+                }
+            }
+        }
+    }
+    
+    func translateAllTextInUnified(delta: CGPoint) {
+        // Get all text IDs from unified system
+        let textIDs = unifiedObjects.compactMap { obj -> UUID? in
+            if case .shape(let shape) = obj.objectType, shape.isTextObject {
+                return shape.id
+            }
+            return nil
+        }
+        
+        // Use unified helper for each text
+        for textID in textIDs {
+            translateTextInUnified(id: textID, delta: delta)
+        }
+    }
+    
+    // MARK: - UNIFIED EDITING STATE HELPERS
     
     func setTextEditingInUnified(id: UUID, isEditing: Bool) {
-        // Set text editing state in unified system
-        if let index = unifiedObjects.firstIndex(where: { obj in
+        // Update in unified objects
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.isTextObject && shape.id == id
             }
             return false
         }) {
-            var updatedObject = unifiedObjects[index]
-            if case .shape(var shape) = updatedObject.objectType {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                // Update the isEditing state in the shape
                 shape.isEditing = isEditing
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
-                unifiedObjects[index] = updatedObject
-                objectWillChange.send()
+                
+                // Update unified objects
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Update the shape in the layers array
+                let layerIndex = unifiedObjects[objectIndex].layerIndex
+                if layerIndex < layers.count,
+                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                    layers[layerIndex].shapes[shapeIndex].isEditing = isEditing
+                }
             }
         }
     }
     
     func updateTextLayerInUnified(id: UUID, layerIndex: Int) {
-        // Update text layer in unified system
-        if let index = unifiedObjects.firstIndex(where: { obj in
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.isTextObject && shape.id == id
             }
             return false
         }) {
-            let oldObject = unifiedObjects[index]
-            if case .shape(let shape) = oldObject.objectType {
-                let updatedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: oldObject.orderID)
-                unifiedObjects[index] = updatedObject
-                objectWillChange.send()
-            }
-        }
-    }
-    
-    func updateTextLineHeightInUnified(id: UUID, lineHeight: Double) {
-        // Text line height is not currently stored on VectorShape
-        // This would need to be implemented with a proper text styling system
-        objectWillChange.send()
-    }
-    
-    func updateTextLetterSpacingInUnified(id: UUID, letterSpacing: Double) {
-        // Text letter spacing is not currently stored on VectorShape
-        // This would need to be implemented with a proper text styling system
-        objectWillChange.send()
-    }
-    
-    func updateTextParagraphSpacingInUnified(id: UUID, paragraphSpacing: Double) {
-        // Text paragraph spacing is not currently stored on VectorShape
-        // This would need to be implemented with a proper text styling system
-        objectWillChange.send()
-    }
-    
-    func updateTextIndentInUnified(id: UUID, indent: Double) {
-        // Text indent is not currently stored on VectorShape
-        // This would need to be implemented with a proper text styling system
-        objectWillChange.send()
-    }
-    
-    func updateTextVerticalAlignmentInUnified(id: UUID, verticalAlignment: String) {
-        // Text vertical alignment is not currently stored on VectorShape
-        // This would need to be implemented with a proper text styling system
-        objectWillChange.send()
-    }
-    
-    func updateTextBaselineOffsetInUnified(id: UUID, baselineOffset: Double) {
-        // Text baseline offset is not currently stored on VectorShape
-        // This would need to be implemented with a proper text styling system
-        objectWillChange.send()
-    }
-    
-    func updateTextUnderlineInUnified(id: UUID, underline: Bool) {
-        // Text underline is not currently stored on VectorShape
-        // This would need to be implemented with a proper text styling system
-        objectWillChange.send()
-    }
-    
-    func updateTextStrikethroughInUnified(id: UUID, strikethrough: Bool) {
-        // Text strikethrough is not currently stored on VectorShape
-        // This would need to be implemented with a proper text styling system
-        objectWillChange.send()
-    }
-    
-    func updateTextTransformInUnified(id: UUID, transform: CGAffineTransform) {
-        // Update text transform in unified objects
-        if let index = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject && shape.id == id
-            }
-            return false
-        }) {
-            var updatedObject = unifiedObjects[index]
-            if case .shape(var shape) = updatedObject.objectType {
-                shape.transform = transform
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
-                unifiedObjects[index] = updatedObject
-                objectWillChange.send()
-            }
-        }
-    }
-    
-    func updateTextSelectionRangeInUnified(id: UUID, selectionRange: NSRange?) {
-        // Text selection range is not currently stored on VectorShape
-        // This would need to be implemented with a proper text selection system
-        objectWillChange.send()
-    }
-    
-    func updateTextOpacityInUnified(id: UUID, opacity: Double) {
-        // Update text opacity in unified objects
-        if let index = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject && shape.id == id
-            }
-            return false
-        }) {
-            var updatedObject = unifiedObjects[index]
-            if case .shape(var shape) = updatedObject.objectType {
-                shape.opacity = opacity
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
-                unifiedObjects[index] = updatedObject
-                objectWillChange.send()
+            // Get the existing object and shape
+            let existingObject = unifiedObjects[objectIndex]
+            if case .shape(let shape) = existingObject.objectType {
+                // Find and remove the shape from its current layer
+                for layerIdx in layers.indices {
+                    if let shapeIdx = layers[layerIdx].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
+                        layers[layerIdx].shapes.remove(at: shapeIdx)
+                        break
+                    }
+                }
+                
+                // Add the shape to the new layer
+                if layerIndex < layers.count {
+                    layers[layerIndex].shapes.append(shape)
+                }
+                
+                // Update the unified object with new layerIndex
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: layerIndex,
+                    orderID: existingObject.orderID
+                )
             }
         }
     }
