@@ -443,9 +443,9 @@ struct MainToolbarContent: ToolbarContent {
     private func unlockAllObjects() {
         document.saveToUndoStack()
         
-        // Unlock all shapes in all layers
-        for layerIndex in document.layers.indices {
-            for shape in document.layers[layerIndex].shapes {
+        // Unlock all shapes using unified objects
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
                 document.unlockShapeInUnified(id: shape.id)
             }
         }
@@ -491,9 +491,9 @@ struct MainToolbarContent: ToolbarContent {
     private func showAllObjects() {
         document.saveToUndoStack()
         
-        // Show all shapes in all layers
-        for layerIndex in document.layers.indices {
-            for shape in document.layers[layerIndex].shapes {
+        // Show all shapes using unified objects
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
                 document.showShapeInUnified(id: shape.id)
             }
         }
