@@ -1132,6 +1132,68 @@ extension VectorDocument {
         }
     }
     
+    // MARK: - LAYER SHAPE ACCESS HELPERS (MIGRATION)
+    
+    /// Safe getter for shape at index in layer - returns from unified system
+    func getShapeAtIndex(layerIndex: Int, shapeIndex: Int) -> VectorShape? {
+        guard layerIndex >= 0 && layerIndex < layers.count else { return nil }
+        let shapes = getShapesForLayer(layerIndex)
+        guard shapeIndex >= 0 && shapeIndex < shapes.count else { return nil }
+        return shapes[shapeIndex]
+    }
+    
+    /// Safe setter for shape at index in layer - updates both legacy and unified
+    func setShapeAtIndex(layerIndex: Int, shapeIndex: Int, shape: VectorShape) {
+        guard layerIndex >= 0 && layerIndex < layers.count else { return }
+        guard shapeIndex >= 0 && shapeIndex < layers[layerIndex].shapes.count else { return }
+        
+        // Update in layers array
+        layers[layerIndex].shapes[shapeIndex] = shape
+        
+        // Update in unified system
+        if let unifiedIndex = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let s) = obj.objectType {
+                return s.id == layers[layerIndex].shapes[shapeIndex].id
+            }
+            return false
+        }) {
+            unifiedObjects[unifiedIndex] = VectorObject(
+                shape: shape,
+                layerIndex: layerIndex,
+                orderID: unifiedObjects[unifiedIndex].orderID
+            )
+        }
+    }
+    
+    /// Append shape to layer - adds to both legacy and unified
+    func appendShapeToLayer(layerIndex: Int, shape: VectorShape) {
+        guard layerIndex >= 0 && layerIndex < layers.count else { return }
+        addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
+    }
+    
+    /// Remove shape at index from layer - removes from both legacy and unified
+    func removeShapeAtIndex(layerIndex: Int, shapeIndex: Int) {
+        guard layerIndex >= 0 && layerIndex < layers.count else { return }
+        guard shapeIndex >= 0 && shapeIndex < layers[layerIndex].shapes.count else { return }
+        
+        let shapeId = layers[layerIndex].shapes[shapeIndex].id
+        layers[layerIndex].shapes.remove(at: shapeIndex)
+        
+        // Remove from unified
+        unifiedObjects.removeAll { obj in
+            if case .shape(let s) = obj.objectType {
+                return s.id == shapeId
+            }
+            return false
+        }
+    }
+    
+    /// Get shape count for layer from unified system
+    func getShapeCount(layerIndex: Int) -> Int {
+        guard layerIndex >= 0 && layerIndex < layers.count else { return 0 }
+        return getShapesForLayer(layerIndex).count
+    }
+    
     // MARK: - UNIFIED SHAPE HELPERS
     
     func updateShapeFillColorInUnified(id: UUID, color: VectorColor) {

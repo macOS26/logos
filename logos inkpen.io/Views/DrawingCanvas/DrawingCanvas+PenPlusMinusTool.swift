@@ -41,10 +41,11 @@ extension DrawingCanvas {
     /// Inserts a new smooth point on a curve segment with interpolated handles
     private func insertPointOnCurve(layerIndex: Int, shapeIndex: Int, elementIndex: Int, at location: CGPoint) {
         guard layerIndex < document.layers.count,
-              shapeIndex < document.layers[layerIndex].shapes.count,
-              elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
+              shapeIndex < document.getShapeCount(layerIndex: layerIndex),
+              let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
+              elementIndex < shape.path.elements.count else { return }
         
-        let element = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex]
+        let element = shape.path.elements[elementIndex]
         
         guard case .curve(let to, let control1, let control2) = element else {
             Log.info("Pen +/-: Can only insert points on curve segments", category: .general)
@@ -57,7 +58,7 @@ extension DrawingCanvas {
         // Get the previous point for the curve start
         var startPoint: VectorPoint
         if elementIndex > 0 {
-            let prevElement = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex - 1]
+            let prevElement = shape.path.elements[elementIndex - 1]
             switch prevElement {
             case .move(let point), .line(let point), .curve(let point, _, _), .quadCurve(let point, _):
                 startPoint = point
@@ -102,12 +103,14 @@ extension DrawingCanvas {
         )
         
         // Replace the original curve with the two new curves
-        var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
+        var modifiedShape = shape
+        var elements = modifiedShape.path.elements
         elements[elementIndex] = firstCurve
         elements.insert(secondCurve, at: elementIndex + 1)
         
-        document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
-        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+        modifiedShape.path.elements = elements
+        modifiedShape.updateBounds()
+        document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: modifiedShape)
         
         // Update unified objects and UI
         document.updateUnifiedObjectsOptimized()
@@ -122,11 +125,12 @@ extension DrawingCanvas {
     /// CRITICAL: Protects coincident points (first/last in closed paths) - refuses deletion with system beep
     private func deletePointWithCurvePreservation(pointID: PointID) {
         guard let layerIndex = document.layers.firstIndex(where: { layer in
-            layer.shapes.contains { $0.id == pointID.shapeID }
+            document.getShapesForLayer(document.layers.firstIndex(of: layer) ?? -1).contains { $0.id == pointID.shapeID }
         }),
-        let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == pointID.shapeID }) else { return }
+        let shapes = document.getShapesForLayer(layerIndex).enumerated().first(where: { $0.element.id == pointID.shapeID }) else { return }
         
-        let shape = document.layers[layerIndex].shapes[shapeIndex]
+        let shapeIndex = shapes.offset
+        let shape = shapes.element
         let elements = shape.path.elements
         
         guard pointID.elementIndex < elements.count else { return }
@@ -174,8 +178,10 @@ extension DrawingCanvas {
                 pointIndex: pointID.elementIndex
             )
             
-            document.layers[layerIndex].shapes[shapeIndex].path.elements = updatedElements
-            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            var modifiedShape = shape
+            modifiedShape.path.elements = updatedElements
+            modifiedShape.updateBounds()
+            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: modifiedShape)
             
             Log.info("Pen +/-: Deleted point with curve preservation", category: .general)
         }
