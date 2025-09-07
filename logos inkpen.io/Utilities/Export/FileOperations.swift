@@ -302,7 +302,7 @@ class FileOperations {
         document.addShapeToUnifiedSystem(backgroundShape, layerIndex: 1)
         
         // Create imported layer THIRD (index 2) so it's on top
-        var importedLayer = VectorLayer(name: "Imported SVG")
+        let importedLayer = VectorLayer(name: "Imported SVG")
         document.layers.append(importedLayer)
         
         // FIXED: Position objects at viewBox origin (0,0), not artwork bounds origin
@@ -449,7 +449,7 @@ class FileOperations {
         document.addShapeToUnifiedSystem(backgroundShape, layerIndex: 1)
         
         // Create imported layer THIRD (index 2) so it's on top
-        var importedLayer = VectorLayer(name: "Imported SVG (Extreme Value Handling)")
+        let importedLayer = VectorLayer(name: "Imported SVG (Extreme Value Handling)")
         document.layers.append(importedLayer)
         
         // FIXED: Position objects at viewBox origin (0,0), not artwork bounds origin
@@ -663,7 +663,7 @@ class FileOperations {
         document.addShapeToUnifiedSystem(backgroundShape, layerIndex: 1)
         
         // Create imported layer THIRD (index 2) so it's on top
-        var importedLayer = VectorLayer(name: "Imported PDF")
+        let importedLayer = VectorLayer(name: "Imported PDF")
         document.layers.append(importedLayer)
         
         // Add all imported shapes to the layer
