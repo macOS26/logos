@@ -622,7 +622,7 @@ class TemplateManager {
         let layerCount = document.layers.count
         let settings = document.settings
         
-        if shapeCount == 0 && layerCount == 1 && document.layers[0].shapes.isEmpty {
+        if shapeCount == 0 && layerCount == 1 && document.getShapesForLayer(0).isEmpty {
             return "Template: Blank Document (truly empty)"
         }
         

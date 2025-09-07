@@ -84,8 +84,9 @@ struct MainToolbarContent: ToolbarContent {
                     if shape.isTextObject { continue }
                     
                     // Find the shape in the layers array and update it
-                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                       let _ = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
+                        let shapes = document.getShapesForLayer(layerIndex)
+                        if let _ = shapes.firstIndex(where: { $0.id == shape.id }) {
                         
                         // Check if path is open and has enough points
                         let hasCloseElement = shape.path.elements.contains { element in
@@ -108,6 +109,7 @@ struct MainToolbarContent: ToolbarContent {
                             let newPath = VectorPath(elements: newElements, isClosed: true)
                             document.updateShapePathUnified(id: shape.id, path: newPath)
                             Log.info("🎯 Closed selected path for shape \(shape.name)", category: .shapes)
+                        }
                         }
                     }
                 }
@@ -421,9 +423,11 @@ struct MainToolbarContent: ToolbarContent {
                         document.lockTextInUnified(id: shape.id)
                     } else {
                         // Find the shape in the layers array and lock it
-                        if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                           let _ = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                            document.lockShapeInUnified(id: shape.id)
+                        if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
+                            let shapes = document.getShapesForLayer(layerIndex)
+                            if let _ = shapes.firstIndex(where: { $0.id == shape.id }) {
+                                document.lockShapeInUnified(id: shape.id)
+                            }
                         }
                     }
                 }
@@ -467,9 +471,11 @@ struct MainToolbarContent: ToolbarContent {
                         document.hideTextInUnified(id: shape.id)
                     } else {
                         // Find the shape in the layers array and hide it
-                        if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                           let _ = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                            document.hideShapeInUnified(id: shape.id)
+                        if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
+                            let shapes = document.getShapesForLayer(layerIndex)
+                            if let _ = shapes.firstIndex(where: { $0.id == shape.id }) {
+                                document.hideShapeInUnified(id: shape.id)
+                            }
                         }
                     }
                 }

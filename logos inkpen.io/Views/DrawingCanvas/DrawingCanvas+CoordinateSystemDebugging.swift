@@ -27,7 +27,7 @@ extension DrawingCanvas {
         
         // Clear any existing shapes
         if !document.layers.isEmpty {
-            document.layers[0].shapes.removeAll()
+            document.removeShapesUnified(layerIndex: 0, where: { _ in true })
         }
         
         // Create a test shape at a known position
@@ -56,7 +56,8 @@ extension DrawingCanvas {
         print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
         
         // Verify the shape's actual position
-        if let addedShape = document.layers[0].shapes.first(where: { $0.name == "TEST SHAPE" }) {
+        let shapes = document.getShapesForLayer(0)
+        if let addedShape = shapes.first(where: { $0.name == "TEST SHAPE" }) {
             let actualCenter = CGPoint(
                 x: (addedShape.bounds.minX + addedShape.bounds.maxX) / 2,
                 y: (addedShape.bounds.minY + addedShape.bounds.maxY) / 2

@@ -170,7 +170,8 @@ class PasteboardDiagnostics {
         }
         
         // Test 1: Pasteboard-only hit
-        let pasteboardBounds = document.layers[0].shapes[0].bounds
+        let pasteboardShape = document.getShapeAtIndex(layerIndex: 0, shapeIndex: 0)
+        let pasteboardBounds = pasteboardShape?.bounds ?? .zero
         let pasteboardOnlyPoint = CGPoint(
             x: pasteboardBounds.minX + 100,
             y: pasteboardBounds.minY + 100
@@ -184,7 +185,8 @@ class PasteboardDiagnostics {
         )
         
         // Test 2: Canvas priority hit
-        let canvasBounds = document.layers[1].shapes[0].bounds
+        let canvasShape = document.getShapeAtIndex(layerIndex: 1, shapeIndex: 0)
+        let canvasBounds = canvasShape?.bounds ?? .zero
         let canvasPoint = CGPoint(x: canvasBounds.midX, y: canvasBounds.midY)
         
         let canvasHit = simulateHitTest(document: document, at: canvasPoint)
@@ -273,8 +275,10 @@ class PasteboardDiagnostics {
         var test = RealWorldScenariosTest()
         
         // Add test objects to working layer
-        let pasteboardBounds = document.layers[0].shapes[0].bounds
-        let canvasBounds = document.layers[1].shapes[0].bounds
+        let pasteboardShape = document.getShapeAtIndex(layerIndex: 0, shapeIndex: 0)
+        let pasteboardBounds = pasteboardShape?.bounds ?? .zero
+        let canvasShape = document.getShapeAtIndex(layerIndex: 1, shapeIndex: 0)
+        let canvasBounds = canvasShape?.bounds ?? .zero
         
         // Object on pasteboard
         let pasteboardObjectLocation = CGPoint(
@@ -286,9 +290,9 @@ class PasteboardDiagnostics {
             at: pasteboardObjectLocation,
             size: CGSize(width: 50, height: 50)
         )
-        var pasteboardShape = pasteboardObject
-        pasteboardShape.name = "Test Pasteboard Object"
-        pasteboardShape.fillStyle = FillStyle(color: .rgb(RGBColor(red: 1, green: 0, blue: 0)), opacity: 1.0)
+        var pasteboardTestShape = pasteboardObject
+        pasteboardTestShape.name = "Test Pasteboard Object"
+        pasteboardTestShape.fillStyle = FillStyle(color: .rgb(RGBColor(red: 1, green: 0, blue: 0)), opacity: 1.0)
         
         // Object on canvas
         let canvasObjectLocation = CGPoint(
@@ -300,13 +304,13 @@ class PasteboardDiagnostics {
             at: canvasObjectLocation,
             size: CGSize(width: 50, height: 50)
         )
-        var canvasShape = canvasObject
-        canvasShape.name = "Test Canvas Object"
-        canvasShape.fillStyle = FillStyle(color: .rgb(RGBColor(red: 0, green: 0, blue: 1)), opacity: 1.0)
+        var canvasTestShape = canvasObject
+        canvasTestShape.name = "Test Canvas Object"
+        canvasTestShape.fillStyle = FillStyle(color: .rgb(RGBColor(red: 0, green: 0, blue: 1)), opacity: 1.0)
         
         // Add to working layer temporarily
-        document.layers[2].addShape(pasteboardShape)
-        document.layers[2].addShape(canvasShape)
+        document.appendShapeToLayerUnified(layerIndex: 2, shape: pasteboardTestShape)
+        document.appendShapeToLayerUnified(layerIndex: 2, shape: canvasTestShape)
         
         // Test scenarios
         
@@ -350,9 +354,9 @@ class PasteboardDiagnostics {
         )
         
         // Clean up test objects
-        document.layers[2].shapes.removeAll { shape in
+        document.removeShapesUnified(layerIndex: 2, where: { shape in
             shape.name == "Test Pasteboard Object" || shape.name == "Test Canvas Object"
-        }
+        })
         
         test.passed = test.pasteboardObjectHitCorrect && test.canvasObjectHitCorrect && test.emptyPasteboardHitCorrect
         
@@ -370,7 +374,7 @@ class PasteboardDiagnostics {
         var test = PerformanceTest()
         
         // Add many test objects
-        let originalShapeCount = document.layers[2].shapes.count
+        let originalShapeCount = document.getShapesForLayer(2).count
         
         for i in 0..<100 {
             let testRect = VectorShape.rectangle(
@@ -379,7 +383,7 @@ class PasteboardDiagnostics {
             )
             var testShape = testRect
             testShape.name = "Perf Test \(i)"
-            document.layers[2].addShape(testShape)
+            document.appendShapeToLayerUnified(layerIndex: 2, shape: testShape)
         }
         
         let testPoint = CGPoint(x: 250, y: 250)
@@ -396,8 +400,11 @@ class PasteboardDiagnostics {
         test.averageTimePerHitTest = test.totalTime / 1000.0
         
         // Clean up
-        while document.layers[2].shapes.count > originalShapeCount {
-            document.layers[2].shapes.removeLast()
+        let shapes = document.getShapesForLayer(2)
+        let shapesToRemove = shapes.count - originalShapeCount
+        if shapesToRemove > 0 {
+            let shapeIDsToRemove = shapes.suffix(shapesToRemove).map { $0.id }
+            document.removeShapesUnified(layerIndex: 2, where: { shapeIDsToRemove.contains($0.id) })
         }
         
         test.passed = test.averageTimePerHitTest < 0.001 // Less than 1ms per hit test
