@@ -365,7 +365,7 @@ struct StrokeFillPanel: View {
                     } else {
                         // Find the shape in the layers array and update it
                         if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                           let _ = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                           document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
                             // Use unified helper instead of direct property access
                             document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
                             hasChanges = true
@@ -405,7 +405,7 @@ struct StrokeFillPanel: View {
                     } else {
                         // Find the shape in the layers array and update it
                         if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                           let _ = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                           document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
                             // Use unified helper instead of direct property access
                             document.updateShapeStrokeColorInUnified(id: shape.id, color: color)
                             hasChanges = true
@@ -445,7 +445,7 @@ struct StrokeFillPanel: View {
                     } else {
                         // Find the shape in the layers array and update it
                         if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                           let _ = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                           document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
                             // Use unified helper instead of direct property access
                             document.updateShapeStrokeWidthInUnified(id: shape.id, width: width)
                             hasChanges = true
@@ -518,7 +518,7 @@ struct StrokeFillPanel: View {
             for shapeID in activeShapeIDs {
                 // Find the shape across all layers
                 for layerIndex in document.layers.indices {
-                    if document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) != nil {
+                    if document.getShapesForLayer(layerIndex).contains(where: { $0.id == shapeID }) {
                         // Use unified helper instead of direct property access
                         document.updateShapeStrokeOpacityInUnified(id: shapeID, opacity: opacity)
                         break // Found the shape, no need to check other layers
@@ -536,8 +536,10 @@ struct StrokeFillPanel: View {
                 }) {
                     // Find updated shape data
                     for layerIndex in document.layers.indices {
-                        if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                        let shapes = document.getShapesForLayer(layerIndex)
+                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
+                           let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
                             break
                         }
                     }
@@ -567,7 +569,7 @@ struct StrokeFillPanel: View {
             for shapeID in activeShapeIDs {
                 // Find the shape across all layers
                 for layerIndex in document.layers.indices {
-                    if document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) != nil {
+                    if document.getShapesForLayer(layerIndex).contains(where: { $0.id == shapeID }) {
                         // Use unified helper instead of direct property access
                         document.updateShapeStrokeLineJoinInUnified(id: shapeID, lineJoin: lineJoin)
                         break // Found the shape, no need to check other layers
@@ -585,8 +587,10 @@ struct StrokeFillPanel: View {
                 }) {
                     // Find updated shape data
                     for layerIndex in document.layers.indices {
-                        if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                        let shapes = document.getShapesForLayer(layerIndex)
+                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
+                           let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
                             break
                         }
                     }
@@ -612,7 +616,7 @@ struct StrokeFillPanel: View {
             for shapeID in activeShapeIDs {
                 // Find the shape across all layers
                 for layerIndex in document.layers.indices {
-                    if document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) != nil {
+                    if document.getShapesForLayer(layerIndex).contains(where: { $0.id == shapeID }) {
                         // Use unified helper instead of direct property access
                         document.updateShapeStrokeLineCapInUnified(id: shapeID, lineCap: lineCap)
                         break // Found the shape, no need to check other layers
@@ -630,8 +634,10 @@ struct StrokeFillPanel: View {
                 }) {
                     // Find updated shape data
                     for layerIndex in document.layers.indices {
-                        if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                        let shapes = document.getShapesForLayer(layerIndex)
+                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
+                           let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
                             break
                         }
                     }
@@ -657,7 +663,7 @@ struct StrokeFillPanel: View {
             for shapeID in activeShapeIDs {
                 // Find the shape across all layers
                 for layerIndex in document.layers.indices {
-                    if document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) != nil {
+                    if document.getShapesForLayer(layerIndex).contains(where: { $0.id == shapeID }) {
                         // Use unified helper instead of direct property access
                         document.updateShapeStrokeMiterLimitInUnified(id: shapeID, miterLimit: miterLimit)
                         break // Found the shape, no need to check other layers
@@ -675,8 +681,10 @@ struct StrokeFillPanel: View {
                 }) {
                     // Find updated shape data
                     for layerIndex in document.layers.indices {
-                        if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                        let shapes = document.getShapesForLayer(layerIndex)
+                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
+                           let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
                             break
                         }
                     }
@@ -695,8 +703,9 @@ struct StrokeFillPanel: View {
         document.saveToUndoStack()
         
         for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                let shape = document.layers[layerIndex].shapes[shapeIndex]
+            let shapes = document.getShapesForLayer(layerIndex)
+            if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
+               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
                 // Only update image shapes
                 if ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
                     // Use unified helper instead of direct property access
