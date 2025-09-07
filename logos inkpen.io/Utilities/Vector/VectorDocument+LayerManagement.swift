@@ -53,8 +53,9 @@ extension VectorDocument {
         duplicatedLayer.isLocked = originalLayer.isLocked
         duplicatedLayer.opacity = originalLayer.opacity
         
-        // Deep copy all shapes with new IDs
-        for shape in originalLayer.shapes {
+        // Deep copy all shapes with new IDs from unified objects
+        let originalShapes = getShapesForLayer(index)
+        for shape in originalShapes {
             var duplicatedShape = shape
             duplicatedShape.id = UUID() // New unique ID
             // If this shape carries raster content, duplicate the image registry entry to the new ID
@@ -62,7 +63,8 @@ extension VectorDocument {
                let image = ImageContentRegistry.image(for: shape.id) {
                 ImageContentRegistry.register(image: image, for: duplicatedShape.id)
             }
-            duplicatedLayer.shapes.append(duplicatedShape)
+            // Add to unified system for new layer
+            addShapeToUnifiedSystem(duplicatedShape, layerIndex: index + 1)
         }
         
         // Insert the duplicated layer right after the original

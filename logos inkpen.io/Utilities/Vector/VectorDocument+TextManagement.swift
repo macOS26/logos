@@ -162,7 +162,7 @@ extension VectorDocument {
         var newShapeIDs: Set<UUID> = []
         
         // CRITICAL FIX: Track total shapes across all layers before conversion
-        let totalShapesBefore = layers.reduce(0) { $0 + $1.shapes.count }
+        let totalShapesBefore = unifiedObjects.filter { if case .shape = $0.objectType { return true } else { return false } }.count
         
         for textObj in selectedTexts {
             // CRITICAL: Use ProfessionalTextCanvas convertToPath logic instead of VectorText.convertToOutlines()

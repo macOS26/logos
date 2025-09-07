@@ -365,9 +365,9 @@ extension VectorDocument {
         defer { isUndoRedoOperation = wasUndoRedoOperation }
         
         // CRITICAL FIX: Preserve original shapes for proper restoration
-        let originalShapes = layers.map { $0.shapes }
+        let originalShapes = layers.indices.map { getShapesForLayer($0) }
         
-        // Clear existing shapes arrays to rebuild from unified objects
+        // Unified objects now manage all shapes
         for layerIndex in layers.indices {
             removeShapesUnified(layerIndex: layerIndex, where: { _ in true })
         }

@@ -557,7 +557,12 @@ struct PathOperationsPanel: View {
     
     /// Remove overlapping areas from all shapes in the document
     private func removeOverlapFromAllShapes() {
-        let allShapes = document.layers.flatMap { $0.shapes }
+        let allShapes = document.unifiedObjects.compactMap { obj -> VectorShape? in
+            if case .shape(let shape) = obj.objectType {
+                return shape
+            }
+            return nil
+        }
         guard !allShapes.isEmpty else { return }
         
         var processedCount = 0

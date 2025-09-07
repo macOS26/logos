@@ -356,7 +356,7 @@ struct DocumentBasedMainView: View {
         document.showRulers = importedDoc.showRulers
         document.snapToGrid = importedDoc.snapToGrid
         
-        Log.info("✅ Loaded imported document - \(document.layers.count) layers, \(document.layers.reduce(0) { $0 + $1.shapes.count }) shapes", category: .fileOperations)
+        Log.info("✅ Loaded imported document - \(document.layers.count) layers, \(document.unifiedObjects.filter { if case .shape = $0.objectType { return true } else { return false } }.count) shapes", category: .fileOperations)
         
         // Defer fit to page operation to prevent blocking
         Task {
