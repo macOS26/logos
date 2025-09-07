@@ -853,7 +853,7 @@ extension VectorShape {
 struct VectorLayer: Codable, Hashable, Identifiable {
     var id: UUID
     var name: String
-    var shapes: [VectorShape] = [] // Keep for now but will be deprecated
+    // REMOVED: shapes - unified objects is the ONLY source of truth
     var isVisible: Bool
     var isLocked: Bool
     var opacity: Double

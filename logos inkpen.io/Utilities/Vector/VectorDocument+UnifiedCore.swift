@@ -12,7 +12,7 @@ import CoreGraphics
 extension VectorDocument {
     
     /// Sync a shape back to the layers array - unified system helper
-    /// This replaces direct layers[].shapes access throughout the codebase
+    /// This is the ONLY place that should directly access layers[].shapes
     func syncShapeToLayer(_ shape: VectorShape, at layerIndex: Int) {
         guard layerIndex >= 0 && layerIndex < layers.count else {
             Log.fileOperation("⚠️ Invalid layer index \(layerIndex) for sync", level: .warning)
