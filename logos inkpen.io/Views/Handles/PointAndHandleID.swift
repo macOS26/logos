@@ -43,7 +43,8 @@ func findCoincidentPoints(to targetPointID: PointID, in document: VectorDocument
         let layer = document.layers[layerIndex]
         if !layer.isVisible { continue }
         
-        for shape in layer.shapes {
+        let shapes = document.getShapesForLayer(layerIndex)
+        for shape in shapes {
             if !shape.isVisible { continue }
             
             // Check each path element for coincident points
