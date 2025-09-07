@@ -128,8 +128,9 @@ extension VectorDocument {
     func getSelectedShapes() -> [VectorShape] {
         var selectedShapes: [VectorShape] = []
         
-        for layer in layers {
-            for shape in layer.shapes {
+        // Use unified objects to get selected shapes
+        for unifiedObject in unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
                 if selectedShapeIDs.contains(shape.id) {
                     selectedShapes.append(shape)
                 }
@@ -143,8 +144,9 @@ extension VectorDocument {
     func getShapesByIds(_ shapeIDs: Set<UUID>) -> [VectorShape] {
         var shapes: [VectorShape] = []
         
-        for layer in layers {
-            for shape in layer.shapes {
+        // Use unified objects to get shapes by IDs
+        for unifiedObject in unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
                 if shapeIDs.contains(shape.id) {
                     shapes.append(shape)
                 }
@@ -193,10 +195,9 @@ extension VectorDocument {
     func getSelectedShapesInStackingOrder() -> [VectorShape] {
         var stackingOrderShapes: [VectorShape] = []
         
-        // Process layers from bottom to top (first layer = bottom)
-        for layer in layers {
-            // Process shapes within layer from bottom to top (first shape = bottom)
-            for shape in layer.shapes {
+        // Process shapes from bottom to top using unified objects (already in stacking order)
+        for unifiedObject in unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
                 if selectedShapeIDs.contains(shape.id) {
                     stackingOrderShapes.append(shape)
                 }
