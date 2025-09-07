@@ -195,26 +195,24 @@ extension DrawingCanvas {
     
     /// Finds an anchor point at the given location
     private func findAnchorPointAt(location: CGPoint, tolerance: Double) -> PointID? {
-        for layerIndex in document.layers.indices.reversed() {
-            let layer = document.layers[layerIndex]
-            if !layer.isVisible || layer.isLocked { continue }
-            
-            for (_, shape) in layer.shapes.enumerated().reversed() {
+        // Use unified objects to find anchor points
+        for unifiedObject in document.unifiedObjects.reversed() {
+            if case .shape(let shape) = unifiedObject.objectType {
                 if !shape.isVisible || shape.isLocked { continue }
-                
-                for (elementIndex, element) in shape.path.elements.enumerated() {
-                    switch element {
-                    case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
-                        let rawPointLocation = CGPoint(x: to.x, y: to.y)
-                        let pointLocation = rawPointLocation.applying(shape.transform)
-                        
-                        if distance(location, pointLocation) <= tolerance {
-                            return PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
-                        }
-                    default:
-                        break
+            
+            for (elementIndex, element) in shape.path.elements.enumerated() {
+                switch element {
+                case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+                    let rawPointLocation = CGPoint(x: to.x, y: to.y)
+                    let pointLocation = rawPointLocation.applying(shape.transform)
+                    
+                    if distance(location, pointLocation) <= tolerance {
+                        return PointID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex)
                     }
+                default:
+                    break
                 }
+            }
             }
         }
         return nil
@@ -222,12 +220,14 @@ extension DrawingCanvas {
     
     /// Finds a curve segment at the given location
     private func findCurveSegmentAt(location: CGPoint, tolerance: Double) -> (layerIndex: Int, shapeIndex: Int, elementIndex: Int)? {
-        for layerIndex in document.layers.indices.reversed() {
-            let layer = document.layers[layerIndex]
-            if !layer.isVisible || layer.isLocked { continue }
-            
-            for (shapeIndex, shape) in layer.shapes.enumerated().reversed() {
+        // Use unified objects to find curve segments
+        for unifiedObject in document.unifiedObjects.reversed() {
+            if case .shape(let shape) = unifiedObject.objectType {
                 if !shape.isVisible || shape.isLocked { continue }
+                
+                let layerIndex = unifiedObject.layerIndex
+                // Find shape index in the layer
+                guard let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) else { continue }
                 
                 var previousPoint: VectorPoint?
                 
