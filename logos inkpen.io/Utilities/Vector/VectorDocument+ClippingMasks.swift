@@ -70,8 +70,9 @@ extension VectorDocument {
         
         // DEBUG: Check layers array before unified sync
         Log.info("🎭 CLIPPING MASK DEBUG: Before unified sync - checking layers array:", category: .general)
-        for (idx, layer) in layers.enumerated() {
-            for shape in layer.shapes {
+        for (idx, _) in layers.enumerated() {
+            let shapesInLayer = getShapesForLayer(idx)
+            for shape in shapesInLayer {
                 if shape.id == maskID || selectedShapes.dropLast().contains(where: { $0.id == shape.id }) {
                     Log.info("🎭 CLIPPING MASK DEBUG: Layer \(idx) shape '\(shape.name)' - isClippingPath: \(shape.isClippingPath), clippedByShapeID: \(shape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .general)
                 }
