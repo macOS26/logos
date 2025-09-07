@@ -18,25 +18,21 @@ struct ProfessionalDirectSelectionView: View {
         ZStack {
             // PROFESSIONAL BEZIER DISPLAY: Show ALL anchor points and handles for direct-selected shapes
             // This matches professional vector graphics software standards
-            ForEach(document.layers.indices, id: \.self) { layerIndex in
-                let layer = document.layers[layerIndex]
-                if layer.isVisible {
-                    ForEach(layer.shapes.indices, id: \.self) { shapeIndex in
-                        let shape = layer.shapes[shapeIndex]
-                        if shape.isVisible && directSelectedShapeIDs.contains(shape.id) {
-                            // GROUP DIRECT SELECTION FIX: Handle groups differently
-                            if shape.isGroupContainer {
-                                // For groups, show anchor points for all grouped shapes
-                                ForEach(shape.groupedShapes.indices, id: \.self) { groupedShapeIndex in
-                                    let groupedShape = shape.groupedShapes[groupedShapeIndex]
-                                    if groupedShape.isVisible {
-                                        professionalBezierDisplay(for: groupedShape)
-                                    }
+            ForEach(Array(document.unifiedObjects), id: \.id) { unifiedObject in
+                if case .shape(let shape) = unifiedObject.objectType {
+                    if shape.isVisible && directSelectedShapeIDs.contains(shape.id) {
+                        // GROUP DIRECT SELECTION FIX: Handle groups differently
+                        if shape.isGroupContainer {
+                            // For groups, show anchor points for all grouped shapes
+                            ForEach(shape.groupedShapes.indices, id: \.self) { groupedShapeIndex in
+                                let groupedShape = shape.groupedShapes[groupedShapeIndex]
+                                if groupedShape.isVisible {
+                                    professionalBezierDisplay(for: groupedShape)
                                 }
-                            } else {
-                                // For individual shapes, show anchor points normally
-                                professionalBezierDisplay(for: shape)
                             }
+                        } else {
+                            // For individual shapes, show anchor points normally
+                            professionalBezierDisplay(for: shape)
                         }
                     }
                 }
@@ -229,30 +225,30 @@ struct ProfessionalDirectSelectionView: View {
     // REMOVED: Duplicate function - use the precision version above
     
     private func getPointLocation(_ pointID: PointID) -> CGPoint? {
-        // Find the shape and extract point location (including grouped shapes)
-        for layer in document.layers {
-            // First check top-level shapes
-            if let shape = layer.shapes.first(where: { $0.id == pointID.shapeID }) {
-                if pointID.elementIndex < shape.path.elements.count {
-                    let element = shape.path.elements[pointID.elementIndex]
-                    
-                    switch element {
-                    case .move(let to), .line(let to):
-                        return CGPoint(x: to.x, y: to.y)
-                    case .curve(let to, _, _):
-                        return CGPoint(x: to.x, y: to.y)
-                    case .quadCurve(let to, _):
-                        return CGPoint(x: to.x, y: to.y)
-                    case .close:
-                        return nil
+        // Find the shape and extract point location using unified objects
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
+                // First check if this is the shape we're looking for
+                if shape.id == pointID.shapeID {
+                    if pointID.elementIndex < shape.path.elements.count {
+                        let element = shape.path.elements[pointID.elementIndex]
+                        
+                        switch element {
+                        case .move(let to), .line(let to):
+                            return CGPoint(x: to.x, y: to.y)
+                        case .curve(let to, _, _):
+                            return CGPoint(x: to.x, y: to.y)
+                        case .quadCurve(let to, _):
+                            return CGPoint(x: to.x, y: to.y)
+                        case .close:
+                            return nil
+                        }
                     }
                 }
-            }
-            
-            // Then check grouped shapes within group containers
-            for containerShape in layer.shapes {
-                if containerShape.isGroupContainer {
-                    if let groupedShape = containerShape.groupedShapes.first(where: { $0.id == pointID.shapeID }) {
+                
+                // Then check grouped shapes within this shape if it's a group container
+                if shape.isGroupContainer {
+                    if let groupedShape = shape.groupedShapes.first(where: { $0.id == pointID.shapeID }) {
                         if pointID.elementIndex < groupedShape.path.elements.count {
                             let element = groupedShape.path.elements[pointID.elementIndex]
                             
@@ -278,16 +274,16 @@ struct ProfessionalDirectSelectionView: View {
         // CRITICAL FIX: Match the selection logic exactly!
         // HandleIDs now point to where the handle data actually lives in the bezier structure
         
-        for layer in document.layers {
-            // First check top-level shapes
-            if let shape = layer.shapes.first(where: { $0.id == handleID.shapeID }) {
-                return getHandleInfoFromShape(shape, handleID: handleID)
-            }
-            
-            // Then check grouped shapes within group containers
-            for containerShape in layer.shapes {
-                if containerShape.isGroupContainer {
-                    if let groupedShape = containerShape.groupedShapes.first(where: { $0.id == handleID.shapeID }) {
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
+                // First check if this is the shape we're looking for
+                if shape.id == handleID.shapeID {
+                    return getHandleInfoFromShape(shape, handleID: handleID)
+                }
+                
+                // Then check grouped shapes within this shape if it's a group container
+                if shape.isGroupContainer {
+                    if let groupedShape = shape.groupedShapes.first(where: { $0.id == handleID.shapeID }) {
                         return getHandleInfoFromShape(groupedShape, handleID: handleID)
                     }
                 }
@@ -353,17 +349,17 @@ struct ProfessionalDirectSelectionView: View {
     }
     
     private func getShapeForHandle(_ handleID: HandleID) -> VectorShape? {
-        // Find the shape that contains this handle (including grouped shapes)
-        for layer in document.layers {
-            // First check top-level shapes
-            if let shape = layer.shapes.first(where: { $0.id == handleID.shapeID }) {
-                return shape
-            }
-            
-            // Then check grouped shapes within group containers
-            for containerShape in layer.shapes {
-                if containerShape.isGroupContainer {
-                    if let groupedShape = containerShape.groupedShapes.first(where: { $0.id == handleID.shapeID }) {
+        // Find the shape that contains this handle using unified objects
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
+                // First check if this is the shape we're looking for
+                if shape.id == handleID.shapeID {
+                    return shape
+                }
+                
+                // Then check grouped shapes within this shape if it's a group container
+                if shape.isGroupContainer {
+                    if let groupedShape = shape.groupedShapes.first(where: { $0.id == handleID.shapeID }) {
                         return groupedShape
                     }
                 }
@@ -373,17 +369,17 @@ struct ProfessionalDirectSelectionView: View {
     }
     
     private func getShapeForPoint(_ pointID: PointID) -> VectorShape? {
-        // Find the shape that contains this point (including grouped shapes)
-        for layer in document.layers {
-            // First check top-level shapes
-            if let shape = layer.shapes.first(where: { $0.id == pointID.shapeID }) {
-                return shape
-            }
-            
-            // Then check grouped shapes within group containers
-            for containerShape in layer.shapes {
-                if containerShape.isGroupContainer {
-                    if let groupedShape = containerShape.groupedShapes.first(where: { $0.id == pointID.shapeID }) {
+        // Find the shape that contains this point using unified objects
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
+                // First check if this is the shape we're looking for
+                if shape.id == pointID.shapeID {
+                    return shape
+                }
+                
+                // Then check grouped shapes within this shape if it's a group container
+                if shape.isGroupContainer {
+                    if let groupedShape = shape.groupedShapes.first(where: { $0.id == pointID.shapeID }) {
                         return groupedShape
                     }
                 }
