@@ -12,141 +12,167 @@ import CoreGraphics
 extension VectorDocument {
     
     func updateShapeStrokeLineJoinInUnified(id: UUID, lineJoin: CGLineJoin) {
-        // Check if shape exists in unified system
-        if unifiedObjects.contains(where: { obj in
+        // Find and update in unified objects
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return !shape.isTextObject && shape.id == id
             }
             return false
         }) {
-            // Find in legacy layer arrays
-            for layerIndex in 0..<layers.count {
-                if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id }) {
-                    if layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                        layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: defaultStrokePlacement, lineJoin: lineJoin, opacity: defaultStrokeOpacity)
-                    } else {
-                        layers[layerIndex].shapes[shapeIndex].strokeStyle?.lineJoin = lineJoin
-                    }
-                    updateUnifiedObjectsOptimized()
-                    break
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                if shape.strokeStyle == nil {
+                    shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: defaultStrokePlacement, lineJoin: lineJoin, opacity: defaultStrokeOpacity)
+                } else {
+                    shape.strokeStyle?.lineJoin = lineJoin
                 }
+                
+                // Update unified objects
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Sync to layers
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }
     
     func updateShapeStrokeLineCapInUnified(id: UUID, lineCap: CGLineCap) {
-        // Check if shape exists in unified system
-        if unifiedObjects.contains(where: { obj in
+        // Find and update in unified objects
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return !shape.isTextObject && shape.id == id
             }
             return false
         }) {
-            // Find in legacy layer arrays
-            for layerIndex in 0..<layers.count {
-                if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id }) {
-                    if layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                        layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: defaultStrokePlacement, lineCap: lineCap, opacity: defaultStrokeOpacity)
-                    } else {
-                        layers[layerIndex].shapes[shapeIndex].strokeStyle?.lineCap = lineCap
-                    }
-                    updateUnifiedObjectsOptimized()
-                    break
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                if shape.strokeStyle == nil {
+                    shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: defaultStrokePlacement, lineCap: lineCap, opacity: defaultStrokeOpacity)
+                } else {
+                    shape.strokeStyle?.lineCap = lineCap
                 }
+                
+                // Update unified objects
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Sync to layers
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }
     
     func updateShapeStrokeMiterLimitInUnified(id: UUID, miterLimit: CGFloat) {
-        // Check if shape exists in unified system
-        if unifiedObjects.contains(where: { obj in
+        // Find and update in unified objects
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return !shape.isTextObject && shape.id == id
             }
             return false
         }) {
-            // Find in legacy layer arrays
-            for layerIndex in 0..<layers.count {
-                if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id }) {
-                    if layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                        layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: defaultStrokePlacement, miterLimit: miterLimit, opacity: defaultStrokeOpacity)
-                    } else {
-                        layers[layerIndex].shapes[shapeIndex].strokeStyle?.miterLimit = miterLimit
-                    }
-                    updateUnifiedObjectsOptimized()
-                    break
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                if shape.strokeStyle == nil {
+                    shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: defaultStrokePlacement, miterLimit: miterLimit, opacity: defaultStrokeOpacity)
+                } else {
+                    shape.strokeStyle?.miterLimit = miterLimit
                 }
+                
+                // Update unified objects
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Sync to layers
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }
     
     func createFillStyleInUnified(id: UUID, color: VectorColor, opacity: Double) {
-        if unifiedObjects.contains(where: { obj in
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return !shape.isTextObject && shape.id == id
             }
             return false
         }) {
-            for layerIndex in 0..<layers.count {
-                if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id }) {
-                    layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
-                        color: color,
-                        opacity: opacity
-                    )
-                    updateUnifiedObjectsOptimized()
-                    break
-                }
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                shape.fillStyle = FillStyle(
+                    color: color,
+                    opacity: opacity
+                )
+                
+                // Update unified objects
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Sync to layers
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }
     
     func createStrokeStyleInUnified(id: UUID, color: VectorColor, width: Double, placement: StrokePlacement, lineCap: CGLineCap, lineJoin: CGLineJoin, miterLimit: Double, opacity: Double) {
-        if unifiedObjects.contains(where: { obj in
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return !shape.isTextObject && shape.id == id
             }
             return false
         }) {
-            for layerIndex in 0..<layers.count {
-                if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id }) {
-                    layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
-                        color: color,
-                        width: width,
-                        placement: placement,
-                        lineCap: lineCap,
-                        lineJoin: lineJoin,
-                        miterLimit: miterLimit,
-                        opacity: opacity
-                    )
-                    updateUnifiedObjectsOptimized()
-                    break
-                }
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                shape.strokeStyle = StrokeStyle(
+                    color: color,
+                    width: width,
+                    placement: placement,
+                    lineCap: lineCap,
+                    lineJoin: lineJoin,
+                    miterLimit: miterLimit,
+                    opacity: opacity
+                )
+                
+                // Update unified objects
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Sync to layers
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }
     
     func updateShapePathUnified(id: UUID, path: VectorPath) {
-        // Find in legacy layer arrays and update
-        for layerIndex in 0..<layers.count {
-            if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id }) {
-                layers[layerIndex].shapes[shapeIndex].path = path
-                layers[layerIndex].shapes[shapeIndex].updateBounds()
+        // Find and update in unified objects
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.id == id && !shape.isTextObject
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                shape.path = path
+                shape.updateBounds()
                 
-                // Update the specific unified object
-                if let unifiedIndex = unifiedObjects.firstIndex(where: { obj in
-                    if case .shape(let shape) = obj.objectType {
-                        return shape.id == id && !shape.isTextObject
-                    }
-                    return false
-                }) {
-                    let updatedShape = layers[layerIndex].shapes[shapeIndex]
-                    unifiedObjects[unifiedIndex] = VectorObject(
-                        shape: updatedShape,
-                        layerIndex: layerIndex,
-                        orderID: unifiedObjects[unifiedIndex].orderID
-                    )
-                }
-                break
+                // Update unified objects
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Sync to layers
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }

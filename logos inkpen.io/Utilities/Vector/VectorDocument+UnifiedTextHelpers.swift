@@ -29,12 +29,8 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
-                // CRITICAL: Update the shape in the layers array
-                let layerIndex = unifiedObjects[objectIndex].layerIndex
-                if layerIndex < layers.count,
-                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
-                    layers[layerIndex].shapes[shapeIndex].isLocked = true
-                }
+                // Sync the updated shape back to layers through unified system
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }
@@ -55,12 +51,8 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
-                // CRITICAL: Update the shape in the layers array
-                let layerIndex = unifiedObjects[objectIndex].layerIndex
-                if layerIndex < layers.count,
-                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
-                    layers[layerIndex].shapes[shapeIndex].isLocked = false
-                }
+                // Sync the updated shape back to layers through unified system
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }
@@ -83,12 +75,8 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
-                // CRITICAL: Update the shape in the layers array
-                let layerIndex = unifiedObjects[objectIndex].layerIndex
-                if layerIndex < layers.count,
-                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
-                    layers[layerIndex].shapes[shapeIndex].isVisible = false
-                }
+                // Sync the updated shape back to layers through unified system
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }
@@ -109,12 +97,8 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
-                // CRITICAL: Update the shape in the layers array
-                let layerIndex = unifiedObjects[objectIndex].layerIndex
-                if layerIndex < layers.count,
-                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
-                    layers[layerIndex].shapes[shapeIndex].isVisible = true
-                }
+                // Sync the updated shape back to layers through unified system
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }

@@ -85,22 +85,9 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
-                // CRITICAL: Update the shape in the layers array - ONLY COLOR
-                let layerIndex = unifiedObjects[objectIndex].layerIndex
-                Log.fileOperation("📋 Updating layer \(layerIndex) shapes array", level: .info)
-                if layerIndex < layers.count,
-                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
-                    Log.fileOperation("  - Found shape at index \(shapeIndex)", level: .info)
-                    Log.fileOperation("  - BEFORE layer shape font: \(layers[layerIndex].shapes[shapeIndex].typography?.fontFamily ?? "nil")", level: .info)
-                    
-                    // Preserve existing typography, only update color
-                    layers[layerIndex].shapes[shapeIndex].typography?.fillColor = color
-                    layers[layerIndex].shapes[shapeIndex].typography?.fillOpacity = defaultFillOpacity
-                    
-                    Log.fileOperation("  - AFTER layer shape font: \(layers[layerIndex].shapes[shapeIndex].typography?.fontFamily ?? "nil")", level: .info)
-                } else {
-                    Log.fileOperation("⚠️ Could not find shape in layers array!", level: .warning)
-                }
+                // Sync the updated shape back to layers through unified system
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
+                Log.fileOperation("✅ Synced text color update to layer \(unifiedObjects[objectIndex].layerIndex)", level: .info)
                 
                 // Text is now fully managed in unified system
             } else {
@@ -147,17 +134,9 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
-                // Update the shape in the layers array
-                let layerIndex = unifiedObjects[objectIndex].layerIndex
-                if layerIndex < layers.count,
-                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
-                    Log.fileOperation("📋 Updating layer \(layerIndex) shape typography", level: .info)
-                    Log.fileOperation("  - BEFORE layer font: \(layers[layerIndex].shapes[shapeIndex].typography?.fontFamily ?? "nil")", level: .info)
-                    
-                    layers[layerIndex].shapes[shapeIndex].typography = typography
-                    
-                    Log.fileOperation("  - AFTER layer font: \(layers[layerIndex].shapes[shapeIndex].typography?.fontFamily ?? "nil")", level: .info)
-                }
+                // Sync the updated shape back to layers through unified system
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
+                Log.fileOperation("✅ Synced typography update to layer \(unifiedObjects[objectIndex].layerIndex)", level: .info)
                 
                 // Text is now fully managed in unified system
             }
@@ -245,22 +224,9 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
-                // CRITICAL: Update the shape in the layers array - ONLY STROKE COLOR
-                let layerIndex = unifiedObjects[objectIndex].layerIndex
-                Log.fileOperation("📋 Updating layer \(layerIndex) shapes array", level: .info)
-                if layerIndex < layers.count,
-                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
-                    Log.fileOperation("  - Found shape at index \(shapeIndex)", level: .info)
-                    Log.fileOperation("  - BEFORE layer shape font: \(layers[layerIndex].shapes[shapeIndex].typography?.fontFamily ?? "nil")", level: .info)
-                    
-                    // Preserve existing typography, only update stroke color
-                    layers[layerIndex].shapes[shapeIndex].typography?.hasStroke = true
-                    layers[layerIndex].shapes[shapeIndex].typography?.strokeColor = color
-                    
-                    Log.fileOperation("  - AFTER layer shape font: \(layers[layerIndex].shapes[shapeIndex].typography?.fontFamily ?? "nil")", level: .info)
-                } else {
-                    Log.fileOperation("⚠️ Could not find shape in layers array!", level: .warning)
-                }
+                // Sync the updated shape back to layers through unified system
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
+                Log.fileOperation("✅ Synced stroke color update to layer \(unifiedObjects[objectIndex].layerIndex)", level: .info)
                 
                 // Text is now fully managed in unified system
             } else {

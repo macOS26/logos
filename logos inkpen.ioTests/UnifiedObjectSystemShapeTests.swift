@@ -32,8 +32,8 @@ struct UnifiedObjectSystemShapeTests {
             VectorObject(shape: shape2, layerIndex: 1, orderID: 0)
         ]
         
-        // Sync layers from unified
-        document.syncLayerShapesFromUnified()
+        // Sync layers from unified using updateUnifiedObjectsOptimized
+        document.updateUnifiedObjectsOptimized()
         
         // Verify sync worked
         #expect(document.layers[0].shapes.count == 1)
