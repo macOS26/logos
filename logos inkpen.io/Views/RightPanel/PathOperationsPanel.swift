@@ -591,8 +591,10 @@ struct PathOperationsPanel: View {
             }
             
             // Update the shape with the cleaned path
-            if let layerIndex = document.layers.firstIndex(where: { $0.shapes.contains { $0.id == shape.id } }),
-               document.layers[layerIndex].shapes.contains(where: { $0.id == shape.id }) {
+            if let layerIndex = document.layers.firstIndex(where: { layer in
+                document.getShapesForLayer(document.layers.firstIndex(of: layer) ?? -1).contains { $0.id == shape.id }
+            }),
+               document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
                 
                 // Use unified helper to update shape path
                 document.updateShapePathUnified(id: shape.id, path: VectorPath(cgPath: cleanedPath))

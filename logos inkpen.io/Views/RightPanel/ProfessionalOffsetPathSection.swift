@@ -243,7 +243,8 @@ struct ProfessionalOffsetPathSection: View {
         // Store original shape indices for proper insertion
         var originalShapeIndices: [UUID: Int] = [:]
         if let layerIndex = document.selectedLayerIndex {
-            for (index, shape) in document.layers[layerIndex].shapes.enumerated() {
+            let shapes = document.getShapesForLayer(layerIndex)
+            for (index, shape) in shapes.enumerated() {
                 if document.selectedShapeIDs.contains(shape.id) {
                     originalShapeIndices[shape.id] = index
                 }

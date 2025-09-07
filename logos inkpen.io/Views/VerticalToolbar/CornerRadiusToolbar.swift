@@ -238,8 +238,9 @@ struct CornerRadiusToolbar: View {
         
         // Find and update the shape
         for layerIndex in document.layers.indices {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == selectedShape.id }) {
-                var shape = document.layers[layerIndex].shapes[shapeIndex]
+            let shapes = document.getShapesForLayer(layerIndex)
+            if let shapeIndex = shapes.firstIndex(where: { $0.id == selectedShape.id }),
+               var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
                 
                 // ENABLE CORNER RADIUS SUPPORT: Convert regular rectangles to corner-radius-enabled rectangles
                 if !shape.isRoundedRectangle && isRectangleShape(shape) {
