@@ -97,16 +97,15 @@ struct StatusBar: View {
         var combinedBounds: CGRect?
         
         // Include selected shapes
-        for layerIndex in document.layers.indices {
-            let layer = document.layers[layerIndex]
-            for shape in layer.shapes {
-                if document.selectedShapeIDs.contains(shape.id) {
-                    let shapeBounds = shape.bounds.applying(shape.transform)
-                    if combinedBounds == nil {
-                        combinedBounds = shapeBounds
-                    } else {
-                        combinedBounds = combinedBounds!.union(shapeBounds)
-                    }
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType,
+               !shape.isTextObject,
+               document.selectedShapeIDs.contains(shape.id) {
+                let shapeBounds = shape.bounds.applying(shape.transform)
+                if combinedBounds == nil {
+                    combinedBounds = shapeBounds
+                } else {
+                    combinedBounds = combinedBounds!.union(shapeBounds)
                 }
             }
         }
