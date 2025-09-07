@@ -1,0 +1,229 @@
+//
+//  VectorDocument+UnifiedCore.swift
+//  logos inkpen.io
+//
+//  Split from VectorDocument+UnifiedObjectManagement.swift
+//
+
+import Foundation
+import CoreGraphics
+
+// MARK: - Core Unified Object Management
+extension VectorDocument {
+    /// Gets shapes for a specific layer from the unified objects system
+    func getShapesForLayer(_ layerIndex: Int) -> [VectorShape] {
+        return unifiedObjects
+            .filter { $0.layerIndex == layerIndex }
+            .sorted { $0.orderID < $1.orderID }
+            .compactMap { object -> VectorShape? in
+                if case .shape(let shape) = object.objectType {
+                    return shape
+                }
+                return nil
+            }
+    }
+    
+    /// Syncs the legacy layer.shapes array with unified objects (temporary during migration)
+    func syncLayerShapesFromUnified() {
+        for (index, _) in layers.enumerated() {
+            layers[index].shapes = getShapesForLayer(index)
+        }
+    }
+    
+    /// Gets the next available orderID for a layer
+    private func getNextOrderID(for layerIndex: Int) -> Int {
+        let existingOrderIDs = unifiedObjects
+            .filter { $0.layerIndex == layerIndex }
+            .map { $0.orderID }
+        
+        return existingOrderIDs.isEmpty ? 0 : (existingOrderIDs.max() ?? -1) + 1
+    }
+    
+    /// Adds a shape to the unified objects system
+    func addShapeToUnifiedSystem(_ shape: VectorShape, layerIndex: Int) {
+        // CRITICAL FIX: Check for existing object to prevent duplicates
+        let existingIndex = unifiedObjects.firstIndex { unifiedObject in
+            if case .shape(let existingShape) = unifiedObject.objectType {
+                return existingShape.id == shape.id
+            }
+            return false
+        }
+        
+        // If object already exists, remove it first to prevent duplicates
+        if let existingIndex = existingIndex {
+            unifiedObjects.remove(at: existingIndex)
+        }
+        
+        // CRITICAL FIX: During undo/redo operations, preserve the original orderID if available
+        if isUndoRedoOperation {
+            // Try to find an existing unified object for this shape to preserve its orderID
+            if let existingObject = unifiedObjects.first(where: { 
+                if case .shape(let existingShape) = $0.objectType {
+                    return existingShape.id == shape.id
+                }
+                return false
+            }) {
+                // Use the existing orderID to preserve order
+                let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: existingObject.orderID)
+                unifiedObjects.append(unifiedObject)
+                return
+            }
+        }
+        
+        // CRITICAL FIX: Only add to legacy layers array if shape doesn't already exist there
+        if layerIndex < layers.count {
+            let shapeExists = layers[layerIndex].shapes.contains { $0.id == shape.id }
+            if !shapeExists {
+                layers[layerIndex].shapes.append(shape)
+            }
+        }
+        
+        let orderID = getNextOrderID(for: layerIndex)
+        let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+        unifiedObjects.append(unifiedObject)
+    }
+    
+    /// Adds a shape to the front of the unified objects system (for drawing tools)
+    func addShapeToFrontOfUnifiedSystem(_ shape: VectorShape, layerIndex: Int) {
+        // CRITICAL FIX: Check for existing object to prevent duplicates
+        let existingIndex = unifiedObjects.firstIndex { unifiedObject in
+            if case .shape(let existingShape) = unifiedObject.objectType {
+                return existingShape.id == shape.id
+            }
+            return false
+        }
+        
+        // If object already exists, remove it first to prevent duplicates
+        if let existingIndex = existingIndex {
+            unifiedObjects.remove(at: existingIndex)
+        }
+        
+        // CRITICAL FIX: During undo/redo operations, preserve the original orderID if available
+        if isUndoRedoOperation {
+            // Try to find an existing unified object for this shape to preserve its orderID
+            if let existingObject = unifiedObjects.first(where: { 
+                if case .shape(let existingShape) = $0.objectType {
+                    return existingShape.id == shape.id
+                }
+                return false
+            }) {
+                // Use the existing orderID to preserve order
+                let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: existingObject.orderID)
+                unifiedObjects.append(unifiedObject)
+                return
+            }
+        }
+        
+        // Get the highest orderID for this layer and add 1 to put the new shape on top
+        let existingOrderIDs = unifiedObjects
+            .filter { $0.layerIndex == layerIndex }
+            .map { $0.orderID }
+        
+        let highestOrderID = existingOrderIDs.isEmpty ? 0 : (existingOrderIDs.max() ?? 0)
+        let orderID = highestOrderID + 1
+        
+        let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+        unifiedObjects.append(unifiedObject)
+    }
+    
+    /// Adds a shape BEHIND existing shapes in the unified objects system (for positive offset paths)
+    func addShapeBehindInUnifiedSystem(_ shape: VectorShape, layerIndex: Int, behindShapeIDs: Set<UUID>) {
+        // CRITICAL FIX: Check for existing object to prevent duplicates
+        let existingIndex = unifiedObjects.firstIndex { unifiedObject in
+            if case .shape(let existingShape) = unifiedObject.objectType {
+                return existingShape.id == shape.id
+            }
+            return false
+        }
+        
+        // If object already exists, remove it first to prevent duplicates
+        if let existingIndex = existingIndex {
+            unifiedObjects.remove(at: existingIndex)
+        }
+        
+        // Find the lowest orderID among the shapes we want to go behind
+        let targetOrderIDs = unifiedObjects
+            .filter { $0.layerIndex == layerIndex }
+            .compactMap { unifiedObj -> Int? in
+                switch unifiedObj.objectType {
+                case .shape(let existingShape):
+                    return behindShapeIDs.contains(existingShape.id) ? unifiedObj.orderID : nil
+                }
+            }
+        
+        let orderID: Int
+        if let minTargetOrderID = targetOrderIDs.min() {
+            // Insert with an orderID just before the minimum target orderID
+            orderID = minTargetOrderID - 1
+        } else {
+            // Fallback: use lowest orderID for this layer minus 1
+            let existingOrderIDs = unifiedObjects
+                .filter { $0.layerIndex == layerIndex }
+                .map { $0.orderID }
+            orderID = (existingOrderIDs.min() ?? 0) - 1
+        }
+        
+        let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+        unifiedObjects.append(unifiedObject)
+    }
+    
+    /// Adds a text object as VectorShape to the unified objects system
+    func addTextToUnifiedSystem(_ text: VectorText, layerIndex: Int) {
+        // MIGRATION: Text is now stored as VectorShape in unified system
+        
+        // CRITICAL FIX: Check for existing object to prevent duplicates
+        let existingIndex = unifiedObjects.firstIndex { unifiedObject in
+            if case .shape(let existingShape) = unifiedObject.objectType {
+                return existingShape.id == text.id && existingShape.isTextObject
+            }
+            return false
+        }
+        
+        // If object already exists, remove it first to prevent duplicates
+        if let existingIndex = existingIndex {
+            unifiedObjects.remove(at: existingIndex)
+        }
+        
+        // Convert VectorText to VectorShape
+        var textWithLayer = text
+        textWithLayer.layerIndex = layerIndex
+        let textShape = VectorShape.from(textWithLayer)
+        
+        // DEBUG: Log the editing state
+        Log.fileOperation("🔍 addTextToUnifiedSystem: text.isEditing=\(text.isEditing), textShape.isEditing=\(textShape.isEditing ?? false)", level: .info)
+        
+        // CRITICAL: Add the text shape to the layer's shapes array
+        if layerIndex < layers.count {
+            // Remove any existing shape with same ID to prevent duplicates
+            layers[layerIndex].shapes.removeAll { $0.id == text.id }
+            // Add the text as a shape (make sure editing state is preserved)
+            var shapeToAdd = textShape
+            shapeToAdd.isEditing = text.isEditing  // Ensure editing state is preserved
+            layers[layerIndex].shapes.append(shapeToAdd)
+        }
+        
+        // MIGRATION: textObjects is now rebuilt from unified, no direct modification needed
+        
+        // CRITICAL FIX: During undo/redo operations, preserve the original orderID if available
+        if isUndoRedoOperation {
+            // Try to find an existing unified object for this text to preserve its orderID
+            if let existingObject = unifiedObjects.first(where: { 
+                if case .shape(let existingShape) = $0.objectType {
+                    return existingShape.id == text.id
+                }
+                return false
+            }) {
+                // Use the existing orderID to preserve order
+                let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex, orderID: existingObject.orderID)
+                unifiedObjects.append(unifiedObject)
+                return
+            }
+        }
+        
+        let orderID = getNextOrderID(for: layerIndex)
+        let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex, orderID: orderID)
+        unifiedObjects.append(unifiedObject)
+        
+        // Text is now fully managed in unified system
+    }
+}
