@@ -10,6 +10,26 @@ import CoreGraphics
 
 // MARK: - Unified Object Management
 extension VectorDocument {
+    /// Gets shapes for a specific layer from the unified objects system
+    func getShapesForLayer(_ layerIndex: Int) -> [VectorShape] {
+        return unifiedObjects
+            .filter { $0.layerIndex == layerIndex }
+            .sorted { $0.orderID < $1.orderID }
+            .compactMap { object -> VectorShape? in
+                if case .shape(let shape) = object.objectType {
+                    return shape
+                }
+                return nil
+            }
+    }
+    
+    /// Syncs the legacy layer.shapes array with unified objects (temporary during migration)
+    func syncLayerShapesFromUnified() {
+        for (index, _) in layers.enumerated() {
+            layers[index].shapes = getShapesForLayer(index)
+        }
+    }
+    
     /// Gets the next available orderID for a layer
     private func getNextOrderID(for layerIndex: Int) -> Int {
         let existingOrderIDs = unifiedObjects
@@ -229,6 +249,9 @@ extension VectorDocument {
         
         unifiedObjects.removeAll()
         
+        // After populating, sync back to layers
+        defer { syncLayerShapesFromUnified() }
+        
         // For each layer, we need to create a truly unified ordering of ALL objects (shapes + text)
         for (layerIndex, layer) in layers.enumerated() {
             var layerObjects: [(object: Any, isText: Bool)] = []
@@ -346,31 +369,6 @@ extension VectorDocument {
     }
     
     // Text rebuild no longer needed - all text is accessed directly from unified system
-    
-    /// CRITICAL FIX: Sync layer shapes from unified objects array
-    private func syncLayerShapesFromUnified() {
-        let originalShapes = layers.map { $0.shapes }
-        
-        // Clear existing shapes in layers
-        for layerIndex in layers.indices {
-            layers[layerIndex].shapes.removeAll()
-        }
-        
-        // Rebuild layer shapes from unified objects, maintaining order
-        for unifiedObject in unifiedObjects.sorted(by: { $0.orderID < $1.orderID }) {
-            switch unifiedObject.objectType {
-            case .shape(let shape):
-                // Use original shape from layers array to preserve all state if available
-                if let originalShape = originalShapes[unifiedObject.layerIndex].first(where: { $0.id == shape.id }) {
-                    layers[unifiedObject.layerIndex].shapes.append(originalShape)
-                } else {
-                    layers[unifiedObject.layerIndex].shapes.append(shape)
-                }
-            }
-        }
-        
-        Log.fileOperation("🔧 LAYER SHAPES: Synced from unified objects", level: .info)
-    }
     
     /// OPTIMIZED: Update unified objects without full sync - preserves text object order and IDs
     func updateUnifiedObjectsOptimized() {

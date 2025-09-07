@@ -14,6 +14,34 @@ struct UnifiedObjectSystemShapeTests {
     
     // MARK: - SHAPE UNIFIED HELPER TESTS
     
+    @Test func testSyncLayerShapesFromUnified() async throws {
+        let document = VectorDocument()
+        
+        // Add layers
+        document.layers = [
+            VectorLayer(name: "Layer 0"),
+            VectorLayer(name: "Layer 1")
+        ]
+        
+        // Create shapes directly in unified system
+        let shape1 = VectorShape(name: "Shape 1", path: VectorPath(elements: [], isClosed: false))
+        let shape2 = VectorShape(name: "Shape 2", path: VectorPath(elements: [], isClosed: false))
+        
+        document.unifiedObjects = [
+            VectorObject(shape: shape1, layerIndex: 0, orderID: 0),
+            VectorObject(shape: shape2, layerIndex: 1, orderID: 0)
+        ]
+        
+        // Sync layers from unified
+        document.syncLayerShapesFromUnified()
+        
+        // Verify sync worked
+        #expect(document.layers[0].shapes.count == 1)
+        #expect(document.layers[0].shapes[0].id == shape1.id)
+        #expect(document.layers[1].shapes.count == 1)
+        #expect(document.layers[1].shapes[0].id == shape2.id)
+    }
+    
     @Test func testUpdateShapeFillColorInUnified() async throws {
         let document = VectorDocument()
         
