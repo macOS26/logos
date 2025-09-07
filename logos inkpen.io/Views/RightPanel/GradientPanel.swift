@@ -616,7 +616,7 @@ struct GradientFillSection: View {
                 if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
                     if case .shape(let shape) = unifiedObject.objectType,
                        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                       document.layers[layerIndex].shapes.contains(where: { $0.id == shape.id }) {
+                       document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
                         
                         // Use unified helper to update gradient
                         document.updateShapeGradientInUnified(id: shape.id, gradient: gradient, target: document.activeColorTarget)
@@ -637,17 +637,22 @@ struct GradientFillSection: View {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     // Find the shape in the layers array and update it
-                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                        
-                        // Apply gradient based on active color target (fill or stroke)
-                        switch document.activeColorTarget {
-                        case .fill:
-                            document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
-                        case .stroke:
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(gradient: gradient, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: 1.0)
+                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
+                        let shapes = document.getShapesForLayer(layerIndex)
+                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }),
+                           let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                            
+                            var updatedShape = currentShape
+                            // Apply gradient based on active color target (fill or stroke)
+                            switch document.activeColorTarget {
+                            case .fill:
+                                updatedShape.fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
+                            case .stroke:
+                                updatedShape.strokeStyle = StrokeStyle(gradient: gradient, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: 1.0)
+                            }
+                            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
+                            hasChanges = true
                         }
-                        hasChanges = true
                     }
                     
                 }
@@ -842,8 +847,12 @@ struct GradientFillSection: View {
         
         // Fallback: try to find in selected shape's gradient
         guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first,
-              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+              let firstSelectedID = document.selectedShapeIDs.first else {
+            return .black
+        }
+        
+        let shapes = document.getShapesForLayer(layerIndex)
+        guard let shape = shapes.first(where: { $0.id == firstSelectedID }),
               let fillStyle = shape.fillStyle else {
             return .black
         }
