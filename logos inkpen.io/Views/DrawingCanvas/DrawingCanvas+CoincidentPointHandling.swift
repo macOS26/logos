@@ -34,7 +34,8 @@ extension DrawingCanvas {
             let layer = document.layers[layerIndex]
             if !layer.isVisible { continue }
             
-			for shape in layer.shapes {
+			let shapes = document.getShapesForLayer(layerIndex)
+			for shape in shapes {
 				// Only consider shapes that are currently active/selected
 				if !allowedShapeIDs.contains(shape.id) { continue }
                 if !shape.isVisible { continue }
@@ -119,8 +120,9 @@ extension DrawingCanvas {
         
         // Find the shape containing this point
         for layerIndex in document.layers.indices {
-            let layer = document.layers[layerIndex]
-            if let shape = layer.shapes.first(where: { $0.id == pointID.shapeID }) {
+            let _ = document.layers[layerIndex]
+            let shapes = document.getShapesForLayer(layerIndex)
+            if let shape = shapes.first(where: { $0.id == pointID.shapeID }) {
                 
                 // MUST have a close command to be considered a closed path
                 let hasCloseElement = shape.path.elements.contains { element in
@@ -194,7 +196,8 @@ extension DrawingCanvas {
             let layer = document.layers[layerIndex]
             if !layer.isVisible { continue }
             
-            for shape in layer.shapes {
+            let shapes = document.getShapesForLayer(layerIndex)
+            for shape in shapes {
                 if !shape.isVisible { continue }
                 
                 Log.info("\n📋 Analyzing shape: \(shape.name)", category: .general)

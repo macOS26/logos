@@ -17,7 +17,8 @@ extension DrawingCanvas {
             // Find the shape in the document
             for layerIndex in document.layers.indices {
                 let layer = document.layers[layerIndex]
-                if let shape = layer.shapes.first(where: { $0.id == shapeID }) {
+                let shapes = document.getShapesForLayer(layerIndex)
+                if let shape = shapes.first(where: { $0.id == shapeID }) {
                     
                     // IMPROVED LOCKED BEHAVIOR: Instead of preventing interaction, deselect current selection
                     if layer.isLocked || shape.isLocked {
@@ -255,7 +256,8 @@ extension DrawingCanvas {
             let layer = document.layers[layerIndex]
             if !layer.isVisible { continue }
             
-            for shape in layer.shapes.reversed() {
+            let shapes = document.getShapesForLayer(layerIndex)
+            for shape in shapes.reversed() {
                 if !shape.isVisible { continue }
                 
                 // PASTEBOARD BEHAVES EXACTLY LIKE CANVAS: Allow hit testing, handle via locked behavior

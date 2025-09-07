@@ -50,7 +50,8 @@ extension DrawingCanvas {
         for pointID in selectedPoints {
             // Find which layer this point belongs to
             for layerIndex in document.layers.indices {
-                if let _ = document.layers[layerIndex].shapes.first(where: { $0.id == pointID.shapeID }) {
+                let shapes = document.getShapesForLayer(layerIndex)
+                if let _ = shapes.first(where: { $0.id == pointID.shapeID }) {
                     if document.layers[layerIndex].isLocked {
                         Log.info("🚫 Cannot edit points on locked layer '\(document.layers[layerIndex].name)'", category: .general)
                         return
@@ -63,7 +64,8 @@ extension DrawingCanvas {
         for handleID in selectedHandles {
             // Find which layer this handle belongs to
             for layerIndex in document.layers.indices {
-                if let _ = document.layers[layerIndex].shapes.first(where: { $0.id == handleID.shapeID }) {
+                let shapes = document.getShapesForLayer(layerIndex)
+                if let _ = shapes.first(where: { $0.id == handleID.shapeID }) {
                     if document.layers[layerIndex].isLocked {
                         Log.info("🚫 Cannot edit handles on locked layer '\(document.layers[layerIndex].name)'", category: .general)
                         return
@@ -128,16 +130,24 @@ extension DrawingCanvas {
         // Update bounds for all modified shapes now that dragging is complete
         for pointID in selectedPoints {
             for layerIndex in document.layers.indices {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == pointID.shapeID }) {
-                    document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                let shapes = document.getShapesForLayer(layerIndex)
+                if let shapeIndex = shapes.firstIndex(where: { $0.id == pointID.shapeID }),
+                   let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                    var updatedShape = shape
+                    updatedShape.updateBounds()
+                    document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                     break
                 }
             }
         }
         for handleID in selectedHandles {
             for layerIndex in document.layers.indices {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == handleID.shapeID }) {
-                    document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                let shapes = document.getShapesForLayer(layerIndex)
+                if let shapeIndex = shapes.firstIndex(where: { $0.id == handleID.shapeID }),
+                   let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                    var updatedShape = shape
+                    updatedShape.updateBounds()
+                    document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                     break
                 }
             }

@@ -865,8 +865,9 @@ extension ProfessionalPathOperations {
         var totalCleaned = 0
         
         for layerIndex in document.layers.indices {
-            for shapeIndex in document.layers[layerIndex].shapes.indices {
-                let originalShape = document.layers[layerIndex].shapes[shapeIndex]
+            let shapes = document.getShapesForLayer(layerIndex)
+            for shapeIndex in shapes.indices {
+                guard let originalShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
                 let cleanedShape = mergeDuplicatePoints(in: originalShape, tolerance: tolerance)
                 
                 if cleanedShape.path.elements.count != originalShape.path.elements.count {
@@ -899,8 +900,9 @@ extension ProfessionalPathOperations {
         var totalCleaned = 0
         
         for layerIndex in document.layers.indices {
-            for shapeIndex in document.layers[layerIndex].shapes.indices {
-                let shape = document.layers[layerIndex].shapes[shapeIndex]
+            let shapes = document.getShapesForLayer(layerIndex)
+            for shapeIndex in shapes.indices {
+                guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
                 
                 if document.selectedShapeIDs.contains(shape.id) {
                     let originalShape = shape
