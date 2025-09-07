@@ -387,15 +387,15 @@ struct RGBInputSection: View {
             for shapeID in activeShapeIDs {
                 // Find the shape across all layers
                 for layerIndex in document.layers.indices {
-                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    let shapes = document.getShapesForLayer(layerIndex)
+                    if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
+                       let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
                         switch document.activeColorTarget {
                         case .fill:
                             // UNIFIED HELPER: Use unified system helper instead of direct manipulation
-                            let shape = document.layers[layerIndex].shapes[shapeIndex]
                             document.updateShapeFillColorInUnified(id: shape.id, color: vectorColor)
                         case .stroke:
                             // UNIFIED HELPER: Use unified system helper instead of direct manipulation
-                            let shape = document.layers[layerIndex].shapes[shapeIndex]
                             document.updateShapeStrokeColorInUnified(id: shape.id, color: vectorColor)
                         }
                         break // Found the shape, no need to check other layers
@@ -416,8 +416,10 @@ struct RGBInputSection: View {
                 }) {
                     // Find updated shape data
                     for layerIndex in document.layers.indices {
-                        if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                        let shapes = document.getShapesForLayer(layerIndex)
+                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
+                           let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
                             break
                         }
                     }
