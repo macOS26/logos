@@ -183,8 +183,9 @@ struct CornerRadiusToolbar: View {
         guard document.selectedShapeIDs.count == 1 else { return nil }
         
         let selectedID = document.selectedShapeIDs.first!
-        for layer in document.layers {
-            if let shape = layer.shapes.first(where: { $0.id == selectedID }) {
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType,
+               shape.id == selectedID {
                 return shape
             }
         }
