@@ -260,50 +260,10 @@ class FileOperations {
             Log.info("   Actual artwork bounds: \(artworkBounds)", category: .general)
         }
         
-        // Clear existing layers and create pasteboard + canvas + imported layers in correct order
-        document.layers.removeAll()
-        
-        // Create pasteboard layer FIRST (index 0) - working area behind everything
-        var pasteboardLayer = VectorLayer(name: "Pasteboard")
-        pasteboardLayer.isLocked = true  // Pasteboard should be LOCKED to prevent interference
-        
-        // Calculate pasteboard size (10x larger than canvas, same aspect ratio)
-        let pasteboardSize = CGSize(width: canvasWidth * 10, height: canvasHeight * 10)
-        
-        // Calculate pasteboard position (centered on canvas)
-        let pasteboardOrigin = CGPoint(
-            x: (canvasWidth - pasteboardSize.width) / 2,
-            y: (canvasHeight - pasteboardSize.height) / 2
-        )
-        
-        let pasteboardRect = VectorShape.rectangle(
-            at: pasteboardOrigin,
-            size: pasteboardSize
-        )
-        var pasteboardShape = pasteboardRect
-        pasteboardShape.fillStyle = FillStyle(color: .black, opacity: 0.2)  // 20% black
-        pasteboardShape.strokeStyle = nil
-        pasteboardShape.name = "Pasteboard Background"
-        document.layers.append(pasteboardLayer)
-        document.addShapeToUnifiedSystem(pasteboardShape, layerIndex: 0)
-        
-        // Create canvas layer SECOND (index 1) so it's above pasteboard
-        var canvasLayer = VectorLayer(name: "Canvas")
-        canvasLayer.isLocked = true
-        let canvasRect = VectorShape.rectangle(
-            at: CGPoint(x: 0, y: 0),
-            size: CGSize(width: canvasWidth, height: canvasHeight)
-        )
-        var backgroundShape = canvasRect
-        backgroundShape.fillStyle = FillStyle(color: .white, opacity: 1.0)
-        backgroundShape.strokeStyle = nil
-        backgroundShape.name = "Canvas Background"
-        document.layers.append(canvasLayer)
-        document.addShapeToUnifiedSystem(backgroundShape, layerIndex: 1)
-        
-        // Create imported layer THIRD (index 2) so it's on top
-        let importedLayer = VectorLayer(name: "Imported SVG")
-        document.layers.append(importedLayer)
+        // VectorDocument init already created Pasteboard, Canvas and Working layers with backgrounds
+        // We only need to update the canvas size in settings
+        document.settings.width = canvasWidth
+        document.settings.height = canvasHeight
         
         // FIXED: Position objects at viewBox origin (0,0), not artwork bounds origin
         // This preserves the intended positioning from the SVG file
@@ -343,13 +303,8 @@ class FileOperations {
 
         // Text objects are now imported as shapes with isTextObject=true
         
-        // Update the layer in the document
-        if let importedIndex = document.layers.firstIndex(where: { $0.name == "Imported SVG" }) {
-            document.layers[importedIndex] = importedLayer
-        }
-        
-        // Select the imported layer (not canvas)
-        document.selectedLayerIndex = 2 // Index 2 since Canvas is at index 0 and Pasteboard is at index 1
+        // Select the working layer which contains imported shapes
+        document.selectedLayerIndex = 2 // Working layer is at index 2
         
         // Log warnings if any
         for warning in result.warnings {
@@ -408,50 +363,10 @@ class FileOperations {
             Log.info("   Actual artwork bounds: \(artworkBounds)", category: .general)
         }
         
-        // Clear existing layers and create pasteboard + canvas + imported layers in correct order
-        document.layers.removeAll()
-        
-        // Create pasteboard layer FIRST (index 0) - working area behind everything
-        var pasteboardLayer = VectorLayer(name: "Pasteboard")
-        pasteboardLayer.isLocked = true  // Pasteboard should be LOCKED to prevent interference
-        
-        // Calculate pasteboard size (10x larger than canvas, same aspect ratio)
-        let pasteboardSize = CGSize(width: canvasWidth * 10, height: canvasHeight * 10)
-        
-        // Calculate pasteboard position (centered on canvas)
-        let pasteboardOrigin = CGPoint(
-            x: (canvasWidth - pasteboardSize.width) / 2,
-            y: (canvasHeight - pasteboardSize.height) / 2
-        )
-        
-        let pasteboardRect = VectorShape.rectangle(
-            at: pasteboardOrigin,
-            size: pasteboardSize
-        )
-        var pasteboardShape = pasteboardRect
-        pasteboardShape.fillStyle = FillStyle(color: .black, opacity: 0.2)  // 20% black
-        pasteboardShape.strokeStyle = nil
-        pasteboardShape.name = "Pasteboard Background"
-        document.layers.append(pasteboardLayer)
-        document.addShapeToUnifiedSystem(pasteboardShape, layerIndex: 0)
-        
-        // Create canvas layer SECOND (index 1) so it's above pasteboard
-        var canvasLayer = VectorLayer(name: "Canvas")
-        canvasLayer.isLocked = true
-        let canvasRect = VectorShape.rectangle(
-            at: CGPoint(x: 0, y: 0),
-            size: CGSize(width: canvasWidth, height: canvasHeight)
-        )
-        var backgroundShape = canvasRect
-        backgroundShape.fillStyle = FillStyle(color: .white, opacity: 1.0)
-        backgroundShape.strokeStyle = nil
-        backgroundShape.name = "Canvas Background"
-        document.layers.append(canvasLayer)
-        document.addShapeToUnifiedSystem(backgroundShape, layerIndex: 1)
-        
-        // Create imported layer THIRD (index 2) so it's on top
-        let importedLayer = VectorLayer(name: "Imported SVG (Extreme Value Handling)")
-        document.layers.append(importedLayer)
+        // VectorDocument init already created Pasteboard, Canvas and Working layers with backgrounds
+        // We only need to update the canvas size in settings
+        document.settings.width = canvasWidth
+        document.settings.height = canvasHeight
         
         // FIXED: Position objects at viewBox origin (0,0), not artwork bounds origin
         // This preserves the intended positioning from the SVG file
@@ -491,13 +406,8 @@ class FileOperations {
 
         // Text objects are now imported as shapes with isTextObject=true
         
-        // Update the layer in the document
-        if let importedIndex = document.layers.firstIndex(where: { $0.name == "Imported SVG (Extreme Value Handling)" }) {
-            document.layers[importedIndex] = importedLayer
-        }
-        
-        // Select the imported layer (not canvas)
-        document.selectedLayerIndex = 2 // Index 2 since Canvas is at index 0 and Pasteboard is at index 1
+        // Select the working layer which contains imported shapes
+        document.selectedLayerIndex = 2 // Working layer is at index 2
         
         // Log warnings if any
         for warning in result.warnings {
@@ -623,50 +533,8 @@ class FileOperations {
         Log.info("   PDF document size: \(pdfDocumentSize)", category: .general)
         Log.info("   Canvas size: \(canvasWidth) × \(canvasHeight) pts", category: .general)
         
-        // Clear existing layers and create pasteboard + canvas + imported layers in correct order
-        document.layers.removeAll()
-        
-        // Create pasteboard layer FIRST (index 0) - working area behind everything
-        var pasteboardLayer = VectorLayer(name: "Pasteboard")
-        pasteboardLayer.isLocked = true  // Pasteboard should be LOCKED to prevent interference
-        
-        // Calculate pasteboard size (10x larger than canvas, same aspect ratio)
-        let pasteboardSize = CGSize(width: canvasWidth * 10, height: canvasHeight * 10)
-        
-        // Calculate pasteboard position (centered on canvas)
-        let pasteboardOrigin = CGPoint(
-            x: (canvasWidth - pasteboardSize.width) / 2,
-            y: (canvasHeight - pasteboardSize.height) / 2
-        )
-        
-        let pasteboardRect = VectorShape.rectangle(
-            at: pasteboardOrigin,
-            size: pasteboardSize
-        )
-        var pasteboardShape = pasteboardRect
-        pasteboardShape.fillStyle = FillStyle(color: .black, opacity: 0.2)  // 20% black
-        pasteboardShape.strokeStyle = nil
-        pasteboardShape.name = "Pasteboard Background"
-        document.layers.append(pasteboardLayer)
-        document.addShapeToUnifiedSystem(pasteboardShape, layerIndex: 0)
-        
-        // Create canvas layer SECOND (index 1) so it's above pasteboard
-        var canvasLayer = VectorLayer(name: "Canvas")
-        canvasLayer.isLocked = true
-        let canvasRect = VectorShape.rectangle(
-            at: CGPoint(x: 0, y: 0),
-            size: CGSize(width: canvasWidth, height: canvasHeight)
-        )
-        var backgroundShape = canvasRect
-        backgroundShape.fillStyle = FillStyle(color: .white, opacity: 1.0)
-        backgroundShape.strokeStyle = nil
-        backgroundShape.name = "Canvas Background"
-        document.layers.append(canvasLayer)
-        document.addShapeToUnifiedSystem(backgroundShape, layerIndex: 1)
-        
-        // Create imported layer THIRD (index 2) so it's on top
-        let importedLayer = VectorLayer(name: "Imported PDF")
-        document.layers.append(importedLayer)
+        // VectorDocument init already created Pasteboard, Canvas and Working layers with backgrounds
+        // We only need to update the canvas size in settings (already done above)
         
         // Add all imported shapes to the layer
         for shape in result.shapes {
@@ -676,17 +544,12 @@ class FileOperations {
             importedShape.isLocked = false
             importedShape.isVisible = true
             
-            // Add shape to unified system (layer index 2 for imported layer)
+            // Add shape to unified system (layer index 2 for working layer)
             document.addShapeToUnifiedSystem(importedShape, layerIndex: 2)
         }
 
-        // Update the layer in the document
-        if let importedIndex = document.layers.firstIndex(where: { $0.name == "Imported PDF" }) {
-            document.layers[importedIndex] = importedLayer
-        }
-        
-        // Select the imported layer (not canvas)
-        document.selectedLayerIndex = 2 // Index 2 since Canvas is at index 0 and Pasteboard is at index 1
+        // Select the working layer which contains imported shapes
+        document.selectedLayerIndex = 2 // Working layer is at index 2
         
         // Log warnings if any
         for warning in result.warnings {
