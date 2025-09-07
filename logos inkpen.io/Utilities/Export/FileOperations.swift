@@ -1089,7 +1089,9 @@ class FileOperations {
         // Pre-analyze all shapes to generate CSS classes
         for layer in document.layers {
             if !layer.isVisible { continue }
-            for shape in layer.shapes {
+            let layerIndex = document.layers.firstIndex(where: { $0.id == layer.id }) ?? 0
+            let shapesInLayer = document.getShapesForLayer(layerIndex)
+            for shape in shapesInLayer {
                 if !shape.isVisible { continue }
                 
                 let fillStyle = generateSVGFill(shape.fillStyle, gradientMapping: gradientToIdMapping)
@@ -1202,7 +1204,9 @@ class FileOperations {
             svg += "<g id=\"layer-\(layerIndex)\">\n"
             
             // Export shapes in this layer
-            for shape in layer.shapes {
+            let layerIndex = document.layers.firstIndex(where: { $0.id == layer.id }) ?? 0
+            let shapesInLayer = document.getShapesForLayer(layerIndex)
+            for shape in shapesInLayer {
                 if !shape.isVisible { continue }
                 
                 // SPECIAL-CASE RASTER IMAGES: Export as <image> with data URI
@@ -1859,7 +1863,9 @@ class FileOperations {
             context.setAlpha(layer.opacity)
             
             // Draw shapes in layer
-            for shape in layer.shapes {
+            let layerIndex = document.layers.firstIndex(where: { $0.id == layer.id }) ?? 0
+            let shapesInLayer = document.getShapesForLayer(layerIndex)
+            for shape in shapesInLayer {
                 if !shape.isVisible { continue }
                 
                 drawShapeInPDF(shape, context: context)
@@ -2006,7 +2012,9 @@ class FileOperations {
             context.setAlpha(layer.opacity)
             
             // Draw shapes in layer
-            for shape in layer.shapes {
+            let layerIndex = document.layers.firstIndex(where: { $0.id == layer.id }) ?? 0
+            let shapesInLayer = document.getShapesForLayer(layerIndex)
+            for shape in shapesInLayer {
                 if !shape.isVisible { continue }
                 
                 drawShapeInPDF(shape, context: context)
@@ -2095,7 +2103,9 @@ class FileOperations {
             context.setAlpha(layer.opacity)
             
             // Draw shapes in layer
-            for shape in layer.shapes {
+            let layerIndex = document.layers.firstIndex(where: { $0.id == layer.id }) ?? 0
+            let shapesInLayer = document.getShapesForLayer(layerIndex)
+            for shape in shapesInLayer {
                 if !shape.isVisible { continue }
                 
                 drawShapeInPDF(shape, context: context)
