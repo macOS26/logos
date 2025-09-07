@@ -15,15 +15,24 @@ extension VectorDocument {
     /// Get all shapes from all layers
     func getAllShapes() -> [VectorShape] {
         var allShapes: [VectorShape] = []
-        for layer in layers {
-            allShapes.append(contentsOf: layer.shapes)
+        // Use unified objects to get all shapes
+        for unifiedObject in unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
+                allShapes.append(shape)
+            }
         }
         return allShapes
     }
     
     /// Get total shape count across all layers
     func getTotalShapeCount() -> Int {
-        return layers.reduce(0) { $0 + $1.shapes.count }
+        // Count shapes in unified objects
+        return unifiedObjects.reduce(0) { count, unifiedObject in
+            if case .shape(_) = unifiedObject.objectType {
+                return count + 1
+            }
+            return count
+        }
     }
 }
 
