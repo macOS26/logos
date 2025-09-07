@@ -79,8 +79,9 @@ extension DrawingCanvas {
     internal func getSelectedRectangleShape() -> VectorShape? {
         guard document.selectedShapeIDs.count == 1 else { return nil }
         
-        for layer in document.layers {
-            for shape in layer.shapes {
+        // Use unified objects to find the selected shape
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
                 if document.selectedShapeIDs.contains(shape.id) && isRectangleBasedShape(shape) {
                     return shape
                 }
