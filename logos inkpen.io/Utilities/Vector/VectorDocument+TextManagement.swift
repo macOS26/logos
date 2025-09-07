@@ -173,14 +173,21 @@ extension VectorDocument {
         }
         
         // CRITICAL FIX: Track total shapes across all layers after conversion
-        let totalShapesAfter = layers.reduce(0) { $0 + $1.shapes.count }
+        let totalShapesAfter = unifiedObjects.filter { 
+            if case .shape(let shape) = $0.objectType {
+                return !shape.isTextObject
+            }
+            return false
+        }.count
         let newShapesCreated = totalShapesAfter - totalShapesBefore
         
         if newShapesCreated > 0 {
             // Find the newly created shapes by comparing before/after
             var allShapesAfter: [VectorShape] = []
-            for layer in layers {
-                allShapesAfter.append(contentsOf: layer.shapes)
+            for unifiedObject in unifiedObjects {
+                if case .shape(let shape) = unifiedObject.objectType, !shape.isTextObject {
+                    allShapesAfter.append(shape)
+                }
             }
             
             // Get the last N shapes (where N = newShapesCreated)
