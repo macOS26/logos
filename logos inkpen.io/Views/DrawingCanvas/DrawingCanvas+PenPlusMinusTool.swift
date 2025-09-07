@@ -226,8 +226,9 @@ extension DrawingCanvas {
                 if !shape.isVisible || shape.isLocked { continue }
                 
                 let layerIndex = unifiedObject.layerIndex
-                // Find shape index in the layer
-                guard let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) else { continue }
+                // Find shape index in the layer using unified system
+                let shapesInLayer = document.getShapesForLayer(layerIndex)
+                guard let shapeIndex = shapesInLayer.firstIndex(where: { $0.id == shape.id }) else { continue }
                 
                 var previousPoint: VectorPoint?
                 

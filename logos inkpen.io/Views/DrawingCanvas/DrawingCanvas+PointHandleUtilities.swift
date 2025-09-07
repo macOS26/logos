@@ -160,8 +160,9 @@ extension DrawingCanvas {
                 } else {
                     // FULL UPDATE: On drag end, update bounds and do full sync
                     updatedShape.updateBounds()
-                    // Find shape index in layer to update properly
-                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == updatedShape.id }) {
+                    // Find shape index in layer using unified system
+                    let shapesInLayer = document.getShapesForLayer(layerIndex)
+                    if let shapeIndex = shapesInLayer.firstIndex(where: { $0.id == updatedShape.id }) {
                         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                     }
                     document.updateUnifiedObjectsOptimized()
@@ -294,8 +295,9 @@ extension DrawingCanvas {
                 } else {
                     // FULL UPDATE: On drag end, update bounds and do full sync
                     updatedShape.updateBounds()
-                    // Find shape index in layer to update properly
-                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == updatedShape.id }) {
+                    // Find shape index in layer using unified system
+                    let shapesInLayer = document.getShapesForLayer(layerIndex)
+                    if let shapeIndex = shapesInLayer.firstIndex(where: { $0.id == updatedShape.id }) {
                         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                     }
                     document.updateUnifiedObjectsOptimized()
