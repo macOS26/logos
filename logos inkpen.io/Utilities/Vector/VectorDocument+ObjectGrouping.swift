@@ -106,8 +106,9 @@ extension VectorDocument {
         
         // Process each selected shape
         for shapeID in selectedShapeIDs {
-            if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                let shape = layers[layerIndex].shapes[shapeIndex]
+            let shapes = getShapesForLayer(layerIndex)
+            if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
+               let shape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
                 
                 // Check if this shape is a group
                 if shape.isGroupContainer {
@@ -159,7 +160,7 @@ extension VectorDocument {
               let selectedShapeID = selectedShapeIDs.first,
               let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == selectedShapeID }) else { return }
         
-        let flattenedGroup = layers[layerIndex].shapes[shapeIndex]
+        guard let flattenedGroup = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         
         // Only unflatten actual groups (flattened shapes)
         guard flattenedGroup.isGroup && !flattenedGroup.groupedShapes.isEmpty else { return }
@@ -287,13 +288,14 @@ extension VectorDocument {
     func releaseCompoundPath() {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count == 1,
-              let selectedShapeID = selectedShapeIDs.first,
-              let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == selectedShapeID }),
-              layers[layerIndex].shapes[shapeIndex].isCompoundPath else { return }
+              let selectedShapeID = selectedShapeIDs.first else { return }
+        
+        let shapes = getShapesForLayer(layerIndex)
+        guard let shapeIndex = shapes.firstIndex(where: { $0.id == selectedShapeID }),
+              let compoundShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
+              compoundShape.isCompoundPath else { return }
         
         saveToUndoStack()
-        
-        let compoundShape = layers[layerIndex].shapes[shapeIndex]
         
         // Extract individual subpaths from compound path
         let subpaths = extractSubpaths(from: compoundShape.path.cgPath)
@@ -337,13 +339,14 @@ extension VectorDocument {
     func releaseLoopingPath() {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count == 1,
-              let selectedShapeID = selectedShapeIDs.first,
-              let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == selectedShapeID }),
-              layers[layerIndex].shapes[shapeIndex].isCompoundPath else { return }
+              let selectedShapeID = selectedShapeIDs.first else { return }
+        
+        let shapes = getShapesForLayer(layerIndex)
+        guard let shapeIndex = shapes.firstIndex(where: { $0.id == selectedShapeID }),
+              let loopingShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
+              loopingShape.isCompoundPath else { return }
         
         saveToUndoStack()
-        
-        let loopingShape = layers[layerIndex].shapes[shapeIndex]
         
         // Extract individual subpaths from looping path
         let subpaths = extractSubpaths(from: loopingShape.path.cgPath)

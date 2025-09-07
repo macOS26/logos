@@ -15,8 +15,9 @@ extension DrawingCanvas {
         for (shapeID, points) in pointsByShape {
             // Find the shape
             for layerIndex in document.layers.indices {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    let shape = document.layers[layerIndex].shapes[shapeIndex]
+                let shapes = document.getShapesForLayer(layerIndex)
+                if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
+                   let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
                     
                     // If all points are selected, delete the entire shape
                     let pathPointCount = shape.path.elements.filter { element in
