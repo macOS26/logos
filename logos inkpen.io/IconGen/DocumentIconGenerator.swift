@@ -83,19 +83,20 @@ class DocumentIconGenerator {
         // Find the first image in the document
         var foundImage: NSImage? = nil
         
-        for layer in document.layers where layer.isVisible {
-            for shape in layer.shapes where shape.isVisible {
-                if let image = ImageContentRegistry.image(for: shape.id) {
-                    foundImage = image
-                    print("   ✅ Found image for shape: \(shape.name)")
-                    break
-                } else if let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: shape) {
-                    foundImage = hydrated
-                    print("   ✅ Hydrated image for shape: \(shape.name)")
-                    break
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
+                if shape.isVisible {
+                    if let image = ImageContentRegistry.image(for: shape.id) {
+                        foundImage = image
+                        print("   ✅ Found image for shape: \(shape.name)")
+                        break
+                    } else if let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: shape) {
+                        foundImage = hydrated
+                        print("   ✅ Hydrated image for shape: \(shape.name)")
+                        break
+                    }
                 }
             }
-            if foundImage != nil { break }
         }
         
         if let image = foundImage {
@@ -147,10 +148,11 @@ class DocumentIconGenerator {
     
     private func documentHasArtContent(_ document: VectorDocument) -> Bool {
         // Check if document has any visible shapes or text
-        let hasVisibleShapes = document.layers.contains { layer in
-            layer.isVisible && layer.shapes.contains { shape in
-                shape.isVisible
+        let hasVisibleShapes = document.unifiedObjects.contains { unifiedObject in
+            if case .shape(let shape) = unifiedObject.objectType {
+                return shape.isVisible
             }
+            return false
         }
         
         // UNIFIED OBJECT SYSTEM: Check for visible text objects via unified shapes
@@ -322,13 +324,15 @@ class DocumentIconGenerator {
         // Background rectangle removed to make SVG preview transparent
         
         // Render all visible layers and shapes (excluding Canvas and Pasteboard layers)
-        for layer in document.layers where layer.isVisible {
+        for (layerIndex, layer) in document.layers.enumerated() where layer.isVisible {
             // Skip Canvas and Pasteboard layers for SVG preview (they're UI-only layers)
             if layer.name == "Canvas" || layer.name == "Pasteboard" {
                 continue
             }
             
-            for shape in layer.shapes where shape.isVisible {
+            // Use unified objects to get shapes for this layer
+            let shapesInLayer = document.getShapesForLayer(layerIndex)
+            for shape in shapesInLayer where shape.isVisible {
                 svgContent += generateShapeSVG(shape)
             }
         }
