@@ -121,12 +121,8 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
-                // CRITICAL: Update the shape in the layers array
-                let layerIndex = unifiedObjects[objectIndex].layerIndex
-                if layerIndex < layers.count,
-                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
-                    layers[layerIndex].shapes[shapeIndex].typography?.fillOpacity = opacity
-                }
+                // Sync to layers
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }
@@ -148,13 +144,8 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
-                // CRITICAL: Update the shape in the layers array
-                let layerIndex = unifiedObjects[objectIndex].layerIndex
-                if layerIndex < layers.count,
-                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
-                    layers[layerIndex].shapes[shapeIndex].typography?.strokeWidth = width
-                    layers[layerIndex].shapes[shapeIndex].typography?.hasStroke = width > 0
-                }
+                // Sync to layers
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }
@@ -184,17 +175,8 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
-                // Update in layers
-                for layerIdx in layers.indices {
-                    if let shapeIdx = layers[layerIdx].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
-                        layers[layerIdx].shapes[shapeIdx].transform.tx += delta.x
-                        layers[layerIdx].shapes[shapeIdx].transform.ty += delta.y
-                        if let textPos = layers[layerIdx].shapes[shapeIdx].textPosition {
-                            layers[layerIdx].shapes[shapeIdx].textPosition = CGPoint(x: textPos.x + delta.x, y: textPos.y + delta.y)
-                        }
-                        break
-                    }
-                }
+                // Sync to layers
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }
@@ -235,12 +217,8 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
-                // Update the shape in the layers array
-                let layerIndex = unifiedObjects[objectIndex].layerIndex
-                if layerIndex < layers.count,
-                   let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
-                    layers[layerIndex].shapes[shapeIndex].isEditing = isEditing
-                }
+                // Sync to layers
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }
@@ -255,17 +233,10 @@ extension VectorDocument {
             // Get the existing object and shape
             let existingObject = unifiedObjects[objectIndex]
             if case .shape(let shape) = existingObject.objectType {
-                // Find and remove the shape from its current layer
-                for layerIdx in layers.indices {
-                    if let shapeIdx = layers[layerIdx].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
-                        layers[layerIdx].shapes.remove(at: shapeIdx)
-                        break
-                    }
-                }
-                
-                // Add the shape to the new layer
-                if layerIndex < layers.count {
-                    layers[layerIndex].shapes.append(shape)
+                // Remove the shape from its current layer using syncShapeToLayer with nil
+                let oldLayerIndex = existingObject.layerIndex
+                if oldLayerIndex < layers.count {
+                    layers[oldLayerIndex].shapes.removeAll { $0.id == id && $0.isTextObject }
                 }
                 
                 // Update the unified object with new layerIndex
@@ -274,6 +245,9 @@ extension VectorDocument {
                     layerIndex: layerIndex,
                     orderID: existingObject.orderID
                 )
+                
+                // Sync the shape to the new layer
+                syncShapeToLayer(shape, at: layerIndex)
             }
         }
     }

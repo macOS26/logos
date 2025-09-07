@@ -178,42 +178,46 @@ extension VectorDocument {
     }
     
     func updateShapeCornerRadiiInUnified(id: UUID, cornerRadii: [Double], path: VectorPath) {
-        // Find in legacy layer arrays and update
-        for layerIndex in 0..<layers.count {
-            if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id }) {
-                layers[layerIndex].shapes[shapeIndex].cornerRadii = cornerRadii
-                layers[layerIndex].shapes[shapeIndex].path = path
-                layers[layerIndex].shapes[shapeIndex].updateBounds()
+        // Find and update in unified objects
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.id == id && !shape.isTextObject
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                shape.cornerRadii = cornerRadii
+                shape.path = path
+                shape.updateBounds()
                 
-                // Update the specific unified object
-                if let unifiedIndex = unifiedObjects.firstIndex(where: { obj in
-                    if case .shape(let shape) = obj.objectType {
-                        return shape.id == id && !shape.isTextObject
-                    }
-                    return false
-                }) {
-                    let updatedShape = layers[layerIndex].shapes[shapeIndex]
-                    unifiedObjects[unifiedIndex] = VectorObject(
-                        shape: updatedShape,
-                        layerIndex: layerIndex,
-                        orderID: unifiedObjects[unifiedIndex].orderID
-                    )
-                }
-                break
+                // Update unified objects
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Sync to layers
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }
     
     func updateShapeGradientInUnified(id: UUID, gradient: VectorGradient, target: ColorTarget) {
-        // Find in legacy layer arrays and update
-        for layerIndex in 0..<layers.count {
-            if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id }) {
+        // Find and update in unified objects
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.id == id && !shape.isTextObject
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
                 switch target {
                 case .fill:
-                    layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
+                    shape.fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
                 case .stroke:
-                    let currentStroke = layers[layerIndex].shapes[shapeIndex].strokeStyle
-                    layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
+                    let currentStroke = shape.strokeStyle
+                    shape.strokeStyle = StrokeStyle(
                         gradient: gradient, 
                         width: currentStroke?.width ?? defaultStrokeWidth,
                         placement: currentStroke?.placement ?? defaultStrokePlacement,
@@ -224,80 +228,72 @@ extension VectorDocument {
                     )
                 }
                 
-                // Update the specific unified object
-                if let unifiedIndex = unifiedObjects.firstIndex(where: { obj in
-                    if case .shape(let shape) = obj.objectType {
-                        return shape.id == id && !shape.isTextObject
-                    }
-                    return false
-                }) {
-                    let updatedShape = layers[layerIndex].shapes[shapeIndex]
-                    unifiedObjects[unifiedIndex] = VectorObject(
-                        shape: updatedShape,
-                        layerIndex: layerIndex,
-                        orderID: unifiedObjects[unifiedIndex].orderID
-                    )
-                }
-                break
+                // Update unified objects
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Sync to layers
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }
     
     /// Generic shape update helper for complex transformations
     func updateShapeTransformAndPathInUnified(id: UUID, path: VectorPath? = nil, transform: CGAffineTransform? = nil) {
-        // Find in legacy layer arrays and update
-        for layerIndex in 0..<layers.count {
-            if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id }) {
+        // Find and update in unified objects
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.id == id && !shape.isTextObject
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
                 if let path = path {
-                    layers[layerIndex].shapes[shapeIndex].path = path
+                    shape.path = path
                 }
                 if let transform = transform {
-                    layers[layerIndex].shapes[shapeIndex].transform = transform
+                    shape.transform = transform
                 }
-                layers[layerIndex].shapes[shapeIndex].updateBounds()
+                shape.updateBounds()
                 
-                // Update the specific unified object
-                if let unifiedIndex = unifiedObjects.firstIndex(where: { obj in
-                    if case .shape(let shape) = obj.objectType {
-                        return shape.id == id && !shape.isTextObject
-                    }
-                    return false
-                }) {
-                    let updatedShape = layers[layerIndex].shapes[shapeIndex]
-                    unifiedObjects[unifiedIndex] = VectorObject(
-                        shape: updatedShape,
-                        layerIndex: layerIndex,
-                        orderID: unifiedObjects[unifiedIndex].orderID
-                    )
-                }
-                break
+                // Update unified objects
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Sync to layers
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }
     
     /// Update entire shape object in unified system (use sparingly)
     func updateEntireShapeInUnified(id: UUID, updater: (inout VectorShape) -> Void) {
-        // Find in legacy layer arrays and update
-        for layerIndex in 0..<layers.count {
-            if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id }) {
-                updater(&layers[layerIndex].shapes[shapeIndex])
-                layers[layerIndex].shapes[shapeIndex].updateBounds()
+        // Find and update in unified objects
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.id == id && !shape.isTextObject
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                updater(&shape)
+                shape.updateBounds()
                 
-                // Update the specific unified object
-                if let unifiedIndex = unifiedObjects.firstIndex(where: { obj in
-                    if case .shape(let shape) = obj.objectType {
-                        return shape.id == id && !shape.isTextObject
-                    }
-                    return false
-                }) {
-                    let updatedShape = layers[layerIndex].shapes[shapeIndex]
-                    unifiedObjects[unifiedIndex] = VectorObject(
-                        shape: updatedShape,
-                        layerIndex: layerIndex,
-                        orderID: unifiedObjects[unifiedIndex].orderID
-                    )
-                }
-                break
+                // Update unified objects
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Sync to layers
+                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }
