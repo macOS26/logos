@@ -43,8 +43,28 @@ struct ExportView: View {
     
     var body: some View {
         NavigationView {
-            Form {
-                Section(header: Text("Export Format")) {
+            exportForm
+        }
+        .navigationTitle("Export Document")
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel") {
+                    presentationMode.wrappedValue.dismiss()
+                }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Export") {
+                    exportDocument()
+                    presentationMode.wrappedValue.dismiss()
+                }
+            }
+        }
+        .frame(width: 400, height: 300)
+    }
+    
+    private var exportForm: some View {
+        Form {
+            Section(header: Text("Export Format")) {
                     Picker("Format", selection: $exportFormat) {
                         ForEach(ExportFormat.allCases, id: \.self) { format in
                             Text(format.rawValue).tag(format)
@@ -123,30 +143,12 @@ struct ExportView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    let totalShapes = document.layers.reduce(0) { $0 + $1.shapes.count }
-                    Text("Shapes: \(totalShapes)")
+                    Text("Objects: \(document.unifiedObjects.count)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
             }
-            .navigationTitle("Export Document")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Export") {
-                        exportDocument()
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-            }
         }
-        .frame(width: 400, height: 300)
-    }
     
     private func exportDocument() {
         let panel = NSSavePanel()
@@ -186,4 +188,3 @@ struct ExportView: View {
         }
     }
 }
-

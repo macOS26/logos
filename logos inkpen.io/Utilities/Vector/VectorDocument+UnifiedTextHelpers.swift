@@ -233,11 +233,8 @@ extension VectorDocument {
             // Get the existing object and shape
             let existingObject = unifiedObjects[objectIndex]
             if case .shape(let shape) = existingObject.objectType {
-                // Remove the shape from its current layer using syncShapeToLayer with nil
-                let oldLayerIndex = existingObject.layerIndex
-                if oldLayerIndex < layers.count {
-                    layers[oldLayerIndex].shapes.removeAll { $0.id == id && $0.isTextObject }
-                }
+                // Shape will be moved through unified objects
+                // No need to manually remove from layers array
                 
                 // Update the unified object with new layerIndex
                 unifiedObjects[objectIndex] = VectorObject(

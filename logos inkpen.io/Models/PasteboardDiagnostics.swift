@@ -94,21 +94,21 @@ class PasteboardDiagnostics {
         var test = BackgroundShapesTest()
         
         if document.layers.count >= 2 {
-            // Check pasteboard shape
-            let pasteboardLayer = document.layers[0]
-            test.pasteboardShapeCount = pasteboardLayer.shapes.count
-            if pasteboardLayer.shapes.count > 0 {
-                let pasteboardShape = pasteboardLayer.shapes[0]
+            // Check pasteboard shape using unified objects
+            let pasteboardShapes = document.getShapesForLayer(0)
+            test.pasteboardShapeCount = pasteboardShapes.count
+            if pasteboardShapes.count > 0 {
+                let pasteboardShape = pasteboardShapes[0]
                 test.pasteboardShapeName = pasteboardShape.name
                 test.pasteboardBounds = pasteboardShape.bounds
                 test.pasteboardFillColor = pasteboardShape.fillStyle?.color
             }
             
-            // Check canvas shape
-            let canvasLayer = document.layers[1]
-            test.canvasShapeCount = canvasLayer.shapes.count
-            if canvasLayer.shapes.count > 0 {
-                let canvasShape = canvasLayer.shapes[0]
+            // Check canvas shape using unified objects
+            let canvasShapes = document.getShapesForLayer(1)
+            test.canvasShapeCount = canvasShapes.count
+            if canvasShapes.count > 0 {
+                let canvasShape = canvasShapes[0]
                 test.canvasShapeName = canvasShape.name
                 test.canvasBounds = canvasShape.bounds
                 test.canvasFillColor = canvasShape.fillStyle?.color

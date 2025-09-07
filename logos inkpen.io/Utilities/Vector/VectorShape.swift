@@ -853,7 +853,7 @@ extension VectorShape {
 struct VectorLayer: Codable, Hashable, Identifiable {
     var id: UUID
     var name: String
-    var shapes: [VectorShape] = [] // Analyzing before removal
+    // REMOVED: shapes - unified objects is the SINGLE source of truth
     var isVisible: Bool
     var isLocked: Bool
     var opacity: Double
@@ -862,7 +862,7 @@ struct VectorLayer: Codable, Hashable, Identifiable {
     init(name: String, shapes: [VectorShape] = [], isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal) {
         self.id = UUID()
         self.name = name
-        self.shapes = shapes
+        // shapes parameter ignored - unified objects is the source
         self.isVisible = isVisible
         self.isLocked = isLocked
         self.opacity = opacity
@@ -870,11 +870,11 @@ struct VectorLayer: Codable, Hashable, Identifiable {
     }
     
     mutating func addShape(_ shape: VectorShape) {
-        shapes.append(shape)
+        // NO-OP: Shapes managed through unified objects
     }
     
     mutating func removeShape(_ shape: VectorShape) {
-        shapes.removeAll { $0.id == shape.id }
+        // NO-OP: Shapes managed through unified objects
     }
 }
 

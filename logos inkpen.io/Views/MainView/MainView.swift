@@ -371,7 +371,7 @@ struct MainView: View {
         // Clear the current document URL (imported document needs to be saved)
         currentDocumentURL = nil
         
-        Log.info("✅ Loaded imported SVG document into Ink Pen - \(document.layers.count) layers, \(document.layers.reduce(0) { $0 + $1.shapes.count }) shapes", category: .fileOperations)
+        Log.info("✅ Loaded imported SVG document into Ink Pen - \(document.layers.count) layers, \(document.unifiedObjects.count) objects", category: .fileOperations)
         
         // Defer fit to page operation to prevent blocking
         Task {

@@ -364,10 +364,8 @@ extension VectorDocument {
         
         defer { isUndoRedoOperation = wasUndoRedoOperation }
         
-        // CRITICAL FIX: Preserve original shapes for proper restoration
-        let originalShapes = layers.map { $0.shapes }
-        
-        // Clear existing shapes arrays to rebuild from unified objects
+        // Unified objects is the source - no need to preserve shapes array
+        // Clear unified objects for each layer
         for layerIndex in layers.indices {
             removeShapesUnified(layerIndex: layerIndex, where: { _ in true })
         }
@@ -386,12 +384,8 @@ extension VectorDocument {
                     // Just add to shapes array for unified system
                     appendShapeToLayerUnified(layerIndex: unifiedObject.layerIndex, shape: shape)
                 } else {
-                    // Regular shape - restore from original or use from unified
-                    if let originalShape = originalShapes[unifiedObject.layerIndex].first(where: { $0.id == shape.id }) {
-                        appendShapeToLayerUnified(layerIndex: unifiedObject.layerIndex, shape: originalShape)
-                    } else {
-                        appendShapeToLayerUnified(layerIndex: unifiedObject.layerIndex, shape: shape)
-                    }
+                    // Regular shape - use from unified objects
+                    appendShapeToLayerUnified(layerIndex: unifiedObject.layerIndex, shape: shape)
                 }
             }
         }

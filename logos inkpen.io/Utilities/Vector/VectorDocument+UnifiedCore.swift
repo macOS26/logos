@@ -11,21 +11,12 @@ import CoreGraphics
 // MARK: - Core Unified Object Management
 extension VectorDocument {
     
-    /// Sync a shape back to the layers array - unified system helper
-    /// This is the ONLY place that should directly access layers[].shapes
+    /// NO LONGER NEEDED - unified objects is the single source of truth
+    /// This method is now a no-op for compatibility
     func syncShapeToLayer(_ shape: VectorShape, at layerIndex: Int) {
-        guard layerIndex >= 0 && layerIndex < layers.count else {
-            Log.fileOperation("⚠️ Invalid layer index \(layerIndex) for sync", level: .warning)
-            return
-        }
-        
-        // Find existing shape in layer and update it
-        if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-            layers[layerIndex].shapes[shapeIndex] = shape
-            Log.fileOperation("✅ Synced shape \(shape.id) to layer \(layerIndex) at index \(shapeIndex)", level: .debug)
-        } else {
-            Log.fileOperation("⚠️ Shape \(shape.id) not found in layer \(layerIndex) for sync", level: .warning)
-        }
+        // NO-OP: Everything is managed through unified objects
+        // No sync needed since there's only one source of truth
+        Log.fileOperation("✅ Shape \(shape.id) managed through unified objects", level: .debug)
     }
     
     /// Get shape at specific index (compatibility wrapper)

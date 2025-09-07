@@ -98,7 +98,7 @@ struct PathOperationsPanel: View {
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
                         .help("Remove overlapping points and merge their curve data smoothly (⌘⇧K)")
-                        .disabled(document.layers.flatMap(\.shapes).isEmpty)
+                        .disabled(document.unifiedObjects.isEmpty)
                         
                         Button("Clean All Paths") {
                             ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 1.0)
@@ -106,7 +106,7 @@ struct PathOperationsPanel: View {
                         .buttonStyle(.bordered)
                         .controlSize(.small)
                         .help("Clean duplicate points in all shapes in the document (⌘⌥K)")
-                        .disabled(document.layers.flatMap(\.shapes).isEmpty)
+                        .disabled(document.unifiedObjects.isEmpty)
                     }
                     
                     HStack(spacing: 6) {
@@ -124,7 +124,7 @@ struct PathOperationsPanel: View {
                         .buttonStyle(.bordered)
                         .controlSize(.small)
                         .help("Remove overlaps from all shapes in the document")
-                        .disabled(document.layers.flatMap(\.shapes).isEmpty)
+                        .disabled(document.unifiedObjects.isEmpty)
                     }
                 }
                 .padding(.horizontal, 12)
@@ -557,7 +557,12 @@ struct PathOperationsPanel: View {
     
     /// Remove overlapping areas from all shapes in the document
     private func removeOverlapFromAllShapes() {
-        let allShapes = document.layers.flatMap { $0.shapes }
+        let allShapes = document.unifiedObjects.compactMap { obj -> VectorShape? in
+            if case .shape(let shape) = obj.objectType {
+                return shape
+            }
+            return nil
+        }
         guard !allShapes.isEmpty else { return }
         
         var processedCount = 0

@@ -275,13 +275,14 @@ class SVGImportDebugTest: ObservableObject {
             )
         ]
         
-        // Add shapes to layer
-        var layerWithShapes = testLayer
-        layerWithShapes.shapes = testShapes
-        
         // Create document
         let document = VectorDocument(settings: settings)
-        document.layers = [layerWithShapes]
+        document.layers = [testLayer]
+        
+        // Add shapes through unified objects
+        for shape in testShapes {
+            document.addShape(shape, to: 0)
+        }
         
         return (true, "Ink Pen Document created successfully", "Document with \(testShapes.count) shapes in 1 layer")
     }

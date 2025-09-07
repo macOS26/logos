@@ -167,12 +167,14 @@ class SVGToInkPenImporter: ObservableObject {
         // Extract shapes from SVG (simplified - in real implementation you'd parse SVG elements)
         let shapes = extractShapesFromSVG(svgDoc, svgData: svgData)
         
-        var layerWithShapes = mainLayer
-        layerWithShapes.shapes = shapes
-        
         // Create document
         let document = VectorDocument(settings: settings)
-        document.layers = [layerWithShapes]
+        document.layers = [mainLayer]
+        
+        // Add shapes to unified system
+        for shape in shapes {
+            document.addShapeToUnifiedSystem(shape, layerIndex: 0)
+        }
         
         addResult("Shapes Extracted", success: true, message: "Created \(shapes.count) shapes from SVG")
         
@@ -500,7 +502,7 @@ struct SVGImportView: View {
                     VStack(alignment: .leading, spacing: 5) {
                         Text("Size: \(Int(document.settings.width)) × \(Int(document.settings.height)) \(document.settings.unit.rawValue)")
                         Text("Layers: \(document.layers.count)")
-                        Text("Total Shapes: \(document.layers.reduce(0) { $0 + $1.shapes.count })")
+                        Text("Total Shapes: \(document.unifiedObjects.count)")
                     }
                     .font(.caption)
                     .foregroundColor(.secondary)
