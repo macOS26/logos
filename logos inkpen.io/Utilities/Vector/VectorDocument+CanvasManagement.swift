@@ -72,8 +72,24 @@ extension VectorDocument {
     /// Update pasteboard layer to match canvas size and center it
     func updatePasteboardLayer() {
         guard layers.count > 0,
-              layers[0].name == "Pasteboard",
-              let pasteboardShape = layers[0].shapes.first(where: { $0.name == "Pasteboard Background" }) else {
+              layers[0].name == "Pasteboard" else {
+            // Logging removed
+            return
+        }
+        
+        // Use unified objects to find pasteboard shape
+        let pasteboardShape = unifiedObjects
+            .filter { $0.layerIndex == 0 }
+            .compactMap { object -> VectorShape? in
+                if case .shape(let shape) = object.objectType,
+                   shape.name == "Pasteboard Background" {
+                    return shape
+                }
+                return nil
+            }
+            .first
+        
+        guard let pasteboardShape = pasteboardShape else {
             // Logging removed
             return
         }
@@ -87,8 +103,16 @@ extension VectorDocument {
             y: (canvasSize.height - pasteboardSize.height) / 2
         )
         
-        // Find the pasteboard shape and update it
-        if let pasteboardIndex = layers[0].shapes.firstIndex(where: { $0.name == "Pasteboard Background" }) {
+        // Find the pasteboard shape index in unified objects and update it
+        if unifiedObjects.contains(where: { object in
+            if case .shape(let shape) = object.objectType {
+                return shape.name == "Pasteboard Background" && object.layerIndex == 0
+            }
+            return false
+        }) {
+            // Get the shape index within the layer for setShapeAtIndex
+            let shapesInLayer = getShapesForLayer(0)
+            guard let pasteboardIndex = shapesInLayer.firstIndex(where: { $0.name == "Pasteboard Background" }) else { return }
             let newPasteboardRect = VectorShape.rectangle(
                 at: pasteboardOrigin,
                 size: pasteboardSize
@@ -117,7 +141,8 @@ extension VectorDocument {
         Log.info("   Selected layer index: \(selectedLayerIndex ?? -1)", category: .general)
         for (index, layer) in layers.enumerated() {
             let marker = (selectedLayerIndex == index) ? "👈" : "  "
-            Log.info("   \(marker) Layer \(index): '\(layer.name)' - locked: \(layer.isLocked), visible: \(layer.isVisible), shapes: \(layer.shapes.count)", category: .general)
+            let shapeCount = getShapesForLayer(index).count
+            Log.info("   \(marker) Layer \(index): '\(layer.name)' - locked: \(layer.isLocked), visible: \(layer.isVisible), shapes: \(shapeCount)", category: .general)
         }
         Log.info("   Selected shapes: \(selectedShapeIDs.count)", category: .general)
         Log.info("   Current tool: \(currentTool)", category: .general)
@@ -126,9 +151,15 @@ extension VectorDocument {
     /// Update canvas layer rectangle to match current `settings.sizeInPoints`
     func updateCanvasLayer() {
         guard layers.count > 1,
-              layers[1].name == "Canvas",
-              let canvasIndex = layers[1].shapes.firstIndex(where: { $0.name == "Canvas Background" }) else {
+              layers[1].name == "Canvas" else {
             Log.fileOperation("⚠️ Cannot update canvas - canvas layer not found", level: .info)
+            return
+        }
+        
+        // Use unified objects to find canvas shape index
+        let shapesInLayer = getShapesForLayer(1)
+        guard let canvasIndex = shapesInLayer.firstIndex(where: { $0.name == "Canvas Background" }) else {
+            Log.fileOperation("⚠️ Cannot update canvas - canvas background not found", level: .info)
             return
         }
         let newCanvasRect = VectorShape.rectangle(
