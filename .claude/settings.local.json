@@ -45,7 +45,8 @@
       "Bash(swift test:*)",
       "Bash(awk:*)",
       "Bash(mcp__xcf-server__build_project:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []
