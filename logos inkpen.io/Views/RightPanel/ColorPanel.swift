@@ -253,14 +253,19 @@ struct ColorPanel: View {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     // Find the shape in the layers array and update it
-                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                        if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
-                            document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color)
-                        } else {
-                            document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
+                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
+                        let shapes = document.getShapesForLayer(layerIndex)
+                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }),
+                           let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                            var updatedShape = currentShape
+                            if updatedShape.fillStyle == nil {
+                                updatedShape.fillStyle = FillStyle(color: color)
+                            } else {
+                                updatedShape.fillStyle?.color = color
+                            }
+                            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
+                            hasChanges = true
                         }
-                        hasChanges = true
                     }
                     
                     // Text objects are now handled as VectorShape with isTextObject = true
@@ -286,14 +291,19 @@ struct ColorPanel: View {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     // Find the shape in the layers array and update it
-                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                        if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
-                        } else {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
+                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
+                        let shapes = document.getShapesForLayer(layerIndex)
+                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }),
+                           let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                            var updatedShape = currentShape
+                            if updatedShape.strokeStyle == nil {
+                                updatedShape.strokeStyle = StrokeStyle(color: color, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
+                            } else {
+                                updatedShape.strokeStyle?.color = color
+                            }
+                            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
+                            hasChanges = true
                         }
-                        hasChanges = true
                     }
                     
                     // MIGRATED: Use unified object system to update text stroke color
