@@ -13,14 +13,6 @@ extension VectorDocument {
     
     /// Remove shape from both layers array and unified system
     func removeShapeFromUnifiedSystem(id: UUID) {
-        // Remove from layers array
-        for layerIndex in 0..<layers.count {
-            if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == id }) {
-                layers[layerIndex].shapes.remove(at: shapeIndex)
-                break
-            }
-        }
-        
         // Remove from unified objects
         unifiedObjects.removeAll { obj in
             if case .shape(let shape) = obj.objectType {
@@ -41,10 +33,7 @@ extension VectorDocument {
     
     /// Remove text from unified system
     func removeTextFromUnifiedSystem(id: UUID) {
-        // MIGRATION: Remove text shape from layers (text is now stored as shapes)
-        for layerIndex in layers.indices {
-            layers[layerIndex].shapes.removeAll { $0.id == id && $0.isTextObject }
-        }
+        // Text is now only in unified objects
         
         // MIGRATION: textObjects is rebuilt from unified, no direct removal needed
         
@@ -93,13 +82,7 @@ extension VectorDocument {
                     orderID: unifiedObjects[unifiedIndex].orderID
                 )
                 
-                // MIGRATION: Also update in layers array
-                for layerIdx in layers.indices {
-                    if let shapeIdx = layers[layerIdx].shapes.firstIndex(where: { $0.id == id && $0.isTextObject }) {
-                        layers[layerIdx].shapes[shapeIdx] = updatedShape
-                        break
-                    }
-                }
+                // Shape is now only in unified objects
                 
                 // Text is now fully managed in unified system
             }
@@ -209,9 +192,7 @@ extension VectorDocument {
         }
         
         // Remove text shapes from layers
-        for layerIndex in layers.indices {
-            layers[layerIndex].shapes.removeAll { $0.isTextObject }
-        }
+        // Text objects are now only in unified system
     }
     
     /// Removes text objects matching a condition
