@@ -58,8 +58,9 @@ extension DrawingCanvas {
     /// Get the selected shape that has a gradient
     private func getSelectedShapeWithGradient() -> VectorShape? {
         guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first,
-              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+              let firstSelectedID = document.selectedShapeIDs.first else { return nil }
+        let shapes = document.getShapesForLayer(layerIndex)
+        guard let shape = shapes.first(where: { $0.id == firstSelectedID }),
               let fillStyle = shape.fillStyle,
               case .gradient = fillStyle.color else {
             return nil
@@ -232,7 +233,8 @@ extension DrawingCanvas {
         // Log.fileOperation("🎯 GRADIENT TOOL: updateShapeGradientOptimized called with isLiveDrag: \(isLiveDrag)", level: .info) // Disabled for performance
         
         // Find and update the shape in the document using unified helper
-        if document.layers[layerIndex].shapes.contains(where: { $0.id == shape.id }) {
+        let shapes = document.getShapesForLayer(layerIndex)
+        if shapes.contains(where: { $0.id == shape.id }) {
             document.updateShapeGradientInUnified(id: shape.id, gradient: newGradient, target: .fill)
             
             if isLiveDrag {
@@ -253,8 +255,9 @@ extension DrawingCanvas {
     /// Helper function to get selected shape gradient (copied from StrokeFillPanel)
     private func getSelectedShapeGradient(document: VectorDocument) -> VectorGradient? {
         guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first,
-              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+              let firstSelectedID = document.selectedShapeIDs.first else { return nil }
+        let shapes = document.getShapesForLayer(layerIndex)
+        guard let shape = shapes.first(where: { $0.id == firstSelectedID }),
               let fillStyle = shape.fillStyle,
               case .gradient(let gradient) = fillStyle.color else {
             return nil

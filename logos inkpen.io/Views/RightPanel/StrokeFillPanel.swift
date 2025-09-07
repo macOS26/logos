@@ -474,7 +474,8 @@ struct StrokeFillPanel: View {
         for shapeID in activeShapeIDs {
             // Find the shape across all layers
             for layerIndex in document.layers.indices {
-                if document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) != nil {
+                let shapes = document.getShapesForLayer(layerIndex)
+                if shapes.firstIndex(where: { $0.id == shapeID }) != nil {
                     // Use unified helper instead of direct property access
                     document.updateShapeStrokePlacementInUnified(id: shapeID, placement: placement)
                     break // Found the shape, no need to check other layers
@@ -492,8 +493,10 @@ struct StrokeFillPanel: View {
             }) {
                 // Find updated shape data
                 for layerIndex in document.layers.indices {
-                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                        document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                    let shapes = document.getShapesForLayer(layerIndex)
+                    if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
+                       let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                        document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
                         break
                     }
                 }

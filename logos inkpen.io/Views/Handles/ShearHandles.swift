@@ -266,11 +266,16 @@ struct ShearHandles: View {
             }
             return false
         }),
-        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-        let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
+        let shapes = document.getShapesForLayer(layerIndex)
+        if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
             
             // CRITICAL FIX: Reset to initial transform first to prevent drift accumulation
-            document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
+            if let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                var updatedShape = currentShape
+                updatedShape.transform = initialTransform
+                document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
+            }
             
             // Apply the final transform to coordinates and reset transform to identity
             applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
@@ -285,6 +290,7 @@ struct ShearHandles: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.updatePathPointsAfterShear()
             }
+        }
         } else {
             Log.error("❌ SHEAR FAILED: Could not find shape in unified objects system", category: .error)
         }
@@ -589,7 +595,7 @@ struct ShearHandles: View {
     /// PROFESSIONAL COORDINATE SYSTEM FIX: Apply transform to actual coordinates
     /// This ensures object origin moves with the object (Professional behavior)
     private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int, transform: CGAffineTransform? = nil) {
-        let shape = document.layers[layerIndex].shapes[shapeIndex]
+        guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         let currentTransform = transform ?? shape.transform
         
         // Don't apply identity transforms
@@ -639,9 +645,11 @@ struct ShearHandles: View {
         let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
         
         // Update the shape with transformed path and reset transform to identity
-        document.layers[layerIndex].shapes[shapeIndex].path = transformedPath
-        document.layers[layerIndex].shapes[shapeIndex].transform = .identity
-        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+        var updatedShape = shape
+        updatedShape.path = transformedPath
+        updatedShape.transform = .identity
+        updatedShape.updateBounds()
+        document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
         
         Log.info("✅ Shape coordinates updated after shear - object origin stays with object", category: .fileOperations)
     }

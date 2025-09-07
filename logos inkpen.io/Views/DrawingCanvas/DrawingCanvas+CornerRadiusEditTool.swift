@@ -511,8 +511,9 @@ extension DrawingCanvas {
     private func updateCornerRadius(shapeID: UUID, cornerIndex: Int, radiusChange: Double) {
         // Find and update the shape
         for layerIndex in document.layers.indices {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                var shape = document.layers[layerIndex].shapes[shapeIndex]
+            let shapes = document.getShapesForLayer(layerIndex)
+            if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }) {
+                guard var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
                 
                 // ENABLE CORNER RADIUS SUPPORT: Convert regular rectangles/squares to corner-radius-enabled
                 if !shape.isRoundedRectangle && isRectangleBasedShape(shape) {
@@ -571,8 +572,9 @@ extension DrawingCanvas {
     /// Update specific corner radius to an absolute value and regenerate path
     func updateCornerRadiusToValue(shapeID: UUID, cornerIndex: Int, newRadius: Double) {
         for layerIndex in document.layers.indices {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                var shape = document.layers[layerIndex].shapes[shapeIndex]
+            let shapes = document.getShapesForLayer(layerIndex)
+            if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }) {
+                guard var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
                 
                 // Update the corner radii array
                 var updatedRadii = shape.cornerRadii
@@ -615,8 +617,9 @@ extension DrawingCanvas {
     /// Update all corner radii to absolute values and regenerate path (for proportional editing)
     func updateAllCornerRadiiToValues(shapeID: UUID, cornerRadii: [Double]) {
         for layerIndex in document.layers.indices {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                var shape = document.layers[layerIndex].shapes[shapeIndex]
+            let shapes = document.getShapesForLayer(layerIndex)
+            if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }) {
+                guard var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
                 
                 // Ensure we have exactly 4 corner radii
                 var updatedRadii = cornerRadii

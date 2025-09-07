@@ -60,7 +60,7 @@ struct LayersPanel: View {
     private func layerRowContent(for layerIndex: Int) -> some View {
         ProfessionalLayerRow(
             layerIndex: layerIndex,
-            layer: document.layers[layerIndex],
+            layer: layerIndex < document.layers.count ? document.layers[layerIndex] : document.layers[0],
             document: document
         )
     }

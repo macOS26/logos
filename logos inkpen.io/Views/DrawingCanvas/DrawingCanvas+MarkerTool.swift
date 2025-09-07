@@ -670,12 +670,16 @@ extension DrawingCanvas {
     /// Apply self-union operation to remove overlapping areas within the single marker stroke
     private func applySelfUnionToMarkerStroke(shapeIndex: Int, layerIndex: Int) {
         
-        guard shapeIndex < document.layers[layerIndex].shapes.count else { 
-            Log.fileOperation("🚨 MARKER ERROR: Shape index \(shapeIndex) out of bounds! Layer has \(document.layers[layerIndex].shapes.count) shapes", level: .info)
+        let shapes = document.getShapesForLayer(layerIndex)
+        guard shapeIndex < shapes.count else { 
+            Log.fileOperation("🚨 MARKER ERROR: Shape index \(shapeIndex) out of bounds! Layer has \(shapes.count) shapes", level: .info)
             return 
         }
         
-        let markerStroke = document.layers[layerIndex].shapes[shapeIndex]
+        guard let markerStroke = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else {
+            Log.fileOperation("🚨 MARKER ERROR: Could not get shape at index \(shapeIndex)", level: .info)
+            return
+        }
         
         // VERIFY: Make sure we're operating on the correct shape
         guard markerStroke.id == activeMarkerShape?.id else {
@@ -709,7 +713,10 @@ extension DrawingCanvas {
     
     /// Apply union operation for markers with same stroke/fill color or single color
     private func applySingleUnionToMarkerStroke(shapeIndex: Int, layerIndex: Int) {
-        let markerStroke = document.layers[layerIndex].shapes[shapeIndex]
+        guard let markerStroke = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else {
+            Log.fileOperation("🚨 MARKER ERROR: Could not get shape at index \(shapeIndex)", level: .info)
+            return
+        }
         
         // Convert VectorPath to CGPath for boolean operations
         let originalPath = markerStroke.path.cgPath
@@ -738,7 +745,9 @@ extension DrawingCanvas {
             let cleanedVectorPath = VectorPath(cgPath: cleanedPath)
             
             // Update the marker stroke with the cleaned path
-            document.layers[layerIndex].shapes[shapeIndex].path = cleanedVectorPath
+            var updatedShape = markerStroke
+            updatedShape.path = cleanedVectorPath
+            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
             
             // CRITICAL FIX: Sync unified objects system to ensure the updated shape is rendered
             document.updateUnifiedObjectsOptimized()
@@ -751,7 +760,10 @@ extension DrawingCanvas {
     
     /// Apply expanded stroke union for markers with same stroke/fill color
     private func applyExpandedStrokeUnionToMarkerStroke(shapeIndex: Int, layerIndex: Int) {
-        let markerStroke = document.layers[layerIndex].shapes[shapeIndex]
+        guard let markerStroke = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else {
+            Log.fileOperation("🚨 MARKER ERROR: Could not get shape at index \(shapeIndex)", level: .info)
+            return
+        }
         
         // Convert VectorPath to CGPath for boolean operations
         let originalPath = markerStroke.path.cgPath
@@ -820,7 +832,10 @@ extension DrawingCanvas {
     
     /// Apply separate union operations for markers with different stroke/fill colors
     private func applyDualUnionToMarkerStroke(shapeIndex: Int, layerIndex: Int) {
-        let markerStroke = document.layers[layerIndex].shapes[shapeIndex]
+        guard let markerStroke = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else {
+            Log.fileOperation("🚨 MARKER ERROR: Could not get shape at index \(shapeIndex)", level: .info)
+            return
+        }
         
         // For different colors, we need to expand the stroke and union separately
         if let strokeStyle = markerStroke.strokeStyle {
@@ -880,7 +895,7 @@ extension DrawingCanvas {
         // PRIORITY 2: If shapes are selected, use their color
         if let layerIndex = document.selectedLayerIndex,
            let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+           let shape = document.getShapesForLayer(layerIndex).first(where: { $0.id == firstSelectedID }),
            let fillColor = shape.fillStyle?.color {
             return fillColor
         }
@@ -900,7 +915,7 @@ extension DrawingCanvas {
         // PRIORITY 2: If shapes are selected, use their opacity
         if let layerIndex = document.selectedLayerIndex,
            let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+           let shape = document.getShapesForLayer(layerIndex).first(where: { $0.id == firstSelectedID }),
            let opacity = shape.fillStyle?.opacity {
             return opacity
         }
@@ -920,7 +935,7 @@ extension DrawingCanvas {
         // PRIORITY 2: If shapes are selected, use their color
         if let layerIndex = document.selectedLayerIndex,
            let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+           let shape = document.getShapesForLayer(layerIndex).first(where: { $0.id == firstSelectedID }),
            let strokeColor = shape.strokeStyle?.color {
             return strokeColor
         }
@@ -940,7 +955,7 @@ extension DrawingCanvas {
         // PRIORITY 2: If shapes are selected, use their opacity
         if let layerIndex = document.selectedLayerIndex,
            let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+           let shape = document.getShapesForLayer(layerIndex).first(where: { $0.id == firstSelectedID }),
            let opacity = shape.strokeStyle?.opacity {
             return opacity
         }
@@ -960,7 +975,7 @@ extension DrawingCanvas {
         // PRIORITY 2: If shapes are selected, use their width
         if let layerIndex = document.selectedLayerIndex,
            let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+           let shape = document.getShapesForLayer(layerIndex).first(where: { $0.id == firstSelectedID }),
            let width = shape.strokeStyle?.width {
             return width
         }

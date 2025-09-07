@@ -593,14 +593,19 @@ struct EnvelopeHandles: View {
             }
             return false
         }),
-        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-        let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-            if document.layers[layerIndex].shapes[shapeIndex].isGroup {
-                for i in 0..<document.layers[layerIndex].shapes[shapeIndex].groupedShapes.count {
-                    document.layers[layerIndex].shapes[shapeIndex].groupedShapes[i].updateBounds()
+        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
+        let shapes = document.getShapesForLayer(layerIndex)
+        if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
+            if var currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                currentShape.updateBounds()
+                if currentShape.isGroup {
+                    for i in 0..<currentShape.groupedShapes.count {
+                        currentShape.groupedShapes[i].updateBounds()
+                    }
                 }
+                document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: currentShape)
             }
+        }
         } else {
             Log.error("❌ WARP FAILED: Could not find shape in unified objects system", category: .error)
         }
@@ -622,10 +627,11 @@ struct EnvelopeHandles: View {
             }
             return false
         }),
-        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-        let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) else { return }
+        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil else { return }
+        let shapes = document.getShapesForLayer(layerIndex)
+        guard let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) else { return }
         
-        let currentShape = document.layers[layerIndex].shapes[shapeIndex]
+        guard let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         
         if currentShape.isWarpObject {
             // Update existing warp object with new warped coordinates
