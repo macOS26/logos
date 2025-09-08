@@ -215,258 +215,258 @@ class FileOperations {
         }
     }
     
-    static func importFromSVG(url: URL) async throws -> VectorDocument {
-        Log.fileOperation("🎨 Importing document from SVG: \(url.path)", level: .info)
-        
-        let result = await VectorImportManager.shared.importVectorFile(from: url)
-        
-        if !result.success {
-            let errorMessage = result.errors.first?.localizedDescription ?? "Unknown SVG import error"
-            throw VectorImportError.parsingError("Failed to import SVG: \(errorMessage)", line: nil)
-        }
-        
-        // Create a new VectorDocument from the imported shapes
-        let document = VectorDocument()
-        
-        // FIXED: Use viewBox/document dimensions from SVG file, not calculated bounds
-        // This ensures objects stay within their intended viewBox bounds
-        let svgDocumentSize = result.metadata.documentSize
-        let canvasWidth = max(svgDocumentSize.width, 100) // Minimum 100pt
-        let canvasHeight = max(svgDocumentSize.height, 100) // Minimum 100pt
-        
-        // Set document size based on SVG viewBox/dimensions
-        document.settings.width = canvasWidth / 72.0 // Convert to inches
-        document.settings.height = canvasHeight / 72.0
-        document.settings.unit = .inches
-        
-        Log.fileOperation("🎯 SVG IMPORT USING VIEWBOX DIMENSIONS:", level: .info)
-        Log.info("   SVG document size: \(svgDocumentSize)", category: .general)
-        Log.info("   Canvas size: \(canvasWidth) × \(canvasHeight) pts", category: .general)
-        print("   Document size: \(String(format: "%.2f", canvasWidth/72.0)) × \(String(format: "%.2f", canvasHeight/72.0)) inches")
-        
-        // Calculate actual artwork bounds for positioning
-        var artworkBounds = CGRect.null
-        for shape in result.shapes {
-            // CRITICAL FIX: Use transformed bounds to get actual positioned bounds
-            let shapeBounds = shape.bounds.applying(shape.transform)
-            if artworkBounds.isNull {
-                artworkBounds = shapeBounds
-            } else {
-                artworkBounds = artworkBounds.union(shapeBounds)
-            }
-        }
-        
-        if !artworkBounds.isNull {
-            Log.info("   Actual artwork bounds: \(artworkBounds)", category: .general)
-        }
-        
-        // VectorDocument init already created Pasteboard, Canvas and Working layers with backgrounds
-        // Canvas size already set above in inches - don't override with raw pixel values
-        
-        // FIXED: Position objects at viewBox origin (0,0), not artwork bounds origin
-        // This preserves the intended positioning from the SVG file
-        let translateX: CGFloat = 0  // Keep at viewBox origin
-        let translateY: CGFloat = 0  // Keep at viewBox origin
-        
-        Log.fileOperation("🎯 POSITIONING CALCULATION:", level: .info)
-        Log.info("   Using viewBox origin (0,0) - preserving SVG positioning", category: .general)
-        if !artworkBounds.isNull {
-            Log.info("   Artwork bounds: \(artworkBounds)", category: .general)
-            if artworkBounds.minX < 0 || artworkBounds.minY < 0 || 
-               artworkBounds.maxX > canvasWidth || artworkBounds.maxY > canvasHeight {
-                Log.info("   ⚠️ WARNING: Some objects are positioned outside the viewBox bounds!", category: .general)
-            }
-        }
-        
-        // Add all imported shapes to the layer with translation applied to coordinates (not transforms)
-        for shape in result.shapes {
-            var centeredShape = shape
-            
-            // CRITICAL FIX: Apply centering to actual coordinates, not transforms
-            // This prevents coordinate drift during zoom operations
-            let centeringTransform = CGAffineTransform(translationX: translateX, y: translateY)
-            let finalTransform = shape.transform.concatenating(centeringTransform)
-            
-            // CRITICAL FIX: Only apply transform if it's not identity
-            // This preserves the original shape's properties and bounds
-            if !finalTransform.isIdentity {
-                centeredShape = applyTransformToShapeCoordinates(shape: centeredShape, transform: finalTransform)
-                centeredShape.transform = .identity
-            }
-            
-            // Ensure the shape is editable
-            centeredShape.isLocked = false
-            centeredShape.isVisible = true
-            
-            // Debug: Log shape being added with bounds
-            Log.fileOperation("✅ Adding SVG shape '\(centeredShape.name)' to unified system at layer 2", level: .debug)
-            Log.fileOperation("   📐 Shape bounds: \(centeredShape.bounds)", level: .debug)
-            Log.fileOperation("   👁️ Shape visible: \(centeredShape.isVisible)", level: .debug)
-            Log.fileOperation("   🎨 Fill: \(centeredShape.fillStyle != nil ? String(describing: centeredShape.fillStyle!.color) : "none")", level: .debug)
-            Log.fileOperation("   🖌️ Stroke: \(centeredShape.strokeStyle != nil ? String(describing: centeredShape.strokeStyle!.color) : "none")", level: .debug)
-            
-            // Add shape to unified system (layer index 2 for imported layer)
-            document.addShapeToUnifiedSystem(centeredShape, layerIndex: 2)
-        }
-
-        // Text objects are now imported as shapes with isTextObject=true
-        
-        // Select the working layer which contains imported shapes
-        document.selectedLayerIndex = 2 // Working layer is at index 2
-        
-        // Log warnings if any
-        for warning in result.warnings {
-            Log.fileOperation("⚠️ SVG Import Warning: \(warning)", level: .info)
-        }
-        
-        Log.info("✅ Successfully imported SVG document with \(result.shapes.count) shapes", category: .fileOperations)
-        Log.fileOperation("📐 Canvas sized to exact artwork dimensions: \(canvasWidth) × \(canvasHeight) pts", level: .info)
-        return document
-    }
-    
-    /// Import SVG with extreme value handling for radial gradients that cannot be reproduced
-    /// Use this for SVGs with extreme coordinate values that cause rendering issues
-    static func importFromSVGWithExtremeValueHandling(url: URL) async throws -> VectorDocument {
-        Log.fileOperation("🎨 Importing document from SVG with extreme value handling: \(url.path)", level: .info)
-        
-        let result = await VectorImportManager.shared.importSVGWithExtremeValueHandling(from: url)
-        
-        if !result.success {
-            let errorMessage = result.errors.first?.localizedDescription ?? "Unknown SVG import error"
-            throw VectorImportError.parsingError("Failed to import SVG: \(errorMessage)", line: nil)
-        }
-        
-        // Create a new VectorDocument from the imported shapes
-        let document = VectorDocument()
-        
-        // FIXED: Use viewBox/document dimensions from SVG file, not calculated bounds
-        // This ensures objects stay within their intended viewBox bounds
-        let svgDocumentSize = result.metadata.documentSize
-        let canvasWidth = max(svgDocumentSize.width, 100) // Minimum 100pt
-        let canvasHeight = max(svgDocumentSize.height, 100) // Minimum 100pt
-        
-        // Set document size based on SVG viewBox/dimensions
-        document.settings.width = canvasWidth / 72.0 // Convert to inches
-        document.settings.height = canvasHeight / 72.0
-        document.settings.unit = .inches
-        
-        Log.fileOperation("🎯 SVG IMPORT WITH EXTREME VALUE HANDLING:", level: .info)
-        Log.info("   SVG document size: \(svgDocumentSize)", category: .general)
-        Log.info("   Canvas size: \(canvasWidth) × \(canvasHeight) pts", category: .general)
-        print("   Document size: \(String(format: "%.2f", canvasWidth/72.0)) × \(String(format: "%.2f", canvasHeight/72.0)) inches")
-        
-        // Calculate actual artwork bounds for positioning
-        var artworkBounds = CGRect.null
-        for shape in result.shapes {
-            // CRITICAL FIX: Use transformed bounds to get actual positioned bounds
-            let shapeBounds = shape.bounds.applying(shape.transform)
-            if artworkBounds.isNull {
-                artworkBounds = shapeBounds
-            } else {
-                artworkBounds = artworkBounds.union(shapeBounds)
-            }
-        }
-        
-        if !artworkBounds.isNull {
-            Log.info("   Actual artwork bounds: \(artworkBounds)", category: .general)
-        }
-        
-        // VectorDocument init already created Pasteboard, Canvas and Working layers with backgrounds
-        // Canvas size already set above in inches - don't override with raw pixel values
-        
-        // FIXED: Position objects at viewBox origin (0,0), not artwork bounds origin
-        // This preserves the intended positioning from the SVG file
-        let translateX: CGFloat = 0  // Keep at viewBox origin
-        let translateY: CGFloat = 0  // Keep at viewBox origin
-        
-        Log.fileOperation("🎯 POSITIONING CALCULATION:", level: .info)
-        Log.info("   Using viewBox origin (0,0) - preserving SVG positioning", category: .general)
-        if !artworkBounds.isNull {
-            Log.info("   Artwork bounds: \(artworkBounds)", category: .general)
-            if artworkBounds.minX < 0 || artworkBounds.minY < 0 || 
-               artworkBounds.maxX > canvasWidth || artworkBounds.maxY > canvasHeight {
-                Log.info("   ⚠️ WARNING: Some objects are positioned outside the viewBox bounds!", category: .general)
-            }
-        }
-        
-        // Add all imported shapes to the layer with translation applied to coordinates (not transforms)
-        for shape in result.shapes {
-            var centeredShape = shape
-            
-            // CRITICAL FIX: Apply centering to actual coordinates, not transforms
-            // This prevents coordinate drift during zoom operations
-            let centeringTransform = CGAffineTransform(translationX: translateX, y: translateY)
-            let finalTransform = shape.transform.concatenating(centeringTransform)
-            
-            // CRITICAL FIX: Only apply transform if it's not identity
-            // This preserves the original shape's properties and bounds
-            if !finalTransform.isIdentity {
-                centeredShape = applyTransformToShapeCoordinates(shape: centeredShape, transform: finalTransform)
-                centeredShape.transform = .identity
-            }
-            
-            // Ensure the shape is editable
-            centeredShape.isLocked = false
-            centeredShape.isVisible = true
-            
-            // Debug: Log shape being added with bounds
-            Log.fileOperation("✅ Adding SVG shape '\(centeredShape.name)' to unified system at layer 2", level: .debug)
-            Log.fileOperation("   📐 Shape bounds: \(centeredShape.bounds)", level: .debug)
-            Log.fileOperation("   👁️ Shape visible: \(centeredShape.isVisible)", level: .debug)
-            Log.fileOperation("   🎨 Fill: \(centeredShape.fillStyle != nil ? String(describing: centeredShape.fillStyle!.color) : "none")", level: .debug)
-            Log.fileOperation("   🖌️ Stroke: \(centeredShape.strokeStyle != nil ? String(describing: centeredShape.strokeStyle!.color) : "none")", level: .debug)
-            
-            // Add shape to unified system (layer index 2 for imported layer)
-            document.addShapeToUnifiedSystem(centeredShape, layerIndex: 2)
-        }
-
-        // Text objects are now imported as shapes with isTextObject=true
-        
-        // Select the working layer which contains imported shapes
-        document.selectedLayerIndex = 2 // Working layer is at index 2
-        
-        // Log warnings if any
-        for warning in result.warnings {
-            Log.fileOperation("⚠️ SVG Import Warning: \(warning)", level: .info)
-        }
-        
-        // CRITICAL: Log the unified objects count to verify they were added
-        Log.info("🔧 UNIFIED OBJECTS after SVG import: \(document.unifiedObjects.count) objects", category: .fileOperations)
-        Log.info("✅ Successfully imported SVG document with extreme value handling: \(result.shapes.count) shapes", category: .fileOperations)
-        Log.fileOperation("📐 Canvas sized to exact artwork dimensions: \(canvasWidth) × \(canvasHeight) pts", level: .info)
-        return document
-    }
-    
+// MOVED TO FileOperations+SVGImport.swift:     static func importFromSVG(url: URL) async throws -> VectorDocument {
+// MOVED TO FileOperations+SVGImport.swift:         Log.fileOperation("🎨 Importing document from SVG: \(url.path)", level: .info)
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         let result = await VectorImportManager.shared.importVectorFile(from: url)
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         if !result.success {
+// MOVED TO FileOperations+SVGImport.swift:             let errorMessage = result.errors.first?.localizedDescription ?? "Unknown SVG import error"
+// MOVED TO FileOperations+SVGImport.swift:             throw VectorImportError.parsingError("Failed to import SVG: \(errorMessage)", line: nil)
+// MOVED TO FileOperations+SVGImport.swift:         }
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // Create a new VectorDocument from the imported shapes
+// MOVED TO FileOperations+SVGImport.swift:         let document = VectorDocument()
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // FIXED: Use viewBox/document dimensions from SVG file, not calculated bounds
+// MOVED TO FileOperations+SVGImport.swift:         // This ensures objects stay within their intended viewBox bounds
+// MOVED TO FileOperations+SVGImport.swift:         let svgDocumentSize = result.metadata.documentSize
+// MOVED TO FileOperations+SVGImport.swift:         let canvasWidth = max(svgDocumentSize.width, 100) // Minimum 100pt
+// MOVED TO FileOperations+SVGImport.swift:         let canvasHeight = max(svgDocumentSize.height, 100) // Minimum 100pt
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // Set document size based on SVG viewBox/dimensions
+// MOVED TO FileOperations+SVGImport.swift:         document.settings.width = canvasWidth / 72.0 // Convert to inches
+// MOVED TO FileOperations+SVGImport.swift:         document.settings.height = canvasHeight / 72.0
+// MOVED TO FileOperations+SVGImport.swift:         document.settings.unit = .inches
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         Log.fileOperation("🎯 SVG IMPORT USING VIEWBOX DIMENSIONS:", level: .info)
+// MOVED TO FileOperations+SVGImport.swift:         Log.info("   SVG document size: \(svgDocumentSize)", category: .general)
+// MOVED TO FileOperations+SVGImport.swift:         Log.info("   Canvas size: \(canvasWidth) × \(canvasHeight) pts", category: .general)
+// MOVED TO FileOperations+SVGImport.swift:         print("   Document size: \(String(format: "%.2f", canvasWidth/72.0)) × \(String(format: "%.2f", canvasHeight/72.0)) inches")
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // Calculate actual artwork bounds for positioning
+// MOVED TO FileOperations+SVGImport.swift:         var artworkBounds = CGRect.null
+// MOVED TO FileOperations+SVGImport.swift:         for shape in result.shapes {
+// MOVED TO FileOperations+SVGImport.swift:             // CRITICAL FIX: Use transformed bounds to get actual positioned bounds
+// MOVED TO FileOperations+SVGImport.swift:             let shapeBounds = shape.bounds.applying(shape.transform)
+// MOVED TO FileOperations+SVGImport.swift:             if artworkBounds.isNull {
+// MOVED TO FileOperations+SVGImport.swift:                 artworkBounds = shapeBounds
+// MOVED TO FileOperations+SVGImport.swift:             } else {
+// MOVED TO FileOperations+SVGImport.swift:                 artworkBounds = artworkBounds.union(shapeBounds)
+// MOVED TO FileOperations+SVGImport.swift:             }
+// MOVED TO FileOperations+SVGImport.swift:         }
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         if !artworkBounds.isNull {
+// MOVED TO FileOperations+SVGImport.swift:             Log.info("   Actual artwork bounds: \(artworkBounds)", category: .general)
+// MOVED TO FileOperations+SVGImport.swift:         }
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // VectorDocument init already created Pasteboard, Canvas and Working layers with backgrounds
+// MOVED TO FileOperations+SVGImport.swift:         // Canvas size already set above in inches - don't override with raw pixel values
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // FIXED: Position objects at viewBox origin (0,0), not artwork bounds origin
+// MOVED TO FileOperations+SVGImport.swift:         // This preserves the intended positioning from the SVG file
+// MOVED TO FileOperations+SVGImport.swift:         let translateX: CGFloat = 0  // Keep at viewBox origin
+// MOVED TO FileOperations+SVGImport.swift:         let translateY: CGFloat = 0  // Keep at viewBox origin
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         Log.fileOperation("🎯 POSITIONING CALCULATION:", level: .info)
+// MOVED TO FileOperations+SVGImport.swift:         Log.info("   Using viewBox origin (0,0) - preserving SVG positioning", category: .general)
+// MOVED TO FileOperations+SVGImport.swift:         if !artworkBounds.isNull {
+// MOVED TO FileOperations+SVGImport.swift:             Log.info("   Artwork bounds: \(artworkBounds)", category: .general)
+// MOVED TO FileOperations+SVGImport.swift:             if artworkBounds.minX < 0 || artworkBounds.minY < 0 || 
+// MOVED TO FileOperations+SVGImport.swift:                artworkBounds.maxX > canvasWidth || artworkBounds.maxY > canvasHeight {
+// MOVED TO FileOperations+SVGImport.swift:                 Log.info("   ⚠️ WARNING: Some objects are positioned outside the viewBox bounds!", category: .general)
+// MOVED TO FileOperations+SVGImport.swift:             }
+// MOVED TO FileOperations+SVGImport.swift:         }
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // Add all imported shapes to the layer with translation applied to coordinates (not transforms)
+// MOVED TO FileOperations+SVGImport.swift:         for shape in result.shapes {
+// MOVED TO FileOperations+SVGImport.swift:             var centeredShape = shape
+// MOVED TO FileOperations+SVGImport.swift:             
+// MOVED TO FileOperations+SVGImport.swift:             // CRITICAL FIX: Apply centering to actual coordinates, not transforms
+// MOVED TO FileOperations+SVGImport.swift:             // This prevents coordinate drift during zoom operations
+// MOVED TO FileOperations+SVGImport.swift:             let centeringTransform = CGAffineTransform(translationX: translateX, y: translateY)
+// MOVED TO FileOperations+SVGImport.swift:             let finalTransform = shape.transform.concatenating(centeringTransform)
+// MOVED TO FileOperations+SVGImport.swift:             
+// MOVED TO FileOperations+SVGImport.swift:             // CRITICAL FIX: Only apply transform if it's not identity
+// MOVED TO FileOperations+SVGImport.swift:             // This preserves the original shape's properties and bounds
+// MOVED TO FileOperations+SVGImport.swift:             if !finalTransform.isIdentity {
+// MOVED TO FileOperations+SVGImport.swift:                 centeredShape = applyTransformToShapeCoordinates(shape: centeredShape, transform: finalTransform)
+// MOVED TO FileOperations+SVGImport.swift:                 centeredShape.transform = .identity
+// MOVED TO FileOperations+SVGImport.swift:             }
+// MOVED TO FileOperations+SVGImport.swift:             
+// MOVED TO FileOperations+SVGImport.swift:             // Ensure the shape is editable
+// MOVED TO FileOperations+SVGImport.swift:             centeredShape.isLocked = false
+// MOVED TO FileOperations+SVGImport.swift:             centeredShape.isVisible = true
+// MOVED TO FileOperations+SVGImport.swift:             
+// MOVED TO FileOperations+SVGImport.swift:             // Debug: Log shape being added with bounds
+// MOVED TO FileOperations+SVGImport.swift:             Log.fileOperation("✅ Adding SVG shape '\(centeredShape.name)' to unified system at layer 2", level: .debug)
+// MOVED TO FileOperations+SVGImport.swift:             Log.fileOperation("   📐 Shape bounds: \(centeredShape.bounds)", level: .debug)
+// MOVED TO FileOperations+SVGImport.swift:             Log.fileOperation("   👁️ Shape visible: \(centeredShape.isVisible)", level: .debug)
+// MOVED TO FileOperations+SVGImport.swift:             Log.fileOperation("   🎨 Fill: \(centeredShape.fillStyle != nil ? String(describing: centeredShape.fillStyle!.color) : "none")", level: .debug)
+// MOVED TO FileOperations+SVGImport.swift:             Log.fileOperation("   🖌️ Stroke: \(centeredShape.strokeStyle != nil ? String(describing: centeredShape.strokeStyle!.color) : "none")", level: .debug)
+// MOVED TO FileOperations+SVGImport.swift:             
+// MOVED TO FileOperations+SVGImport.swift:             // Add shape to unified system (layer index 2 for imported layer)
+// MOVED TO FileOperations+SVGImport.swift:             document.addShapeToUnifiedSystem(centeredShape, layerIndex: 2)
+// MOVED TO FileOperations+SVGImport.swift:         }
+// MOVED TO FileOperations+SVGImport.swift: 
+// MOVED TO FileOperations+SVGImport.swift:         // Text objects are now imported as shapes with isTextObject=true
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // Select the working layer which contains imported shapes
+// MOVED TO FileOperations+SVGImport.swift:         document.selectedLayerIndex = 2 // Working layer is at index 2
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // Log warnings if any
+// MOVED TO FileOperations+SVGImport.swift:         for warning in result.warnings {
+// MOVED TO FileOperations+SVGImport.swift:             Log.fileOperation("⚠️ SVG Import Warning: \(warning)", level: .info)
+// MOVED TO FileOperations+SVGImport.swift:         }
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         Log.info("✅ Successfully imported SVG document with \(result.shapes.count) shapes", category: .fileOperations)
+// MOVED TO FileOperations+SVGImport.swift:         Log.fileOperation("📐 Canvas sized to exact artwork dimensions: \(canvasWidth) × \(canvasHeight) pts", level: .info)
+// MOVED TO FileOperations+SVGImport.swift:         return document
+// MOVED TO FileOperations+SVGImport.swift:     }
+// MOVED TO FileOperations+SVGImport.swift:     
+// MOVED TO FileOperations+SVGImport.swift:     /// Import SVG with extreme value handling for radial gradients that cannot be reproduced
+// MOVED TO FileOperations+SVGImport.swift:     /// Use this for SVGs with extreme coordinate values that cause rendering issues
+// MOVED TO FileOperations+SVGImport.swift:     static func importFromSVGWithExtremeValueHandling(url: URL) async throws -> VectorDocument {
+// MOVED TO FileOperations+SVGImport.swift:         Log.fileOperation("🎨 Importing document from SVG with extreme value handling: \(url.path)", level: .info)
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         let result = await VectorImportManager.shared.importSVGWithExtremeValueHandling(from: url)
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         if !result.success {
+// MOVED TO FileOperations+SVGImport.swift:             let errorMessage = result.errors.first?.localizedDescription ?? "Unknown SVG import error"
+// MOVED TO FileOperations+SVGImport.swift:             throw VectorImportError.parsingError("Failed to import SVG: \(errorMessage)", line: nil)
+// MOVED TO FileOperations+SVGImport.swift:         }
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // Create a new VectorDocument from the imported shapes
+// MOVED TO FileOperations+SVGImport.swift:         let document = VectorDocument()
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // FIXED: Use viewBox/document dimensions from SVG file, not calculated bounds
+// MOVED TO FileOperations+SVGImport.swift:         // This ensures objects stay within their intended viewBox bounds
+// MOVED TO FileOperations+SVGImport.swift:         let svgDocumentSize = result.metadata.documentSize
+// MOVED TO FileOperations+SVGImport.swift:         let canvasWidth = max(svgDocumentSize.width, 100) // Minimum 100pt
+// MOVED TO FileOperations+SVGImport.swift:         let canvasHeight = max(svgDocumentSize.height, 100) // Minimum 100pt
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // Set document size based on SVG viewBox/dimensions
+// MOVED TO FileOperations+SVGImport.swift:         document.settings.width = canvasWidth / 72.0 // Convert to inches
+// MOVED TO FileOperations+SVGImport.swift:         document.settings.height = canvasHeight / 72.0
+// MOVED TO FileOperations+SVGImport.swift:         document.settings.unit = .inches
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         Log.fileOperation("🎯 SVG IMPORT WITH EXTREME VALUE HANDLING:", level: .info)
+// MOVED TO FileOperations+SVGImport.swift:         Log.info("   SVG document size: \(svgDocumentSize)", category: .general)
+// MOVED TO FileOperations+SVGImport.swift:         Log.info("   Canvas size: \(canvasWidth) × \(canvasHeight) pts", category: .general)
+// MOVED TO FileOperations+SVGImport.swift:         print("   Document size: \(String(format: "%.2f", canvasWidth/72.0)) × \(String(format: "%.2f", canvasHeight/72.0)) inches")
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // Calculate actual artwork bounds for positioning
+// MOVED TO FileOperations+SVGImport.swift:         var artworkBounds = CGRect.null
+// MOVED TO FileOperations+SVGImport.swift:         for shape in result.shapes {
+// MOVED TO FileOperations+SVGImport.swift:             // CRITICAL FIX: Use transformed bounds to get actual positioned bounds
+// MOVED TO FileOperations+SVGImport.swift:             let shapeBounds = shape.bounds.applying(shape.transform)
+// MOVED TO FileOperations+SVGImport.swift:             if artworkBounds.isNull {
+// MOVED TO FileOperations+SVGImport.swift:                 artworkBounds = shapeBounds
+// MOVED TO FileOperations+SVGImport.swift:             } else {
+// MOVED TO FileOperations+SVGImport.swift:                 artworkBounds = artworkBounds.union(shapeBounds)
+// MOVED TO FileOperations+SVGImport.swift:             }
+// MOVED TO FileOperations+SVGImport.swift:         }
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         if !artworkBounds.isNull {
+// MOVED TO FileOperations+SVGImport.swift:             Log.info("   Actual artwork bounds: \(artworkBounds)", category: .general)
+// MOVED TO FileOperations+SVGImport.swift:         }
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // VectorDocument init already created Pasteboard, Canvas and Working layers with backgrounds
+// MOVED TO FileOperations+SVGImport.swift:         // Canvas size already set above in inches - don't override with raw pixel values
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // FIXED: Position objects at viewBox origin (0,0), not artwork bounds origin
+// MOVED TO FileOperations+SVGImport.swift:         // This preserves the intended positioning from the SVG file
+// MOVED TO FileOperations+SVGImport.swift:         let translateX: CGFloat = 0  // Keep at viewBox origin
+// MOVED TO FileOperations+SVGImport.swift:         let translateY: CGFloat = 0  // Keep at viewBox origin
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         Log.fileOperation("🎯 POSITIONING CALCULATION:", level: .info)
+// MOVED TO FileOperations+SVGImport.swift:         Log.info("   Using viewBox origin (0,0) - preserving SVG positioning", category: .general)
+// MOVED TO FileOperations+SVGImport.swift:         if !artworkBounds.isNull {
+// MOVED TO FileOperations+SVGImport.swift:             Log.info("   Artwork bounds: \(artworkBounds)", category: .general)
+// MOVED TO FileOperations+SVGImport.swift:             if artworkBounds.minX < 0 || artworkBounds.minY < 0 || 
+// MOVED TO FileOperations+SVGImport.swift:                artworkBounds.maxX > canvasWidth || artworkBounds.maxY > canvasHeight {
+// MOVED TO FileOperations+SVGImport.swift:                 Log.info("   ⚠️ WARNING: Some objects are positioned outside the viewBox bounds!", category: .general)
+// MOVED TO FileOperations+SVGImport.swift:             }
+// MOVED TO FileOperations+SVGImport.swift:         }
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // Add all imported shapes to the layer with translation applied to coordinates (not transforms)
+// MOVED TO FileOperations+SVGImport.swift:         for shape in result.shapes {
+// MOVED TO FileOperations+SVGImport.swift:             var centeredShape = shape
+// MOVED TO FileOperations+SVGImport.swift:             
+// MOVED TO FileOperations+SVGImport.swift:             // CRITICAL FIX: Apply centering to actual coordinates, not transforms
+// MOVED TO FileOperations+SVGImport.swift:             // This prevents coordinate drift during zoom operations
+// MOVED TO FileOperations+SVGImport.swift:             let centeringTransform = CGAffineTransform(translationX: translateX, y: translateY)
+// MOVED TO FileOperations+SVGImport.swift:             let finalTransform = shape.transform.concatenating(centeringTransform)
+// MOVED TO FileOperations+SVGImport.swift:             
+// MOVED TO FileOperations+SVGImport.swift:             // CRITICAL FIX: Only apply transform if it's not identity
+// MOVED TO FileOperations+SVGImport.swift:             // This preserves the original shape's properties and bounds
+// MOVED TO FileOperations+SVGImport.swift:             if !finalTransform.isIdentity {
+// MOVED TO FileOperations+SVGImport.swift:                 centeredShape = applyTransformToShapeCoordinates(shape: centeredShape, transform: finalTransform)
+// MOVED TO FileOperations+SVGImport.swift:                 centeredShape.transform = .identity
+// MOVED TO FileOperations+SVGImport.swift:             }
+// MOVED TO FileOperations+SVGImport.swift:             
+// MOVED TO FileOperations+SVGImport.swift:             // Ensure the shape is editable
+// MOVED TO FileOperations+SVGImport.swift:             centeredShape.isLocked = false
+// MOVED TO FileOperations+SVGImport.swift:             centeredShape.isVisible = true
+// MOVED TO FileOperations+SVGImport.swift:             
+// MOVED TO FileOperations+SVGImport.swift:             // Debug: Log shape being added with bounds
+// MOVED TO FileOperations+SVGImport.swift:             Log.fileOperation("✅ Adding SVG shape '\(centeredShape.name)' to unified system at layer 2", level: .debug)
+// MOVED TO FileOperations+SVGImport.swift:             Log.fileOperation("   📐 Shape bounds: \(centeredShape.bounds)", level: .debug)
+// MOVED TO FileOperations+SVGImport.swift:             Log.fileOperation("   👁️ Shape visible: \(centeredShape.isVisible)", level: .debug)
+// MOVED TO FileOperations+SVGImport.swift:             Log.fileOperation("   🎨 Fill: \(centeredShape.fillStyle != nil ? String(describing: centeredShape.fillStyle!.color) : "none")", level: .debug)
+// MOVED TO FileOperations+SVGImport.swift:             Log.fileOperation("   🖌️ Stroke: \(centeredShape.strokeStyle != nil ? String(describing: centeredShape.strokeStyle!.color) : "none")", level: .debug)
+// MOVED TO FileOperations+SVGImport.swift:             
+// MOVED TO FileOperations+SVGImport.swift:             // Add shape to unified system (layer index 2 for imported layer)
+// MOVED TO FileOperations+SVGImport.swift:             document.addShapeToUnifiedSystem(centeredShape, layerIndex: 2)
+// MOVED TO FileOperations+SVGImport.swift:         }
+// MOVED TO FileOperations+SVGImport.swift: 
+// MOVED TO FileOperations+SVGImport.swift:         // Text objects are now imported as shapes with isTextObject=true
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // Select the working layer which contains imported shapes
+// MOVED TO FileOperations+SVGImport.swift:         document.selectedLayerIndex = 2 // Working layer is at index 2
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // Log warnings if any
+// MOVED TO FileOperations+SVGImport.swift:         for warning in result.warnings {
+// MOVED TO FileOperations+SVGImport.swift:             Log.fileOperation("⚠️ SVG Import Warning: \(warning)", level: .info)
+// MOVED TO FileOperations+SVGImport.swift:         }
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // CRITICAL: Log the unified objects count to verify they were added
+// MOVED TO FileOperations+SVGImport.swift:         Log.info("🔧 UNIFIED OBJECTS after SVG import: \(document.unifiedObjects.count) objects", category: .fileOperations)
+// MOVED TO FileOperations+SVGImport.swift:         Log.info("✅ Successfully imported SVG document with extreme value handling: \(result.shapes.count) shapes", category: .fileOperations)
+// MOVED TO FileOperations+SVGImport.swift:         Log.fileOperation("📐 Canvas sized to exact artwork dimensions: \(canvasWidth) × \(canvasHeight) pts", level: .info)
+// MOVED TO FileOperations+SVGImport.swift:         return document
+// MOVED TO FileOperations+SVGImport.swift:     }
+// MOVED TO FileOperations+SVGImport.swift:     
     /// Synchronous version of SVG import for FileDocument protocol
-    static func importFromSVGSync(url: URL) throws -> VectorDocument {
-        Log.fileOperation("🎨 Importing document from SVG (sync): \(url.path)", level: .info)
-        
-        // Use a semaphore to make the async call synchronous
-        let semaphore = DispatchSemaphore(value: 0)
-        var resultDocument: VectorDocument?
-        var resultError: Error?
-        
-        Task {
-            do {
-                resultDocument = try await importFromSVG(url: url)
-            } catch {
-                resultError = error
-            }
-            semaphore.signal()
-        }
-        
-        semaphore.wait()
-        
-        if let error = resultError {
-            throw error
-        }
-        
-        guard let document = resultDocument else {
-            throw VectorImportError.parsingError("Failed to import SVG: Unknown error", line: nil)
-        }
-        
-        return document
-    }
+// MOVED TO FileOperations+SVGImport.swift:     static func importFromSVGSync(url: URL) throws -> VectorDocument {
+// MOVED TO FileOperations+SVGImport.swift:         Log.fileOperation("🎨 Importing document from SVG (sync): \(url.path)", level: .info)
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // Use a semaphore to make the async call synchronous
+// MOVED TO FileOperations+SVGImport.swift:         let semaphore = DispatchSemaphore(value: 0)
+// MOVED TO FileOperations+SVGImport.swift:         var resultDocument: VectorDocument?
+// MOVED TO FileOperations+SVGImport.swift:         var resultError: Error?
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         Task {
+// MOVED TO FileOperations+SVGImport.swift:             do {
+// MOVED TO FileOperations+SVGImport.swift:                 resultDocument = try await importFromSVG(url: url)
+// MOVED TO FileOperations+SVGImport.swift:             } catch {
+// MOVED TO FileOperations+SVGImport.swift:                 resultError = error
+// MOVED TO FileOperations+SVGImport.swift:             }
+// MOVED TO FileOperations+SVGImport.swift:             semaphore.signal()
+// MOVED TO FileOperations+SVGImport.swift:         }
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         semaphore.wait()
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         if let error = resultError {
+// MOVED TO FileOperations+SVGImport.swift:             throw error
+// MOVED TO FileOperations+SVGImport.swift:         }
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         guard let document = resultDocument else {
+// MOVED TO FileOperations+SVGImport.swift:             throw VectorImportError.parsingError("Failed to import SVG: Unknown error", line: nil)
+// MOVED TO FileOperations+SVGImport.swift:         }
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         return document
+// MOVED TO FileOperations+SVGImport.swift:     }
     
     /// Import PDF from data for FileDocument protocol
     static func importFromPDFData(_ data: Data) throws -> VectorDocument {
@@ -786,100 +786,100 @@ class FileOperations {
     }
     
     /// Import SVG from data for FileDocument protocol
-    static func importFromSVGData(_ data: Data) throws -> VectorDocument {
-        Log.fileOperation("🎨 Importing document from SVG data", level: .info)
-        
-        // Create a temporary file to use with the existing SVG import infrastructure
-        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("svg")
-        
-        do {
-            try data.write(to: tempURL)
-            let document = try importFromSVGSync(url: tempURL)
-            
-            // CRITICAL FIX: Hydrate images after SVG import so embedded images are loaded
-            // This ensures SVG images are properly imported when opening through File > Open
-            ImageContentRegistry.setBaseDirectoryURL(tempURL.deletingLastPathComponent())
-            // Use unified objects to hydrate all shapes
-            for unifiedObject in document.unifiedObjects {
-                if case .shape(let shape) = unifiedObject.objectType {
-                    _ = ImageContentRegistry.hydrateImageIfAvailable(for: shape)
-                }
-            }
-            
-            // Trigger UI refresh after hydration
-            DispatchQueue.main.async {
-                document.objectWillChange.send()
-            }
-            
-            // Clean up temporary file
-            try? FileManager.default.removeItem(at: tempURL)
-            
-            Log.fileOperation("✅ SVG data import completed with image hydration", level: .info)
-            
-            return document
-        } catch {
-            // Clean up temporary file on error
-            try? FileManager.default.removeItem(at: tempURL)
-            throw error
-        }
-    }
+// MOVED TO FileOperations+SVGImport.swift:     static func importFromSVGData(_ data: Data) throws -> VectorDocument {
+// MOVED TO FileOperations+SVGImport.swift:         Log.fileOperation("🎨 Importing document from SVG data", level: .info)
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // Create a temporary file to use with the existing SVG import infrastructure
+// MOVED TO FileOperations+SVGImport.swift:         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("svg")
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         do {
+// MOVED TO FileOperations+SVGImport.swift:             try data.write(to: tempURL)
+// MOVED TO FileOperations+SVGImport.swift:             let document = try importFromSVGSync(url: tempURL)
+// MOVED TO FileOperations+SVGImport.swift:             
+// MOVED TO FileOperations+SVGImport.swift:             // CRITICAL FIX: Hydrate images after SVG import so embedded images are loaded
+// MOVED TO FileOperations+SVGImport.swift:             // This ensures SVG images are properly imported when opening through File > Open
+// MOVED TO FileOperations+SVGImport.swift:             ImageContentRegistry.setBaseDirectoryURL(tempURL.deletingLastPathComponent())
+// MOVED TO FileOperations+SVGImport.swift:             // Use unified objects to hydrate all shapes
+// MOVED TO FileOperations+SVGImport.swift:             for unifiedObject in document.unifiedObjects {
+// MOVED TO FileOperations+SVGImport.swift:                 if case .shape(let shape) = unifiedObject.objectType {
+// MOVED TO FileOperations+SVGImport.swift:                     _ = ImageContentRegistry.hydrateImageIfAvailable(for: shape)
+// MOVED TO FileOperations+SVGImport.swift:                 }
+// MOVED TO FileOperations+SVGImport.swift:             }
+// MOVED TO FileOperations+SVGImport.swift:             
+// MOVED TO FileOperations+SVGImport.swift:             // Trigger UI refresh after hydration
+// MOVED TO FileOperations+SVGImport.swift:             DispatchQueue.main.async {
+// MOVED TO FileOperations+SVGImport.swift:                 document.objectWillChange.send()
+// MOVED TO FileOperations+SVGImport.swift:             }
+// MOVED TO FileOperations+SVGImport.swift:             
+// MOVED TO FileOperations+SVGImport.swift:             // Clean up temporary file
+// MOVED TO FileOperations+SVGImport.swift:             try? FileManager.default.removeItem(at: tempURL)
+// MOVED TO FileOperations+SVGImport.swift:             
+// MOVED TO FileOperations+SVGImport.swift:             Log.fileOperation("✅ SVG data import completed with image hydration", level: .info)
+// MOVED TO FileOperations+SVGImport.swift:             
+// MOVED TO FileOperations+SVGImport.swift:             return document
+// MOVED TO FileOperations+SVGImport.swift:         } catch {
+// MOVED TO FileOperations+SVGImport.swift:             // Clean up temporary file on error
+// MOVED TO FileOperations+SVGImport.swift:             try? FileManager.default.removeItem(at: tempURL)
+// MOVED TO FileOperations+SVGImport.swift:             throw error
+// MOVED TO FileOperations+SVGImport.swift:         }
+// MOVED TO FileOperations+SVGImport.swift:     }
     
     /// Apply transform to shape coordinates and return new shape with identity transform
     /// This prevents coordinate drift during zoom operations
-    private static func applyTransformToShapeCoordinates(shape: VectorShape, transform: CGAffineTransform) -> VectorShape {
-        // Don't apply identity transforms
-        if transform.isIdentity {
-            return shape
-        }
-        
-        Log.fileOperation("🔄 Applying transform to SVG shape: \(shape.name)", level: .debug)
-        
-        // Transform all path elements
-        var transformedElements: [PathElement] = []
-        
-        for element in shape.path.elements {
-            switch element {
-            case .move(let to):
-                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
-                transformedElements.append(.move(to: VectorPoint(transformedPoint)))
-                
-            case .line(let to):
-                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
-                transformedElements.append(.line(to: VectorPoint(transformedPoint)))
-                
-            case .curve(let to, let control1, let control2):
-                let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
-                let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(transform)
-                let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(transform)
-                transformedElements.append(.curve(
-                    to: VectorPoint(transformedTo),
-                    control1: VectorPoint(transformedControl1),
-                    control2: VectorPoint(transformedControl2)
-                ))
-                
-            case .quadCurve(let to, let control):
-                let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
-                let transformedControl = CGPoint(x: control.x, y: control.y).applying(transform)
-                transformedElements.append(.quadCurve(
-                    to: VectorPoint(transformedTo),
-                    control: VectorPoint(transformedControl)
-                ))
-                
-            case .close:
-                transformedElements.append(.close)
-            }
-        }
-        
-        // Create new shape with transformed path and identity transform
-        let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
-        
-        var newShape = shape
-        newShape.path = transformedPath
-        newShape.transform = .identity
-        newShape.updateBounds()
-        
-        return newShape
-    }
+// MOVED TO FileOperations+SVGImport.swift:     private static func applyTransformToShapeCoordinates(shape: VectorShape, transform: CGAffineTransform) -> VectorShape {
+// MOVED TO FileOperations+SVGImport.swift:         // Don't apply identity transforms
+// MOVED TO FileOperations+SVGImport.swift:         if transform.isIdentity {
+// MOVED TO FileOperations+SVGImport.swift:             return shape
+// MOVED TO FileOperations+SVGImport.swift:         }
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         Log.fileOperation("🔄 Applying transform to SVG shape: \(shape.name)", level: .debug)
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // Transform all path elements
+// MOVED TO FileOperations+SVGImport.swift:         var transformedElements: [PathElement] = []
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         for element in shape.path.elements {
+// MOVED TO FileOperations+SVGImport.swift:             switch element {
+// MOVED TO FileOperations+SVGImport.swift:             case .move(let to):
+// MOVED TO FileOperations+SVGImport.swift:                 let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
+// MOVED TO FileOperations+SVGImport.swift:                 transformedElements.append(.move(to: VectorPoint(transformedPoint)))
+// MOVED TO FileOperations+SVGImport.swift:                 
+// MOVED TO FileOperations+SVGImport.swift:             case .line(let to):
+// MOVED TO FileOperations+SVGImport.swift:                 let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
+// MOVED TO FileOperations+SVGImport.swift:                 transformedElements.append(.line(to: VectorPoint(transformedPoint)))
+// MOVED TO FileOperations+SVGImport.swift:                 
+// MOVED TO FileOperations+SVGImport.swift:             case .curve(let to, let control1, let control2):
+// MOVED TO FileOperations+SVGImport.swift:                 let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
+// MOVED TO FileOperations+SVGImport.swift:                 let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(transform)
+// MOVED TO FileOperations+SVGImport.swift:                 let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(transform)
+// MOVED TO FileOperations+SVGImport.swift:                 transformedElements.append(.curve(
+// MOVED TO FileOperations+SVGImport.swift:                     to: VectorPoint(transformedTo),
+// MOVED TO FileOperations+SVGImport.swift:                     control1: VectorPoint(transformedControl1),
+// MOVED TO FileOperations+SVGImport.swift:                     control2: VectorPoint(transformedControl2)
+// MOVED TO FileOperations+SVGImport.swift:                 ))
+// MOVED TO FileOperations+SVGImport.swift:                 
+// MOVED TO FileOperations+SVGImport.swift:             case .quadCurve(let to, let control):
+// MOVED TO FileOperations+SVGImport.swift:                 let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
+// MOVED TO FileOperations+SVGImport.swift:                 let transformedControl = CGPoint(x: control.x, y: control.y).applying(transform)
+// MOVED TO FileOperations+SVGImport.swift:                 transformedElements.append(.quadCurve(
+// MOVED TO FileOperations+SVGImport.swift:                     to: VectorPoint(transformedTo),
+// MOVED TO FileOperations+SVGImport.swift:                     control: VectorPoint(transformedControl)
+// MOVED TO FileOperations+SVGImport.swift:                 ))
+// MOVED TO FileOperations+SVGImport.swift:                 
+// MOVED TO FileOperations+SVGImport.swift:             case .close:
+// MOVED TO FileOperations+SVGImport.swift:                 transformedElements.append(.close)
+// MOVED TO FileOperations+SVGImport.swift:             }
+// MOVED TO FileOperations+SVGImport.swift:         }
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         // Create new shape with transformed path and identity transform
+// MOVED TO FileOperations+SVGImport.swift:         let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         var newShape = shape
+// MOVED TO FileOperations+SVGImport.swift:         newShape.path = transformedPath
+// MOVED TO FileOperations+SVGImport.swift:         newShape.transform = .identity
+// MOVED TO FileOperations+SVGImport.swift:         newShape.updateBounds()
+// MOVED TO FileOperations+SVGImport.swift:         
+// MOVED TO FileOperations+SVGImport.swift:         return newShape
+// MOVED TO FileOperations+SVGImport.swift:     }
     
     static func exportToSVG(_ document: VectorDocument, url: URL) throws {
         Log.fileOperation("🎨 Exporting document to SVG: \(url.path)", level: .info)

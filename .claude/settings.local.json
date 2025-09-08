@@ -50,7 +50,9 @@
       "Bash(do echo \"=== $file ===\")",
       "Bash(chmod:*)",
       "Bash(/tmp/fix_layers_shapes.sh:*)",
-      "mcp__xcf-server__xcf_help"
+      "mcp__xcf-server__xcf_help",
+      "Bash(echo:*)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []
