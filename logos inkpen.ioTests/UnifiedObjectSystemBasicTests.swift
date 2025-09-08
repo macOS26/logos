@@ -5,7 +5,7 @@
 //  Created by Claude on 1/21/25.
 //
 
-// import Testing
+import Testing
 import CoreGraphics
 @testable import logos_inkpen_io
 import Foundation

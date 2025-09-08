@@ -5,7 +5,7 @@
 //  Created by Todd Bruss on 7/13/25.
 //
 
-// import Testing
+import Testing
 import CoreGraphics
 @testable import logos_inkpen_io
 

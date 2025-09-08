@@ -5,7 +5,7 @@
 //  Split from UnifiedObjectSystemUtilityTests.swift on 1/25/25.
 //
 
-// import Testing
+import Testing
 import CoreGraphics
 @testable import logos_inkpen_io
 import Foundation

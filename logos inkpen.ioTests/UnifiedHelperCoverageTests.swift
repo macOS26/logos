@@ -5,7 +5,7 @@
 //  Tests to ensure ALL operations use unified helpers
 //
 
-// import Testing
+import Testing
 import CoreGraphics
 @testable import logos_inkpen_io
 import Foundation

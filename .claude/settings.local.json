@@ -47,7 +47,9 @@
       "Bash(mcp__xcf-server__build_project:*)",
       "Bash(git checkout:*)",
       "Bash(git rm:*)",
-      "Bash(do echo \"=== $file ===\")"
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(chmod:*)",
+      "Bash(/tmp/fix_layers_shapes.sh:*)"
     ],
     "deny": [],
     "ask": []

@@ -5,7 +5,7 @@
 //  Tests to ensure ALL operations use unified helpers and no bypasses exist
 //
 
-// import Testing
+import Testing
 import CoreGraphics
 @testable import logos_inkpen_io
 import Foundation

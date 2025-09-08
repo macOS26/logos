@@ -6,7 +6,7 @@
 //  becomes unselectable due to invalid bounds
 //
 
-// import Testing
+import Testing
 import CoreGraphics
 @testable import logos_inkpen_io
 import Foundation
