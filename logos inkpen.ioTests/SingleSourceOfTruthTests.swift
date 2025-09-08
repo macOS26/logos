@@ -34,8 +34,8 @@ struct SingleSourceOfTruthTests {
         
         // Verify we can get shapes for layer through helper
         let layerShapes = document.getShapesForLayer(0)
-        #expect(layerShapes.count > 0, "Should get shapes through helper")
-        #expect(layerShapes.first?.id == shape.id, "Should get correct shape")
+        #expect(layerShapes.count > 1, "Should get shapes through helper (including background)")
+        #expect(layerShapes.contains { $0.id == shape.id }, "Should find our added shape")
         
         // After removing shapes array, this should work without layers[].shapes
         #expect(document.layers[0].name != "", "Layer should exist with metadata")

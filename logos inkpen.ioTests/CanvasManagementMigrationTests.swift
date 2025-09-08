@@ -22,8 +22,7 @@ final class CanvasManagementMigrationTests: XCTestCase {
     }
     
     func testUpdatePasteboardLayerUsesUnifiedObjects() {
-        // Setup: Create canvas and working layers
-        document.createCanvasAndWorkingLayers()
+        // Document already has canvas layers from init
         
         // Verify initial state
         XCTAssertEqual(document.layers.count, 3, "Should have 3 layers (Pasteboard, Canvas, Layer 1)")
@@ -40,6 +39,7 @@ final class CanvasManagementMigrationTests: XCTestCase {
         
         // Change canvas size and update pasteboard
         let newSize = CGSize(width: 800, height: 600)
+        document.settings.unit = .pixels  // Ensure we're using pixels
         document.settings.width = 800
         document.settings.height = 600
         document.updatePasteboardLayer()
@@ -72,8 +72,7 @@ final class CanvasManagementMigrationTests: XCTestCase {
     }
     
     func testUpdateCanvasLayerUsesUnifiedObjects() {
-        // Setup: Create canvas and working layers
-        document.createCanvasAndWorkingLayers()
+        // Document already has canvas layers from init
         
         // Verify canvas shape exists in unified objects
         let canvasObject = document.unifiedObjects.first { object in
@@ -87,6 +86,7 @@ final class CanvasManagementMigrationTests: XCTestCase {
         // Change canvas size and background color
         let newSize = CGSize(width: 1024, height: 768)
         let newColor = VectorColor.rgb(RGBColor(red: 0.9, green: 0.9, blue: 0.9))
+        document.settings.unit = .pixels  // Ensure we're using pixels
         document.settings.width = 1024
         document.settings.height = 768
         document.settings.backgroundColor = newColor
@@ -120,9 +120,7 @@ final class CanvasManagementMigrationTests: XCTestCase {
     }
     
     func testDebugCurrentStateUsesUnifiedObjects() {
-        // Setup: Create canvas and add some shapes
-        document.createCanvasAndWorkingLayers()
-        
+        // Document already has canvas layers from init
         // Add test shapes to Layer 1 (index 2)
         let testShape1 = VectorShape.rectangle(at: CGPoint(x: 100, y: 100), size: CGSize(width: 50, height: 50))
         // Create an ellipse using path elements
@@ -152,8 +150,7 @@ final class CanvasManagementMigrationTests: XCTestCase {
     }
     
     func testTranslateAllContentUsesUnifiedObjects() {
-        // Setup: Create canvas and add shapes
-        document.createCanvasAndWorkingLayers()
+        // Document already has canvas layers from init
         
         // Add test shape to Layer 1
         var testShape = VectorShape.rectangle(at: CGPoint(x: 100, y: 100), size: CGSize(width: 50, height: 50))
