@@ -1776,263 +1776,263 @@ class FileOperations {
         Log.info("✅ Successfully exported PDF document", category: .fileOperations)
     }
     
-    private static func drawShapeInPDF(_ shape: VectorShape, context: CGContext) {
-        context.saveGState()
-        
-        // Apply shape opacity
-        context.setAlpha(shape.opacity)
-        
-        // Apply transform
-        if !shape.transform.isIdentity {
-            context.concatenate(shape.transform)
-        }
-        
-        // Create path from shape
-        let path = shape.path.cgPath
-        context.addPath(path)
-        
-        // Apply fill
-        if let fillStyle = shape.fillStyle {
-            context.setFillColor(fillStyle.color.cgColor)
-            context.setAlpha(fillStyle.opacity)
-            
-            if shape.strokeStyle != nil {
-                context.drawPath(using: .fillStroke)
-            } else {
-                context.fillPath()
-            }
-        } else if let strokeStyle = shape.strokeStyle {
-            // Only stroke, no fill
-            context.setStrokeColor(strokeStyle.color.cgColor)
-            context.setLineWidth(strokeStyle.width)
-            context.setAlpha(strokeStyle.opacity)
-            context.setLineCap(strokeStyle.lineCap)
-            context.setLineJoin(strokeStyle.lineJoin)
-            
-            if !strokeStyle.dashPattern.isEmpty {
-                let dashPatternCGFloat = strokeStyle.dashPattern.map { CGFloat($0) }
-                context.setLineDash(phase: 0, lengths: dashPatternCGFloat)
-            }
-            
-            context.strokePath()
-        }
-        
-        context.restoreGState()
-    }
+// MOVED TO FileOperations+RasterExport.swift:     private static func drawShapeInPDF(_ shape: VectorShape, context: CGContext) {
+// MOVED TO FileOperations+RasterExport.swift:         context.saveGState()
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Apply shape opacity
+// MOVED TO FileOperations+RasterExport.swift:         context.setAlpha(shape.opacity)
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Apply transform
+// MOVED TO FileOperations+RasterExport.swift:         if !shape.transform.isIdentity {
+// MOVED TO FileOperations+RasterExport.swift:             context.concatenate(shape.transform)
+// MOVED TO FileOperations+RasterExport.swift:         }
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Create path from shape
+// MOVED TO FileOperations+RasterExport.swift:         let path = shape.path.cgPath
+// MOVED TO FileOperations+RasterExport.swift:         context.addPath(path)
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Apply fill
+// MOVED TO FileOperations+RasterExport.swift:         if let fillStyle = shape.fillStyle {
+// MOVED TO FileOperations+RasterExport.swift:             context.setFillColor(fillStyle.color.cgColor)
+// MOVED TO FileOperations+RasterExport.swift:             context.setAlpha(fillStyle.opacity)
+// MOVED TO FileOperations+RasterExport.swift:             
+// MOVED TO FileOperations+RasterExport.swift:             if shape.strokeStyle != nil {
+// MOVED TO FileOperations+RasterExport.swift:                 context.drawPath(using: .fillStroke)
+// MOVED TO FileOperations+RasterExport.swift:             } else {
+// MOVED TO FileOperations+RasterExport.swift:                 context.fillPath()
+// MOVED TO FileOperations+RasterExport.swift:             }
+// MOVED TO FileOperations+RasterExport.swift:         } else if let strokeStyle = shape.strokeStyle {
+// MOVED TO FileOperations+RasterExport.swift:             // Only stroke, no fill
+// MOVED TO FileOperations+RasterExport.swift:             context.setStrokeColor(strokeStyle.color.cgColor)
+// MOVED TO FileOperations+RasterExport.swift:             context.setLineWidth(strokeStyle.width)
+// MOVED TO FileOperations+RasterExport.swift:             context.setAlpha(strokeStyle.opacity)
+// MOVED TO FileOperations+RasterExport.swift:             context.setLineCap(strokeStyle.lineCap)
+// MOVED TO FileOperations+RasterExport.swift:             context.setLineJoin(strokeStyle.lineJoin)
+// MOVED TO FileOperations+RasterExport.swift:             
+// MOVED TO FileOperations+RasterExport.swift:             if !strokeStyle.dashPattern.isEmpty {
+// MOVED TO FileOperations+RasterExport.swift:                 let dashPatternCGFloat = strokeStyle.dashPattern.map { CGFloat($0) }
+// MOVED TO FileOperations+RasterExport.swift:                 context.setLineDash(phase: 0, lengths: dashPatternCGFloat)
+// MOVED TO FileOperations+RasterExport.swift:             }
+// MOVED TO FileOperations+RasterExport.swift:             
+// MOVED TO FileOperations+RasterExport.swift:             context.strokePath()
+// MOVED TO FileOperations+RasterExport.swift:         }
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         context.restoreGState()
+// MOVED TO FileOperations+RasterExport.swift:     }
+// MOVED TO FileOperations+RasterExport.swift:     
+// MOVED TO FileOperations+RasterExport.swift:     private static func drawTextInPDF(_ text: VectorText, context: CGContext) {
+// MOVED TO FileOperations+RasterExport.swift:         context.saveGState()
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Apply text opacity
+// MOVED TO FileOperations+RasterExport.swift:         context.setAlpha(text.isVisible ? 1.0 : 0.0)
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Apply transform
+// MOVED TO FileOperations+RasterExport.swift:         if !text.transform.isIdentity {
+// MOVED TO FileOperations+RasterExport.swift:             context.concatenate(text.transform)
+// MOVED TO FileOperations+RasterExport.swift:         }
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Create attributed string
+// MOVED TO FileOperations+RasterExport.swift:         let font = text.typography.nsFont
+// MOVED TO FileOperations+RasterExport.swift:         let attributes: [NSAttributedString.Key: Any] = [
+// MOVED TO FileOperations+RasterExport.swift:             .font: font,
+// MOVED TO FileOperations+RasterExport.swift:             .foregroundColor: NSColor(cgColor: text.typography.fillColor.cgColor) ?? NSColor.black,
+// MOVED TO FileOperations+RasterExport.swift:             .kern: text.typography.letterSpacing
+// MOVED TO FileOperations+RasterExport.swift:         ]
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         let attributedString = NSAttributedString(string: text.content, attributes: attributes)
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Calculate text position (PDF coordinates)
+// MOVED TO FileOperations+RasterExport.swift:         let textPosition = CGPoint(x: text.position.x, y: text.position.y)
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Draw text
+// MOVED TO FileOperations+RasterExport.swift:         let line = CTLineCreateWithAttributedString(attributedString)
+// MOVED TO FileOperations+RasterExport.swift:         context.textPosition = textPosition
+// MOVED TO FileOperations+RasterExport.swift:         CTLineDraw(line, context)
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         context.restoreGState()
+// MOVED TO FileOperations+RasterExport.swift:     }
     
-    private static func drawTextInPDF(_ text: VectorText, context: CGContext) {
-        context.saveGState()
-        
-        // Apply text opacity
-        context.setAlpha(text.isVisible ? 1.0 : 0.0)
-        
-        // Apply transform
-        if !text.transform.isIdentity {
-            context.concatenate(text.transform)
-        }
-        
-        // Create attributed string
-        let font = text.typography.nsFont
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .foregroundColor: NSColor(cgColor: text.typography.fillColor.cgColor) ?? NSColor.black,
-            .kern: text.typography.letterSpacing
-        ]
-        
-        let attributedString = NSAttributedString(string: text.content, attributes: attributes)
-        
-        // Calculate text position (PDF coordinates)
-        let textPosition = CGPoint(x: text.position.x, y: text.position.y)
-        
-        // Draw text
-        let line = CTLineCreateWithAttributedString(attributedString)
-        context.textPosition = textPosition
-        CTLineDraw(line, context)
-        
-        context.restoreGState()
-    }
+// MOVED TO FileOperations+RasterExport.swift:     static func exportToPNG(_ document: VectorDocument, url: URL, scale: CGFloat) throws {
+// MOVED TO FileOperations+RasterExport.swift:         Log.fileOperation("🖼️ Exporting document to PNG: \(url.path) at \(scale)x scale", level: .info)
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Calculate output size
+// MOVED TO FileOperations+RasterExport.swift:         let pageSize = document.settings.sizeInPoints
+// MOVED TO FileOperations+RasterExport.swift:         let outputSize = CGSize(width: pageSize.width * scale, height: pageSize.height * scale)
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // CRITICAL FIX: Add size validation to prevent Core Image crashes
+// MOVED TO FileOperations+RasterExport.swift:         guard outputSize.width > 0 && outputSize.height > 0 && 
+// MOVED TO FileOperations+RasterExport.swift:               outputSize.width <= 16384 && outputSize.height <= 16384 else {
+// MOVED TO FileOperations+RasterExport.swift:             throw VectorImportError.parsingError("Invalid output size: \(outputSize)", line: nil)
+// MOVED TO FileOperations+RasterExport.swift:         }
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Create bitmap context
+// MOVED TO FileOperations+RasterExport.swift:         let colorSpace = CGColorSpaceCreateDeviceRGB()
+// MOVED TO FileOperations+RasterExport.swift:         let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         guard let context = CGContext(
+// MOVED TO FileOperations+RasterExport.swift:             data: nil,
+// MOVED TO FileOperations+RasterExport.swift:             width: Int(outputSize.width),
+// MOVED TO FileOperations+RasterExport.swift:             height: Int(outputSize.height),
+// MOVED TO FileOperations+RasterExport.swift:             bitsPerComponent: 8,
+// MOVED TO FileOperations+RasterExport.swift:             bytesPerRow: 0,
+// MOVED TO FileOperations+RasterExport.swift:             space: colorSpace,
+// MOVED TO FileOperations+RasterExport.swift:             bitmapInfo: bitmapInfo
+// MOVED TO FileOperations+RasterExport.swift:         ) else {
+// MOVED TO FileOperations+RasterExport.swift:             throw VectorImportError.parsingError("Failed to create bitmap context", line: nil)
+// MOVED TO FileOperations+RasterExport.swift:         }
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Set coordinate system to match our canvas (flip Y axis)
+// MOVED TO FileOperations+RasterExport.swift:         context.translateBy(x: 0, y: outputSize.height)
+// MOVED TO FileOperations+RasterExport.swift:         context.scaleBy(x: scale, y: -scale)
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Draw background
+// MOVED TO FileOperations+RasterExport.swift:         context.setFillColor(document.settings.backgroundColor.cgColor)
+// MOVED TO FileOperations+RasterExport.swift:         context.fill(CGRect(origin: .zero, size: pageSize))
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Draw each layer
+// MOVED TO FileOperations+RasterExport.swift:         for layer in document.layers {
+// MOVED TO FileOperations+RasterExport.swift:             if !layer.isVisible { continue }
+// MOVED TO FileOperations+RasterExport.swift:             
+// MOVED TO FileOperations+RasterExport.swift:             // Apply layer opacity
+// MOVED TO FileOperations+RasterExport.swift:             context.saveGState()
+// MOVED TO FileOperations+RasterExport.swift:             context.setAlpha(layer.opacity)
+// MOVED TO FileOperations+RasterExport.swift:             
+// MOVED TO FileOperations+RasterExport.swift:             // Draw shapes in layer
+// MOVED TO FileOperations+RasterExport.swift:             let layerIndex = document.layers.firstIndex(where: { $0.id == layer.id }) ?? 0
+// MOVED TO FileOperations+RasterExport.swift:             let shapesInLayer = document.getShapesForLayer(layerIndex)
+// MOVED TO FileOperations+RasterExport.swift:             for shape in shapesInLayer {
+// MOVED TO FileOperations+RasterExport.swift:                 if !shape.isVisible { continue }
+// MOVED TO FileOperations+RasterExport.swift:                 
+// MOVED TO FileOperations+RasterExport.swift:                 drawShapeInPDF(shape, context: context)
+// MOVED TO FileOperations+RasterExport.swift:             }
+// MOVED TO FileOperations+RasterExport.swift:             
+// MOVED TO FileOperations+RasterExport.swift:             context.restoreGState()
+// MOVED TO FileOperations+RasterExport.swift:         }
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Draw text objects
+// MOVED TO FileOperations+RasterExport.swift:         document.forEachTextInOrder { text in
+// MOVED TO FileOperations+RasterExport.swift:             if !text.isVisible { return }
+// MOVED TO FileOperations+RasterExport.swift:             
+// MOVED TO FileOperations+RasterExport.swift:             drawTextInPDF(text, context: context)
+// MOVED TO FileOperations+RasterExport.swift:         }
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // CRITICAL FIX: Add timeout and error handling for Core Image operations
+// MOVED TO FileOperations+RasterExport.swift:         let image: CGImage
+// MOVED TO FileOperations+RasterExport.swift:         do {
+// MOVED TO FileOperations+RasterExport.swift:             // Create image from context with timeout protection
+// MOVED TO FileOperations+RasterExport.swift:             guard let createdImage = context.makeImage() else {
+// MOVED TO FileOperations+RasterExport.swift:                 throw VectorImportError.parsingError("Failed to create image from context", line: nil)
+// MOVED TO FileOperations+RasterExport.swift:             }
+// MOVED TO FileOperations+RasterExport.swift:             image = createdImage
+// MOVED TO FileOperations+RasterExport.swift:         } catch {
+// MOVED TO FileOperations+RasterExport.swift:             throw VectorImportError.parsingError("Core Image operation failed: \(error.localizedDescription)", line: nil)
+// MOVED TO FileOperations+RasterExport.swift:         }
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Save PNG with error handling
+// MOVED TO FileOperations+RasterExport.swift:         let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil)
+// MOVED TO FileOperations+RasterExport.swift:         guard let dest = destination else {
+// MOVED TO FileOperations+RasterExport.swift:             throw VectorImportError.parsingError("Failed to create PNG destination", line: nil)
+// MOVED TO FileOperations+RasterExport.swift:         }
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         CGImageDestinationAddImage(dest, image, nil)
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         if !CGImageDestinationFinalize(dest) {
+// MOVED TO FileOperations+RasterExport.swift:             throw VectorImportError.parsingError("Failed to finalize PNG export", line: nil)
+// MOVED TO FileOperations+RasterExport.swift:         }
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         Log.info("✅ Successfully exported PNG document", category: .fileOperations)
+// MOVED TO FileOperations+RasterExport.swift:     }
     
-    static func exportToPNG(_ document: VectorDocument, url: URL, scale: CGFloat) throws {
-        Log.fileOperation("🖼️ Exporting document to PNG: \(url.path) at \(scale)x scale", level: .info)
-        
-        // Calculate output size
-        let pageSize = document.settings.sizeInPoints
-        let outputSize = CGSize(width: pageSize.width * scale, height: pageSize.height * scale)
-        
-        // CRITICAL FIX: Add size validation to prevent Core Image crashes
-        guard outputSize.width > 0 && outputSize.height > 0 && 
-              outputSize.width <= 16384 && outputSize.height <= 16384 else {
-            throw VectorImportError.parsingError("Invalid output size: \(outputSize)", line: nil)
-        }
-        
-        // Create bitmap context
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
-        
-        guard let context = CGContext(
-            data: nil,
-            width: Int(outputSize.width),
-            height: Int(outputSize.height),
-            bitsPerComponent: 8,
-            bytesPerRow: 0,
-            space: colorSpace,
-            bitmapInfo: bitmapInfo
-        ) else {
-            throw VectorImportError.parsingError("Failed to create bitmap context", line: nil)
-        }
-        
-        // Set coordinate system to match our canvas (flip Y axis)
-        context.translateBy(x: 0, y: outputSize.height)
-        context.scaleBy(x: scale, y: -scale)
-        
-        // Draw background
-        context.setFillColor(document.settings.backgroundColor.cgColor)
-        context.fill(CGRect(origin: .zero, size: pageSize))
-        
-        // Draw each layer
-        for layer in document.layers {
-            if !layer.isVisible { continue }
-            
-            // Apply layer opacity
-            context.saveGState()
-            context.setAlpha(layer.opacity)
-            
-            // Draw shapes in layer
-            let layerIndex = document.layers.firstIndex(where: { $0.id == layer.id }) ?? 0
-            let shapesInLayer = document.getShapesForLayer(layerIndex)
-            for shape in shapesInLayer {
-                if !shape.isVisible { continue }
-                
-                drawShapeInPDF(shape, context: context)
-            }
-            
-            context.restoreGState()
-        }
-        
-        // Draw text objects
-        document.forEachTextInOrder { text in
-            if !text.isVisible { return }
-            
-            drawTextInPDF(text, context: context)
-        }
-        
-        // CRITICAL FIX: Add timeout and error handling for Core Image operations
-        let image: CGImage
-        do {
-            // Create image from context with timeout protection
-            guard let createdImage = context.makeImage() else {
-                throw VectorImportError.parsingError("Failed to create image from context", line: nil)
-            }
-            image = createdImage
-        } catch {
-            throw VectorImportError.parsingError("Core Image operation failed: \(error.localizedDescription)", line: nil)
-        }
-        
-        // Save PNG with error handling
-        let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil)
-        guard let dest = destination else {
-            throw VectorImportError.parsingError("Failed to create PNG destination", line: nil)
-        }
-        
-        CGImageDestinationAddImage(dest, image, nil)
-        
-        if !CGImageDestinationFinalize(dest) {
-            throw VectorImportError.parsingError("Failed to finalize PNG export", line: nil)
-        }
-        
-        Log.info("✅ Successfully exported PNG document", category: .fileOperations)
-    }
-    
-    static func exportToJPEG(_ document: VectorDocument, url: URL, scale: CGFloat, quality: Double) throws {
-        Log.info("📷 Exporting document to JPEG: \(url.path) at \(scale)x scale, \(Int(quality * 100))% quality", category: .general)
-        
-        // Calculate output size
-        let pageSize = document.settings.sizeInPoints
-        let outputSize = CGSize(width: pageSize.width * scale, height: pageSize.height * scale)
-        
-        // CRITICAL FIX: Add size validation to prevent Core Image crashes
-        guard outputSize.width > 0 && outputSize.height > 0 && 
-              outputSize.width <= 16384 && outputSize.height <= 16384 else {
-            throw VectorImportError.parsingError("Invalid output size: \(outputSize)", line: nil)
-        }
-        
-        // Create bitmap context
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        let bitmapInfo = CGImageAlphaInfo.noneSkipLast.rawValue // JPEG doesn't support alpha
-        
-        guard let context = CGContext(
-            data: nil,
-            width: Int(outputSize.width),
-            height: Int(outputSize.height),
-            bitsPerComponent: 8,
-            bytesPerRow: 0,
-            space: colorSpace,
-            bitmapInfo: bitmapInfo
-        ) else {
-            throw VectorImportError.parsingError("Failed to create bitmap context", line: nil)
-        }
-        
-        // Set coordinate system to match our canvas (flip Y axis)
-        context.translateBy(x: 0, y: outputSize.height)
-        context.scaleBy(x: scale, y: -scale)
-        
-        // Draw background (important for JPEG since it doesn't support transparency)
-        context.setFillColor(document.settings.backgroundColor.cgColor)
-        context.fill(CGRect(origin: .zero, size: pageSize))
-        
-        // Draw each layer
-        for layer in document.layers {
-            if !layer.isVisible { continue }
-            
-            // Apply layer opacity
-            context.saveGState()
-            context.setAlpha(layer.opacity)
-            
-            // Draw shapes in layer
-            let layerIndex = document.layers.firstIndex(where: { $0.id == layer.id }) ?? 0
-            let shapesInLayer = document.getShapesForLayer(layerIndex)
-            for shape in shapesInLayer {
-                if !shape.isVisible { continue }
-                
-                drawShapeInPDF(shape, context: context)
-            }
-            
-            context.restoreGState()
-        }
-        
-        // Draw text objects
-        document.forEachTextInOrder { text in
-            if !text.isVisible { return }
-            
-            drawTextInPDF(text, context: context)
-        }
-        
-        // CRITICAL FIX: Add timeout and error handling for Core Image operations
-        let image: CGImage
-        do {
-            // Create image from context with timeout protection
-            guard let createdImage = context.makeImage() else {
-                throw VectorImportError.parsingError("Failed to create image from context", line: nil)
-            }
-            image = createdImage
-        } catch {
-            throw VectorImportError.parsingError("Core Image operation failed: \(error.localizedDescription)", line: nil)
-        }
-        
-        // Save JPEG with quality setting and error handling
-        let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.jpeg.identifier as CFString, 1, nil)
-        guard let dest = destination else {
-            throw VectorImportError.parsingError("Failed to create JPEG destination", line: nil)
-        }
-        
-        // Set JPEG compression quality
-        let options = [kCGImageDestinationLossyCompressionQuality: quality]
-        CGImageDestinationAddImage(dest, image, options as CFDictionary)
-        
-        if !CGImageDestinationFinalize(dest) {
-            throw VectorImportError.parsingError("Failed to finalize JPEG export", line: nil)
-        }
-        
-        Log.info("✅ Successfully exported JPEG document", category: .fileOperations)
-    }
+// MOVED TO FileOperations+RasterExport.swift:     static func exportToJPEG(_ document: VectorDocument, url: URL, scale: CGFloat, quality: Double) throws {
+// MOVED TO FileOperations+RasterExport.swift:         Log.info("📷 Exporting document to JPEG: \(url.path) at \(scale)x scale, \(Int(quality * 100))% quality", category: .general)
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Calculate output size
+// MOVED TO FileOperations+RasterExport.swift:         let pageSize = document.settings.sizeInPoints
+// MOVED TO FileOperations+RasterExport.swift:         let outputSize = CGSize(width: pageSize.width * scale, height: pageSize.height * scale)
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // CRITICAL FIX: Add size validation to prevent Core Image crashes
+// MOVED TO FileOperations+RasterExport.swift:         guard outputSize.width > 0 && outputSize.height > 0 && 
+// MOVED TO FileOperations+RasterExport.swift:               outputSize.width <= 16384 && outputSize.height <= 16384 else {
+// MOVED TO FileOperations+RasterExport.swift:             throw VectorImportError.parsingError("Invalid output size: \(outputSize)", line: nil)
+// MOVED TO FileOperations+RasterExport.swift:         }
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Create bitmap context
+// MOVED TO FileOperations+RasterExport.swift:         let colorSpace = CGColorSpaceCreateDeviceRGB()
+// MOVED TO FileOperations+RasterExport.swift:         let bitmapInfo = CGImageAlphaInfo.noneSkipLast.rawValue // JPEG doesn't support alpha
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         guard let context = CGContext(
+// MOVED TO FileOperations+RasterExport.swift:             data: nil,
+// MOVED TO FileOperations+RasterExport.swift:             width: Int(outputSize.width),
+// MOVED TO FileOperations+RasterExport.swift:             height: Int(outputSize.height),
+// MOVED TO FileOperations+RasterExport.swift:             bitsPerComponent: 8,
+// MOVED TO FileOperations+RasterExport.swift:             bytesPerRow: 0,
+// MOVED TO FileOperations+RasterExport.swift:             space: colorSpace,
+// MOVED TO FileOperations+RasterExport.swift:             bitmapInfo: bitmapInfo
+// MOVED TO FileOperations+RasterExport.swift:         ) else {
+// MOVED TO FileOperations+RasterExport.swift:             throw VectorImportError.parsingError("Failed to create bitmap context", line: nil)
+// MOVED TO FileOperations+RasterExport.swift:         }
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Set coordinate system to match our canvas (flip Y axis)
+// MOVED TO FileOperations+RasterExport.swift:         context.translateBy(x: 0, y: outputSize.height)
+// MOVED TO FileOperations+RasterExport.swift:         context.scaleBy(x: scale, y: -scale)
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Draw background (important for JPEG since it doesn't support transparency)
+// MOVED TO FileOperations+RasterExport.swift:         context.setFillColor(document.settings.backgroundColor.cgColor)
+// MOVED TO FileOperations+RasterExport.swift:         context.fill(CGRect(origin: .zero, size: pageSize))
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Draw each layer
+// MOVED TO FileOperations+RasterExport.swift:         for layer in document.layers {
+// MOVED TO FileOperations+RasterExport.swift:             if !layer.isVisible { continue }
+// MOVED TO FileOperations+RasterExport.swift:             
+// MOVED TO FileOperations+RasterExport.swift:             // Apply layer opacity
+// MOVED TO FileOperations+RasterExport.swift:             context.saveGState()
+// MOVED TO FileOperations+RasterExport.swift:             context.setAlpha(layer.opacity)
+// MOVED TO FileOperations+RasterExport.swift:             
+// MOVED TO FileOperations+RasterExport.swift:             // Draw shapes in layer
+// MOVED TO FileOperations+RasterExport.swift:             let layerIndex = document.layers.firstIndex(where: { $0.id == layer.id }) ?? 0
+// MOVED TO FileOperations+RasterExport.swift:             let shapesInLayer = document.getShapesForLayer(layerIndex)
+// MOVED TO FileOperations+RasterExport.swift:             for shape in shapesInLayer {
+// MOVED TO FileOperations+RasterExport.swift:                 if !shape.isVisible { continue }
+// MOVED TO FileOperations+RasterExport.swift:                 
+// MOVED TO FileOperations+RasterExport.swift:                 drawShapeInPDF(shape, context: context)
+// MOVED TO FileOperations+RasterExport.swift:             }
+// MOVED TO FileOperations+RasterExport.swift:             
+// MOVED TO FileOperations+RasterExport.swift:             context.restoreGState()
+// MOVED TO FileOperations+RasterExport.swift:         }
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Draw text objects
+// MOVED TO FileOperations+RasterExport.swift:         document.forEachTextInOrder { text in
+// MOVED TO FileOperations+RasterExport.swift:             if !text.isVisible { return }
+// MOVED TO FileOperations+RasterExport.swift:             
+// MOVED TO FileOperations+RasterExport.swift:             drawTextInPDF(text, context: context)
+// MOVED TO FileOperations+RasterExport.swift:         }
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // CRITICAL FIX: Add timeout and error handling for Core Image operations
+// MOVED TO FileOperations+RasterExport.swift:         let image: CGImage
+// MOVED TO FileOperations+RasterExport.swift:         do {
+// MOVED TO FileOperations+RasterExport.swift:             // Create image from context with timeout protection
+// MOVED TO FileOperations+RasterExport.swift:             guard let createdImage = context.makeImage() else {
+// MOVED TO FileOperations+RasterExport.swift:                 throw VectorImportError.parsingError("Failed to create image from context", line: nil)
+// MOVED TO FileOperations+RasterExport.swift:             }
+// MOVED TO FileOperations+RasterExport.swift:             image = createdImage
+// MOVED TO FileOperations+RasterExport.swift:         } catch {
+// MOVED TO FileOperations+RasterExport.swift:             throw VectorImportError.parsingError("Core Image operation failed: \(error.localizedDescription)", line: nil)
+// MOVED TO FileOperations+RasterExport.swift:         }
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Save JPEG with quality setting and error handling
+// MOVED TO FileOperations+RasterExport.swift:         let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.jpeg.identifier as CFString, 1, nil)
+// MOVED TO FileOperations+RasterExport.swift:         guard let dest = destination else {
+// MOVED TO FileOperations+RasterExport.swift:             throw VectorImportError.parsingError("Failed to create JPEG destination", line: nil)
+// MOVED TO FileOperations+RasterExport.swift:         }
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         // Set JPEG compression quality
+// MOVED TO FileOperations+RasterExport.swift:         let options = [kCGImageDestinationLossyCompressionQuality: quality]
+// MOVED TO FileOperations+RasterExport.swift:         CGImageDestinationAddImage(dest, image, options as CFDictionary)
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         if !CGImageDestinationFinalize(dest) {
+// MOVED TO FileOperations+RasterExport.swift:             throw VectorImportError.parsingError("Failed to finalize JPEG export", line: nil)
+// MOVED TO FileOperations+RasterExport.swift:         }
+// MOVED TO FileOperations+RasterExport.swift:         
+// MOVED TO FileOperations+RasterExport.swift:         Log.info("✅ Successfully exported JPEG document", category: .fileOperations)
+// MOVED TO FileOperations+RasterExport.swift:     }
 }
