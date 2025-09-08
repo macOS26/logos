@@ -469,115 +469,115 @@ class FileOperations {
 // MOVED TO FileOperations+SVGImport.swift:     }
     
     /// Import PDF from data for FileDocument protocol
-    static func importFromPDFData(_ data: Data) throws -> VectorDocument {
-        Log.fileOperation("🎨 Importing document from PDF data", level: .info)
-        
-        // Create a temporary file to use with the existing PDF import infrastructure
-        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("pdf")
-        
-        do {
-            try data.write(to: tempURL)
-            let document = try importFromPDFSync(url: tempURL)
-            
-            // Clean up temporary file
-            try? FileManager.default.removeItem(at: tempURL)
-            
-            Log.fileOperation("✅ PDF data import completed", level: .info)
-            
-            return document
-        } catch {
-            // Clean up temporary file on error
-            try? FileManager.default.removeItem(at: tempURL)
-            throw error
-        }
-    }
-    
-    /// Synchronous version of PDF import for FileDocument protocol
-    static func importFromPDFSync(url: URL) throws -> VectorDocument {
-        Log.fileOperation("🎨 Importing document from PDF (sync): \(url.path)", level: .info)
-        
-        // Use a semaphore to make the async call synchronous
-        let semaphore = DispatchSemaphore(value: 0)
-        var resultDocument: VectorDocument?
-        var resultError: Error?
-        
-        Task {
-            do {
-                resultDocument = try await importFromPDF(url: url)
-            } catch {
-                resultError = error
-            }
-            semaphore.signal()
-        }
-        
-        semaphore.wait()
-        
-        if let error = resultError {
-            throw error
-        }
-        
-        guard let document = resultDocument else {
-            throw VectorImportError.parsingError("Failed to import PDF: Unknown error", line: nil)
-        }
-        
-        return document
-    }
-    
-    /// Async PDF import method
-    static func importFromPDF(url: URL) async throws -> VectorDocument {
-        Log.fileOperation("🎨 Importing document from PDF: \(url.path)", level: .info)
-        
-        let result = await VectorImportManager.shared.importVectorFile(from: url)
-        
-        if !result.success {
-            let errorMessage = result.errors.first?.localizedDescription ?? "Unknown PDF import error"
-            throw VectorImportError.parsingError("Failed to import PDF: \(errorMessage)", line: nil)
-        }
-        
-        // Create a new VectorDocument from the imported shapes
-        let document = VectorDocument()
-        
-        // Use document dimensions from PDF file metadata
-        let pdfDocumentSize = result.metadata.documentSize
-        let canvasWidth = pdfDocumentSize.width
-        let canvasHeight = pdfDocumentSize.height
-        
-        // Set document size based on PDF dimensions
-        document.settings.width = canvasWidth / 72.0 // Convert to inches
-        document.settings.height = canvasHeight / 72.0
-        document.settings.unit = .inches
-        
-        Log.fileOperation("🎯 PDF IMPORT USING DOCUMENT DIMENSIONS:", level: .info)
-        Log.info("   PDF document size: \(pdfDocumentSize)", category: .general)
-        Log.info("   Canvas size: \(canvasWidth) × \(canvasHeight) pts", category: .general)
-        
-        // VectorDocument init already created Pasteboard, Canvas and Working layers with backgrounds
-        // We only need to update the canvas size in settings (already done above)
-        
-        // Add all imported shapes to the layer
-        for shape in result.shapes {
-            var importedShape = shape
-            
-            // Ensure the shape is editable
-            importedShape.isLocked = false
-            importedShape.isVisible = true
-            
-            // Add shape to unified system (layer index 2 for working layer)
-            document.addShapeToUnifiedSystem(importedShape, layerIndex: 2)
-        }
-
-        // Select the working layer which contains imported shapes
-        document.selectedLayerIndex = 2 // Working layer is at index 2
-        
-        // Log warnings if any
-        for warning in result.warnings {
-            Log.fileOperation("⚠️ PDF Import Warning: \(warning)", level: .info)
-        }
-        
-        Log.info("✅ Successfully imported PDF document with \(result.shapes.count) shapes", category: .fileOperations)
-        Log.fileOperation("📐 Canvas sized to document dimensions: \(canvasWidth) × \(canvasHeight) pts", level: .info)
-        return document
-    }
+// MOVED TO FileOperations+PDFImport.swift:     static func importFromPDFData(_ data: Data) throws -> VectorDocument {
+// MOVED TO FileOperations+PDFImport.swift:         Log.fileOperation("🎨 Importing document from PDF data", level: .info)
+// MOVED TO FileOperations+PDFImport.swift:         
+// MOVED TO FileOperations+PDFImport.swift:         // Create a temporary file to use with the existing PDF import infrastructure
+// MOVED TO FileOperations+PDFImport.swift:         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("pdf")
+// MOVED TO FileOperations+PDFImport.swift:         
+// MOVED TO FileOperations+PDFImport.swift:         do {
+// MOVED TO FileOperations+PDFImport.swift:             try data.write(to: tempURL)
+// MOVED TO FileOperations+PDFImport.swift:             let document = try importFromPDFSync(url: tempURL)
+// MOVED TO FileOperations+PDFImport.swift:             
+// MOVED TO FileOperations+PDFImport.swift:             // Clean up temporary file
+// MOVED TO FileOperations+PDFImport.swift:             try? FileManager.default.removeItem(at: tempURL)
+// MOVED TO FileOperations+PDFImport.swift:             
+// MOVED TO FileOperations+PDFImport.swift:             Log.fileOperation("✅ PDF data import completed", level: .info)
+// MOVED TO FileOperations+PDFImport.swift:             
+// MOVED TO FileOperations+PDFImport.swift:             return document
+// MOVED TO FileOperations+PDFImport.swift:         } catch {
+// MOVED TO FileOperations+PDFImport.swift:             // Clean up temporary file on error
+// MOVED TO FileOperations+PDFImport.swift:             try? FileManager.default.removeItem(at: tempURL)
+// MOVED TO FileOperations+PDFImport.swift:             throw error
+// MOVED TO FileOperations+PDFImport.swift:         }
+// MOVED TO FileOperations+PDFImport.swift:     }
+// MOVED TO FileOperations+PDFImport.swift:     
+// MOVED TO FileOperations+PDFImport.swift:     /// Synchronous version of PDF import for FileDocument protocol
+// MOVED TO FileOperations+PDFImport.swift:     static func importFromPDFSync(url: URL) throws -> VectorDocument {
+// MOVED TO FileOperations+PDFImport.swift:         Log.fileOperation("🎨 Importing document from PDF (sync): \(url.path)", level: .info)
+// MOVED TO FileOperations+PDFImport.swift:         
+// MOVED TO FileOperations+PDFImport.swift:         // Use a semaphore to make the async call synchronous
+// MOVED TO FileOperations+PDFImport.swift:         let semaphore = DispatchSemaphore(value: 0)
+// MOVED TO FileOperations+PDFImport.swift:         var resultDocument: VectorDocument?
+// MOVED TO FileOperations+PDFImport.swift:         var resultError: Error?
+// MOVED TO FileOperations+PDFImport.swift:         
+// MOVED TO FileOperations+PDFImport.swift:         Task {
+// MOVED TO FileOperations+PDFImport.swift:             do {
+// MOVED TO FileOperations+PDFImport.swift:                 resultDocument = try await importFromPDF(url: url)
+// MOVED TO FileOperations+PDFImport.swift:             } catch {
+// MOVED TO FileOperations+PDFImport.swift:                 resultError = error
+// MOVED TO FileOperations+PDFImport.swift:             }
+// MOVED TO FileOperations+PDFImport.swift:             semaphore.signal()
+// MOVED TO FileOperations+PDFImport.swift:         }
+// MOVED TO FileOperations+PDFImport.swift:         
+// MOVED TO FileOperations+PDFImport.swift:         semaphore.wait()
+// MOVED TO FileOperations+PDFImport.swift:         
+// MOVED TO FileOperations+PDFImport.swift:         if let error = resultError {
+// MOVED TO FileOperations+PDFImport.swift:             throw error
+// MOVED TO FileOperations+PDFImport.swift:         }
+// MOVED TO FileOperations+PDFImport.swift:         
+// MOVED TO FileOperations+PDFImport.swift:         guard let document = resultDocument else {
+// MOVED TO FileOperations+PDFImport.swift:             throw VectorImportError.parsingError("Failed to import PDF: Unknown error", line: nil)
+// MOVED TO FileOperations+PDFImport.swift:         }
+// MOVED TO FileOperations+PDFImport.swift:         
+// MOVED TO FileOperations+PDFImport.swift:         return document
+// MOVED TO FileOperations+PDFImport.swift:     }
+// MOVED TO FileOperations+PDFImport.swift:     
+// MOVED TO FileOperations+PDFImport.swift:     /// Async PDF import method
+// MOVED TO FileOperations+PDFImport.swift:     static func importFromPDF(url: URL) async throws -> VectorDocument {
+// MOVED TO FileOperations+PDFImport.swift:         Log.fileOperation("🎨 Importing document from PDF: \(url.path)", level: .info)
+// MOVED TO FileOperations+PDFImport.swift:         
+// MOVED TO FileOperations+PDFImport.swift:         let result = await VectorImportManager.shared.importVectorFile(from: url)
+// MOVED TO FileOperations+PDFImport.swift:         
+// MOVED TO FileOperations+PDFImport.swift:         if !result.success {
+// MOVED TO FileOperations+PDFImport.swift:             let errorMessage = result.errors.first?.localizedDescription ?? "Unknown PDF import error"
+// MOVED TO FileOperations+PDFImport.swift:             throw VectorImportError.parsingError("Failed to import PDF: \(errorMessage)", line: nil)
+// MOVED TO FileOperations+PDFImport.swift:         }
+// MOVED TO FileOperations+PDFImport.swift:         
+// MOVED TO FileOperations+PDFImport.swift:         // Create a new VectorDocument from the imported shapes
+// MOVED TO FileOperations+PDFImport.swift:         let document = VectorDocument()
+// MOVED TO FileOperations+PDFImport.swift:         
+// MOVED TO FileOperations+PDFImport.swift:         // Use document dimensions from PDF file metadata
+// MOVED TO FileOperations+PDFImport.swift:         let pdfDocumentSize = result.metadata.documentSize
+// MOVED TO FileOperations+PDFImport.swift:         let canvasWidth = pdfDocumentSize.width
+// MOVED TO FileOperations+PDFImport.swift:         let canvasHeight = pdfDocumentSize.height
+// MOVED TO FileOperations+PDFImport.swift:         
+// MOVED TO FileOperations+PDFImport.swift:         // Set document size based on PDF dimensions
+// MOVED TO FileOperations+PDFImport.swift:         document.settings.width = canvasWidth / 72.0 // Convert to inches
+// MOVED TO FileOperations+PDFImport.swift:         document.settings.height = canvasHeight / 72.0
+// MOVED TO FileOperations+PDFImport.swift:         document.settings.unit = .inches
+// MOVED TO FileOperations+PDFImport.swift:         
+// MOVED TO FileOperations+PDFImport.swift:         Log.fileOperation("🎯 PDF IMPORT USING DOCUMENT DIMENSIONS:", level: .info)
+// MOVED TO FileOperations+PDFImport.swift:         Log.info("   PDF document size: \(pdfDocumentSize)", category: .general)
+// MOVED TO FileOperations+PDFImport.swift:         Log.info("   Canvas size: \(canvasWidth) × \(canvasHeight) pts", category: .general)
+// MOVED TO FileOperations+PDFImport.swift:         
+// MOVED TO FileOperations+PDFImport.swift:         // VectorDocument init already created Pasteboard, Canvas and Working layers with backgrounds
+// MOVED TO FileOperations+PDFImport.swift:         // We only need to update the canvas size in settings (already done above)
+// MOVED TO FileOperations+PDFImport.swift:         
+// MOVED TO FileOperations+PDFImport.swift:         // Add all imported shapes to the layer
+// MOVED TO FileOperations+PDFImport.swift:         for shape in result.shapes {
+// MOVED TO FileOperations+PDFImport.swift:             var importedShape = shape
+// MOVED TO FileOperations+PDFImport.swift:             
+// MOVED TO FileOperations+PDFImport.swift:             // Ensure the shape is editable
+// MOVED TO FileOperations+PDFImport.swift:             importedShape.isLocked = false
+// MOVED TO FileOperations+PDFImport.swift:             importedShape.isVisible = true
+// MOVED TO FileOperations+PDFImport.swift:             
+// MOVED TO FileOperations+PDFImport.swift:             // Add shape to unified system (layer index 2 for working layer)
+// MOVED TO FileOperations+PDFImport.swift:             document.addShapeToUnifiedSystem(importedShape, layerIndex: 2)
+// MOVED TO FileOperations+PDFImport.swift:         }
+// MOVED TO FileOperations+PDFImport.swift: 
+// MOVED TO FileOperations+PDFImport.swift:         // Select the working layer which contains imported shapes
+// MOVED TO FileOperations+PDFImport.swift:         document.selectedLayerIndex = 2 // Working layer is at index 2
+// MOVED TO FileOperations+PDFImport.swift:         
+// MOVED TO FileOperations+PDFImport.swift:         // Log warnings if any
+// MOVED TO FileOperations+PDFImport.swift:         for warning in result.warnings {
+// MOVED TO FileOperations+PDFImport.swift:             Log.fileOperation("⚠️ PDF Import Warning: \(warning)", level: .info)
+// MOVED TO FileOperations+PDFImport.swift:         }
+// MOVED TO FileOperations+PDFImport.swift:         
+// MOVED TO FileOperations+PDFImport.swift:         Log.info("✅ Successfully imported PDF document with \(result.shapes.count) shapes", category: .fileOperations)
+// MOVED TO FileOperations+PDFImport.swift:         Log.fileOperation("📐 Canvas sized to document dimensions: \(canvasWidth) × \(canvasHeight) pts", level: .info)
+// MOVED TO FileOperations+PDFImport.swift:         return document
+// MOVED TO FileOperations+PDFImport.swift:     }
     
     /// Generate PDF data from VectorDocument
     static func generatePDFData(from document: VectorDocument) throws -> Data {
