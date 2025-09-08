@@ -160,12 +160,6 @@ struct DocumentBasedMainView: View {
             allowedContentTypes: [
                 .svg,                                    // SVG files
                 .pdf,                                    // PDF files
-                UTType("com.adobe.illustrator.ai-image")!, // AI files
-                UTType("com.adobe.encapsulated-postscript")!, // EPS files
-                UTType("com.adobe.postscript")!,         // PostScript files
-                UTType(filenameExtension: "ps")!,        // PostScript files (.ps)
-                UTType(filenameExtension: "ai")!,        // AI files (.ai)
-                UTType(filenameExtension: "eps")!,       // EPS files (.eps)
                 UTType(filenameExtension: "dwf")!,       // DWF files (.dwf)
                 .png, .jpeg, .tiff, .gif, .bmp, UTType("public.heic")!, // Raster images
                 .data                                    // Generic data for unknown formats

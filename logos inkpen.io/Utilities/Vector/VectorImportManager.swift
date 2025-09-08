@@ -57,7 +57,13 @@ class VectorImportManager {
         case .pdf:
             return await importPDF(from: url)
         case .adobeIllustrator:
-            return await importAdobeIllustrator(from: url)
+            return VectorImportResult(
+                success: false,
+                shapes: [],
+                metadata: createDefaultMetadata(),
+                errors: [.unsupportedFormat(.adobeIllustrator)],
+                warnings: ["Adobe Illustrator format is no longer supported"]
+            )
         case .dwf:
             return await importDWF(from: url)
         case .dxf, .dwg:
@@ -107,7 +113,13 @@ class VectorImportManager {
         case .pdf:
             return await importPDF(from: url)
         case .adobeIllustrator:
-            return await importAdobeIllustrator(from: url)
+            return VectorImportResult(
+                success: false,
+                shapes: [],
+                metadata: createDefaultMetadata(),
+                errors: [.unsupportedFormat(.adobeIllustrator)],
+                warnings: ["Adobe Illustrator format is no longer supported"]
+            )
         case .dwf:
             return await importDWF(from: url)
         case .dxf, .dwg:
@@ -392,164 +404,7 @@ class VectorImportManager {
         }
     }
     
-    // MARK: - AI File Import (Professional Standard)
-    private func importAdobeIllustrator(from url: URL) async -> VectorImportResult {
-        var errors: [VectorImportError] = []
-        let warnings: [String] = []
-        
-        Log.fileOperation("📊 Importing AI file...", level: .info)
-        Log.fileOperation("💡 AI files contain embedded PDF data", level: .info)
-        
-        do {
-            let aiContent = try parseAdobeIllustratorFile(url)
-            
-            if let embeddedPDFURL = aiContent.embeddedPDFURL {
-                // Import the embedded PDF
-                let pdfResult = await importPDF(from: embeddedPDFURL)
-                
-                // Update metadata to reflect AI origin
-                let metadata = VectorImportMetadata(
-                    originalFormat: .adobeIllustrator,
-                    documentSize: pdfResult.metadata.documentSize,
-                    colorSpace: pdfResult.metadata.colorSpace,
-                    units: pdfResult.metadata.units,
-                    dpi: pdfResult.metadata.dpi,
-                    layerCount: aiContent.layerCount,
-                    shapeCount: pdfResult.metadata.shapeCount,
-                    textObjectCount: pdfResult.metadata.textObjectCount,
-                    importDate: Date(),
-                    sourceApplication: "AI File",
-                    documentVersion: aiContent.version
-                )
-                
-                Log.fileOperation("✅ AI file import successful via embedded PDF", level: .info)
-                
-                return VectorImportResult(
-                    success: pdfResult.success,
-                    shapes: pdfResult.shapes,
-                    metadata: metadata,
-                    errors: pdfResult.errors,
-                    warnings: pdfResult.warnings + ["Imported via embedded PDF data"]
-                )
-            } else {
-                throw VectorImportError.invalidStructure("No embedded PDF found")
-            }
-            
-        } catch {
-            errors.append(.parsingError(error.localizedDescription, line: nil))
-            Log.error("❌ AI file import failed: \(error)", category: .error)
-            
-            return VectorImportResult(
-                success: false,
-                shapes: [],
-                metadata: createDefaultMetadata(),
-                errors: errors,
-                warnings: warnings
-            )
-        }
-    }
-    
-    // MARK: - EPS Import (PostScript Standard) - DEPRECATED
-    // Note: EPS/PostScript support removed, keeping method for compatibility
-    private func importEPS(from url: URL) async -> VectorImportResult {
-        var errors: [VectorImportError] = []
-        let warnings: [String] = []
-        
-        Log.fileOperation("📊 Importing EPS (Encapsulated PostScript)...", level: .info)
-        
-        // EPS can often be converted to PDF for import
-        do {
-            // Convert EPS to CGPath using ImageIO
-            let epsContent = try parseEPSContent(url)
-            
-            let metadata = VectorImportMetadata(
-                originalFormat: .pdf, // EPS treated as PDF for import
-                documentSize: epsContent.boundingBox.size,
-                colorSpace: epsContent.colorSpace,
-                units: .points,
-                dpi: 72.0,
-                layerCount: 1,
-                shapeCount: epsContent.shapes.count,
-                textObjectCount: epsContent.textCount,
-                importDate: Date(),
-                sourceApplication: epsContent.creator,
-                documentVersion: epsContent.version
-            )
-            
-            Log.fileOperation("✅ EPS import successful: \(epsContent.shapes.count) shapes", level: .info)
-            
-            return VectorImportResult(
-                success: true,
-                shapes: epsContent.shapes,
-                metadata: metadata,
-                errors: errors,
-                warnings: warnings
-            )
-            
-        } catch {
-            errors.append(.parsingError(error.localizedDescription, line: nil))
-            Log.error("❌ EPS import failed: \(error)", category: .error)
-            
-            return VectorImportResult(
-                success: false,
-                shapes: [],
-                metadata: createDefaultMetadata(),
-                errors: errors,
-                warnings: warnings
-            )
-        }
-    }
-    
-    // MARK: - PostScript Import
-    
-    private func importPostScript(from url: URL) async -> VectorImportResult {
-        var errors: [VectorImportError] = []
-        let warnings: [String] = []
-        
-        Log.fileOperation("📊 Importing PostScript (.ps)...", level: .info)
-        
-        // PostScript can often be converted to PDF for import, similar to EPS
-        do {
-            // Parse PostScript content using similar approach to EPS
-            let psContent = try parsePostScriptContent(url)
-            
-            let metadata = VectorImportMetadata(
-                originalFormat: .pdf, // PostScript treated as PDF for import
-                documentSize: psContent.boundingBox.size,
-                colorSpace: psContent.colorSpace,
-                units: .points,
-                dpi: 72.0,
-                layerCount: 1,
-                shapeCount: psContent.shapes.count,
-                textObjectCount: psContent.textCount,
-                importDate: Date(),
-                sourceApplication: psContent.creator,
-                documentVersion: psContent.version
-            )
-            
-            Log.fileOperation("✅ PostScript import successful: \(psContent.shapes.count) shapes", level: .info)
-            
-            return VectorImportResult(
-                success: true,
-                shapes: psContent.shapes,
-                metadata: metadata,
-                errors: errors,
-                warnings: warnings
-            )
-            
-        } catch {
-            errors.append(.parsingError(error.localizedDescription, line: nil))
-            Log.error("❌ PostScript import failed: \(error)", category: .error)
-            
-            return VectorImportResult(
-                success: false,
-                shapes: [],
-                metadata: createDefaultMetadata(),
-                errors: errors,
-                warnings: warnings
-            )
-        }
-    }
+    // MARK: - AI/EPS/PS Import Methods (REMOVED - No longer supported)
     
     // MARK: - DWF Import (Design Web Format - Autodesk Published Standard)
     
