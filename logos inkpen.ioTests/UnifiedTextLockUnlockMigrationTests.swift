@@ -20,15 +20,17 @@ struct UnifiedTextLockUnlockMigrationTests {
         // Create a text object
         let textObject = VectorText(
             content: "Lockable Text",
-            position: CGPoint(x: 100, y: 100),
-            typography: Typography(
+            typography: TypographyProperties(
                 fontFamily: "Arial",
-                fontSize: 18
-            )
+                fontSize: 18,
+                strokeColor: VectorColor.black,
+                fillColor: VectorColor.black
+            ),
+            position: CGPoint(x: 100, y: 100)
         )
         
         // Add text through unified system
-        document.addText(textObject, to: 0)
+        document.addTextToUnifiedSystem(textObject, layerIndex: 0)
         
         // Verify initial state - should be unlocked
         if let addedText = document.findText(by: textObject.id) {
@@ -85,18 +87,20 @@ struct UnifiedTextLockUnlockMigrationTests {
         // Create text with specific typography
         let textObject = VectorText(
             content: "Typography Test",
-            position: CGPoint(x: 50, y: 50),
-            typography: Typography(
+            typography: TypographyProperties(
                 fontFamily: "Times New Roman",
+                fontWeight: FontWeight.semibold,
+                fontStyle: FontStyle.normal,
                 fontSize: 36,
-                fontWeight: .semibold,
-                fontStyle: .normal,
-                alignment: .right,
-                fillColor: .solid(color: CGColor(red: 0.5, green: 0.5, blue: 0.5, alpha: 1))
-            )
+                alignment: TextAlignment.right,
+                strokeColor: VectorColor.black,
+                fillColor: VectorColor.rgb(RGBColor(red: 0.5, green: 0.5, blue: 0.5)),
+                fillOpacity: 1.0
+            ),
+            position: CGPoint(x: 50, y: 50)
         )
         
-        document.addText(textObject, to: 0)
+        document.addTextToUnifiedSystem(textObject, layerIndex: 0)
         
         // Lock and then unlock
         document.lockTextInUnified(id: textObject.id)
@@ -106,18 +110,15 @@ struct UnifiedTextLockUnlockMigrationTests {
         if let text = document.findText(by: textObject.id) {
             #expect(text.typography.fontFamily == "Times New Roman", "Font family should be preserved")
             #expect(text.typography.fontSize == 36, "Font size should be preserved")
-            #expect(text.typography.fontWeight == .semibold, "Font weight should be preserved")
-            #expect(text.typography.fontStyle == .normal, "Font style should be preserved")
-            #expect(text.typography.alignment == .right, "Alignment should be preserved")
+            #expect(text.typography.fontWeight == FontWeight.semibold, "Font weight should be preserved")
+            #expect(text.typography.fontStyle == FontStyle.normal, "Font style should be preserved")
+            #expect(text.typography.alignment == TextAlignment.right, "Alignment should be preserved")
             
             // Verify color was preserved
-            if case .solid(let color) = text.typography.fillColor {
-                let components = color.components ?? []
-                if components.count >= 3 {
-                    #expect(abs(components[0] - 0.5) < 0.01, "Red should be preserved")
-                    #expect(abs(components[1] - 0.5) < 0.01, "Green should be preserved")
-                    #expect(abs(components[2] - 0.5) < 0.01, "Blue should be preserved")
-                }
+            if case .rgb(let rgbColor) = text.typography.fillColor {
+                #expect(abs(rgbColor.red - 0.5) < 0.01, "Red should be preserved")
+                #expect(abs(rgbColor.green - 0.5) < 0.01, "Green should be preserved")
+                #expect(abs(rgbColor.blue - 0.5) < 0.01, "Blue should be preserved")
             }
         } else {
             Issue.record("Text not found after lock/unlock")

@@ -20,10 +20,10 @@ struct SingleSourceOfTruthTests {
         // Add a shape through unified system
         let shape = VectorShape(
             path: VectorPath(elements: [
-                .move(to: CGPoint(x: 0, y: 0)),
-                .line(to: CGPoint(x: 100, y: 0)),
-                .line(to: CGPoint(x: 100, y: 100)),
-                .line(to: CGPoint(x: 0, y: 100)),
+                .move(to: VectorPoint(0, 0)),
+                .line(to: VectorPoint(100, 0)),
+                .line(to: VectorPoint(100, 100)),
+                .line(to: VectorPoint(0, 100)),
                 .close
             ])
         )
@@ -48,10 +48,15 @@ struct SingleSourceOfTruthTests {
         // Add text
         let text = VectorText(
             content: "Test",
-            position: CGPoint(x: 50, y: 50),
-            typography: TypographyProperties(fontFamily: "Arial", fontSize: 12)
+            typography: TypographyProperties(
+                fontFamily: "Arial",
+                fontSize: 12,
+                strokeColor: VectorColor.black,
+                fillColor: VectorColor.black
+            ),
+            position: CGPoint(x: 50, y: 50)
         )
-        document.addText(text, to: 0)
+        document.addTextToUnifiedSystem(text, layerIndex: 0)
         
         // Verify text is in unified objects
         let textInUnified = document.unifiedObjects.contains { obj in

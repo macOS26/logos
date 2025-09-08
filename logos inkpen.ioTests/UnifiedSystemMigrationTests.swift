@@ -344,9 +344,8 @@ struct UnifiedSystemMigrationTests {
         
         #expect(doc.selectedObjectIDs.contains(shapeID))
         
-        // Remove shape from layer but not from selection
-        doc.getShapesForLayer(2).removeAll { $0.id == shapeID }
-        doc.populateUnifiedObjectsFromLayersPreservingOrder()
+        // Remove shape from unified objects but not from selection
+        doc.unifiedObjects.removeAll { $0.id == shapeID }
         
         // Unified system should handle orphaned selections gracefully
         #expect(doc.selectedObjectIDs.contains(shapeID)) // Still in selection

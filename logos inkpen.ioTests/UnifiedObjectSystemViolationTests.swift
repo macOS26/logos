@@ -342,8 +342,9 @@ struct UnifiedObjectSystemViolationTests {
             #expect(unifiedObj.layerIndex == targetLayerIndex, "Imported shape added to wrong layer")
         }
         
-        // Verify legacy system consistency
-        let legacyExists = document.layers[targetLayerIndex].shapes.contains { $0.id == importedShape.id }
-        #expect(legacyExists, "Imported shape not in correct legacy layer")
+        // Verify through helper method
+        let layerShapes = document.getShapesForLayer(targetLayerIndex)
+        let shapeExists = layerShapes.contains { $0.id == importedShape.id }
+        #expect(shapeExists, "Imported shape not in correct layer")
     }
 }
