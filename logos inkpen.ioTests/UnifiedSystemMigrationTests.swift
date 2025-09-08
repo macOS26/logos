@@ -60,7 +60,7 @@ struct UnifiedSystemMigrationTests {
         #expect(doc.selectedTextIDs.isEmpty)
         
         // Select a shape
-        let shapeID = doc.layers[2].shapes[0].id
+        let shapeID = doc.getShapesForLayer(2)[0].id
         doc.selectedObjectIDs.insert(shapeID)
         doc.syncSelectionArrays()
         
@@ -86,7 +86,7 @@ struct UnifiedSystemMigrationTests {
         let doc = createTestDocument()
         
         // Select multiple shapes (excluding text shapes)
-        for shape in doc.layers[2].shapes where !shape.isTextObject {
+        for shape in doc.getShapesForLayer(2) where !shape.isTextObject {
             doc.selectedObjectIDs.insert(shape.id)
         }
         doc.syncSelectionArrays()
@@ -109,7 +109,7 @@ struct UnifiedSystemMigrationTests {
     @Test("Test insert operations with unified system")
     func testInsertOperations() {
         let doc = createTestDocument()
-        let shapeID = doc.layers[2].shapes[0].id
+        let shapeID = doc.getShapesForLayer(2)[0].id
         
         // Old way
         doc.selectedShapeIDs.insert(shapeID)
@@ -132,7 +132,7 @@ struct UnifiedSystemMigrationTests {
         let doc = createTestDocument()
         
         // Select everything
-        for shape in doc.layers[2].shapes {
+        for shape in doc.getShapesForLayer(2) {
             doc.selectedObjectIDs.insert(shape.id)
         }
         doc.selectedObjectIDs.insert(doc.allTextObjects[0].id)
@@ -164,7 +164,7 @@ struct UnifiedSystemMigrationTests {
         let doc = createTestDocument()
         
         // Select all shapes
-        for shape in doc.layers[2].shapes {
+        for shape in doc.getShapesForLayer(2) {
             doc.selectedObjectIDs.insert(shape.id)
         }
         doc.syncSelectionArrays()
@@ -172,7 +172,7 @@ struct UnifiedSystemMigrationTests {
         // Old way - iterate selectedShapeIDs
         var oldWayCount = 0
         for shapeID in doc.selectedShapeIDs {
-            if doc.layers[2].shapes.contains(where: { $0.id == shapeID }) {
+            if doc.getShapesForLayer(2).contains(where: { $0.id == shapeID }) {
                 oldWayCount += 1
             }
         }
@@ -198,13 +198,13 @@ struct UnifiedSystemMigrationTests {
         let doc = createTestDocument()
         
         // Select one shape and one text
-        doc.selectedObjectIDs.insert(doc.layers[2].shapes[0].id)
+        doc.selectedObjectIDs.insert(doc.getShapesForLayer(2)[0].id)
         doc.selectedObjectIDs.insert(doc.allTextObjects[0].id)
         doc.syncSelectionArrays()
         
         let selectedShapes = doc.getSelectedShapes()
         #expect(selectedShapes.count == 1)
-        #expect(selectedShapes[0].id == doc.layers[2].shapes[0].id)
+        #expect(selectedShapes[0].id == doc.getShapesForLayer(2)[0].id)
     }
     
     // MARK: - Complex Selection Logic Tests
@@ -220,7 +220,7 @@ struct UnifiedSystemMigrationTests {
         #expect(doc.selectedObjectIDs.isEmpty)
         
         // Select a shape
-        doc.selectedObjectIDs.insert(doc.layers[2].shapes[0].id)
+        doc.selectedObjectIDs.insert(doc.getShapesForLayer(2)[0].id)
         doc.syncSelectionArrays()
         
         #expect(!(doc.selectedShapeIDs.isEmpty && doc.selectedTextIDs.isEmpty))
@@ -246,7 +246,7 @@ struct UnifiedSystemMigrationTests {
         #expect(doc.selectedObjectIDs.isEmpty)
         
         // Select shape
-        doc.selectedObjectIDs.insert(doc.layers[2].shapes[0].id)
+        doc.selectedObjectIDs.insert(doc.getShapesForLayer(2)[0].id)
         doc.syncSelectionArrays()
         
         #expect(!doc.selectedShapeIDs.isEmpty || !doc.selectedTextIDs.isEmpty)
@@ -260,7 +260,7 @@ struct UnifiedSystemMigrationTests {
         let doc = createTestDocument()
         
         // Test shape duplication
-        doc.selectedObjectIDs.insert(doc.layers[2].shapes[0].id)
+        doc.selectedObjectIDs.insert(doc.getShapesForLayer(2)[0].id)
         doc.syncSelectionArrays()
         
         // Old check: !selectedShapeIDs.isEmpty
@@ -268,7 +268,7 @@ struct UnifiedSystemMigrationTests {
         
         // New unified check
         let hasShapeSelection = doc.selectedObjectIDs.contains { id in
-            doc.unifiedObjects.first { $0.id == id }?.objectType == .shape(doc.layers[2].shapes[0])
+            doc.unifiedObjects.first { $0.id == id }?.objectType == .shape(doc.getShapesForLayer(2)[0])
         }
         #expect(hasShapeSelection)
         
@@ -306,7 +306,7 @@ struct UnifiedSystemMigrationTests {
         
         // Measure old way
         let startOld = Foundation.Date()
-        for shape in doc.layers[2].shapes {
+        for shape in doc.getShapesForLayer(2) {
             doc.selectedShapeIDs.insert(shape.id)
         }
         doc.syncSelectionArrays()
@@ -319,7 +319,7 @@ struct UnifiedSystemMigrationTests {
         
         // Measure new unified way
         let startNew = Foundation.Date()
-        for shape in doc.layers[2].shapes {
+        for shape in doc.getShapesForLayer(2) {
             doc.selectedObjectIDs.insert(shape.id)
         }
         doc.syncSelectionArrays()
@@ -336,7 +336,7 @@ struct UnifiedSystemMigrationTests {
     @Test("Test selection with deleted objects")
     func testSelectionWithDeletedObjects() {
         let doc = createTestDocument()
-        let shapeID = doc.layers[2].shapes[0].id
+        let shapeID = doc.getShapesForLayer(2)[0].id
         
         // Select shape
         doc.selectedObjectIDs.insert(shapeID)
@@ -345,7 +345,7 @@ struct UnifiedSystemMigrationTests {
         #expect(doc.selectedObjectIDs.contains(shapeID))
         
         // Remove shape from layer but not from selection
-        doc.layers[2].shapes.removeAll { $0.id == shapeID }
+        doc.getShapesForLayer(2).removeAll { $0.id == shapeID }
         doc.populateUnifiedObjectsFromLayersPreservingOrder()
         
         // Unified system should handle orphaned selections gracefully
@@ -372,7 +372,7 @@ struct UnifiedSystemMigrationTests {
         doc.addShape(shape3, to: 3)
         
         // Select shapes from different layers
-        doc.selectedObjectIDs.insert(doc.layers[2].shapes[0].id)
+        doc.selectedObjectIDs.insert(doc.getShapesForLayer(2)[0].id)
         doc.selectedObjectIDs.insert(shape3.id)
         doc.syncSelectionArrays()
         
@@ -421,7 +421,7 @@ struct UnifiedSystemMigrationTests {
         let doc = createTestDocument()
         
         // Select mixed objects
-        doc.selectedObjectIDs.insert(doc.layers[2].shapes[0].id)
+        doc.selectedObjectIDs.insert(doc.getShapesForLayer(2)[0].id)
         doc.selectedObjectIDs.insert(doc.allTextObjects[0].id)
         doc.syncSelectionArrays()
         

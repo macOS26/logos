@@ -36,10 +36,10 @@ struct UnifiedObjectSystemShapeTests {
         document.updateUnifiedObjectsOptimized()
         
         // Verify sync worked
-        #expect(document.layers[0].shapes.count == 1)
-        #expect(document.layers[0].shapes[0].id == shape1.id)
-        #expect(document.layers[1].shapes.count == 1)
-        #expect(document.layers[1].shapes[0].id == shape2.id)
+        #expect(document.getShapesForLayer(0).count == 1)
+        #expect(document.getShapesForLayer(0)[0].id == shape1.id)
+        #expect(document.getShapesForLayer(1).count == 1)
+        #expect(document.getShapesForLayer(1)[0].id == shape2.id)
     }
     
     @Test func testUpdateShapeFillColorInUnified() async throws {
@@ -60,7 +60,7 @@ struct UnifiedObjectSystemShapeTests {
         document.addShapeToUnifiedSystem(testShape, layerIndex: 0)
         
         // Verify initial fill color
-        let initialShape = document.layers[0].shapes.first { $0.id == testShape.id }
+        let initialShape = document.getShapesForLayer(0).first { $0.id == testShape.id }
         #expect(initialShape?.fillStyle?.color == VectorColor.black, "Initial fill color not set correctly")
         
         // Use unified helper to update fill color
@@ -68,7 +68,7 @@ struct UnifiedObjectSystemShapeTests {
         document.updateShapeFillColorInUnified(id: testShape.id, color: newColor)
         
         // Verify legacy array updated
-        let updatedShape = document.layers[0].shapes.first { $0.id == testShape.id }
+        let updatedShape = document.getShapesForLayer(0).first { $0.id == testShape.id }
         #expect(updatedShape?.fillStyle?.color == newColor, "Legacy shapes fill color not updated")
         
         // Verify unified system knows about the shape
@@ -99,19 +99,19 @@ struct UnifiedObjectSystemShapeTests {
         document.addShapeToUnifiedSystem(testShape, layerIndex: 0)
         
         // Verify initial lock state
-        let initialShape = document.layers[0].shapes.first { $0.id == testShape.id }
+        let initialShape = document.getShapesForLayer(0).first { $0.id == testShape.id }
         #expect(initialShape?.isLocked == false, "Initial lock state not set correctly")
         
         // Use unified helper to lock shape
         document.lockShapeInUnified(id: testShape.id)
         
         // Verify legacy array updated
-        let lockedShape = document.layers[0].shapes.first { $0.id == testShape.id }
+        let lockedShape = document.getShapesForLayer(0).first { $0.id == testShape.id }
         #expect(lockedShape?.isLocked == true, "Legacy shapes lock state not updated")
         
         // Test unlock
         document.unlockShapeInUnified(id: testShape.id)
-        let unlockedShape = document.layers[0].shapes.first { $0.id == testShape.id }
+        let unlockedShape = document.getShapesForLayer(0).first { $0.id == testShape.id }
         #expect(unlockedShape?.isLocked == false, "Legacy shapes unlock state not updated")
     }
     
@@ -133,19 +133,19 @@ struct UnifiedObjectSystemShapeTests {
         document.addShapeToUnifiedSystem(testShape, layerIndex: 0)
         
         // Verify initial visibility state
-        let initialShape = document.layers[0].shapes.first { $0.id == testShape.id }
+        let initialShape = document.getShapesForLayer(0).first { $0.id == testShape.id }
         #expect(initialShape?.isVisible == true, "Initial visibility state not set correctly")
         
         // Use unified helper to hide shape
         document.hideShapeInUnified(id: testShape.id)
         
         // Verify legacy array updated
-        let hiddenShape = document.layers[0].shapes.first { $0.id == testShape.id }
+        let hiddenShape = document.getShapesForLayer(0).first { $0.id == testShape.id }
         #expect(hiddenShape?.isVisible == false, "Legacy shapes visibility state not updated")
         
         // Test show
         document.showShapeInUnified(id: testShape.id)
-        let visibleShape = document.layers[0].shapes.first { $0.id == testShape.id }
+        let visibleShape = document.getShapesForLayer(0).first { $0.id == testShape.id }
         #expect(visibleShape?.isVisible == true, "Legacy shapes show state not updated")
     }
     
@@ -161,7 +161,7 @@ struct UnifiedObjectSystemShapeTests {
         document.addShapeToUnifiedSystem(testShape, layerIndex: 0)
         
         // Verify initial fill style is nil
-        let initialShape = document.layers[0].shapes.first { $0.id == testShape.id }
+        let initialShape = document.getShapesForLayer(0).first { $0.id == testShape.id }
         #expect(initialShape?.fillStyle == nil, "Initial fill style should be nil")
         
         // Use unified helper to create fill style
@@ -170,7 +170,7 @@ struct UnifiedObjectSystemShapeTests {
         document.createFillStyleInUnified(id: testShape.id, color: testColor, opacity: testOpacity)
         
         // Verify legacy array updated
-        let updatedShape = document.layers[0].shapes.first { $0.id == testShape.id }
+        let updatedShape = document.getShapesForLayer(0).first { $0.id == testShape.id }
         #expect(updatedShape?.fillStyle?.color == testColor, "Legacy shapes fill color not updated")
         #expect(updatedShape?.fillStyle?.opacity == testOpacity, "Legacy shapes fill opacity not updated")
         
@@ -196,7 +196,7 @@ struct UnifiedObjectSystemShapeTests {
         document.addShapeToUnifiedSystem(testShape, layerIndex: 0)
         
         // Verify initial stroke style is nil
-        let initialShape = document.layers[0].shapes.first { $0.id == testShape.id }
+        let initialShape = document.getShapesForLayer(0).first { $0.id == testShape.id }
         #expect(initialShape?.strokeStyle == nil, "Initial stroke style should be nil")
         
         // Use unified helper to create stroke style
@@ -220,7 +220,7 @@ struct UnifiedObjectSystemShapeTests {
         )
         
         // Verify legacy array updated
-        let updatedShape = document.layers[0].shapes.first { $0.id == testShape.id }
+        let updatedShape = document.getShapesForLayer(0).first { $0.id == testShape.id }
         #expect(updatedShape?.strokeStyle?.color == testColor, "Legacy shapes stroke color not updated")
         #expect(updatedShape?.strokeStyle?.width == testWidth, "Legacy shapes stroke width not updated")
         #expect(updatedShape?.strokeStyle?.placement == testPlacement, "Legacy shapes stroke placement not updated")

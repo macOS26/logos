@@ -25,13 +25,13 @@ struct UnifiedHelperCoverageTests {
         let _ = CGAffineTransform(scaleX: 2.0, y: 2.0)
         
         // VIOLATION TEST: This should use unified helper, not direct manipulation
-        // document.layers[0].shapes[0].transform = transform  // VIOLATION!
+        // document.getShapesForLayer(0)[0].transform = transform  // VIOLATION!
         
         // CORRECT: Use unified system (need to add this helper)
         // document.updateShapeTransformUnified(id: shape.id, transform: transform)
         
         // For now, verify the violation doesn't exist
-        let updatedShape = document.layers[0].shapes.first { $0.id == shape.id }
+        let updatedShape = document.getShapesForLayer(0).first { $0.id == shape.id }
         #expect(updatedShape != nil, "Shape should exist")
     }
     
@@ -48,7 +48,7 @@ struct UnifiedHelperCoverageTests {
         // CORRECT: Use unified helper
         document.updateShapePathUnified(id: shape.id, path: newPath)
         
-        let updatedShape = document.layers[0].shapes.first { $0.id == shape.id }
+        let updatedShape = document.getShapesForLayer(0).first { $0.id == shape.id }
         #expect(updatedShape?.path.elements.count == 2, "Path should be updated via unified helper")
     }
     
@@ -87,12 +87,12 @@ struct UnifiedHelperCoverageTests {
         document.addShapeToUnifiedSystem(shape, layerIndex: 0)
         
         // VIOLATION TEST: Direct bounds manipulation should not be allowed
-        // document.layers[0].shapes[0].bounds = newBounds  // VIOLATION!
+        // document.getShapesForLayer(0)[0].bounds = newBounds  // VIOLATION!
         
         // Instead, bounds should be updated automatically by unified helpers
         // or through proper unified helper methods
         
-        let updatedShape = document.layers[0].shapes.first { $0.id == shape.id }
+        let updatedShape = document.getShapesForLayer(0).first { $0.id == shape.id }
         #expect(updatedShape != nil, "Shape should exist and bounds managed by unified system")
     }
     
@@ -110,12 +110,12 @@ struct UnifiedHelperCoverageTests {
         // CORRECT: Use unified helpers
         document.hideShapeInUnified(id: shape.id)
         
-        let hiddenShape = document.layers[0].shapes.first { $0.id == shape.id }
+        let hiddenShape = document.getShapesForLayer(0).first { $0.id == shape.id }
         #expect(hiddenShape?.isVisible == false, "Shape visibility should use unified helper")
         
         document.showShapeInUnified(id: shape.id)
         
-        let visibleShape = document.layers[0].shapes.first { $0.id == shape.id }
+        let visibleShape = document.getShapesForLayer(0).first { $0.id == shape.id }
         #expect(visibleShape?.isVisible == true, "Shape visibility should use unified helper")
     }
     
@@ -170,7 +170,7 @@ struct UnifiedHelperCoverageTests {
         // CORRECT: Use unified helpers
         document.updateShapeFillColorInUnified(id: shape.id, color: newColor)
         
-        let updatedShape = document.layers[0].shapes.first { $0.id == shape.id }
+        let updatedShape = document.getShapesForLayer(0).first { $0.id == shape.id }
         #expect(updatedShape?.fillStyle?.color == newColor, "Shape color should use unified helper")
     }
     
@@ -220,7 +220,7 @@ struct UnifiedHelperCoverageTests {
         #expect(document.unifiedObjects.count == initialUnifiedCount + 2, "Both objects should be in unified system")
         
         // Verify legacy arrays are in sync
-        #expect(document.layers[0].shapes.contains { $0.id == shape.id }, "Shape should be in legacy array")
+        #expect(document.getShapesForLayer(0).contains { $0.id == shape.id }, "Shape should be in legacy array")
         
         // Verify unified objects have correct types
         let unifiedShape = document.unifiedObjects.first { obj in

@@ -312,8 +312,8 @@ struct UnifiedTextSystemMigrationTests {
         #expect(!textInLayer3.isEmpty, "Text should be in layer 3")
         
         // Verify shape is in correct layer
-        #expect(document.layers[2].shapes.filter { $0.id == text.id }.isEmpty, "Shape should not be in layer 2")
-        #expect(!document.layers[3].shapes.filter { $0.id == text.id }.isEmpty, "Shape should be in layer 3")
+        #expect(document.getShapesForLayer(2).filter { $0.id == text.id }.isEmpty, "Shape should not be in layer 2")
+        #expect(!document.getShapesForLayer(3).filter { $0.id == text.id }.isEmpty, "Shape should be in layer 3")
     }
     
     // Removed testTextUndoRedoUsesUnifiedSystem as undo/redo has known issues in test environment
@@ -349,7 +349,7 @@ struct UnifiedTextSystemMigrationTests {
         }
         
         // Verify the shape is also in the layer
-        let shapeInLayer = document.layers[2].shapes.first { $0.id == text.id }
+        let shapeInLayer = document.getShapesForLayer(2).first { $0.id == text.id }
         #expect(shapeInLayer != nil, "Text shape should be in layer")
         #expect(shapeInLayer?.isTextObject == true, "Shape in layer should be marked as text")
     }

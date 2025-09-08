@@ -65,7 +65,7 @@ struct UnifiedObjectSystemViolationTests {
         #expect(unifiedShape != nil, "Shape not found in unified objects")
         
         // Verify shape is in legacy layer
-        let legacyShape = document.layers[0].shapes.first { $0.id == testShape.id }
+        let legacyShape = document.getShapesForLayer(0).first { $0.id == testShape.id }
         #expect(legacyShape != nil, "Shape not found in legacy layer")
     }
     
@@ -157,7 +157,7 @@ struct UnifiedObjectSystemViolationTests {
         // Create a test template shape
         let templateShape = VectorShape.circle(center: CGPoint(x: 50, y: 50), radius: 25)
         
-        // Test VIOLATION: layers[0].shapes.append() bypasses unified system
+        // Test VIOLATION: getShapesForLayer(0).append() bypasses unified system
         let initialUnifiedCount = document.unifiedObjects.count
         
         // CORRECT approach
@@ -167,7 +167,7 @@ struct UnifiedObjectSystemViolationTests {
         #expect(document.unifiedObjects.count == initialUnifiedCount + 1, "Template shape not added to unified system")
         
         // Verify both systems are in sync
-        let legacyExists = document.layers[0].shapes.contains { $0.id == templateShape.id }
+        let legacyExists = document.getShapesForLayer(0).contains { $0.id == templateShape.id }
         let unifiedExists = document.unifiedObjects.contains { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.id == templateShape.id

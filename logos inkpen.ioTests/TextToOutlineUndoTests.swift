@@ -45,7 +45,7 @@ struct TextToOutlineUndoTests {
         
         // Verify text was removed and shape was added
         #expect(document.allTextObjects.isEmpty, "Text objects should be empty after conversion")
-        let shapesInLayer = document.layers[2].shapes
+        let shapesInLayer = document.getShapesForLayer(2)
         #expect(!shapesInLayer.isEmpty, "Should have shape in layer after conversion")
         
         // Find the outline shape
@@ -71,7 +71,7 @@ struct TextToOutlineUndoTests {
         }
         
         // Verify outline shape was removed
-        let shapesAfterUndo = document.layers[2].shapes
+        let shapesAfterUndo = document.getShapesForLayer(2)
         let outlineShapeAfterUndo = shapesAfterUndo.first { $0.name.contains("Text Outline") }
         #expect(outlineShapeAfterUndo == nil, "Outline shape should be removed after undo")
     }

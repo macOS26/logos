@@ -341,7 +341,7 @@ struct UnifiedClippingMaskTests {
         }
         
         // Verify no duplicates
-        #expect(document.layers[2].shapes.count == 2, "Should still have exactly 2 shapes")
+        #expect(document.getShapesForLayer(2).count == 2, "Should still have exactly 2 shapes")
         #expect(document.unifiedObjects.filter { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.id == rect.id || shape.id == circle.id
