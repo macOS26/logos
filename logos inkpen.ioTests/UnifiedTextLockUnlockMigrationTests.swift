@@ -2,7 +2,7 @@
 //  UnifiedTextLockUnlockMigrationTests.swift
 //  logos inkpen.ioTests
 //
-//  Testing migration of lock/unlock text methods to eliminate layers[].shapes
+//  Testing migration of lock/unlock text methods to use unified objects system
 //
 
 import Testing

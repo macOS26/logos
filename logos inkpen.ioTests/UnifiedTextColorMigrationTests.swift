@@ -2,7 +2,7 @@
 //  UnifiedTextColorMigrationTests.swift
 //  logos inkpen.ioTests
 //
-//  Testing migration of updateTextFillColorInUnified to eliminate layers[].shapes
+//  Testing migration of updateTextFillColorInUnified to use unified objects system
 //
 
 import Testing

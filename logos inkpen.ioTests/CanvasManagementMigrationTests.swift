@@ -2,7 +2,7 @@
 //  CanvasManagementMigrationTests.swift
 //  logos inkpen.ioTests
 //
-//  Test that canvas management uses unified objects instead of layers[].shapes
+//  Test that canvas management uses unified objects system
 //
 
 import XCTest

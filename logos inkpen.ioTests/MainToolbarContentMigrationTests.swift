@@ -2,7 +2,7 @@
 //  MainToolbarContentMigrationTests.swift
 //  logos inkpen.ioTests
 //
-//  Test that MainToolbarContent uses unified objects instead of layers[].shapes
+//  Test that MainToolbarContent uses unified objects system
 //
 
 import XCTest
@@ -41,7 +41,7 @@ final class MainToolbarContentMigrationTests: XCTestCase {
         }.count
         XCTAssertEqual(lockedCount, 2, "Should have 2 locked shapes")
         
-        // Unlock all objects - this should use unified objects, not layers[].shapes
+        // Unlock all objects - this uses unified objects system
         for unifiedObject in document.unifiedObjects {
             if case .shape(let shape) = unifiedObject.objectType {
                 document.unlockShapeInUnified(id: shape.id)
@@ -85,7 +85,7 @@ final class MainToolbarContentMigrationTests: XCTestCase {
         }.count
         XCTAssertEqual(hiddenCount, 2, "Should have 2 hidden shapes")
         
-        // Show all objects - this should use unified objects, not layers[].shapes
+        // Show all objects - this uses unified objects system
         for unifiedObject in document.unifiedObjects {
             if case .shape(let shape) = unifiedObject.objectType {
                 document.showShapeInUnified(id: shape.id)
