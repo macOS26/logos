@@ -58,40 +58,36 @@ extension PDFCommandParser {
         
         let startPoint: CGPoint
         let endPoint: CGPoint
-        let deltaY: CGFloat
         
         if needsNormalization && pageSize.width > 0 && pageSize.height > 0 {
-            // For absolute coordinates from our own PDFs:
-            // - Normalize to 0-1 range
-            // - Keep Y coordinates as-is (don't flip) since they're already in the correct space
+            // For absolute coordinates (typically from our own PDFs):
+            // Normalize to 0-1 range but DON'T use the Y-flipped coordinates
+            // because our export already has the correct orientation
             startPoint = CGPoint(x: Double(x0 / pageSize.width), y: Double(y0 / pageSize.height))
             endPoint = CGPoint(x: Double(x1 / pageSize.width), y: Double(y1 / pageSize.height))
-            deltaY = y1 - y0  // Use original Y delta for angle calculation
-            print("PDF: 🔄 Normalized absolute coordinates to unit space (our PDF)")
+            print("PDF: 🔄 Normalized absolute coordinates to unit space (keeping original Y orientation)")
         } else {
-            // For normalized coordinates from other PDFs:
-            // - Flip Y coordinate system (PDF has origin at bottom-left, we need top-left)
-            let transformedY0 = pageSize.height - y0
-            let transformedY1 = pageSize.height - y1
-            startPoint = CGPoint(x: Double(x0), y: Double(transformedY0))
-            endPoint = CGPoint(x: Double(x1), y: Double(transformedY1))
-            deltaY = transformedY1 - transformedY0  // Use transformed Y delta
-            print("PDF: 🔄 Using normalized coordinates with Y-flip (external PDF)")
+            // For normalized coordinates (0-1 range):
+            // Keep original coordinates without Y-flip
+            startPoint = CGPoint(x: Double(x0), y: Double(y0))
+            endPoint = CGPoint(x: Double(x1), y: Double(y1))
         }
         
-        // Calculate the actual gradient angle from the vector
+        // Calculate the actual gradient angle from the original coordinates
         let deltaX = x1 - x0
+        let deltaY = y1 - y0  // Always use original Y values
         let coordinateAngle = atan2(deltaY, deltaX) * 180.0 / .pi
         
         // CRITICAL: Use the transformation matrix rotation for the actual gradient angle
-        let ctmAngle = atan2(currentTransformMatrix.b, currentTransformMatrix.a) * 180.0 / .pi
-        // No need to flip the CTM angle - use it directly
+        // The CTM's b component is negated in PDF coordinate system, so we need to un-negate it
+        let ctmAngle = atan2(-currentTransformMatrix.b, currentTransformMatrix.a) * 180.0 / .pi
+        // Combine coordinate angle with CTM angle
         let angleDegrees = coordinateAngle + ctmAngle
         
         print("PDF: 📍 Original PDF coordinates: (\(x0), \(y0)) -> (\(x1), \(y1))")
         print("PDF: 🔄 Final coordinates: (\(startPoint.x), \(startPoint.y)) -> (\(endPoint.x), \(endPoint.y))")
         print("PDF: 📊 Delta values: ΔX=\(deltaX), ΔY=\(deltaY)")
-        print("PDF: 📐 Coordinate angle: \(coordinateAngle)°, CTM angle: \(ctmAngle)°")
+        print("PDF: 📐 Coordinate angle: \(coordinateAngle)°, CTM angle (corrected): \(ctmAngle)°")
         print("PDF: 🎯 FINAL gradient angle: \(angleDegrees)° (coordinate + CTM)")
         
         // Get function for color interpolation from the actual PDF data
