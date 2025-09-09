@@ -129,16 +129,22 @@ class FileOperations {
         let documentSize = document.settings.sizeInPoints
         Log.fileOperation("📐 PDF document size: \(documentSize.width) × \(documentSize.height) pts", level: .info)
         
-        // Create PDF context
+        // Create PDF context with correct media box size
         let pdfData = NSMutableData()
+        
+        // CRITICAL FIX: Set media box in context creation to avoid default 8.5x11
+        var mediaBox = CGRect(origin: .zero, size: documentSize)
+        
+        // Create PDF context with proper media box
         guard let pdfConsumer = CGDataConsumer(data: pdfData),
-              let pdfContext = CGContext(consumer: pdfConsumer, mediaBox: nil, nil) else {
+              let pdfContext = CGContext(consumer: pdfConsumer, mediaBox: &mediaBox, nil) else {
             throw VectorImportError.parsingError("Failed to create PDF context", line: nil)
         }
         
-        // Begin PDF document
-        let mediaBox = CGRect(origin: .zero, size: documentSize)
-        let pageInfo = [kCGPDFContextMediaBox as String: mediaBox]
+        // Begin PDF page with the same media box
+        let pageInfo = [
+            kCGPDFContextMediaBox as String: mediaBox
+        ] as [String : Any]
         pdfContext.beginPDFPage(pageInfo as CFDictionary)
         
         // Flip Y-axis to match standard coordinate system
@@ -347,15 +353,55 @@ class FileOperations {
         context.setLineJoin(strokeStyle.lineJoin)
     }
     
-    /// Draw gradient for PDF without rasterization using CGShading
+    /// Draw gradient for PDF using CGGradient for better PDF compatibility
     static func drawPDFGradient(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         // Apply opacity
         context.setAlpha(CGFloat(opacity))
         
         switch gradient {
         case .linear(let linearGradient):
+            // CRITICAL FIX: Use CGGradient instead of CGShading for proper vector gradients in PDF
+            // CGGradient is better supported in PDF export and doesn't get rasterized
+            
             // Create color space
             let colorSpace = CGColorSpaceCreateDeviceRGB()
+            
+            // Extract colors and locations from gradient stops
+            var colors: [CGFloat] = []
+            var locations: [CGFloat] = []
+            
+            for stop in linearGradient.stops {
+                locations.append(stop.position)
+                
+                switch stop.color {
+                case .rgb(let rgb):
+                    colors.append(contentsOf: [rgb.red, rgb.green, rgb.blue, rgb.alpha * stop.opacity])
+                case .white:
+                    colors.append(contentsOf: [1.0, 1.0, 1.0, CGFloat(stop.opacity)])
+                case .black:
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+                case .clear:
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, 0.0])
+                case .cmyk(let cmyk):
+                    let r = (1.0 - cmyk.cyan) * (1.0 - cmyk.black)
+                    let g = (1.0 - cmyk.magenta) * (1.0 - cmyk.black)
+                    let b = (1.0 - cmyk.yellow) * (1.0 - cmyk.black)
+                    colors.append(contentsOf: [r, g, b, CGFloat(stop.opacity)])
+                case .hsb(let hsb):
+                    let rgb = hsb.rgbColor
+                    colors.append(contentsOf: [rgb.red, rgb.green, rgb.blue, rgb.alpha * stop.opacity])
+                default:
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+                }
+            }
+            
+            // Create CGGradient
+            guard let cgGradient = CGGradient(
+                colorSpace: colorSpace,
+                colorComponents: colors,
+                locations: locations,
+                count: locations.count
+            ) else { return }
             
             // Calculate gradient points based on the gradient's angle
             let angle = linearGradient.angle * .pi / 180.0
@@ -371,25 +417,54 @@ class FileOperations {
             let startPoint = CGPoint(x: startX, y: startY)
             let endPoint = CGPoint(x: endX, y: endY)
             
-            // Create the shading function
-            guard let shadingFunction = createShadingFunction(for: linearGradient, colorSpace: colorSpace) else { return }
-            
-            // Create the axial shading
-            guard let shading = CGShading(
-                axialSpace: colorSpace,
+            // Draw the gradient using CGGradient (preserves vector in PDF)
+            context.drawLinearGradient(
+                cgGradient,
                 start: startPoint,
                 end: endPoint,
-                function: shadingFunction,
-                extendStart: true,
-                extendEnd: true
-            ) else { return }
-            
-            // Draw the shading (this creates a vector gradient in PDF)
-            context.drawShading(shading)
+                options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
+            )
             
         case .radial(let radialGradient):
-            // Create color space
+            // CRITICAL FIX: Use CGGradient for radial gradients too
             let colorSpace = CGColorSpaceCreateDeviceRGB()
+            
+            // Extract colors and locations
+            var colors: [CGFloat] = []
+            var locations: [CGFloat] = []
+            
+            for stop in radialGradient.stops {
+                locations.append(stop.position)
+                
+                switch stop.color {
+                case .rgb(let rgb):
+                    colors.append(contentsOf: [rgb.red, rgb.green, rgb.blue, rgb.alpha * stop.opacity])
+                case .white:
+                    colors.append(contentsOf: [1.0, 1.0, 1.0, CGFloat(stop.opacity)])
+                case .black:
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+                case .clear:
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, 0.0])
+                case .cmyk(let cmyk):
+                    let r = (1.0 - cmyk.cyan) * (1.0 - cmyk.black)
+                    let g = (1.0 - cmyk.magenta) * (1.0 - cmyk.black)
+                    let b = (1.0 - cmyk.yellow) * (1.0 - cmyk.black)
+                    colors.append(contentsOf: [r, g, b, CGFloat(stop.opacity)])
+                case .hsb(let hsb):
+                    let rgb = hsb.rgbColor
+                    colors.append(contentsOf: [rgb.red, rgb.green, rgb.blue, rgb.alpha * stop.opacity])
+                default:
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+                }
+            }
+            
+            // Create CGGradient
+            guard let cgGradient = CGGradient(
+                colorSpace: colorSpace,
+                colorComponents: colors,
+                locations: locations,
+                count: locations.count
+            ) else { return }
             
             // Calculate center and radius using bounds parameter
             let centerX = bounds.minX + bounds.width * radialGradient.centerPoint.x
@@ -397,26 +472,21 @@ class FileOperations {
             let center = CGPoint(x: centerX, y: centerY)
             let radius = min(bounds.width, bounds.height) * radialGradient.radius
             
-            // Create the shading function
-            guard let shadingFunction = createRadialShadingFunction(for: radialGradient, colorSpace: colorSpace) else { return }
-            
-            // Create the radial shading
-            guard let shading = CGShading(
-                radialSpace: colorSpace,
-                start: center,
+            // Draw the radial gradient using CGGradient
+            context.drawRadialGradient(
+                cgGradient,
+                startCenter: center,
                 startRadius: 0,
-                end: center,
+                endCenter: center,
                 endRadius: radius,
-                function: shadingFunction,
-                extendStart: false,
-                extendEnd: true
-            ) else { return }
-            
-            // Draw the shading (this creates a vector gradient in PDF)
-            context.drawShading(shading)
+                options: [.drawsAfterEndLocation]
+            )
         }
     }
     
+    // DEPRECATED: We now use CGGradient instead of CGShading for better PDF compatibility
+    // CGGradient creates proper vector gradients in PDFs without rasterization
+    /*
     /// Create a shading function for linear gradients
     private static func createShadingFunction(for gradient: LinearGradient, colorSpace: CGColorSpace) -> CGFunction? {
         // CRITICAL FIX: Support multi-stop gradients properly for PDF vector gradients
@@ -566,20 +636,7 @@ class FileOperations {
             callbacks: &callbacks
         )
     }
-    
-    /// Create a shading function for radial gradients
-    private static func createRadialShadingFunction(for gradient: RadialGradient, colorSpace: CGColorSpace) -> CGFunction? {
-        // Reuse linear gradient function creation for radial gradients
-        // The shading function works the same way, just applied radially
-        let linearEquivalent = LinearGradient(
-            startPoint: CGPoint(x: 0, y: 0),
-            endPoint: CGPoint(x: 1, y: 0),
-            stops: gradient.stops,
-            spreadMethod: gradient.spreadMethod,
-            units: gradient.units
-        )
-        return createShadingFunction(for: linearEquivalent, colorSpace: colorSpace)
-    }
+    */
     
     /// Import SVG from data for FileDocument protocol
     

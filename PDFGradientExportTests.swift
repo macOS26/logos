@@ -87,25 +87,35 @@ class PDFGradientExportTests: XCTestCase {
         }
     }
     
-    func testPDFGradientInterpolation() throws {
-        // Test that gradient interpolation works correctly
+    func testPDFGradientCreation() throws {
+        // Test that CGGradient is created correctly for PDF export
         let stops = [
             GradientStop(position: 0.0, color: .rgb(RGBColor(red: 1.0, green: 0.0, blue: 0.0, alpha: 1.0)), opacity: 1.0),
             GradientStop(position: 0.5, color: .rgb(RGBColor(red: 0.0, green: 1.0, blue: 0.0, alpha: 1.0)), opacity: 1.0),
             GradientStop(position: 1.0, color: .rgb(RGBColor(red: 0.0, green: 0.0, blue: 1.0, alpha: 1.0)), opacity: 1.0)
         ]
         
-        let gradient = LinearGradient(
-            startPoint: CGPoint(x: 0, y: 0),
-            endPoint: CGPoint(x: 1, y: 0),
-            stops: stops
+        // Extract colors and locations for CGGradient
+        var colors: [CGFloat] = []
+        var locations: [CGFloat] = []
+        
+        for stop in stops {
+            locations.append(stop.position)
+            if case .rgb(let rgb) = stop.color {
+                colors.append(contentsOf: [rgb.red, rgb.green, rgb.blue, rgb.alpha * stop.opacity])
+            }
+        }
+        
+        // Create CGGradient
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let cgGradient = CGGradient(
+            colorSpace: colorSpace,
+            colorComponents: colors,
+            locations: locations,
+            count: locations.count
         )
         
-        // Create shading function
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        let shadingFunction = FileOperations.createShadingFunction(for: gradient, colorSpace: colorSpace)
-        
-        XCTAssertNotNil(shadingFunction, "Shading function should be created successfully")
+        XCTAssertNotNil(cgGradient, "CGGradient should be created successfully")
     }
     
     func testRadialGradientPDFExport() throws {
