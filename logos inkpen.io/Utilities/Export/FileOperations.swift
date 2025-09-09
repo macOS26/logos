@@ -419,124 +419,150 @@ class FileOperations {
     
     /// Create a shading function for linear gradients
     private static func createShadingFunction(for gradient: LinearGradient, colorSpace: CGColorSpace) -> CGFunction? {
-        // Extract color components from gradient stops
-        var colorComponents: [[CGFloat]] = []
+        // CRITICAL FIX: Support multi-stop gradients properly for PDF vector gradients
+        // This creates true vector gradients in PDFs, not rasterized images
         
+        // Structure to hold gradient stop information
+        struct GradientStopInfo {
+            let position: CGFloat
+            let red: CGFloat
+            let green: CGFloat
+            let blue: CGFloat
+            let alpha: CGFloat
+        }
+        
+        // Convert gradient stops to our info structure
+        var stopInfos: [GradientStopInfo] = []
         for stop in gradient.stops {
+            let components: [CGFloat]
             switch stop.color {
             case .rgb(let rgb):
-                colorComponents.append([rgb.red, rgb.green, rgb.blue, rgb.alpha * stop.opacity])
+                components = [rgb.red, rgb.green, rgb.blue, rgb.alpha * stop.opacity]
             case .white:
-                colorComponents.append([1.0, 1.0, 1.0, CGFloat(stop.opacity)])
+                components = [1.0, 1.0, 1.0, CGFloat(stop.opacity)]
             case .black:
-                colorComponents.append([0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+                components = [0.0, 0.0, 0.0, CGFloat(stop.opacity)]
+            case .clear:
+                components = [0.0, 0.0, 0.0, 0.0]
+            case .cmyk(let cmyk):
+                // Convert CMYK to RGB
+                let r = (1.0 - cmyk.cyan) * (1.0 - cmyk.black)
+                let g = (1.0 - cmyk.magenta) * (1.0 - cmyk.black)
+                let b = (1.0 - cmyk.yellow) * (1.0 - cmyk.black)
+                components = [r, g, b, CGFloat(stop.opacity)]
+            case .hsb(let hsb):
+                let rgb = hsb.rgbColor
+                components = [rgb.red, rgb.green, rgb.blue, rgb.alpha * stop.opacity]
             default:
-                colorComponents.append([0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+                components = [0.0, 0.0, 0.0, CGFloat(stop.opacity)]
+            }
+            
+            stopInfos.append(GradientStopInfo(
+                position: stop.position,
+                red: components[0],
+                green: components[1],
+                blue: components[2],
+                alpha: components[3]
+            ))
+        }
+        
+        // Sort stops by position to ensure correct interpolation
+        stopInfos.sort { $0.position < $1.position }
+        
+        // Create a class to hold the gradient data (since CGFunction needs a pointer)
+        class GradientData {
+            let stops: [GradientStopInfo]
+            
+            init(stops: [GradientStopInfo]) {
+                self.stops = stops
+            }
+            
+            func interpolateColor(at position: CGFloat) -> (r: CGFloat, g: CGFloat, b: CGFloat, a: CGFloat) {
+                // Handle edge cases
+                if stops.isEmpty {
+                    return (0, 0, 0, 1)
+                }
+                if stops.count == 1 {
+                    let stop = stops[0]
+                    return (stop.red, stop.green, stop.blue, stop.alpha)
+                }
+                
+                // Find the two stops to interpolate between
+                if position <= stops.first!.position {
+                    let stop = stops.first!
+                    return (stop.red, stop.green, stop.blue, stop.alpha)
+                }
+                if position >= stops.last!.position {
+                    let stop = stops.last!
+                    return (stop.red, stop.green, stop.blue, stop.alpha)
+                }
+                
+                // Find the surrounding stops
+                var lowerStop = stops[0]
+                var upperStop = stops[1]
+                
+                for i in 0..<(stops.count - 1) {
+                    if position >= stops[i].position && position <= stops[i + 1].position {
+                        lowerStop = stops[i]
+                        upperStop = stops[i + 1]
+                        break
+                    }
+                }
+                
+                // Interpolate between the two stops
+                let range = upperStop.position - lowerStop.position
+                let t = (position - lowerStop.position) / range
+                
+                return (
+                    r: lowerStop.red + (upperStop.red - lowerStop.red) * t,
+                    g: lowerStop.green + (upperStop.green - lowerStop.green) * t,
+                    b: lowerStop.blue + (upperStop.blue - lowerStop.blue) * t,
+                    a: lowerStop.alpha + (upperStop.alpha - lowerStop.alpha) * t
+                )
             }
         }
         
-        // For simple two-stop gradients
-        if gradient.stops.count == 2 {
-            let startComponents = colorComponents[0]
-            let endComponents = colorComponents[1]
-            
-            // Store components in a structure that can be passed to callback
-            struct GradientInfo {
-                var startR: CGFloat
-                var startG: CGFloat
-                var startB: CGFloat
-                var startA: CGFloat
-                var endR: CGFloat
-                var endG: CGFloat
-                var endB: CGFloat
-                var endA: CGFloat
-            }
-            
-            var info = GradientInfo(
-                startR: startComponents[0],
-                startG: startComponents[1],
-                startB: startComponents[2],
-                startA: startComponents[3],
-                endR: endComponents[0],
-                endG: endComponents[1],
-                endB: endComponents[2],
-                endA: endComponents[3]
-            )
-            
-            var callbacks = CGFunctionCallbacks(
-                version: 0,
-                evaluate: { (infoPtr, input, output) in
-                    guard let infoPtr = infoPtr else { return }
-                    let info = infoPtr.assumingMemoryBound(to: GradientInfo.self).pointee
-                    let t = input[0]
-                    
-                    // Interpolate between start and end colors
-                    output[0] = info.startR + (info.endR - info.startR) * t  // R
-                    output[1] = info.startG + (info.endG - info.startG) * t  // G
-                    output[2] = info.startB + (info.endB - info.startB) * t  // B
-                    output[3] = info.startA + (info.endA - info.startA) * t  // A
-                },
-                releaseInfo: nil
-            )
-            
-            return CGFunction(
-                info: &info,
-                domainDimension: 1,
-                domain: [0, 1],
-                rangeDimension: 4,
-                range: [0, 1, 0, 1, 0, 1, 0, 1],
-                callbacks: &callbacks
-            )
-        }
+        // Create gradient data object
+        let gradientData = GradientData(stops: stopInfos)
         
-        // For multi-stop gradients, use first and last stops as approximation
-        // TODO: Implement proper multi-stop gradient function
-        let startComponents = colorComponents.first ?? [0, 0, 0, 1]
-        let endComponents = colorComponents.last ?? [1, 1, 1, 1]
-        
-        struct GradientInfo {
-            var startR: CGFloat
-            var startG: CGFloat
-            var startB: CGFloat
-            var startA: CGFloat
-            var endR: CGFloat
-            var endG: CGFloat
-            var endB: CGFloat
-            var endA: CGFloat
-        }
-        
-        var info = GradientInfo(
-            startR: startComponents[0],
-            startG: startComponents[1],
-            startB: startComponents[2],
-            startA: startComponents[3],
-            endR: endComponents[0],
-            endG: endComponents[1],
-            endB: endComponents[2],
-            endA: endComponents[3]
-        )
-        
+        // Create callbacks for CGFunction
         var callbacks = CGFunctionCallbacks(
             version: 0,
-            evaluate: { (infoPtr, input, output) in
-                guard let infoPtr = infoPtr else { return }
-                let info = infoPtr.assumingMemoryBound(to: GradientInfo.self).pointee
-                let t = input[0]
+            evaluate: { (info, input, output) in
+                guard let info = info else { return }
                 
-                output[0] = info.startR + (info.endR - info.startR) * t  // R
-                output[1] = info.startG + (info.endG - info.startG) * t  // G
-                output[2] = info.startB + (info.endB - info.startB) * t  // B
-                output[3] = info.startA + (info.endA - info.startA) * t  // A
+                // Get the gradient data
+                let gradientData = Unmanaged<GradientData>.fromOpaque(info).takeUnretainedValue()
+                
+                // Get the position in the gradient (0 to 1)
+                let position = input[0]
+                
+                // Interpolate the color at this position
+                let color = gradientData.interpolateColor(at: position)
+                
+                // Set the output color components
+                output[0] = color.r
+                output[1] = color.g
+                output[2] = color.b
+                output[3] = color.a
             },
-            releaseInfo: nil
+            releaseInfo: { info in
+                // Release the gradient data when done
+                if let info = info {
+                    Unmanaged<GradientData>.fromOpaque(info).release()
+                }
+            }
         )
         
+        // Create the CGFunction with our gradient data
+        let info = Unmanaged.passRetained(gradientData).toOpaque()
+        
         return CGFunction(
-            info: &info,
+            info: info,
             domainDimension: 1,
-            domain: [0, 1],
+            domain: [0, 1],  // Input range: position from 0 to 1
             rangeDimension: 4,
-            range: [0, 1, 0, 1, 0, 1, 0, 1],
+            range: [0, 1, 0, 1, 0, 1, 0, 1],  // Output ranges: RGBA each from 0 to 1
             callbacks: &callbacks
         )
     }
