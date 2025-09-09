@@ -39,28 +39,8 @@ class DocumentIconGenerator {
     private func createDocumentIcon(context: CGContext, size: CGSize, document: VectorDocument) {
         let rect = CGRect(origin: .zero, size: size)
         
-        // FIXED: Remove white background and padding - use full rect for content
-        // Add a preview of the document content using full space
+        // Add a preview of the document content using full rect
         createDocumentPreview(context: context, rect: rect, document: document)
-     
-        
-        // FIXED: Add ghost "Ink Pen" text using Marker Felt font near the bottom
-        let brush = "🖋️" //🖊️ 🖌️
-        // Use Marker Felt font which is available on macOS
-        let emojiFont = NSFont(name: "Apple Color Emoji", size: 130) ?? NSFont.systemFont(ofSize: 130, weight: .regular)
-        let emojiAttributes: [NSAttributedString.Key: Any] = [
-            .font: emojiFont
-        ]
-        
-        let emojiSize = brush.size(withAttributes: emojiAttributes)
-        let emojiRect = CGRect(
-            x: size.width - 132,
-            y: -24, // Near the bottom
-            width: emojiSize.width,
-            height: emojiSize.height
-        )
-        
-        brush.draw(in: emojiRect, withAttributes: emojiAttributes)
 
     }
     
@@ -89,7 +69,7 @@ class DocumentIconGenerator {
         let documentSize = document.settings.sizeInPoints
         let scaleX = rect.width / documentSize.width
         let scaleY = rect.height / documentSize.height
-        let scale = min(scaleX, scaleY) * 0.9 // 90% of available space for some padding
+        let scale = min(scaleX, scaleY) // Use full available space, no padding
         
         // Calculate centered position
         let scaledWidth = documentSize.width * scale
@@ -171,10 +151,23 @@ class DocumentIconGenerator {
             
             // Apply fill if present
             if let fillStyle = shape.fillStyle {
-                let fillCGColor = ColorManager.shared.toWorking(fillStyle.color.cgColor)
-                context.setFillColor(fillCGColor)
-                context.setAlpha(fillStyle.opacity)
-                context.fillPath()
+                // Check if fill is a gradient
+                if case .gradient(let vectorGradient) = fillStyle.color {
+                    // Save the current path
+                    context.saveGState()
+                    context.clip() // Clip to the path
+                    
+                    // Draw gradient
+                    drawGradient(vectorGradient, in: context, bounds: shape.bounds)
+                    
+                    context.restoreGState()
+                } else {
+                    // Solid color fill
+                    let fillCGColor = ColorManager.shared.toWorking(fillStyle.color.cgColor)
+                    context.setFillColor(fillCGColor)
+                    context.setAlpha(fillStyle.opacity)
+                    context.fillPath()
+                }
             }
             
             // Re-add path for stroke
@@ -236,6 +229,64 @@ class DocumentIconGenerator {
         }
         
         context.restoreGState()
+    }
+    
+    // MARK: - Gradient Rendering
+    
+    private func drawGradient(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect) {
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        var locations: [CGFloat] = []
+        var colors: [CGFloat] = []
+        
+        // Extract colors and locations from gradient stops
+        for stop in gradient.stops {
+            locations.append(CGFloat(stop.position))
+            let cgColor = ColorManager.shared.toWorking(stop.color.cgColor)
+            if let components = cgColor.components, components.count >= 3 {
+                colors.append(contentsOf: components[0..<min(4, components.count)])
+                // Ensure we have 4 components (RGBA)
+                while colors.count % 4 != 0 {
+                    colors.append(1.0) // Add alpha if missing
+                }
+            }
+        }
+        
+        guard let cgGradient = CGGradient(colorSpace: colorSpace,
+                                          colorComponents: colors,
+                                          locations: locations,
+                                          count: gradient.stops.count) else { return }
+        
+        switch gradient {
+        case .linear(let linearGradient):
+            // Use the gradient's stored angle properly
+            let angle = linearGradient.angle * .pi / 180 // Convert to radians
+            let centerX = bounds.midX
+            let centerY = bounds.midY
+            let radius = max(bounds.width, bounds.height) / 2
+            
+            // Calculate start and end points from angle
+            // Note: For a 90° gradient (vertical), cos(90°) = 0, sin(90°) = 1
+            // This gives us startY = centerY - radius, endY = centerY + radius
+            let startX = centerX - radius * cos(angle)
+            let startY = centerY - radius * sin(angle)
+            let endX = centerX + radius * cos(angle)
+            let endY = centerY + radius * sin(angle)
+            
+            context.drawLinearGradient(cgGradient,
+                                      start: CGPoint(x: startX, y: startY),
+                                      end: CGPoint(x: endX, y: endY),
+                                      options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+            
+        case .radial(_):
+            let center = CGPoint(x: bounds.midX, y: bounds.midY)
+            let radius = min(bounds.width, bounds.height) / 2
+            context.drawRadialGradient(cgGradient,
+                                     startCenter: center,
+                                     startRadius: 0,
+                                     endCenter: center,
+                                     endRadius: radius,
+                                     options: [])
+        }
     }
     
     // MARK: - Path Conversion

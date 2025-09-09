@@ -810,8 +810,26 @@ class FileOperations {
     }
     
     private static func generateLinearGradientDefinition(_ gradient: LinearGradient, id: String) -> String {
+        // Calculate proper coordinates from the stored angle
+        let radians = gradient.angle * .pi / 180.0
+        
+        // Use originPoint as center, or calculate from current points
+        let centerX = gradient.originPoint.x
+        let centerY = gradient.originPoint.y
+        
+        // Calculate gradient vector from angle (for a gradient across the full object)
+        let halfLength: Double = 0.5 // This gives us a gradient from edge to edge
+        let deltaX = cos(radians) * halfLength
+        let deltaY = sin(radians) * halfLength
+        
+        // Calculate start and end points from center and angle
+        let x1 = centerX - deltaX
+        let y1 = centerY - deltaY
+        let x2 = centerX + deltaX
+        let y2 = centerY + deltaY
+        
         var svg = """
-        <linearGradient id="\(id)" x1="\(gradient.startPoint.x)" y1="\(gradient.startPoint.y)" x2="\(gradient.endPoint.x)" y2="\(gradient.endPoint.y)"
+        <linearGradient id="\(id)" x1="\(x1)" y1="\(y1)" x2="\(x2)" y2="\(y2)"
         """
         
         // Add gradientUnits attribute based on gradient units
