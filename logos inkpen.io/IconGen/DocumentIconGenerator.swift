@@ -21,27 +21,84 @@ class DocumentIconGenerator {
     // MARK: - Document Icon Generation
     
     func generateDocumentIcon(for document: VectorDocument, size: CGSize = CGSize(width: 256, height: 256)) -> NSImage {
+        // Generate SVG content using the actual export code
+        do {
+            let svgContent = try FileOperations.generateSVGContent(from: document)
+            
+            // Convert SVG to NSImage
+            guard let svgData = svgContent.data(using: .utf8) else {
+                Log.error("❌ Failed to convert SVG to data for icon", category: .error)
+                return createFallbackIcon(size: size)
+            }
+            
+            // Create SVG document
+            guard let svg = SVG(svgData) else {
+                Log.error("❌ Failed to create SVG object for icon", category: .error)
+                return createFallbackIcon(size: size)
+            }
+            
+            // Create image and render SVG into it
+            let image = NSImage(size: size)
+            image.lockFocus()
+            
+            guard let context = NSGraphicsContext.current?.cgContext else {
+                image.unlockFocus()
+                return createFallbackIcon(size: size)
+            }
+            
+            // Save context state
+            context.saveGState()
+            
+            // Clear background
+            context.setFillColor(NSColor.clear.cgColor)
+            context.fill(CGRect(origin: .zero, size: size))
+            
+            // Calculate scale to fit SVG in icon size
+            let svgSize = svg.size
+            let scaleX = size.width / svgSize.width
+            let scaleY = size.height / svgSize.height
+            let scale = min(scaleX, scaleY)
+            
+            // Calculate centered position
+            let scaledWidth = svgSize.width * scale
+            let scaledHeight = svgSize.height * scale
+            let x = (size.width - scaledWidth) / 2
+            let y = (size.height - scaledHeight) / 2
+            
+            // Apply transform to center and scale the SVG
+            context.translateBy(x: x, y: y + scaledHeight)
+            context.scaleBy(x: scale, y: -scale)
+            
+            // Render the SVG
+            svg.renderToVectorContext(context, targetSize: svgSize)
+            
+            // Restore context
+            context.restoreGState()
+            
+            image.unlockFocus()
+            
+            Log.info("✅ Generated icon from SVG export (\(Int(scaledWidth))x\(Int(scaledHeight)))", category: .fileOperations)
+            return image
+            
+        } catch {
+            Log.error("❌ Failed to generate SVG for icon: \(error)", category: .error)
+            return createFallbackIcon(size: size)
+        }
+    }
+    
+    private func createFallbackIcon(size: CGSize) -> NSImage {
         let image = NSImage(size: size)
         image.lockFocus()
         
         guard let context = NSGraphicsContext.current?.cgContext else {
             image.unlockFocus()
-            return NSImage(size: size)
+            return image
         }
         
-        // Create a professional document icon
-        createDocumentIcon(context: context, size: size, document: document)
+        renderFallbackPreview(context: context, rect: CGRect(origin: .zero, size: size))
         
         image.unlockFocus()
         return image
-    }
-    
-    private func createDocumentIcon(context: CGContext, size: CGSize, document: VectorDocument) {
-        let rect = CGRect(origin: .zero, size: size)
-        
-        // Add a preview of the document content using full rect
-        createDocumentPreview(context: context, rect: rect, document: document)
-
     }
     
     private func createDocumentPreview(context: CGContext, rect: CGRect, document: VectorDocument) {

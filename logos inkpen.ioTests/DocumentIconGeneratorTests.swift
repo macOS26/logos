@@ -290,6 +290,55 @@ class DocumentIconGeneratorTests: XCTestCase {
         // This is tested implicitly by the successful generation of the icon
     }
     
+    func testGenerateDocumentIconWithGradient() {
+        // Given a document with a shape that has a gradient fill
+        let gradient = VectorGradient.linear(
+            LinearGradient(
+                startPoint: CGPoint(x: 0.5, y: 0.0),
+                endPoint: CGPoint(x: 0.5, y: 1.0),
+                stops: [
+                    GradientStop(position: 0.0, color: .rgb(RGBColor(red: 1, green: 0, blue: 0, alpha: 1))), // Red at top
+                    GradientStop(position: 1.0, color: .rgb(RGBColor(red: 0, green: 0, blue: 1, alpha: 1)))  // Blue at bottom
+                ]
+            )
+        )
+        
+        let shape = VectorShape(
+            name: "Gradient Shape",
+            path: createRectanglePath(x: 100, y: 100, width: 300, height: 200),
+            strokeStyle: nil,
+            fillStyle: FillStyle(color: .gradient(gradient), opacity: 1.0)
+        )
+        
+        // Add shape to document
+        let vectorObject = VectorObject(
+            shape: shape,
+            layerIndex: 0,
+            orderID: 0
+        )
+        document.unifiedObjects.append(vectorObject)
+        
+        // When generating an icon
+        let icon = iconGenerator.generateDocumentIcon(for: document)
+        
+        // Then icon should be created and contain the gradient
+        XCTAssertNotNil(icon)
+        XCTAssertEqual(icon.size.width, 256)
+        XCTAssertEqual(icon.size.height, 256)
+        
+        // Verify the document has a gradient
+        let hasGradient = document.unifiedObjects.contains { vectorObject in
+            if case .shape(let shape) = vectorObject.objectType,
+               let fillStyle = shape.fillStyle,
+               case .gradient(_) = fillStyle.color {
+                return true
+            }
+            return false
+        }
+        
+        XCTAssertTrue(hasGradient, "Document should contain a gradient")
+    }
+    
     // MARK: - Helper Methods
     
     private func createRectanglePath(x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat) -> VectorPath {
