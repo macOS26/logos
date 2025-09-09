@@ -125,10 +125,9 @@ class FileOperations {
     static func generatePDFData(from document: VectorDocument) throws -> Data {
         Log.fileOperation("📄 Generating PDF data from document", level: .info)
         
-        // Get document dimensions
-        let canvasWidth = document.settings.width * 72.0 // Convert to points
-        let canvasHeight = document.settings.height * 72.0
-        let documentSize = CGSize(width: canvasWidth, height: canvasHeight)
+        // Get document dimensions - use sizeInPoints which is already in points
+        let documentSize = document.settings.sizeInPoints
+        Log.fileOperation("📐 PDF document size: \(documentSize.width) × \(documentSize.height) pts", level: .info)
         
         // Create PDF context
         let pdfData = NSMutableData()
@@ -139,11 +138,18 @@ class FileOperations {
         
         // Begin PDF document
         let mediaBox = CGRect(origin: .zero, size: documentSize)
-        pdfContext.beginPDFPage(nil)
+        let pageInfo = [kCGPDFContextMediaBox as String: mediaBox]
+        pdfContext.beginPDFPage(pageInfo as CFDictionary)
         
-        // Set white background
-        pdfContext.setFillColor(CGColor.white)
-        pdfContext.fill(mediaBox)
+        // Flip Y-axis to match standard coordinate system
+        pdfContext.translateBy(x: 0, y: documentSize.height)
+        pdfContext.scaleBy(x: 1.0, y: -1.0)
+        
+        // Set background color from document settings
+        if document.settings.backgroundColor != .clear {
+            pdfContext.setFillColor(document.settings.backgroundColor.cgColor)
+            pdfContext.fill(mediaBox)
+        }
         
         // Render document content
         try renderDocumentToPDF(document: document, context: pdfContext, canvasSize: documentSize)
@@ -191,9 +197,8 @@ class FileOperations {
         // Save graphics state for this shape
         context.saveGState()
         
-        // Apply shape transform if any (if transform exists)
-        // Note: VectorShape may not have a transform property - skip for now
-        // context.concatenate(shape.transform)
+        // Apply shape transform
+        context.concatenate(shape.transform)
         
         // Set up fill style
         if let fillStyle = shape.fillStyle {
@@ -278,9 +283,9 @@ class FileOperations {
         case .appleSystem(_):
             // Fallback to black for system colors
             context.setFillColor(red: 0, green: 0, blue: 0, alpha: fillStyle.opacity)
-        case .gradient(_):
-            // Fallback to black for gradients (would need separate implementation)
-            context.setFillColor(red: 0, green: 0, blue: 0, alpha: fillStyle.opacity)
+        case .gradient(let gradient):
+            // Apply gradient fill
+            applyGradientFill(gradient, to: context, opacity: fillStyle.opacity)
         }
     }
     
@@ -325,6 +330,132 @@ class FileOperations {
         
         // Set line join
         context.setLineJoin(strokeStyle.lineJoin)
+    }
+    
+    /// Apply gradient fill to PDF context
+    static func applyGradientFill(_ gradient: VectorGradient, to context: CGContext, opacity: Double) {
+        // Save the current graphics state
+        context.saveGState()
+        defer { context.restoreGState() }
+        
+        // Get the current path bounds for gradient positioning
+        let pathBounds = context.boundingBoxOfPath
+        
+        switch gradient {
+        case .linear(let linearGradient):
+            // Create color space
+            let colorSpace = CGColorSpaceCreateDeviceRGB()
+            
+            // Extract colors and locations from gradient stops
+            var colors: [CGFloat] = []
+            var locations: [CGFloat] = []
+            
+            for stop in linearGradient.stops {
+                locations.append(CGFloat(stop.position))
+                
+                // Extract color components
+                switch stop.color {
+                case .rgb(let rgb):
+                    colors.append(contentsOf: [rgb.red, rgb.green, rgb.blue, rgb.alpha * stop.opacity])
+                case .white:
+                    colors.append(contentsOf: [1.0, 1.0, 1.0, CGFloat(stop.opacity)])
+                case .black:
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+                default:
+                    // Fallback to black for other color types
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+                }
+            }
+            
+            // Create CGGradient
+            guard let cgGradient = CGGradient(
+                colorSpace: colorSpace,
+                colorComponents: colors,
+                locations: locations,
+                count: linearGradient.stops.count
+            ) else { return }
+            
+            // Calculate gradient points based on the gradient's angle
+            let angle = linearGradient.angle * .pi / 180.0
+            let centerX = pathBounds.midX
+            let centerY = pathBounds.midY
+            let radius = max(pathBounds.width, pathBounds.height) / 2.0
+            
+            let startX = centerX - radius * cos(angle)
+            let startY = centerY - radius * sin(angle)
+            let endX = centerX + radius * cos(angle)
+            let endY = centerY + radius * sin(angle)
+            
+            let startPoint = CGPoint(x: startX, y: startY)
+            let endPoint = CGPoint(x: endX, y: endY)
+            
+            // Clip to the current path
+            context.clip()
+            
+            // Apply opacity
+            context.setAlpha(CGFloat(opacity))
+            
+            // Draw the gradient
+            context.drawLinearGradient(
+                cgGradient,
+                start: startPoint,
+                end: endPoint,
+                options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
+            )
+            
+        case .radial(let radialGradient):
+            // Create color space
+            let colorSpace = CGColorSpaceCreateDeviceRGB()
+            
+            // Extract colors and locations
+            var colors: [CGFloat] = []
+            var locations: [CGFloat] = []
+            
+            for stop in radialGradient.stops {
+                locations.append(CGFloat(stop.position))
+                
+                switch stop.color {
+                case .rgb(let rgb):
+                    colors.append(contentsOf: [rgb.red, rgb.green, rgb.blue, rgb.alpha * stop.opacity])
+                case .white:
+                    colors.append(contentsOf: [1.0, 1.0, 1.0, CGFloat(stop.opacity)])
+                case .black:
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+                default:
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+                }
+            }
+            
+            // Create CGGradient
+            guard let cgGradient = CGGradient(
+                colorSpace: colorSpace,
+                colorComponents: colors,
+                locations: locations,
+                count: radialGradient.stops.count
+            ) else { return }
+            
+            // Calculate center and radius
+            let centerX = pathBounds.minX + pathBounds.width * radialGradient.centerPoint.x
+            let centerY = pathBounds.minY + pathBounds.height * radialGradient.centerPoint.y
+            let center = CGPoint(x: centerX, y: centerY)
+            let radius = min(pathBounds.width, pathBounds.height) * radialGradient.radius
+            
+            // Clip to the current path
+            context.clip()
+            
+            // Apply opacity
+            context.setAlpha(CGFloat(opacity))
+            
+            // Draw the gradient
+            context.drawRadialGradient(
+                cgGradient,
+                startCenter: center,
+                startRadius: 0,
+                endCenter: center,
+                endRadius: radius,
+                options: []
+            )
+        }
     }
     
     /// Import SVG from data for FileDocument protocol
