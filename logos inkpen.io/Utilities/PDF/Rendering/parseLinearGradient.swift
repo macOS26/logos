@@ -52,32 +52,35 @@ extension PDFCommandParser {
         print("PDF: 📐 Raw gradient coordinates: (\(x0), \(y0)) -> (\(x1), \(y1))")
         print("PDF: 📏 Page size: \(pageSize.width) x \(pageSize.height)")
         
-        // Apply the same coordinate system transformation as other PDF elements
-        // Transform coordinates: flip Y coordinate system (PDF has origin at bottom-left, we need top-left)
-        let transformedY0 = pageSize.height - y0
-        let transformedY1 = pageSize.height - y1
-        
         // Check if coordinates appear to be absolute (greater than 1.0) and normalize them
         // PDFs can contain gradients in either normalized (0-1) or absolute coordinates
         let needsNormalization = (abs(x0) > 1.0 || abs(y0) > 1.0 || abs(x1) > 1.0 || abs(y1) > 1.0)
         
         let startPoint: CGPoint
         let endPoint: CGPoint
+        let deltaY: CGFloat
         
         if needsNormalization && pageSize.width > 0 && pageSize.height > 0 {
-            // Normalize absolute coordinates to 0-1 range for objectBoundingBox units
-            startPoint = CGPoint(x: Double(x0 / pageSize.width), y: Double(transformedY0 / pageSize.height))
-            endPoint = CGPoint(x: Double(x1 / pageSize.width), y: Double(transformedY1 / pageSize.height))
-            print("PDF: 🔄 Normalized absolute coordinates to unit space")
+            // For absolute coordinates from our own PDFs:
+            // - Normalize to 0-1 range
+            // - Keep Y coordinates as-is (don't flip) since they're already in the correct space
+            startPoint = CGPoint(x: Double(x0 / pageSize.width), y: Double(y0 / pageSize.height))
+            endPoint = CGPoint(x: Double(x1 / pageSize.width), y: Double(y1 / pageSize.height))
+            deltaY = y1 - y0  // Use original Y delta for angle calculation
+            print("PDF: 🔄 Normalized absolute coordinates to unit space (our PDF)")
         } else {
-            // Already normalized or page size unavailable
+            // For normalized coordinates from other PDFs:
+            // - Flip Y coordinate system (PDF has origin at bottom-left, we need top-left)
+            let transformedY0 = pageSize.height - y0
+            let transformedY1 = pageSize.height - y1
             startPoint = CGPoint(x: Double(x0), y: Double(transformedY0))
             endPoint = CGPoint(x: Double(x1), y: Double(transformedY1))
+            deltaY = transformedY1 - transformedY0  // Use transformed Y delta
+            print("PDF: 🔄 Using normalized coordinates with Y-flip (external PDF)")
         }
         
-        // Calculate the actual gradient angle from the transformed vector
+        // Calculate the actual gradient angle from the vector
         let deltaX = x1 - x0
-        let deltaY = transformedY1 - transformedY0  // Use transformed Y coordinates
         let coordinateAngle = atan2(deltaY, deltaX) * 180.0 / .pi
         
         // CRITICAL: Use the transformation matrix rotation for the actual gradient angle
@@ -86,7 +89,7 @@ extension PDFCommandParser {
         let angleDegrees = coordinateAngle + ctmAngle
         
         print("PDF: 📍 Original PDF coordinates: (\(x0), \(y0)) -> (\(x1), \(y1))")
-        print("PDF: 🔄 Transformed coordinates: (\(x0), \(transformedY0)) -> (\(x1), \(transformedY1))")
+        print("PDF: 🔄 Final coordinates: (\(startPoint.x), \(startPoint.y)) -> (\(endPoint.x), \(endPoint.y))")
         print("PDF: 📊 Delta values: ΔX=\(deltaX), ΔY=\(deltaY)")
         print("PDF: 📐 Coordinate angle: \(coordinateAngle)°, CTM angle: \(ctmAngle)°")
         print("PDF: 🎯 FINAL gradient angle: \(angleDegrees)° (coordinate + CTM)")
