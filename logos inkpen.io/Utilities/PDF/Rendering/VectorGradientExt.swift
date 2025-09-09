@@ -25,19 +25,15 @@ extension VectorGradient {
             // Extract RGB components from the color
             switch stop.color {
             case .rgb(let rgb):
-                // For PDF compatibility, we should use alpha of 1.0 when drawing to PDF context
-                // Check if we're in a PDF context and adjust accordingly
                 colors.append(contentsOf: [CGFloat(rgb.red), CGFloat(rgb.green), CGFloat(rgb.blue), CGFloat(rgb.alpha * stop.opacity)])
             case .cmyk(let cmyk):
                 // Convert CMYK to RGB
                 let r = (1.0 - cmyk.cyan) * (1.0 - cmyk.black)
                 let g = (1.0 - cmyk.magenta) * (1.0 - cmyk.black)
                 let b = (1.0 - cmyk.yellow) * (1.0 - cmyk.black)
-                // Keep opacity for non-PDF contexts (screen rendering)
                 colors.append(contentsOf: [CGFloat(r), CGFloat(g), CGFloat(b), CGFloat(stop.opacity)])
             default:
                 // Default to black for other color types
-                // Keep opacity for non-PDF contexts (screen rendering)
                 colors.append(contentsOf: [0, 0, 0, CGFloat(stop.opacity)])
             }
         }

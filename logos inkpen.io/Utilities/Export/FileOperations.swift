@@ -376,31 +376,23 @@ class FileOperations {
                 
                 switch stop.color {
                 case .rgb(let rgb):
-                    // IMPORTANT: Use alpha of 1.0 for PDF compatibility with Illustrator
-                    // Alpha in gradients causes "unknown shading type" error
-                    colors.append(contentsOf: [rgb.red, rgb.green, rgb.blue, 1.0])
+                    colors.append(contentsOf: [rgb.red, rgb.green, rgb.blue, rgb.alpha * stop.opacity])
                 case .white:
-                    // Always use alpha of 1.0 for PDF gradient compatibility
-                    colors.append(contentsOf: [1.0, 1.0, 1.0, 1.0])
+                    colors.append(contentsOf: [1.0, 1.0, 1.0, CGFloat(stop.opacity)])
                 case .black:
-                    // Always use alpha of 1.0 for PDF gradient compatibility
-                    colors.append(contentsOf: [0.0, 0.0, 0.0, 1.0])
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
                 case .clear:
-                    // For clear, use white with alpha 1.0 (opacity handled by context)
-                    colors.append(contentsOf: [1.0, 1.0, 1.0, 1.0])
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, 0.0])
                 case .cmyk(let cmyk):
                     let r = (1.0 - cmyk.cyan) * (1.0 - cmyk.black)
                     let g = (1.0 - cmyk.magenta) * (1.0 - cmyk.black)
                     let b = (1.0 - cmyk.yellow) * (1.0 - cmyk.black)
-                    // Always use alpha of 1.0 for PDF gradient compatibility
-                    colors.append(contentsOf: [r, g, b, 1.0])
+                    colors.append(contentsOf: [r, g, b, CGFloat(stop.opacity)])
                 case .hsb(let hsb):
                     let rgb = hsb.rgbColor
-                    // Always use alpha of 1.0 for PDF gradient compatibility
-                    colors.append(contentsOf: [rgb.red, rgb.green, rgb.blue, 1.0])
+                    colors.append(contentsOf: [rgb.red, rgb.green, rgb.blue, rgb.alpha * stop.opacity])
                 default:
-                    // Always use alpha of 1.0 for PDF gradient compatibility
-                    colors.append(contentsOf: [0.0, 0.0, 0.0, 1.0])
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
                 }
             }
             
@@ -447,31 +439,23 @@ class FileOperations {
                 
                 switch stop.color {
                 case .rgb(let rgb):
-                    // IMPORTANT: Use alpha of 1.0 for PDF compatibility with Illustrator
-                    // Alpha in gradients causes "unknown shading type" error
-                    colors.append(contentsOf: [rgb.red, rgb.green, rgb.blue, 1.0])
+                    colors.append(contentsOf: [rgb.red, rgb.green, rgb.blue, rgb.alpha * stop.opacity])
                 case .white:
-                    // Always use alpha of 1.0 for PDF gradient compatibility
-                    colors.append(contentsOf: [1.0, 1.0, 1.0, 1.0])
+                    colors.append(contentsOf: [1.0, 1.0, 1.0, CGFloat(stop.opacity)])
                 case .black:
-                    // Always use alpha of 1.0 for PDF gradient compatibility
-                    colors.append(contentsOf: [0.0, 0.0, 0.0, 1.0])
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
                 case .clear:
-                    // For clear, use white with alpha 1.0 (opacity handled by context)
-                    colors.append(contentsOf: [1.0, 1.0, 1.0, 1.0])
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, 0.0])
                 case .cmyk(let cmyk):
                     let r = (1.0 - cmyk.cyan) * (1.0 - cmyk.black)
                     let g = (1.0 - cmyk.magenta) * (1.0 - cmyk.black)
                     let b = (1.0 - cmyk.yellow) * (1.0 - cmyk.black)
-                    // Always use alpha of 1.0 for PDF gradient compatibility
-                    colors.append(contentsOf: [r, g, b, 1.0])
+                    colors.append(contentsOf: [r, g, b, CGFloat(stop.opacity)])
                 case .hsb(let hsb):
                     let rgb = hsb.rgbColor
-                    // Always use alpha of 1.0 for PDF gradient compatibility
-                    colors.append(contentsOf: [rgb.red, rgb.green, rgb.blue, 1.0])
+                    colors.append(contentsOf: [rgb.red, rgb.green, rgb.blue, rgb.alpha * stop.opacity])
                 default:
-                    // Always use alpha of 1.0 for PDF gradient compatibility
-                    colors.append(contentsOf: [0.0, 0.0, 0.0, 1.0])
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
                 }
             }
             
