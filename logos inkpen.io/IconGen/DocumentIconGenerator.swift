@@ -171,7 +171,8 @@ class DocumentIconGenerator {
             
             // Apply fill if present
             if let fillStyle = shape.fillStyle {
-                context.setFillColor(fillStyle.color.cgColor)
+                let fillCGColor = ColorManager.shared.toWorking(fillStyle.color.cgColor)
+                context.setFillColor(fillCGColor)
                 context.setAlpha(fillStyle.opacity)
                 context.fillPath()
             }
@@ -181,7 +182,8 @@ class DocumentIconGenerator {
             
             // Apply stroke if present
             if let strokeStyle = shape.strokeStyle {
-                context.setStrokeColor(strokeStyle.color.cgColor)
+                let strokeCGColor = ColorManager.shared.toWorking(strokeStyle.color.cgColor)
+                context.setStrokeColor(strokeCGColor)
                 context.setLineWidth(strokeStyle.width)
                 context.setAlpha(strokeStyle.opacity)
                 context.strokePath()
@@ -203,7 +205,9 @@ class DocumentIconGenerator {
         context.concatenate(shape.transform)
         
         // Create attributed string with typography
-        let fillNSColor = NSColor(cgColor: typography.fillColor.cgColor) ?? NSColor.black
+        // Use ColorManager to ensure proper color space conversion
+        let fillCGColor = ColorManager.shared.toWorking(typography.fillColor.cgColor)
+        let fillNSColor = NSColor(cgColor: fillCGColor) ?? NSColor.black
         let attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont(name: typography.fontFamily, size: typography.fontSize) ?? 
                    NSFont.systemFont(ofSize: typography.fontSize),
@@ -218,7 +222,9 @@ class DocumentIconGenerator {
         
         // Draw stroke if present
         if typography.strokeColor != .clear && typography.strokeWidth > 0 {
-            let strokeNSColor = NSColor(cgColor: typography.strokeColor.cgColor) ?? NSColor.black
+            // Use ColorManager to ensure proper color space conversion
+            let strokeCGColor = ColorManager.shared.toWorking(typography.strokeColor.cgColor)
+            let strokeNSColor = NSColor(cgColor: strokeCGColor) ?? NSColor.black
             let strokeAttributes: [NSAttributedString.Key: Any] = [
                 .font: NSFont(name: typography.fontFamily, size: typography.fontSize) ?? 
                        NSFont.systemFont(ofSize: typography.fontSize),
