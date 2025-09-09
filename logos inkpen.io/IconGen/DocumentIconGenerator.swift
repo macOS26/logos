@@ -69,81 +69,196 @@ class DocumentIconGenerator {
         let hasArtContent = documentHasArtContent(document)
         
         if hasArtContent {
-            // SIMPLIFIED: Direct image rendering instead of complex SVG generation
-            renderDirectImagePreview(context: context, rect: rect, document: document)
+            // FIXED: Render the entire canvas content (shapes, images, text) instead of just images
+            renderCanvasContent(context: context, rect: rect, document: document)
         } else {
             // Use fallback preview when no art content
             renderFallbackPreview(context: context, rect: rect)
         }
     }
     
-    private func renderDirectImagePreview(context: CGContext, rect: CGRect, document: VectorDocument) {
-        print("🔍 IconGenerator: Rendering direct image preview...")
+    // MARK: - Canvas Content Rendering (NEW)
+    
+    private func renderCanvasContent(context: CGContext, rect: CGRect, document: VectorDocument) {
+        print("🔍 IconGenerator: Rendering full canvas content...")
         
-        // Find the first image in the document
-        var foundImage: NSImage? = nil
+        // Save context state
+        context.saveGState()
         
-        for unifiedObject in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType {
-                if shape.isVisible {
-                    if let image = ImageContentRegistry.image(for: shape.id) {
-                        foundImage = image
-                        print("   ✅ Found image for shape: \(shape.name)")
-                        break
-                    } else if let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: shape) {
-                        foundImage = hydrated
-                        print("   ✅ Hydrated image for shape: \(shape.name)")
-                        break
-                    }
-                }
-            }
+        // Calculate scale to fit document in preview rect
+        let documentSize = document.settings.sizeInPoints
+        let scaleX = rect.width / documentSize.width
+        let scaleY = rect.height / documentSize.height
+        let scale = min(scaleX, scaleY) * 0.9 // 90% of available space for some padding
+        
+        // Calculate centered position
+        let scaledWidth = documentSize.width * scale
+        let scaledHeight = documentSize.height * scale
+        let offsetX = (rect.width - scaledWidth) / 2
+        let offsetY = (rect.height - scaledHeight) / 2
+        
+        // Apply transform to center and scale content
+        context.translateBy(x: offsetX, y: offsetY + scaledHeight)
+        context.scaleBy(x: scale, y: -scale)
+        
+        // Draw background if not transparent
+        if document.settings.backgroundColor != .clear {
+            context.setFillColor(document.settings.backgroundColor.cgColor)
+            context.fill(CGRect(origin: .zero, size: documentSize))
         }
         
-        if let image = foundImage {
-            // Render the image directly as a low-res thumbnail
-            print("   🖼️ Rendering image thumbnail...")
+        // Draw each visible layer
+        for layer in document.layers {
+            if !layer.isVisible { continue }
             
-            // Save context state
+            // Skip Canvas and Pasteboard layers for thumbnail (they're UI-only layers)
+            if layer.name == "Canvas" || layer.name == "Pasteboard" {
+                continue
+            }
+            
+            // Apply layer opacity
             context.saveGState()
+            context.setAlpha(layer.opacity)
             
-            // Set up context for image rendering
-            context.interpolationQuality = .medium
-            context.setShouldAntialias(true)
-            context.setAllowsAntialiasing(true)
+            // Get shapes in this layer using unified system
+            let layerIndex = document.layers.firstIndex(where: { $0.id == layer.id }) ?? 0
+            let shapesInLayer = document.getShapesForLayer(layerIndex)
             
-            // Calculate scale to fit image in preview rect while maintaining aspect ratio
-            let imageSize = image.size
-            let scaleX = rect.width / imageSize.width
-            let scaleY = rect.height / imageSize.height
-            let scale = min(scaleX, scaleY) * 0.8 // 80% of available space
-            
-            // Calculate centered position
-            let scaledWidth = imageSize.width * scale
-            let scaledHeight = imageSize.height * scale
-            let x = rect.midX - scaledWidth / 2
-            let y = rect.midY - scaledHeight / 2
-            
-            // Create a simple thumbnail
-            let imageRect = CGRect(x: x, y: y, width: scaledWidth, height: scaledHeight)
-            
-            // Draw the image
-            if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-                context.draw(cgImage, in: imageRect)
-                print("   ✅ Image drawn successfully")
+            // Draw each shape
+            for shape in shapesInLayer {
+                if !shape.isVisible { continue }
+                renderShape(shape, in: context)
             }
             
-            // Only add a subtle border to make the image stand out, not a tint
-            context.setStrokeColor(NSColor.systemGray.withAlphaComponent(0.3).cgColor)
-            context.setLineWidth(1.0)
-            context.stroke(imageRect)
-            
-            // Restore context state
             context.restoreGState()
-            
-        } else {
-            print("   ❌ No images found, using fallback")
-            renderFallbackPreview(context: context, rect: rect)
         }
+        
+        // Draw text objects using unified shapes
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType,
+               shape.isTextObject && shape.isVisible {
+                renderTextShape(shape, in: context)
+            }
+        }
+        
+        // Restore context state
+        context.restoreGState()
+        
+        print("   ✅ Canvas content rendered successfully")
+    }
+    
+    // MARK: - Shape Rendering
+    
+    private func renderShape(_ shape: VectorShape, in context: CGContext) {
+        context.saveGState()
+        
+        // Apply shape transform
+        context.concatenate(shape.transform)
+        
+        // Check if this is an image shape
+        if let nsImage = ImageContentRegistry.image(for: shape.id) ?? 
+                        ImageContentRegistry.hydrateImageIfAvailable(for: shape) {
+            // Draw the image
+            if let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+                // Use the shape's bounds property directly
+                let bounds = shape.bounds
+                context.draw(cgImage, in: bounds)
+            }
+        } else {
+            // Draw the vector path
+            let path = createCGPath(from: shape.path)
+            context.addPath(path)
+            
+            // Apply fill if present
+            if let fillStyle = shape.fillStyle {
+                context.setFillColor(fillStyle.color.cgColor)
+                context.setAlpha(fillStyle.opacity)
+                context.fillPath()
+            }
+            
+            // Re-add path for stroke
+            context.addPath(path)
+            
+            // Apply stroke if present
+            if let strokeStyle = shape.strokeStyle {
+                context.setStrokeColor(strokeStyle.color.cgColor)
+                context.setLineWidth(strokeStyle.width)
+                context.setAlpha(strokeStyle.opacity)
+                context.strokePath()
+            }
+        }
+        
+        context.restoreGState()
+    }
+    
+    // MARK: - Text Rendering
+    
+    private func renderTextShape(_ shape: VectorShape, in context: CGContext) {
+        guard let textContent = shape.textContent,
+              let typography = shape.typography else { return }
+        
+        context.saveGState()
+        
+        // Apply shape transform
+        context.concatenate(shape.transform)
+        
+        // Create attributed string with typography
+        let fillNSColor = NSColor(cgColor: typography.fillColor.cgColor) ?? NSColor.black
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont(name: typography.fontFamily, size: typography.fontSize) ?? 
+                   NSFont.systemFont(ofSize: typography.fontSize),
+            .foregroundColor: fillNSColor
+        ]
+        
+        let attributedString = NSAttributedString(string: textContent, attributes: attributes)
+        
+        // Draw the text
+        let position = CGPoint.zero // Position is handled by transform
+        attributedString.draw(at: position)
+        
+        // Draw stroke if present
+        if typography.strokeColor != .clear && typography.strokeWidth > 0 {
+            let strokeNSColor = NSColor(cgColor: typography.strokeColor.cgColor) ?? NSColor.black
+            let strokeAttributes: [NSAttributedString.Key: Any] = [
+                .font: NSFont(name: typography.fontFamily, size: typography.fontSize) ?? 
+                       NSFont.systemFont(ofSize: typography.fontSize),
+                .strokeColor: strokeNSColor,
+                .strokeWidth: -typography.strokeWidth // Negative for both stroke and fill
+            ]
+            let strokeString = NSAttributedString(string: textContent, attributes: strokeAttributes)
+            strokeString.draw(at: position)
+        }
+        
+        context.restoreGState()
+    }
+    
+    // MARK: - Path Conversion
+    
+    private func createCGPath(from vectorPath: VectorPath) -> CGPath {
+        let path = CGMutablePath()
+        
+        for element in vectorPath.elements {
+            switch element {
+            case .move(let to):
+                path.move(to: to.cgPoint)
+            case .line(let to):
+                path.addLine(to: to.cgPoint)
+            case .curve(let to, let control1, let control2):
+                path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+            case .quadCurve(let to, let control):
+                path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+            case .close:
+                path.closeSubpath()
+            }
+        }
+        
+        return path
+    }
+    
+    // Keep the old renderDirectImagePreview method for backward compatibility but deprecated
+    @available(*, deprecated, message: "Use renderCanvasContent instead")
+    private func renderDirectImagePreview(context: CGContext, rect: CGRect, document: VectorDocument) {
+        renderCanvasContent(context: context, rect: rect, document: document)
     }
     
     private func documentHasArtContent(_ document: VectorDocument) -> Bool {

@@ -1,0 +1,37 @@
+{
+  "configurations" : [
+    {
+      "id" : "176A7089-0485-458B-B8F5-7C1251BF888D",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:logos inkpen.io.xcodeproj",
+      "identifier" : "EAC969A92E2416EC0093AB2A",
+      "name" : "logos inkpen.io"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:logos inkpen.io.xcodeproj",
+        "identifier" : "EAC969B72E2416ED0093AB2A",
+        "name" : "logos inkpen.ioTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:logos inkpen.io.xcodeproj",
+        "identifier" : "EAC969C12E2416ED0093AB2A",
+        "name" : "logos inkpen.ioUITests"
+      }
+    }
+  ],
+  "version" : 1
+}
