@@ -200,14 +200,28 @@ class FileOperations {
         // Apply shape transform
         context.concatenate(shape.transform)
         
-        // Set up fill style
+        // Handle fill
         if let fillStyle = shape.fillStyle {
-            context.addPath(cgPath)
-            setFillStyle(fillStyle, context: context)
-            context.fillPath()
+            // Check if fill is a gradient
+            if case .gradient(let gradient) = fillStyle.color {
+                // For gradients, we need to clip first then draw
+                context.addPath(cgPath)
+                context.saveGState()
+                context.clip()
+                
+                // Draw the gradient
+                drawPDFGradient(gradient, in: context, bounds: cgPath.boundingBox, opacity: fillStyle.opacity)
+                
+                context.restoreGState()
+            } else {
+                // Regular color fill
+                context.addPath(cgPath)
+                setFillStyle(fillStyle, context: context)
+                context.fillPath()
+            }
         }
         
-        // Set up stroke style
+        // Handle stroke
         if let strokeStyle = shape.strokeStyle {
             context.addPath(cgPath)
             setStrokeStyle(strokeStyle, context: context)
@@ -283,9 +297,10 @@ class FileOperations {
         case .appleSystem(_):
             // Fallback to black for system colors
             context.setFillColor(red: 0, green: 0, blue: 0, alpha: fillStyle.opacity)
-        case .gradient(let gradient):
-            // Apply gradient fill
-            applyGradientFill(gradient, to: context, opacity: fillStyle.opacity)
+        case .gradient(_):
+            // Gradient handling is done separately in renderShapeToPDF
+            // This should not be called for gradients
+            break
         }
     }
     
@@ -332,54 +347,21 @@ class FileOperations {
         context.setLineJoin(strokeStyle.lineJoin)
     }
     
-    /// Apply gradient fill to PDF context
-    static func applyGradientFill(_ gradient: VectorGradient, to context: CGContext, opacity: Double) {
-        // Save the current graphics state
-        context.saveGState()
-        defer { context.restoreGState() }
-        
-        // Get the current path bounds for gradient positioning
-        let pathBounds = context.boundingBoxOfPath
+    /// Draw gradient for PDF without rasterization using CGShading
+    static func drawPDFGradient(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
+        // Apply opacity
+        context.setAlpha(CGFloat(opacity))
         
         switch gradient {
         case .linear(let linearGradient):
             // Create color space
             let colorSpace = CGColorSpaceCreateDeviceRGB()
             
-            // Extract colors and locations from gradient stops
-            var colors: [CGFloat] = []
-            var locations: [CGFloat] = []
-            
-            for stop in linearGradient.stops {
-                locations.append(CGFloat(stop.position))
-                
-                // Extract color components
-                switch stop.color {
-                case .rgb(let rgb):
-                    colors.append(contentsOf: [rgb.red, rgb.green, rgb.blue, rgb.alpha * stop.opacity])
-                case .white:
-                    colors.append(contentsOf: [1.0, 1.0, 1.0, CGFloat(stop.opacity)])
-                case .black:
-                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
-                default:
-                    // Fallback to black for other color types
-                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
-                }
-            }
-            
-            // Create CGGradient
-            guard let cgGradient = CGGradient(
-                colorSpace: colorSpace,
-                colorComponents: colors,
-                locations: locations,
-                count: linearGradient.stops.count
-            ) else { return }
-            
             // Calculate gradient points based on the gradient's angle
             let angle = linearGradient.angle * .pi / 180.0
-            let centerX = pathBounds.midX
-            let centerY = pathBounds.midY
-            let radius = max(pathBounds.width, pathBounds.height) / 2.0
+            let centerX = bounds.midX
+            let centerY = bounds.midY
+            let radius = max(bounds.width, bounds.height) / 2.0
             
             let startX = centerX - radius * cos(angle)
             let startY = centerY - radius * sin(angle)
@@ -389,73 +371,188 @@ class FileOperations {
             let startPoint = CGPoint(x: startX, y: startY)
             let endPoint = CGPoint(x: endX, y: endY)
             
-            // Clip to the current path
-            context.clip()
+            // Create the shading function
+            guard let shadingFunction = createShadingFunction(for: linearGradient, colorSpace: colorSpace) else { return }
             
-            // Apply opacity
-            context.setAlpha(CGFloat(opacity))
-            
-            // Draw the gradient
-            context.drawLinearGradient(
-                cgGradient,
+            // Create the axial shading
+            guard let shading = CGShading(
+                axialSpace: colorSpace,
                 start: startPoint,
                 end: endPoint,
-                options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
-            )
+                function: shadingFunction,
+                extendStart: true,
+                extendEnd: true
+            ) else { return }
+            
+            // Draw the shading (this creates a vector gradient in PDF)
+            context.drawShading(shading)
             
         case .radial(let radialGradient):
             // Create color space
             let colorSpace = CGColorSpaceCreateDeviceRGB()
             
-            // Extract colors and locations
-            var colors: [CGFloat] = []
-            var locations: [CGFloat] = []
+            // Calculate center and radius using bounds parameter
+            let centerX = bounds.minX + bounds.width * radialGradient.centerPoint.x
+            let centerY = bounds.minY + bounds.height * radialGradient.centerPoint.y
+            let center = CGPoint(x: centerX, y: centerY)
+            let radius = min(bounds.width, bounds.height) * radialGradient.radius
             
-            for stop in radialGradient.stops {
-                locations.append(CGFloat(stop.position))
-                
-                switch stop.color {
-                case .rgb(let rgb):
-                    colors.append(contentsOf: [rgb.red, rgb.green, rgb.blue, rgb.alpha * stop.opacity])
-                case .white:
-                    colors.append(contentsOf: [1.0, 1.0, 1.0, CGFloat(stop.opacity)])
-                case .black:
-                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
-                default:
-                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
-                }
-            }
+            // Create the shading function
+            guard let shadingFunction = createRadialShadingFunction(for: radialGradient, colorSpace: colorSpace) else { return }
             
-            // Create CGGradient
-            guard let cgGradient = CGGradient(
-                colorSpace: colorSpace,
-                colorComponents: colors,
-                locations: locations,
-                count: radialGradient.stops.count
+            // Create the radial shading
+            guard let shading = CGShading(
+                radialSpace: colorSpace,
+                start: center,
+                startRadius: 0,
+                end: center,
+                endRadius: radius,
+                function: shadingFunction,
+                extendStart: false,
+                extendEnd: true
             ) else { return }
             
-            // Calculate center and radius
-            let centerX = pathBounds.minX + pathBounds.width * radialGradient.centerPoint.x
-            let centerY = pathBounds.minY + pathBounds.height * radialGradient.centerPoint.y
-            let center = CGPoint(x: centerX, y: centerY)
-            let radius = min(pathBounds.width, pathBounds.height) * radialGradient.radius
+            // Draw the shading (this creates a vector gradient in PDF)
+            context.drawShading(shading)
+        }
+    }
+    
+    /// Create a shading function for linear gradients
+    private static func createShadingFunction(for gradient: LinearGradient, colorSpace: CGColorSpace) -> CGFunction? {
+        // Extract color components from gradient stops
+        var colorComponents: [[CGFloat]] = []
+        
+        for stop in gradient.stops {
+            switch stop.color {
+            case .rgb(let rgb):
+                colorComponents.append([rgb.red, rgb.green, rgb.blue, rgb.alpha * stop.opacity])
+            case .white:
+                colorComponents.append([1.0, 1.0, 1.0, CGFloat(stop.opacity)])
+            case .black:
+                colorComponents.append([0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+            default:
+                colorComponents.append([0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+            }
+        }
+        
+        // For simple two-stop gradients
+        if gradient.stops.count == 2 {
+            let startComponents = colorComponents[0]
+            let endComponents = colorComponents[1]
             
-            // Clip to the current path
-            context.clip()
+            // Store components in a structure that can be passed to callback
+            struct GradientInfo {
+                var startR: CGFloat
+                var startG: CGFloat
+                var startB: CGFloat
+                var startA: CGFloat
+                var endR: CGFloat
+                var endG: CGFloat
+                var endB: CGFloat
+                var endA: CGFloat
+            }
             
-            // Apply opacity
-            context.setAlpha(CGFloat(opacity))
+            var info = GradientInfo(
+                startR: startComponents[0],
+                startG: startComponents[1],
+                startB: startComponents[2],
+                startA: startComponents[3],
+                endR: endComponents[0],
+                endG: endComponents[1],
+                endB: endComponents[2],
+                endA: endComponents[3]
+            )
             
-            // Draw the gradient
-            context.drawRadialGradient(
-                cgGradient,
-                startCenter: center,
-                startRadius: 0,
-                endCenter: center,
-                endRadius: radius,
-                options: []
+            var callbacks = CGFunctionCallbacks(
+                version: 0,
+                evaluate: { (infoPtr, input, output) in
+                    guard let infoPtr = infoPtr else { return }
+                    let info = infoPtr.assumingMemoryBound(to: GradientInfo.self).pointee
+                    let t = input[0]
+                    
+                    // Interpolate between start and end colors
+                    output[0] = info.startR + (info.endR - info.startR) * t  // R
+                    output[1] = info.startG + (info.endG - info.startG) * t  // G
+                    output[2] = info.startB + (info.endB - info.startB) * t  // B
+                    output[3] = info.startA + (info.endA - info.startA) * t  // A
+                },
+                releaseInfo: nil
+            )
+            
+            return CGFunction(
+                info: &info,
+                domainDimension: 1,
+                domain: [0, 1],
+                rangeDimension: 4,
+                range: [0, 1, 0, 1, 0, 1, 0, 1],
+                callbacks: &callbacks
             )
         }
+        
+        // For multi-stop gradients, use first and last stops as approximation
+        // TODO: Implement proper multi-stop gradient function
+        let startComponents = colorComponents.first ?? [0, 0, 0, 1]
+        let endComponents = colorComponents.last ?? [1, 1, 1, 1]
+        
+        struct GradientInfo {
+            var startR: CGFloat
+            var startG: CGFloat
+            var startB: CGFloat
+            var startA: CGFloat
+            var endR: CGFloat
+            var endG: CGFloat
+            var endB: CGFloat
+            var endA: CGFloat
+        }
+        
+        var info = GradientInfo(
+            startR: startComponents[0],
+            startG: startComponents[1],
+            startB: startComponents[2],
+            startA: startComponents[3],
+            endR: endComponents[0],
+            endG: endComponents[1],
+            endB: endComponents[2],
+            endA: endComponents[3]
+        )
+        
+        var callbacks = CGFunctionCallbacks(
+            version: 0,
+            evaluate: { (infoPtr, input, output) in
+                guard let infoPtr = infoPtr else { return }
+                let info = infoPtr.assumingMemoryBound(to: GradientInfo.self).pointee
+                let t = input[0]
+                
+                output[0] = info.startR + (info.endR - info.startR) * t  // R
+                output[1] = info.startG + (info.endG - info.startG) * t  // G
+                output[2] = info.startB + (info.endB - info.startB) * t  // B
+                output[3] = info.startA + (info.endA - info.startA) * t  // A
+            },
+            releaseInfo: nil
+        )
+        
+        return CGFunction(
+            info: &info,
+            domainDimension: 1,
+            domain: [0, 1],
+            rangeDimension: 4,
+            range: [0, 1, 0, 1, 0, 1, 0, 1],
+            callbacks: &callbacks
+        )
+    }
+    
+    /// Create a shading function for radial gradients
+    private static func createRadialShadingFunction(for gradient: RadialGradient, colorSpace: CGColorSpace) -> CGFunction? {
+        // Reuse linear gradient function creation for radial gradients
+        // The shading function works the same way, just applied radially
+        let linearEquivalent = LinearGradient(
+            startPoint: CGPoint(x: 0, y: 0),
+            endPoint: CGPoint(x: 1, y: 0),
+            stops: gradient.stops,
+            spreadMethod: gradient.spreadMethod,
+            units: gradient.units
+        )
+        return createShadingFunction(for: linearEquivalent, colorSpace: colorSpace)
     }
     
     /// Import SVG from data for FileDocument protocol
