@@ -75,9 +75,12 @@ class DocumentIconGenerator {
             // Restore context
             context.restoreGState()
             
+            // Add pen emoji overlay
+            addPenEmojiOverlay(to: context, size: size)
+            
             image.unlockFocus()
             
-            Log.info("✅ Generated icon from SVG export (\(Int(scaledWidth))x\(Int(scaledHeight)))", category: .fileOperations)
+            Log.info("✅ Generated icon from SVG export (\(Int(scaledWidth))x\(Int(scaledHeight))) with pen overlay", category: .fileOperations)
             return image
             
         } catch {
@@ -99,6 +102,27 @@ class DocumentIconGenerator {
         
         image.unlockFocus()
         return image
+    }
+    
+    private func addPenEmojiOverlay(to context: CGContext, size: CGSize) {
+        // Add pen emoji overlay in bottom right corner
+        let brush = "🖋️" // Alternative emojis: 🖊️ 🖌️
+        
+        // Use Apple Color Emoji font for the pen emoji
+        let emojiFont = NSFont(name: "Apple Color Emoji", size: 130) ?? NSFont.systemFont(ofSize: 130, weight: .regular)
+        let emojiAttributes: [NSAttributedString.Key: Any] = [
+            .font: emojiFont
+        ]
+        
+        let emojiSize = brush.size(withAttributes: emojiAttributes)
+        let emojiRect = CGRect(
+            x: size.width - 132,  // Position near right edge
+            y: -24,               // Position near bottom
+            width: emojiSize.width,
+            height: emojiSize.height
+        )
+        
+        brush.draw(in: emojiRect, withAttributes: emojiAttributes)
     }
     
     private func createDocumentPreview(context: CGContext, rect: CGRect, document: VectorDocument) {
