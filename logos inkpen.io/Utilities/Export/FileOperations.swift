@@ -141,9 +141,10 @@ class FileOperations {
             throw VectorImportError.parsingError("Failed to create PDF context", line: nil)
         }
         
-        // Begin PDF page with the same media box
+        // Begin PDF page with the same media box and metadata
         let pageInfo = [
-            kCGPDFContextMediaBox as String: mediaBox
+            kCGPDFContextMediaBox as String: mediaBox,
+            kCGPDFContextCreator as String: "Inkpen.io"
         ] as [String : Any]
         pdfContext.beginPDFPage(pageInfo as CFDictionary)
         

@@ -57,8 +57,23 @@ extension PDFCommandParser {
         let transformedY0 = pageSize.height - y0
         let transformedY1 = pageSize.height - y1
         
-        let startPoint = CGPoint(x: Double(x0), y: Double(transformedY0))
-        let endPoint = CGPoint(x: Double(x1), y: Double(transformedY1))
+        // Check if coordinates appear to be absolute (greater than 1.0) and normalize them
+        // PDFs can contain gradients in either normalized (0-1) or absolute coordinates
+        let needsNormalization = (abs(x0) > 1.0 || abs(y0) > 1.0 || abs(x1) > 1.0 || abs(y1) > 1.0)
+        
+        let startPoint: CGPoint
+        let endPoint: CGPoint
+        
+        if needsNormalization && pageSize.width > 0 && pageSize.height > 0 {
+            // Normalize absolute coordinates to 0-1 range for objectBoundingBox units
+            startPoint = CGPoint(x: Double(x0 / pageSize.width), y: Double(transformedY0 / pageSize.height))
+            endPoint = CGPoint(x: Double(x1 / pageSize.width), y: Double(transformedY1 / pageSize.height))
+            print("PDF: 🔄 Normalized absolute coordinates to unit space")
+        } else {
+            // Already normalized or page size unavailable
+            startPoint = CGPoint(x: Double(x0), y: Double(transformedY0))
+            endPoint = CGPoint(x: Double(x1), y: Double(transformedY1))
+        }
         
         // Calculate the actual gradient angle from the transformed vector
         let deltaX = x1 - x0
