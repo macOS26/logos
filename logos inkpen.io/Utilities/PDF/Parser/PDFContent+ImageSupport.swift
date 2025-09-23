@@ -376,9 +376,19 @@ extension PDFCommandParser {
 
     /// Handle clip operator 'W' or 'W*'
     func handleClipOperator() {
-        print("PDF: Clip operator 'W' encountered - setting up clipping path")
+        print("PDF: Clip operator 'W' encountered")
 
-        // Create a clipping path shape from current path
+        // IMPORTANT: Check if we're in a gradient/compound path context
+        // In these cases, W operator defines the boundary for gradient fills, not a clipping path for images
+        if isInCompoundPath || activeGradient != nil || !compoundPathParts.isEmpty {
+            print("PDF: W operator with gradient/compound context - preserving path for gradient fill, NOT creating clipping path")
+            // The path will be used as the shape boundary when filled with gradient
+            return
+        }
+
+        print("PDF: Setting up clipping path for image/content clipping")
+
+        // Create a clipping path shape from current path (only for actual image clipping)
         if !currentPath.isEmpty {
             // Convert PathCommands to PathElements
             var pathElements: [PathElement] = []
