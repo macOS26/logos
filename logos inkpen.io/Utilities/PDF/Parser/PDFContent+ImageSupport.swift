@@ -386,42 +386,6 @@ extension PDFCommandParser {
             return
         }
 
-        // Also check if this is likely a gradient path (single path that will get shading)
-        // Gradients often use: path construction -> W -> n -> q -> cm -> sh sequence
-        // We can detect this by checking if we have a non-empty current path that's not a simple rectangle
-        if !currentPath.isEmpty {
-            // Check if this looks like a gradient shape (not a simple clipping rectangle)
-            var isLikelyGradientPath = false
-
-            // Count path complexity - gradients often have complex paths
-            let pathCommandCount = currentPath.count
-            var hasComplexPath = false
-
-            for command in currentPath {
-                switch command {
-                case .curveTo, .quadCurveTo:
-                    hasComplexPath = true
-                case .rectangle:
-                    // Simple rectangles are usually for image clipping
-                    break
-                default:
-                    break
-                }
-            }
-
-            // If we have a complex path with curves or many commands, it's likely for a gradient
-            if hasComplexPath || pathCommandCount > 10 {
-                isLikelyGradientPath = true
-            }
-
-            if isLikelyGradientPath {
-                print("PDF: W operator with complex path - likely gradient boundary, NOT creating clipping path")
-                // Mark that we might be setting up for a gradient
-                // The path will be used when the shading operator is called
-                return
-            }
-        }
-
         print("PDF: Setting up clipping path for image/content clipping")
 
         // Create a clipping path shape from current path (only for actual image clipping)
