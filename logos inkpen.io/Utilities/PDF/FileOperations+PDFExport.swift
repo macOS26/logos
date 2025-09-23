@@ -165,6 +165,24 @@ extension FileOperations {
 
     /// Render individual shape to PDF context with image support
     static func renderShapeToPDFWithImageSupport(shape: VectorShape, context: CGContext) throws {
+        // Check if this is a group
+        if shape.isGroup && !shape.groupedShapes.isEmpty {
+            // Save graphics state for group
+            context.saveGState()
+
+            // Apply group transform if any
+            context.concatenate(shape.transform)
+
+            // Render each shape in the group recursively
+            for groupedShape in shape.groupedShapes {
+                try renderShapeToPDFWithImageSupport(shape: groupedShape, context: context)
+            }
+
+            // Restore graphics state
+            context.restoreGState()
+            return
+        }
+
         // Check if this is an image shape
         if let imageData = shape.embeddedImageData {
             try renderImageToPDF(shape: shape, imageData: imageData, context: context)

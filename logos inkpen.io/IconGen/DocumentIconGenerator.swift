@@ -72,9 +72,24 @@ class DocumentIconGenerator {
         
         // Try to draw SVG using WebKit's SVG rendering
         if let svgImage = NSImage(data: svgData) {
-            // SVG loaded as NSImage - draw it centered and scaled
-            let drawRect = NSRect(origin: .zero, size: iconSize)
-            svgImage.draw(in: drawRect, from: NSRect(origin: .zero, size: svgImage.size), operation: .sourceOver, fraction: 1.0)
+            // SVG loaded as NSImage - draw it centered and scaled while preserving aspect ratio
+            let svgSize = svgImage.size
+
+            // Calculate scale to fit within icon bounds while preserving aspect ratio
+            let scaleX = iconSize.width / svgSize.width
+            let scaleY = iconSize.height / svgSize.height
+            let scale = min(scaleX, scaleY)  // Use smaller scale to ensure it fits
+
+            // Calculate scaled size
+            let scaledWidth = svgSize.width * scale
+            let scaledHeight = svgSize.height * scale
+
+            // Center the scaled image within the icon bounds
+            let x = (iconSize.width - scaledWidth) / 2
+            let y = (iconSize.height - scaledHeight) / 2
+
+            let drawRect = NSRect(x: x, y: y, width: scaledWidth, height: scaledHeight)
+            svgImage.draw(in: drawRect, from: NSRect(origin: .zero, size: svgSize), operation: .sourceOver, fraction: 1.0)
         } else {
             // Fallback: Try to parse as XML and extract basic shapes
             Log.info("⚠️ Could not load SVG as NSImage, using fallback", category: .fileOperations)

@@ -40,11 +40,19 @@ struct DocumentSettingsView: View {
                         .frame(maxWidth: .infinity, alignment: .topLeading)
                     }
 
-                    // Layer Selection Section
-                    layerSelectionSection
-
-                    // Display Options Section (Full Width)
+                    // Display Options Section (without Grid Spacing)
                     displayOptionsSection
+
+                    // Layer Selection and Grid Spacing Side by Side at Bottom
+                    HStack(alignment: .top, spacing: 24) {
+                        // Left: Selected Layer
+                        layerSelectionSection
+                            .frame(maxWidth: .infinity, alignment: .topLeading)
+
+                        // Right: Grid Spacing
+                        gridSpacingSection
+                            .frame(maxWidth: .infinity, alignment: .topLeading)
+                    }
                 }
                 .padding(24)
             }
@@ -120,48 +128,52 @@ struct DocumentSettingsView: View {
                     .foregroundColor(.primary)
             }
             
-            VStack(spacing: 16) {
-                // Dimensions
-                HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 16) {
+                // Dimensions - Side by Side
+                HStack(spacing: 24) {
                     // Width
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Width")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.secondary)
-                        
+
                         HStack(spacing: 8) {
                             TextField("Width", value: $document.settings.width, format: .number)
                                 .textFieldStyle(ProfessionalTextFieldStyle())
-                                .frame(width: 100)
+                                .frame(width: 120)
                                 .onChange(of: document.settings.width) {
                                     document.onSettingsChanged()
                                 }
-                            
-                            Text(document.settings.unit.rawValue)
+
+                            Text(document.settings.unit.rawValue.capitalized)
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(.secondary)
+                                .frame(width: 60, alignment: .leading)
                         }
                     }
-                    
+
                     // Height
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Height")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.secondary)
-                        
+
                         HStack(spacing: 8) {
                             TextField("Height", value: $document.settings.height, format: .number)
                                 .textFieldStyle(ProfessionalTextFieldStyle())
-                                .frame(width: 100)
+                                .frame(width: 120)
                                 .onChange(of: document.settings.height) {
                                     document.onSettingsChanged()
                                 }
-                            
-                            Text(document.settings.unit.rawValue)
+
+                            Text(document.settings.unit.rawValue.capitalized)
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(.secondary)
+                                .frame(width: 60, alignment: .leading)
                         }
                     }
+
+                    Spacer()
                 }
                 
                 // Units
@@ -244,7 +256,7 @@ struct DocumentSettingsView: View {
                 HStack(spacing: 8) {
                     TextField("Resolution", value: $document.settings.resolution, format: .number)
                         .textFieldStyle(ProfessionalTextFieldStyle())
-                        .frame(width: 100)
+                        .frame(width: 120)
                         .onChange(of: document.settings.resolution) {
                             document.onSettingsChanged()
                         }
@@ -252,6 +264,7 @@ struct DocumentSettingsView: View {
                     Text("DPI")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.secondary)
+                        .frame(width: 60, alignment: .leading)
                 }
             }
         }
@@ -259,23 +272,12 @@ struct DocumentSettingsView: View {
 
     // MARK: - Layer Selection Section
     private var layerSelectionSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "square.stack.3d.up")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.blue)
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Selected Layer")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.secondary)
 
-                Text("Active Layer")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Selected Layer")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary)
-
-                Picker("Layer", selection: Binding(
+            Picker("", selection: Binding(
                     get: {
                         // Find the layer with the matching ID, or default to first layer
                         if let selectedId = document.settings.selectedLayerId,
@@ -304,9 +306,8 @@ struct DocumentSettingsView: View {
                     }
                 }
                 .pickerStyle(MenuPickerStyle())
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .disabled(document.layers.isEmpty)
-            }
         }
     }
 
@@ -323,61 +324,104 @@ struct DocumentSettingsView: View {
                     .foregroundColor(.primary)
             }
 
-            // 2x2 Grid Layout
-            HStack(spacing: 12) {
-                // Left column: Show options
-                VStack(spacing: 6) {
-                    ProfessionalToggle(title: "Show Rulers", isOn: $document.settings.showRulers)
-                        .onChange(of: document.settings.showRulers) { _, newValue in
-                            document.showRulers = newValue
-                            UserDefaults.standard.set(newValue, forKey: "showRulers")
-                            document.onSettingsChanged()
-                        }
-                    ProfessionalToggle(title: "Show Grid", isOn: $document.settings.showGrid)
-                        .onChange(of: document.settings.showGrid) { _, newValue in
-                            document.showGrid = newValue
-                            UserDefaults.standard.set(newValue, forKey: "showGrid")
-                            document.onSettingsChanged()
-                        }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+            // 2x2 Grid Layout with proper alignment
+            VStack(alignment: .leading, spacing: 12) {
+                // First row: Show Rulers and Snap to Point
+                HStack(spacing: 40) {
+                    // Show Rulers
+                    HStack {
+                        Text("Show Rulers")
+                            .font(.system(size: 13))
+                            .foregroundColor(.primary)
+                            .frame(width: 120, alignment: .leading)
 
-                // Right column: Snap options
-                VStack(spacing: 6) {
-                    ProfessionalToggle(title: "Snap to Point", isOn: $document.settings.snapToPoint)
-                        .onChange(of: document.settings.snapToPoint) { _, newValue in
-                            document.snapToPoint = newValue
-                            UserDefaults.standard.set(newValue, forKey: "snapToPoint")
-                            document.onSettingsChanged()
-                        }
-                    ProfessionalToggle(title: "Snap to Grid", isOn: $document.settings.snapToGrid)
-                        .onChange(of: document.settings.snapToGrid) { _, newValue in
-                            document.snapToGrid = newValue
-                            UserDefaults.standard.set(newValue, forKey: "snapToGrid")
-                            document.onSettingsChanged()
-                        }
+                        Toggle("", isOn: $document.settings.showRulers)
+                            .toggleStyle(SwitchToggleStyle())
+                            .scaleEffect(0.8)
+                            .onChange(of: document.settings.showRulers) { _, newValue in
+                                document.showRulers = newValue
+                                UserDefaults.standard.set(newValue, forKey: "showRulers")
+                                document.onSettingsChanged()
+                            }
+                    }
+
+                    // Snap to Point
+                    HStack {
+                        Text("Snap to Point")
+                            .font(.system(size: 13))
+                            .foregroundColor(.primary)
+                            .frame(width: 120, alignment: .leading)
+
+                        Toggle("", isOn: $document.settings.snapToPoint)
+                            .toggleStyle(SwitchToggleStyle())
+                            .scaleEffect(0.8)
+                            .onChange(of: document.settings.snapToPoint) { _, newValue in
+                                document.snapToPoint = newValue
+                                UserDefaults.standard.set(newValue, forKey: "snapToPoint")
+                                document.onSettingsChanged()
+                            }
+                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+
+                // Second row: Show Grid and Snap to Grid
+                HStack(spacing: 40) {
+                    // Show Grid
+                    HStack {
+                        Text("Show Grid")
+                            .font(.system(size: 13))
+                            .foregroundColor(.primary)
+                            .frame(width: 120, alignment: .leading)
+
+                        Toggle("", isOn: $document.settings.showGrid)
+                            .toggleStyle(SwitchToggleStyle())
+                            .scaleEffect(0.8)
+                            .onChange(of: document.settings.showGrid) { _, newValue in
+                                document.showGrid = newValue
+                                UserDefaults.standard.set(newValue, forKey: "showGrid")
+                                document.onSettingsChanged()
+                            }
+                    }
+
+                    // Snap to Grid
+                    HStack {
+                        Text("Snap to Grid")
+                            .font(.system(size: 13))
+                            .foregroundColor(.primary)
+                            .frame(width: 120, alignment: .leading)
+
+                        Toggle("", isOn: $document.settings.snapToGrid)
+                            .toggleStyle(SwitchToggleStyle())
+                            .scaleEffect(0.8)
+                            .onChange(of: document.settings.snapToGrid) { _, newValue in
+                                document.snapToGrid = newValue
+                                UserDefaults.standard.set(newValue, forKey: "snapToGrid")
+                                document.onSettingsChanged()
+                            }
+                    }
+                }
             }
+        }
+    }
 
-            // Grid Spacing - Always visible
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Grid Spacing")
+    // MARK: - Grid Spacing Section
+    private var gridSpacingSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Grid Spacing")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.secondary)
+
+            HStack(spacing: 8) {
+                TextField("Grid Spacing", value: $document.settings.gridSpacing, format: .number)
+                    .textFieldStyle(ProfessionalTextFieldStyle())
+                    .frame(width: 120)
+                    .onChange(of: document.settings.gridSpacing) {
+                        document.onSettingsChanged()
+                    }
+
+                Text(document.settings.unit.rawValue.capitalized)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.secondary)
-
-                HStack(spacing: 8) {
-                    TextField("Grid Spacing", value: $document.settings.gridSpacing, format: .number)
-                        .textFieldStyle(ProfessionalTextFieldStyle())
-                        .frame(width: 100)
-                        .onChange(of: document.settings.gridSpacing) {
-                            document.onSettingsChanged()
-                        }
-
-                    Text(document.settings.unit.rawValue)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
-                }
+                    .frame(width: 60, alignment: .leading)
             }
         }
     }

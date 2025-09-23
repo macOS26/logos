@@ -75,7 +75,7 @@ struct logos_inken_ioApp: App {
                     .help("Import SVG, PDF, PNG")
                     
                     Divider()
-                    
+
                     Button("Export SVG…") {
                         documentState?.exportSVG()
                     }

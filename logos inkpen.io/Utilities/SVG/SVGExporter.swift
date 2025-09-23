@@ -117,21 +117,34 @@ class SVGExporter {
     
     private func exportShape(_ shape: VectorShape, dpiScale: CGFloat) -> String {
         var svg = ""
-        
+
         // Skip clipping path shapes as they're handled in defs
         if shape.isClippingPath {
             return ""
         }
-        
+
+        // Check if this is a group
+        if shape.isGroup && !shape.groupedShapes.isEmpty {
+            svg += "<g id=\"group_\(shape.id.uuidString)\">\n"
+
+            // Export each shape in the group
+            for groupedShape in shape.groupedShapes {
+                svg += exportShape(groupedShape, dpiScale: dpiScale)
+            }
+
+            svg += "</g>\n"
+            return svg
+        }
+
         // Check if this is an image
-        if let image = ImageContentRegistry.image(for: shape.id) ?? 
+        if let image = ImageContentRegistry.image(for: shape.id) ??
                        ImageContentRegistry.hydrateImageIfAvailable(for: shape) {
             return exportImageShape(shape, image: image, dpiScale: dpiScale)
         }
-        
+
         // Export as path
         let pathData = generatePathData(from: shape.path, transform: shape.transform)
-        
+
         svg += "<path d=\"\(pathData)\""
         
         // Add clip-path reference if this shape is clipped

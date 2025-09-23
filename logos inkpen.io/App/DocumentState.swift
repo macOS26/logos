@@ -382,55 +382,161 @@ class DocumentState: ObservableObject {
         panel.message = "Export as PNG (Portable Network Graphics)"
 
         // Create accessory view for options
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 100))
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 350, height: 140))
+
+        // Icon set checkbox
+        let iconCheckbox = NSButton(checkboxWithTitle: "Export as Icon Set",
+                                    target: nil, action: nil)
+        iconCheckbox.frame = NSRect(x: 20, y: 100, width: 200, height: 20)
+        iconCheckbox.state = .off
+        accessoryView.addSubview(iconCheckbox)
+
+        // Icon sizes label (initially hidden)
+        let iconSizesLabel = NSTextField(labelWithString: "Sizes: 1024×1024, 512×512, 256×256, 128×128, 64×64, 32×32, 16×16 px")
+        iconSizesLabel.frame = NSRect(x: 40, y: 75, width: 300, height: 20)
+        iconSizesLabel.font = NSFont.systemFont(ofSize: 10)
+        iconSizesLabel.textColor = NSColor.secondaryLabelColor
+        iconSizesLabel.isHidden = true
+        accessoryView.addSubview(iconSizesLabel)
 
         // Scale control
         let scaleLabel = NSTextField(labelWithString: "Scale:")
-        scaleLabel.frame = NSRect(x: 20, y: 60, width: 50, height: 20)
+        scaleLabel.frame = NSRect(x: 20, y: 45, width: 50, height: 20)
         accessoryView.addSubview(scaleLabel)
 
-        let scalePopup = NSPopUpButton(frame: NSRect(x: 75, y: 58, width: 100, height: 25))
-        scalePopup.addItems(withTitles: ["1x", "2x", "3x", "4x"])
+        let scalePopup = NSPopUpButton(frame: NSRect(x: 75, y: 43, width: 100, height: 25))
+        scalePopup.addItems(withTitles: ["1x", "2x", "3x", "4x", "Icon Set"])
         scalePopup.selectItem(withTitle: "2x") // Default to 2x
         accessoryView.addSubview(scalePopup)
 
         // Background checkbox
         let bgCheckbox = NSButton(checkboxWithTitle: "Include background",
                                    target: nil, action: nil)
-        bgCheckbox.frame = NSRect(x: 20, y: 20, width: 200, height: 20)
+        bgCheckbox.frame = NSRect(x: 20, y: 10, width: 200, height: 20)
         bgCheckbox.state = .off // Default to transparent background
         accessoryView.addSubview(bgCheckbox)
+
+        // Setup icon checkbox action to show/hide options
+        iconCheckbox.target = iconCheckbox
+        iconCheckbox.action = #selector(NSButton.performClick(_:))
+        iconCheckbox.sendAction(on: .leftMouseUp)
+
+        // Create a simple handler using objc runtime
+        class IconCheckboxHandler: NSObject {
+            let scaleLabel: NSTextField
+            let scalePopup: NSPopUpButton
+            let bgCheckbox: NSButton
+            let iconSizesLabel: NSTextField
+            let iconCheckbox: NSButton
+
+            init(scaleLabel: NSTextField, scalePopup: NSPopUpButton, bgCheckbox: NSButton, iconSizesLabel: NSTextField, iconCheckbox: NSButton) {
+                self.scaleLabel = scaleLabel
+                self.scalePopup = scalePopup
+                self.bgCheckbox = bgCheckbox
+                self.iconSizesLabel = iconSizesLabel
+                self.iconCheckbox = iconCheckbox
+            }
+
+            @objc func toggleIconMode(_ sender: NSButton) {
+                let isIconMode = sender.state == .on
+                scaleLabel.isHidden = isIconMode
+                scalePopup.isHidden = isIconMode
+                bgCheckbox.isHidden = isIconMode
+                iconSizesLabel.isHidden = !isIconMode
+
+                if isIconMode {
+                    bgCheckbox.state = .off // Icons never have background
+                    scalePopup.selectItem(withTitle: "Icon Set")
+                }
+            }
+
+            @objc func scaleChanged(_ sender: NSPopUpButton) {
+                let isIconSet = sender.titleOfSelectedItem == "Icon Set"
+                if isIconSet {
+                    iconCheckbox.state = .on
+                    bgCheckbox.isHidden = true
+                    bgCheckbox.state = .off
+                    iconSizesLabel.isHidden = false
+                } else {
+                    iconCheckbox.state = .off
+                    bgCheckbox.isHidden = false
+                    iconSizesLabel.isHidden = true
+                }
+            }
+        }
+
+        let handler = IconCheckboxHandler(scaleLabel: scaleLabel, scalePopup: scalePopup,
+                                         bgCheckbox: bgCheckbox, iconSizesLabel: iconSizesLabel,
+                                         iconCheckbox: iconCheckbox)
+        iconCheckbox.target = handler
+        iconCheckbox.action = #selector(IconCheckboxHandler.toggleIconMode(_:))
+        scalePopup.target = handler
+        scalePopup.action = #selector(IconCheckboxHandler.scaleChanged(_:))
+
+        // Keep handler alive
+        objc_setAssociatedObject(accessoryView, "handler", handler, .OBJC_ASSOCIATION_RETAIN)
 
         panel.accessoryView = accessoryView
 
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
 
-            // Get scale from popup
-            let scaleString = scalePopup.titleOfSelectedItem ?? "2x"
-            let scale = CGFloat(Int(scaleString.dropLast()) ?? 2)
+            // Check if icon set mode is enabled (either via checkbox or dropdown)
+            let selectedScale = scalePopup.titleOfSelectedItem ?? "2x"
+            let isIconMode = iconCheckbox.state == .on || selectedScale == "Icon Set"
 
-            // Get background option
-            let includeBackground = bgCheckbox.state == .on
+            if isIconMode {
+                // For icon set, we need a folder not a file
+                let folderURL = url.deletingLastPathComponent()
 
-            Task {
-                do {
-                    try FileOperations.exportToPNG(document, url: url, scale: scale,
-                                                    includeBackground: includeBackground)
+                Task {
+                    do {
+                        try FileOperations.exportIconSet(document, folderURL: folderURL)
 
-                    await MainActor.run {
-                        Log.info("✅ Exported PNG to: \(url.path) (scale: \(scale)x, background: \(includeBackground))",
-                                category: .fileOperations)
+                        await MainActor.run {
+                            Log.info("✅ Exported icon set to: \(folderURL.path)",
+                                    category: .fileOperations)
+                        }
+                    } catch {
+                        await MainActor.run {
+                            Log.error("❌ Failed to export icon set: \(error)", category: .error)
+
+                            let alert = NSAlert()
+                            alert.messageText = "Export Failed"
+                            alert.informativeText = error.localizedDescription
+                            alert.alertStyle = .critical
+                            alert.runModal()
+                        }
                     }
-                } catch {
-                    await MainActor.run {
-                        Log.error("❌ Failed to export PNG: \(error)", category: .error)
+                }
+            } else {
+                // Regular PNG export
+                // Get scale from popup
+                let scaleString = scalePopup.titleOfSelectedItem ?? "2x"
+                let scale = CGFloat(Int(scaleString.dropLast()) ?? 2)
 
-                        let alert = NSAlert()
-                        alert.messageText = "Export Failed"
-                        alert.informativeText = error.localizedDescription
-                        alert.alertStyle = .critical
-                        alert.runModal()
+                // Get background option
+                let includeBackground = bgCheckbox.state == .on
+
+                Task {
+                    do {
+                        try FileOperations.exportToPNG(document, url: url, scale: scale,
+                                                        includeBackground: includeBackground)
+
+                        await MainActor.run {
+                            Log.info("✅ Exported PNG to: \(url.path) (scale: \(scale)x, background: \(includeBackground))",
+                                    category: .fileOperations)
+                        }
+                    } catch {
+                        await MainActor.run {
+                            Log.error("❌ Failed to export PNG: \(error)", category: .error)
+
+                            let alert = NSAlert()
+                            alert.messageText = "Export Failed"
+                            alert.informativeText = error.localizedDescription
+                            alert.alertStyle = .critical
+                            alert.runModal()
+                        }
                     }
                 }
             }

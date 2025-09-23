@@ -8,9 +8,128 @@
 import SwiftUI
 
 extension FileOperations {
-    
+
+    // MARK: - Icon Set Export
+
+    static func exportIconSet(_ document: VectorDocument, folderURL: URL) throws {
+        Log.fileOperation("🎯 Exporting icon set to folder: \(folderURL.path)", level: .info)
+
+        // Icon sizes to export (in pixels)
+        let iconSizes: [Int] = [1024, 512, 256, 128, 64, 32, 16]
+
+        // Get artwork bounds for proper scaling
+        let artworkBounds = calculateArtworkBounds(from: document)
+        let artworkSize = artworkBounds.size
+
+        for pixelSize in iconSizes {
+            let filename = "icon_\(pixelSize)x\(pixelSize).png"
+            let fileURL = folderURL.appendingPathComponent(filename)
+
+            // Calculate scale to fit artwork into icon size (maintaining aspect ratio)
+            let scaleX = CGFloat(pixelSize) / artworkSize.width
+            let scaleY = CGFloat(pixelSize) / artworkSize.height
+            let scale = min(scaleX, scaleY)  // Use smaller scale to ensure it fits
+
+            // Create exact pixel-sized context
+            guard let context = CGContext(
+                data: nil,
+                width: pixelSize,
+                height: pixelSize,
+                bitsPerComponent: 8,
+                bytesPerRow: 0,
+                space: ColorManager.shared.workingCGColorSpace,
+                bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
+            ) else {
+                throw VectorImportError.parsingError("Failed to create bitmap context for \(pixelSize)x\(pixelSize)", line: nil)
+            }
+
+            // Clear to transparent
+            context.clear(CGRect(x: 0, y: 0, width: pixelSize, height: pixelSize))
+
+            // Calculate centering offsets
+            let scaledWidth = artworkSize.width * scale
+            let scaledHeight = artworkSize.height * scale
+            let offsetX = (CGFloat(pixelSize) - scaledWidth) / 2.0
+            let offsetY = (CGFloat(pixelSize) - scaledHeight) / 2.0
+
+            // Set coordinate system and apply centering
+            context.translateBy(x: offsetX, y: CGFloat(pixelSize) - offsetY)
+            context.scaleBy(x: scale, y: -scale)
+
+            // Translate to compensate for artwork bounds origin
+            context.translateBy(x: -artworkBounds.minX, y: -artworkBounds.minY)
+
+            // Draw layers (skip pasteboard and canvas for icons)
+            for (index, layer) in document.layers.enumerated() {
+                if !layer.isVisible { continue }
+                if index <= 1 { continue }  // Skip Pasteboard (0) and Canvas (1)
+
+                context.saveGState()
+                context.setAlpha(layer.opacity)
+
+                let shapesInLayer = document.getShapesForLayer(index)
+                for shape in shapesInLayer {
+                    if !shape.isVisible { continue }
+                    drawShapeInPDF(shape, context: context)
+                }
+
+                context.restoreGState()
+            }
+
+            // Draw text objects
+            document.forEachTextInOrder { text in
+                if !text.isVisible { return }
+                drawTextInPDF(text, context: context)
+            }
+
+            // Export the icon
+            _ = try ColorExportManager.shared.exportFromContext(
+                context,
+                format: .png,
+                colorSpace: .displayP3,
+                to: fileURL
+            )
+
+            Log.info("✅ Exported icon: \(filename)", category: .fileOperations)
+        }
+
+        Log.info("✅ Successfully exported icon set with \(iconSizes.count) sizes", category: .fileOperations)
+    }
+
+    // Helper function to calculate artwork bounds (excluding background)
+    private static func calculateArtworkBounds(from document: VectorDocument) -> CGRect {
+        var bounds = CGRect.null
+
+        // Calculate bounds from all visible shapes (excluding pasteboard and canvas)
+        for (index, layer) in document.layers.enumerated() {
+            if !layer.isVisible || index <= 1 { continue }  // Skip Pasteboard and Canvas
+
+            let shapesInLayer = document.getShapesForLayer(index)
+            for shape in shapesInLayer {
+                if !shape.isVisible { continue }
+                let shapeBounds = shape.bounds
+                bounds = bounds.isNull ? shapeBounds : bounds.union(shapeBounds)
+            }
+        }
+
+        // Include text objects
+        document.forEachTextInOrder { text in
+            if text.isVisible {
+                let textBounds = text.bounds
+                bounds = bounds.isNull ? textBounds : bounds.union(textBounds)
+            }
+        }
+
+        // If no bounds found, use document size
+        if bounds.isNull {
+            bounds = CGRect(origin: .zero, size: document.settings.sizeInPoints)
+        }
+
+        return bounds
+    }
+
     // MARK: - PNG Export
-    
+
     static func exportToPNG(_ document: VectorDocument, url: URL, scale: CGFloat, includeBackground: Bool = true) throws {
         Log.fileOperation("🖼️ Exporting document to PNG: \(url.path) at \(scale)x scale", level: .info)
 
@@ -109,6 +228,16 @@ extension FileOperations {
         // Apply transform
         if !shape.transform.isIdentity {
             context.concatenate(shape.transform)
+        }
+
+        // Check if this is a group
+        if shape.isGroup && !shape.groupedShapes.isEmpty {
+            // Render each shape in the group recursively
+            for groupedShape in shape.groupedShapes {
+                drawShapeInPDF(groupedShape, context: context)
+            }
+            context.restoreGState()
+            return
         }
 
         // Create path from shape
