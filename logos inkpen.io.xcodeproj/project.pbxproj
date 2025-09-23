@@ -38,11 +38,6 @@
 			path = "logos inkpen.io";
 			sourceTree = "<group>";
 		};
-		EAC969BB2E2416ED0093AB2A /* logos inkpen.ioTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "logos inkpen.ioTests";
-			sourceTree = "<group>";
-		};
 		EAC969C52E2416ED0093AB2A /* logos inkpen.ioUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "logos inkpen.ioUITests";
@@ -88,7 +83,6 @@
 				EA417C372E6FC3BF00B80DD1 /* logos inkpen.io.xctestplan */,
 				EA055E2B2E6FC3AC00132C56 /* logos inkpen.io.xctestplan */,
 				EAC969AC2E2416EC0093AB2A /* logos inkpen.io */,
-				EAC969BB2E2416ED0093AB2A /* logos inkpen.ioTests */,
 				EAC969C52E2416ED0093AB2A /* logos inkpen.ioUITests */,
 				EAC969AB2E2416EC0093AB2A /* Products */,
 			);
@@ -141,9 +135,6 @@
 			);
 			dependencies = (
 				EAC969BA2E2416ED0093AB2A /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				EAC969BB2E2416ED0093AB2A /* logos inkpen.ioTests */,
 			);
 			name = "logos inkpen.ioTests";
 			packageProductDependencies = (
