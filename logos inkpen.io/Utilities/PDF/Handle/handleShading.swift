@@ -14,10 +14,19 @@ extension PDFCommandParser {
            let name = nameObj {
             let shadingName = String(cString: name)
             print("PDF: Shading operation with shading: \(shadingName)")
-            
+
             // CRITICAL: The current transformation matrix (CTM) contains the gradient rotation
             print("PDF: 🔍 GRADIENT APPLICATION - Current CTM rotation: \(atan2(currentTransformMatrix.b, currentTransformMatrix.a) * 180.0 / .pi)°")
-            
+
+            // Check if we have a pending clip operator - this means the W was for gradient, not image
+            if hasClipOperatorPending {
+                print("PDF: 🎯 Shading after W operator - this was a gradient boundary, not image clipping")
+                hasClipOperatorPending = false
+                // The path is already in currentPath or compoundPathParts, will be used by gradient
+                clipOperatorPath.removeAll()
+                // Note: Don't clear compound path state here - it will be used by the gradient
+            }
+
             // Create a shape with the shading gradient
             if let gradient = extractGradientFromShading(shadingName: shadingName, scanner: scanner) {
                 // IMPROVED APPROACH: Use the shading within the current graphics context

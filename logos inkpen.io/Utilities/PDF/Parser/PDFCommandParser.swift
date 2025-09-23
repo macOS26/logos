@@ -72,6 +72,10 @@ class PDFCommandParser {
     var hasUpcomingTransparentImage: Bool = false
     var transparentImageBounds: CGRect? = nil
 
+    // For detecting gradient vs image after W operator
+    var hasClipOperatorPending: Bool = false  // Track if we just saw a W operator
+    var clipOperatorPath: [PathCommand] = []  // Store the path from W operator
+
     func parseDocument(at url: URL) -> [VectorShape] {
         commands.removeAll()
         shapes.removeAll()

@@ -18,6 +18,12 @@ extension PDFCommandParser {
         print("PDF: Processing Image XObject '\(name)'...")
         print("PDF: Current transform matrix: \(currentTransform)")
 
+        // Check if we have a pending clip operator - this means the W was for image clipping
+        if hasClipOperatorPending {
+            print("PDF: 🎯 Image after W operator - creating clipping path for image")
+            createClippingPathFromPending()
+        }
+
         // Get the stream dictionary
         guard let streamDict = CGPDFStreamGetDictionary(xObjectStream) else {
             print("PDF: Failed to get stream dictionary for image '\(name)'")
@@ -378,11 +384,28 @@ extension PDFCommandParser {
     func handleClipOperator() {
         print("PDF: Clip operator 'W' encountered")
 
-        // IMPORTANT: Check if we're in a gradient/compound path context
-        // In these cases, W operator defines the boundary for gradient fills, not a clipping path for images
-        if isInCompoundPath || activeGradient != nil || !compoundPathParts.isEmpty {
-            print("PDF: W operator with gradient/compound context - preserving path for gradient fill, NOT creating clipping path")
-            // The path will be used as the shape boundary when filled with gradient
+        // For both single and compound paths, defer the decision until we see what comes next
+        // We need to determine if it's for a gradient or an image
+
+        if isInCompoundPath || !compoundPathParts.isEmpty {
+            print("PDF: W operator with compound path - deferring decision until we see gradient or image")
+            hasClipOperatorPending = true
+
+            // Store the compound path parts
+            if !currentPath.isEmpty {
+                compoundPathParts.append(currentPath)
+            }
+            clipOperatorPath = currentPath  // Store current part
+            // Note: Keep compound path state intact for now
+            return
+        }
+
+        // For single paths, defer the decision
+        if !currentPath.isEmpty {
+            print("PDF: W operator - deferring clipping path decision until we see gradient or image")
+            hasClipOperatorPending = true
+            clipOperatorPath = currentPath  // Store the path
+            // Don't clear currentPath - it will be used for gradient or converted to clipping for image
             return
         }
 
@@ -434,6 +457,88 @@ extension PDFCommandParser {
             pendingClippingPath = clipShape
 
             print("PDF: Created PENDING clipping path with ID: \(clipShape.id) - will add after clipped content")
+        }
+    }
+
+    /// Create clipping path from pending W operator path
+    func createClippingPathFromPending() {
+        guard hasClipOperatorPending else { return }
+
+        print("PDF: Creating clipping path from pending W operator path")
+
+        // Check if we have a compound path
+        var allPathCommands: [[PathCommand]] = []
+
+        if !compoundPathParts.isEmpty {
+            print("PDF: Creating compound clipping path from \(compoundPathParts.count) parts")
+            allPathCommands = compoundPathParts
+            // Add current path if not empty
+            if !clipOperatorPath.isEmpty {
+                allPathCommands.append(clipOperatorPath)
+            }
+        } else if !clipOperatorPath.isEmpty {
+            allPathCommands = [clipOperatorPath]
+        } else {
+            return
+        }
+
+        // Convert all path parts to PathElements
+        var pathElements: [PathElement] = []
+        for pathCommands in allPathCommands {
+            for cmd in pathCommands {
+            switch cmd {
+            case .moveTo(let pt):
+                // Flip Y coordinate: PDF has origin at bottom-left, we need top-left
+                pathElements.append(.move(to: VectorPoint(pt.x, pageSize.height - pt.y)))
+            case .lineTo(let pt):
+                pathElements.append(.line(to: VectorPoint(pt.x, pageSize.height - pt.y)))
+            case .curveTo(let cp1, let cp2, let pt):
+                pathElements.append(.curve(to: VectorPoint(pt.x, pageSize.height - pt.y),
+                                          control1: VectorPoint(cp1.x, pageSize.height - cp1.y),
+                                          control2: VectorPoint(cp2.x, pageSize.height - cp2.y)))
+            case .quadCurveTo(let cp, let pt):
+                // Convert quadratic to cubic bezier with flipped Y
+                pathElements.append(.curve(to: VectorPoint(pt.x, pageSize.height - pt.y),
+                                          control1: VectorPoint(cp.x, pageSize.height - cp.y),
+                                          control2: VectorPoint(cp.x, pageSize.height - cp.y)))
+            case .rectangle(let rect):
+                // Convert rectangle to path elements with flipped Y
+                let flippedMinY = pageSize.height - rect.maxY  // maxY becomes minY after flip
+                let flippedMaxY = pageSize.height - rect.minY  // minY becomes maxY after flip
+                pathElements.append(.move(to: VectorPoint(rect.minX, flippedMinY)))
+                pathElements.append(.line(to: VectorPoint(rect.maxX, flippedMinY)))
+                pathElements.append(.line(to: VectorPoint(rect.maxX, flippedMaxY)))
+                pathElements.append(.line(to: VectorPoint(rect.minX, flippedMaxY)))
+                pathElements.append(.close)
+            case .closePath:
+                pathElements.append(.close)
+            }
+            }
+        }
+
+        let clipPath = VectorPath(elements: pathElements)
+        var clipShape = VectorShape(name: "Clipping Path", path: clipPath)
+        clipShape.isClippingPath = true
+
+        // Store the clip ID for associating with clipped content
+        currentClippingPathId = clipShape.id
+        isInsideClippingPath = true
+
+        // Don't add the clipping path immediately - store it as pending
+        // It will be added AFTER the content it clips
+        pendingClippingPath = clipShape
+
+        print("PDF: Created PENDING clipping path with ID: \(clipShape.id) - will add after clipped content")
+
+        // Clear the pending state and compound path state if used
+        hasClipOperatorPending = false
+        clipOperatorPath.removeAll()
+
+        // Clear compound path state if we used it for clipping
+        if !compoundPathParts.isEmpty {
+            compoundPathParts.removeAll()
+            isInCompoundPath = false
+            currentPath.removeAll()
         }
     }
 
