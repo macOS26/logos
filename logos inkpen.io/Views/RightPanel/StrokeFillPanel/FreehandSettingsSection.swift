@@ -1,0 +1,237 @@
+//
+//  FreehandSettingsSection.swift
+//  logos inkpen.io
+//
+//  Freehand tool settings section for StrokeFillPanel
+//
+
+import SwiftUI
+
+struct FreehandSettingsSection: View {
+    @ObservedObject var document: VectorDocument
+    @Environment(AppState.self) private var appState
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "scribble")
+                    .foregroundColor(.accentColor)
+                Text("Freehand Tool")
+                    .font(.headline)
+                    .foregroundColor(Color.ui.primaryText)
+                Spacer()
+            }
+
+            // Fill Mode Selector
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Fill Mode")
+                    .font(.subheadline)
+                    .foregroundColor(Color.ui.secondaryText)
+
+                Picker("", selection: Binding(
+                    get: { document.freehandFillMode },
+                    set: { document.freehandFillMode = $0 }
+                )) {
+                    ForEach(VectorDocument.FreehandFillMode.allCases, id: \.self) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .help("Choose whether freehand paths have fill or just stroke")
+            }
+
+            // Freehand Smoothing Tolerance
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Smoothing")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.secondaryText)
+                    Spacer()
+                    Text("\(formatNumberForDisplay(document.freehandSmoothingTolerance))")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.primaryText)
+                        .monospacedDigit()
+                }
+
+                Slider(value: Binding(
+                    get: { document.freehandSmoothingTolerance },
+                    set: { document.freehandSmoothingTolerance = $0 }
+                ), in: 0.1...10)
+                .help("Curve fitting tolerance - lower values preserve more detail, higher values create smoother curves")
+            }
+
+            // Close Path Toggle
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Close Path")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.primaryText)
+                    Text("Connect end back to start")
+                        .font(.caption)
+                        .foregroundColor(Color.ui.secondaryText)
+                }
+                Spacer()
+                Toggle("", isOn: Binding(
+                    get: { document.freehandClosePath },
+                    set: { document.freehandClosePath = $0 }
+                ))
+                .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                .help("When enabled, closes the path by connecting the end to the start")
+            }
+
+            // Expand Stroke Toggle
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Expand Stroke")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.primaryText)
+                    Text("Convert stroke to filled outline")
+                        .font(.caption)
+                        .foregroundColor(Color.ui.secondaryText)
+                }
+                Spacer()
+                Toggle("", isOn: Binding(
+                    get: { document.freehandExpandStroke },
+                    set: { document.freehandExpandStroke = $0 }
+                ))
+                .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                .help("When enabled, converts the stroke to a filled path outline")
+            }
+
+            Divider()
+                .padding(.vertical, 4)
+
+            // Real-time Smoothing
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Real-time Smoothing")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.secondaryText)
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { document.realTimeSmoothingEnabled },
+                        set: { document.realTimeSmoothingEnabled = $0 }
+                    ))
+                    .toggleStyle(SwitchToggleStyle())
+                    .scaleEffect(0.8)
+                }
+                .help("Enable real-time smoothing during drawing")
+
+                if document.realTimeSmoothingEnabled {
+                    HStack {
+                        Text("Strength")
+                            .font(.subheadline)
+                            .foregroundColor(Color.ui.secondaryText)
+                        Spacer()
+                        Text("\(Int(document.realTimeSmoothingStrength * 100))%")
+                            .font(.subheadline)
+                            .foregroundColor(Color.ui.primaryText)
+                            .monospacedDigit()
+                    }
+
+                    Slider(value: Binding(
+                        get: { document.realTimeSmoothingStrength },
+                        set: { document.realTimeSmoothingStrength = $0 }
+                    ), in: 0...1)
+                    .help("Strength of real-time smoothing (0-100%)")
+                }
+            }
+
+            // Preserve Sharp Corners
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Preserve Sharp Corners")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.primaryText)
+                    Text("Keep sharp angles during simplification")
+                        .font(.caption)
+                        .foregroundColor(Color.ui.secondaryText)
+                }
+                Spacer()
+                Toggle("", isOn: Binding(
+                    get: { document.preserveSharpCorners },
+                    set: { document.preserveSharpCorners = $0 }
+                ))
+                .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                .help("Preserve sharp corners when simplifying paths")
+            }
+
+            // Advanced Smoothing Section (shared with brush/marker)
+            Divider()
+                .padding(.vertical, 8)
+
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: "waveform.path")
+                        .foregroundColor(.purple)
+                    Text("Advanced Smoothing")
+                        .font(.headline)
+                        .foregroundColor(Color.ui.primaryText)
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { document.advancedSmoothingEnabled },
+                        set: { document.advancedSmoothingEnabled = $0 }
+                    ))
+                    .toggleStyle(SwitchToggleStyle(tint: .purple))
+                    .scaleEffect(0.9)
+                }
+                .help("Enable advanced curve smoothing algorithms")
+
+                if document.advancedSmoothingEnabled {
+                    // Chaikin Smoothing Iterations
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Chaikin Iterations")
+                                .font(.subheadline)
+                                .foregroundColor(Color.ui.secondaryText)
+                            Spacer()
+                            Text("\(document.chaikinSmoothingIterations)")
+                                .font(.subheadline)
+                                .foregroundColor(Color.ui.primaryText)
+                                .monospacedDigit()
+                        }
+
+                        Slider(value: Binding<Double>(
+                            get: { Double(document.chaikinSmoothingIterations) },
+                            set: { document.chaikinSmoothingIterations = Int(round($0)) }
+                        ), in: 1...3)
+                        .help("More iterations create smoother curves but may lose detail (1-3)")
+                    }
+
+                    // Adaptive Tension Toggle
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Adaptive Tension")
+                                .font(.subheadline)
+                                .foregroundColor(Color.ui.primaryText)
+                            Text("Adjust curve tension based on curvature")
+                                .font(.caption)
+                                .foregroundColor(Color.ui.secondaryText)
+                        }
+                        Spacer()
+                        Toggle("", isOn: Binding(
+                            get: { document.adaptiveTensionEnabled },
+                            set: { document.adaptiveTensionEnabled = $0 }
+                        ))
+                        .toggleStyle(SwitchToggleStyle(tint: .purple))
+                        .help("Enable adaptive curve tension based on curvature")
+                    }
+                }
+            }
+
+            // Freehand Info
+            HStack {
+                Image(systemName: "info.circle")
+                    .foregroundColor(Color.ui.primaryBlue)
+                Text("Draw smooth curves with automatic path fitting")
+                    .font(.caption)
+                    .foregroundColor(Color.ui.secondaryText)
+                Spacer()
+            }
+            .padding(.top, 4)
+        }
+        .padding()
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(12)
+    }
+}

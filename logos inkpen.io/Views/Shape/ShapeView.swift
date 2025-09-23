@@ -7,7 +7,7 @@
 
 import SwiftUI
 import AppKit
-import CoreGraphics
+import SwiftUI
 
 struct ShapeView: View {
     let shape: VectorShape
@@ -100,7 +100,8 @@ struct ShapeView: View {
                         image: image,
                         bounds: transformedBounds,
                         opacity: shape.opacity,
-                        fillStyle: shape.fillStyle // Pass fillStyle for image tinting
+                        fillStyle: shape.fillStyle, // Pass fillStyle for image tinting
+                        viewMode: effectiveViewMode // Pass view mode for keyline rendering
                     )
                     // CRITICAL FIX: For images with transforms, apply preview offset in canvas space
                     // This prevents the jumping effect when moving scaled/rotated images
@@ -120,7 +121,8 @@ struct ShapeView: View {
                             image: hydrated,
                             bounds: transformedBounds,
                             opacity: shape.opacity,
-                            fillStyle: shape.fillStyle // Pass fillStyle for image tinting
+                            fillStyle: shape.fillStyle, // Pass fillStyle for image tinting
+                            viewMode: effectiveViewMode // Pass view mode for keyline rendering
                         )
                         // CRITICAL FIX: For images with transforms, apply preview offset in canvas space
                         // This prevents the jumping effect when moving scaled/rotated images
@@ -185,8 +187,8 @@ struct ShapeView: View {
     private func renderStrokeWithPlacement(shape: VectorShape, strokeStyle: StrokeStyle, viewMode: ViewMode, path: Path) -> some View {
         let swiftUIStrokeStyle = SwiftUI.StrokeStyle(
             lineWidth: strokeStyle.width,
-            lineCap: strokeStyle.lineCap.swiftUILineCap,
-            lineJoin: strokeStyle.lineJoin.swiftUILineJoin,
+            lineCap: strokeStyle.lineCap.cgLineCap.swiftUILineCap,
+            lineJoin: strokeStyle.lineJoin.cgLineJoin.swiftUILineJoin,
             miterLimit: strokeStyle.miterLimit,
             dash: strokeStyle.dashPattern.map { CGFloat($0) }
         )
@@ -206,8 +208,8 @@ struct ShapeView: View {
                     width: strokeStyle.width * 2, // Double width for inside placement
                     placement: .center, // Use center placement for the gradient calculation
                     dashPattern: strokeStyle.dashPattern.map { $0 * 2 }, // Scale dash pattern
-                    lineCap: strokeStyle.lineCap,
-                    lineJoin: strokeStyle.lineJoin,
+                    lineCap: strokeStyle.lineCap.cgLineCap,
+                    lineJoin: strokeStyle.lineJoin.cgLineJoin,
                     miterLimit: strokeStyle.miterLimit,
                     opacity: strokeStyle.opacity,
                     blendMode: strokeStyle.blendMode
@@ -262,8 +264,8 @@ struct ShapeView: View {
                         width: strokeStyle.width * 2,
                         placement: .center,
                         dashPattern: strokeStyle.dashPattern.map { $0 * 2 },
-                        lineCap: strokeStyle.lineCap,
-                        lineJoin: strokeStyle.lineJoin,
+                        lineCap: strokeStyle.lineCap.cgLineCap,
+                        lineJoin: strokeStyle.lineJoin.cgLineJoin,
                         miterLimit: strokeStyle.miterLimit,
                         opacity: strokeStyle.opacity,
                         blendMode: strokeStyle.blendMode
@@ -313,7 +315,7 @@ struct ShapeView: View {
                 .blendMode(fillStyle.blendMode.swiftUIBlendMode)
             
         default:
-            path.fill(fillStyle.color.color, style: SwiftUI.FillStyle(eoFill: shape.path.fillRule == .evenOdd))
+            path.fill(fillStyle.color.color, style: SwiftUI.FillStyle(eoFill: shape.path.fillRule.cgPathFillRule == .evenOdd))
                 .opacity(fillStyle.opacity)
                 .blendMode(fillStyle.blendMode.swiftUIBlendMode)
         }

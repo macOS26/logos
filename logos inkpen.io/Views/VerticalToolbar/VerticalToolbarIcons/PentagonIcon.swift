@@ -5,7 +5,6 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import Foundation
 import SwiftUI
 
 // MARK: - Custom Polygon Icons (5–9 sides) using the same math as canvas

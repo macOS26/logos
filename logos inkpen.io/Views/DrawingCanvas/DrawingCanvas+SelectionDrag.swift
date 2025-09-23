@@ -6,12 +6,16 @@
 //
 
 import SwiftUI
+import Combine
 
 extension DrawingCanvas {
     internal func startSelectionDrag() {
         guard let _ = document.selectedLayerIndex,
               !document.selectedObjectIDs.isEmpty else { return }
-        
+
+        // Reset update counter for 60fps throttling
+        dragUpdateCounter = 0
+
         // REFACTORED: Use unified objects system for selection checking
         let selectedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
         
@@ -82,10 +86,10 @@ extension DrawingCanvas {
     internal func handleSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         guard let _ = document.selectedLayerIndex,
               !document.selectedObjectIDs.isEmpty else { return }
-        
+
         // REFACTORED: Use unified objects system for selection checking
         let selectedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
-        
+
         // PROTECT LOCKED OBJECTS: Check all selected objects for locked state
         for unifiedObject in selectedObjects {
             switch unifiedObject.objectType {
@@ -95,23 +99,54 @@ extension DrawingCanvas {
                 }
             }
         }
-        
+
         // PROFESSIONAL OBJECT DRAGGING: Perfect cursor-to-object synchronization
         // Uses the same precision approach as the hand tool - calculate cursor delta directly
         // This eliminates floating-point accumulation errors from DragGesture.translation
-        
+
         // Calculate cursor movement from reference location (perfect 1:1 tracking)
         let cursorDelta = CGPoint(
             x: value.location.x - selectionDragStart.x,
             y: value.location.y - selectionDragStart.y
         )
-        
+
         // Convert screen delta to canvas delta (accounting for zoom)
         let preciseZoom = Double(document.zoomLevel)
-        let canvasDelta = CGPoint(
+        var canvasDelta = CGPoint(
             x: cursorDelta.x / preciseZoom,
             y: cursorDelta.y / preciseZoom
         )
+
+        // Apply snap to grid or snap to point if enabled
+        if document.snapToGrid || document.snapToPoint {
+            // Get the first selected object's bounds to snap its corner instead of center
+            if let firstObjectID = document.selectedObjectIDs.first,
+               let initialCenter = initialObjectPositions[firstObjectID],
+               let firstObject = document.unifiedObjects.first(where: { $0.id == firstObjectID }) {
+
+                // Get the object's bounds to find its top-left corner
+                if case .shape(let shape) = firstObject.objectType {
+                    let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+
+                    // Calculate where the top-left corner would be after the drag
+                    let topLeftX = initialCenter.x - bounds.width/2 + canvasDelta.x
+                    let topLeftY = initialCenter.y - bounds.height/2 + canvasDelta.y
+                    let targetTopLeft = CGPoint(x: topLeftX, y: topLeftY)
+
+                    // Apply snapping (snap to point has priority over snap to grid)
+                    let snappedTopLeft = applySnapping(to: targetTopLeft)
+
+                    // Calculate the new center position based on snapped top-left
+                    let snappedCenter = CGPoint(
+                        x: snappedTopLeft.x + bounds.width/2,
+                        y: snappedTopLeft.y + bounds.height/2
+                    )
+
+                    // Adjust the delta to achieve the snapped position
+                    canvasDelta = CGPoint(x: snappedCenter.x - initialCenter.x, y: snappedCenter.y - initialCenter.y)
+                }
+            }
+        }
         
         // CRITICAL FIX: For clipping masks, move the image shape DURING drag for live preview
         for unifiedObject in selectedObjects {
@@ -128,7 +163,15 @@ extension DrawingCanvas {
         // BLAZING FAST 60FPS: Store drag delta for preview rendering - DON'T modify actual objects during drag
         // This eliminates expensive document updates and bounds recalculation during drag
         currentDragDelta = canvasDelta
-        
+        document.currentDragOffset = canvasDelta
+
+        // TWO-WAY BINDING: Update the drag preview coordinates for the transform panel
+        // Update only every 60th frame (once per second at 60fps) to reduce UI updates
+        dragUpdateCounter += 1
+        if dragUpdateCounter % 60 == 0 {
+            document.dragPreviewCoordinates = canvasDelta
+        }
+
         // VECTOR APP OPTIMIZATION: Don't trigger full scene redraw - just update drag preview overlay
         // The dragged object will be rendered as a separate overlay, keeping all other objects static
         // NO dragPreviewUpdateTrigger.toggle() - we'll use SwiftUI overlay instead
@@ -194,7 +237,10 @@ extension DrawingCanvas {
             
             // CRITICAL FIX: Sync unified objects with moved shapes
             syncUnifiedObjectsAfterMovement()
-            
+
+            // Use common update function for transform panel
+            document.updateTransformPanelValues()
+
             // PROFESSIONAL OBJECT DRAGGING: Clean state reset for next drag operation
             // This ensures each new drag operation starts with fresh reference points
             _ = initialObjectPositions.count
@@ -204,6 +250,8 @@ extension DrawingCanvas {
             initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
             currentDragDelta = .zero
+            document.currentDragOffset = .zero
+            document.dragPreviewCoordinates = .zero
             
             // Selection drag completed - reduced logging for performance
         }

@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import Foundation
+import SwiftUI
 
 extension DrawingCanvas {
     
@@ -34,20 +34,20 @@ extension DrawingCanvas {
         let startPoint = VectorPoint(location)
         freehandPath = VectorPath(elements: [.move(to: startPoint)])
         
-        // Create real VectorShape with document default colors
+        // Create real VectorShape with round joins and caps for smoother appearance
         let strokeStyle = StrokeStyle(
             color: document.defaultStrokeColor,
             width: document.defaultStrokeWidth, // Use user's default stroke width setting
-            lineCap: document.defaultStrokeLineCap, // Use user's default line cap
-            lineJoin: document.defaultStrokeLineJoin, // Use user's default line join
+            lineCap: .round, // Always use round caps for freehand
+            lineJoin: .round, // Always use round joins for freehand
             miterLimit: document.defaultStrokeMiterLimit, // Use user's default miter limit
             opacity: document.defaultStrokeOpacity
         )
-        let fillStyle = FillStyle(
-            color: document.defaultFillColor,
-            opacity: document.defaultFillOpacity // Use user's default fill opacity setting
-        )
-        
+        // Use fill mode setting to determine fill style
+        let fillStyle: FillStyle? = document.freehandFillMode == .fill
+            ? FillStyle(color: document.defaultFillColor, opacity: document.defaultFillOpacity)
+            : nil
+
         activeFreehandShape = VectorShape(
             name: "Freehand Path",
             path: freehandPath!,
@@ -69,12 +69,12 @@ extension DrawingCanvas {
         
         // Apply real-time smoothing for immediate visual feedback (if enabled)
         let smoothedLocation: CGPoint
-        if document.settings.advancedSmoothingEnabled && document.settings.realTimeSmoothingEnabled {
+        if document.advancedSmoothingEnabled && document.realTimeSmoothingEnabled {
             smoothedLocation = RealTimeSmoothing.applyRealTimeSmoothing(
                 newPoint: location,
                 recentPoints: &freehandRealtimeSmoothingPoints,
                 windowSize: 5,
-                strength: document.settings.realTimeSmoothingStrength
+                strength: document.realTimeSmoothingStrength
             )
         } else {
             smoothedLocation = location
@@ -138,18 +138,18 @@ extension DrawingCanvas {
         var processedPoints = freehandRawPoints
         
         // STEP 1: Apply Chaikin smoothing for initial curve smoothing (if enabled)
-        if document.settings.advancedSmoothingEnabled {
+        if document.advancedSmoothingEnabled {
             let chaikinSmoothed = CurveSmoothing.chaikinSmooth(
                 points: processedPoints,
-                iterations: document.settings.chaikinSmoothingIterations,
+                iterations: document.chaikinSmoothingIterations,
                 ratio: 0.25
             )
             processedPoints = chaikinSmoothed
-            Log.fileOperation("🖊️ CHAIKIN: Smoothed to \(processedPoints.count) points (\(document.settings.chaikinSmoothingIterations) iterations)", level: .info)
+            Log.fileOperation("🖊️ CHAIKIN: Smoothed to \(processedPoints.count) points (\(document.chaikinSmoothingIterations) iterations)", level: .info)
         }
         
         // STEP 2: 🚀 OPTIMIZED Douglas-Peucker simplification (Metal-accelerated when possible)
-        let tolerance = document.settings.freehandSmoothingTolerance
+        let tolerance = document.freehandSmoothingTolerance
         let cgPoints = processedPoints.map { CGPoint(x: $0.x, y: $0.y) }
         let optimizedCGPoints = MetalDrawingOptimizer.shared.optimizeFreehandDrawing(points: cgPoints, tolerance: tolerance)
         let simplifiedPoints = optimizedCGPoints.map { VectorPoint($0) }
@@ -158,9 +158,9 @@ extension DrawingCanvas {
         
         // STEP 3: Convert to smooth bezier curves with adaptive tension
         let finalCGPoints = simplifiedPoints.map { CGPoint(x: $0.x, y: $0.y) }
-        let smoothPath = document.settings.advancedSmoothingEnabled ? 
+        let smoothPath = document.advancedSmoothingEnabled ?
             createAdvancedSmoothBezierPath(from: finalCGPoints) :
-            createSmoothBezierPath(from: finalCGPoints)
+            DrawingCanvasPathHelpers.createSmoothBezierPath(from: finalCGPoints)
         
         // STEP 4: Update the final shape with professionally smooth curves
         updateFinalFreehandShape(with: smoothPath)
@@ -169,55 +169,7 @@ extension DrawingCanvas {
     }
     
     // MARK: - Douglas-Peucker Line Simplification Algorithm
-    
-    private func douglasPeuckerSimplify(points: [CGPoint], tolerance: Double) -> [CGPoint] {
-        guard points.count > 2 else { return points }
-        
-        return douglasPeuckerRecursive(points: points, tolerance: tolerance, startIndex: 0, endIndex: points.count - 1)
-    }
-    
-    private func douglasPeuckerRecursive(points: [CGPoint], tolerance: Double, startIndex: Int, endIndex: Int) -> [CGPoint] {
-        guard endIndex - startIndex > 1 else {
-            return [points[startIndex], points[endIndex]]
-        }
-        
-        let startPoint = points[startIndex]
-        let endPoint = points[endIndex]
-        
-        // Find the point with maximum distance from the line segment
-        var maxDistance: Double = 0
-        var maxIndex = startIndex
-        
-        for i in (startIndex + 1)..<endIndex {
-            let distance = perpendicularDistance(point: points[i], lineStart: startPoint, lineEnd: endPoint)
-            if distance > maxDistance {
-                maxDistance = distance
-                maxIndex = i
-            }
-        }
-        
-        // If the maximum distance is greater than tolerance, recursively simplify
-        if maxDistance > tolerance {
-            // Recursively simplify the two segments
-            let leftSegment = douglasPeuckerRecursive(points: points, tolerance: tolerance, startIndex: startIndex, endIndex: maxIndex)
-            let rightSegment = douglasPeuckerRecursive(points: points, tolerance: tolerance, startIndex: maxIndex, endIndex: endIndex)
-            
-            // Combine segments (remove duplicate point at the connection)
-            return leftSegment + Array(rightSegment.dropFirst())
-        } else {
-            // All points between start and end are within tolerance - return only endpoints
-            return [startPoint, endPoint]
-        }
-    }
-    
-    private func perpendicularDistance(point: CGPoint, lineStart: CGPoint, lineEnd: CGPoint) -> Double {
-        let A = lineEnd.y - lineStart.y
-        let B = lineStart.x - lineEnd.x
-        let C = lineEnd.x * lineStart.y - lineStart.x * lineEnd.y
-        
-        let distance = abs(A * point.x + B * point.y + C) / sqrt(A * A + B * B)
-        return distance
-    }
+    // These functions have been moved to DrawingCanvasPathHelpers
     
     // MARK: - Advanced Bezier Curve Fitting
     
@@ -242,126 +194,76 @@ extension DrawingCanvas {
             )
             elements.append(contentsOf: curveSegments)
         }
-        
+
+        // Close path if option is enabled
+        if document.freehandClosePath {
+            elements.append(.close)
+        }
+
         return VectorPath(elements: elements)
     }
     
     /// Legacy smooth bezier path creation (kept for compatibility)
     private func createSmoothBezierPath(from points: [CGPoint]) -> VectorPath {
-        guard points.count >= 2 else {
-            return VectorPath(elements: [])
-        }
-        
-        var elements: [PathElement] = []
-        elements.append(.move(to: VectorPoint(points[0])))
-        
-        if points.count == 2 {
-            // Simple line for two points
-            elements.append(.line(to: VectorPoint(points[1])))
-        } else {
-            // Create smooth curves through all points
-            let curveSegments = fitBezierCurves(through: points)
-            elements.append(contentsOf: curveSegments)
-        }
-        
-        return VectorPath(elements: elements)
-    }
-    
-    private func fitBezierCurves(through points: [CGPoint]) -> [PathElement] {
-        var elements: [PathElement] = []
-        
-        // Use a simple curve fitting approach that creates smooth C1 continuous curves
-        for i in 1..<points.count {
-            let p0 = points[i - 1]
-            let p1 = points[i]
-            
-            // SURGICAL FIX: Make first and last segments lines (corner points) instead of curves
-            let isFirstSegment = (i == 1)
-            let isLastSegment = (i == points.count - 1)
-            
-            if isFirstSegment || isLastSegment {
-                // Create corner points for start and end - no handles
-                elements.append(.line(to: VectorPoint(p1)))
-            } else {
-                // Calculate control points for smooth curves (middle segments only)
-                let tension: Double = 0.25 // Curve tension factor
-                let distance = sqrt(pow(p1.x - p0.x, 2) + pow(p1.y - p0.y, 2))
-                
-                // Calculate tangent directions
-                let prevTangent = i > 1 ? calculateTangent(p0: points[i - 2], p1: p0, p2: p1) : CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
-                let nextTangent = i < points.count - 1 ? calculateTangent(p0: p0, p1: p1, p2: points[i + 1]) : CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
-                
-                // Create control points
-                let controlLength = distance * tension
-                
-                let control1 = CGPoint(
-                    x: p0.x + prevTangent.x * controlLength,
-                    y: p0.y + prevTangent.y * controlLength
-                )
-                
-                let control2 = CGPoint(
-                    x: p1.x - nextTangent.x * controlLength,
-                    y: p1.y - nextTangent.y * controlLength
-                )
-                
-                elements.append(.curve(
-                    to: VectorPoint(p1),
-                    control1: VectorPoint(control1),
-                    control2: VectorPoint(control2)
-                ))
-            }
-        }
-        
-        return elements
-    }
-    
-    private func calculateTangent(p0: CGPoint, p1: CGPoint, p2: CGPoint) -> CGPoint {
-        // Calculate normalized tangent direction at p1
-        let dx1 = p1.x - p0.x
-        let dy1 = p1.y - p0.y
-        let dx2 = p2.x - p1.x
-        let dy2 = p2.y - p1.y
-        
-        // Average the two segments
-        let avgDx = (dx1 + dx2) / 2
-        let avgDy = (dy1 + dy2) / 2
-        
-        // Normalize
-        let length = sqrt(avgDx * avgDx + avgDy * avgDy)
-        if length > 0 {
-            return CGPoint(x: avgDx / length, y: avgDy / length)
-        } else {
-            return CGPoint(x: 1, y: 0)
-        }
+        return DrawingCanvasPathHelpers.createSmoothBezierPath(from: points)
     }
     
     // MARK: - Final Shape Update
     
     private func updateFinalFreehandShape(with smoothPath: VectorPath) {
-        // Create and add the final freehand shape to the document
+        // Create and add the final freehand shape to the document with round joins and caps
         let strokeStyle = StrokeStyle(
             color: document.defaultStrokeColor,
             width: document.defaultStrokeWidth,
-            lineCap: document.defaultStrokeLineCap,
-            lineJoin: document.defaultStrokeLineJoin,
+            lineCap: .round, // Always use round caps for freehand
+            lineJoin: .round, // Always use round joins for freehand
             miterLimit: document.defaultStrokeMiterLimit,
             opacity: document.defaultStrokeOpacity
         )
         
-        let fillStyle = FillStyle(
-            color: document.defaultFillColor,
-            opacity: document.defaultFillOpacity
-        )
-        
-        let finalShape = VectorShape(
-            name: "Freehand Path",
-            path: smoothPath,
-            strokeStyle: strokeStyle,
-            fillStyle: fillStyle
-        )
-        
-        // VECTOR APP OPTIMIZATION: Add shape only once at the end, not during drawing
-        document.addShapeToFront(finalShape)
+        // Use fill mode setting to determine fill style
+        let fillStyle: FillStyle? = document.freehandFillMode == .fill
+            ? FillStyle(color: document.defaultFillColor, opacity: document.defaultFillOpacity)
+            : nil
+
+        // Check if we need to expand stroke to outline
+        if document.freehandExpandStroke {
+            // Convert stroke to filled outline path
+            if let expandedPath = PathOperations.outlineStroke(
+                path: smoothPath.cgPath,
+                strokeStyle: strokeStyle
+            ) {
+                // Create shape with expanded path as fill, no stroke
+                let expandedShape = VectorShape(
+                    name: "Freehand Path",
+                    path: VectorPath(cgPath: expandedPath),
+                    strokeStyle: nil, // No stroke since it's now a filled outline
+                    fillStyle: FillStyle(
+                        color: strokeStyle.color,
+                        opacity: strokeStyle.opacity
+                    )
+                )
+                document.addShapeToFront(expandedShape)
+            } else {
+                // Fallback to regular shape if expansion fails
+                let finalShape = VectorShape(
+                    name: "Freehand Path",
+                    path: smoothPath,
+                    strokeStyle: strokeStyle,
+                    fillStyle: fillStyle
+                )
+                document.addShapeToFront(finalShape)
+            }
+        } else {
+            // Regular shape without expansion
+            let finalShape = VectorShape(
+                name: "Freehand Path",
+                path: smoothPath,
+                strokeStyle: strokeStyle,
+                fillStyle: fillStyle
+            )
+            document.addShapeToFront(finalShape)
+        }
         
         Log.info("✅ FREEHAND: Applied smooth bezier curves to final shape", category: .fileOperations)
     }

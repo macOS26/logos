@@ -26,7 +26,7 @@ struct ToolButton: View {
                 }
             }
             .frame(width: 32, height: 32)
-            .background(isSelected ? Color.blue : Color.clear)
+            .background(isSelected ? InkPenUIColors.shared.primaryBlue : Color.clear)
             .cornerRadius(6)
         }
         .buttonStyle(PlainButtonStyle())

@@ -5,19 +5,13 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import Metal
-import MetalKit
-import Foundation
-
 enum MetalError: Error {
     case libraryCreationFailed
-    case pipelineCreationFailed
     case deviceNotAvailable
     case commandBufferCreationFailed
     case computeEncoderCreationFailed
     case bufferCreationFailed
     case pipelineNotAvailable
-    case shaderCompilationFailed
     case operationFailed(String)
 }
 

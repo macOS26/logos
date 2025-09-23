@@ -6,10 +6,7 @@
 //
 
 import SwiftUI
-import Foundation
-import AppKit
-import CoreText
-import CoreGraphics
+import Combine
 
 // MARK: - Text Box State Tracking (Blue, Green, Gray)
 enum TextBoxState: String, CaseIterable {
@@ -211,7 +208,7 @@ struct VectorText: Identifiable, Codable, Hashable {
     var layerIndex: Int? // Which layer this text belongs to
     
     // PROFESSIONAL TEXT TOOL PROPERTIES
-    var isPointText: Bool // Point text (expands as you type) vs Area text (fixed area)
+    // Removed isPointText - only area text is used
     var cursorPosition: Int // Current cursor position for inline editing
     var areaSize: CGSize? // Area size for area text (nil for point text)
     
@@ -268,7 +265,6 @@ struct VectorText: Identifiable, Codable, Hashable {
         isLocked: Bool = false,
         isEditing: Bool = false,
         layerIndex: Int? = nil,
-        isPointText: Bool = true,
         cursorPosition: Int = 0,
         areaSize: CGSize? = nil
     ) {
@@ -282,7 +278,6 @@ struct VectorText: Identifiable, Codable, Hashable {
         self.isLocked = isLocked
         self.isEditing = isEditing
         self.layerIndex = layerIndex
-        self.isPointText = isPointText
         self.cursorPosition = cursorPosition
         self.areaSize = areaSize
         updateBounds()
@@ -390,154 +385,6 @@ struct VectorText: Identifiable, Codable, Hashable {
         return CTFontCreateWithName(nsFont.fontName as CFString, typography.fontSize, nil)
     }
     
-    // PROFESSIONAL TEXT TO OUTLINES CONVERSION
-    func convertToOutlines() -> VectorShape? {
-        let attributedString = NSAttributedString(string: content, attributes: [
-            .font: typography.nsFont,
-            .kern: typography.letterSpacing
-        ])
-        
-        let line = CTLineCreateWithAttributedString(attributedString)
-        let runs = CTLineGetGlyphRuns(line) as! [CTRun]
-        
-        var allPathElements: [PathElement] = []
-        let font = createCoreTextFont()
-        
-        // Get font metrics for proper coordinate transformation
-        let ascent = CTFontGetAscent(font)
-        let _ = CTFontGetDescent(font) // Font descent (for future use)
-        
-        for run in runs {
-            let glyphCount = CTRunGetGlyphCount(run)
-            let glyphs = UnsafeMutablePointer<CGGlyph>.allocate(capacity: glyphCount)
-            let positions = UnsafeMutablePointer<CGPoint>.allocate(capacity: glyphCount)
-            
-            CTRunGetGlyphs(run, CFRangeMake(0, 0), glyphs)
-            CTRunGetPositions(run, CFRangeMake(0, 0), positions)
-            
-            for i in 0..<glyphCount {
-                let glyph = glyphs[i]
-                let glyphPosition = positions[i]
-                
-                if let glyphPath = CTFontCreatePathForGlyph(font, glyph, nil) {
-                    // CRITICAL FIX: Apply coordinate system transformation for SwiftUI
-                    // Core Graphics uses bottom-left origin, SwiftUI uses top-left
-                    var transform = CGAffineTransform(scaleX: 1.0, y: -1.0) // Flip Y-axis
-                        .translatedBy(x: Double(glyphPosition.x), y: -ascent) // Position glyph correctly
-                    
-                    if let transformedPath = glyphPath.copy(using: &transform) {
-                        // Convert transformed CGPath to VectorPath elements
-                        let glyphElements = convertCGPathToElements(transformedPath)
-                        allPathElements.append(contentsOf: glyphElements)
-                    }
-                }
-            }
-            
-            glyphs.deallocate()
-            positions.deallocate()
-        }
-        
-        if !allPathElements.isEmpty {
-            // CRITICAL FIX: Create single grouped shape with all letters combined
-            let vectorPath = VectorPath(elements: allPathElements, isClosed: false) // Let individual letters handle closing
-            return VectorShape(
-                name: "Text Outline: \(content)",
-                path: vectorPath,
-                strokeStyle: typography.hasStroke ? StrokeStyle(color: typography.strokeColor, width: typography.strokeWidth, placement: .center, opacity: typography.strokeOpacity) : nil,
-                fillStyle: FillStyle(color: typography.fillColor, opacity: typography.fillOpacity),
-                transform: .identity, // No additional transform needed
-                isGroup: false // Single unified shape, not a group
-            )
-        }
-        
-        return nil
-    }
-    
-    private func convertCGPathToElements(_ cgPath: CGPath) -> [PathElement] {
-        var elements: [PathElement] = []
-        
-        cgPath.applyWithBlock { elementPointer in
-            let element = elementPointer.pointee
-            
-            switch element.type {
-            case .moveToPoint:
-                let point = element.points[0]
-                elements.append(.move(to: VectorPoint(Double(point.x), Double(point.y))))
-                
-            case .addLineToPoint:
-                let point = element.points[0]
-                elements.append(.line(to: VectorPoint(Double(point.x), Double(point.y))))
-                
-            case .addQuadCurveToPoint:
-                let control = element.points[0]
-                let point = element.points[1]
-                elements.append(.quadCurve(
-                    to: VectorPoint(Double(point.x), Double(point.y)),
-                    control: VectorPoint(Double(control.x), Double(control.y))
-                ))
-                
-            case .addCurveToPoint:
-                let control1 = element.points[0]
-                let control2 = element.points[1]
-                let point = element.points[2]
-                elements.append(.curve(
-                    to: VectorPoint(Double(point.x), Double(point.y)),
-                    control1: VectorPoint(Double(control1.x), Double(control1.y)),
-                    control2: VectorPoint(Double(control2.x), Double(control2.y))
-                ))
-                
-            case .closeSubpath:
-                elements.append(.close)
-                
-            @unknown default:
-                break
-            }
-        }
-        
-        return elements
-    }
-    
-    private func convertBezierPathToElements(_ bezierPath: NSBezierPath, offset: CGPoint) -> [PathElement] {
-        var elements: [PathElement] = []
-        let elementCount = bezierPath.elementCount
-        let points = UnsafeMutablePointer<NSPoint>.allocate(capacity: 3)
-        
-        for i in 0..<elementCount {
-            let elementType = bezierPath.element(at: i, associatedPoints: points)
-            
-            switch elementType {
-            case .moveTo:
-                let point = VectorPoint(Double(points[0].x + offset.x), Double(points[0].y + offset.y))
-                elements.append(.move(to: point))
-            case .lineTo:
-                let point = VectorPoint(Double(points[0].x + offset.x), Double(points[0].y + offset.y))
-                elements.append(.line(to: point))
-            case .curveTo:
-                let to = VectorPoint(Double(points[2].x + offset.x), Double(points[2].y + offset.y))
-                let control1 = VectorPoint(Double(points[0].x + offset.x), Double(points[0].y + offset.y))
-                let control2 = VectorPoint(Double(points[1].x + offset.x), Double(points[1].y + offset.y))
-                elements.append(.curve(to: to, control1: control1, control2: control2))
-            case .cubicCurveTo:
-                // Same as curveTo for NSBezierPath
-                let to = VectorPoint(Double(points[2].x + offset.x), Double(points[2].y + offset.y))
-                let control1 = VectorPoint(Double(points[0].x + offset.x), Double(points[0].y + offset.y))
-                let control2 = VectorPoint(Double(points[1].x + offset.x), Double(points[1].y + offset.y))
-                elements.append(.curve(to: to, control1: control1, control2: control2))
-            case .quadraticCurveTo:
-                // Convert quadratic to regular curve
-                let to = VectorPoint(Double(points[1].x + offset.x), Double(points[1].y + offset.y))
-                let control = VectorPoint(Double(points[0].x + offset.x), Double(points[0].y + offset.y))
-                elements.append(.quadCurve(to: to, control: control))
-            case .closePath:
-                elements.append(.close)
-            @unknown default:
-                break
-            }
-        }
-        
-        points.deallocate()
-        return elements
-    }
     
     // MIGRATION: Convert VectorShape back to VectorText for unified access
     static func from(_ vectorShape: VectorShape) -> VectorText? {

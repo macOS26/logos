@@ -5,10 +5,7 @@
 //  Created by Todd Bruss on 8/31/25.
 //
 
-import Foundation
 import SwiftUI
-import CoreGraphics
-import PDFKit
 
 // MARK: - PDF Operator Callback Setup and Interpretation
 
@@ -142,16 +139,32 @@ class PDFOperatorInterpreter {
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
             parser.handleFillAndStroke()
         }
-        
+
+        // MARK: - Clipping Path Operators
+
+        // Clip with non-zero winding rule
+        CGPDFOperatorTableSetCallback(operatorTable, "W") { (scanner, info) in
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
+            parser.handleClipOperator()
+        }
+
+        // Clip with even-odd rule
+        CGPDFOperatorTableSetCallback(operatorTable, "W*") { (scanner, info) in
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
+            parser.handleClipOperator()
+        }
+
         // MARK: - Graphics State Operators
-        
+
         // Save/restore graphics state
         CGPDFOperatorTableSetCallback(operatorTable, "q") { (scanner, info) in
             print("PDF: 'q' (save graphics state) operator encountered")
         }
-        
+
         CGPDFOperatorTableSetCallback(operatorTable, "Q") { (scanner, info) in
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
             print("PDF: 'Q' (restore graphics state) operator encountered")
+            parser.resetClippingState()  // Reset clipping when restoring graphics state
         }
         
         // Extended graphics state
@@ -182,8 +195,58 @@ class PDFOperatorInterpreter {
             parser.handleXObjectWithOpacitySaving(scanner: scanner)
         }
         
+        // MARK: - Line Style Operators
+
+        // Line width
+        CGPDFOperatorTableSetCallback(operatorTable, "w") { (scanner, info) in
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
+            var width: CGFloat = 1.0
+            if CGPDFScannerPopNumber(scanner, &width) {
+                parser.currentLineWidth = Double(width)
+                print("PDF: Set line width to \(width)")
+            }
+        }
+
+        // Line cap
+        CGPDFOperatorTableSetCallback(operatorTable, "J") { (scanner, info) in
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
+            var cap: CGPDFInteger = 0
+            if CGPDFScannerPopInteger(scanner, &cap) {
+                parser.currentLineCap = CGLineCap(rawValue: Int32(cap)) ?? .butt
+                print("PDF: Set line cap to \(cap)")
+            }
+        }
+
+        // Line join
+        CGPDFOperatorTableSetCallback(operatorTable, "j") { (scanner, info) in
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
+            var join: CGPDFInteger = 0
+            if CGPDFScannerPopInteger(scanner, &join) {
+                parser.currentLineJoin = CGLineJoin(rawValue: Int32(join)) ?? .miter
+                print("PDF: Set line join to \(join)")
+            }
+        }
+
+        // Miter limit
+        CGPDFOperatorTableSetCallback(operatorTable, "M") { (scanner, info) in
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
+            var limit: CGFloat = 10.0
+            if CGPDFScannerPopNumber(scanner, &limit) {
+                parser.currentMiterLimit = Double(limit)
+                print("PDF: Set miter limit to \(limit)")
+            }
+        }
+
+        // Line dash pattern
+        CGPDFOperatorTableSetCallback(operatorTable, "d") { (scanner, info) in
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
+            // For now, just clear dash pattern - full implementation would parse array
+            parser.currentLineDashPattern = []
+            print("PDF: Set dash pattern (simplified)")
+        }
+
         // MARK: - Specialty Operators
-        
+
         // Path no-op
         CGPDFOperatorTableSetCallback(operatorTable, "n") { (scanner, info) in
             print("PDF: Path construction (no-op) operator 'n' encountered")

@@ -5,8 +5,8 @@
 //  Split from VectorDocument+UnifiedObjectManagement.swift
 //
 
-import Foundation
-import CoreGraphics
+import SwiftUI
+import Combine
 
 // MARK: - Unified Text Content Management
 extension VectorDocument {

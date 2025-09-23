@@ -102,13 +102,11 @@ extension DrawingCanvas {
         initialZoomLevel = finalZoomLevel
         Log.info("Professional zoom completed: \(String(format: "%.3f", finalZoomLevel))x at focal point: \(currentMousePosition)", category: .debug)
 
-        #if os(macOS)
         // After pinch ends, if still over canvas and zoom tool active, restore cursor now and next runloop
         if isCanvasHovering && document.currentTool == .zoom {
             MagnifyingGlassCursor.set()
             DispatchQueue.main.async { if isCanvasHovering && document.currentTool == .zoom { MagnifyingGlassCursor.set() } }
         }
-        #endif
     }
     
             /// Handle coordinated zoom requests from menu/toolbar (Professional Standards)
@@ -146,7 +144,6 @@ extension DrawingCanvas {
         // Clear the request after processing
         document.clearZoomRequest()
 
-        #if os(macOS)
         // After completing a programmatic zoom request, restore the active tool cursor
         if isCanvasHovering {
             switch document.currentTool {
@@ -175,6 +172,5 @@ extension DrawingCanvas {
                 }
             }
         }
-        #endif
     }
 } 

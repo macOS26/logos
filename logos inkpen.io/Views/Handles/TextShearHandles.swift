@@ -5,7 +5,7 @@
 //  Created by Todd Bruss on 8/20/25.
 //
 
-import CoreGraphics
+import SwiftUI
 import SwiftUI
 
 struct TextShearHandles: View {

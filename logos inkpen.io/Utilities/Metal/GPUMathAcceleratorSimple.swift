@@ -1,6 +1,4 @@
-import Metal
 import MetalKit
-import Foundation
 
 /// GPU-accelerated Core Graphics math functions - Phase 1 (Simple Implementation)
 /// This version works without custom Metal shaders to start GPU acceleration incrementally
@@ -136,42 +134,5 @@ class GPUMathAcceleratorSimple {
     }
     
     // MARK: - Future Phase Preparation
-    
-    /// Prepare data structures for next GPU phase
-    func prepareForGPUPhase2() {
-        Log.fileOperation("📋 Preparing for Phase 2: Metal compute shaders", level: .info)
-        // Future: Setup for full GPU compute shaders
-    }
 }
 
-// MARK: - Phase 1 Testing
-
-extension GPUMathAcceleratorSimple {
-    
-    /// Test Phase 1 optimizations
-    func testPhase1Performance() {
-        Log.info("🧪 Testing Phase 1 GPU-ready optimizations...", category: .general)
-        
-        // Create test data
-        var testPoints: [CGPoint] = []
-        for i in 0..<1000 {
-            let x = CGFloat(i) + sin(Double(i) * 0.1) * 50
-            let y = CGFloat(i) + cos(Double(i) * 0.1) * 50
-            testPoints.append(CGPoint(x: x, y: y))
-        }
-        
-        let startTime = CACurrentMediaTime()
-        let simplified = optimizeDrawingPath(testPoints, tolerance: 2.0)
-        let endTime = CACurrentMediaTime()
-        
-        let processingTime = (endTime - startTime) * 1000 // Convert to ms
-        
-        Log.info("✅ Phase 1 Results:", category: .fileOperations)
-        Log.info("   Input: \(testPoints.count) points", category: .general)
-        Log.info("   Output: \(simplified.count) points", category: .general)
-        print("   Time: \(String(format: "%.2f", processingTime))ms")
-        let reductionPercent = (1.0 - Double(simplified.count) / Double(testPoints.count)) * 100
-        print("   Reduction: \(String(format: "%.1f", reductionPercent))%")
-        Log.info("   Mode: \(getPerformanceInfo())", category: .general)
-    }
-}

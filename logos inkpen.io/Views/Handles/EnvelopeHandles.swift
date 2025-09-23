@@ -5,8 +5,9 @@
 //  Created by Todd Bruss on 8/20/25.
 //
 
-import CoreGraphics
 import SwiftUI
+import SwiftUI
+import Combine
 
 // MARK: - Envelope Warping Tool Handles
 struct EnvelopeHandles: View {
@@ -29,7 +30,8 @@ struct EnvelopeHandles: View {
     @State private var warpedCorners: [CGPoint] = []    // Current warped positions
     @State private var draggingCornerIndex: Int? = nil  // Which corner is being dragged
     
-    private let handleSize: CGFloat = 8
+    private let handleSize: CGFloat = 10
+    private let handleHitAreaSize: CGFloat = 15  // Larger hit area for easier selection
     
     var body: some View {
         // ENVELOPE TOOL: Show bounding box corners with correct colors
@@ -170,28 +172,43 @@ struct EnvelopeHandles: View {
     
     @ViewBuilder
     private func envelopeCornerHandles() -> some View {
-        ForEach(0..<4) { cornerIndex in
-            let cornerPos = warpedCorners.indices.contains(cornerIndex) ? warpedCorners[cornerIndex] : CGPoint.zero
-            
-            Rectangle()
-                .fill(Color.green)  // All corners GREEN - no locking
-                .stroke(Color.white, lineWidth: 1.0)
-                .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
-                .position(cornerPos)
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
+        // Only show handles if corners are properly initialized
+        if warpedCorners.count == 4 {
+            ForEach(0..<4) { cornerIndex in
+                let cornerPos = warpedCorners[cornerIndex]
+
+                ZStack {
+                    // White outline for better visibility against any background
+                    Circle()
+                        .stroke(Color.white, lineWidth: 1.0)
+                        .frame(width: handleSize + 2, height: handleSize + 2)
+
+                    // Visible handle - blue like TransformBox handles
+                    Circle()
+                        .fill(Color.blue)
+                        .frame(width: handleSize, height: handleSize)
+
+                    // Invisible expanded hit area for easier selection (on top)
+                    Circle()
+                        .fill(Color.clear)
+                        .frame(width: handleHitAreaSize, height: handleHitAreaSize)
+                        .contentShape(Circle())
+                }
+            .position(CGPoint(x: cornerPos.x * zoomLevel + canvasOffset.x,
+                              y: cornerPos.y * zoomLevel + canvasOffset.y))
             // ACTUAL PATH CORNERS FIX: Never apply transform since we use actual path points
             // (Path points already contain the object's geometry and rotation)
-                .gesture(
-                    DragGesture(minimumDistance: 3)
-                        .onChanged { value in
-                            // DRAG: Warp envelope from this corner
-                            handleEnvelopeWarp(cornerIndex: cornerIndex, dragValue: value)
-                        }
-                        .onEnded { _ in
-                            finishEnvelopeWarp()
-                        }
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 0.5) // Small threshold like TransformBox
+                    .onChanged { value in
+                        // DRAG: Warp envelope from this corner
+                        handleEnvelopeWarp(cornerIndex: cornerIndex, dragValue: value)
+                    }
+                    .onEnded { _ in
+                        finishEnvelopeWarp()
+                    }
                 )
+            }
         }
     }
     
@@ -286,28 +303,39 @@ struct EnvelopeHandles: View {
     // MARK: - Envelope Warping Logic
     
     private func initializeEnvelopeCorners() {
-        // WARP OBJECT HANDLING: Use stored original envelope for continuous warping
-        if shape.isWarpObject && !shape.warpEnvelope.isEmpty {
-            // CRITICAL FIX: Use stored original envelope as reference, current envelope as starting point
-            if !shape.originalEnvelope.isEmpty {
-                originalCorners = shape.originalEnvelope  // TRUE original envelope (never changes)
-                warpedCorners = shape.warpEnvelope        // Current envelope (can be warped further)
-                Log.fileOperation("🔧 WARP MEMORY PRESERVED: Using stored original envelope for reference", level: .info)
-                print("   Original Envelope: [\(shape.originalEnvelope.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]")
-                print("   Current Envelope: [\(shape.warpEnvelope.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]")
-            } else {
-                // Fallback for older warp objects without originalEnvelope
-                originalCorners = shape.warpEnvelope
-                warpedCorners = shape.warpEnvelope
-                Log.fileOperation("🔧 LEGACY WARP OBJECT: Missing original envelope, using current as reference", level: .info)
-            }
-            
+        // WARP OBJECT HANDLING: Check if shape is already a warp object FIRST
+        // Warp objects have originalPath and warpEnvelope
+        if shape.isWarpObject && !shape.warpEnvelope.isEmpty, let originalPath = shape.originalPath {
+            // Calculate original envelope from the original path bounds
+            let originalBounds = originalPath.cgPath.boundingBoxOfPath
+            originalCorners = [
+                CGPoint(x: originalBounds.minX, y: originalBounds.minY),
+                CGPoint(x: originalBounds.maxX, y: originalBounds.minY),
+                CGPoint(x: originalBounds.maxX, y: originalBounds.maxY),
+                CGPoint(x: originalBounds.minX, y: originalBounds.maxY)
+            ]
+            warpedCorners = shape.warpEnvelope  // Current warp envelope
+
+            Log.fileOperation("🔧 WARP OBJECT: Using saved warp envelope", level: .info)
+            print("   Current Warp Envelope: [\(shape.warpEnvelope.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]")
+
             Log.info("   🎯 Continuous warping enabled - can warp from current state", category: .general)
-            
+
             // REACTIVATION: Set preview to current warped shape for immediate visual feedback
             previewPath = shape.path  // Show current warped state immediately
             Log.info("   🔄 REACTIVATION: Set preview to current warped shape (\(shape.path.elements.count) elements)", category: .general)
-            
+
+            return
+        }
+
+        // CHECK FOR STORED WARP BOUNDS (only for non-warp objects that were previously warped in this session)
+        if let storedBounds = document.warpBounds[shape.id],
+           let storedCorners = document.warpEnvelopeCorners[shape.id], storedCorners.count == 4 {
+            // Use the stored warp envelope for regular shapes that were warped in this session
+            originalCorners = storedCorners
+            warpedCorners = storedCorners
+            Log.fileOperation("🔧 SESSION WARP RESTORED: Using stored envelope from current session", level: .info)
+            print("📍 USING SESSION WARP BOUNDS: \(storedBounds)")
             return
         }
         
@@ -317,6 +345,20 @@ struct EnvelopeHandles: View {
             let newOriginalCorners = calculateOrientedBoundingBox(for: shape)
             originalCorners = newOriginalCorners
             warpedCorners = newOriginalCorners
+
+            // ONLY initialize warp bounds if they don't exist yet - NEVER overwrite!
+            if document.warpBounds[shape.id] == nil {
+                let minX = newOriginalCorners.map { $0.x }.min() ?? 0
+                let maxX = newOriginalCorners.map { $0.x }.max() ?? 0
+                let minY = newOriginalCorners.map { $0.y }.min() ?? 0
+                let maxY = newOriginalCorners.map { $0.y }.max() ?? 0
+                let newBounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+                print("⚠️ INITIALIZING NEW WARP BOUNDS (4-point shape): \(newBounds)")
+                document.warpBounds[shape.id] = newBounds
+                document.warpEnvelopeCorners[shape.id] = newOriginalCorners
+            } else {
+                print("✅ KEEPING EXISTING WARP BOUNDS (4-point shape): \(document.warpBounds[shape.id]!)")
+            }
         } else {
             let bounds = shape.bounds
             let newOriginalCorners = [
@@ -327,6 +369,15 @@ struct EnvelopeHandles: View {
             ]
             originalCorners = newOriginalCorners
             warpedCorners = newOriginalCorners
+
+            // ONLY initialize warp bounds if they don't exist yet - NEVER overwrite!
+            if document.warpBounds[shape.id] == nil {
+                print("⚠️ INITIALIZING NEW WARP BOUNDS (regular shape): \(bounds)")
+                document.warpBounds[shape.id] = bounds
+                document.warpEnvelopeCorners[shape.id] = newOriginalCorners
+            } else {
+                print("✅ KEEPING EXISTING WARP BOUNDS (regular shape): \(document.warpBounds[shape.id]!)")
+            }
         }
         
         Log.fileOperation("🔧 ENVELOPE INITIALIZED: Using \(originalCorners.count) corners", level: .info)
@@ -363,7 +414,17 @@ struct EnvelopeHandles: View {
         
         // Update the warped corner position
         warpedCorners[cornerIndex] = canvasLocation
-        
+
+        // STORE WARP ENVELOPE: Save corners to document for persistence
+        document.warpEnvelopeCorners[shape.id] = warpedCorners
+
+        // STORE WARP BOUNDS: Calculate and store the bounds rectangle
+        let minX = warpedCorners.map { $0.x }.min() ?? 0
+        let maxX = warpedCorners.map { $0.x }.max() ?? 0
+        let minY = warpedCorners.map { $0.y }.min() ?? 0
+        let maxY = warpedCorners.map { $0.y }.max() ?? 0
+        document.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+
         // Calculate the warped shape preview
         calculateEnvelopeWarpPreview()
     }
@@ -579,36 +640,24 @@ struct EnvelopeHandles: View {
         isWarping = false
         document.isHandleScalingActive = false
         draggingCornerIndex = nil
+
+        // CRITICAL: Update stored warp bounds when finishing warp
+        if warpedCorners.count == 4 {
+            let minX = warpedCorners.map { $0.x }.min() ?? 0
+            let maxX = warpedCorners.map { $0.x }.max() ?? 0
+            let minY = warpedCorners.map { $0.y }.min() ?? 0
+            let maxY = warpedCorners.map { $0.y }.max() ?? 0
+            document.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+            document.warpEnvelopeCorners[shape.id] = warpedCorners
+            print("📍 WARP FINISH: Stored final bounds: \(document.warpBounds[shape.id]!)")
+        }
         
         // ENVELOPE DRAG FINISHED: Minimal logging for performance
         
         // REAL-TIME UPDATE: Apply the current warp to the shape immediately
         updateShapeWithCurrentWarp()
         
-        // BOUNDS UPDATE: Now that warping is finished, update bounds properly
-        // CRITICAL FIX: Find the unified object that contains this specific shape
-        if let unifiedObject = document.unifiedObjects.first(where: { unifiedObject in
-            if case .shape(let targetShape) = unifiedObject.objectType {
-                return targetShape.id == shape.id
-            }
-            return false
-        }),
-        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
-        let shapes = document.getShapesForLayer(layerIndex)
-        if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
-            if var currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                currentShape.updateBounds()
-                if currentShape.isGroup {
-                    for i in 0..<currentShape.groupedShapes.count {
-                        currentShape.groupedShapes[i].updateBounds()
-                    }
-                }
-                document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: currentShape)
-            }
-        }
-        } else {
-            Log.error("❌ WARP FAILED: Could not find shape in unified objects system", category: .error)
-        }
+        // Note: Bounds update happens automatically when the warp object is created and stored
         
         print("   Current envelope: TL(\(String(format: "%.1f", warpedCorners[0].x)), \(String(format: "%.1f", warpedCorners[0].y))), TR(\(String(format: "%.1f", warpedCorners[1].x)), \(String(format: "%.1f", warpedCorners[1].y))), BR(\(String(format: "%.1f", warpedCorners[2].x)), \(String(format: "%.1f", warpedCorners[2].y))), BL(\(String(format: "%.1f", warpedCorners[3].x)), \(String(format: "%.1f", warpedCorners[3].y)))")
         
@@ -647,10 +696,8 @@ struct EnvelopeHandles: View {
                     
                     var warpedGrouped = groupedShape
                     warpedGrouped.path = warpedPath
-                    // CRITICAL FIX: Don't update bounds during active warping to prevent axis recalculation
-                    if !isWarping {
-                        warpedGrouped.updateBounds()
-                    }
+                    // Update bounds for grouped shapes
+                    warpedGrouped.updateBounds()
                     warpedGroupedShapes.append(warpedGrouped)
                 }
                 
@@ -663,13 +710,24 @@ struct EnvelopeHandles: View {
             }
             
             updatedWarpObject.warpEnvelope = warpedCorners
-            // CRITICAL FIX: Don't update bounds during active warping to prevent axis recalculation
-            if !isWarping {
-                updatedWarpObject.updateBounds()
-            }
+            // Update bounds after warping changes
+            updatedWarpObject.updateBounds()
             
-            // Use unified helper to update warped shape
-            document.updateShapePathUnified(id: updatedWarpObject.id, path: updatedWarpObject.path)
+            // Update the entire warp object in unified system, not just the path
+            if let objectIndex = document.unifiedObjects.firstIndex(where: { obj in
+                if case .shape(let shape) = obj.objectType {
+                    return shape.id == updatedWarpObject.id
+                }
+                return false
+            }) {
+                document.unifiedObjects[objectIndex] = VectorObject(
+                    shape: updatedWarpObject,
+                    layerIndex: document.unifiedObjects[objectIndex].layerIndex,
+                    orderID: document.unifiedObjects[objectIndex].orderID
+                )
+                // Sync to layers
+                document.syncShapeToLayer(updatedWarpObject, at: document.unifiedObjects[objectIndex].layerIndex)
+            }
             Log.info("   ✅ Updated existing warp object coordinates in real-time", category: .general)
         } else {
             // First-time warp: create warp object
@@ -678,7 +736,6 @@ struct EnvelopeHandles: View {
             warpObject.name = "Warped " + currentShape.name
             warpObject.isWarpObject = true
             warpObject.warpEnvelope = warpedCorners
-            warpObject.originalEnvelope = originalCorners // CRITICAL: Store original envelope for continuous warping
             warpObject.transform = .identity
             
             if currentShape.isGroup && !currentShape.groupedShapes.isEmpty {
@@ -694,10 +751,8 @@ struct EnvelopeHandles: View {
                     
                     var warpedGrouped = groupedShape
                     warpedGrouped.path = warpedPath
-                    // CRITICAL FIX: Don't update bounds during active warping to prevent axis recalculation
-                    if !isWarping {
-                        warpedGrouped.updateBounds()
-                    }
+                    // Update bounds for grouped shapes
+                    warpedGrouped.updateBounds()
                     warpedGroupedShapes.append(warpedGrouped)
                 }
                 
@@ -710,11 +765,9 @@ struct EnvelopeHandles: View {
                 Log.info("   ✅ Created warp object from single shape", category: .general)
             }
             
-            // CRITICAL FIX: Don't update bounds during active warping to prevent axis recalculation
-            if !isWarping {
-                warpObject.updateBounds()
-            }
-            
+            // Update bounds after warping is complete
+            warpObject.updateBounds()
+
             // Use unified helper to update warped shape
             document.updateShapePathUnified(id: warpObject.id, path: warpObject.path)
         
@@ -742,7 +795,7 @@ struct EnvelopeHandles: View {
             document.addShapeToUnifiedSystem(warpObject, layerIndex: layerIndex)
             Log.info("   🔧 UNIFIED OBJECTS: Added warp object to unified system", category: .general)
         }
-        
+
         Log.info("   🎯 First-time warp completed - created new warp object", category: .general)
     }
     
@@ -754,7 +807,18 @@ struct EnvelopeHandles: View {
     
     private func commitEnvelopeWarp() {
         Log.info("🏁 ENVELOPE WARP COMMIT: Finalizing envelope editing session", category: .general)
-        
+
+        // CRITICAL: Store final warp bounds when committing
+        if warpedCorners.count == 4 {
+            let minX = warpedCorners.map { $0.x }.min() ?? 0
+            let maxX = warpedCorners.map { $0.x }.max() ?? 0
+            let minY = warpedCorners.map { $0.y }.min() ?? 0
+            let maxY = warpedCorners.map { $0.y }.max() ?? 0
+            document.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+            document.warpEnvelopeCorners[shape.id] = warpedCorners
+            print("📍 WARP COMMIT: Stored final bounds: \(document.warpBounds[shape.id]!)")
+        }
+
         // The shape has already been updated in real-time during editing
         // PRESERVE PREVIEW: Keep the preview when switching away so it shows correctly when returning
         // Don't clear previewPath - this maintains the warped shape preview for reactivation

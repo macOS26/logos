@@ -1,4 +1,4 @@
-import Foundation
+import SwiftUI
 import os.log
 
 enum LogCategory: String, CaseIterable {
@@ -22,16 +22,6 @@ enum LogLevel: String, CaseIterable {
     case warning = "warning"
     case error = "error"
     case fault = "fault"
-    
-    var osLogType: OSLogType {
-        switch self {
-        case .debug: return .debug
-        case .info: return .info
-        case .warning: return .default
-        case .error: return .error
-        case .fault: return .fault
-        }
-    }
 }
 
 struct Log {
@@ -133,19 +123,7 @@ struct Log {
     }
     
     // Main logging methods
-    static func debug(_ message: String, category: LogCategory = .general, file: String = #file, function: String = #function, line: Int = #line) {
-        #if DEBUG
-        // Check for spam suppression
-        if shouldSuppressMessage(message) {
-            return
-        }
-        
-        let logger = logger(for: category)
-        logger.debug("\(message, privacy: .public)")
-        #endif
-    }
-    
-    static func info(_ message: String, category: LogCategory = .general, file: String = #file, function: String = #function, line: Int = #line) {
+    static func info(_ message: String, category: LogCategory = .general) {
         // Check for spam suppression first
         if shouldSuppressMessage(message) {
             return
@@ -155,7 +133,7 @@ struct Log {
         logger.info("\(message, privacy: .public)")
     }
     
-    static func warning(_ message: String, category: LogCategory = .general, file: String = #file, function: String = #function, line: Int = #line) {
+    static func warning(_ message: String, category: LogCategory = .general) {
         // Check for spam suppression first
         if shouldSuppressMessage(message) {
             return
@@ -165,13 +143,13 @@ struct Log {
         logger.warning("\(message, privacy: .public)")
     }
     
-    static func error(_ message: String, category: LogCategory = .error, file: String = #file, function: String = #function, line: Int = #line) {
+    static func error(_ message: String, category: LogCategory = .error) {
         // Don't suppress errors - they're important
         let logger = logger(for: category)
         logger.error("\(message, privacy: .public)")
     }
     
-    static func fault(_ message: String, category: LogCategory = .error, file: String = #file, function: String = #function, line: Int = #line) {
+    static func fault(_ message: String, category: LogCategory = .error) {
         // Don't suppress faults - they're critical
         let logger = logger(for: category)
         logger.fault("\(message, privacy: .public)")
@@ -206,22 +184,6 @@ struct Log {
         case .error: error(message, category: .error)
         case .fault: fault(message, category: .error)
         }
-    }
-    
-    static func performance(_ message: String, level: LogLevel = .info) {
-        switch level {
-        case .debug: info(message, category: .performance)
-        case .info: info(message, category: .performance)
-        case .warning: warning(message, category: .performance)
-        case .error: error(message, category: .error)
-        case .fault: fault(message, category: .error)
-        }
-    }
-    
-    // Legacy compatibility - these will be removed after migration
-    @available(*, deprecated, message: "Use Log.info instead")
-    static func debug(_ message: String, category: LogCategory = .general) {
-        info(message, category: category)
     }
 }
 

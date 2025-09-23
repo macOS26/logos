@@ -6,12 +6,7 @@
 //
 
 import SwiftUI
-
-struct RGBColorData: Hashable {
-    let red: Int
-    let green: Int
-    let blue: Int
-}
+import Combine
 
 struct RGBInputSection: View {
     @ObservedObject var document: VectorDocument
@@ -49,9 +44,9 @@ struct RGBInputSection: View {
         )
     }
     
-    // Helper function to get SwiftUI Color from RGB values
+    // Helper function to get SwiftUI Color from RGB values using Display P3
     private func swiftUIColor(r: Double, g: Double, b: Double) -> Color {
-        return Color(.sRGB, red: r/255.0, green: g/255.0, blue: b/255.0)
+        return Color(.displayP3, red: r/255.0, green: g/255.0, blue: b/255.0)
     }
     
     // Red slider gradient (morphs from current color with R=0 to current color with R=255)
@@ -125,13 +120,14 @@ struct RGBInputSection: View {
                         Slider(value: $redSlider, in: 0...255)
                             .tint(Color.clear)
                             .onChange(of: redSlider) {
-                                guard !isProgrammaticallyUpdating else { 
+                                guard !isProgrammaticallyUpdating else {
                                     // Removed logging spam
-                                    return 
+                                    return
                                 }
                                 // Removed logging for performance
                                 redValue = String(Int(redSlider))
                                 updateHexFromRGB()
+                                updateSharedColor()
                             }
                         
                         // Gradient overlay
@@ -146,14 +142,15 @@ struct RGBInputSection: View {
                         .frame(width: 45)
                         .font(.system(size: 11))
                         .onChange(of: redValue) {
-                            guard !isProgrammaticallyUpdating else { 
+                            guard !isProgrammaticallyUpdating else {
                                 // Removed logging spam
-                                return 
+                                return
                             }
                             // Removed logging for performance
                             if let intValue = Double(redValue) {
                                 redSlider = min(255, max(0, intValue))
                                 updateHexFromRGB()
+                                updateSharedColor()
                             }
                         }
                 }
@@ -186,6 +183,7 @@ struct RGBInputSection: View {
                                 guard !isProgrammaticallyUpdating else { return }
                                 greenValue = String(Int(greenSlider))
                                 updateHexFromRGB()
+                                updateSharedColor()
                             }
                         
                         // Gradient overlay
@@ -204,6 +202,7 @@ struct RGBInputSection: View {
                             if let intValue = Double(greenValue) {
                                 greenSlider = min(255, max(0, intValue))
                                 updateHexFromRGB()
+                                updateSharedColor()
                             }
                         }
                 }
@@ -236,6 +235,7 @@ struct RGBInputSection: View {
                                 guard !isProgrammaticallyUpdating else { return }
                                 blueValue = String(Int(blueSlider))
                                 updateHexFromRGB()
+                                updateSharedColor()
                             }
                         
                         // Gradient overlay
@@ -254,6 +254,7 @@ struct RGBInputSection: View {
                             if let intValue = Double(blueValue) {
                                 blueSlider = min(255, max(0, intValue))
                                 updateHexFromRGB()
+                                updateSharedColor()
                             }
                         }
                 }
@@ -266,7 +267,7 @@ struct RGBInputSection: View {
                     applyColorToActiveSelection()
                 }) {
                     Rectangle()
-                        .fill(Color(.sRGB, 
+                        .fill(Color(.displayP3,
                             red: currentColor.red, 
                             green: currentColor.green, 
                             blue: currentColor.blue))
@@ -299,6 +300,7 @@ struct RGBInputSection: View {
                     .frame(width: 70)
                     .onChange(of: hexValue) {
                         updateRGBFromHex()
+                        updateSharedColor()
                     }
                 
             }
@@ -343,34 +345,16 @@ struct RGBInputSection: View {
     private func updateSharedColor() {
         let vectorColor = VectorColor.rgb(currentColor)
         // Removed excessive logging for performance
-        
+
         sharedColor = .rgb(currentColor)
-        
+
         // CRITICAL FIX: Don't update gradients during programmatic changes OR when just browsing
         // Only update gradients when user explicitly applies/selects colors
         if isProgrammaticallyUpdating {
             // Removed logging spam
             return
         }
-        
-        // 🔥 CRITICAL FIX: COMMON CODE NEVER UPDATES GRADIENT STOPS OR FILL/STROKE AUTOMATICALLY
-        // The common RGB/CMYK/HSB input sections are used by BOTH:
-        // 1. INK PANEL (Fill/Stroke mode) - should only update fill/stroke when swatch clicked
-        // 2. GRADIENT SELECT COLOR PANEL (Gradient mode) - should only update via callbacks
-        // 
-        // NO automatic updates - only explicit user actions should update colors!
-        
-        // Update document defaults only (for preview purposes)
-        switch document.activeColorTarget {
-        case .fill:
-            document.defaultFillColor = vectorColor
-        case .stroke:
-            document.defaultStrokeColor = vectorColor
-        }
-        
-        // 🔥 NO AUTOMATIC FILL/STROKE UPDATES - only when swatches are clicked!
-        
-        // Priority 3: Apply color to selected objects and update document defaults
+
         // Update document defaults based on active color target
         switch document.activeColorTarget {
         case .fill:
@@ -378,12 +362,12 @@ struct RGBInputSection: View {
         case .stroke:
             document.defaultStrokeColor = vectorColor
         }
-        
+
         // Apply to active shapes (regular or direct selection)
         let activeShapeIDs = document.getActiveShapeIDs()
         if !activeShapeIDs.isEmpty {
             document.saveToUndoStack()
-            
+
             for shapeID in activeShapeIDs {
                 // Find the shape across all layers
                 for layerIndex in document.layers.indices {
@@ -402,10 +386,8 @@ struct RGBInputSection: View {
                     }
                 }
             }
-        }
-        
-        // OPTIMIZED: Update unified objects directly during live color changes
-        if !activeShapeIDs.isEmpty {
+
+            // OPTIMIZED: Update unified objects directly during live color changes
             for shapeID in activeShapeIDs {
                 // Update the specific unified object directly for targeted rendering
                 if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
@@ -426,11 +408,9 @@ struct RGBInputSection: View {
                 }
             }
         }
-        
+
         // Force immediate UI update for visual responsiveness
         document.objectWillChange.send()
-        
-        // 🔥 NO AUTOMATIC TEXT UPDATES - only when swatches are clicked!
         
         // Log.fileOperation("🎨 RGB INPUT: Updated \(document.activeColorTarget) color: \(vectorColor)", level: .info)
     }
@@ -532,22 +512,26 @@ struct RGBInputSection: View {
     
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.rgb(currentColor)
-        
+
         // Log.fileOperation("🎨 RGB INPUT: applyColorToActiveSelection called", level: .info)
         // Log.fileOperation("🎨 RGB INPUT: showGradientEditing = \(showGradientEditing)", level: .info)
         // Log.fileOperation("🎨 RGB INPUT: Gradient editing state: \(appState.gradientEditingState != nil)", level: .info)
-        
+
         // 🔥 CRITICAL FIX: Only use gradient callback if THIS section allows gradient editing
         // Priority 1: If we're in gradient editing mode AND this section supports it, use gradient callback
         if showGradientEditing, let gradientCallback = appState.gradientEditingState?.onColorSelected {
             // Log.fileOperation("🎨 RGB INPUT: Using gradient callback (gradient mode section)", level: .info)
             gradientCallback(vectorColor)
+            // Also add to swatches when ink well is clicked
+            document.addColorSwatch(vectorColor)
             return
         }
-        
+
         // Priority 2: Otherwise, apply to document's active selection
         // Log.fileOperation("🎨 RGB INPUT: Using document setActiveColor (fill/stroke mode)", level: .info)
         document.setActiveColor(vectorColor)
+        // Also add to swatches when ink well is clicked
+        document.addColorSwatch(vectorColor)
     }
     
     private func addColorToSwatches() {

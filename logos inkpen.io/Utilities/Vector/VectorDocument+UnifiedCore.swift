@@ -5,8 +5,7 @@
 //  Split from VectorDocument+UnifiedObjectManagement.swift
 //
 
-import Foundation
-import CoreGraphics
+import SwiftUI
 
 // MARK: - Core Unified Object Management
 extension VectorDocument {
@@ -46,7 +45,7 @@ extension VectorDocument {
         }) {
             let orderID = unifiedObjects[index].orderID
             unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
-            objectWillChange.send()
+            // REMOVED: objectWillChange.send() - unifiedObjects is @Published
         }
     }
     

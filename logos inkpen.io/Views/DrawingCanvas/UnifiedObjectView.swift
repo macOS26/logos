@@ -20,7 +20,7 @@ struct UnifiedObjectView: View {
     private var objects: [VectorObject] {
         document.getObjectsInStackingOrder()
     }
-    
+
     var body: some View {
         ZStack {
             // Render all objects in proper layer stacking order
@@ -69,7 +69,6 @@ struct UnifiedObjectContentView: View {
                         isLocked: shape.isLocked,
                         isEditing: shape.isEditing ?? false,
                         layerIndex: nil, // Will be handled by unified object
-                        isPointText: shape.isPointText ?? true,
                         cursorPosition: shape.cursorPosition ?? 0,
                         areaSize: shape.areaSize
                     )
@@ -121,7 +120,8 @@ struct UnifiedObjectContentView: View {
                         canvasOffset: canvasOffset,
                         isSelected: isSelected,
                         dragPreviewDelta: isSelected ? dragPreviewDelta : .zero,
-                        dragPreviewTrigger: dragPreviewTrigger
+                        dragPreviewTrigger: dragPreviewTrigger,
+                        viewMode: viewMode
                     )
                     .id("\(shape.id)-\(shape.path.isClosed)-\(maskShape.id)-\(maskShape.path.isClosed)-\(shape.clippedByShapeID?.uuidString ?? "none")")  // CRITICAL FIX: Include clipping mask ID
                     .onAppear {
@@ -192,5 +192,121 @@ struct UnifiedObjectContentView: View {
         }
         
         return path
+    }
+}
+
+// MARK: - Pasteboard Background View
+struct PasteboardBackgroundView: View {
+    @ObservedObject var document: VectorDocument
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+    let selectedObjectIDs: Set<UUID>
+    let viewMode: ViewMode
+    let dragPreviewDelta: CGPoint
+    let dragPreviewTrigger: Bool
+
+    private var pasteboardBackground: VectorObject? {
+        document.getObjectsInStackingOrder().first { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.name == "Pasteboard Background"
+            }
+            return false
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            // Render only the Pasteboard Background
+            if let pasteboardBackground = pasteboardBackground {
+                UnifiedObjectContentView(
+                    unifiedObject: pasteboardBackground,
+                    document: document,
+                    zoomLevel: zoomLevel,
+                    canvasOffset: canvasOffset,
+                    selectedObjectIDs: selectedObjectIDs,
+                    viewMode: viewMode,
+                    dragPreviewDelta: dragPreviewDelta,
+                    dragPreviewTrigger: dragPreviewTrigger
+                )
+            }
+        }
+    }
+}
+
+// MARK: - Canvas Background View
+struct CanvasBackgroundView: View {
+    @ObservedObject var document: VectorDocument
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+    let selectedObjectIDs: Set<UUID>
+    let viewMode: ViewMode
+    let dragPreviewDelta: CGPoint
+    let dragPreviewTrigger: Bool
+
+    private var canvasBackground: VectorObject? {
+        document.getObjectsInStackingOrder().first { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.name == "Canvas Background"
+            }
+            return false
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            // Render only the Canvas Background
+            if let canvasBackground = canvasBackground {
+                UnifiedObjectContentView(
+                    unifiedObject: canvasBackground,
+                    document: document,
+                    zoomLevel: zoomLevel,
+                    canvasOffset: canvasOffset,
+                    selectedObjectIDs: selectedObjectIDs,
+                    viewMode: viewMode,
+                    dragPreviewDelta: dragPreviewDelta,
+                    dragPreviewTrigger: dragPreviewTrigger
+                )
+            }
+        }
+    }
+}
+
+// MARK: - Non-Background Objects View
+struct NonBackgroundObjectsView: View {
+    @ObservedObject var document: VectorDocument
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+    let selectedObjectIDs: Set<UUID>
+    let viewMode: ViewMode
+    let isShiftPressed: Bool
+    let dragPreviewDelta: CGPoint
+    let dragPreviewTrigger: Bool
+
+    private var nonBackgroundObjects: [VectorObject] {
+        document.getObjectsInStackingOrder().filter { obj in
+            if case .shape(let shape) = obj.objectType {
+                // Exclude both Canvas Background and Pasteboard Background
+                return shape.name != "Canvas Background" && shape.name != "Pasteboard Background"
+            }
+            return true
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            // Render all objects except Canvas Background
+            ForEach(nonBackgroundObjects, id: \.id) { unifiedObject in
+                UnifiedObjectContentView(
+                    unifiedObject: unifiedObject,
+                    document: document,
+                    zoomLevel: zoomLevel,
+                    canvasOffset: canvasOffset,
+                    selectedObjectIDs: selectedObjectIDs,
+                    viewMode: viewMode,
+                    dragPreviewDelta: dragPreviewDelta,
+                    dragPreviewTrigger: dragPreviewTrigger
+                )
+            }
+        }
     }
 }

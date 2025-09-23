@@ -5,7 +5,6 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import Foundation
 import SwiftUI
 
 struct DocumentSettingsView: View {
@@ -22,18 +21,30 @@ struct DocumentSettingsView: View {
                 VStack(spacing: 24) {
                     // Document Size Section
                     documentSizeSection
-                    
-                    // Color Settings Section
-                    colorSettingsSection
-                    
-                    // Display Settings Section
-                    displaySettingsSection
-                    
-                    // Drawing Tools Section
-                    drawingToolsSection
-                    
-                    // Advanced Smoothing Section
-                    advancedSmoothingSection
+
+                    // Display and Color Settings Side by Side
+                    HStack(alignment: .top, spacing: 24) {
+                        // Left 50%: Display Settings (Resolution only)
+                        VStack(alignment: .leading, spacing: 24) {
+                            displaySettingsSection
+                        }
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
+
+                        Divider()
+                            .frame(height: 100)
+
+                        // Right 50%: Color Settings
+                        VStack(alignment: .leading, spacing: 24) {
+                            colorSettingsSection
+                        }
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
+                    }
+
+                    // Layer Selection Section
+                    layerSelectionSection
+
+                    // Display Options Section (Full Width)
+                    displayOptionsSection
                 }
                 .padding(24)
             }
@@ -165,7 +176,17 @@ struct DocumentSettingsView: View {
                         }
                     }
                     .pickerStyle(SegmentedPickerStyle())
-                    .onChange(of: document.settings.unit) {
+                    .onChange(of: document.settings.unit) { oldUnit, newUnit in
+                        // Convert width and height to new units
+                        let convertedWidth = UnitsConverter.convert(value: document.settings.width, from: oldUnit, to: newUnit)
+                        let convertedHeight = UnitsConverter.convert(value: document.settings.height, from: oldUnit, to: newUnit)
+                        document.settings.width = convertedWidth
+                        document.settings.height = convertedHeight
+
+                        // Always convert grid spacing when units change
+                        let convertedGridSpacing = UnitsConverter.convert(value: document.settings.gridSpacing, from: oldUnit, to: newUnit)
+                        document.settings.gridSpacing = convertedGridSpacing
+                        
                         document.onSettingsChanged()
                     }
                 }
@@ -201,299 +222,167 @@ struct DocumentSettingsView: View {
         }
     }
     
-    // MARK: - Display Settings Section
+    // MARK: - Display Settings Section (Resolution only)
     private var displaySettingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Image(systemName: "eye")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.blue)
-                
+
                 Text("Display Settings")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.primary)
             }
-            
-            VStack(spacing: 16) {
-                // Resolution
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Resolution")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
-                    
-                    HStack(spacing: 8) {
-                        TextField("Resolution", value: $document.settings.resolution, format: .number)
-                            .textFieldStyle(ProfessionalTextFieldStyle())
-                            .frame(width: 100)
-                        
-                        Text("DPI")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                // Display Options
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Display Options")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
-                    
-                    VStack(spacing: 6) {
-                        ProfessionalToggle(title: "Show Rulers", isOn: $document.settings.showRulers)
-                        ProfessionalToggle(title: "Show Grid", isOn: $document.settings.showGrid)
-                        ProfessionalToggle(title: "Snap to Grid", isOn: $document.settings.snapToGrid)
-                            .disabled(!document.settings.showGrid)
-                    }
-                }
-                
-                // Grid Spacing
-                if document.settings.showGrid {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Grid Spacing")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.secondary)
-                        
-                        HStack(spacing: 8) {
-                            TextField("Grid Spacing", value: $document.settings.gridSpacing, format: .number)
-                                .textFieldStyle(ProfessionalTextFieldStyle())
-                                .frame(width: 100)
-                            
-                            Text(document.settings.unit.rawValue)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    // MARK: - Drawing Tools Section
-    private var drawingToolsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "pencil")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.blue)
-                
-                Text("Drawing Tools")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-            }
-            
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("Freehand Smoothing")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.primary)
-                    
-                    Spacer()
-                    
-                    Text(String(format: "%.1f", document.settings.freehandSmoothingTolerance))
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.blue)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(Color.blue.opacity(0.1))
-                        )
-                }
-                
-                VStack(spacing: 8) {
-                    Slider(
-                        value: $document.settings.freehandSmoothingTolerance,
-                        in: 0.1...10.0,
-                        step: 0.1
-                    ) {
-                        Text("Freehand Smoothing")
-                    } minimumValueLabel: {
-                        Text("Detail")
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(.secondary)
-                    } maximumValueLabel: {
-                        Text("Smooth")
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(.secondary)
-                    }
-                    .onChange(of: document.settings.freehandSmoothingTolerance) {
-                        document.onSettingsChanged()
-                    }
-                    
-                    Text("Lower values preserve more detail, higher values create smoother curves")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                        .lineLimit(2)
-                }
-            }
-        }
-    }
-    
-    // MARK: - Advanced Smoothing Section
-    private var advancedSmoothingSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "waveform.path")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.purple)
-                
-                Text("Advanced Smoothing")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                Toggle("", isOn: $document.settings.advancedSmoothingEnabled)
-                    .toggleStyle(SwitchToggleStyle(tint: .purple))
-                    .onChange(of: document.settings.advancedSmoothingEnabled) {
-                        document.onSettingsChanged()
-                    }
-            }
-            
-            if document.settings.advancedSmoothingEnabled {
-                VStack(alignment: .leading, spacing: 12) {
-                    // Real-time smoothing
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Real-time Smoothing")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.primary)
-                            
-                            Spacer()
-                            
-                            Toggle("", isOn: $document.settings.realTimeSmoothingEnabled)
-                                .toggleStyle(SwitchToggleStyle(tint: .purple))
-                                .onChange(of: document.settings.realTimeSmoothingEnabled) {
-                                    document.onSettingsChanged()
-                                }
-                        }
-                        
-                        if document.settings.realTimeSmoothingEnabled {
-                            HStack {
-                                Text("Strength")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(.secondary)
-                                
-                                Spacer()
-                                
-                                Text(String(format: "%.1f", document.settings.realTimeSmoothingStrength))
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundColor(.purple)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 3)
-                                            .fill(Color.purple.opacity(0.1))
-                                    )
-                            }
-                            
-                            Slider(
-                                value: $document.settings.realTimeSmoothingStrength,
-                                in: 0.0...1.0,
-                                step: 0.1
-                            ) {
-                                Text("Real-time Smoothing Strength")
-                            } minimumValueLabel: {
-                                Text("Light")
-                                    .font(.system(size: 9, weight: .medium))
-                                    .foregroundColor(.secondary)
-                            } maximumValueLabel: {
-                                Text("Strong")
-                                    .font(.system(size: 9, weight: .medium))
-                                    .foregroundColor(.secondary)
-                            }
-                            .onChange(of: document.settings.realTimeSmoothingStrength) {
-                                document.onSettingsChanged()
-                            }
-                        }
-                    }
-                    
-                    // Chaikin smoothing iterations
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Chaikin Iterations")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.primary)
-                            
-                            Spacer()
-                            
-                            Text("\(document.settings.chaikinSmoothingIterations)")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.purple)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .fill(Color.purple.opacity(0.1))
-                                )
-                        }
-                        
-                        Slider(
-                            value: Binding<Double>(
-                                get: { Double(document.settings.chaikinSmoothingIterations) },
-                                set: { document.settings.chaikinSmoothingIterations = Int($0) }
-                            ),
-                            in: 1...3,
-                            step: 1
-                        ) {
-                            Text("Chaikin Smoothing Iterations")
-                        } minimumValueLabel: {
-                            Text("1")
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundColor(.secondary)
-                        } maximumValueLabel: {
-                            Text("3")
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundColor(.secondary)
-                        }
-                        .onChange(of: document.settings.chaikinSmoothingIterations) {
+
+            // Resolution
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Resolution")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.secondary)
+
+                HStack(spacing: 8) {
+                    TextField("Resolution", value: $document.settings.resolution, format: .number)
+                        .textFieldStyle(ProfessionalTextFieldStyle())
+                        .frame(width: 100)
+                        .onChange(of: document.settings.resolution) {
                             document.onSettingsChanged()
                         }
-                        
-                        Text("More iterations create smoother curves but may lose detail")
-                            .font(.system(size: 10))
-                            .foregroundColor(.secondary)
-                            .lineLimit(2)
-                    }
-                    
-                    // Advanced options
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Adaptive Tension")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.primary)
-                            
-                            Spacer()
-                            
-                            Toggle("", isOn: $document.settings.adaptiveTensionEnabled)
-                                .toggleStyle(SwitchToggleStyle(tint: .purple))
-                                .scaleEffect(0.8)
-                                .onChange(of: document.settings.adaptiveTensionEnabled) {
-                                    document.onSettingsChanged()
-                                }
-                        }
-                        
-                        HStack {
-                            Text("Preserve Sharp Corners")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.primary)
-                            
-                            Spacer()
-                            
-                            Toggle("", isOn: $document.settings.preserveSharpCorners)
-                                .toggleStyle(SwitchToggleStyle(tint: .purple))
-                                .scaleEffect(0.8)
-                                .onChange(of: document.settings.preserveSharpCorners) {
-                                    document.onSettingsChanged()
-                                }
-                        }
-                    }
+
+                    Text("DPI")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
                 }
-                .padding(.leading, 12)
             }
         }
-        .padding(.top, 8)
     }
+
+    // MARK: - Layer Selection Section
+    private var layerSelectionSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "square.stack.3d.up")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.blue)
+
+                Text("Active Layer")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Selected Layer")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.secondary)
+
+                Picker("Layer", selection: Binding(
+                    get: {
+                        // Find the layer with the matching ID, or default to first layer
+                        if let selectedId = document.settings.selectedLayerId,
+                           let layer = document.layers.first(where: { $0.id == selectedId }) {
+                            return layer.id
+                        } else if let firstLayer = document.layers.first {
+                            // Default to first layer if no selection or selection not found
+                            return firstLayer.id
+                        } else {
+                            // This should never happen, but provide a fallback
+                            return UUID()
+                        }
+                    },
+                    set: { newLayerId in
+                        // Update both ID and name when selection changes
+                        if let selectedLayer = document.layers.first(where: { $0.id == newLayerId }) {
+                            document.settings.selectedLayerId = selectedLayer.id
+                            document.settings.selectedLayerName = selectedLayer.name
+                            document.layerIndex = document.layers.firstIndex(where: { $0.id == newLayerId }) ?? 0
+                            document.onSettingsChanged()
+                        }
+                    }
+                )) {
+                    ForEach(document.layers) { layer in
+                        Text(layer.name).tag(layer.id)
+                    }
+                }
+                .pickerStyle(MenuPickerStyle())
+                .frame(maxWidth: .infinity)
+                .disabled(document.layers.isEmpty)
+            }
+        }
+    }
+
+    // MARK: - Display Options Section (Full Width)
+    private var displayOptionsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "eye")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.blue)
+
+                Text("Display Options")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+            }
+
+            // 2x2 Grid Layout
+            HStack(spacing: 12) {
+                // Left column: Show options
+                VStack(spacing: 6) {
+                    ProfessionalToggle(title: "Show Rulers", isOn: $document.settings.showRulers)
+                        .onChange(of: document.settings.showRulers) { _, newValue in
+                            document.showRulers = newValue
+                            UserDefaults.standard.set(newValue, forKey: "showRulers")
+                            document.onSettingsChanged()
+                        }
+                    ProfessionalToggle(title: "Show Grid", isOn: $document.settings.showGrid)
+                        .onChange(of: document.settings.showGrid) { _, newValue in
+                            document.showGrid = newValue
+                            UserDefaults.standard.set(newValue, forKey: "showGrid")
+                            document.onSettingsChanged()
+                        }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                // Right column: Snap options
+                VStack(spacing: 6) {
+                    ProfessionalToggle(title: "Snap to Point", isOn: $document.settings.snapToPoint)
+                        .onChange(of: document.settings.snapToPoint) { _, newValue in
+                            document.snapToPoint = newValue
+                            UserDefaults.standard.set(newValue, forKey: "snapToPoint")
+                            document.onSettingsChanged()
+                        }
+                    ProfessionalToggle(title: "Snap to Grid", isOn: $document.settings.snapToGrid)
+                        .onChange(of: document.settings.snapToGrid) { _, newValue in
+                            document.snapToGrid = newValue
+                            UserDefaults.standard.set(newValue, forKey: "snapToGrid")
+                            document.onSettingsChanged()
+                        }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            // Grid Spacing - Always visible
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Grid Spacing")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.secondary)
+
+                HStack(spacing: 8) {
+                    TextField("Grid Spacing", value: $document.settings.gridSpacing, format: .number)
+                        .textFieldStyle(ProfessionalTextFieldStyle())
+                        .frame(width: 100)
+                        .onChange(of: document.settings.gridSpacing) {
+                            document.onSettingsChanged()
+                        }
+
+                    Text(document.settings.unit.rawValue)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+    }
+    
+    
     
     // MARK: - Professional Footer
     private var professionalFooter: some View {

@@ -5,8 +5,7 @@
 //  Split from VectorDocument+UnifiedObjectManagement.swift
 //
 
-import Foundation
-import CoreGraphics
+import SwiftUI
 
 // MARK: - UNIFIED TEXT LOCK/UNLOCK AND VISIBILITY HELPERS
 extension VectorDocument {

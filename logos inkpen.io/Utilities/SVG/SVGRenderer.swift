@@ -6,8 +6,6 @@
 //
 
 import SwiftUI
-import AppKit
-import CoreGraphics
 
 // MARK: - SVG Shape Renderer
 /// Custom view that renders SVG content using CoreSVG

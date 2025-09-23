@@ -1,0 +1,25 @@
+//
+//  FileOperations+SVG.swift
+//  logos
+//
+//  Created by Todd Bruss on 7/5/25.
+//
+
+import SwiftUI
+
+extension FileOperations {
+    /// Export VectorDocument to SVG format
+    static func exportToSVG(_ document: VectorDocument, url: URL, includeBackground: Bool = true) throws {
+        Log.fileOperation("🎨 Exporting document to SVG: \(url.path)", level: .info)
+
+        do {
+            // Use the proper SVG exporter
+            let svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: includeBackground)
+            try svgContent.write(to: url, atomically: true, encoding: .utf8)
+            Log.info("✅ Successfully exported SVG document", category: .fileOperations)
+        } catch {
+            Log.error("❌ SVG export failed: \(error)", category: .error)
+            throw VectorImportError.parsingError("Failed to export SVG: \(error.localizedDescription)", line: nil)
+        }
+    }
+}

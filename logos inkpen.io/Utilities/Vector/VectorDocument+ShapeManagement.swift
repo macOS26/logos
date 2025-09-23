@@ -5,8 +5,7 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import Foundation
-import CoreGraphics
+import SwiftUI
 
 // MARK: - Shape Management
 extension VectorDocument {
@@ -176,7 +175,14 @@ extension VectorDocument {
     /// Gets all objects in proper layer stacking order (bottom→top, then by orderID within layer)
     func getObjectsInStackingOrder() -> [VectorObject] {
         return unifiedObjects
-            .filter { $0.isVisible }
+            .filter { object in
+                // Check object visibility
+                guard object.isVisible else { return false }
+                // Check if the layer is visible
+                guard object.layerIndex < layers.count else { return false }
+                let layer = layers[object.layerIndex]
+                return layer.isVisible
+            }
             .sorted { obj1, obj2 in
                 // First sort by layer index (bottom to top)
                 if obj1.layerIndex != obj2.layerIndex {

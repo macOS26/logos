@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 extension DrawingCanvas {
     internal func handleToolChange(oldTool: DrawingTool, newTool: DrawingTool) {
@@ -14,40 +15,42 @@ extension DrawingCanvas {
             Log.fileOperation("🔧 TOOL SWITCH: Exiting corner radius edit mode", level: .info)
             isCornerRadiusEditMode = false
         }
+
+        // CRITICAL: Stop all text editing when switching away from font tool or to arrow tool
+        // This ensures text boxes don't get stuck in editing mode
+        if (previousTool == .font || oldTool == .font) && newTool != .font {
+            Log.fileOperation("🔧 TOOL SWITCH: Exiting text editing mode when switching away from font tool", level: .info)
+            stopAllTextEditing()
+        } else if newTool == .selection {
+            // Also stop text editing when switching to arrow tool from any tool
+            Log.fileOperation("🔧 TOOL SWITCH: Exiting text editing mode when switching to arrow tool", level: .info)
+            stopAllTextEditing()
+        }
+
         // ✅ EXPLICIT USER ACTION: Auto-finish bezier path when user switches away from pen tool
         // This is standard professional behavior and represents explicit user intent to stop drawing
         if previousTool == .bezierPen && newTool != .bezierPen && isBezierDrawing {
             Log.fileOperation("🔧 USER SWITCHED TOOLS: Auto-finishing current bezier path (explicit user action)", level: .info)
             finishBezierPath()
         }
-        
+
         // ✅ EXPLICIT USER ACTION: Auto-finish freehand path when user switches away from freehand tool
         if previousTool == .freehand && newTool != .freehand && isFreehandDrawing {
             Log.fileOperation("🔧 USER SWITCHED TOOLS: Auto-finishing current freehand path (explicit user action)", level: .info)
             handleFreehandDragEnd()
         }
-        
+
         // CRITICAL FIX: Preserve text box font settings when switching tools
         // This prevents font settings from changing when switching between font tool and arrow tool
         if previousTool == .font && newTool == .selection {
             Log.fileOperation("🔧 TOOL SWITCH: Font → Arrow: Preserving all text box font settings", level: .info)
-            // Convert editing text to selected state (BLUE → GREEN)
-            if isEditingText, let editingTextID = editingTextID {
-                finishTextEditingButKeepSelected(editingTextID)
-            }
             // Font settings remain unchanged per text box UUID
         }
-        
+
         if previousTool == .selection && newTool == .font {
             Log.fileOperation("🔧 TOOL SWITCH: Arrow → Font: Preserving all text box font settings", level: .info)
             // Keep selected text boxes selected (GREEN stays GREEN)
             // Font settings remain unchanged per text box UUID
-        }
-        
-        // SURGICAL FIX: Cancel text editing when switching away from font tool to other tools (not arrow)
-        if previousTool == .font && newTool != .font && newTool != .selection && isEditingText {
-            Log.fileOperation("🔧 USER SWITCHED TOOLS: Canceling text editing (switched away from font tool to non-arrow tool)", level: .info)
-            finishTextEditing()
         }
         
         // PROFESSIONAL TOOL BEHAVIOR: Auto-convert selections when switching tools
@@ -56,20 +59,52 @@ extension DrawingCanvas {
         previousTool = newTool
     }
     
-    // NEW: Helper function to finish text editing but keep text selected
+    // NEW: Helper function to stop all text editing across all text boxes
+    private func stopAllTextEditing() {
+        // Find and stop editing for ALL text boxes that might be in editing mode
+        let allTextObjects = document.getAllTextObjects()
+        var stoppedCount = 0
+
+        for textObject in allTextObjects {
+            if textObject.isEditing {
+                document.setTextEditingInUnified(id: textObject.id, isEditing: false)
+                stoppedCount += 1
+                Log.info("🛑 STOPPED EDITING: Text box \(textObject.id.uuidString.prefix(8))", category: .selection)
+            }
+        }
+
+        // Clear all editing flags
+        if isEditingText {
+            isEditingText = false
+            editingTextID = nil
+            currentCursorPosition = 0
+            currentSelectionRange = NSRange(location: 0, length: 0)
+        }
+
+        // Reset text editing cursor mode
+        isTextEditingMode = false
+        // Reset cursor to default arrow when exiting text editing
+        NSCursor.arrow.set()
+
+        if stoppedCount > 0 {
+            Log.info("✅ CLEANUP: Stopped editing for \(stoppedCount) text box(es)", category: .selection)
+        }
+    }
+
+    // Helper function to finish text editing but keep text selected
     private func finishTextEditingButKeepSelected(_ textID: UUID) {
         // Stop editing mode using unified helper (BLUE → GREEN)
         document.setTextEditingInUnified(id: textID, isEditing: false)
-        
+
         // Keep text selected (GREEN state) - REFACTORED: Use unified objects system
         document.selectedObjectIDs = [textID]
-        
+
         // Clear editing flags
         isEditingText = false
         editingTextID = nil
         currentCursorPosition = 0
         currentSelectionRange = NSRange(location: 0, length: 0)
-        
+
         Log.info("🎯 TEXT STATE: \(textID.uuidString.prefix(8)) → GREEN (Selected, not editing)", category: .selection)
         Log.info("🔧 FONT SETTINGS: Preserved all typography properties for this text box", category: .selection)
     }

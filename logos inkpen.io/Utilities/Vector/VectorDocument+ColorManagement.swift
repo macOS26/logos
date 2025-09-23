@@ -5,7 +5,8 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import Foundation
+import SwiftUI
+import Combine
 
 // MARK: - Color Management
 extension VectorDocument {
@@ -16,14 +17,20 @@ extension VectorDocument {
         case .rgb:
             if !rgbSwatches.contains(color) {
                 rgbSwatches.append(color)
+                objectWillChange.send() // Trigger UI update
+                colorDefaults.saveToUserDefaults() // Save immediately
             }
         case .cmyk:
             if !cmykSwatches.contains(color) {
                 cmykSwatches.append(color)
+                objectWillChange.send() // Trigger UI update
+                colorDefaults.saveToUserDefaults() // Save immediately
             }
         case .pms:
             if !hsbSwatches.contains(color) {
                 hsbSwatches.append(color)
+                objectWillChange.send() // Trigger UI update
+                colorDefaults.saveToUserDefaults() // Save immediately
             }
         }
     }
@@ -142,6 +149,31 @@ extension VectorDocument {
     func removeColorSwatch(_ color: VectorColor) {
         removeColorFromCurrentMode(color)
     }
+
+    // MARK: - Get Selected Object Color
+
+    /// Get the fill or stroke color of the first selected object
+    func getSelectedObjectColor() -> VectorColor? {
+        guard let firstSelectedID = selectedObjectIDs.first else { return nil }
+
+        if let unifiedObject = unifiedObjects.first(where: { $0.id == firstSelectedID }) {
+            switch unifiedObject.objectType {
+            case .shape(let shape):
+                if activeColorTarget == .stroke {
+                    return shape.strokeStyle?.color
+                } else {
+                    if shape.isTextObject {
+                        // For text objects, use typography fillColor
+                        return shape.typography?.fillColor
+                    } else {
+                        return shape.fillStyle?.color
+                    }
+                }
+            }
+        }
+
+        return nil
+    }
     
     // SIMPLIFIED - No longer needed with separate arrays
     func updateColorSwatchesForMode() {
@@ -167,26 +199,24 @@ extension VectorDocument {
             .rgb(RGBColor(red: 0.5, green: 0.5, blue: 0)), // Olive
         ]
         
-        let systemColors: [VectorColor] = [
-            .appleSystem(.systemBlue),
-            .appleSystem(.systemRed),
-            .appleSystem(.systemGreen),
-            .appleSystem(.systemYellow),
-            .appleSystem(.systemOrange),
-            .appleSystem(.systemPurple),
-            .appleSystem(.systemPink),
-            .appleSystem(.systemTeal),
-            .appleSystem(.systemIndigo),
-            .appleSystem(.systemBrown),
-            .appleSystem(.systemGray),
-            .appleSystem(.systemGray2),
-            .appleSystem(.systemGray3),
-            .appleSystem(.label),
-            .appleSystem(.secondaryLabel),
-            .appleSystem(.link)
+        // Use explicit P3 RGB colors instead of system colors
+        let p3Colors: [VectorColor] = [
+            .rgb(RGBColor(red: 0.0, green: 0.478, blue: 1.0)),    // Blue (was systemBlue)
+            .rgb(RGBColor(red: 1.0, green: 0.231, blue: 0.188)),  // Red (was systemRed)
+            .rgb(RGBColor(red: 0.204, green: 0.780, blue: 0.349)), // Green (was systemGreen)
+            .rgb(RGBColor(red: 1.0, green: 0.800, blue: 0.0)),    // Yellow (was systemYellow)
+            .rgb(RGBColor(red: 1.0, green: 0.584, blue: 0.0)),    // Orange (was systemOrange)
+            .rgb(RGBColor(red: 0.686, green: 0.322, blue: 0.871)), // Purple (was systemPurple)
+            .rgb(RGBColor(red: 1.0, green: 0.176, blue: 0.333)),  // Pink (was systemPink)
+            .rgb(RGBColor(red: 0.353, green: 0.784, blue: 0.980)), // Teal (was systemTeal)
+            .rgb(RGBColor(red: 0.345, green: 0.337, blue: 0.839)), // Indigo (was systemIndigo)
+            .rgb(RGBColor(red: 0.635, green: 0.518, blue: 0.368)), // Brown (was systemBrown)
+            .rgb(RGBColor(red: 0.557, green: 0.557, blue: 0.576)), // Gray (was systemGray)
+            .rgb(RGBColor(red: 0.682, green: 0.682, blue: 0.698)), // Gray2 (was systemGray2)
+            .rgb(RGBColor(red: 0.780, green: 0.780, blue: 0.800))  // Gray3 (was systemGray3)
         ]
         
-        return basicColors + rgbColors + systemColors
+        return basicColors + rgbColors + p3Colors
     }
     
     static func createDefaultCMYKSwatches() -> [VectorColor] {

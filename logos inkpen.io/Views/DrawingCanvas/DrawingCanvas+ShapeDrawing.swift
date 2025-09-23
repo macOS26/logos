@@ -51,7 +51,19 @@ extension DrawingCanvas {
             shapeDragStart = value.startLocation
             
             // Convert to canvas coordinates for initial position
-            shapeStartPoint = screenToCanvas(value.startLocation, geometry: geometry)
+            var initialPoint = screenToCanvas(value.startLocation, geometry: geometry)
+
+            // Apply snapping (snap to point or grid) for the initial position for all shape tools
+            let shapeTools: [DrawingTool] = [.line, .rectangle, .square, .roundedRectangle, .pill,
+                                              .circle, .ellipse, .oval, .egg, .cone,
+                                              .star, .polygon, .pentagon, .hexagon, .heptagon,
+                                              .octagon, .nonagon, .equilateralTriangle,
+                                              .rightTriangle, .acuteTriangle, .isoscelesTriangle]
+            if (document.snapToPoint || document.snapToGrid) && shapeTools.contains(document.currentTool) {
+                initialPoint = applySnapping(to: initialPoint)
+            }
+
+            shapeStartPoint = initialPoint
             drawingStartPoint = shapeStartPoint
             
             Log.info("🎨 SHAPE DRAWING: Started at cursor position (\(String(format: "%.1f", shapeDragStart.x)), \(String(format: "%.1f", shapeDragStart.y)))", category: .shapes)
@@ -72,10 +84,20 @@ extension DrawingCanvas {
         )
         
         // Calculate current location based on initial position + cursor delta
-        let currentLocation = CGPoint(
+        var currentLocation = CGPoint(
             x: shapeStartPoint.x + canvasDelta.x,
             y: shapeStartPoint.y + canvasDelta.y
         )
+
+        // Apply snapping (snap to point or grid) for all shape tools
+        let shapeTools: [DrawingTool] = [.line, .rectangle, .square, .roundedRectangle, .pill,
+                                          .circle, .ellipse, .oval, .egg, .cone,
+                                          .star, .polygon, .pentagon, .hexagon, .heptagon,
+                                          .octagon, .nonagon, .equilateralTriangle,
+                                          .rightTriangle, .acuteTriangle, .isoscelesTriangle]
+        if (document.snapToPoint || document.snapToGrid) && shapeTools.contains(document.currentTool) {
+            currentLocation = applySnapping(to: currentLocation)
+        }
         
         // Professional verification logging (only for significant movements)
         if abs(canvasDelta.x) > 2 || abs(canvasDelta.y) > 2 {
@@ -92,71 +114,117 @@ extension DrawingCanvas {
                 .line(to: VectorPoint(currentLocation))
             ])
         case .rectangle:
-            // Rectangle aligned to cursor with pixel-precise edges
-            var minX = min(startPoint.x, currentLocation.x)
-            var maxX = max(startPoint.x, currentLocation.x)
-            var minY = min(startPoint.y, currentLocation.y)
-            var maxY = max(startPoint.y, currentLocation.y)
+            var width = currentLocation.x - startPoint.x
+            var height = currentLocation.y - startPoint.y
 
-            // Shift the edge under the cursor inward by half a screen pixel (in canvas units)
-            let halfPixelInCanvas = 0.5 / document.zoomLevel
-            if currentLocation.x >= startPoint.x {
-                maxX -= halfPixelInCanvas
-            } else {
-                minX += halfPixelInCanvas
+            // Shift key: Constrain to 1:1 aspect ratio (square)
+            if isShiftPressed {
+                let size = max(abs(width), abs(height))
+                width = width >= 0 ? size : -size
+                height = height >= 0 ? size : -size
             }
-            if currentLocation.y >= startPoint.y {
-                maxY -= halfPixelInCanvas
+
+            // Calculate rectangle bounds
+            var rectBounds: CGRect
+            if isOptionPressed {
+                // Option key: Draw from center
+                rectBounds = CGRect(
+                    x: startPoint.x - width,
+                    y: startPoint.y - height,
+                    width: width * 2,
+                    height: height * 2
+                )
             } else {
-                minY += halfPixelInCanvas
+                // Normal: Draw from corner
+                rectBounds = CGRect(
+                    x: startPoint.x,
+                    y: startPoint.y,
+                    width: width,
+                    height: height
+                )
             }
+
+            // Normalize the rectangle to ensure positive width/height
+            let normalizedRect = rectBounds.standardized
 
             currentPath = VectorPath(elements: [
-                .move(to: VectorPoint(minX, minY)),
-                .line(to: VectorPoint(maxX, minY)),
-                .line(to: VectorPoint(maxX, maxY)),
-                .line(to: VectorPoint(minX, maxY)),
+                .move(to: VectorPoint(normalizedRect.minX, normalizedRect.minY)),
+                .line(to: VectorPoint(normalizedRect.maxX, normalizedRect.minY)),
+                .line(to: VectorPoint(normalizedRect.maxX, normalizedRect.maxY)),
+                .line(to: VectorPoint(normalizedRect.minX, normalizedRect.maxY)),
                 .close
             ], isClosed: true)
         case .square:
-            // FIXED: Pin square from exact start point and grow square in direction of cursor movement
-            // This ensures consistent behavior with rectangle tool - top-left corner stays pinned
             let dragDeltaX = currentLocation.x - startPoint.x
             let dragDeltaY = currentLocation.y - startPoint.y
-            
+
             // Use the larger absolute delta to maintain square proportions while following cursor direction
             let size = max(abs(dragDeltaX), abs(dragDeltaY))
-            
-            // Create square that grows from startPoint in the direction of cursor movement
-            let squareRect = CGRect(
-                x: startPoint.x,
-                y: startPoint.y,
-                width: dragDeltaX >= 0 ? size : -size,
-                height: dragDeltaY >= 0 ? size : -size
-            )
+            let signedSizeX = dragDeltaX >= 0 ? size : -size
+            let signedSizeY = dragDeltaY >= 0 ? size : -size
+
+            // Calculate square bounds
+            var squareRect: CGRect
+            if isOptionPressed {
+                // Option key: Draw from center
+                squareRect = CGRect(
+                    x: startPoint.x - signedSizeX,
+                    y: startPoint.y - signedSizeY,
+                    width: signedSizeX * 2,
+                    height: signedSizeY * 2
+                )
+            } else {
+                // Normal: Draw from corner
+                squareRect = CGRect(
+                    x: startPoint.x,
+                    y: startPoint.y,
+                    width: signedSizeX,
+                    height: signedSizeY
+                )
+            }
+
+            // Normalize the rectangle to ensure positive width/height
+            let normalizedRect = squareRect.standardized
+
             currentPath = VectorPath(elements: [
-                .move(to: VectorPoint(squareRect.minX, squareRect.minY)),
-                .line(to: VectorPoint(squareRect.maxX, squareRect.minY)),
-                .line(to: VectorPoint(squareRect.maxX, squareRect.maxY)),
-                .line(to: VectorPoint(squareRect.minX, squareRect.maxY)),
+                .move(to: VectorPoint(normalizedRect.minX, normalizedRect.minY)),
+                .line(to: VectorPoint(normalizedRect.maxX, normalizedRect.minY)),
+                .line(to: VectorPoint(normalizedRect.maxX, normalizedRect.maxY)),
+                .line(to: VectorPoint(normalizedRect.minX, normalizedRect.maxY)),
                 .close
             ], isClosed: true)
         case .roundedRectangle:
-            // FIXED: Pin rounded rectangle from start point like rectangle tool
-            let dragDeltaX = currentLocation.x - startPoint.x
-            let dragDeltaY = currentLocation.y - startPoint.y
-            let rect = CGRect(
-                x: startPoint.x,
-                y: startPoint.y,
-                width: dragDeltaX,
-                height: dragDeltaY
-            )
-            let normalizedRect = CGRect(
-                x: min(rect.minX, rect.maxX),
-                y: min(rect.minY, rect.maxY),
-                width: abs(rect.width),
-                height: abs(rect.height)
-            )
+            var width = currentLocation.x - startPoint.x
+            var height = currentLocation.y - startPoint.y
+
+            // Shift key: Constrain to 1:1 aspect ratio
+            if isShiftPressed {
+                let size = max(abs(width), abs(height))
+                width = width >= 0 ? size : -size
+                height = height >= 0 ? size : -size
+            }
+
+            // Calculate bounds
+            var rect: CGRect
+            if isOptionPressed {
+                // Option key: Draw from center
+                rect = CGRect(
+                    x: startPoint.x - width,
+                    y: startPoint.y - height,
+                    width: width * 2,
+                    height: height * 2
+                )
+            } else {
+                // Normal: Draw from corner
+                rect = CGRect(
+                    x: startPoint.x,
+                    y: startPoint.y,
+                    width: width,
+                    height: height
+                )
+            }
+
+            let normalizedRect = rect.standardized
             // Use 20pt radius for drawing preview (matches creation default)
             let cornerRadius: Double = 20.0
             currentPath = createRoundedRectPath(rect: normalizedRect, cornerRadius: cornerRadius)
@@ -164,12 +232,26 @@ extension DrawingCanvas {
             // FIXED: Pin pill from start point like rectangle tool
             let dragDeltaX = currentLocation.x - startPoint.x
             let dragDeltaY = currentLocation.y - startPoint.y
-            let rect = CGRect(
-                x: startPoint.x,
-                y: startPoint.y,
-                width: dragDeltaX,
-                height: dragDeltaY
-            )
+
+            // Calculate pill bounds
+            var rect: CGRect
+            if isOptionPressed {
+                // Option key: Draw from center
+                rect = CGRect(
+                    x: startPoint.x - dragDeltaX,
+                    y: startPoint.y - dragDeltaY,
+                    width: dragDeltaX * 2,
+                    height: dragDeltaY * 2
+                )
+            } else {
+                // Normal: Draw from corner
+                rect = CGRect(
+                    x: startPoint.x,
+                    y: startPoint.y,
+                    width: dragDeltaX,
+                    height: dragDeltaY
+                )
+            }
             let normalizedRect = CGRect(
                 x: min(rect.minX, rect.maxX),
                 y: min(rect.minY, rect.maxY),
@@ -179,42 +261,88 @@ extension DrawingCanvas {
             let cornerRadius = min(normalizedRect.width, normalizedRect.height) / 2 // Half of smallest dimension
             currentPath = createRoundedRectPath(rect: normalizedRect, cornerRadius: cornerRadius)
         case .circle:
-            // FIXED: Create perfect circle with 1:1 aspect ratio like square tool
             let dragDeltaX = currentLocation.x - startPoint.x
             let dragDeltaY = currentLocation.y - startPoint.y
-            
-            // Use the larger absolute delta to maintain circular proportions
+
+            // Circle is always 1:1 aspect ratio
             let size = max(abs(dragDeltaX), abs(dragDeltaY))
-            
-            // Create perfect circle that grows from startPoint in direction of cursor
-            let circleRect = CGRect(
-                x: startPoint.x,
-                y: startPoint.y,
-                width: dragDeltaX >= 0 ? size : -size,
-                height: dragDeltaY >= 0 ? size : -size
-            )
+            let signedSize = (dragDeltaX >= 0 && dragDeltaY >= 0) || (dragDeltaX < 0 && dragDeltaY < 0) ? size : -size
+
+            // Calculate circle bounds
+            var circleRect: CGRect
+            if isOptionPressed {
+                // Option key: Draw from center
+                circleRect = CGRect(
+                    x: startPoint.x - signedSize,
+                    y: startPoint.y - signedSize,
+                    width: signedSize * 2,
+                    height: signedSize * 2
+                )
+            } else {
+                // Normal: Draw from corner
+                circleRect = CGRect(
+                    x: startPoint.x,
+                    y: startPoint.y,
+                    width: dragDeltaX >= 0 ? size : -size,
+                    height: dragDeltaY >= 0 ? size : -size
+                )
+            }
             currentPath = createCirclePath(rect: circleRect)
         case .ellipse:
-            // FIXED: Pin ellipse from start point like rectangle tool
-            let dragDeltaX = currentLocation.x - startPoint.x
-            let dragDeltaY = currentLocation.y - startPoint.y
-            let rect = CGRect(
-                x: startPoint.x,
-                y: startPoint.y,
-                width: dragDeltaX,
-                height: dragDeltaY
-            )
+            var width = currentLocation.x - startPoint.x
+            var height = currentLocation.y - startPoint.y
+
+            // Shift key: Constrain to 1:1 aspect ratio (circle)
+            if isShiftPressed {
+                let size = max(abs(width), abs(height))
+                width = width >= 0 ? size : -size
+                height = height >= 0 ? size : -size
+            }
+
+            // Calculate ellipse bounds
+            var rect: CGRect
+            if isOptionPressed {
+                // Option key: Draw from center
+                rect = CGRect(
+                    x: startPoint.x - width,
+                    y: startPoint.y - height,
+                    width: width * 2,
+                    height: height * 2
+                )
+            } else {
+                // Normal: Draw from corner
+                rect = CGRect(
+                    x: startPoint.x,
+                    y: startPoint.y,
+                    width: width,
+                    height: height
+                )
+            }
             currentPath = createEllipsePath(rect: rect)
         case .oval:
             // FIXED: Pin oval from start point like rectangle tool
             let dragDeltaX = currentLocation.x - startPoint.x
             let dragDeltaY = currentLocation.y - startPoint.y
-            let rect = CGRect(
-                x: startPoint.x,
-                y: startPoint.y,
-                width: dragDeltaX,
-                height: dragDeltaY
-            )
+
+            // Calculate oval bounds
+            var rect: CGRect
+            if isOptionPressed {
+                // Option key: Draw from center
+                rect = CGRect(
+                    x: startPoint.x - dragDeltaX,
+                    y: startPoint.y - dragDeltaY,
+                    width: dragDeltaX * 2,
+                    height: dragDeltaY * 2
+                )
+            } else {
+                // Normal: Draw from corner
+                rect = CGRect(
+                    x: startPoint.x,
+                    y: startPoint.y,
+                    width: dragDeltaX,
+                    height: dragDeltaY
+                )
+            }
             // Normalize the rectangle to ensure proper oval construction
             let normalizedRect = CGRect(
                 x: min(rect.minX, rect.maxX),
@@ -228,12 +356,26 @@ extension DrawingCanvas {
             // FIXED: Pin egg from start point like rectangle tool
             let dragDeltaX = currentLocation.x - startPoint.x
             let dragDeltaY = currentLocation.y - startPoint.y
-            let rect = CGRect(
-                x: startPoint.x,
-                y: startPoint.y,
-                width: dragDeltaX,
-                height: dragDeltaY
-            )
+
+            // Calculate egg bounds
+            var rect: CGRect
+            if isOptionPressed {
+                // Option key: Draw from center
+                rect = CGRect(
+                    x: startPoint.x - dragDeltaX,
+                    y: startPoint.y - dragDeltaY,
+                    width: dragDeltaX * 2,
+                    height: dragDeltaY * 2
+                )
+            } else {
+                // Normal: Draw from corner
+                rect = CGRect(
+                    x: startPoint.x,
+                    y: startPoint.y,
+                    width: dragDeltaX,
+                    height: dragDeltaY
+                )
+            }
             // Normalize the rectangle to ensure proper egg construction
             let normalizedRect = CGRect(
                 x: min(rect.minX, rect.maxX),
@@ -244,16 +386,12 @@ extension DrawingCanvas {
             // Use the egg path function that creates a true egg shape
             currentPath = createEggPath(rect: normalizedRect)
         case .equilateralTriangle:
-            // FIXED: Use square tool's pinning approach to prevent drift + make truly equilateral
-            let dragDeltaX = currentLocation.x - startPoint.x
-            let dragDeltaY = currentLocation.y - startPoint.y
-            
-            // Use the larger absolute delta to maintain equilateral proportions
-            let size = max(abs(dragDeltaX), abs(dragDeltaY))
-            
-            // Create equilateral triangle that grows from startPoint in direction of cursor
-            // For equilateral triangle: height = side * sqrt(3)/2, so side = height * 2/sqrt(3)
-            let triangleHeight = dragDeltaY >= 0 ? size : -size
+            let width = currentLocation.x - startPoint.x
+            let height = currentLocation.y - startPoint.y
+
+            // Equilateral triangle always maintains proportions
+            let size = max(abs(width), abs(height))
+            let triangleHeight = height >= 0 ? size : -size
             // 🚀 PHASE 11: GPU-accelerated square root calculation
             let sqrt3: Float
             let metalEngine = MetalComputeEngine.shared
@@ -265,27 +403,45 @@ extension DrawingCanvas {
                 sqrt3 = Float(sqrt(3.0))
             }
             let triangleWidth = CGFloat(abs(triangleHeight) * 2.0 / Double(sqrt3)) // Convert height to equilateral base width
-            
-            // Pin triangle from start point (upper left corner of bounding box)
-            let triangleRect = CGRect(
-                x: startPoint.x,
-                y: startPoint.y,
-                width: dragDeltaX >= 0 ? triangleWidth : -triangleWidth,
-                height: triangleHeight
-            )
-            
+
+            // Calculate triangle bounds
+            var triangleRect: CGRect
+            if isOptionPressed {
+                // Option key: Draw from center
+                triangleRect = CGRect(
+                    x: startPoint.x - (width >= 0 ? triangleWidth : -triangleWidth) / 2,
+                    y: startPoint.y - triangleHeight / 2,
+                    width: width >= 0 ? triangleWidth : -triangleWidth,
+                    height: triangleHeight
+                )
+            } else {
+                // Normal: Draw from corner - cursor at bottom-right
+                // The rectangle should be positioned so cursor is at bottom-right corner
+                triangleRect = CGRect(
+                    x: currentLocation.x - (width >= 0 ? triangleWidth : -triangleWidth),
+                    y: currentLocation.y - triangleHeight,
+                    width: width >= 0 ? triangleWidth : -triangleWidth,
+                    height: triangleHeight
+                )
+            }
+
             // Create true equilateral triangle with equal side lengths
-            let centerX = triangleRect.midX
-            let topY = triangleRect.minY
-            let bottomY = triangleRect.maxY
-            let baseHalfWidth = triangleWidth / 2.0
-            
-            currentPath = VectorPath(elements: [
-                .move(to: VectorPoint(centerX, topY)),
-                .line(to: VectorPoint(centerX - baseHalfWidth, bottomY)),
-                .line(to: VectorPoint(centerX + baseHalfWidth, bottomY)),
-                .close
-            ], isClosed: true)
+            // Use grid-snapping version if snap to grid is enabled
+            if document.snapToGrid {
+                currentPath = createEquilateralTrianglePathWithGridSnapping(rect: triangleRect, gridSpacing: document.settings.gridSpacing, unit: document.settings.unit)
+            } else {
+                let centerX = triangleRect.midX
+                let topY = triangleRect.minY
+                let bottomY = triangleRect.maxY
+                let baseHalfWidth = abs(triangleWidth) / 2.0
+
+                currentPath = VectorPath(elements: [
+                    .move(to: VectorPoint(centerX, topY)),
+                    .line(to: VectorPoint(centerX - baseHalfWidth, bottomY)),
+                    .line(to: VectorPoint(centerX + baseHalfWidth, bottomY)),
+                    .close
+                ], isClosed: true)
+            }
             
             // DEBUG: Add visual bounding box to verify no drift (pin upper left corner)
             let boundingBox = VectorPath(elements: [
@@ -300,12 +456,28 @@ extension DrawingCanvas {
             tempBoundingBoxPath = boundingBox
         case .rightTriangle:
             // Use rectangle pattern to avoid Y inversion issues
-            let rect = CGRect(
-                x: min(startPoint.x, currentLocation.x),
-                y: min(startPoint.y, currentLocation.y),
-                width: abs(currentLocation.x - startPoint.x),
-                height: abs(currentLocation.y - startPoint.y)
-            )
+            let dragDeltaX = currentLocation.x - startPoint.x
+            let dragDeltaY = currentLocation.y - startPoint.y
+
+            // Calculate right triangle bounds
+            var rect: CGRect
+            if isOptionPressed {
+                // Option key: Draw from center
+                rect = CGRect(
+                    x: startPoint.x - abs(dragDeltaX),
+                    y: startPoint.y - abs(dragDeltaY),
+                    width: abs(dragDeltaX) * 2,
+                    height: abs(dragDeltaY) * 2
+                )
+            } else {
+                // Normal: Draw from corner
+                rect = CGRect(
+                    x: min(startPoint.x, currentLocation.x),
+                    y: min(startPoint.y, currentLocation.y),
+                    width: abs(currentLocation.x - startPoint.x),
+                    height: abs(currentLocation.y - startPoint.y)
+                )
+            }
             // Determine orientation based on BOTH X and Y directions
             let dragX = currentLocation.x >= startPoint.x ? "RIGHT" : "LEFT"
             let dragY = currentLocation.y >= startPoint.y ? "DOWN" : "UP"
@@ -316,29 +488,66 @@ extension DrawingCanvas {
             // FIXED: Pin triangle from start point like rectangle tool
             let dragDeltaX = currentLocation.x - startPoint.x
             let dragDeltaY = currentLocation.y - startPoint.y
-            let rect = CGRect(
-                x: startPoint.x,
-                y: startPoint.y,
-                width: dragDeltaX,
-                height: dragDeltaY
-            )
+
+            // Calculate acute triangle bounds
+            var rect: CGRect
+            if isOptionPressed {
+                // Option key: Draw from center
+                rect = CGRect(
+                    x: startPoint.x - dragDeltaX,
+                    y: startPoint.y - dragDeltaY,
+                    width: dragDeltaX * 2,
+                    height: dragDeltaY * 2
+                )
+            } else {
+                // Normal: Draw from corner
+                rect = CGRect(
+                    x: startPoint.x,
+                    y: startPoint.y,
+                    width: dragDeltaX,
+                    height: dragDeltaY
+                )
+            }
             currentPath = createAcuteTrianglePath(rect: rect)
         case .isoscelesTriangle:
             // FIXED: Pin triangle from start point like rectangle tool
             let dragDeltaX = currentLocation.x - startPoint.x
             let dragDeltaY = currentLocation.y - startPoint.y
-            let rect = CGRect(
-                x: startPoint.x,
-                y: startPoint.y,
-                width: dragDeltaX,
-                height: dragDeltaY
-            )
+
+            // Calculate isosceles triangle bounds
+            var rect: CGRect
+            if isOptionPressed {
+                // Option key: Draw from center
+                rect = CGRect(
+                    x: startPoint.x - dragDeltaX,
+                    y: startPoint.y - dragDeltaY,
+                    width: dragDeltaX * 2,
+                    height: dragDeltaY * 2
+                )
+            } else {
+                // Normal: Draw from corner
+                rect = CGRect(
+                    x: startPoint.x,
+                    y: startPoint.y,
+                    width: dragDeltaX,
+                    height: dragDeltaY
+                )
+            }
             currentPath = createIsoscelesTrianglePath(rect: rect)
         case .cone:
             // Build cone using reference proportions from coneshape.inkpen.json
             let dx = currentLocation.x - startPoint.x
             let dy = currentLocation.y - startPoint.y
-            let raw = CGRect(x: startPoint.x, y: startPoint.y, width: dx, height: dy)
+
+            // Calculate cone bounds
+            var raw: CGRect
+            if isOptionPressed {
+                // Option key: Draw from center
+                raw = CGRect(x: startPoint.x - dx, y: startPoint.y - dy, width: dx * 2, height: dy * 2)
+            } else {
+                // Normal: Draw from corner
+                raw = CGRect(x: startPoint.x, y: startPoint.y, width: dx, height: dy)
+            }
             let r = CGRect(x: min(raw.minX, raw.maxX), y: min(raw.minY, raw.maxY), width: abs(raw.width), height: abs(raw.height))
 
             let apex = VectorPoint(r.midX, r.minY)
@@ -372,12 +581,31 @@ extension DrawingCanvas {
                 .close
             ], isClosed: true)
         case .star:
-            let center = CGPoint(
-                x: (startPoint.x + currentLocation.x) / 2,
-                y: (startPoint.y + currentLocation.y) / 2
-            )
-            // 🚀 PHASE 12: GPU-accelerated distance calculation for radius
-            let outerRadius = calculateDistanceWithFallback(from: startPoint, to: currentLocation) / 2.0
+            var width = currentLocation.x - startPoint.x
+            var height = currentLocation.y - startPoint.y
+
+            // Shift key: Constrain to 1:1 aspect ratio
+            if isShiftPressed {
+                let size = max(abs(width), abs(height))
+                width = width >= 0 ? size : -size
+                height = height >= 0 ? size : -size
+            }
+
+            // Calculate star center and radius
+            let center: CGPoint
+            let outerRadius: Float
+            if isOptionPressed {
+                // Option key: Draw from center
+                center = startPoint
+                outerRadius = Float(max(abs(width), abs(height)))
+            } else {
+                // Normal: Draw from corner (center is between start and current)
+                center = CGPoint(
+                    x: startPoint.x + width / 2,
+                    y: startPoint.y + height / 2
+                )
+                outerRadius = Float(max(abs(width), abs(height)) / 2.0)
+            }
             // Determine star points and inner radius ratio based on selected variant in tool group
             let selectedVariant = ToolGroupManager.shared.selectedVariant
             let points: Int
@@ -400,18 +628,62 @@ extension DrawingCanvas {
                 innerRatio = 0.40
             }
             let innerRadius = Double(outerRadius) * innerRatio
-            currentPath = createStarPath(center: center, outerRadius: Double(outerRadius), innerRadius: innerRadius, points: points)
+            // Snap center to grid if enabled, but keep shape regular
+            let finalCenter: CGPoint
+            if document.snapToGrid {
+                // Calculate actual grid spacing in points
+                let baseSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit
+                let spacingMultiplier: CGFloat = {
+                    switch document.settings.unit {
+                    case .pixels, .points:
+                        return 25.0
+                    case .millimeters:
+                        return 1.0
+                    case .inches:
+                        return 1.0
+                    case .centimeters:
+                        return 10.0
+                    case .picas:
+                        return 1.0
+                    }
+                }()
+                let actualGridSpacing = baseSpacing * spacingMultiplier
+
+                // Snap center point to grid
+                let snappedX = round(center.x / actualGridSpacing) * actualGridSpacing
+                let snappedY = round(center.y / actualGridSpacing) * actualGridSpacing
+                finalCenter = CGPoint(x: snappedX, y: snappedY)
+            } else {
+                finalCenter = center
+            }
+            currentPath = createStarPath(center: finalCenter, outerRadius: Double(outerRadius), innerRadius: innerRadius, points: points)
 		case .polygon:
 			// Pin from start like rectangle/square and use a square bounds to keep the polygon regular
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
-			let rect = CGRect(
-				x: startPoint.x,
-				y: startPoint.y,
-				width: dragDeltaX >= 0 ? size : -size,
-				height: dragDeltaY >= 0 ? size : -size
-			)
+
+			// Calculate polygon bounds
+			var rect: CGRect
+			if isOptionPressed {
+				// Option key: Draw from center
+				let signedSize = dragDeltaX >= 0 && dragDeltaY >= 0 ? size : -size
+				rect = CGRect(
+					x: startPoint.x - signedSize,
+					y: startPoint.y - signedSize,
+					width: signedSize * 2,
+					height: signedSize * 2
+				)
+			} else {
+				// Normal: Draw from corner
+				rect = CGRect(
+					x: startPoint.x,
+					y: startPoint.y,
+					width: dragDeltaX >= 0 ? size : -size,
+					height: dragDeltaY >= 0 ? size : -size
+				)
+			}
+
 			let normalizedRect = CGRect(
 				x: min(rect.minX, rect.maxX),
 				y: min(rect.minY, rect.maxY),
@@ -420,25 +692,61 @@ extension DrawingCanvas {
 			)
 			let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
 			let radius = Double(min(normalizedRect.width, normalizedRect.height) / 2.0)
-			currentPath = createPolygonPath(center: center, radius: radius, sides: 6) // Default hexagon
-			let boundingBox = VectorPath(elements: [
-				.move(to: VectorPoint(normalizedRect.minX, normalizedRect.minY)),
-				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.minY)),
-				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.maxY)),
-				.line(to: VectorPoint(normalizedRect.minX, normalizedRect.maxY)),
-				.close
-			], isClosed: false)
-			tempBoundingBoxPath = boundingBox
+			// Snap center to grid if enabled, but keep shape regular
+			let finalCenter: CGPoint
+			if document.snapToGrid {
+				// Calculate actual grid spacing in points
+				let baseSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit
+				let spacingMultiplier: CGFloat = {
+					switch document.settings.unit {
+					case .pixels, .points:
+						return 25.0
+					case .millimeters:
+						return 1.0
+					case .inches:
+						return 1.0
+					case .centimeters:
+						return 10.0
+					case .picas:
+						return 1.0
+					}
+				}()
+				let actualGridSpacing = baseSpacing * spacingMultiplier
+
+				// Snap center point to grid
+				let snappedX = round(center.x / actualGridSpacing) * actualGridSpacing
+				let snappedY = round(center.y / actualGridSpacing) * actualGridSpacing
+				finalCenter = CGPoint(x: snappedX, y: snappedY)
+			} else {
+				finalCenter = center
+			}
+			currentPath = createPolygonPath(center: finalCenter, radius: radius, sides: 6) // Default hexagon
+			// Polygon bounding box handled in ViewComposition with blue color
 		case .pentagon:
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
-			let rect = CGRect(
-				x: startPoint.x,
-				y: startPoint.y,
-				width: dragDeltaX >= 0 ? size : -size,
-				height: dragDeltaY >= 0 ? size : -size
-			)
+
+			// Calculate pentagon bounds
+			var rect: CGRect
+			if isOptionPressed {
+				// Option key: Draw from center
+				let signedSize = dragDeltaX >= 0 && dragDeltaY >= 0 ? size : -size
+				rect = CGRect(
+					x: startPoint.x - signedSize,
+					y: startPoint.y - signedSize,
+					width: signedSize * 2,
+					height: signedSize * 2
+				)
+			} else {
+				// Normal: Draw from corner
+				rect = CGRect(
+					x: startPoint.x,
+					y: startPoint.y,
+					width: dragDeltaX >= 0 ? size : -size,
+					height: dragDeltaY >= 0 ? size : -size
+				)
+			}
 			let normalizedRect = CGRect(
 				x: min(rect.minX, rect.maxX),
 				y: min(rect.minY, rect.maxY),
@@ -447,25 +755,61 @@ extension DrawingCanvas {
 			)
 			let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
 			let radius = Double(min(normalizedRect.width, normalizedRect.height) / 2.0)
-			currentPath = createPolygonPath(center: center, radius: radius, sides: 5)
-			let boundingBox = VectorPath(elements: [
-				.move(to: VectorPoint(normalizedRect.minX, normalizedRect.minY)),
-				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.minY)),
-				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.maxY)),
-				.line(to: VectorPoint(normalizedRect.minX, normalizedRect.maxY)),
-				.close
-			], isClosed: false)
-			tempBoundingBoxPath = boundingBox
+			// Snap center to grid if enabled, but keep shape regular
+			let finalCenter: CGPoint
+			if document.snapToGrid {
+				// Calculate actual grid spacing in points
+				let baseSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit
+				let spacingMultiplier: CGFloat = {
+					switch document.settings.unit {
+					case .pixels, .points:
+						return 25.0
+					case .millimeters:
+						return 1.0
+					case .inches:
+						return 1.0
+					case .centimeters:
+						return 10.0
+					case .picas:
+						return 1.0
+					}
+				}()
+				let actualGridSpacing = baseSpacing * spacingMultiplier
+
+				// Snap center point to grid
+				let snappedX = round(center.x / actualGridSpacing) * actualGridSpacing
+				let snappedY = round(center.y / actualGridSpacing) * actualGridSpacing
+				finalCenter = CGPoint(x: snappedX, y: snappedY)
+			} else {
+				finalCenter = center
+			}
+			currentPath = createPolygonPath(center: finalCenter, radius: radius, sides: 5)
+			// Pentagon bounding box handled in ViewComposition with blue color
 		case .hexagon:
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
-			let rect = CGRect(
-				x: startPoint.x,
-				y: startPoint.y,
-				width: dragDeltaX >= 0 ? size : -size,
-				height: dragDeltaY >= 0 ? size : -size
-			)
+
+			// Calculate hexagon bounds
+			var rect: CGRect
+			if isOptionPressed {
+				// Option key: Draw from center
+				let signedSize = dragDeltaX >= 0 && dragDeltaY >= 0 ? size : -size
+				rect = CGRect(
+					x: startPoint.x - signedSize,
+					y: startPoint.y - signedSize,
+					width: signedSize * 2,
+					height: signedSize * 2
+				)
+			} else {
+				// Normal: Draw from corner
+				rect = CGRect(
+					x: startPoint.x,
+					y: startPoint.y,
+					width: dragDeltaX >= 0 ? size : -size,
+					height: dragDeltaY >= 0 ? size : -size
+				)
+			}
 			let normalizedRect = CGRect(
 				x: min(rect.minX, rect.maxX),
 				y: min(rect.minY, rect.maxY),
@@ -474,25 +818,61 @@ extension DrawingCanvas {
 			)
 			let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
 			let radius = Double(min(normalizedRect.width, normalizedRect.height) / 2.0)
-			currentPath = createPolygonPath(center: center, radius: radius, sides: 6)
-			let boundingBox = VectorPath(elements: [
-				.move(to: VectorPoint(normalizedRect.minX, normalizedRect.minY)),
-				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.minY)),
-				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.maxY)),
-				.line(to: VectorPoint(normalizedRect.minX, normalizedRect.maxY)),
-				.close
-			], isClosed: false)
-			tempBoundingBoxPath = boundingBox
+			// Snap center to grid if enabled, but keep shape regular
+			let finalCenter: CGPoint
+			if document.snapToGrid {
+				// Calculate actual grid spacing in points
+				let baseSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit
+				let spacingMultiplier: CGFloat = {
+					switch document.settings.unit {
+					case .pixels, .points:
+						return 25.0
+					case .millimeters:
+						return 1.0
+					case .inches:
+						return 1.0
+					case .centimeters:
+						return 10.0
+					case .picas:
+						return 1.0
+					}
+				}()
+				let actualGridSpacing = baseSpacing * spacingMultiplier
+
+				// Snap center point to grid
+				let snappedX = round(center.x / actualGridSpacing) * actualGridSpacing
+				let snappedY = round(center.y / actualGridSpacing) * actualGridSpacing
+				finalCenter = CGPoint(x: snappedX, y: snappedY)
+			} else {
+				finalCenter = center
+			}
+			currentPath = createPolygonPath(center: finalCenter, radius: radius, sides: 6)
+			// Hexagon bounding box handled in ViewComposition with blue color
 		case .heptagon:
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
-			let rect = CGRect(
-				x: startPoint.x,
-				y: startPoint.y,
-				width: dragDeltaX >= 0 ? size : -size,
-				height: dragDeltaY >= 0 ? size : -size
-			)
+
+			// Calculate heptagon bounds
+			var rect: CGRect
+			if isOptionPressed {
+				// Option key: Draw from center
+				let signedSize = dragDeltaX >= 0 && dragDeltaY >= 0 ? size : -size
+				rect = CGRect(
+					x: startPoint.x - signedSize,
+					y: startPoint.y - signedSize,
+					width: signedSize * 2,
+					height: signedSize * 2
+				)
+			} else {
+				// Normal: Draw from corner
+				rect = CGRect(
+					x: startPoint.x,
+					y: startPoint.y,
+					width: dragDeltaX >= 0 ? size : -size,
+					height: dragDeltaY >= 0 ? size : -size
+				)
+			}
 			let normalizedRect = CGRect(
 				x: min(rect.minX, rect.maxX),
 				y: min(rect.minY, rect.maxY),
@@ -501,25 +881,61 @@ extension DrawingCanvas {
 			)
 			let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
 			let radius = Double(min(normalizedRect.width, normalizedRect.height) / 2.0)
-			currentPath = createPolygonPath(center: center, radius: radius, sides: 7)
-			let boundingBox = VectorPath(elements: [
-				.move(to: VectorPoint(normalizedRect.minX, normalizedRect.minY)),
-				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.minY)),
-				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.maxY)),
-				.line(to: VectorPoint(normalizedRect.minX, normalizedRect.maxY)),
-				.close
-			], isClosed: false)
-			tempBoundingBoxPath = boundingBox
+			// Snap center to grid if enabled, but keep shape regular
+			let finalCenter: CGPoint
+			if document.snapToGrid {
+				// Calculate actual grid spacing in points
+				let baseSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit
+				let spacingMultiplier: CGFloat = {
+					switch document.settings.unit {
+					case .pixels, .points:
+						return 25.0
+					case .millimeters:
+						return 1.0
+					case .inches:
+						return 1.0
+					case .centimeters:
+						return 10.0
+					case .picas:
+						return 1.0
+					}
+				}()
+				let actualGridSpacing = baseSpacing * spacingMultiplier
+
+				// Snap center point to grid
+				let snappedX = round(center.x / actualGridSpacing) * actualGridSpacing
+				let snappedY = round(center.y / actualGridSpacing) * actualGridSpacing
+				finalCenter = CGPoint(x: snappedX, y: snappedY)
+			} else {
+				finalCenter = center
+			}
+			currentPath = createPolygonPath(center: finalCenter, radius: radius, sides: 7)
+			// Heptagon bounding box handled in ViewComposition with blue color
 		case .octagon:
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
-			let rect = CGRect(
-				x: startPoint.x,
-				y: startPoint.y,
-				width: dragDeltaX >= 0 ? size : -size,
-				height: dragDeltaY >= 0 ? size : -size
-			)
+
+			// Calculate octagon bounds
+			var rect: CGRect
+			if isOptionPressed {
+				// Option key: Draw from center
+				let signedSize = dragDeltaX >= 0 && dragDeltaY >= 0 ? size : -size
+				rect = CGRect(
+					x: startPoint.x - signedSize,
+					y: startPoint.y - signedSize,
+					width: signedSize * 2,
+					height: signedSize * 2
+				)
+			} else {
+				// Normal: Draw from corner
+				rect = CGRect(
+					x: startPoint.x,
+					y: startPoint.y,
+					width: dragDeltaX >= 0 ? size : -size,
+					height: dragDeltaY >= 0 ? size : -size
+				)
+			}
 			let normalizedRect = CGRect(
 				x: min(rect.minX, rect.maxX),
 				y: min(rect.minY, rect.maxY),
@@ -528,25 +944,61 @@ extension DrawingCanvas {
 			)
 			let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
 			let radius = Double(min(normalizedRect.width, normalizedRect.height) / 2.0)
-			currentPath = createPolygonPath(center: center, radius: radius, sides: 8)
-			let boundingBox = VectorPath(elements: [
-				.move(to: VectorPoint(normalizedRect.minX, normalizedRect.minY)),
-				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.minY)),
-				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.maxY)),
-				.line(to: VectorPoint(normalizedRect.minX, normalizedRect.maxY)),
-				.close
-			], isClosed: false)
-			tempBoundingBoxPath = boundingBox
+			// Snap center to grid if enabled, but keep shape regular
+			let finalCenter: CGPoint
+			if document.snapToGrid {
+				// Calculate actual grid spacing in points
+				let baseSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit
+				let spacingMultiplier: CGFloat = {
+					switch document.settings.unit {
+					case .pixels, .points:
+						return 25.0
+					case .millimeters:
+						return 1.0
+					case .inches:
+						return 1.0
+					case .centimeters:
+						return 10.0
+					case .picas:
+						return 1.0
+					}
+				}()
+				let actualGridSpacing = baseSpacing * spacingMultiplier
+
+				// Snap center point to grid
+				let snappedX = round(center.x / actualGridSpacing) * actualGridSpacing
+				let snappedY = round(center.y / actualGridSpacing) * actualGridSpacing
+				finalCenter = CGPoint(x: snappedX, y: snappedY)
+			} else {
+				finalCenter = center
+			}
+			currentPath = createPolygonPath(center: finalCenter, radius: radius, sides: 8)
+			// Octagon bounding box handled in ViewComposition with blue color
 		case .nonagon:
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
-			let rect = CGRect(
-				x: startPoint.x,
-				y: startPoint.y,
-				width: dragDeltaX >= 0 ? size : -size,
-				height: dragDeltaY >= 0 ? size : -size
-			)
+
+			// Calculate nonagon bounds
+			var rect: CGRect
+			if isOptionPressed {
+				// Option key: Draw from center
+				let signedSize = dragDeltaX >= 0 && dragDeltaY >= 0 ? size : -size
+				rect = CGRect(
+					x: startPoint.x - signedSize,
+					y: startPoint.y - signedSize,
+					width: signedSize * 2,
+					height: signedSize * 2
+				)
+			} else {
+				// Normal: Draw from corner
+				rect = CGRect(
+					x: startPoint.x,
+					y: startPoint.y,
+					width: dragDeltaX >= 0 ? size : -size,
+					height: dragDeltaY >= 0 ? size : -size
+				)
+			}
 			let normalizedRect = CGRect(
 				x: min(rect.minX, rect.maxX),
 				y: min(rect.minY, rect.maxY),
@@ -555,15 +1007,36 @@ extension DrawingCanvas {
 			)
 			let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
 			let radius = Double(min(normalizedRect.width, normalizedRect.height) / 2.0)
-			currentPath = createPolygonPath(center: center, radius: radius, sides: 9)
-			let boundingBox = VectorPath(elements: [
-				.move(to: VectorPoint(normalizedRect.minX, normalizedRect.minY)),
-				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.minY)),
-				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.maxY)),
-				.line(to: VectorPoint(normalizedRect.minX, normalizedRect.maxY)),
-				.close
-			], isClosed: false)
-			tempBoundingBoxPath = boundingBox
+			// Snap center to grid if enabled, but keep shape regular
+			let finalCenter: CGPoint
+			if document.snapToGrid {
+				// Calculate actual grid spacing in points
+				let baseSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit
+				let spacingMultiplier: CGFloat = {
+					switch document.settings.unit {
+					case .pixels, .points:
+						return 25.0
+					case .millimeters:
+						return 1.0
+					case .inches:
+						return 1.0
+					case .centimeters:
+						return 10.0
+					case .picas:
+						return 1.0
+					}
+				}()
+				let actualGridSpacing = baseSpacing * spacingMultiplier
+
+				// Snap center point to grid
+				let snappedX = round(center.x / actualGridSpacing) * actualGridSpacing
+				let snappedY = round(center.y / actualGridSpacing) * actualGridSpacing
+				finalCenter = CGPoint(x: snappedX, y: snappedY)
+			} else {
+				finalCenter = center
+			}
+			currentPath = createPolygonPath(center: finalCenter, radius: radius, sides: 9)
+			// Nonagon bounding box handled in ViewComposition with blue color
         default:
             break
         }

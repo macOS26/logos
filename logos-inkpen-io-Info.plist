@@ -8,7 +8,7 @@
 			<key>CFBundleTypeIconFile</key>
 			<string>apple</string>
 			<key>CFBundleTypeIconSystemGenerated</key>
-			<integer>1</integer>
+			<true/>
 			<key>CFBundleTypeName</key>
 			<string>Ink Pen Document</string>
 			<key>CFBundleTypeRole</key>
@@ -17,7 +17,7 @@
 			<string>Default</string>
 			<key>LSItemContentTypes</key>
 			<array>
-				<string>com.toddbruss.logos-inkpen-io.document</string>
+				<string>io.logos.logos-inkpen-io.document</string>
 			</array>
 			<key>NSDocumentClass</key>
 			<string>NSDocument</string>
@@ -26,7 +26,7 @@
 			<key>CFBundleTypeIconFile</key>
 			<string>apple</string>
 			<key>CFBundleTypeIconSystemGenerated</key>
-			<integer>1</integer>
+			<true/>
 			<key>CFBundleTypeName</key>
 			<string>SVG Document</string>
 			<key>CFBundleTypeRole</key>
@@ -51,8 +51,10 @@
 			</array>
 			<key>UTTypeDescription</key>
 			<string>Ink Pen Document</string>
+			<key>UTTypeIcons</key>
+			<dict/>
 			<key>UTTypeIdentifier</key>
-			<string>com.toddbruss.logos-inkpen-io.document</string>
+			<string>io.logos.logos-inkpen-io.document</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>
@@ -66,14 +68,12 @@
 			</dict>
 		</dict>
 		<dict>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>public.data</string>
-			</array>
 			<key>UTTypeDescription</key>
 			<string>Draggable Vector Object</string>
+			<key>UTTypeIcons</key>
+			<dict/>
 			<key>UTTypeIdentifier</key>
-			<string>com.toddbruss.logos-inkpen-io.draggableVectorObject</string>
+			<string>io.logos.logos-inkpen-io.draggableVectorObject</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>

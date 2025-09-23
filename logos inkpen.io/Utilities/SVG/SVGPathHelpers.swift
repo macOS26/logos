@@ -6,7 +6,7 @@
 //  Extracted from SVGParser.swift for better organization
 //
 
-import Foundation
+import SwiftUI
 
 extension SVGParser {
     

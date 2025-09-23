@@ -5,8 +5,8 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import Foundation
 import SwiftUI
+import Combine
 
 // MARK: - Pantone Library Structure
 struct PantoneLibraryColor: Codable, Hashable {
@@ -35,12 +35,6 @@ struct PantoneLibraryColor: Codable, Hashable {
     var color: Color {
         rgbEquivalent.color
     }
-    
-    // Convert to SPOTColor for compatibility
-    var spotColor: SPOTColor {
-        SPOTColor(number: pantone, name: name, rgbEquivalent: rgbEquivalent, cmykEquivalent: cmykEquivalent)
-    }
-    
     // Helper function to convert hex to RGB
     static func hexToRGB(_ hex: String) -> RGBColor {
         var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -79,15 +73,6 @@ struct PantoneLibraryColor: Codable, Hashable {
         
         // Weighted distance calculation (hue is most important for perceptual matching)
         return hueDiff * 0.5 + satDiff * 100 * 0.3 + briDiff * 100 * 0.2
-    }
-    
-    func distanceFrom(rgb: RGBColor) -> Double {
-        let rDiff = abs(rgbEquivalent.red - rgb.red)
-        let gDiff = abs(rgbEquivalent.green - rgb.green)
-        let bDiff = abs(rgbEquivalent.blue - rgb.blue)
-        
-        // Euclidean distance in RGB space
-        return sqrt(rDiff * rDiff + gDiff * gDiff + bDiff * bDiff)
     }
 }
 
@@ -140,26 +125,23 @@ class PantoneLibrary: ObservableObject {
         return closestColor
     }
     
-    func findClosestMatch(to rgb: RGBColor) -> PantoneLibraryColor? {
-        guard !allColors.isEmpty else { return nil }
-        
-        var closestColor = allColors[0]
-        var smallestDistance = Double.greatestFiniteMagnitude
-        
-        for pantoneColor in allColors {
-            let distance = pantoneColor.distanceFrom(rgb: rgb)
-            if distance < smallestDistance {
-                smallestDistance = distance
-                closestColor = pantoneColor
-            }
-        }
-        
-        return closestColor
-    }
-    
     // Search by Pantone number or name
     func searchColors(query: String) -> [PantoneLibraryColor] {
-        let lowercaseQuery = query.lowercased()
+        let lowercaseQuery = query.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // First, check for exact match (starts with the query)
+        let exactMatches = allColors.filter { color in
+            color.pantone.lowercased().starts(with: lowercaseQuery) ||
+            color.pantone.lowercased().starts(with: lowercaseQuery + " c") ||
+            color.pantone.lowercased().starts(with: lowercaseQuery + "-c")
+        }
+
+        // If we found exact matches, return them
+        if !exactMatches.isEmpty {
+            return exactMatches
+        }
+
+        // Otherwise, fall back to contains search
         return allColors.filter { color in
             color.pantone.lowercased().contains(lowercaseQuery) ||
             color.name.lowercased().contains(lowercaseQuery)

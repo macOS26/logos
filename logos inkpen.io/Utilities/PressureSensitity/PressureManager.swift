@@ -5,9 +5,8 @@
 //  Manages pressure detection and fallback simulation
 //
 
-import Foundation
-import AppKit
 import SwiftUI
+import Combine
 
 /// Manages pressure detection with smart fallback to simulation
 class PressureManager: ObservableObject {

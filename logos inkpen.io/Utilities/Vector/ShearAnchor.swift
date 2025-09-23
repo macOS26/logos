@@ -5,7 +5,7 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import Foundation
+import SwiftUI
 
 enum ShearAnchor: String, CaseIterable, Codable {
     case center = "Center"

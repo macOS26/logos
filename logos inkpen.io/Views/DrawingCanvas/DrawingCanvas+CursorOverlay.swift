@@ -1,6 +1,5 @@
 import SwiftUI
 
-#if os(macOS)
 import AppKit
 
 /// SwiftUI wrapper that installs an AppKit cursor rect overlay to eliminate cursor flicker
@@ -211,19 +210,17 @@ private final class CursorOverlayNSView: NSView {
     }
 }
 
-#else
 
 // No-op on non-macOS platforms
-struct CanvasCursorOverlayView: View {
-    let isHovering: Bool
-    let currentTool: DrawingTool
-    let isPanActive: Bool
-    let zoomLevel: CGFloat
-    let canvasOffset: CGPoint
+//struct CanvasCursorOverlayView: View {
+//    let isHovering: Bool
+//    let currentTool: DrawingTool
+//    let isPanActive: Bool
+//    let zoomLevel: CGFloat
+//    let canvasOffset: CGPoint
+//
+//    var body: some View { Color.clear.opacity(0) }
+//}
 
-    var body: some View { Color.clear.opacity(0) }
-}
-
-#endif
 
 

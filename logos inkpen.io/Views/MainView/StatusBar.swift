@@ -5,7 +5,6 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import Foundation
 import SwiftUI
 
 struct StatusBar: View {
@@ -46,9 +45,9 @@ struct StatusBar: View {
                 } else {
                     let totalSelected = document.selectedObjectIDs.count
                     
-                    // Show selection count and dimensions on one line
+                    // Show selection count and dimensions on one line with precision
                     if let bounds = getSelectionBounds() {
-                        Text("\(totalSelected) selected  •  W: \(formatDimension(bounds.width))pt H: \(formatDimension(bounds.height))pt")
+                        Text("\(totalSelected) selected  •  W: \(formatPreciseDimension(bounds.width))pt H: \(formatPreciseDimension(bounds.height))pt")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     } else {
@@ -83,13 +82,38 @@ struct StatusBar: View {
         )
     }
     
-    /// Format dimension values to show decimals only when needed
+    /// Format dimension values to show up to 5 decimal places
     private func formatDimension(_ value: Double) -> String {
-        if value == floor(value) {
-            return String(format: "%.0f", value)  // Show as integer if no decimal
-        } else {
-            return String(format: "%.1f", value)  // Show one decimal place
+        // Always show up to 5 decimal places, but trim trailing zeros
+        let formatted = String(format: "%.5f", value)
+        
+        // Remove trailing zeros and decimal point if not needed
+        if formatted.contains(".") {
+            var trimmed = formatted.trimmingCharacters(in: CharacterSet(charactersIn: "0"))
+            if trimmed.hasSuffix(".") {
+                trimmed = String(trimmed.dropLast())
+            }
+            return trimmed
         }
+        
+        return formatted
+    }
+    
+    /// Format precise dimension values in points (always show decimals)
+    private func formatPreciseDimension(_ value: CGFloat) -> String {
+        // Always show up to 5 decimal places for points, trim trailing zeros
+        let formatted = String(format: "%.5f", value)
+        
+        // Remove trailing zeros but keep at least one decimal
+        if formatted.contains(".") {
+            var trimmed = formatted.trimmingCharacters(in: CharacterSet(charactersIn: "0"))
+            if trimmed.hasSuffix(".") {
+                trimmed = String(trimmed.dropLast())
+            }
+            return trimmed
+        }
+        
+        return formatted
     }
     
     /// Calculate combined bounds of all selected objects

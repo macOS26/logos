@@ -5,9 +5,7 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import Foundation
 import SwiftUI
-import CoreGraphics
 
 /// Professional import result with comprehensive metadata
 struct VectorImportResult: Identifiable {
@@ -23,6 +21,7 @@ struct VectorImportResult: Identifiable {
 struct VectorImportMetadata {
     let originalFormat: VectorFileFormat
     let documentSize: CGSize
+    let viewBoxSize: CGSize?  // Added to detect 96 DPI SVGs
     let colorSpace: String
     let units: VectorUnit
     let dpi: Double
@@ -36,7 +35,7 @@ struct VectorImportMetadata {
 
 /// Professional vector graphics units
 enum VectorUnit: String, CaseIterable {
-    case points = "pt"        // 1/72 inch (PostScript standard)
+    case points = "pt"        // 1/72 inch (standard)
     case inches = "in"        // Imperial
     case millimeters = "mm"   // Metric
     case pixels = "px"        // Screen

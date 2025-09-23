@@ -7,7 +7,7 @@
 
 import SwiftUI
 import AppKit
-import CoreGraphics
+import SwiftUI
 import UniformTypeIdentifiers
 
 struct LayerView: View {
@@ -59,7 +59,8 @@ struct LayerView: View {
                         canvasOffset: canvasOffset,
                         isSelected: selectedShapeIDs.contains(currentShape.id) || selectedShapeIDs.contains(maskShape.id),
                         dragPreviewDelta: (selectedShapeIDs.contains(currentShape.id) || selectedShapeIDs.contains(maskShape.id)) ? dragPreviewDelta : .zero,
-                        dragPreviewTrigger: dragPreviewTrigger
+                        dragPreviewTrigger: dragPreviewTrigger,
+                        viewMode: viewMode
                     )
                     // REMOVED: All SwiftUI transforms - handle everything in NSView
                     // The NSView will handle zoom, offset, and transforms internally

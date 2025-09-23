@@ -6,8 +6,7 @@
 //  Programmatic pasteboard diagnostics and testing
 //
 
-import Foundation
-import CoreGraphics
+import SwiftUI
 
 class PasteboardDiagnostics {
     
@@ -101,7 +100,6 @@ class PasteboardDiagnostics {
                 let pasteboardShape = pasteboardShapes[0]
                 test.pasteboardShapeName = pasteboardShape.name
                 test.pasteboardBounds = pasteboardShape.bounds
-                test.pasteboardFillColor = pasteboardShape.fillStyle?.color
             }
             
             // Check canvas shape using unified objects
@@ -111,7 +109,6 @@ class PasteboardDiagnostics {
                 let canvasShape = canvasShapes[0]
                 test.canvasShapeName = canvasShape.name
                 test.canvasBounds = canvasShape.bounds
-                test.canvasFillColor = canvasShape.fillStyle?.color
             }
             
             // Validate
@@ -246,10 +243,7 @@ class PasteboardDiagnostics {
                 }
             }
         }
-        
-        test.testedLayers = testedLayers
-        test.testedShapes = testedShapes
-        
+
         // Verify all expected layers were tested
         let expectedLayers = ["Layer 2: Layer 1", "Layer 1: Canvas", "Layer 0: Pasteboard"]
         test.allLayersTested = expectedLayers.allSatisfy { expected in
@@ -461,8 +455,6 @@ class PasteboardDiagnostics {
         return HitTestResult(
             hitShape: hitShape,
             layerIndex: hitLayerIndex,
-            testedLayers: testedLayers,
-            testedShapes: testedShapes,
             testLocation: location
         )
     }
@@ -521,13 +513,11 @@ struct BackgroundShapesTest {
     var pasteboardShapeCount = 0
     var pasteboardShapeName = ""
     var pasteboardBounds: CGRect?
-    var pasteboardFillColor: VectorColor?
     var pasteboardShapeCorrect = false
     
     var canvasShapeCount = 0
     var canvasShapeName = ""
     var canvasBounds: CGRect?
-    var canvasFillColor: VectorColor?
     var canvasShapeCorrect = false
     
     var sizingCorrect = false
@@ -549,8 +539,6 @@ struct HitTestingTest {
 }
 
 struct LayerIterationTest {
-    var testedLayers: [String] = []
-    var testedShapes: [String] = []
     var allLayersTested = false
     var allBackgroundShapesTested = false
     var passed = false
@@ -578,8 +566,6 @@ struct PerformanceTest {
 struct HitTestResult {
     var hitShape: VectorShape?
     var layerIndex: Int?
-    var testedLayers: [String] = []
-    var testedShapes: [String] = []
     var testLocation = CGPoint.zero
 }
 

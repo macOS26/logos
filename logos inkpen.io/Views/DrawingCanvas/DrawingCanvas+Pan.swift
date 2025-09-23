@@ -6,9 +6,7 @@
 //
 
 import SwiftUI
-#if os(macOS)
 import AppKit
-#endif
 
 // Toggle to enable/disable verbose logging for the Hand Tool (pan gesture)
 fileprivate let enableHandToolLogging = false
@@ -33,10 +31,8 @@ extension DrawingCanvas {
                 print("   Reference cursor location: (\(String(format: "%.1f", handToolDragStart.x)), \(String(format: "%.1f", handToolDragStart.y)))")
             }
 
-            #if os(macOS)
             // Show closed hand when panning begins
             HandClosedCursor.set()
-            #endif
         }
         
         // Calculate cursor movement from reference location (perfect 1:1 tracking)
@@ -48,12 +44,10 @@ extension DrawingCanvas {
         // PROFESSIONAL IMPLEMENTATION: Direct cursor-to-canvas mapping
         // The point under the cursor at drag start stays exactly under the cursor throughout the drag
 
-        #if os(macOS)
         // Keep closed hand while dragging with hand tool
         if document.currentTool == .hand {
             HandClosedCursor.set()
         }
-        #endif
         // This is the gold standard used by professional vector graphics software
         document.canvasOffset = CGPoint(
             x: initialCanvasOffset.x + cursorDelta.x,

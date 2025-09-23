@@ -5,8 +5,8 @@
 //  Created by Todd Bruss on 8/20/25.
 //
 
-import CoreGraphics
 import SwiftUI
+import Combine
 
 // MARK: - Scale Tool Handles
 struct ScaleHandles: View {
@@ -164,7 +164,7 @@ struct ScaleHandles: View {
             
             // CENTER POINT: Always available (GREEN if not locked, RED if locked)
             let isCenterLockedPin = (lockedPinPointIndex == nil) // nil represents center as locked pin
-            Rectangle()
+            Circle()
                 .fill(isCenterLockedPin ? Color.red : Color.green)  // RED = locked pin, GREEN = scalable
                 .stroke(Color.white, lineWidth: 1.0)
                 .frame(width: handleSize, height: handleSize) // Fixed UI size - does not scale with artwork
@@ -368,9 +368,10 @@ struct ScaleHandles: View {
         scalingStarted = false
         isScaling = false
         document.isHandleScalingActive = false // CRITICAL: Re-enable canvas drag gestures
-        
+        document.scalePreviewDimensions = .zero // Reset preview dimensions
+
         // Removed excessive logging during drag operations
-        
+
         // PROFESSIONAL SCALING FIX: Apply the final preview transform to coordinates
         // This ensures object origin stays with object after scaling (Professional behavior)
         
@@ -396,11 +397,11 @@ struct ScaleHandles: View {
             
             // Apply the final transform to coordinates and reset transform to identity
             applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
-            
+
             if let finalShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                _ = finalShape.bounds
+                print("🔴 FINAL SHAPE BOUNDS AFTER SCALING: \(finalShape.bounds)")
+                print("🔴 FINAL SHAPE WIDTH: \(finalShape.bounds.width), HEIGHT: \(finalShape.bounds.height)")
             }
-            // Removed excessive logging during drag operations
             
             // Reset preview transform and marquee bounds
             previewTransform = .identity
@@ -408,9 +409,14 @@ struct ScaleHandles: View {
             
             Log.info("✅ SCALING FINISHED: Applied final transform to coordinates and reset transform to identity", category: .fileOperations)
             
-            // CRITICAL FIX: Sync unified objects after scaling to ensure UI updates
-            document.updateUnifiedObjectsOptimized()
-            
+            // Use common update function for transform panel (same as dragging)
+            // CRITICAL: Update AFTER a delay to ensure bounds are recalculated
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                print("🔴 CALLING updateTransformPanelValues AFTER SCALING")
+                self.document.updateTransformPanelValues()
+                print("🔴 CALLED updateTransformPanelValues - CHECK IF X Y W H UPDATED")
+            }
+
             // CRITICAL FIX: Force refresh of point selection system (same as rotate/shear tools)
             // This updates the points to match the scaled object positions
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -853,10 +859,18 @@ struct ScaleHandles: View {
             .translatedBy(x: anchor.x, y: anchor.y)
             .scaledBy(x: scaleX, y: scaleY)
             .translatedBy(x: -anchor.x, y: -anchor.y)
-        
+
         // CRITICAL FIX: Always calculate from initial transform to prevent drift
         previewTransform = initialTransform.concatenating(scaleTransform)
-        
+
+        // TWO-WAY BINDING: Always update dimensions for immediate feedback
+        // Calculate new width and height
+        let newWidth = initialBounds.width * abs(scaleX)
+        let newHeight = initialBounds.height * abs(scaleY)
+
+        // Update preview dimensions for transform panel - ALWAYS update for smooth feedback
+        document.scalePreviewDimensions = CGSize(width: newWidth, height: newHeight)
+
         // MARQUEE FIX: Calculate exact final bounds position (PINNED CORRECTLY!)
         let currentBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         finalMarqueeBounds = currentBounds.applying(scaleTransform)

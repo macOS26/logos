@@ -7,7 +7,8 @@
 
 import SwiftUI
 import AppKit
-import CoreGraphics
+import SwiftUI
+import Combine
 
 // MARK: - Transform Box for Arrow Tool (Illustrator-style)
 struct TransformBoxHandles: View {
@@ -16,6 +17,7 @@ struct TransformBoxHandles: View {
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let isShiftPressed: Bool
+    let transformOrigin: TransformOrigin
 
     // State for interactive scaling
     @State private var isScaling: Bool = false
@@ -24,6 +26,7 @@ struct TransformBoxHandles: View {
     @State private var previewTransform: CGAffineTransform = .identity
 
     private let handleSize: CGFloat = 10
+    private let handleHitAreaSize: CGFloat = 10  // EXACT same as visual handle size
 
     var body: some View {
         let transformedBounds: CGRect = computeTransformedBounds()
@@ -40,59 +43,114 @@ struct TransformBoxHandles: View {
 
             // Red preview outline when scaling
             if isScaling && !previewTransform.isIdentity {
-                Path { path in
-                    for element in shape.path.elements {
-                        switch element {
-                        case .move(let to):
-                            let p = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                            path.move(to: p)
-                        case .line(let to):
-                            let p = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                            path.addLine(to: p)
-                        case .curve(let to, let c1, let c2):
-                            let tp = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                            let tc1 = CGPoint(x: c1.x, y: c1.y).applying(previewTransform)
-                            let tc2 = CGPoint(x: c2.x, y: c2.y).applying(previewTransform)
-                            path.addCurve(to: tp, control1: tc1, control2: tc2)
-                        case .quadCurve(let to, let c):
-                            let tp = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                            let tc = CGPoint(x: c.x, y: c.y).applying(previewTransform)
-                            path.addQuadCurve(to: tp, control: tc)
-                        case .close:
-                            path.closeSubpath()
+                // Check if this is a group - preview all grouped shapes
+                if shape.isGroupContainer {
+                    // Preview each grouped shape
+                    ForEach(shape.groupedShapes.indices, id: \.self) { index in
+                        let groupedShape = shape.groupedShapes[index]
+                        Path { path in
+                            for element in groupedShape.path.elements {
+                                switch element {
+                                case .move(let to):
+                                    let p = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                    path.move(to: p)
+                                case .line(let to):
+                                    let p = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                    path.addLine(to: p)
+                                case .curve(let to, let c1, let c2):
+                                    let tp = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                    let tc1 = CGPoint(x: c1.x, y: c1.y).applying(previewTransform)
+                                    let tc2 = CGPoint(x: c2.x, y: c2.y).applying(previewTransform)
+                                    path.addCurve(to: tp, control1: tc1, control2: tc2)
+                                case .quadCurve(let to, let c):
+                                    let tp = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                    let tc = CGPoint(x: c.x, y: c.y).applying(previewTransform)
+                                    path.addQuadCurve(to: tp, control: tc)
+                                case .close:
+                                    path.closeSubpath()
+                                }
+                            }
+                        }
+                        .stroke(Color.red, lineWidth: 1.0 / zoomLevel)
+                        .scaleEffect(zoomLevel, anchor: .topLeading)
+                        .offset(x: canvasOffset.x, y: canvasOffset.y)
+                        .allowsHitTesting(false)
+                    }
+                } else {
+                    // Preview single shape path
+                    Path { path in
+                        for element in shape.path.elements {
+                            switch element {
+                            case .move(let to):
+                                let p = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                path.move(to: p)
+                            case .line(let to):
+                                let p = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                path.addLine(to: p)
+                            case .curve(let to, let c1, let c2):
+                                let tp = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                let tc1 = CGPoint(x: c1.x, y: c1.y).applying(previewTransform)
+                                let tc2 = CGPoint(x: c2.x, y: c2.y).applying(previewTransform)
+                                path.addCurve(to: tp, control1: tc1, control2: tc2)
+                            case .quadCurve(let to, let c):
+                                let tp = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                let tc = CGPoint(x: c.x, y: c.y).applying(previewTransform)
+                                path.addQuadCurve(to: tp, control: tc)
+                            case .close:
+                                path.closeSubpath()
+                            }
                         }
                     }
+                    .stroke(Color.red, lineWidth: 1.0 / zoomLevel)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .allowsHitTesting(false)
                 }
-                .stroke(Color.red, lineWidth: 1.0 / zoomLevel)
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .allowsHitTesting(false)
             }
 
             // Handles: 4 corners + 4 mids + center
             ForEach(0..<9) { index in
                 let pt = handlePosition(index: index, in: transformedBounds)
-                Circle()
-                    .fill(Color.blue)
-                    .overlay(Circle().stroke(Color.white, lineWidth: 1.0))
-                    .frame(width: handleSize, height: handleSize)
-                    .position(CGPoint(x: pt.x * zoomLevel + canvasOffset.x,
-                                      y: pt.y * zoomLevel + canvasOffset.y))
-                    .highPriorityGesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { value in
-                                if !isScaling {
-                                    beginScaling(startValue: value)
-                                }
-                                updateScaling(forHandle: index, dragValue: value, bounds: transformedBounds)
+                let isAnchorPoint = isHandleTheAnchor(index: index)
+                ZStack {
+                    // Invisible expanded hit area for easier selection
+                    Circle()
+                        .fill(Color.clear)
+                        .frame(width: handleHitAreaSize, height: handleHitAreaSize)
+                        .contentShape(Circle())
+
+                    // Visible handle - RED for anchor point, blue for others
+                    Circle()
+                        .fill(isAnchorPoint ? Color.red : Color.blue)
+                        .overlay(Circle().stroke(Color.white, lineWidth: isAnchorPoint ? 2.0 : 1.0))
+                        .frame(width: isAnchorPoint ? handleSize * 1.2 : handleSize,
+                               height: isAnchorPoint ? handleSize * 1.2 : handleSize)
+                        .allowsHitTesting(false)  // Hit testing handled by larger area
+                }
+                .position(CGPoint(x: pt.x * zoomLevel + canvasOffset.x,
+                                  y: pt.y * zoomLevel + canvasOffset.y))
+                .onTapGesture {
+                    // Click to set this handle as the anchor point (red dot)
+                    setAnchorPoint(forHandle: index)
+                }
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 0.5) // Small threshold
+                        .onChanged { value in
+                            if !isScaling {
+                                beginScaling(startValue: value)
                             }
-                            .onEnded { _ in
-                                endScaling()
-                            }
-                    )
+                            updateScaling(forHandle: index, dragValue: value, bounds: transformedBounds)
+                        }
+                        .onEnded { _ in
+                            endScaling()
+                        }
+                )
             }
         }
-        .onAppear { initialTransform = shape.transform }
+        .onAppear {
+        // Start with identity since we apply transforms to coordinates
+        initialTransform = .identity
+    }
     }
 
     // Compute transformed bounds in canvas coordinates (after shape.transform)
@@ -138,25 +196,46 @@ struct TransformBoxHandles: View {
         }
     }
 
-    private func oppositeHandle(index: Int, in rect: CGRect) -> CGPoint {
-        // Anchor at the opposite corner or mid; center returns center
-        switch index {
-        case 0: return handlePosition(index: 4, in: rect)
-        case 1: return handlePosition(index: 5, in: rect)
-        case 2: return handlePosition(index: 6, in: rect)
-        case 3: return handlePosition(index: 7, in: rect)
-        case 4: return handlePosition(index: 0, in: rect)
-        case 5: return handlePosition(index: 1, in: rect)
-        case 6: return handlePosition(index: 2, in: rect)
-        case 7: return handlePosition(index: 3, in: rect)
-        default: return handlePosition(index: 8, in: rect)
+    private func isHandleTheAnchor(index: Int) -> Bool {
+        // Map handle indices to transform origin positions
+        // 0=TL, 1=Top, 2=TR, 3=Right, 4=BR, 5=Bottom, 6=BL, 7=Left, 8=Center
+        let handleToOrigin: [TransformOrigin] = [
+            .topLeft, .topCenter, .topRight,
+            .middleRight, .bottomRight, .bottomCenter,
+            .bottomLeft, .middleLeft, .center
+        ]
+        return index < handleToOrigin.count && handleToOrigin[index] == transformOrigin
+    }
+
+    private func getTransformAnchor(in rect: CGRect) -> CGPoint {
+        // Use the selected transform origin from the 9-point grid
+        let origin = transformOrigin.point
+        return CGPoint(
+            x: rect.minX + rect.width * origin.x,
+            y: rect.minY + rect.height * origin.y
+        )
+    }
+
+    private func setAnchorPoint(forHandle index: Int) {
+        // Map handle indices to transform origin positions
+        // 0=TL, 1=Top, 2=TR, 3=Right, 4=BR, 5=Bottom, 6=BL, 7=Left, 8=Center
+        let handleToOrigin: [TransformOrigin] = [
+            .topLeft, .topCenter, .topRight,
+            .middleRight, .bottomRight, .bottomCenter,
+            .bottomLeft, .middleLeft, .center
+        ]
+
+        if index < handleToOrigin.count {
+            // Update the document's transform origin
+            document.transformOrigin = handleToOrigin[index]
+            document.objectWillChange.send()
         }
     }
 
     private func beginScaling(startValue: DragGesture.Value) {
         isScaling = true
         startLocation = startValue.startLocation
-        initialTransform = shape.transform
+        initialTransform = .identity  // Always use identity since we apply to coordinates
         document.isHandleScalingActive = true
         document.saveToUndoStack()
     }
@@ -164,7 +243,7 @@ struct TransformBoxHandles: View {
     private func updateScaling(forHandle index: Int, dragValue: DragGesture.Value, bounds: CGRect) {
         // Handle 8 (center) uses a special, stable mapping from mouse delta to scale
         if index == 8 {
-            let anchor = CGPoint(x: bounds.midX, y: bounds.midY)
+            let anchor = getTransformAnchor(in: bounds)
             // Convert mouse delta to canvas space
             let preciseZoom = CGFloat(zoomLevel)
             let dxCanvas = (dragValue.location.x - startLocation.x) / preciseZoom
@@ -198,13 +277,13 @@ struct TransformBoxHandles: View {
                 .scaledBy(x: sx, y: sy)
                 .translatedBy(x: -anchor.x, y: -anchor.y)
 
-            previewTransform = initialTransform.concatenating(scaleTransform)
+            previewTransform = scaleTransform  // Direct transform, no concatenation
             document.isHandleScalingActive = true
             document.objectWillChange.send()
             return
         }
 
-        let anchor = oppositeHandle(index: index, in: bounds) // canvas coordinates
+        let anchor = getTransformAnchor(in: bounds) // Use selected transform origin
 
         // Convert anchor to screen coordinates
         let anchorScreenX = anchor.x * zoomLevel + canvasOffset.x
@@ -258,15 +337,22 @@ struct TransformBoxHandles: View {
             .scaledBy(x: scaleX, y: scaleY)
             .translatedBy(x: -anchor.x, y: -anchor.y)
 
-        previewTransform = initialTransform.concatenating(scaleTransform)
+        previewTransform = scaleTransform  // Direct transform, no concatenation
         // Keep transform active so next small drags immediately continue
         document.isHandleScalingActive = true
+
+        // LIVE UPDATE W/H: Calculate and update dimensions during drag (every frame)
+        let currentBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        let newBounds = currentBounds.applying(scaleTransform)
+        document.scalePreviewDimensions = CGSize(width: newBounds.width, height: newBounds.height)
+
         document.objectWillChange.send()
     }
 
     private func endScaling() {
         isScaling = false
         document.isHandleScalingActive = false
+        document.scalePreviewDimensions = .zero // Reset preview dimensions
         
         // CRITICAL FIX: Find the unified object that contains this specific shape
         if let unifiedObject = document.unifiedObjects.first(where: { unifiedObject in
@@ -289,12 +375,16 @@ struct TransformBoxHandles: View {
                 updatedShape.updateBounds()
                 document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
             } else {
-                // Reset to initial transform to avoid drift and apply final preview to path coordinates
-                updatedShape.transform = initialTransform
+                // Apply transform directly to path coordinates, no matrix transforms
+                updatedShape.transform = .identity
                 document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                 applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
             }
             previewTransform = .identity
+
+            // UPDATE X Y W H: Call the common update function after transform is applied
+            document.updateTransformPanelValues()
+
             // Force UI refresh to reflect committed transform
             document.objectWillChange.send()
             
@@ -312,31 +402,70 @@ struct TransformBoxHandles: View {
         let t = transform
         if t.isIdentity { return }
 
-        // Transform all path elements
-        var transformedElements: [PathElement] = []
-        for element in targetShape.path.elements {
-            switch element {
-            case .move(let to):
-                transformedElements.append(.move(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
-            case .line(let to):
-                transformedElements.append(.line(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
-            case .curve(let to, let c1, let c2):
-                transformedElements.append(.curve(
-                    to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
-                    control1: VectorPoint(CGPoint(x: c1.x, y: c1.y).applying(t)),
-                    control2: VectorPoint(CGPoint(x: c2.x, y: c2.y).applying(t))
-                ))
-            case .quadCurve(let to, let c):
-                transformedElements.append(.quadCurve(
-                    to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
-                    control: VectorPoint(CGPoint(x: c.x, y: c.y).applying(t))
-                ))
-            case .close:
-                transformedElements.append(.close)
+        // Check if this is a group - if so, we need to transform all grouped shapes
+        if targetShape.isGroupContainer {
+            // For groups, we need to update the entire shape with transformed grouped shapes
+            document.updateEntireShapeInUnified(id: targetShape.id) { shape in
+                // Transform each grouped shape's path
+                var transformedGroupedShapes: [VectorShape] = []
+                for var groupedShape in shape.groupedShapes {
+                    // Transform the grouped shape's path elements
+                    var transformedElements: [PathElement] = []
+                    for element in groupedShape.path.elements {
+                        switch element {
+                        case .move(let to):
+                            transformedElements.append(.move(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
+                        case .line(let to):
+                            transformedElements.append(.line(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
+                        case .curve(let to, let c1, let c2):
+                            transformedElements.append(.curve(
+                                to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
+                                control1: VectorPoint(CGPoint(x: c1.x, y: c1.y).applying(t)),
+                                control2: VectorPoint(CGPoint(x: c2.x, y: c2.y).applying(t))
+                            ))
+                        case .quadCurve(let to, let c):
+                            transformedElements.append(.quadCurve(
+                                to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
+                                control: VectorPoint(CGPoint(x: c.x, y: c.y).applying(t))
+                            ))
+                        case .close:
+                            transformedElements.append(.close)
+                        }
+                    }
+                    groupedShape.path = VectorPath(elements: transformedElements, isClosed: groupedShape.path.isClosed)
+                    groupedShape.updateBounds()
+                    transformedGroupedShapes.append(groupedShape)
+                }
+                shape.groupedShapes = transformedGroupedShapes
+                shape.transform = .identity
             }
-        }
+        } else {
+            // For regular shapes, transform the path elements as before
+            var transformedElements: [PathElement] = []
+            for element in targetShape.path.elements {
+                switch element {
+                case .move(let to):
+                    transformedElements.append(.move(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
+                case .line(let to):
+                    transformedElements.append(.line(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
+                case .curve(let to, let c1, let c2):
+                    transformedElements.append(.curve(
+                        to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
+                        control1: VectorPoint(CGPoint(x: c1.x, y: c1.y).applying(t)),
+                        control2: VectorPoint(CGPoint(x: c2.x, y: c2.y).applying(t))
+                    ))
+                case .quadCurve(let to, let c):
+                    transformedElements.append(.quadCurve(
+                        to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
+                        control: VectorPoint(CGPoint(x: c.x, y: c.y).applying(t))
+                    ))
+                case .close:
+                    transformedElements.append(.close)
+                }
+            }
 
-        let newPath = VectorPath(elements: transformedElements, isClosed: targetShape.path.isClosed)
-        document.updateShapeTransformAndPathInUnified(id: targetShape.id, path: newPath, transform: .identity)
+            let newPath = VectorPath(elements: transformedElements, isClosed: targetShape.path.isClosed)
+            document.updateShapeTransformAndPathInUnified(id: targetShape.id, path: newPath, transform: .identity)
+        }
     }
 }

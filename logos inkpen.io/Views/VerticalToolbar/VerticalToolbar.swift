@@ -12,7 +12,7 @@ import AppKit
 struct VerticalToolbar: View {
     @ObservedObject var document: VectorDocument
     @StateObject private var toolGroupManager = ToolGroupManager.shared
-
+    
     // MARK: - Tool Group Functions
     
     private func handleToolLongPress(_ tool: DrawingTool, variantIndex: Int? = nil) {
@@ -91,6 +91,55 @@ struct VerticalToolbar: View {
     
     // MARK: - Flexible Toolbar Display Logic
     
+    private func getToolsToDisplayByGroup() -> [[ToolItem]] {
+        var toolGroups: [[ToolItem]] = []
+        
+        // Get all unique tool groups
+        let allToolGroups = getAllToolGroups()
+        
+        for toolGroup in allToolGroups {
+            var groupTools: [ToolItem] = []
+            let primaryTool = toolGroup[0]
+            let groupName = ToolGroupConfiguration.getToolGroupName(for: primaryTool) ?? "single:\(primaryTool.rawValue)"
+            
+            // Expanded state is now per-group
+            if toolGroupManager.expandedGroups.contains(groupName) {
+                if primaryTool == .star {
+                    // If we have a per-group anchor variant, put it first; otherwise natural order
+                    if let anchorVariant = (toolGroupManager.anchorVariantByGroup[groupName] ?? nil) {
+                        groupTools.append(ToolItem(tool: .star, starVariant: anchorVariant))
+                        let otherVariants = StarVariant.allCases.filter { $0 != anchorVariant }
+                        for variant in otherVariants {
+                            groupTools.append(ToolItem(tool: .star, starVariant: variant))
+                        }
+                    } else {
+                        for variant in StarVariant.allCases {
+                            groupTools.append(ToolItem(tool: .star, starVariant: variant))
+                        }
+                    }
+                } else {
+                    for tool in toolGroup {
+                        groupTools.append(ToolItem(tool: tool, starVariant: nil))
+                    }
+                }
+            } else {
+                // Collapsed state shows the group's selected tool (falls back to primary)
+                if primaryTool == .star {
+                    groupTools.append(ToolItem(tool: .star, starVariant: toolGroupManager.selectedVariant))
+                } else {
+                    let selectedTool = toolGroupManager.selectedToolByGroup[groupName] ?? primaryTool
+                    groupTools.append(ToolItem(tool: selectedTool, starVariant: nil))
+                }
+            }
+            
+            if !groupTools.isEmpty {
+                toolGroups.append(groupTools)
+            }
+        }
+        
+        return toolGroups
+    }
+    
     private func getToolsToDisplay() -> [ToolItem] {
         var toolsToShow: [ToolItem] = []
         
@@ -151,65 +200,55 @@ struct VerticalToolbar: View {
             return document.currentTool == toolItem.tool
         }
     }
-
+    
+    private func isToolInExpandableGroup(_ toolItem: ToolItem) -> Bool {
+        // Check if the tool belongs to a group with more than one tool
+        let tool = toolItem.tool
+        let group = ToolGroupConfiguration.getToolGroup(for: tool)
+        
+        // Star tool always has expandable variants
+        if tool == .star {
+            return true
+        }
+        
+        // Other tools are expandable if their group has more than 1 tool
+        return group.count > 1
+    }
+    
+    private func isGroupExpanded(for toolItem: ToolItem) -> Bool {
+        // Check if this tool's group is currently expanded
+        let tool = toolItem.tool
+        
+        if tool == .star {
+            let groupName = "stars"
+            return toolGroupManager.expandedGroups.contains(groupName)
+        } else if let groupName = ToolGroupConfiguration.getToolGroupName(for: tool) {
+            return toolGroupManager.expandedGroups.contains(groupName)
+        }
+        
+        return false
+    }
+    
     
     var body: some View {
         ZStack {
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 2) {
+                VStack(spacing: 0) {
                     // Drawing Tools
-                    ToolSection(title: "Drawing") {
-                        ForEach(getToolsToDisplay(), id: \.toolIdentifier) { toolItem in
-                            Button {
-                                // Handle tool selection
-                                if let starVariant = toolItem.starVariant {
-                                    toolGroupManager.selectStarVariant(starVariant)
-                                    document.currentTool = .star
-                                    // Update tool group manager state
-                                    toolGroupManager.currentToolInGroup = .star
-                                    toolGroupManager.setSelectedToolInGroup(.star)
-                                    Log.info("⭐ Selected star variant: \(starVariant.rawValue)", category: .general)
-                                } else {
-                                    document.currentTool = toolItem.tool
-                                    // Update tool group manager state
-                                    toolGroupManager.currentToolInGroup = toolItem.tool
-                                    toolGroupManager.setSelectedToolInGroup(toolItem.tool)
-                                    Log.info("🛠️ Switched to tool: \(toolItem.tool.rawValue)", category: .general)
+                    ToolSection {
+                        VStack(spacing: 0) {
+                            let toolsByGroup = getToolsToDisplayByGroup()
+                            ForEach(Array(toolsByGroup.enumerated()), id: \.offset) { index, toolGroup in
+                                // Add separator between groups (but not before the first group)
+                                if index > 0 {
+                                    Rectangle()
+                                        .fill(Color.primary.opacity(0.2))
+                                        .frame(height: 0.5)
+                                        .frame(maxWidth: .infinity)
                                 }
                                 
-                                // Do not force cursor here; let canvas hover control cursor visibility.
-                                // This avoids requiring long-press to see the cursor. The canvas will set
-                                // the correct cursor on hover/enter.
-                            } label: {
-                                toolIconView(for: toolItem)
-                                .frame(width: 32, height: 32)
-                                .background(
-                                    isToolSelected(toolItem)
-                                    ? Color.blue.opacity(0.8)
-                                    : Color.clear
-                                )
-                                .cornerRadius(4)
-                                .contentShape(Rectangle()) // Extend hit area to match entire button area
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .help(toolTooltip(for: toolItem.tool, variant: toolItem.starVariant))
-                            .background(
-                                GeometryReader { geometry in
-                                    Color.clear
-                                        .onAppear {
-                                            // Store the button's frame for tool group positioning
-                                            let globalFrame = geometry.frame(in: .global)
-                                            toolGroupManager.setToolButtonFrame(toolItem.tool, frame: globalFrame)
-                                        }
-                                        .onChange(of: geometry.frame(in: .global)) { _, newFrame in
-                                            // Update frame if it changes (e.g., during scrolling)
-                                            toolGroupManager.setToolButtonFrame(toolItem.tool, frame: newFrame)
-                                        }
-                                }
-                            )
-                            .highPriorityGesture(
-                                TapGesture()
-                                    .onEnded { _ in
+                                ForEach(toolGroup, id: \.toolIdentifier) { toolItem in
+                                    Button {
                                         // Handle tool selection
                                         if let starVariant = toolItem.starVariant {
                                             toolGroupManager.selectStarVariant(starVariant)
@@ -217,43 +256,113 @@ struct VerticalToolbar: View {
                                             // Update tool group manager state
                                             toolGroupManager.currentToolInGroup = .star
                                             toolGroupManager.setSelectedToolInGroup(.star)
-                                            Log.fileOperation("🔧 Tool tap detected: \(starVariant.rawValue)", level: .info)
+                                            Log.info("⭐ Selected star variant: \(starVariant.rawValue)", category: .general)
                                         } else {
                                             document.currentTool = toolItem.tool
                                             // Update tool group manager state
                                             toolGroupManager.currentToolInGroup = toolItem.tool
                                             toolGroupManager.setSelectedToolInGroup(toolItem.tool)
-                                            Log.fileOperation("🔧 Tool tap detected: \(toolItem.tool.rawValue)", level: .info)
+                                            Log.info("🛠️ Switched to tool: \(toolItem.tool.rawValue)", category: .general)
                                         }
                                         
-                                        // Do not force cursor here; canvas hover logic will set it.
-                                    }
-                            )
-                            .simultaneousGesture(
-                                LongPressGesture(minimumDuration: 0.5)
-                                    .onEnded { _ in
-                                        // Long press completed - expand tool group
-                                        if let starVariant = toolItem.starVariant {
-                                            let variantIndex = StarVariant.allCases.firstIndex(of: starVariant) ?? 0
-                                            handleToolLongPress(.star, variantIndex: variantIndex)
-                                        } else {
-                                            handleToolLongPress(toolItem.tool)
+                                        // Do not force cursor here; let canvas hover control cursor visibility.
+                                        // This avoids requiring long-press to see the cursor. The canvas will set
+                                        // the correct cursor on hover/enter.
+                                    } label: {
+                                        ZStack {
+                                            // Background highlight - always present but transparent when not selected
+                                            RoundedRectangle(cornerRadius: 100)
+                                                .fill(isToolSelected(toolItem)
+                                                      ? InkPenUIColors.shared.toolSelectionBlue
+                                                      : Color.clear)
+                                                .frame(width: 47, height: 34)
+                                            
+                                            toolIconView(for: toolItem)
+                                                .frame(width: 47)
+                                            
+                                            // Orange triangle indicator - always present but transparent when not needed
+                                            Path { path in
+                                                // Triangle pointing to bottom-right corner
+                                                path.move(to: CGPoint(x: 0, y: 6))    // Left point
+                                                path.addLine(to: CGPoint(x: 6, y: 0)) // Top point
+                                                path.addLine(to: CGPoint(x: 6, y: 6)) // Bottom-right corner
+                                                path.closeSubpath()
+                                            }
+                                            .fill((isToolSelected(toolItem) && isToolInExpandableGroup(toolItem) && !isGroupExpanded(for: toolItem))
+                                                  ? Color(.displayP3, red: 1.0, green: 0.584, blue: 0.0) // Display P3 orange at full 1.0 opacity
+                                                  : Color.clear)
+                                            .frame(width: 6, height: 6)
+                                            .position(x: 42, y: 26)
                                         }
+                                        .contentShape(Rectangle()) // Extend hit area to match entire button area
+                                        .frame(width: 58, height: 34)
+                                        .position(x: 24.5, y: 17)
                                     }
-                            )
+                                    .buttonStyle(PlainButtonStyle())
+                                    .help(toolTooltip(for: toolItem.tool, variant: toolItem.starVariant))
+                                    .background(
+                                        GeometryReader { geometry in
+                                            Color.clear
+                                                .onAppear {
+                                                    // Store the button's frame for tool group positioning
+                                                    let globalFrame = geometry.frame(in: .global)
+                                                    toolGroupManager.setToolButtonFrame(toolItem.tool, frame: globalFrame)
+                                                }
+                                                .onChange(of: geometry.frame(in: .global)) { _, newFrame in
+                                                    // Update frame if it changes (e.g., during scrolling)
+                                                    toolGroupManager.setToolButtonFrame(toolItem.tool, frame: newFrame)
+                                                }
+                                        }
+                                    )
+                                    .highPriorityGesture(
+                                        TapGesture()
+                                            .onEnded { _ in
+                                                // Handle tool selection
+                                                if let starVariant = toolItem.starVariant {
+                                                    toolGroupManager.selectStarVariant(starVariant)
+                                                    document.currentTool = .star
+                                                    // Update tool group manager state
+                                                    toolGroupManager.currentToolInGroup = .star
+                                                    toolGroupManager.setSelectedToolInGroup(.star)
+                                                    Log.fileOperation("🔧 Tool tap detected: \(starVariant.rawValue)", level: .info)
+                                                } else {
+                                                    document.currentTool = toolItem.tool
+                                                    // Update tool group manager state
+                                                    toolGroupManager.currentToolInGroup = toolItem.tool
+                                                    toolGroupManager.setSelectedToolInGroup(toolItem.tool)
+                                                    Log.fileOperation("🔧 Tool tap detected: \(toolItem.tool.rawValue)", level: .info)
+                                                }
+                                                
+                                                // Do not force cursor here; canvas hover logic will set it.
+                                            }
+                                    )
+                                    .simultaneousGesture(
+                                        LongPressGesture(minimumDuration: 0.5)
+                                            .onEnded { _ in
+                                                // Long press completed - expand tool group
+                                                if let starVariant = toolItem.starVariant {
+                                                    let variantIndex = StarVariant.allCases.firstIndex(of: starVariant) ?? 0
+                                                    handleToolLongPress(.star, variantIndex: variantIndex)
+                                                } else {
+                                                    handleToolLongPress(toolItem.tool)
+                                                }
+                                            }
+                                    )
+                                }
+                            }
                         }
                     }
                     
                     Divider()
                     
                     // Quick Color Swatches
-                    ToolSection(title: "Colors") {
+                    ToolSection {
                         ColorSwatchGrid(document: document)
                     }
                     
                     Spacer()
                 }
-                .padding(.vertical, 8)
+                .padding(.bottom, 4)
                 .frame(width: 48) // ENSURE: Maintain fixed toolbar width
             }
             .background(Color(NSColor.controlBackgroundColor))
@@ -265,7 +374,7 @@ struct VerticalToolbar: View {
         }
     }
     
-
+    
     
     private func toolTooltip(for tool: DrawingTool, variant: StarVariant? = nil) -> String {
         if let starVariant = variant {

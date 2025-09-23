@@ -1,7 +1,12 @@
+//
+//  DrawingCanvas+SafeMetalIntegration.swift
+//  logos inkpen.io
+//
+//  Safe Metal integration without breaking existing functionality
+//
+
 import SwiftUI
-#if os(macOS)
 import AppKit
-#endif
 
 // EyedropperCursor now defined in DrawingCanvas.swift for shared access
 import MetalKit
@@ -44,7 +49,7 @@ extension DrawingCanvas {
                 cgContext.fillPath()
             }
         }
-        .allowsHitTesting(false)
+        .allowsHitTesting(true)  // Metal overlay handles ALL hit testing
     }
     
     /// Render selected canvas elements with Metal acceleration
@@ -65,6 +70,15 @@ extension DrawingCanvas {
         // 3. Render selection overlays with Metal (non-critical UI elements)
         if !document.selectedShapeIDs.isEmpty {
             renderSelectionOverlaysWithMetal(cgContext: cgContext, geometry: geometry)
+        }
+
+        // 4. Render snap point feedback if snap to point is enabled
+        if document.snapToPoint, let snapPoint = currentSnapPoint {
+            // Get current mouse position for drawing connection line
+            let mouseLocation = currentMouseLocation ?? bezierPoints.last?.cgPoint ?? .zero
+            let mousePointView = transformPointToView(mouseLocation, geometry: geometry)
+            let snapPointView = transformPointToView(snapPoint, geometry: geometry)
+            drawSnapPointFeedback(in: cgContext, at: mousePointView, snapPointView: snapPointView)
         }
     }
     
@@ -213,17 +227,16 @@ extension DrawingCanvas {
     @ViewBuilder
     internal func enhancedCanvasMainContent(geometry: GeometryProxy) -> some View {
         ZStack {
-            // Your existing content (unchanged)
-            canvasBaseContent(geometry: geometry)
-            
-            // Optional Metal acceleration layer (can be disabled)
+            // Metal acceleration layer FIRST (bottom of stack)
             optionalMetalAcceleratedOverlay(geometry: geometry)
-            
+
+            // Your existing content on TOP (so handles can receive gestures)
+            canvasBaseContent(geometry: geometry)
+
             // Your existing pressure-sensitive overlay (unchanged)
             pressureSensitiveOverlay(geometry: geometry)
-            
+
             // Removed custom in-app Performance HUD overlay
-            #if os(macOS)
             // AppKit-backed cursor overlay to eliminate flicker
             CanvasCursorOverlayView(
                 isHovering: isCanvasHovering,
@@ -232,7 +245,6 @@ extension DrawingCanvas {
                 zoomLevel: document.zoomLevel,
                 canvasOffset: document.canvasOffset
             )
-            #endif
         }
         // All your existing modifiers (unchanged)
         .onAppear {
@@ -246,7 +258,6 @@ extension DrawingCanvas {
         }
         .onChange(of: document.currentTool) { oldTool, newTool in
             handleToolChange(oldTool: oldTool, newTool: newTool)
-            #if os(macOS)
             if isCanvasHovering {
                 if newTool == .hand {
                     HandOpenCursor.set()
@@ -260,13 +271,11 @@ extension DrawingCanvas {
                     NSCursor.arrow.set()
                 }
             }
-            #endif
         }
         .onHover { isHovering in
             // Track enter/exit over the drawing area
             isCanvasHovering = isHovering
             if isHovering {
-                #if os(macOS)
                 if document.currentTool == .hand {
                     HandOpenCursor.set()
                 } else if document.currentTool == .eyedropper {
@@ -276,26 +285,20 @@ extension DrawingCanvas {
                 } else if document.currentTool == .rectangle || document.currentTool == .square || document.currentTool == .circle || document.currentTool == .equilateralTriangle || document.currentTool == .isoscelesTriangle || document.currentTool == .rightTriangle || document.currentTool == .acuteTriangle || document.currentTool == .cone || document.currentTool == .polygon || document.currentTool == .pentagon || document.currentTool == .hexagon || document.currentTool == .heptagon || document.currentTool == .octagon || document.currentTool == .nonagon {
                     CrosshairCursor.set()
                 }
-                #endif
             } else {
-                #if os(macOS)
                 NSCursor.arrow.set()
-                #endif
             }
         }
         .onContinuousHover { phase in
             handleHover(phase: phase, geometry: geometry)
-            #if os(macOS)
             // During hover tracking, prevent system from flipping to arrow while zoom tool is active
             if isCanvasHovering && document.currentTool == .zoom {
                 MagnifyingGlassCursor.set()
             }
-            #endif
         }
         .onTapGesture { location in
             Log.fileOperation("🎯 SINGLE CLICK DETECTED at: \(location)", level: .info)
             handleUnifiedTap(at: location, geometry: geometry)
-            #if os(macOS)
             // After tap, restore appropriate cursor immediately
             // Note: During mouseDown, SwiftUI may temporarily drop hover. Use hit test
             // to verify the location is inside the canvas bounds to decide cursor.
@@ -317,8 +320,8 @@ extension DrawingCanvas {
                 }
                 // Defensive: if system applies Arrow after layout updates, override on next runloop
                 DispatchQueue.main.async {
-                    if (insideCanvas || isCanvasHovering) {
-                        switch document.currentTool {
+                    if (insideCanvas || self.isCanvasHovering) {
+                        switch self.document.currentTool {
                         case .hand:
                             HandOpenCursor.set()
                         case .eyedropper:
@@ -333,19 +336,24 @@ extension DrawingCanvas {
                     }
                 }
             }
-            #endif
+        }
+        .onTapGesture { location in
+            // Single-click selection
+            Log.info("🎯 SINGLE CLICK DETECTED at: \(location)", category: .selection)
+            handleUnifiedTap(at: location, geometry: geometry)
         }
         .simultaneousGesture(
+            // Unified drag gesture for object manipulation
+            document.currentTool != .gradient && document.currentTool != .cornerRadius ?
             DragGesture(minimumDistance: 3)
                 .onChanged { value in
                     handleUnifiedDragChanged(value: value, geometry: geometry)
                 }
                 .onEnded { value in
                     handleUnifiedDragEnded(value: value, geometry: geometry)
-                }
+                } : nil
         )
         .simultaneousGesture(
-            // PROFESSIONAL ZOOM GESTURE - Separate from drag to avoid conflicts
             MagnificationGesture()
                 .onChanged { value in
                     handleZoomGestureChanged(value: value, geometry: geometry)
@@ -361,7 +369,6 @@ extension DrawingCanvas {
         }
         // Reassert correct tool cursor whenever zoom level changes (post-layout)
         .onChange(of: document.zoomLevel) { _, _ in
-            #if os(macOS)
             if isCanvasHovering {
                 switch document.currentTool {
                 case .hand:
@@ -377,8 +384,8 @@ extension DrawingCanvas {
                 }
                 // Also schedule on next runloop to win races with system arrow resets
                 DispatchQueue.main.async {
-                    if isCanvasHovering {
-                        switch document.currentTool {
+                    if self.isCanvasHovering {
+                        switch self.document.currentTool {
                         case .hand:
                             HandOpenCursor.set()
                         case .eyedropper:
@@ -393,11 +400,9 @@ extension DrawingCanvas {
                     }
                 }
             }
-            #endif
         }
         // Reassert during offset changes as well (some zoom flows adjust offset last)
         .onChange(of: document.canvasOffset) { _, _ in
-            #if os(macOS)
             if isCanvasHovering {
                 switch document.currentTool {
                 case .hand:
@@ -412,7 +417,6 @@ extension DrawingCanvas {
                     break
                 }
             }
-            #endif
         }
         .contextMenu {
             directSelectionContextMenu

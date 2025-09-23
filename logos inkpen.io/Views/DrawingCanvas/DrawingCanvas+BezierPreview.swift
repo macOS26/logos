@@ -65,10 +65,17 @@ extension DrawingCanvas {
            let currentBezierPath = bezierPath,
            bezierPoints.count >= 2 {
             
-            let canvasMouseLocation = screenToCanvas(mouseLocation, geometry: geometry)
+            let rawCanvasMouseLocation = screenToCanvas(mouseLocation, geometry: geometry)
             let lastPointIndex = bezierPoints.count - 1
+            let lastPoint = bezierPoints[lastPointIndex]
+            let lastPointLocation = CGPoint(x: lastPoint.x, y: lastPoint.y)
             let firstPoint = bezierPoints[0]
             let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
+            
+            // Apply angle constraint if Shift is pressed
+            let canvasMouseLocation = isShiftPressed ? 
+                constrainToAngle(from: lastPointLocation, to: rawCanvasMouseLocation) : 
+                rawCanvasMouseLocation
             
             // Create preview path (existing path + rubber band to cursor + back to first point)
             Path { path in
@@ -112,10 +119,62 @@ extension DrawingCanvas {
         if isBezierDrawing && document.currentTool == .bezierPen,
            let mouseLocation = currentMouseLocation,
            bezierPoints.count > 0 {
-            let canvasMouseLocation = screenToCanvas(mouseLocation, geometry: geometry)
+            let rawCanvasMouseLocation = screenToCanvas(mouseLocation, geometry: geometry)
             let lastPointIndex = bezierPoints.count - 1
             let lastPoint = bezierPoints[lastPointIndex]
             let lastPointLocation = CGPoint(x: lastPoint.x, y: lastPoint.y)
+            
+            // Apply angle constraint if Shift is pressed
+            let canvasMouseLocation = isShiftPressed ? 
+                constrainToAngle(from: lastPointLocation, to: rawCanvasMouseLocation) : 
+                rawCanvasMouseLocation
+            
+            // Show intersection snap indicator for any point (triangles, rectangles, etc.)
+            if isShiftPressed && bezierPoints.count >= 1 {
+                // Find the best intersection snap point
+                if let snapPoint = findBestIntersectionPoint(from: lastPointLocation, toward: rawCanvasMouseLocation) {
+                    // Draw snap indicator circle
+                    Circle()
+                        .fill(Color.purple.opacity(0.3))
+                        .frame(width: 16 / document.zoomLevel, height: 16 / document.zoomLevel)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.purple, lineWidth: 2 / document.zoomLevel)
+                        )
+                        .position(
+                            x: snapPoint.x * document.zoomLevel + document.canvasOffset.x,
+                            y: snapPoint.y * document.zoomLevel + document.canvasOffset.y
+                        )
+                    
+                    // Draw preview line from current point to snap point
+                    Path { path in
+                        path.move(to: lastPointLocation)
+                        path.addLine(to: snapPoint)
+                    }
+                    .stroke(Color.purple.opacity(0.5), style: SwiftUI.StrokeStyle(
+                        lineWidth: 1 / document.zoomLevel, 
+                        lineCap: .round, 
+                        dash: [4, 2]
+                    ))
+                    .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                    
+                    // Draw preview line from snap point to start (closing line preview)
+                    let firstPoint = bezierPoints[0]
+                    let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
+                    Path { path in
+                        path.move(to: snapPoint)
+                        path.addLine(to: firstPointLocation)
+                    }
+                    .stroke(Color.purple.opacity(0.5), style: SwiftUI.StrokeStyle(
+                        lineWidth: 1 / document.zoomLevel, 
+                        lineCap: .round, 
+                        dash: [4, 2]
+                    ))
+                    .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                }
+            }
             
             // PROFESSIONAL SCALE-INDEPENDENT RUBBER BAND (Professional Standards)
             let strokeWidth = 2.0 / document.zoomLevel    // Scale-independent close preview
@@ -339,5 +398,12 @@ extension DrawingCanvas {
                     ))
             }
         }
+    }
+    
+    // MARK: - Angle Constraint Helper
+
+    /// Constrains a point to specific angles - delegates to GeometryUtils
+    private func constrainToAngle(from reference: CGPoint, to target: CGPoint) -> CGPoint {
+        return GeometryUtils.constrainToAngle(from: reference, to: target, constraintAngles: constraintAngles)
     }
 } 

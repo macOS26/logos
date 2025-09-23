@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 extension DrawingCanvas {
     

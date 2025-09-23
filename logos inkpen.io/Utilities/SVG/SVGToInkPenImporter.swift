@@ -1,7 +1,5 @@
 import SwiftUI
-import Foundation
-import CoreGraphics
-import AppKit
+import Combine
 import UniformTypeIdentifiers
 
 // MARK: - SVG to Ink Pen Document Importer

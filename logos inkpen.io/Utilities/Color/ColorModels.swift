@@ -5,9 +5,7 @@
 //  Created by Todd Bruss on 7/5/25.
 //
 
-import Foundation
 import SwiftUI
-import AppKit
 
 // MARK: - Color Modes
 enum ColorMode: String, CaseIterable, Codable {
@@ -38,28 +36,36 @@ enum ColorChangeType: String, CaseIterable, Codable {
     case strokeOpacity = "StrokeOpacity"
 }
 
+// MARK: - Color Space Support
+enum ColorSpaceType: String, Codable {
+    case sRGB = "sRGB"
+    case displayP3 = "displayP3"
+}
+
 // MARK: - Color Definitions
 struct RGBColor: Codable, Hashable {
     var red: Double
     var green: Double
     var blue: Double
     var alpha: Double
-    
-    init(red: Double, green: Double, blue: Double, alpha: Double = 1.0) {
+    var colorSpace: ColorSpaceType
+
+    init(red: Double, green: Double, blue: Double, alpha: Double = 1.0, colorSpace: ColorSpaceType = .displayP3) {
         self.red = red
         self.green = green
         self.blue = blue
         self.alpha = alpha
+        self.colorSpace = colorSpace
     }
-    
+
     var color: Color {
-        // Create color in the app's working space
-        return ColorManager.shared.makeColor(r: red, g: green, b: blue, a: alpha, source: ColorManager.shared.sRGBCG)
+        // Create color in the app's working space (Display P3)
+        return ColorManager.shared.makeColor(r: red, g: green, b: blue, a: alpha, source: ColorManager.shared.workingCGColorSpace)
     }
-    
+
     var cgColor: CGColor {
         let comps: [CGFloat] = [CGFloat(red), CGFloat(green), CGFloat(blue), CGFloat(alpha)]
-        return CGColor(colorSpace: ColorManager.shared.sRGBCG, components: comps) ?? CGColor(red: red, green: green, blue: blue, alpha: alpha)
+        return CGColor(colorSpace: ColorManager.shared.workingCGColorSpace, components: comps) ?? CGColor(red: red, green: green, blue: blue, alpha: alpha)
     }
 }
 
@@ -87,8 +93,8 @@ struct CMYKColor: Codable, Hashable {
     }
     
     var color: Color {
-        // CMYK components are device independent; render via sRGB-equivalent then into working space
-        return ColorManager.shared.makeColor(r: rgbColor.red, g: rgbColor.green, b: rgbColor.blue, a: alpha, source: ColorManager.shared.sRGBCG)
+        // CMYK components are device independent; render via RGB then into working space
+        return ColorManager.shared.makeColor(r: rgbColor.red, g: rgbColor.green, b: rgbColor.blue, a: alpha, source: ColorManager.shared.workingCGColorSpace)
     }
 }
 
@@ -138,8 +144,8 @@ struct HSBColorModel: Codable, Hashable {
     }
     
     var color: Color {
-        // HSB is interpreted in sRGB primaries. Convert to working space for UI
-        return ColorManager.shared.makeColor(r: rgbColor.red, g: rgbColor.green, b: rgbColor.blue, a: alpha, source: ColorManager.shared.sRGBCG)
+        // HSB uses Display P3 color space for consistency
+        return ColorManager.shared.makeColor(r: rgbColor.red, g: rgbColor.green, b: rgbColor.blue, a: alpha, source: ColorManager.shared.workingCGColorSpace)
     }
     
     // Create HSB from RGB

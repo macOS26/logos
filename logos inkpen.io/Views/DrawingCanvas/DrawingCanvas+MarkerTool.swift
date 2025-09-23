@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import Foundation
+import SwiftUI
 
 extension DrawingCanvas {
     
@@ -174,7 +174,7 @@ extension DrawingCanvas {
         
         // PERFORMANCE OPTIMIZATION: Use a slightly higher tolerance for live preview
         let previewSmoothingTolerance = document.currentMarkerSmoothingTolerance * 1.25
-        let simplifiedPoints = douglasPeuckerSimplify(
+        let simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
             points: rawPointLocations,
             tolerance: previewSmoothingTolerance
         )
@@ -194,12 +194,14 @@ extension DrawingCanvas {
     // MARK: - Marker Stroke Processing
     
     private func processMarkerStroke() {
-        guard markerRawPoints.count >= 3,
+        guard markerRawPoints.count >= 2,
               let _ = activeMarkerShape,
-              document.selectedLayerIndex != nil else { 
+              document.selectedLayerIndex != nil else {
             Log.fileOperation("🖊️ MARKER: Too few points (\(markerRawPoints.count)) - keeping as simple stroke", level: .info)
-            return 
+            return
         }
+
+        // We'll detect straight lines AFTER simplification, like brush tool does
         
         let rawPointLocations = markerRawPoints.map { $0.location }
         Log.fileOperation("🖊️ ADVANCED SMOOTHING: Starting with \(rawPointLocations.count) raw marker points", level: .info)
@@ -207,27 +209,48 @@ extension DrawingCanvas {
         var processedPoints = rawPointLocations
         
         // Step 1: Apply Chaikin smoothing for initial curve smoothing (if enabled)
-        if document.settings.advancedSmoothingEnabled {
+        if document.advancedSmoothingEnabled {
             let chaikinSmoothed = CurveSmoothing.chaikinSmooth(
                 points: processedPoints,
-                iterations: document.settings.chaikinSmoothingIterations,
+                iterations: document.chaikinSmoothingIterations,
                 ratio: 0.25
             )
             processedPoints = chaikinSmoothed
-            Log.fileOperation("🖊️ CHAIKIN: Smoothed to \(processedPoints.count) points (\(document.settings.chaikinSmoothingIterations) iterations)", level: .info)
+            Log.fileOperation("🖊️ CHAIKIN: Smoothed to \(processedPoints.count) points (\(document.chaikinSmoothingIterations) iterations)", level: .info)
         }
         
         // Step 2: Apply improved Douglas-Peucker simplification with sharp corner preservation
-        let smoothingTolerance = document.currentMarkerSmoothingTolerance
-        markerSimplifiedPoints = document.settings.advancedSmoothingEnabled ?
+        // Reduce tolerance to preserve more points for proper leaf shapes
+        let smoothingTolerance = document.currentMarkerSmoothingTolerance * 0.3  // Less aggressive for leaf shapes
+        markerSimplifiedPoints = document.advancedSmoothingEnabled ?
             CurveSmoothing.improvedDouglassPeucker(
                 points: processedPoints,
                 tolerance: smoothingTolerance,
-                preserveSharpCorners: document.settings.preserveSharpCorners
+                preserveSharpCorners: document.preserveSharpCorners
             ) :
-            douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
-        
+            DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
+
         Log.info("Douglas-Peucker: Simplified to \(markerSimplifiedPoints.count) points", category: .general)
+
+        // CRITICAL: Ensure we have enough points for proper leaf shape generation
+        // If simplification was too aggressive, re-interpolate points (SAME AS BRUSH TOOL!)
+        if markerSimplifiedPoints.count < 8 && processedPoints.count > 2 {
+            // Try again with much less tolerance
+            let minTolerance = smoothingTolerance * 0.1
+            markerSimplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: minTolerance)
+
+            // If still too few, sample from processed points
+            if markerSimplifiedPoints.count < 8 {
+                let stepSize = max(1, processedPoints.count / 10)
+                markerSimplifiedPoints = []
+                for i in Swift.stride(from: 0, to: processedPoints.count, by: stepSize) {
+                    markerSimplifiedPoints.append(processedPoints[i])
+                }
+                if let last = processedPoints.last, markerSimplifiedPoints.last != last {
+                    markerSimplifiedPoints.append(last)
+                }
+            }
+        }
         
         // Step 2: Generate smooth felt-tip marker stroke
         let markerStrokePath = createFinalMarkerStroke(
@@ -317,39 +340,73 @@ extension DrawingCanvas {
         guard centerPoints.count >= 2 else {
             return createMarkerDot(at: centerPoints[0])
         }
-        
+
+        // Markers don't need special straight line handling - they should look consistent
+
         // Calculate variable thickness at each simplified point with pressure and tapering
         var thicknessPoints: [(location: CGPoint, thickness: Double)] = []
         
         for (index, point) in centerPoints.enumerated() {
             let progress = Double(index) / Double(centerPoints.count - 1)
-            
+
             // Get pressure at this point
             let pressure = getPressureAtPoint(point, rawPoints: rawPoints)
-            
+
             // Base thickness from marker settings
             var finalThickness = document.currentMarkerTipSize
-            
-            // Apply tapering at start and end (like brush tool)
-            let startTaper = document.currentMarkerTaperStart
-            let endTaper = document.currentMarkerTaperEnd
-            
-            if progress < startTaper {
-                // Taper from 0 to full thickness at start
-                finalThickness *= (progress / startTaper)
-            } else if progress > (1.0 - endTaper) {
-                // Taper from full thickness to 0 at end
-                let endProgress = (1.0 - progress) / endTaper
-                finalThickness *= endProgress
+
+            // MARKER-SPECIFIC THICKNESS PROFILE (consistent felt-tip appearance)
+            // Markers maintain consistent width with only subtle tip effects
+            // SHORT STROKES: Must still look like marker, not brush leaves!
+
+            // For very short strokes, use minimal tapering to maintain marker appearance
+            let strokeLength = Double(centerPoints.count)
+            let isShortStroke = strokeLength < 20
+
+            if isShortStroke {
+                // Short strokes: Maintain consistent marker width with minimal tapering
+                // Only taper the very tips to avoid harsh cutoffs
+                if progress < 0.1 {
+                    // Very subtle start taper for marker tip entry
+                    finalThickness *= (0.85 + progress * 1.5) // Start at 85% quickly to full
+                } else if progress > 0.9 {
+                    // Very subtle end taper
+                    let endProgress = (1.0 - progress) * 10.0
+                    finalThickness *= (0.85 + endProgress * 0.15) // End at 85% of full
+                }
+                // Else maintain full thickness for marker body
+            } else {
+                // Longer strokes: Use normal marker tapering
+                let startTaper = document.currentMarkerTaperStart
+                let endTaper = document.currentMarkerTaperEnd
+
+                if progress < startTaper {
+                    // Gentle taper at start for marker tip
+                    finalThickness *= pow(progress / startTaper, 0.3) // Even gentler for consistent appearance
+                } else if progress > (1.0 - endTaper) {
+                    // Gentle taper at end
+                    let endProgress = (1.0 - progress) / endTaper
+                    finalThickness *= pow(endProgress, 0.3) // Even gentler
+                }
             }
-            
-            // Apply pressure variation (30% to 100% of base thickness)
-            finalThickness *= (0.3 + pressure * 0.7)
-            
+
+            // Apply pressure variation (marker characteristic)
+            // For short strokes, reduce pressure variation to maintain consistency
+            if isShortStroke {
+                finalThickness *= (0.85 + pressure * 0.15) // Minimal pressure variation for short strokes
+            } else {
+                finalThickness *= (0.7 + pressure * 0.3) // Normal pressure variation for longer strokes
+            }
+
             // Apply feathering effect for felt-tip appearance
+            // Reduce feathering on short strokes to maintain solid appearance
             let feathering = document.currentMarkerFeathering
-            finalThickness *= (1.0 - feathering * 0.2) // Slight thickness reduction for feathering
-            
+            if isShortStroke {
+                finalThickness *= (1.0 - feathering * 0.05) // Minimal feathering for short strokes
+            } else {
+                finalThickness *= (1.0 - feathering * 0.2) // Normal feathering for longer strokes
+            }
+
             thicknessPoints.append((location: point, thickness: finalThickness))
         }
         
@@ -547,54 +604,11 @@ extension DrawingCanvas {
     
     // MARK: - Shared Algorithm Functions (Same as Freehand/Brush Tools)
     
-    private func douglasPeuckerSimplify(points: [CGPoint], tolerance: Double) -> [CGPoint] {
-        guard points.count > 2 else { return points }
-        
-        return douglasPeuckerRecursive(points: points, tolerance: tolerance, startIndex: 0, endIndex: points.count - 1)
-    }
+    // douglasPeuckerSimplify moved to DrawingCanvasPathHelpers
     
-    private func douglasPeuckerRecursive(points: [CGPoint], tolerance: Double, startIndex: Int, endIndex: Int) -> [CGPoint] {
-        guard endIndex - startIndex > 1 else {
-            return [points[startIndex], points[endIndex]]
-        }
-        
-        let startPoint = points[startIndex]
-        let endPoint = points[endIndex]
-        
-        // Find the point with maximum distance from the line segment
-        var maxDistance: Double = 0
-        var maxIndex = startIndex
-        
-        for i in (startIndex + 1)..<endIndex {
-            let distance = perpendicularDistance(point: points[i], lineStart: startPoint, lineEnd: endPoint)
-            if distance > maxDistance {
-                maxDistance = distance
-                maxIndex = i
-            }
-        }
-        
-        // If the maximum distance is greater than tolerance, recursively simplify
-        if maxDistance > tolerance {
-            // Recursively simplify the two segments
-            let leftSegment = douglasPeuckerRecursive(points: points, tolerance: tolerance, startIndex: startIndex, endIndex: maxIndex)
-            let rightSegment = douglasPeuckerRecursive(points: points, tolerance: tolerance, startIndex: maxIndex, endIndex: endIndex)
-            
-            // Combine segments (remove duplicate point at the connection)
-            return leftSegment + Array(rightSegment.dropFirst())
-        } else {
-            // All points between start and end are within tolerance - return only endpoints
-            return [startPoint, endPoint]
-        }
-    }
+    // douglasPeuckerRecursive moved to DrawingCanvasPathHelpers
     
-    private func perpendicularDistance(point: CGPoint, lineStart: CGPoint, lineEnd: CGPoint) -> Double {
-        let A = lineEnd.y - lineStart.y
-        let B = lineStart.x - lineEnd.x
-        let C = lineEnd.x * lineStart.y - lineStart.x * lineEnd.y
-        
-        let distance = abs(A * point.x + B * point.y + C) / sqrt(A * A + B * B)
-        return distance
-    }
+    // perpendicularDistance moved to DrawingCanvasPathHelpers
     
     private func fitBezierCurves(through points: [CGPoint]) -> [PathElement] {
         var elements: [PathElement] = []
@@ -883,104 +897,6 @@ extension DrawingCanvas {
     }
     
     // MARK: - Helper Functions (Same as Brush Tool)
-    
-    /// Get the current fill color that the user has set (same logic as StrokeFillPanel)
-    private func getCurrentFillColor() -> VectorColor {
-        // PRIORITY 1: If text objects are selected, use their fill color
-        if let firstSelectedTextID = document.selectedTextIDs.first,
-           let textObject = document.findText(by: firstSelectedTextID) {
-            return textObject.typography.fillColor
-        }
-        
-        // PRIORITY 2: If shapes are selected, use their color
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.getShapesForLayer(layerIndex).first(where: { $0.id == firstSelectedID }),
-           let fillColor = shape.fillStyle?.color {
-            return fillColor
-        }
-        
-        // PRIORITY 3: Use default color for new shapes
-        return document.defaultFillColor
-    }
-    
-    /// Get the current fill opacity that the user has set (same logic as StrokeFillPanel)
-    private func getCurrentFillOpacity() -> Double {
-        // PRIORITY 1: If text objects are selected, use their fill opacity
-        if let firstSelectedTextID = document.selectedTextIDs.first,
-           let textObject = document.findText(by: firstSelectedTextID) {
-            return textObject.typography.fillOpacity
-        }
-        
-        // PRIORITY 2: If shapes are selected, use their opacity
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.getShapesForLayer(layerIndex).first(where: { $0.id == firstSelectedID }),
-           let opacity = shape.fillStyle?.opacity {
-            return opacity
-        }
-        
-        // PRIORITY 3: Use default opacity for new shapes
-        return document.defaultFillOpacity
-    }
-    
-    /// Get the current stroke color that the user has set
-    private func getCurrentStrokeColor() -> VectorColor {
-        // PRIORITY 1: If text objects are selected, use their stroke color
-        if let firstSelectedTextID = document.selectedTextIDs.first,
-           let textObject = document.findText(by: firstSelectedTextID) {
-            return textObject.typography.strokeColor
-        }
-        
-        // PRIORITY 2: If shapes are selected, use their color
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.getShapesForLayer(layerIndex).first(where: { $0.id == firstSelectedID }),
-           let strokeColor = shape.strokeStyle?.color {
-            return strokeColor
-        }
-        
-        // PRIORITY 3: Use default color for new shapes
-        return document.defaultStrokeColor
-    }
-    
-    /// Get the current stroke opacity that the user has set
-    private func getCurrentStrokeOpacity() -> Double {
-        // PRIORITY 1: If text objects are selected, use their stroke opacity
-        if let firstSelectedTextID = document.selectedTextIDs.first,
-           let textObject = document.findText(by: firstSelectedTextID) {
-            return textObject.typography.strokeOpacity
-        }
-        
-        // PRIORITY 2: If shapes are selected, use their opacity
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.getShapesForLayer(layerIndex).first(where: { $0.id == firstSelectedID }),
-           let opacity = shape.strokeStyle?.opacity {
-            return opacity
-        }
-        
-        // PRIORITY 3: Use default opacity for new shapes
-        return document.defaultStrokeOpacity
-    }
-    
-    /// Get the current stroke width that the user has set
-    private func getCurrentStrokeWidth() -> Double {
-        // PRIORITY 1: If text objects are selected, use their stroke width
-        if let firstSelectedTextID = document.selectedTextIDs.first,
-           let textObject = document.findText(by: firstSelectedTextID) {
-            return textObject.typography.strokeWidth
-        }
-        
-        // PRIORITY 2: If shapes are selected, use their width
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.getShapesForLayer(layerIndex).first(where: { $0.id == firstSelectedID }),
-           let width = shape.strokeStyle?.width {
-            return width
-        }
-        
-        // PRIORITY 3: Use default width for new shapes
-        return document.defaultStrokeWidth
-    }
+
+    // Color helper functions are now provided by DrawingCanvasStyleHelpers extension
 } 

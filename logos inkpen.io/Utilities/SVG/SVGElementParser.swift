@@ -6,7 +6,7 @@
 //  Extracted from SVGParser.swift for better organization
 //
 
-import Foundation
+import SwiftUI
 
 extension SVGParser {
     
@@ -59,6 +59,10 @@ extension SVGParser {
         }
         
         let vectorPath = VectorPath(elements: elements, isClosed: true)
+        
+        // Check if this rectangle should be clipped
+        let (shouldClip, clipPathId) = checkForClipPath(attributes)
+        
         let shape = createShape(
             name: "Rectangle",
             path: vectorPath,
@@ -66,7 +70,12 @@ extension SVGParser {
             geometricType: rx > 0 || ry > 0 ? .roundedRectangle : .rectangle
         )
         
-        shapes.append(shape)
+        // Apply clipping if needed
+        if shouldClip, let clipId = clipPathId {
+            applyClipPathToShape(shape, clipPathId: clipId)
+        } else {
+            shapes.append(shape)
+        }
     }
     
     func parseCircle(attributes: [String: String]) {
@@ -77,6 +86,9 @@ extension SVGParser {
         let center = CGPoint(x: cx, y: cy)
         let shape = VectorShape.circle(center: center, radius: r)
         
+        // Check if this circle should be clipped
+        let (shouldClip, clipPathId) = checkForClipPath(attributes)
+        
         let finalShape = createShape(
             name: "Circle",
             path: shape.path,
@@ -84,7 +96,12 @@ extension SVGParser {
             geometricType: .circle
         )
         
-        shapes.append(finalShape)
+        // Apply clipping if needed
+        if shouldClip, let clipId = clipPathId {
+            applyClipPathToShape(finalShape, clipPathId: clipId)
+        } else {
+            shapes.append(finalShape)
+        }
     }
     
     func parseEllipse(attributes: [String: String]) {
@@ -112,6 +129,10 @@ extension SVGParser {
         ]
         
         let vectorPath = VectorPath(elements: elements, isClosed: true)
+        
+        // Check if this ellipse should be clipped
+        let (shouldClip, clipPathId) = checkForClipPath(attributes)
+        
         let shape = createShape(
             name: "Ellipse",
             path: vectorPath,
@@ -119,7 +140,12 @@ extension SVGParser {
             geometricType: .ellipse
         )
         
-        shapes.append(shape)
+        // Apply clipping if needed
+        if shouldClip, let clipId = clipPathId {
+            applyClipPathToShape(shape, clipPathId: clipId)
+        } else {
+            shapes.append(shape)
+        }
     }
     
     func parseLine(attributes: [String: String]) {

@@ -5,9 +5,7 @@
 //  Created by Todd Bruss on 8/23/25.
 //
 
-import Foundation
 import SwiftUI
-import CoreGraphics
 import UniformTypeIdentifiers
 
 struct DocumentBasedMainView: View {
@@ -20,17 +18,12 @@ struct DocumentBasedMainView: View {
     @State private var showingColorPicker = false
     @State private var currentDocumentURL: URL? = nil
     @State private var showingImportDialog = false
-    @State private var importFileURL: URL?
     @State private var importResult: VectorImportResult?
     @State private var showingImportProgress = false
-    @State private var showingDWFExportDialog = false
-    @State private var dwfExportOptions = DWFExportOptions()
-    @State private var showingDWGExportDialog = false
-    @State private var dwgExportOptions = DWGExportOptions()
     @State private var showingSVGTestHarness = false
     @State private var showingPressureCalibration = false
-    @State private var showingNewDocumentSetup = false
-    
+    @State private var hasInitializedTool = false
+
     var body: some View {
         // EXACT REPLICATION of MainView structure - FIXED status bar position
         VStack(spacing: 0) {
@@ -87,6 +80,8 @@ struct DocumentBasedMainView: View {
             StatusBar(document: document)
         }
         .frame(minHeight: 524) // MINIMUM: Ensure overall height accommodates all elements + status bar (500 + 24)
+        .toolbarBackground(Color(NSColor.controlBackgroundColor), for: .windowToolbar)
+        .toolbarBackground(.visible, for: .windowToolbar)
         .toolbar {
             // CUSTOM DOCUMENT TOOLBAR with icon and clickable path navigation
             //            ToolbarItem(placement: .principal) {
@@ -98,17 +93,10 @@ struct DocumentBasedMainView: View {
                 appState: appState,
                 currentDocumentURL: $currentDocumentURL,
                 showingDocumentSettings: $showingDocumentSettings,
-                showingExportDialog: $showingExportDialog,
                 showingColorPicker: $showingColorPicker,
-                onSave: saveDocument,
-                onSaveAs: saveDocumentAs,
-                onOpen: openDocument,
-                onNew: newDocument,
                 showingImportDialog: $showingImportDialog,
                 importResult: $importResult,
                 showingImportProgress: $showingImportProgress,
-                showingDWFExportDialog: $showingDWFExportDialog,
-                showingDWGExportDialog: $showingDWGExportDialog,
                 showingSVGTestHarness: $showingSVGTestHarness,
                 showingPressureCalibration: $showingPressureCalibration,
                 onRunDiagnostics: runPasteboardDiagnostics
@@ -140,7 +128,7 @@ struct DocumentBasedMainView: View {
         .onAppear {
             // Hydrate linked images when opened via DocumentGroup (where init lacks URL context)
             if let url = fileURL {
-                ImageContentRegistry.setBaseDirectoryURL(url.deletingLastPathComponent())
+                ImageContentRegistry.setBaseDirectory(url.deletingLastPathComponent())
                 for unifiedObject in document.unifiedObjects {
                     if case .shape(let shape) = unifiedObject.objectType {
                         _ = ImageContentRegistry.hydrateImageIfAvailable(for: shape)
@@ -160,8 +148,7 @@ struct DocumentBasedMainView: View {
             allowedContentTypes: [
                 .svg,                                    // SVG files
                 .pdf,                                    // PDF files
-                UTType(filenameExtension: "dwf")!,       // DWF files (.dwf)
-                .png, .jpeg, .tiff, .gif, .bmp, UTType("public.heic")!, // Raster images
+                .png, // PNG images only
                 .data                                    // Generic data for unknown formats
             ],
             allowsMultipleSelection: false
@@ -182,33 +169,17 @@ struct DocumentBasedMainView: View {
                 showingImportDialog = true
             })
         }
-        .sheet(isPresented: $showingDWFExportDialog) {
-            DWFExportView(document: document, options: $dwfExportOptions) { finalOptions in
-                showingDWFExportDialog = false
-                exportToDWF(with: finalOptions)
-            }
-        }
-        .sheet(isPresented: $showingDWGExportDialog) {
-            DWGExportView(document: document, options: $dwgExportOptions) { finalOptions in
-                showingDWGExportDialog = false
-                exportToDWG(with: finalOptions)
-            }
-        }
-        .sheet(isPresented: $showingSVGTestHarness) {
-            SVGTestHarness { importedDoc in
-                // Load the imported document into the main app
-                loadImportedDocument(importedDoc)
-            }
-            .frame(width: 1000, height: 800)
-        }
         .sheet(isPresented: $showingPressureCalibration) {
             PressureCalibrationView()
                 .frame(width: 1200, height: 800)
         }
         .onAppear {
-            // Apply the user's default tool setting to the document
-            document.currentTool = appState.defaultTool
-            Log.info("🛠️ Applied default tool \(appState.defaultTool.rawValue) to DocumentGroup document", category: .general)
+            // Only apply default tool once when document is first opened
+            if !hasInitializedTool {
+                document.currentTool = appState.defaultTool
+                hasInitializedTool = true
+                Log.info("🛠️ Applied default tool \(appState.defaultTool.rawValue) to DocumentGroup document (initial setup)", category: .general)
+            }
             
             // Connect document to menu system
             documentState.setDocument(document)
@@ -246,89 +217,8 @@ struct DocumentBasedMainView: View {
         }
     }
     
-    // MARK: - Document Operations (FIXED - Real implementations)
-    private func saveDocument() {
-        // Save the current document - DocumentGroup handles the file URL
-        if let fileURL = fileURL {
-            saveDocumentToURL(fileURL)
-        } else {
-            saveDocumentAs()
-        }
-    }
-    
-    private func saveDocumentAs() {
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [UTType.json, UTType.inkpen, UTType(filenameExtension: "svg")!]
-        panel.nameFieldStringValue = "Document.inkpen"
-        panel.title = "Save Document"
-        
-        panel.begin { response in
-            guard response == .OK, let url = panel.url else { return }
-            self.saveDocumentToURL(url)
-        }
-    }
-    
-    private func saveDocumentToURL(_ url: URL) {
-        do {
-            // Check file extension to determine format
-            if url.pathExtension.lowercased() == "svg" {
-                try FileOperations.exportToSVG(document, url: url)
-                Log.info("✅ Successfully saved document as SVG to: \(url.path)", category: .fileOperations)
-            } else {
-                try FileOperations.exportToJSON(document, url: url)
-                // Generate and set custom document icon only for inkpen files
-                DocumentIconGenerator.shared.setCustomIcon(for: url, document: document)
-                Log.info("✅ Successfully saved document to: \(url.path)", category: .fileOperations)
-            }
-            
-        } catch {
-            Log.error("❌ Save failed: \(error)", category: .error)
-            
-            // Show error notification
-            DispatchQueue.main.async {
-                let alert = NSAlert()
-                alert.messageText = "Save Failed"
-                alert.informativeText = "Error: \(error.localizedDescription)"
-                alert.alertStyle = .critical
-                alert.runModal()
-            }
-        }
-    }
-    
-    private func openDocument() {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [UTType.json, UTType.svg, UTType.inkpen]
-        panel.allowsMultipleSelection = false
-        panel.title = "Open Document"
-        
-        panel.begin { response in
-            guard response == .OK, let url = panel.urls.first else { return }
-            
-            // Use DocumentGroup's native file opening mechanism to create new tab/window
-            NSDocumentController.shared.openDocument(withContentsOf: url, display: true) { document, documentWasAlreadyOpen, error in
-                if let error = error {
-                    Log.error("❌ Open failed: \(error)", category: .error)
-                    
-                    // Show error notification
-                    DispatchQueue.main.async {
-                        let alert = NSAlert()
-                        alert.messageText = "Open Failed"
-                        alert.informativeText = "Error: \(error.localizedDescription)"
-                        alert.alertStyle = .critical
-                        alert.runModal()
-                    }
-                } else {
-                    Log.info("✅ Successfully opened document in new tab/window from: \(url.path)", category: .fileOperations)
-                }
-            }
-        }
-    }
-    
-    private func newDocument() {
-        // Keep legacy API available; forward to onNew()
-        //onNew()
-    }
-    
+    // MARK: - Document Operations
+
     private func loadImportedDocument(_ importedDoc: VectorDocument) {
         // Reset view state BEFORE loading document to prevent two-step process
         document.zoomLevel = 1.0
@@ -424,68 +314,8 @@ struct DocumentBasedMainView: View {
         }
     }
     
-    // MARK: - Professional DWF Export
-    
-    private func exportToDWF(with options: DWFExportOptions) {
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [UTType(filenameExtension: "dwf")].compactMap { $0 }
-        panel.nameFieldStringValue = "export.dwf"
-        panel.title = "Export as DWF"
-        
-        panel.begin { response in
-            guard response == .OK, let url = panel.url else { return }
-            
-            do {
-                try FileOperations.exportDWF(document, url: url, options: options)
-                
-                Log.info("✅ Successfully exported DWF to: \(url.path)", category: .fileOperations)
-                
-            } catch {
-                Log.error("❌ DWF export failed: \(error)", category: .error)
-                
-                // Show error notification
-                DispatchQueue.main.async {
-                    let alert = NSAlert()
-                    alert.messageText = "DWF Export Failed"
-                    alert.informativeText = "Error: \(error.localizedDescription)"
-                    alert.alertStyle = .critical
-                    alert.runModal()
-                }
-            }
-        }
-    }
-    
-    // MARK: - Professional DWG Export
-    
-    private func exportToDWG(with options: DWGExportOptions) {
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [UTType(filenameExtension: "dwg")].compactMap { $0 }
-        panel.nameFieldStringValue = "export.dwg"
-        panel.title = "Export as DWG"
-        
-        panel.begin { response in
-            guard response == .OK, let url = panel.url else { return }
-            
-            do {
-                try FileOperations.exportDWG(document, url: url, options: options)
-                
-                Log.info("✅ Successfully exported DWG to: \(url.path)", category: .fileOperations)
-                
-            } catch {
-                Log.error("❌ DWG export failed: \(error)", category: .error)
-                
-                // Show error notification
-                DispatchQueue.main.async {
-                    let alert = NSAlert()
-                    alert.messageText = "DWG Export Failed"
-                    alert.informativeText = "Error: \(error.localizedDescription)"
-                    alert.alertStyle = .critical
-                    alert.runModal()
-                }
-            }
-        }
-    }
-    
+    // MARK: - Helper Functions
+
     private func runPasteboardDiagnostics() {
         Log.info("🔧 DocumentGroup: Running pasteboard diagnostics", category: .general)
         let report = PasteboardDiagnostics.shared.runDiagnostics(on: document)

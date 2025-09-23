@@ -5,28 +5,46 @@
 //  Created by Todd Bruss on 7/5/25.
 //
 
-import Foundation
 import SwiftUI
 
-// MARK: - CGPathFillRule Codable Extension
-extension CGPathFillRule: Codable {
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        let rawValue = try container.decode(Int32.self)
-        switch rawValue {
-        case 0:
-            self = .winding
-        case 1:
-            self = .evenOdd
-        default:
-            self = .winding
+// MARK: - FillRule Wrapper (Codable wrapper for CGPathFillRule)
+struct FillRule: Codable, Hashable {
+    private let rule: String
+
+    init(_ rule: CGPathFillRule) {
+        switch rule {
+        case .evenOdd:
+            self.rule = "evenOdd"
+        case .winding:
+            self.rule = "winding"
+        @unknown default:
+            self.rule = "winding"
         }
     }
-    
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(self.rawValue)
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        self.rule = try container.decode(String.self)
     }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rule)
+    }
+
+    var cgPathFillRule: CGPathFillRule {
+        switch rule {
+        case "evenOdd":
+            return .evenOdd
+        case "winding":
+            return .winding
+        default:
+            return .winding
+        }
+    }
+
+    static let winding = FillRule(.winding)
+    static let evenOdd = FillRule(.evenOdd)
 }
 
 // MARK: - Point Types
@@ -75,13 +93,43 @@ struct VectorPath: Codable, Hashable, Identifiable {
     var id: UUID
     var elements: [PathElement]
     var isClosed: Bool
-    var fillRule: CGPathFillRule
-    
+    var fillRule: FillRule
+
     init(elements: [PathElement] = [], isClosed: Bool = false, fillRule: CGPathFillRule = .winding) {
         self.id = UUID()
         self.elements = elements
         self.isClosed = isClosed
-        self.fillRule = fillRule
+        self.fillRule = FillRule(fillRule)
+    }
+
+    // Custom encoding to make isClosed optional when false
+    enum CodingKeys: String, CodingKey {
+        case id, elements, isClosed, fillRule
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+
+        // Only encode elements if not empty (text objects often have empty paths)
+        if !elements.isEmpty {
+            try container.encode(elements, forKey: .elements)
+        }
+
+        // Only encode isClosed if it's true
+        if isClosed {
+            try container.encode(isClosed, forKey: .isClosed)
+        }
+
+        try container.encode(fillRule, forKey: .fillRule)
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        elements = try container.decodeIfPresent([PathElement].self, forKey: .elements) ?? []
+        isClosed = try container.decodeIfPresent(Bool.self, forKey: .isClosed) ?? false
+        fillRule = try container.decode(FillRule.self, forKey: .fillRule)
     }
     
     // PROFESSIONAL CONVENIENCE INITIALIZER: CGPath to VectorPath conversion
@@ -90,7 +138,7 @@ struct VectorPath: Codable, Hashable, Identifiable {
         self.id = UUID()
         self.elements = []
         self.isClosed = false
-        self.fillRule = fillRule
+        self.fillRule = FillRule(fillRule)
         
         // Convert CGPath to VectorPath elements
         cgPath.applyWithBlock { elementPointer in

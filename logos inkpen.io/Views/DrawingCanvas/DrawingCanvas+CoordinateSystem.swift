@@ -195,36 +195,37 @@ extension DrawingCanvas {
         // Use standard document bounds for fit-to-page calculations
         let documentBounds = document.documentBounds
         let viewSize = geometry.size
-        
+
         // RULER ADJUSTMENT: Account for ruler space when calculating available area
         let rulerThickness: CGFloat = 20
         let rulerOffset = document.showRulers ? rulerThickness : 0
-        
+
         // Calculate zoom level to fit the canvas in the view - accounting for ruler space
         let availableWidth = viewSize.width - rulerOffset
         let availableHeight = viewSize.height - rulerOffset
-        
+
         let scaleX = availableWidth / documentBounds.width
         let scaleY = availableHeight / documentBounds.height
         let fitZoom = min(scaleX, scaleY)
-        
+
         // Set zoom level to fit canvas in view
         document.zoomLevel = max(0.1, min(16.0, fitZoom))
-        
-        // Center canvas in the VISIBLE area at the fit zoom (account for rulers)
-        // Add 1px compensation for the top ruler hairline so content doesn't sit under it
-        let rulerBorderCompensationY: CGFloat = document.showRulers ? 0.5 : 0.0
+
+        // Center canvas in the VISIBLE area at the fit zoom
+        // The canvas offset positions the document origin (0,0) relative to the view origin
+        // When rulers are shown, we need to account for the ruler space
         let visibleCenter = CGPoint(
-            x: (viewSize.width - rulerOffset) / 2.0 + rulerOffset,
-            y: (viewSize.height - rulerOffset) / 2.0 + rulerOffset + rulerBorderCompensationY
+            x: (viewSize.width + rulerOffset) / 2.0,  // Center of visible area
+            y: (viewSize.height + rulerOffset) / 2.0  // Center of visible area
         )
-        
+
         let documentCenter = CGPoint(
             x: documentBounds.midX,
             y: documentBounds.midY
         )
-        
+
         // Calculate offset to center document in the visible area
+        // The offset positions the canvas so that the document appears centered
         document.canvasOffset = CGPoint(
             x: visibleCenter.x - (documentCenter.x * document.zoomLevel),
             y: visibleCenter.y - (documentCenter.y * document.zoomLevel)

@@ -1,7 +1,4 @@
 import SwiftUI
-import Foundation
-import CoreGraphics
-import AppKit
 import UniformTypeIdentifiers
 
 // MARK: - Simple SVG to Ink Pen Converter

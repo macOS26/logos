@@ -5,8 +5,9 @@
 //  Created by Todd Bruss on 7/5/25.
 //
 
-import Foundation
-import CoreGraphics
+import SwiftUI
+import Combine
+import Combine
 
 // MARK: - PROFESSIONAL PATHFINDER STANDARDS
 // This implementation matches professional vector graphics software exactly
@@ -566,8 +567,8 @@ class PathOperations {
 			width: Double(effectiveWidth),
 			placement: .center,
 			dashPattern: strokeStyle.dashPattern,
-			lineCap: strokeStyle.lineCap,
-			lineJoin: strokeStyle.lineJoin,
+			lineCap: strokeStyle.lineCap.cgLineCap,
+			lineJoin: strokeStyle.lineJoin.cgLineJoin,
 			miterLimit: strokeStyle.miterLimit,
 			opacity: strokeStyle.opacity,
 			blendMode: strokeStyle.blendMode
@@ -577,8 +578,8 @@ class PathOperations {
 		if effectiveStrokeStyle.dashPattern.isEmpty {
 			outlinedPath = path.copy(
 				strokingWithWidth: CGFloat(effectiveStrokeStyle.width),
-				lineCap: effectiveStrokeStyle.lineCap,
-				lineJoin: effectiveStrokeStyle.lineJoin,
+				lineCap: effectiveStrokeStyle.lineCap.cgLineCap,
+				lineJoin: effectiveStrokeStyle.lineJoin.cgLineJoin,
 				miterLimit: CGFloat(effectiveStrokeStyle.miterLimit)
 			)
 		} else {
@@ -627,7 +628,7 @@ class PathOperations {
             height: expandedBounds.height * scale
         )
         
-        guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
+        guard let colorSpace = CGColorSpace(name: CGColorSpace.displayP3),
               let context = CGContext(
                 data: nil,
                 width: Int(contextSize.width),
@@ -646,8 +647,8 @@ class PathOperations {
         
         // Configure stroke properties
         context.setLineWidth(strokeStyle.width)
-        context.setLineCap(strokeStyle.lineCap)
-        context.setLineJoin(strokeStyle.lineJoin)
+        context.setLineCap(strokeStyle.lineCap.cgLineCap)
+        context.setLineJoin(strokeStyle.lineJoin.cgLineJoin)
         context.setMiterLimit(strokeStyle.miterLimit)
         
         // Set dash pattern

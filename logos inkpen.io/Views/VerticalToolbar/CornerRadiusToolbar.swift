@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 struct CornerRadiusToolbar: View {
     @ObservedObject var document: VectorDocument
@@ -104,7 +105,7 @@ struct CornerRadiusToolbar: View {
             .textFieldStyle(.roundedBorder)
             .frame(width: 50)
             .font(.caption)
-            .background(isRounded && (getSelectedShape()?.cornerRadii[safe: index] ?? 0.0) > 0 ? Color.blue.opacity(0.05) : Color.clear)
+            .background(isRounded && (getSelectedShape()?.cornerRadii[safe: index] ?? 0.0) > 0 ? InkPenUIColors.shared.veryLightBlueBackground : Color.clear)
         }
     }
     

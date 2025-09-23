@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import Foundation
+import SwiftUI
 
 // Throttle and batching state for brush preview (file-private to avoid stored properties in extensions)
 fileprivate var lastBrushPreviewTime: CFAbsoluteTime = 0
@@ -27,111 +27,7 @@ extension DrawingCanvas {
         return rect.origin.x.isFinite && rect.origin.y.isFinite && 
                rect.size.width.isFinite && rect.size.height.isFinite
     }
-    // MARK: - Current Color Helpers (Same as other tools)
-    
-    /// Get the current fill color that the user has set (same logic as StrokeFillPanel)
-    private func getCurrentFillColor() -> VectorColor {
-        // PRIORITY 1: If text objects are selected, use their fill color
-        if let firstSelectedTextID = document.selectedTextIDs.first,
-           let textObject = document.findText(by: firstSelectedTextID) {
-            return textObject.typography.fillColor
-        }
-        
-        // PRIORITY 2: If shapes are selected, use their color
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first {
-            let shapes = document.getShapesForLayer(layerIndex)
-            if let shape = shapes.first(where: { $0.id == firstSelectedID }),
-               let fillColor = shape.fillStyle?.color {
-                return fillColor
-            }
-        }
-        
-        // PRIORITY 3: Use default color for new shapes
-        return document.defaultFillColor
-    }
-    
-    /// Get the current fill opacity that the user has set (same logic as StrokeFillPanel)
-    private func getCurrentFillOpacity() -> Double {
-        // PRIORITY 1: If text objects are selected, use their fill opacity
-        if let firstSelectedTextID = document.selectedTextIDs.first,
-           let textObject = document.findText(by: firstSelectedTextID) {
-            return textObject.typography.fillOpacity
-        }
-        
-        // PRIORITY 2: If shapes are selected, use their opacity
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first {
-            let shapes = document.getShapesForLayer(layerIndex)
-            if let shape = shapes.first(where: { $0.id == firstSelectedID }),
-               let opacity = shape.fillStyle?.opacity {
-                return opacity
-            }
-        }
-        
-        // PRIORITY 3: Use default opacity for new shapes
-        return document.defaultFillOpacity
-    }
-    
-    /// Get the current stroke color that the user has set (same logic as StrokeFillPanel)
-    private func getCurrentStrokeColor() -> VectorColor {
-        // PRIORITY 1: If text objects are selected, use their stroke color
-        if let firstSelectedTextID = document.selectedTextIDs.first,
-           let textObject = document.findText(by: firstSelectedTextID) {
-            return textObject.typography.strokeColor
-        }
-        
-        // PRIORITY 2: If shapes are selected, use their color
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first {
-            let shapes = document.getShapesForLayer(layerIndex)
-            if let shape = shapes.first(where: { $0.id == firstSelectedID }),
-               let strokeColor = shape.strokeStyle?.color {
-                return strokeColor
-            }
-        }
-        
-        // PRIORITY 3: Use default color for new shapes
-        return document.defaultStrokeColor
-    }
-    
-    /// Get the current stroke opacity that the user has set (same logic as StrokeFillPanel)
-    private func getCurrentStrokeOpacity() -> Double {
-        // PRIORITY 1: If text objects are selected, use their stroke opacity
-        if let firstSelectedTextID = document.selectedTextIDs.first,
-           let textObject = document.findText(by: firstSelectedTextID) {
-            return textObject.typography.strokeOpacity
-        }
-        
-        // PRIORITY 2: If shapes are selected, use their opacity
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first {
-            let shapes = document.getShapesForLayer(layerIndex)
-            if let shape = shapes.first(where: { $0.id == firstSelectedID }),
-               let opacity = shape.strokeStyle?.opacity {
-                return opacity
-            }
-        }
-        
-        // PRIORITY 3: Use default opacity for new shapes
-        return document.defaultStrokeOpacity
-    }
-    
-    /// Get the current stroke width that the user has set (same logic as StrokeFillPanel)
-    private func getCurrentStrokeWidth() -> Double {
-        // If shapes are selected, use their stroke width
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first {
-            let shapes = document.getShapesForLayer(layerIndex)
-            if let shape = shapes.first(where: { $0.id == firstSelectedID }),
-               let width = shape.strokeStyle?.width {
-                return width
-            }
-        }
-        
-        // Use default width for new shapes
-        return document.defaultStrokeWidth
-    }
+    // MARK: - Current Color Helpers (now using shared DrawingCanvasStyleHelpers)
     
     // MARK: - Brush Tool Management
     
@@ -207,9 +103,40 @@ extension DrawingCanvas {
     
     internal func handleBrushDragEnd() {
         guard isBrushDrawing else { return }
-        
-        // Logging disabled in hot path to reduce CPU overhead
-        
+
+        // Log the point count at drag end
+        Log.info("🖌️ BRUSH DRAG END: \(brushRawPoints.count) points captured", category: .general)
+
+        // For straight lines (only 2 points), add intermediate points to ensure proper leaf shape generation
+        if brushRawPoints.count == 2 {
+            Log.info("🖌️ BRUSH DRAG END: Interpolating 2-point line in handleBrushDragEnd", category: .general)
+            let startPoint = brushRawPoints[0]
+            let endPoint = brushRawPoints[1]
+
+            // Add intermediate points along the line for proper variable width calculation
+            var interpolatedPoints: [BrushPoint] = [startPoint]
+
+            // Add 3-5 intermediate points for smooth leaf shape
+            let numIntermediatePoints = 4
+            for i in 1...numIntermediatePoints {
+                let t = Double(i) / Double(numIntermediatePoints + 1)
+                let interpolatedLocation = CGPoint(
+                    x: startPoint.location.x + (endPoint.location.x - startPoint.location.x) * t,
+                    y: startPoint.location.y + (endPoint.location.y - startPoint.location.y) * t
+                )
+                // Interpolate pressure as well
+                let interpolatedPressure = startPoint.pressure + (endPoint.pressure - startPoint.pressure) * t
+                interpolatedPoints.append(BrushPoint(
+                    location: interpolatedLocation,
+                    pressure: interpolatedPressure,
+                    timestamp: Date()
+                ))
+            }
+
+            interpolatedPoints.append(endPoint)
+            brushRawPoints = interpolatedPoints
+        }
+
         if appState.brushPreviewIsFinal, let preview = brushPreviewPath {
             // Bake the exact preview path
             finalizeFromPreview(preview)
@@ -279,21 +206,92 @@ extension DrawingCanvas {
         guard brushRawPoints.count >= 2 else {
             return VectorPath(elements: [.move(to: VectorPoint(brushRawPoints[0].location))])
         }
-        
-        let rawPointLocations = brushRawPoints.map { $0.location }
-        let previewTolerance = document.currentBrushSmoothingTolerance * 1.25
-        let simplifiedPoints = douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance)
-        
+
+        // For very short strokes (2 points), add interpolation for smoother shape
+        var pointsToProcess = brushRawPoints
+        if brushRawPoints.count == 2 {
+            let startPoint = brushRawPoints[0]
+            let endPoint = brushRawPoints[1]
+
+            var interpolatedPoints: [BrushPoint] = [startPoint]
+
+            // Calculate perpendicular direction for jitter
+            let dx = endPoint.location.x - startPoint.location.x
+            let dy = endPoint.location.y - startPoint.location.y
+            let lineLength = sqrt(dx * dx + dy * dy)
+
+            // Perpendicular vector (normalized) - handle zero-length lines
+            let perpX = lineLength > 0 ? -dy / lineLength : 0
+            let perpY = lineLength > 0 ? dx / lineLength : 0
+
+            // Add intermediate points with subtle jitter for natural brush look
+            let numIntermediatePoints = 5
+            for i in 1...numIntermediatePoints {
+                let t = Double(i) / Double(numIntermediatePoints + 1)
+
+                // Add subtle perpendicular jitter for organic feel
+                // Use sine wave for smooth variation
+                let jitterAmount = sin(t * .pi) * 2.0 // Max 2 pixels offset at middle
+
+                let interpolatedLocation = CGPoint(
+                    x: startPoint.location.x + (endPoint.location.x - startPoint.location.x) * t + perpX * jitterAmount,
+                    y: startPoint.location.y + (endPoint.location.y - startPoint.location.y) * t + perpY * jitterAmount
+                )
+
+                // Vary pressure for more natural tapering
+                // Create a subtle "bulge" in the middle
+                let basePressure = startPoint.pressure + (endPoint.pressure - startPoint.pressure) * t
+                let pressureVariation = sin(t * .pi) * 0.15 // Add up to 15% variation
+                let interpolatedPressure = min(1.0, basePressure * (1.0 + pressureVariation))
+
+                interpolatedPoints.append(BrushPoint(
+                    location: interpolatedLocation,
+                    pressure: interpolatedPressure,
+                    timestamp: Date()
+                ))
+            }
+
+            interpolatedPoints.append(endPoint)
+            pointsToProcess = interpolatedPoints
+        }
+
+        let rawPointLocations = pointsToProcess.map { $0.location }
+        // Reduce tolerance to keep more points for proper leaf shapes
+        let previewTolerance = document.currentBrushSmoothingTolerance * 0.3  // Much less aggressive
+        var simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance)
+
+        // CRITICAL: Ensure we have enough points for proper leaf shape tapering
+        // If simplification reduced points too much, re-interpolate
+        if simplifiedPoints.count < 8 && rawPointLocations.count > 2 {
+            // Force minimum points for leaf shape by using less aggressive simplification
+            simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance * 0.1)
+
+            // If still too few, just use more of the original points
+            if simplifiedPoints.count < 8 {
+                // Sample evenly from raw points to get at least 8 points
+                let stepSize = max(1, rawPointLocations.count / 8)
+                simplifiedPoints = []
+                for i in Swift.stride(from: 0, to: rawPointLocations.count, by: stepSize) {
+                    simplifiedPoints.append(rawPointLocations[i])
+                }
+                if let last = rawPointLocations.last, simplifiedPoints.last != last {
+                    simplifiedPoints.append(last)
+                }
+            }
+        }
+
+        Log.info("🖌️ PREVIEW: Simplified from \(pointsToProcess.count) to \(simplifiedPoints.count) points", category: .general)
+
         if simplifiedPoints.count >= 2 {
             return generatePreviewVariableWidthPath(
                 centerPoints: simplifiedPoints,
-                recentRawPoints: brushRawPoints,
+                recentRawPoints: pointsToProcess,
                 thickness: document.currentBrushThickness,
                 pressureSensitivity: document.currentBrushPressureSensitivity,
                 taper: document.currentBrushTaper
             )
         } else {
-            return VectorPath(elements: [.move(to: VectorPoint(brushRawPoints[0].location))])
+            return VectorPath(elements: [.move(to: VectorPoint(pointsToProcess[0].location))])
         }
     }
     
@@ -309,29 +307,93 @@ extension DrawingCanvas {
             return VectorPath(elements: [.move(to: VectorPoint(rawPoints[0].location))])
         }
 
-        let rawPointLocations = rawPoints.map { $0.location }
-        let simplifiedPoints: [CGPoint] = douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance)
+        // For straight lines (only 2 points), interpolate for proper leaf shape
+        var pointsToProcess = rawPoints
+        if rawPoints.count == 2 {
+            let startPoint = rawPoints[0]
+            let endPoint = rawPoints[1]
+
+            var interpolatedPoints: [BrushPoint] = [startPoint]
+
+            // Calculate perpendicular direction for jitter
+            let dx = endPoint.location.x - startPoint.location.x
+            let dy = endPoint.location.y - startPoint.location.y
+            let lineLength = sqrt(dx * dx + dy * dy)
+
+            // Perpendicular vector (normalized) - handle zero-length lines
+            let perpX = lineLength > 0 ? -dy / lineLength : 0
+            let perpY = lineLength > 0 ? dx / lineLength : 0
+
+            // Add intermediate points with subtle jitter
+            let numIntermediatePoints = 5
+            for i in 1...numIntermediatePoints {
+                let t = Double(i) / Double(numIntermediatePoints + 1)
+
+                // Add subtle perpendicular jitter for organic feel
+                let jitterAmount = sin(t * .pi) * 2.0 // Max 2 pixels offset at middle
+
+                let interpolatedLocation = CGPoint(
+                    x: startPoint.location.x + (endPoint.location.x - startPoint.location.x) * t + perpX * jitterAmount,
+                    y: startPoint.location.y + (endPoint.location.y - startPoint.location.y) * t + perpY * jitterAmount
+                )
+
+                // Vary pressure for more natural tapering
+                let basePressure = startPoint.pressure + (endPoint.pressure - startPoint.pressure) * t
+                let pressureVariation = sin(t * .pi) * 0.15 // Add up to 15% variation
+                let interpolatedPressure = min(1.0, basePressure * (1.0 + pressureVariation))
+
+                interpolatedPoints.append(BrushPoint(
+                    location: interpolatedLocation,
+                    pressure: interpolatedPressure,
+                    timestamp: Date()
+                ))
+            }
+
+            interpolatedPoints.append(endPoint)
+            pointsToProcess = interpolatedPoints
+        }
+
+        let rawPointLocations = pointsToProcess.map { $0.location }
+        // Use reduced tolerance for better leaf shapes
+        var simplifiedPoints: [CGPoint] = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance * 0.3)
+
+        // Ensure minimum points for proper leaf shape
+        if simplifiedPoints.count < 8 && rawPointLocations.count > 2 {
+            simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance * 0.05)
+            if simplifiedPoints.count < 8 {
+                // Sample evenly from raw points
+                let stepSize = max(1, rawPointLocations.count / 8)
+                simplifiedPoints = []
+                for i in Swift.stride(from: 0, to: rawPointLocations.count, by: stepSize) {
+                    simplifiedPoints.append(rawPointLocations[i])
+                }
+                if let last = rawPointLocations.last, simplifiedPoints.last != last {
+                    simplifiedPoints.append(last)
+                }
+            }
+        }
+
         if simplifiedPoints.count >= 2 {
             return generatePreviewVariableWidthPath(
                 centerPoints: simplifiedPoints,
-                recentRawPoints: rawPoints,
+                recentRawPoints: pointsToProcess,
                 thickness: thickness,
                 pressureSensitivity: pressureSensitivity,
                 taper: taper
             )
         } else {
-            return VectorPath(elements: [.move(to: VectorPoint(rawPoints[0].location))])
+            return VectorPath(elements: [.move(to: VectorPoint(pointsToProcess[0].location))])
         }
     }
     
     // MARK: - Brush Stroke Processing
     
     private func processBrushStroke() {
-        guard brushRawPoints.count >= 3,  // FIXED: Require at least 3 points like freehand
+        guard brushRawPoints.count >= 2,  // Allow 2 points for straight lines
               let _ = activeBrushShape,
               let _ = document.selectedLayerIndex else {
             Log.info("🖌️ BRUSH: Too few points (\(brushRawPoints.count)) - keeping as simple shape", category: .general)
-            return 
+            return
         }
         
         let rawPointLocations = brushRawPoints.map { $0.location }
@@ -340,7 +402,7 @@ extension DrawingCanvas {
         var processedPoints = rawPointLocations
         
         // Step 1: Apply Chaikin smoothing for initial curve smoothing (if enabled)
-        if document.settings.advancedSmoothingEnabled {
+        if document.advancedSmoothingEnabled {
             // Prefer GPU Chaikin for large strokes; fall back to CPU
             if processedPoints.count >= 200 {
                 let metalEngine = MetalComputeEngine.shared
@@ -351,7 +413,7 @@ extension DrawingCanvas {
                 case .failure(_):
                     let chaikinSmoothed = CurveSmoothing.chaikinSmooth(
                         points: processedPoints,
-                        iterations: document.settings.chaikinSmoothingIterations,
+                        iterations: document.chaikinSmoothingIterations,
                         ratio: 0.25
                     )
                     processedPoints = chaikinSmoothed
@@ -359,7 +421,7 @@ extension DrawingCanvas {
             } else {
                 let chaikinSmoothed = CurveSmoothing.chaikinSmooth(
                     points: processedPoints,
-                    iterations: document.settings.chaikinSmoothingIterations,
+                    iterations: document.chaikinSmoothingIterations,
                     ratio: 0.25
                 )
                 processedPoints = chaikinSmoothed
@@ -367,44 +429,65 @@ extension DrawingCanvas {
         }
         
         // Step 2: Apply improved Douglas-Peucker simplification with sharp corner preservation
-        let smoothingTolerance = document.currentBrushSmoothingTolerance  // Use brush-specific smoothing tolerance
+        // Reduce tolerance to preserve more points for proper leaf shapes
+        let smoothingTolerance = document.currentBrushSmoothingTolerance * 0.3  // Less aggressive for leaf shapes
         if processedPoints.count >= 200 {
             // Try GPU DP first; then apply CPU corner-preserving refinement if desired
             let metalEngine = MetalComputeEngine.shared
             let result = metalEngine.douglasPeuckerGPU(processedPoints, tolerance: Float(smoothingTolerance))
             switch result {
             case .success(let pts):
-                if document.settings.advancedSmoothingEnabled {
+                if document.advancedSmoothingEnabled {
                     brushSimplifiedPoints = CurveSmoothing.improvedDouglassPeucker(
                         points: pts,
                         tolerance: smoothingTolerance,
-                        preserveSharpCorners: document.settings.preserveSharpCorners
+                        preserveSharpCorners: document.preserveSharpCorners
                     )
                 } else {
                     brushSimplifiedPoints = pts
                 }
             case .failure(_):
-                brushSimplifiedPoints = document.settings.advancedSmoothingEnabled ?
+                brushSimplifiedPoints = document.advancedSmoothingEnabled ?
                     CurveSmoothing.improvedDouglassPeucker(
                         points: processedPoints,
                         tolerance: smoothingTolerance,
-                        preserveSharpCorners: document.settings.preserveSharpCorners
+                        preserveSharpCorners: document.preserveSharpCorners
                     ) :
-                    douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
+                    DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
             }
         } else {
-            brushSimplifiedPoints = document.settings.advancedSmoothingEnabled ?
+            brushSimplifiedPoints = document.advancedSmoothingEnabled ?
                 CurveSmoothing.improvedDouglassPeucker(
                     points: processedPoints,
                     tolerance: smoothingTolerance,
-                    preserveSharpCorners: document.settings.preserveSharpCorners
+                    preserveSharpCorners: document.preserveSharpCorners
                 ) :
-                douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
+                DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
         }
         
-        // Logging disabled in hot path to reduce CPU overhead
-        
-        // Step 2: Generate variable width brush stroke path using the SIMPLIFIED POINTS with pressure data
+        // CRITICAL: Ensure we have enough points for proper leaf shape generation
+        // If simplification was too aggressive, re-interpolate points
+        if brushSimplifiedPoints.count < 8 && processedPoints.count > 2 {
+            // Try again with much less tolerance
+            let minTolerance = smoothingTolerance * 0.1
+            brushSimplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: minTolerance)
+
+            // If still too few, sample from processed points
+            if brushSimplifiedPoints.count < 8 {
+                let stepSize = max(1, processedPoints.count / 10)
+                brushSimplifiedPoints = []
+                for i in Swift.stride(from: 0, to: processedPoints.count, by: stepSize) {
+                    brushSimplifiedPoints.append(processedPoints[i])
+                }
+                if let last = processedPoints.last, brushSimplifiedPoints.last != last {
+                    brushSimplifiedPoints.append(last)
+                }
+            }
+        }
+
+        Log.info("🖌️ PROCESS: Final simplified points: \(brushSimplifiedPoints.count)", category: .general)
+
+        // Step 3: Generate variable width brush stroke path using the SIMPLIFIED POINTS with pressure data
         // The smoothness comes from the final bezier path creation, not from over-sampling
         let brushStrokePath = generateSmoothVariableWidthPath(
             centerPoints: brushSimplifiedPoints,  // Use the clean simplified points!
@@ -560,23 +643,80 @@ extension DrawingCanvas {
             // Fallback for single point
             return VectorPath(elements: [.move(to: VectorPoint(centerPoints[0]))])
         }
-        
+
+        // DETECT STRAIGHT LINES for special leaf shape treatment
+        let isStraightLine = detectStraightLine(points: centerPoints)
+
         // Calculate variable thickness at each simplified point with proper pressure mapping
         var thicknessPoints: [(location: CGPoint, thickness: Double)] = []
-        
+
+        // ALWAYS ensure strong tapering for leaf shape
         for (index, point) in centerPoints.enumerated() {
             let progress = Double(index) / Double(centerPoints.count - 1)
-            
-            // Apply tapering at start and end
+
+            // Create leaf shape with smooth tapering
             var finalThickness = thickness
-            
-            if progress < taper {
-                // Taper from 0 to full thickness at start
-                finalThickness *= (progress / taper)
-            } else if progress > (1.0 - taper) {
-                // Taper from full thickness to 0 at end
-                let endProgress = (1.0 - progress) / taper
-                finalThickness *= endProgress
+
+            // ENHANCED LEAF SHAPE - Better end tapering for proper leaf form
+            // Creates characteristic leaf bulge at both start and end
+
+            // Create leaf shape with asymmetric tapering for better end shape
+            let distanceFromCenter = abs(progress - 0.5) * 2.0 // 0 at center, 1 at ends
+
+            // Use sine-based curve for the main shape (smooth and natural)
+            let sineShape = sin((1.0 - distanceFromCenter) * .pi * 0.5) // Half sine wave
+
+            // Add subtle power curve to enhance the leaf bulge
+            let powerShape = 1.0 - pow(distanceFromCenter, 2.0) // Quadratic for gentler curve
+
+            // Blend for best of both - more sine for smoothness, some power for bulge
+            let leafShape = sineShape * 0.7 + powerShape * 0.3
+
+            // Apply thickness with good base scaling
+            finalThickness = thickness * leafShape
+
+            // SPECIAL TREATMENT FOR STRAIGHT LINES - Aggressive taper at end to avoid phallic shape
+            if isStraightLine {
+                // For straight lines, AGGRESSIVE TAPER at end - no bulge whatsoever
+                if progress < 0.1 {
+                    // Start: Quick taper from point
+                    finalThickness *= pow(progress / 0.1, 2.0)
+                } else if progress > 0.5 {
+                    // END: Much more aggressive taper starting earlier
+                    let endProgress = (progress - 0.5) / 0.5
+                    // Use power of 3 for very aggressive thinning
+                    // This creates a sharp point with no bulge
+                    finalThickness *= pow(1.0 - endProgress, 3.0)
+                }
+            } else {
+                // Normal curved strokes - CLIP OFF NARROW TAILS
+                if progress < 0.03 {
+                    // START: Cut off very thin tails at beginning
+                    finalThickness = 0  // Completely remove narrow tail
+                } else if progress < 0.08 {
+                    // Quick taper from zero
+                    let startTaper = pow((progress - 0.03) / 0.05, 2.0)
+                    finalThickness *= startTaper
+                } else if progress > 0.15 && progress <= 0.3 {
+                    let bulgeAmount = sin((progress - 0.15) / 0.15 * .pi)
+                    finalThickness *= (1.0 + bulgeAmount * 0.15)
+                } else if progress > 0.8 && progress <= 0.88 {
+                    let endBulgeAmount = sin((progress - 0.8) / 0.08 * .pi)
+                    finalThickness *= (1.0 + endBulgeAmount * 0.3)
+                } else if progress > 0.88 && progress < 0.97 {
+                    // Quick taper to zero
+                    let endProgress = (progress - 0.88) / 0.09
+                    let endTaper = 1.0 - pow(endProgress, 1.5)
+                    finalThickness *= endTaper
+                } else if progress >= 0.97 {
+                    // END: Cut off very thin tails at end
+                    finalThickness = 0  // Completely remove narrow tail
+                }
+            }
+
+            // Ensure minimum thickness to avoid zero (unless explicitly set to 0 for tail removal)
+            if finalThickness > 0 {
+                finalThickness = max(finalThickness, 0.5)
             }
             
             // PROPER PRESSURE MAPPING: Find the closest raw point for pressure data
@@ -603,8 +743,8 @@ extension DrawingCanvas {
         let rightEdgePoints = generateOffsetPoints(centerPoints: thicknessPoints, isLeftSide: false)
         
         // Create smooth bezier curves for BOTH edges (like freehand tool!)
-        let leftEdgePath = createSmoothBezierPath(from: leftEdgePoints)
-        let rightEdgePath = createSmoothBezierPath(from: rightEdgePoints.reversed()) // Reverse for proper winding
+        let leftEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: leftEdgePoints)
+        let rightEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: rightEdgePoints.reversed()) // Reverse for proper winding
         
         // Combine into a filled shape with smooth bezier curves
         return createSmoothBrushOutline(leftEdgePath: leftEdgePath, rightEdgePath: rightEdgePath, startPoint: centerPoints.first!, endPoint: centerPoints.last!)
@@ -651,30 +791,99 @@ extension DrawingCanvas {
         return firstClosest.pressure
     }
     
+    // MARK: - Straight Line Detection
+
+    private func detectStraightLine(points: [CGPoint]) -> Bool {
+        guard points.count >= 2 else { return false }
+
+        // Calculate the direct line from start to end
+        let start = points.first!
+        let end = points.last!
+        let dx = end.x - start.x
+        let dy = end.y - start.y
+        let lineLength = sqrt(dx * dx + dy * dy)
+
+        // Check if very short line (likely straight)
+        if lineLength < 50 { return true }
+
+        // Check deviation of all points from the straight line
+        var maxDeviation: Double = 0
+        for point in points {
+            // Calculate perpendicular distance to line
+            let deviation = abs((dy * point.x - dx * point.y + end.x * start.y - end.y * start.x) / lineLength)
+            maxDeviation = max(maxDeviation, deviation)
+        }
+
+        // If max deviation is less than 5% of line length, it's straight
+        return maxDeviation < lineLength * 0.05
+    }
+
     // MARK: - Smooth Variable Width Path Generation (SAME APPROACH AS FREEHAND!)
-    
+
     private func generateSmoothVariableWidthPath(centerPoints: [CGPoint], rawPoints: [BrushPoint], thickness: Double, pressureSensitivity: Double, taper: Double) -> VectorPath {
         guard centerPoints.count >= 2 else {
             // Fallback for single point
             return VectorPath(elements: [.move(to: VectorPoint(rawPoints[0].location))])
         }
-        
+
+        // Detect if this is a straight line
+        let isStraightLine = detectStraightLine(points: centerPoints)
+
         // Calculate variable thickness at each simplified point with proper pressure interpolation
         var thicknessPoints: [(location: CGPoint, thickness: Double)] = []
-        
+
+        // ALWAYS ensure strong tapering for leaf shape
         for (index, point) in centerPoints.enumerated() {
             let progress = Double(index) / Double(centerPoints.count - 1)
-            
-            // Apply tapering at start and end
+
+            // ENHANCED LEAF SHAPE - matching preview generation
             var finalThickness = thickness
-            
-            if progress < taper {
-                // Taper from 0 to full thickness at start
-                finalThickness *= (progress / taper)
-            } else if progress > (1.0 - taper) {
-                // Taper from full thickness to 0 at end
-                let endProgress = (1.0 - progress) / taper
-                finalThickness *= endProgress
+
+            // Consistent with preview generation
+            let distanceFromCenter = abs(progress - 0.5) * 2.0
+            let sineShape = sin((1.0 - distanceFromCenter) * .pi * 0.5)
+            let powerShape = 1.0 - pow(distanceFromCenter, 2.0)
+            let leafShape = sineShape * 0.7 + powerShape * 0.3
+            finalThickness = thickness * leafShape
+
+            // Special treatment for straight lines - aggressive taper to very thin end
+            if isStraightLine {
+                if progress < 0.1 {
+                    finalThickness *= pow(progress / 0.1, 2.0)
+                } else if progress > 0.5 {
+                    let endProgress = (progress - 0.5) / 0.5
+                    // Power of 3 for aggressive thinning
+                    finalThickness *= pow(1.0 - endProgress, 3.0)
+                }
+            } else {
+                // CLIP OFF NARROW TAILS for curved strokes
+                if progress < 0.03 {
+                    // START: Cut off very thin tails at beginning
+                    finalThickness = 0  // Completely remove narrow tail
+                } else if progress < 0.08 {
+                    // Quick taper from zero
+                    let startTaper = pow((progress - 0.03) / 0.05, 2.0)
+                    finalThickness *= startTaper
+                } else if progress > 0.15 && progress <= 0.3 {
+                    let bulgeAmount = sin((progress - 0.15) / 0.15 * .pi)
+                    finalThickness *= (1.0 + bulgeAmount * 0.15)
+                } else if progress > 0.8 && progress <= 0.88 {
+                    let endBulgeAmount = sin((progress - 0.8) / 0.08 * .pi)
+                    finalThickness *= (1.0 + endBulgeAmount * 0.3)
+                } else if progress > 0.88 && progress < 0.97 {
+                    // Quick taper to zero
+                    let endProgress = (progress - 0.88) / 0.09
+                    let endTaper = 1.0 - pow(endProgress, 1.5)
+                    finalThickness *= endTaper
+                } else if progress >= 0.97 {
+                    // END: Cut off very thin tails at end
+                    finalThickness = 0  // Completely remove narrow tail
+                }
+            }
+
+            // Ensure minimum thickness (unless explicitly set to 0 for tail removal)
+            if finalThickness > 0 {
+                finalThickness = max(finalThickness, 0.5)
             }
             
             // Interpolate pressure from raw points to simplified points
@@ -692,8 +901,8 @@ extension DrawingCanvas {
         let rightEdgePoints = generateOffsetPoints(centerPoints: thicknessPoints, isLeftSide: false)
         
         // Create smooth bezier curves for BOTH edges (like freehand tool!)
-        let leftEdgePath = createSmoothBezierPath(from: leftEdgePoints)
-        let rightEdgePath = createSmoothBezierPath(from: rightEdgePoints.reversed()) // Reverse for proper winding
+        let leftEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: leftEdgePoints)
+        let rightEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: rightEdgePoints.reversed()) // Reverse for proper winding
         
         // Combine into a filled shape with smooth bezier curves
         return createSmoothBrushOutline(leftEdgePath: leftEdgePath, rightEdgePath: rightEdgePath, startPoint: centerPoints.first!, endPoint: centerPoints.last!)
@@ -828,146 +1037,8 @@ extension DrawingCanvas {
         return VectorPath(elements: elements)
     }
     
-    // MARK: - Douglas-Peucker Line Simplification Algorithm (Shared with Freehand)
-    
-    private func douglasPeuckerSimplify(points: [CGPoint], tolerance: Double) -> [CGPoint] {
-        guard points.count > 2 else { return points }
-        
-        return douglasPeuckerRecursive(points: points, tolerance: tolerance, startIndex: 0, endIndex: points.count - 1)
-    }
-    
-    private func douglasPeuckerRecursive(points: [CGPoint], tolerance: Double, startIndex: Int, endIndex: Int) -> [CGPoint] {
-        guard endIndex - startIndex > 1 else {
-            return [points[startIndex], points[endIndex]]
-        }
-        
-        let startPoint = points[startIndex]
-        let endPoint = points[endIndex]
-        
-        // Find the point with maximum distance from the line segment
-        var maxDistance: Double = 0
-        var maxIndex = startIndex
-        
-        for i in (startIndex + 1)..<endIndex {
-            let distance = perpendicularDistance(point: points[i], lineStart: startPoint, lineEnd: endPoint)
-            if distance > maxDistance {
-                maxDistance = distance
-                maxIndex = i
-            }
-        }
-        
-        // If the maximum distance is greater than tolerance, recursively simplify
-        if maxDistance > tolerance {
-            // Recursively simplify the two segments
-            let leftSegment = douglasPeuckerRecursive(points: points, tolerance: tolerance, startIndex: startIndex, endIndex: maxIndex)
-            let rightSegment = douglasPeuckerRecursive(points: points, tolerance: tolerance, startIndex: maxIndex, endIndex: endIndex)
-            
-            // Combine segments (remove duplicate point at the connection)
-            return leftSegment + Array(rightSegment.dropFirst())
-        } else {
-            // All points between start and end are within tolerance - return only endpoints
-            return [startPoint, endPoint]
-        }
-    }
-    
-    private func perpendicularDistance(point: CGPoint, lineStart: CGPoint, lineEnd: CGPoint) -> Double {
-        let A = lineEnd.y - lineStart.y
-        let B = lineStart.x - lineEnd.x
-        let C = lineEnd.x * lineStart.y - lineStart.x * lineEnd.y
-        
-        let distance = abs(A * point.x + B * point.y + C) / sqrt(A * A + B * B)
-        return distance
-    }
-    
-    // MARK: - Smooth Bezier Curve Fitting (SAME AS FREEHAND TOOL)
-    
-    private func createSmoothBezierPath(from points: [CGPoint]) -> VectorPath {
-        guard points.count >= 2 else {
-            return VectorPath(elements: [])
-        }
-        
-        var elements: [PathElement] = []
-        elements.append(.move(to: VectorPoint(points[0])))
-        
-        if points.count == 2 {
-            // Simple line for two points
-            elements.append(.line(to: VectorPoint(points[1])))
-        } else {
-            // Create smooth curves through all points
-            let curveSegments = fitBezierCurves(through: points)
-            elements.append(contentsOf: curveSegments)
-        }
-        
-        return VectorPath(elements: elements)
-    }
-    
-    private func fitBezierCurves(through points: [CGPoint]) -> [PathElement] {
-        var elements: [PathElement] = []
-        
-        // Use a simple curve fitting approach that creates smooth C1 continuous curves
-        for i in 1..<points.count {
-            let p0 = points[i - 1]
-            let p1 = points[i]
-            
-            // SURGICAL FIX: Make first and last segments lines (corner points) instead of curves
-            let isFirstSegment = (i == 1)
-            let isLastSegment = (i == points.count - 1)
-            
-            if isFirstSegment || isLastSegment {
-                // Create corner points for start and end - no handles
-                elements.append(.line(to: VectorPoint(p1)))
-            } else {
-                // Calculate control points for smooth curves (middle segments only)
-                let tension: Double = 0.25 // Curve tension factor
-                let distance = sqrt(pow(p1.x - p0.x, 2) + pow(p1.y - p0.y, 2))
-                
-                // Calculate tangent directions
-                let prevTangent = i > 1 ? calculateTangent(p0: points[i - 2], p1: p0, p2: p1) : CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
-                let nextTangent = i < points.count - 1 ? calculateTangent(p0: p0, p1: p1, p2: points[i + 1]) : CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
-                
-                // Create control points
-                let controlLength = distance * tension
-                
-                let control1 = CGPoint(
-                    x: p0.x + prevTangent.x * controlLength,
-                    y: p0.y + prevTangent.y * controlLength
-                )
-                
-                let control2 = CGPoint(
-                    x: p1.x - nextTangent.x * controlLength,
-                    y: p1.y - nextTangent.y * controlLength
-                )
-                
-                elements.append(.curve(
-                    to: VectorPoint(p1),
-                    control1: VectorPoint(control1),
-                    control2: VectorPoint(control2)
-                ))
-            }
-        }
-        
-        return elements
-    }
-    
-    private func calculateTangent(p0: CGPoint, p1: CGPoint, p2: CGPoint) -> CGPoint {
-        // Calculate normalized tangent direction at p1
-        let dx1 = p1.x - p0.x
-        let dy1 = p1.y - p0.y
-        let dx2 = p2.x - p1.x
-        let dy2 = p2.y - p1.y
-        
-        // Average the two segments
-        let avgDx = (dx1 + dx2) / 2
-        let avgDy = (dy1 + dy2) / 2
-        
-        // Normalize
-        let length = sqrt(avgDx * avgDx + avgDy * avgDy)
-        if length > 0 {
-            return CGPoint(x: avgDx / length, y: avgDy / length)
-        } else {
-            return CGPoint(x: 1, y: 0)
-        }
-    }
+    // MARK: - Path Simplification and Bezier Fitting
+    // These functions have been moved to DrawingCanvasPathHelpers
     
 
 }

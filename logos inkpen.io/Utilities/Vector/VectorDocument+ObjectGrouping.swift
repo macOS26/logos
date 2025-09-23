@@ -5,8 +5,7 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import Foundation
-import CoreGraphics
+import SwiftUI
 
 // MARK: - Object Grouping
 extension VectorDocument {

@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import Combine
 
 extension DrawingCanvas {
     func handleConvertAnchorPointTap(at location: CGPoint) {

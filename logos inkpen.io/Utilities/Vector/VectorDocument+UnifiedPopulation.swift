@@ -5,9 +5,9 @@
 //  Split from VectorDocument+UnifiedObjectManagement.swift
 //
 
-import Foundation
-import CoreGraphics
 import SwiftUI
+import SwiftUI
+import Combine
 
 // MARK: - Unified Objects Population and Sync
 extension VectorDocument {
@@ -92,14 +92,16 @@ extension VectorDocument {
     }
     
     /// OPTIMIZED: Update unified objects without full sync - preserves text object order and IDs
-    func updateUnifiedObjectsOptimized() {
+    func updateUnifiedObjectsOptimized(sendUpdate: Bool = true) {
         // Skip during undo/redo operations to preserve exact order
         if isUndoRedoOperation {
             return
         }
-        
-        // Force immediate UI update
-        objectWillChange.send()
+
+        // Only send update if requested (allows batching during drag operations)
+        if sendUpdate {
+            objectWillChange.send()
+        }
     }
     
     /// CRITICAL FIX: Force complete resync of unified objects system

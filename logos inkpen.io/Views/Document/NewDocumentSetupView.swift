@@ -94,6 +94,9 @@ struct NewDocumentSetupView: View {
                                 .fill(Color.gray.opacity(0.1))
                         )
                 }
+                .padding(.trailing, -11) //FIXME: adjust this later?
+
+                .padding(.top, -55) //FIXME: adjust this later?
                 .buttonStyle(PlainButtonStyle())
                 .help("Cancel")
             }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1630"
+   LastUpgradeVersion = "2600"
    version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -15,7 +15,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "EAC969A92E2416EC0093AB2A"
+               BlueprintIdentifier = "EAE1E5812E81980F00768154"
                BuildableName = "logos inkpen.io.app"
                BlueprintName = "logos inkpen.io"
                ReferencedContainer = "container:logos inkpen.io.xcodeproj">
@@ -35,7 +35,7 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "EAC969B72E2416ED0093AB2A"
+               BlueprintIdentifier = "EAE1E58E2E81981000768154"
                BuildableName = "logos inkpen.ioTests.xctest"
                BlueprintName = "logos inkpen.ioTests"
                ReferencedContainer = "container:logos inkpen.io.xcodeproj">
@@ -46,7 +46,7 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "EAC969C12E2416ED0093AB2A"
+               BlueprintIdentifier = "EAE1E5982E81981000768154"
                BuildableName = "logos inkpen.ioUITests.xctest"
                BlueprintName = "logos inkpen.ioUITests"
                ReferencedContainer = "container:logos inkpen.io.xcodeproj">
@@ -56,22 +56,19 @@
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
-      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
-      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      selectedDebuggerIdentifier = ""
+      selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"
       launchStyle = "0"
       useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
-      showGraphicsOverview = "Yes"
-      logGraphicsOverview = "Yes"
-      allowLocationSimulation = "YES"
-      disablePerformanceAntipatternChecker = "YES">
+      allowLocationSimulation = "YES">
       <BuildableProductRunnable
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "EAC969A92E2416EC0093AB2A"
+            BlueprintIdentifier = "EAE1E5812E81980F00768154"
             BuildableName = "logos inkpen.io.app"
             BlueprintName = "logos inkpen.io"
             ReferencedContainer = "container:logos inkpen.io.xcodeproj">
@@ -88,7 +85,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "EAC969A92E2416EC0093AB2A"
+            BlueprintIdentifier = "EAE1E5812E81980F00768154"
             BuildableName = "logos inkpen.io.app"
             BlueprintName = "logos inkpen.io"
             ReferencedContainer = "container:logos inkpen.io.xcodeproj">

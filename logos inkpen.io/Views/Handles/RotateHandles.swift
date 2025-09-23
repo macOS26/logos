@@ -5,8 +5,9 @@
 //  Created by Todd Bruss on 8/20/25.
 //
 
-import CoreGraphics
 import SwiftUI
+import SwiftUI
+import Combine
 
 // MARK: - Rotate Tool Handles
 struct RotateHandles: View {
@@ -33,7 +34,7 @@ struct RotateHandles: View {
     @State private var centerPoint: VectorPoint = VectorPoint(CGPoint.zero) // Always include center
     @State private var pointsRefreshTrigger: Int = 0 // Force view refresh after transformation
     
-    private let handleSize: CGFloat = 8
+    private let handleSize: CGFloat = 10
     
     // CRITICAL FIX: Calculate bounds outside body property to avoid build errors
     private var calculatedBounds: CGRect {
@@ -134,14 +135,14 @@ struct RotateHandles: View {
             
             // CENTER POINT: Always available as rotation anchor
             let isCenterSelected = selectedAnchorPointIndex == nil
-            Rectangle()
+            Circle()
                 .fill(isCenterSelected ? Color.green : Color.orange)
                 .stroke(Color.white, lineWidth: 1.0)
-                .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
-                .position(center)
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(shape.transform)
+                .frame(width: handleSize, height: handleSize)
+                .position(CGPoint(
+                    x: center.x * zoomLevel + canvasOffset.x,
+                    y: center.y * zoomLevel + canvasOffset.y
+                ))
                 .onTapGesture {
                     if !isRotating {
                         selectedAnchorPointIndex = nil // Select center
@@ -221,14 +222,15 @@ struct RotateHandles: View {
             let point = pathPoints[index]
             let isSelected = selectedAnchorPointIndex == index
             
-            Rectangle()
+            let transformedPoint = CGPoint(x: point.x, y: point.y).applying(shape.transform)
+            Circle()
                 .fill(isSelected ? Color.green : Color.orange)
                 .stroke(Color.white, lineWidth: 1.0)
-                .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
-                .position(CGPoint(x: point.x, y: point.y))
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(shape.transform)
+                .frame(width: handleSize, height: handleSize)
+                .position(CGPoint(
+                    x: transformedPoint.x * zoomLevel + canvasOffset.x,
+                    y: transformedPoint.y * zoomLevel + canvasOffset.y
+                ))
                 .onTapGesture {
                     if !isRotating {
                         selectedAnchorPointIndex = index
@@ -559,7 +561,10 @@ struct RotateHandles: View {
             
             // CRITICAL FIX: Sync unified objects after rotation to ensure UI updates
             document.updateUnifiedObjectsOptimized()
-            
+
+            // UPDATE X Y W H: Call common update function after rotation
+            document.updateTransformPanelValues()
+
             // CRITICAL FIX: Force refresh of point selection system (same as switching tools)
             // This updates the points to match the rotated object positions
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {

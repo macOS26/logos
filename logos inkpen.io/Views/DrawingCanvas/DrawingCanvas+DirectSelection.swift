@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 extension DrawingCanvas {
     // MARK: - PROFESSIONAL ANCHOR POINT AND HANDLE SELECTION
@@ -59,193 +60,161 @@ extension DrawingCanvas {
     
     /// Helper function to check anchor points in a specific shape
     private func checkAnchorPointsInShape(_ shape: VectorShape, at location: CGPoint, tolerance: Double) -> Bool {
-        // Check each path element for points and handles
-                    for (elementIndex, element) in shape.path.elements.enumerated() {
-                        let point: VectorPoint
-                        
-                        switch element {
-                        case .move(let to), .line(let to):
-                            point = to
-                            
-                            // Check for OUTGOING HANDLE (control1 from NEXT element - if it exists)
-                            if elementIndex + 1 < shape.path.elements.count {
-                                let nextElement = shape.path.elements[elementIndex + 1]
-                                if case .curve(_, let nextControl1, _) = nextElement {
-                                    // FIX: Ignore handles that are collapsed to the anchor point
-                                    let outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
-                                    if !outgoingHandleCollapsed {
-                                        let rawHandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y)
-                                        let outgoingHandleLocation = rawHandleLocation.applying(shape.transform)
-                                        if distance(location, outgoingHandleLocation) <= tolerance {
-                                        // CRITICAL FIX: HandleID must point to the NEXT element where the handle actually lives
-                                        let handleID = HandleID(
-                                            shapeID: shape.id,
-                                            pathIndex: 0,
-                                            elementIndex: elementIndex + 1, // NEXT element, not current!
-                                            handleType: .control1
-                                        )
-                                        
-                                        if isShiftPressed && selectedHandles.contains(handleID) {
-                                            selectedHandles.remove(handleID)
-                                            Log.fileOperation("🎯 Deselected OUTGOING handle from line/move point", level: .info)
-                                        } else {
-                                            if !isShiftPressed {
-                                                selectedHandles.removeAll()
-                                                selectedPoints.removeAll()
-                                            }
-                                            selectedHandles.insert(handleID)
-                                            Log.fileOperation("🎯 Selected OUTGOING handle from line/move point", level: .info)
-                                        }
-                                        return true
-                                    }
-                                    }
-                                }
+        // IMPROVED SELECTION: Expanded hit areas for easier selection
+        // Points: 4x4 pixel square with 1-2px border = 5-6px radius for easier selection
+        // Handles: 8x8 pixel circle = 4px radius for precise selection
+        let pointSelectionRadius: Double = 6.0 / document.zoomLevel  // Includes border for easier selection
+        let handleSelectionRadius: Double = 4.0 / document.zoomLevel  // Scale with zoom
+
+        // FIRST PASS: Check all anchor points (higher priority than handles)
+        for (elementIndex, element) in shape.path.elements.enumerated() {
+            let point: VectorPoint
+
+            switch element {
+            case .move(let to), .line(let to):
+                point = to
+            case .curve(let to, _, _):
+                point = to
+            case .quadCurve(let to, _):
+                point = to
+            case .close:
+                continue
+            }
+
+            // Check if tap is near the anchor point with PRECISE radius
+            let pointLocation = CGPoint(x: point.x, y: point.y).applying(shape.transform)
+            if distance(location, pointLocation) <= pointSelectionRadius {
+                let pointID = PointID(
+                    shapeID: shape.id,
+                    pathIndex: 0,
+                    elementIndex: elementIndex
+                )
+
+                if isShiftPressed && selectedPoints.contains(pointID) {
+                    // Shift+Click on selected point: deselect it and all coincident points
+                    let coincidentPoints = findCoincidentPoints(to: pointID, tolerance: coincidentPointTolerance)
+                    let closedPathEndpoints = findClosedPathEndpoints(for: pointID)
+                    selectedPoints.remove(pointID)
+                    for coincidentPoint in coincidentPoints {
+                        selectedPoints.remove(coincidentPoint)
+                    }
+                    for endpointID in closedPathEndpoints {
+                        selectedPoints.remove(endpointID)
+                    }
+                    Log.fileOperation("🎯 Deselected anchor point", level: .info)
+                } else {
+                    // Select point with all coincident points for unified movement
+                    selectPointWithCoincidents(pointID, addToSelection: isShiftPressed)
+                    Log.fileOperation("🎯 Selected anchor point", level: .info)
+                }
+                return true
+            }
+        }
+
+        // SECOND PASS: Check handles (lower priority than points)
+        for (elementIndex, element) in shape.path.elements.enumerated() {
+            switch element {
+            case .curve(let to, _, let control2):
+                // Check INCOMING handle (control2)
+                let handle2Collapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
+                if !handle2Collapsed {
+                    let handle2Location = CGPoint(x: control2.x, y: control2.y).applying(shape.transform)
+                    if distance(location, handle2Location) <= handleSelectionRadius {
+                        let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex, handleType: .control2)
+                        if isShiftPressed && selectedHandles.contains(handleID) {
+                            selectedHandles.remove(handleID)
+                            Log.fileOperation("🎯 Deselected INCOMING handle", level: .info)
+                        } else {
+                            if !isShiftPressed {
+                                selectedHandles.removeAll()
+                                selectedPoints.removeAll()
                             }
-                            
-                        case .curve(let to, _, let control2):
-                            point = to
-                            
-                            // FIRST: Check control handles (higher priority than anchor points)
-                            // For curves, we need to match the DISPLAY logic exactly:
-                            // - control2 is the INCOMING handle to this anchor point
-                            // - control1 from NEXT element is the OUTGOING handle from this anchor point
-                            
-                            // INCOMING HANDLE (control2 of current element)
-                            // FIX: Ignore handles that are collapsed to the anchor point (removed via Convert Anchor Point tool)
-                            let rawHandle2Location = CGPoint(x: control2.x, y: control2.y)
-                            let handle2Location = rawHandle2Location.applying(shape.transform)
-                            let handle2Collapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
-                            
-                            if !handle2Collapsed {
-                                let handle2Distance = distance(location, handle2Location)
-                                Log.info("Testing INCOMING handle at (\(String(format: "%.1f", handle2Location.x)), \(String(format: "%.1f", handle2Location.y))), distance: \(String(format: "%.1f", handle2Distance))", category: .selection)
-                                if handle2Distance <= tolerance {
-                                let handleID = HandleID(
-                                    shapeID: shape.id,
-                                    pathIndex: 0,
-                                    elementIndex: elementIndex,
-                                    handleType: .control2
-                                )
-                                
-                                if isShiftPressed && selectedHandles.contains(handleID) {
-                                    selectedHandles.remove(handleID)
-                                    Log.fileOperation("🎯 Deselected INCOMING handle", level: .info)
-                                } else {
-                                    if !isShiftPressed {
-                                        selectedHandles.removeAll()
-                                        selectedPoints.removeAll()
-                                    }
-                                    selectedHandles.insert(handleID)
-                                    Log.fileOperation("🎯 Selected INCOMING handle", level: .info)
-                                }
-                                return true
-                            }
-                            }
-                            
-                            // OUTGOING HANDLE (control1 from NEXT element - if it exists)
-                            if elementIndex + 1 < shape.path.elements.count {
-                                let nextElement = shape.path.elements[elementIndex + 1]
-                                if case .curve(_, let nextControl1, _) = nextElement {
-                                    // FIX: Ignore handles that are collapsed to the anchor point (removed via Convert Anchor Point tool)
-                                    let outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
-                                    
-                                    if !outgoingHandleCollapsed {
-                                        let rawOutgoingHandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y)
-                                        let outgoingHandleLocation = rawOutgoingHandleLocation.applying(shape.transform)
-                                        let outgoingDistance = distance(location, outgoingHandleLocation)
-                                        Log.info("Testing OUTGOING handle at (\(String(format: "%.1f", outgoingHandleLocation.x)), \(String(format: "%.1f", outgoingHandleLocation.y))), distance: \(String(format: "%.1f", outgoingDistance))", category: .selection)
-                                        if outgoingDistance <= tolerance {
-                                        // CRITICAL FIX: HandleID must point to the NEXT element where the handle actually lives
-                                        let handleID = HandleID(
-                                            shapeID: shape.id,
-                                            pathIndex: 0,
-                                            elementIndex: elementIndex + 1, // NEXT element, not current!
-                                            handleType: .control1
-                                        )
-                                        
-                                        if isShiftPressed && selectedHandles.contains(handleID) {
-                                            selectedHandles.remove(handleID)
-                                            Log.fileOperation("🎯 Deselected OUTGOING handle", level: .info)
-                                        } else {
-                                            if !isShiftPressed {
-                                                selectedHandles.removeAll()
-                                                selectedPoints.removeAll()
-                                            }
-                                            selectedHandles.insert(handleID)
-                                            Log.fileOperation("🎯 Selected OUTGOING handle", level: .info)
-                                        }
-                                        return true
-                                    }
-                                    }
-                                }
-                            }
-                            
-                        case .quadCurve(let to, let control):
-                            point = to
-                            
-                            // Check control handle for quad curve - only if not collapsed
-                            let quadHandleCollapsed = (abs(control.x - to.x) < 0.1 && abs(control.y - to.y) < 0.1)
-                            if !quadHandleCollapsed {
-                                let rawHandleLocation = CGPoint(x: control.x, y: control.y)
-                                let handleLocation = rawHandleLocation.applying(shape.transform)
-                                if distance(location, handleLocation) <= tolerance {
-                                let handleID = HandleID(
-                                    shapeID: shape.id,
-                                    pathIndex: 0,
-                                    elementIndex: elementIndex,
-                                    handleType: .control1
-                                )
-                                
-                                if isShiftPressed && selectedHandles.contains(handleID) {
-                                    selectedHandles.remove(handleID)
-                                    Log.fileOperation("🎯 Deselected quad handle", level: .info)
-                                } else {
-                                    if !isShiftPressed {
-                                        selectedHandles.removeAll()
-                                        selectedPoints.removeAll()
-                                    }
-                                    selectedHandles.insert(handleID)
-                                    Log.fileOperation("🎯 Selected quad handle", level: .info)
-                                }
-                                return true
-                            }
-                            }
-                            
-                        case .close:
-                            continue
+                            selectedHandles.insert(handleID)
+                            Log.fileOperation("🎯 Selected INCOMING handle", level: .info)
                         }
-                        
-                        // SECOND: Check if tap is near the main anchor point
-                        let rawPointLocation = CGPoint(x: point.x, y: point.y)
-                        let pointLocation = rawPointLocation.applying(shape.transform)
-                        if distance(location, pointLocation) <= tolerance {
-                            let pointID = PointID(
-                                shapeID: shape.id,
-                                pathIndex: 0,
-                                elementIndex: elementIndex
-                            )
-                            
-                            if isShiftPressed && selectedPoints.contains(pointID) {
-                                // Shift+Click on selected point: deselect it and all coincident points
-                                let coincidentPoints = findCoincidentPoints(to: pointID, tolerance: coincidentPointTolerance)
-                                let closedPathEndpoints = findClosedPathEndpoints(for: pointID)
-                                selectedPoints.remove(pointID)
-                                for coincidentPoint in coincidentPoints {
-                                    selectedPoints.remove(coincidentPoint)
+                        return true
+                    }
+                }
+
+                // Check OUTGOING handle (control1 from NEXT element)
+                if elementIndex + 1 < shape.path.elements.count {
+                    if case .curve(_, let nextControl1, _) = shape.path.elements[elementIndex + 1] {
+                        let outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
+                        if !outgoingHandleCollapsed {
+                            let outgoingHandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y).applying(shape.transform)
+                            if distance(location, outgoingHandleLocation) <= handleSelectionRadius {
+                                let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex + 1, handleType: .control1)
+                                if isShiftPressed && selectedHandles.contains(handleID) {
+                                    selectedHandles.remove(handleID)
+                                    Log.fileOperation("🎯 Deselected OUTGOING handle", level: .info)
+                                } else {
+                                    if !isShiftPressed {
+                                        selectedHandles.removeAll()
+                                        selectedPoints.removeAll()
+                                    }
+                                    selectedHandles.insert(handleID)
+                                    Log.fileOperation("🎯 Selected OUTGOING handle", level: .info)
                                 }
-                                for endpointID in closedPathEndpoints {
-                                    selectedPoints.remove(endpointID)
-                                }
-                                let totalRemoved = coincidentPoints.count + closedPathEndpoints.count
-                                Log.fileOperation("🎯 Deselected anchor point and \(totalRemoved) coincident/endpoint points", level: .info)
-                            } else {
-                                // Select point with all coincident points for unified movement
-                                selectPointWithCoincidents(pointID, addToSelection: isShiftPressed)
-                                Log.fileOperation("🎯 Selected anchor point with coincident points", level: .info)
+                                return true
                             }
-                            return true
                         }
                     }
+                }
+
+            case .quadCurve(let to, let control):
+                // Check quad curve handle
+                let quadHandleCollapsed = (abs(control.x - to.x) < 0.1 && abs(control.y - to.y) < 0.1)
+                if !quadHandleCollapsed {
+                    let handleLocation = CGPoint(x: control.x, y: control.y).applying(shape.transform)
+                    if distance(location, handleLocation) <= handleSelectionRadius {
+                        let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex, handleType: .control1)
+                        if isShiftPressed && selectedHandles.contains(handleID) {
+                            selectedHandles.remove(handleID)
+                            Log.fileOperation("🎯 Deselected quad handle", level: .info)
+                        } else {
+                            if !isShiftPressed {
+                                selectedHandles.removeAll()
+                                selectedPoints.removeAll()
+                            }
+                            selectedHandles.insert(handleID)
+                            Log.fileOperation("🎯 Selected quad handle", level: .info)
+                        }
+                        return true
+                    }
+                }
+
+            case .move(let to), .line(let to):
+                // Check OUTGOING handle for move/line points
+                if elementIndex + 1 < shape.path.elements.count {
+                    if case .curve(_, let nextControl1, _) = shape.path.elements[elementIndex + 1] {
+                        let outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
+                        if !outgoingHandleCollapsed {
+                            let handleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y).applying(shape.transform)
+                            if distance(location, handleLocation) <= handleSelectionRadius {
+                                let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex + 1, handleType: .control1)
+                                if isShiftPressed && selectedHandles.contains(handleID) {
+                                    selectedHandles.remove(handleID)
+                                    Log.fileOperation("🎯 Deselected OUTGOING handle from line/move", level: .info)
+                                } else {
+                                    if !isShiftPressed {
+                                        selectedHandles.removeAll()
+                                        selectedPoints.removeAll()
+                                    }
+                                    selectedHandles.insert(handleID)
+                                    Log.fileOperation("🎯 Selected OUTGOING handle from line/move", level: .info)
+                                }
+                                return true
+                            }
+                        }
+                    }
+                }
+
+            case .close:
+                continue
+            }
+        }
+
+        // No third pass needed - all checks complete
         return false
     }
     

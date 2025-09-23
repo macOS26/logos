@@ -56,11 +56,9 @@ extension DrawingCanvas {
             
             // 3. Activate I-beam cursor and enter text editing mode
             isTextEditingMode = true
-            #if os(macOS)
             NSCursor.iBeam.set()
             Log.info("🎯 DOUBLE CLICK: Set I-beam cursor at location (\(String(format: "%.1f", canvasLocation.x)), \(String(format: "%.1f", canvasLocation.y)))", category: .selection)
             Log.info("🎯 DOUBLE CLICK: Entered text editing mode - I-beam cursor will be maintained", category: .selection)
-            #endif
             
             // Additional: Position cursor in text at click location
             if let textObj = document.allTextObjects.first(where: { $0.id == textID }) {
@@ -174,10 +172,8 @@ extension DrawingCanvas {
             Log.fileOperation("🎨 UNIFIED: Shape tools (\(document.currentTool.rawValue)) are drag-only - tap ignored", level: .info)
         
         case .zoom:
-            #if os(macOS)
             // Ensure zoom cursor stays during click
             MagnifyingGlassCursor.set()
-            #endif
             // Click to zoom at cursor position. Option-click to zoom out.
             let focalPoint = location
             let currentZoom = CGFloat(document.zoomLevel)
@@ -190,7 +186,6 @@ extension DrawingCanvas {
                 targetZoom = nextAllowedStepUp(from: currentZoom)
             }
             handleZoomAtPoint(newZoomLevel: targetZoom, focalPoint: focalPoint, geometry: geometry)
-            #if os(macOS)
             // Re-assert cursor post-zoom operation
             if isCanvasHovering && document.currentTool == .zoom {
                 MagnifyingGlassCursor.set()
@@ -201,7 +196,6 @@ extension DrawingCanvas {
                     MagnifyingGlassCursor.set()
                 }
             }
-            #endif
             
         case .eyedropper:
             startEyedropperColorPick()
@@ -225,10 +219,8 @@ extension DrawingCanvas {
                 zoomToolDragStartPoint = value.startLocation
                 zoomToolInitialZoomLevel = document.zoomLevel
             }
-            #if os(macOS)
             // Maintain magnifying glass while dragging in zoom tool
             MagnifyingGlassCursor.set()
-            #endif
             let deltaY = value.location.y - zoomToolDragStartPoint.y
             let sensitivity: CGFloat = 300.0
             var scaleChange = exp(-deltaY / sensitivity) // drag up (negative deltaY) -> zoom in
@@ -314,6 +306,10 @@ extension DrawingCanvas {
         case .selection:
             finishSelectionDrag()
             isDrawing = false
+            // Reset handle scaling flag if it was set
+            if document.isHandleScalingActive {
+                document.isHandleScalingActive = false
+            }
             
         case .directSelection:
             finishDirectSelectionDrag()
@@ -337,9 +333,25 @@ extension DrawingCanvas {
     
     // MARK: - Unified Selection Drag Handler
     
-    /// UNIFIED SELECTION DRAG - Consolidates selection behavior for all areas  
+    /// UNIFIED SELECTION DRAG - Consolidates selection behavior for all areas
     /// FIXED: Simplified logic to prevent bouncing behavior
     private func handleUnifiedSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
+        // Check if we're clicking on a transform handle at drag start
+        if !isDrawing && !document.isHandleScalingActive {
+            // Check if we hit any transform handle
+            for objectID in document.selectedObjectIDs {
+                if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }),
+                   case .shape(let shape) = unifiedObject.objectType {
+                    // Skip background shapes
+                    if shape.name != "Canvas Background" && shape.name != "Pasteboard Background" {
+                        // Don't check for handles - let the actual handle views handle their own hit testing
+                        // The handle views have their own gesture handlers that will set isHandleScalingActive
+                        // We should NOT interfere with object dragging here
+                    }
+                }
+            }
+        }
+
         // If a transform handle drag is active (e.g., arrow-tool transform box), ignore canvas drag
         if document.isHandleScalingActive {
             return
@@ -355,12 +367,12 @@ extension DrawingCanvas {
         // Start drag if not already dragging
         if !isDrawing {
             // Try to select if nothing selected or dragging unselected object
-            if (document.selectedShapeIDs.isEmpty && document.selectedTextIDs.isEmpty) || !isDraggingSelectedObject(at: startLocation) {
+            if document.selectedObjectIDs.isEmpty || !isDraggingSelectedObject(at: startLocation) {
                 selectObjectAt(startLocation)
             }
-            
+
             // Start drag if we have something selected
-            if !document.selectedShapeIDs.isEmpty || !document.selectedTextIDs.isEmpty {
+            if !document.selectedObjectIDs.isEmpty {
                 selectionDragStart = value.startLocation
                 startSelectionDrag()
                 isDrawing = true
@@ -381,14 +393,12 @@ extension DrawingCanvas {
         handToolDragStart = CGPoint.zero
         isPanGestureActive = false
         print("✋ UNIFIED: Hand tool completed - final position: (\(String(format: "%.1f", finalOffset.x)), \(String(format: "%.1f", finalOffset.y)))")
-        #if os(macOS)
         // After pan ends, show open hand if still hovering and tool is still hand, else arrow
         if isCanvasHovering && document.currentTool == .hand {
             NSCursor.openHand.set()
         } else {
             NSCursor.arrow.set()
         }
-        #endif
     }
     
     private func resetShapeDrawingState() {
@@ -405,7 +415,7 @@ extension DrawingCanvas {
     private func startEyedropperColorPick() {
         let sampler = NSColorSampler()
         sampler.show { pickedColor in
-            guard let nsColor = pickedColor?.usingColorSpace(.sRGB) else { return }
+            guard let nsColor = pickedColor?.usingColorSpace(.displayP3) else { return }
             var r: CGFloat = 0
             var g: CGFloat = 0
             var b: CGFloat = 0

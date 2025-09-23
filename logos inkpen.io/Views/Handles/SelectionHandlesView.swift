@@ -7,7 +7,7 @@
 
 import SwiftUI
 import AppKit
-import CoreGraphics
+import SwiftUI
 
 struct SelectionHandlesView: View {
     @ObservedObject var document: VectorDocument
@@ -65,7 +65,8 @@ struct SelectionHandlesView: View {
                                             shape: shape,
                                             zoomLevel: document.zoomLevel,
                                             canvasOffset: document.canvasOffset,
-                                            isShiftPressed: isShiftPressed
+                                            isShiftPressed: isShiftPressed,
+                                            transformOrigin: document.transformOrigin
                                         )
                                         // Keep the selection bounds visually in sync with object preview movement
                                         .offset(x: dragPreviewDelta.x * document.zoomLevel,

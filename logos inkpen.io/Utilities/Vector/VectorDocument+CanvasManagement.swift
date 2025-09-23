@@ -5,8 +5,8 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import Foundation
-import CoreGraphics
+import SwiftUI
+import Combine
 
 // MARK: - Canvas Management
 extension VectorDocument {
@@ -23,10 +23,10 @@ extension VectorDocument {
         let canvasSize = settings.sizeInPoints
         let pasteboardSize = CGSize(width: canvasSize.width * 10, height: canvasSize.height * 10)
         
-        // Calculate pasteboard position (centered on canvas)
+        // Calculate pasteboard position (canvas centered within pasteboard)
         let pasteboardOrigin = CGPoint(
-            x: (canvasSize.width - pasteboardSize.width) / 2,
-            y: (canvasSize.height - pasteboardSize.height) / 2
+            x: -(pasteboardSize.width - canvasSize.width) / 2,
+            y: -(pasteboardSize.height - canvasSize.height) / 2
         )
         
         let pasteboardRect = VectorShape.rectangle(
@@ -78,7 +78,7 @@ extension VectorDocument {
             // Logging removed
             return
         }
-        
+
         // Use unified objects to find pasteboard shape
         let pasteboardShape = unifiedObjects
             .filter { $0.layerIndex == 0 }
@@ -90,21 +90,21 @@ extension VectorDocument {
                 return nil
             }
             .first
-        
+
         guard let pasteboardShape = pasteboardShape else {
             // Logging removed
             return
         }
-        
+
         let canvasSize = settings.sizeInPoints
         let pasteboardSize = CGSize(width: canvasSize.width * 10, height: canvasSize.height * 10)
-        
-        // Calculate pasteboard position (centered on canvas)
+
+        // Calculate pasteboard position (canvas centered within pasteboard)
         let pasteboardOrigin = CGPoint(
-            x: (canvasSize.width - pasteboardSize.width) / 2,
-            y: (canvasSize.height - pasteboardSize.height) / 2
+            x: -(pasteboardSize.width - canvasSize.width) / 2,
+            y: -(pasteboardSize.height - canvasSize.height) / 2
         )
-        
+
         // Find the pasteboard shape index in unified objects and update it
         if unifiedObjects.contains(where: { object in
             if case .shape(let shape) = object.objectType {
@@ -124,9 +124,9 @@ extension VectorDocument {
             updatedPasteboardShape.strokeStyle = nil
             updatedPasteboardShape.name = "Pasteboard Background"
             updatedPasteboardShape.id = pasteboardShape.id  // Keep the same ID
-            
+
             setShapeAtIndex(layerIndex: 0, shapeIndex: pasteboardIndex, shape: updatedPasteboardShape)
-            
+
             Log.fileOperation("📐 Updated pasteboard: \(pasteboardSize) at \(pasteboardOrigin)", level: .info)
         }
     }

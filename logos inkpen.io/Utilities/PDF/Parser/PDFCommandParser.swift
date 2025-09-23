@@ -5,10 +5,7 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import Foundation
 import SwiftUI
-import CoreGraphics
-import PDFKit
 
 // MARK: - PDF Command Parser
 class PDFCommandParser {
@@ -36,6 +33,13 @@ class PDFCommandParser {
     var currentFillOpacity: Double = 1.0
     var currentStrokeOpacity: Double = 1.0
     var currentPage: CGPDFPage?
+
+    // Stroke properties for proper stroke style creation
+    var currentLineWidth: Double = 1.0
+    var currentLineCap: CGLineCap = .butt
+    var currentLineJoin: CGLineJoin = .miter
+    var currentMiterLimit: Double = 10.0
+    var currentLineDashPattern: [Double] = []
     
     // For page resources access
     var pageResourcesDict: CGPDFDictionaryRef?
@@ -57,7 +61,17 @@ class PDFCommandParser {
     var gs1StrokeOpacity: Double = 1.0
     var gs3FillOpacity: Double = 1.0
     var gs3StrokeOpacity: Double = 1.0
-    
+
+    // For clipping path support
+    var isInsideClippingPath: Bool = false
+    var currentClippingPathId: UUID? = nil
+    var pendingClippingPath: VectorShape? = nil  // Store clipping path to add after clipped content
+    // Note: currentTransformMatrix already exists and tracks the CTM
+
+    // For transparent image handling
+    var hasUpcomingTransparentImage: Bool = false
+    var transparentImageBounds: CGRect? = nil
+
     func parseDocument(at url: URL) -> [VectorShape] {
         commands.removeAll()
         shapes.removeAll()
@@ -89,14 +103,24 @@ class PDFCommandParser {
             print("PDF: End of document - finalizing remaining path as default filled shape")
             createShapeFromCurrentPath(filled: true, stroked: false)
         }
-        
+
+        // If we still have a pending clipping path at the end, add it now
+        if let pendingClip = pendingClippingPath {
+            shapes.append(pendingClip)
+            pendingClippingPath = nil
+            print("PDF: Added final pending clipping path at document end")
+        }
+
+        // Remove duplicate shapes that match clipping paths
+        removeDuplicateClippingShapes()
+
         // Final gradient processing (handled by specialized gradient modules)
         print("PDF: 🔍 Final check - activeGradient: \(activeGradient != nil), gradientShapes count: \(gradientShapes.count)")
         // TODO: Implement createCompoundPathWithGradient in gradient handling module
         if activeGradient != nil || !gradientShapes.isEmpty {
             print("PDF: 📋 Final gradient processing would occur here")
         }
-        
+
         print("PDF: Finished parsing. Total shapes created: \(shapes.count)")
         
         // Calculate actual artwork bounds and update pageSize
@@ -146,7 +170,63 @@ class PDFCommandParser {
     // MARK: - Legacy operator callback setup (replaced by PDFOperatorInterpreter)
     
     // MARK: - Utility Methods
-    
+
+    func removeDuplicateClippingShapes() {
+        // Find all clipping paths
+        let clippingPaths = shapes.filter { $0.isClippingPath }
+
+        // For each clipping path, check if there's a duplicate filled shape
+        for clippingPath in clippingPaths {
+            // Find shapes with the same path but filled
+            let duplicates = shapes.filter { shape in
+                !shape.isClippingPath &&
+                shape.path.elements.count == clippingPath.path.elements.count &&
+                pathsAreEqual(shape.path, clippingPath.path)
+            }
+
+            // Remove the duplicates
+            for duplicate in duplicates {
+                if let index = shapes.firstIndex(where: { $0.id == duplicate.id }) {
+                    print("PDF: 🗑️ Removing duplicate shape '\(duplicate.name)' that matches clipping path")
+                    shapes.remove(at: index)
+                }
+            }
+        }
+    }
+
+    func pathsAreEqual(_ path1: VectorPath, _ path2: VectorPath) -> Bool {
+        guard path1.elements.count == path2.elements.count else { return false }
+
+        for (element1, element2) in zip(path1.elements, path2.elements) {
+            // Compare path elements with small tolerance for floating point
+            if !elementsAreEqual(element1, element2) {
+                return false
+            }
+        }
+        return true
+    }
+
+    func elementsAreEqual(_ e1: PathElement, _ e2: PathElement) -> Bool {
+        let tolerance = 0.01
+        switch (e1, e2) {
+        case (.move(let p1), .move(let p2)):
+            return abs(p1.x - p2.x) < tolerance && abs(p1.y - p2.y) < tolerance
+        case (.line(let p1), .line(let p2)):
+            return abs(p1.x - p2.x) < tolerance && abs(p1.y - p2.y) < tolerance
+        case (.curve(let to1, let c1_1, let c2_1), .curve(let to2, let c1_2, let c2_2)):
+            return abs(to1.x - to2.x) < tolerance && abs(to1.y - to2.y) < tolerance &&
+                   abs(c1_1.x - c1_2.x) < tolerance && abs(c1_1.y - c1_2.y) < tolerance &&
+                   abs(c2_1.x - c2_2.x) < tolerance && abs(c2_1.y - c2_2.y) < tolerance
+        case (.quadCurve(let to1, let c1), .quadCurve(let to2, let c2)):
+            return abs(to1.x - to2.x) < tolerance && abs(to1.y - to2.y) < tolerance &&
+                   abs(c1.x - c2.x) < tolerance && abs(c1.y - c2.y) < tolerance
+        case (.close, .close):
+            return true
+        default:
+            return false
+        }
+    }
+
     func calculateArtworkBounds() -> CGRect {
         // Delegate to the dedicated geometry module
         return PDFBoundsCalculator.calculateArtworkBounds(from: shapes, pageSize: pageSize)

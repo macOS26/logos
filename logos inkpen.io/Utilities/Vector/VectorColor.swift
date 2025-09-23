@@ -5,11 +5,11 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import CoreGraphics
+import SwiftUI
 import SwiftUI
 
 // MARK: - Vector Color
-enum VectorColor: Codable, Hashable {
+enum VectorColor: Hashable {
     case rgb(RGBColor)
     case cmyk(CMYKColor)
     case hsb(HSBColorModel)
@@ -63,13 +63,21 @@ enum VectorColor: Codable, Hashable {
             return systemColor.rgbEquivalent.cgColor
         case .gradient(let gradient):
             // For gradients, return the first stop color as a fallback
-            return gradient.stops.first?.color.cgColor ?? CGColor(red: 0, green: 0, blue: 0, alpha: 1)
+            if let firstStop = gradient.stops.first {
+                return firstStop.color.cgColor
+            }
+            // Fallback to black using ColorManager
+            let comps: [CGFloat] = [0, 0, 0, 1]
+            return CGColor(colorSpace: ColorManager.shared.workingCGColorSpace, components: comps) ?? CGColor(red: 0, green: 0, blue: 0, alpha: 1)
         case .clear:
-            return CGColor(red: 0, green: 0, blue: 0, alpha: 0)
+            let comps: [CGFloat] = [0, 0, 0, 0]
+            return CGColor(colorSpace: ColorManager.shared.workingCGColorSpace, components: comps) ?? CGColor(red: 0, green: 0, blue: 0, alpha: 0)
         case .black:
-            return CGColor(red: 0, green: 0, blue: 0, alpha: 1)
+            let comps: [CGFloat] = [0, 0, 0, 1]
+            return CGColor(colorSpace: ColorManager.shared.workingCGColorSpace, components: comps) ?? CGColor(red: 0, green: 0, blue: 0, alpha: 1)
         case .white:
-            return CGColor(red: 1, green: 1, blue: 1, alpha: 1)
+            let comps: [CGFloat] = [1, 1, 1, 1]
+            return CGColor(colorSpace: ColorManager.shared.workingCGColorSpace, components: comps) ?? CGColor(red: 1, green: 1, blue: 1, alpha: 1)
         }
     }
     
@@ -87,35 +95,39 @@ enum VectorColor: Codable, Hashable {
         case .white:
             return "#FFFFFF"
         case .rgb(let rgbColor):
-            return String(format: "#%02X%02X%02X",
-                         Int(rgbColor.red * 255),
-                         Int(rgbColor.green * 255),
-                         Int(rgbColor.blue * 255))
+            // Convert from working color space (P3) to sRGB for SVG export
+            // SVG only supports sRGB color space, so we need to convert P3 colors
+            let cgColor = rgbColor.cgColor
+            // Use ColorManager to convert to sRGB hex string
+            return ColorManager.shared.cgColorToSRGBHex(cgColor)
         case .cmyk(let cmykColor):
-            // Convert CMYK to RGB for SVG
+            // Convert CMYK to RGB, then to sRGB for SVG
             let r = (1 - cmykColor.cyan) * (1 - cmykColor.black)
             let g = (1 - cmykColor.magenta) * (1 - cmykColor.black)
             let b = (1 - cmykColor.yellow) * (1 - cmykColor.black)
-            return String(format: "#%02X%02X%02X", Int(r * 255), Int(g * 255), Int(b * 255))
+            // Create RGB color in P3 space, then convert to sRGB
+            let rgbColor = RGBColor(red: r, green: g, blue: b, alpha: 1.0, colorSpace: .displayP3)
+            let cgColor = rgbColor.cgColor
+            return ColorManager.shared.cgColorToSRGBHex(cgColor)
         case .hsb(let hsbColor):
-            // Convert HSB to RGB for SVG
-            let rgb = hsbToRgb(h: hsbColor.hue, s: hsbColor.saturation, b: hsbColor.brightness)
-            return String(format: "#%02X%02X%02X", Int(rgb.r * 255), Int(rgb.g * 255), Int(rgb.b * 255))
+            // Convert HSB to RGB, then to sRGB for SVG
+            // HSBColorModel stores values differently, so convert properly
+            let color = Color(hue: hsbColor.hue / 360.0, saturation: hsbColor.saturation, brightness: hsbColor.brightness)
+            let nsColor = NSColor(color)
+            let cgColor = nsColor.cgColor
+            return ColorManager.shared.cgColorToSRGBHex(cgColor)
         case .pantone(let pantoneColor):
-            return String(format: "#%02X%02X%02X",
-                         Int(pantoneColor.rgbEquivalent.red * 255),
-                         Int(pantoneColor.rgbEquivalent.green * 255),
-                         Int(pantoneColor.rgbEquivalent.blue * 255))
+            // Convert from P3 to sRGB for SVG export
+            let cgColor = pantoneColor.rgbEquivalent.cgColor
+            return ColorManager.shared.cgColorToSRGBHex(cgColor)
         case .spot(let spotColor):
-            return String(format: "#%02X%02X%02X",
-                         Int(spotColor.rgbEquivalent.red * 255),
-                         Int(spotColor.rgbEquivalent.green * 255),
-                         Int(spotColor.rgbEquivalent.blue * 255))
+            // Convert from P3 to sRGB for SVG export
+            let cgColor = spotColor.rgbEquivalent.cgColor
+            return ColorManager.shared.cgColorToSRGBHex(cgColor)
         case .appleSystem(let systemColor):
-            return String(format: "#%02X%02X%02X",
-                         Int(systemColor.rgbEquivalent.red * 255),
-                         Int(systemColor.rgbEquivalent.green * 255),
-                         Int(systemColor.rgbEquivalent.blue * 255))
+            // Convert from P3 to sRGB for SVG export
+            let cgColor = systemColor.rgbEquivalent.cgColor
+            return ColorManager.shared.cgColorToSRGBHex(cgColor)
         case .gradient(let gradient):
             // For gradients, return the first stop color as a fallback
             return gradient.stops.first?.color.svgColor ?? "#000000"
@@ -151,5 +163,148 @@ enum VectorColor: Codable, Hashable {
         }
         
         return (r + m, g + m, b + m)
+    }
+}
+
+// MARK: - VectorColor Codable Implementation
+extension VectorColor: Codable {
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+
+        switch self {
+        case .rgb(let color):
+            try container.encode(["rgb": color])
+        case .cmyk(let color):
+            try container.encode(["cmyk": color])
+        case .hsb(let color):
+            try container.encode(["hsb": color])
+        case .pantone(let color):
+            try container.encode(["pantone": color])
+        case .spot(let color):
+            try container.encode(["spot": color])
+        case .appleSystem(let color):
+            try container.encode(["appleSystem": color])
+        case .gradient(let gradient):
+            try container.encode(["gradient": gradient])
+        case .clear:
+            try container.encode("clear")
+        case .black:
+            try container.encode("black")
+        case .white:
+            try container.encode("white")
+        }
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+
+        // First try to decode as a simple string for black/white/clear
+        if let simpleColor = try? container.decode(String.self) {
+            switch simpleColor {
+            case "black":
+                self = .black
+            case "white":
+                self = .white
+            case "clear":
+                self = .clear
+            default:
+                throw DecodingError.dataCorrupted(DecodingError.Context(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "Unknown color string: \(simpleColor)"
+                ))
+            }
+        } else {
+            // Decode as a dictionary with a single key
+            let dict = try container.decode([String: AnyCodable].self)
+
+            guard let (key, value) = dict.first, dict.count == 1 else {
+                throw DecodingError.dataCorrupted(DecodingError.Context(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "VectorColor should have exactly one color type"
+                ))
+            }
+
+            switch key {
+            case "rgb":
+                let color = try value.decode(RGBColor.self)
+                self = .rgb(color)
+            case "cmyk":
+                let color = try value.decode(CMYKColor.self)
+                self = .cmyk(color)
+            case "hsb":
+                let color = try value.decode(HSBColorModel.self)
+                self = .hsb(color)
+            case "pantone":
+                let color = try value.decode(PantoneLibraryColor.self)
+                self = .pantone(color)
+            case "spot":
+                let color = try value.decode(SPOTColor.self)
+                self = .spot(color)
+            case "appleSystem":
+                let color = try value.decode(AppleSystemColor.self)
+                self = .appleSystem(color)
+            case "gradient":
+                let gradient = try value.decode(VectorGradient.self)
+                self = .gradient(gradient)
+            default:
+                throw DecodingError.dataCorrupted(DecodingError.Context(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "Unknown color type: \(key)"
+                ))
+            }
+        }
+    }
+}
+
+// Helper for type-erased decoding
+private struct AnyCodable: Codable {
+    let value: Any
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let dict = try? container.decode([String: AnyCodable].self) {
+            value = dict.mapValues { $0.value }
+        } else if let array = try? container.decode([AnyCodable].self) {
+            value = array.map { $0.value }
+        } else if let string = try? container.decode(String.self) {
+            value = string
+        } else if let bool = try? container.decode(Bool.self) {
+            value = bool
+        } else if let int = try? container.decode(Int.self) {
+            value = int
+        } else if let double = try? container.decode(Double.self) {
+            value = double
+        } else {
+            value = NSNull()
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch value {
+        case let dict as [String: Any]:
+            try container.encode(dict.mapValues { AnyCodable(wrapping: $0) })
+        case let array as [Any]:
+            try container.encode(array.map { AnyCodable(wrapping: $0) })
+        case let string as String:
+            try container.encode(string)
+        case let bool as Bool:
+            try container.encode(bool)
+        case let int as Int:
+            try container.encode(int)
+        case let double as Double:
+            try container.encode(double)
+        default:
+            try container.encodeNil()
+        }
+    }
+
+    init(wrapping value: Any) {
+        self.value = value
+    }
+
+    func decode<T: Decodable>(_ type: T.Type) throws -> T {
+        let data = try JSONSerialization.data(withJSONObject: value)
+        return try JSONDecoder().decode(type, from: data)
     }
 }

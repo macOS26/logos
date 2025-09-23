@@ -5,7 +5,6 @@
 //  Created by Todd Bruss on 9/3/25.
 //
 
-import Foundation
 import SwiftUI
 
 // MARK: - SVG Gradient Consolidation Helpers

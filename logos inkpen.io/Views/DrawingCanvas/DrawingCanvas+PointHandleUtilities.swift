@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 extension DrawingCanvas {
     internal func captureOriginalPositions() {
@@ -70,10 +71,15 @@ extension DrawingCanvas {
     }
     
     internal func movePointToAbsolutePosition(_ pointID: PointID, to newPosition: CGPoint) {
-        movePointToAbsolutePositionOptimized(pointID, to: newPosition, isLiveDrag: isDraggingPoint)
+        movePointToAbsolutePositionOptimized(pointID, to: newPosition, isLiveDrag: isDraggingPoint, shouldUpdate: true)
+    }
+
+    // Batched version for drag operations - no individual updates
+    internal func movePointToAbsolutePositionBatched(_ pointID: PointID, to newPosition: CGPoint) {
+        movePointToAbsolutePositionOptimized(pointID, to: newPosition, isLiveDrag: true, shouldUpdate: false)
     }
     
-    private func movePointToAbsolutePositionOptimized(_ pointID: PointID, to newPosition: CGPoint, isLiveDrag: Bool) {
+    private func movePointToAbsolutePositionOptimized(_ pointID: PointID, to newPosition: CGPoint, isLiveDrag: Bool, shouldUpdate: Bool = true) {
         // Find the shape and update the point position using unified objects
         if let unifiedIndex = document.unifiedObjects.firstIndex(where: { 
             if case .shape(let shape) = $0.objectType {
@@ -154,9 +160,11 @@ extension DrawingCanvas {
                     // Skip expensive updateBounds during live drag for smoother performance
                     // Update the unified object directly
                     document.unifiedObjects[unifiedIndex] = VectorObject(shape: updatedShape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                    
-                    // Force immediate UI update for visual responsiveness
-                    document.objectWillChange.send()
+
+                    // Only send update if requested (not during batched operations)
+                    if shouldUpdate {
+                        document.objectWillChange.send()
+                    }
                 } else {
                     // FULL UPDATE: On drag end, update bounds and do full sync
                     updatedShape.updateBounds()
@@ -165,8 +173,10 @@ extension DrawingCanvas {
                     if let shapeIndex = shapesInLayer.firstIndex(where: { $0.id == updatedShape.id }) {
                         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                     }
-                    document.updateUnifiedObjectsOptimized()
-                    document.objectWillChange.send()
+                    document.updateUnifiedObjectsOptimized(sendUpdate: false)
+                    if shouldUpdate {
+                        document.objectWillChange.send()
+                    }
                 }
                 return
         }
@@ -239,10 +249,15 @@ extension DrawingCanvas {
     }
     
     internal func moveHandleToAbsolutePosition(_ handleID: HandleID, to newPosition: CGPoint) {
-        moveHandleToAbsolutePositionOptimized(handleID, to: newPosition, isLiveDrag: isDraggingHandle)
+        moveHandleToAbsolutePositionOptimized(handleID, to: newPosition, isLiveDrag: isDraggingHandle, shouldUpdate: true)
     }
-    
-    private func moveHandleToAbsolutePositionOptimized(_ handleID: HandleID, to newPosition: CGPoint, isLiveDrag: Bool) {
+
+    // Batched version for drag operations - no individual updates
+    internal func moveHandleToAbsolutePositionBatched(_ handleID: HandleID, to newPosition: CGPoint) {
+        moveHandleToAbsolutePositionOptimized(handleID, to: newPosition, isLiveDrag: true, shouldUpdate: false)
+    }
+
+    private func moveHandleToAbsolutePositionOptimized(_ handleID: HandleID, to newPosition: CGPoint, isLiveDrag: Bool, shouldUpdate: Bool = true) {
         // Find the shape and update the handle position using unified objects
         if let unifiedIndex = document.unifiedObjects.firstIndex(where: { 
             if case .shape(let shape) = $0.objectType {
@@ -289,9 +304,11 @@ extension DrawingCanvas {
                     // Skip expensive updateBounds during live drag for smoother performance
                     // Update the unified object directly
                     document.unifiedObjects[unifiedIndex] = VectorObject(shape: updatedShape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                    
-                    // Force immediate UI update for visual responsiveness
-                    document.objectWillChange.send()
+
+                    // Only send update if requested (not during batched operations)
+                    if shouldUpdate {
+                        document.objectWillChange.send()
+                    }
                 } else {
                     // FULL UPDATE: On drag end, update bounds and do full sync
                     updatedShape.updateBounds()
@@ -300,8 +317,10 @@ extension DrawingCanvas {
                     if let shapeIndex = shapesInLayer.firstIndex(where: { $0.id == updatedShape.id }) {
                         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                     }
-                    document.updateUnifiedObjectsOptimized()
-                    document.objectWillChange.send()
+                    document.updateUnifiedObjectsOptimized(sendUpdate: false)
+                    if shouldUpdate {
+                        document.objectWillChange.send()
+                    }
                 }
                 return
         }

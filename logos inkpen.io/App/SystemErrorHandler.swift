@@ -5,9 +5,7 @@
 //  Created by Todd Bruss on 8/23/25.
 //
 
-import Foundation
 import SwiftUI
-import CoreGraphics
 
 // MARK: - Custom Error Handler for System-Level Issues
 class SystemErrorHandler {
@@ -60,27 +58,5 @@ class SystemErrorHandler {
         }
         
         return false // Error not handled, let it propagate
-    }
-    
-    // Method to suppress specific error types globally
-    func shouldSuppressError(_ error: Error) -> Bool {
-        let errorDescription = error.localizedDescription.lowercased()
-        
-        // List of error patterns that should be suppressed
-        let suppressPatterns = [
-            "detachedsignatures",
-            "/private/var/db/",
-            "no such file or directory",
-            "renderbox",
-            "metallib",
-            "mach-o",
-            "personaattributes",
-            "persona type",
-            "operation not permitted"
-        ]
-        
-        return suppressPatterns.contains { pattern in
-            errorDescription.contains(pattern)
-        }
     }
 }

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 @Observable
 class PersistentGradientHUDManager {
@@ -32,7 +33,7 @@ class PersistentGradientHUDManager {
     
     init(appState: AppState) {
         self.appState = appState
-        stableColorDocument.defaultFillColor = .black
+        // Don't set to black - this affects ALL documents via ColorManager.shared!
     }
     
     func show(stopId: UUID, color: VectorColor, document: VectorDocument, gradient: VectorGradient?, 
@@ -109,8 +110,8 @@ class PersistentGradientHUDManager {
         onColorSelected = nil
         onClose = nil
         
-        // Clear the stable document color
-        stableColorDocument.defaultFillColor = .black
+        // Clear the stable document color (don't set to black - affects all documents!)
+        // stableColorDocument.defaultFillColor = .black
         stableColorDocument.objectWillChange.send()
         
         // Call the onClose callback if it exists

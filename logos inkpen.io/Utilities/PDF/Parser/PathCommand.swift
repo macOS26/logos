@@ -5,7 +5,7 @@
 //  Created by Todd Bruss on 8/31/25.
 //
 
-import Foundation
+import SwiftUI
 
 // MARK: - Path Command Types
 enum PathCommand: Equatable {

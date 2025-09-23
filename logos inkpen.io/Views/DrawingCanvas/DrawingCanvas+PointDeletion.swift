@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 extension DrawingCanvas {
     internal func deleteSelectedPoints() {
@@ -141,6 +142,9 @@ extension DrawingCanvas {
         
         // Clear bezier state BUT KEEP pen tool active for continuous tracing
         cancelBezierDrawing()
+
+        // Clear the current shape ID since we're done drawing
+        currentShapeId = nil
         
         // Hide any close path hints
         showClosePathHint = false

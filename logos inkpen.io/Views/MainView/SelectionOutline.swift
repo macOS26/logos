@@ -7,7 +7,7 @@
 
 import SwiftUI
 import AppKit
-import CoreGraphics
+import SwiftUI
 
 // MARK: - Simple Selection Outline (Arrow Tool)
 struct SelectionOutline: View {
@@ -75,12 +75,66 @@ struct SelectionOutline: View {
                         .offset(x: canvasOffset.x, y: canvasOffset.y)
                 }
             }
+        } else if shape.isWarpObject && !shape.warpEnvelope.isEmpty {
+            // For warped objects in selection tool, show standard transform box
+            // Use the shape's bounds property which should be calculated from the warped path
+            let warpedBounds = shape.bounds
+            let center = CGPoint(x: warpedBounds.midX, y: warpedBounds.midY)
+
+            ZStack {
+                // Draw standard transform box with dashed lines
+                Path { path in
+                    path.addRect(warpedBounds)
+                }
+                .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [5.0 / zoomLevel, 5.0 / zoomLevel]))
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+
+                // Center point
+                Rectangle()
+                    .fill(Color.blue)
+                    .stroke(Color.white, lineWidth: 1.0)
+                    .frame(width: handleSize, height: handleSize)
+                    .position(CGPoint(
+                        x: center.x * zoomLevel + canvasOffset.x,
+                        y: center.y * zoomLevel + canvasOffset.y
+                    ))
+
+                // Corner handles
+                ForEach(0..<4) { i in
+                    let position = cornerPosition(for: i, in: warpedBounds, center: center)
+
+                    Rectangle()
+                        .fill(Color.blue)
+                        .stroke(Color.white, lineWidth: 1.0)
+                        .frame(width: handleSize, height: handleSize)
+                        .position(CGPoint(
+                            x: position.x * zoomLevel + canvasOffset.x,
+                            y: position.y * zoomLevel + canvasOffset.y
+                        ))
+                }
+            }
         } else {
             // NORMAL SELECTION: Show bounding box outline with blue corner handles and center point
-            // Compute precise bounds in canvas coordinates
-            // Regular shapes: use the actual rendered path with transform baked-in
-            // Group containers: transform group bounds corners
-            let baseBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+            // ALWAYS USE WARP ENVELOPE IF IT EXISTS ON THE SHAPE
+            let baseBounds: CGRect = {
+                // First check if shape itself has warp envelope (warp objects)
+                if shape.isWarpObject && !shape.warpEnvelope.isEmpty && shape.warpEnvelope.count == 4 {
+                    let minX = shape.warpEnvelope.map { $0.x }.min() ?? 0
+                    let maxX = shape.warpEnvelope.map { $0.x }.max() ?? 0
+                    let minY = shape.warpEnvelope.map { $0.y }.min() ?? 0
+                    let maxY = shape.warpEnvelope.map { $0.y }.max() ?? 0
+                    return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+                } else if let warpBounds = document.warpBounds[shape.id] {
+                    // Then check stored warp bounds
+                    return warpBounds
+                } else {
+                    // Compute precise bounds in canvas coordinates
+                    // Regular shapes: use the actual rendered path with transform baked-in
+                    // Group containers: transform group bounds corners
+                    return shape.isGroupContainer ? shape.groupBounds : shape.bounds
+                }
+            }()
             
             // CRITICAL FIX: Account for stroke width in bounding box for stroke-only shapes
             let strokeExpandedBounds: CGRect = {
@@ -96,33 +150,52 @@ struct SelectionOutline: View {
             
             let center = CGPoint(x: strokeExpandedBounds.midX, y: strokeExpandedBounds.midY)
             let transformedBounds: CGRect = {
-                // Robust bounds: transform all four corners, regardless of type (works for images too)
-                let t = shape.transform
-                let corners = [
-                    CGPoint(x: strokeExpandedBounds.minX, y: strokeExpandedBounds.minY).applying(t),
-                    CGPoint(x: strokeExpandedBounds.maxX, y: strokeExpandedBounds.minY).applying(t),
-                    CGPoint(x: strokeExpandedBounds.maxX, y: strokeExpandedBounds.maxY).applying(t),
-                    CGPoint(x: strokeExpandedBounds.minX, y: strokeExpandedBounds.maxY).applying(t)
-                ]
-                let minX = corners.map { $0.x }.min() ?? strokeExpandedBounds.minX
-                let minY = corners.map { $0.y }.min() ?? strokeExpandedBounds.minY
-                let maxX = corners.map { $0.x }.max() ?? strokeExpandedBounds.maxX
-                let maxY = corners.map { $0.y }.max() ?? strokeExpandedBounds.maxY
-                return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+                // CRITICAL: If shape is warped, DON'T transform again - envelope is already in final position
+                if shape.isWarpObject && !shape.warpEnvelope.isEmpty {
+                    return strokeExpandedBounds // Use bounds directly without transform
+                } else {
+                    // Only apply transform for non-warped shapes
+                    let t = shape.transform
+                    let corners = [
+                        CGPoint(x: strokeExpandedBounds.minX, y: strokeExpandedBounds.minY).applying(t),
+                        CGPoint(x: strokeExpandedBounds.maxX, y: strokeExpandedBounds.minY).applying(t),
+                        CGPoint(x: strokeExpandedBounds.maxX, y: strokeExpandedBounds.maxY).applying(t),
+                        CGPoint(x: strokeExpandedBounds.minX, y: strokeExpandedBounds.maxY).applying(t)
+                    ]
+                    let minX = corners.map { $0.x }.min() ?? strokeExpandedBounds.minX
+                    let minY = corners.map { $0.y }.min() ?? strokeExpandedBounds.minY
+                    let maxX = corners.map { $0.x }.max() ?? strokeExpandedBounds.maxX
+                    let maxY = corners.map { $0.y }.max() ?? strokeExpandedBounds.maxY
+                    return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+                }
             }()
             
             ZStack {
-                // Bounding box outline
-                // Draw selection rectangle using Path to avoid layout rounding differences
-                Path { path in
-                    path.addRect(transformedBounds)
+                // Bounding box outline - use SHARED component
+                if shape.isWarpObject {
+                    // Use the SAME envelope drawing code as warp tool
+                    SharedEnvelopeOutline(
+                        shape: shape,
+                        zoomLevel: zoomLevel,
+                        canvasOffset: canvasOffset,
+                        color: .blue,
+                        lineWidth: 1.0,
+                        isDashed: false
+                    )
+                } else {
+                    // Draw regular rectangle for non-warped shapes
+                    Path { path in
+                        path.addRect(transformedBounds)
+                    }
+                    .stroke(Color.blue, lineWidth: 1.0 / zoomLevel)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
                 }
-                .stroke(Color.blue, lineWidth: 1.0 / zoomLevel)
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
                 
                 // CENTER POINT: Blue square same size as corners
-                let transformedCenter = CGPoint(x: center.x, y: center.y).applying(shape.transform)
+                // CRITICAL: If shape is warped, don't transform center - it's already positioned
+                let transformedCenter = (shape.isWarpObject && !shape.warpEnvelope.isEmpty) ?
+                    center : CGPoint(x: center.x, y: center.y).applying(shape.transform)
                 Rectangle()
                     .fill(Color.blue)
                     .stroke(Color.white, lineWidth: 1.0)
@@ -132,20 +205,29 @@ struct SelectionOutline: View {
                         y: transformedCenter.y * zoomLevel + canvasOffset.y
                     ))
                 
-                // 4 Corner handles - ALL BLUE
-                ForEach(0..<4) { i in
-                    // Use corners from transformedBounds directly for regular shapes; transform corners for groups
-                    let position = cornerPosition(for: i, in: baseBounds, center: center)
-                    let transformedCorner = CGPoint(x: position.x, y: position.y).applying(shape.transform)
-                    
-                    Rectangle()
-                        .fill(Color.blue)
-                        .stroke(Color.white, lineWidth: 1.0)
-                        .frame(width: handleSize, height: handleSize) // Fixed UI size - does not scale with artwork
-                        .position(CGPoint(
-                            x: transformedCorner.x * zoomLevel + canvasOffset.x,
-                            y: transformedCorner.y * zoomLevel + canvasOffset.y
-                        ))
+                // 4 Corner handles - use SHARED component for warped shapes
+                if shape.isWarpObject {
+                    SharedEnvelopeCorners(
+                        shape: shape,
+                        zoomLevel: zoomLevel,
+                        canvasOffset: canvasOffset,
+                        handleSize: handleSize,
+                        handleColor: .blue
+                    )
+                } else {
+                    ForEach(0..<4) { i in
+                        let position = cornerPosition(for: i, in: baseBounds, center: center)
+                        let transformedCorner = CGPoint(x: position.x, y: position.y).applying(shape.transform)
+
+                        Rectangle()
+                            .fill(Color.blue)
+                            .stroke(Color.white, lineWidth: 1.0)
+                            .frame(width: handleSize, height: handleSize)
+                            .position(CGPoint(
+                                x: transformedCorner.x * zoomLevel + canvasOffset.x,
+                                y: transformedCorner.y * zoomLevel + canvasOffset.y
+                            ))
+                    }
                 }
             }
         }

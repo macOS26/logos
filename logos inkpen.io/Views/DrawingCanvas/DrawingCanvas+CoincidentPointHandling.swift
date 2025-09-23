@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import Foundation
+import SwiftUI
 
 // MARK: - Coincident Point Handling Extension
 extension DrawingCanvas {

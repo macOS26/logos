@@ -6,8 +6,7 @@
 //  Extracted from SVGParser.swift for better organization
 //
 
-import Foundation
-import AppKit
+import SwiftUI
 
 extension SVGParser {
     
@@ -226,7 +225,6 @@ extension SVGParser {
                     typography: typography,
                     position: CGPoint(x: baseX, y: baseY),
                     transform: finalTextTransform,
-                    isPointText: false,  // This is area text (multi-line)
                     areaSize: nil        // Will be calculated automatically
                 )
                 

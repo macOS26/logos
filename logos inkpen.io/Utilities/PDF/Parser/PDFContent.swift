@@ -5,7 +5,6 @@
 //  Created by Todd Bruss on 8/31/25.
 //
 
-
 // MARK: - Parser Functions (Implementation Required)
 struct PDFContent {
     let shapes: [VectorShape]

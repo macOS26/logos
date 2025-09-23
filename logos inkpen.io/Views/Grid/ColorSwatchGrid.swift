@@ -5,7 +5,6 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import Foundation
 import SwiftUI
 
 struct ColorSwatchGrid: View {
@@ -158,7 +157,7 @@ struct ColorSwatchGrid: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 .focusable(false)
-                .help("Current Stroke Color: \(currentStrokeColor) (Opacity: \(Int(currentStrokeOpacity * 100))%) - Click to make active")
+                .help("Current Stroke Color (Opacity: \(Int(currentStrokeOpacity * 100))%) - Click to make active")
                 .offset(x: 6, y: 6)  // Bottom-right offset
                 // Fill color (foreground, top-left)
                 Button {
@@ -222,7 +221,7 @@ struct ColorSwatchGrid: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 .focusable(false)
-                .help("Current Fill Color: \(currentFillColor) (Opacity: \(Int(currentFillOpacity * 100))%) - Click to make active")
+                .help("Current Fill Color (Opacity: \(Int(currentFillOpacity * 100))%) - Click to make active")
                 .offset(x: -6, y: -6)  // Top-left offset
             }
 			.frame(width: 28, height: 28)  // Total frame to contain both squares

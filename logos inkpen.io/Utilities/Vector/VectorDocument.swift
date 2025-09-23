@@ -5,12 +5,8 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import Foundation
-import CoreGraphics
-import CoreText
-import AppKit
-
-
+import SwiftUI
+import Combine
 
 // MARK: - Vector Document
 class VectorDocument: ObservableObject, Codable {
@@ -29,10 +25,37 @@ class VectorDocument: ObservableObject, Codable {
     // Direct selection state (managed by DrawingCanvas, used by panels)
     @Published var directSelectedShapeIDs: Set<UUID> = []
     
-    // SIMPLIFIED SWATCH SYSTEM - Three separate modifiable arrays
-    @Published var rgbSwatches: [VectorColor] = []
-    @Published var cmykSwatches: [VectorColor] = []
-    @Published var hsbSwatches: [VectorColor] = []
+    // Color defaults are now managed by ColorManager
+    var colorDefaults: ColorDefaults {
+        get { ColorManager.shared.colorDefaults }
+        set { ColorManager.shared.updateColorDefaults(newValue) }
+    }
+
+    // Computed properties for swatches
+    var rgbSwatches: [VectorColor] {
+        get { colorDefaults.rgbSwatches }
+        set {
+            var defaults = colorDefaults
+            defaults.rgbSwatches = newValue
+            colorDefaults = defaults
+        }
+    }
+    var cmykSwatches: [VectorColor] {
+        get { colorDefaults.cmykSwatches }
+        set {
+            var defaults = colorDefaults
+            defaults.cmykSwatches = newValue
+            colorDefaults = defaults
+        }
+    }
+    var hsbSwatches: [VectorColor] {
+        get { colorDefaults.hsbSwatches }
+        set {
+            var defaults = colorDefaults
+            defaults.hsbSwatches = newValue
+            colorDefaults = defaults
+        }
+    }
     
     // CRITICAL FIX: Shared state to prevent double transformations  
     @Published var isHandleScalingActive = false // Set by SelectionHandles, checked by canvas gesture
@@ -129,18 +152,102 @@ class VectorDocument: ObservableObject, Codable {
     @Published var scalingAnchor: ScalingAnchor = .center // NEW: Scaling anchor point selection
     @Published var rotationAnchor: RotationAnchor = .center // NEW: Rotation anchor point selection
     @Published var shearAnchor: ShearAnchor = .center // NEW: Shear anchor point selection
-    
-    // BRUSH TOOL SETTINGS (Current tool settings, not document settings)
-    @Published var currentBrushThickness: Double = 20.0 // Current brush thickness
-    @Published var currentBrushPressureSensitivity: Double = 0.5 // Current pressure sensitivity (0.0-1.0)
-    @Published var currentBrushTaper: Double = 0.3 // Current brush taper (0.0-1.0)
-    @Published var currentBrushSmoothingTolerance: Double = 2.0 // Current brush smoothing tolerance (like freehand)
+    @Published var transformOrigin: TransformOrigin = .center // 9-point transform origin for ALL transforms
+    @Published var objectPositionUpdateTrigger: Bool = false // Triggers transform panel updates after object movement
+    @Published var currentDragOffset: CGPoint = .zero // Current drag delta for transform panel to show live updates
+    @Published var dragPreviewCoordinates: CGPoint = .zero // Live preview coordinates for two-way binding
+    @Published var scalePreviewDimensions: CGSize = .zero // Live preview W/H for scaling operations
+    @Published var warpEnvelopeCorners: [UUID: [CGPoint]] = [:] // Store warp envelope corners per shape
+    @Published var warpBounds: [UUID: CGRect] = [:] // Store warp tool bounds for every shape - ALWAYS AVAILABLE
+
+    // COMMON UPDATE FUNCTION: Actually calculate and update X Y W H values
+    func updateTransformPanelValues() {
+        // First sync unified objects
+        updateUnifiedObjectsOptimized()
+
+        // Calculate bounds for all selected objects
+        guard !selectedObjectIDs.isEmpty else { return }
+
+        var combinedBounds: CGRect?
+        for objectID in selectedObjectIDs {
+            if let unifiedObject = unifiedObjects.first(where: { $0.id == objectID }) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    let shapeBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+                    if let existing = combinedBounds {
+                        combinedBounds = existing.union(shapeBounds)
+                    } else {
+                        combinedBounds = shapeBounds
+                    }
+                }
+            }
+        }
+
+        // Force the transform panel to update
+        objectPositionUpdateTrigger.toggle()
+        objectWillChange.send()
+    }
+
+    // BRUSH TOOL SETTINGS (Current tool settings, stored in UserDefaults)
+    @Published var currentBrushThickness: Double = 20.0 {
+        didSet { UserDefaults.standard.set(currentBrushThickness, forKey: "brushThickness") }
+    }
+    @Published var currentBrushPressureSensitivity: Double = 0.5 {
+        didSet { UserDefaults.standard.set(currentBrushPressureSensitivity, forKey: "brushPressureSensitivity") }
+    }
+    @Published var currentBrushTaper: Double = 0.4 {
+        didSet { UserDefaults.standard.set(currentBrushTaper, forKey: "brushTaper") }
+    }
+    @Published var currentBrushSmoothingTolerance: Double = 2.0 {
+        didSet { UserDefaults.standard.set(currentBrushSmoothingTolerance, forKey: "brushSmoothingTolerance") }
+    }
     @Published var hasPressureInput: Bool = false // Whether pressure-sensitive input is detected
     @Published var brushApplyNoStroke: Bool = true // When enabled, applies no stroke regardless of current stroke settings
     
 
     
     @Published var brushRemoveOverlap: Bool = true // When enabled, applies union operation to merge overlapping parts
+
+    // ADVANCED SMOOTHING SETTINGS (stored in UserDefaults for all drawing tools)
+    @Published var advancedSmoothingEnabled: Bool {
+        didSet { UserDefaults.standard.set(advancedSmoothingEnabled, forKey: "advancedSmoothingEnabled") }
+    }
+    @Published var chaikinSmoothingIterations: Int {
+        didSet { UserDefaults.standard.set(chaikinSmoothingIterations, forKey: "chaikinSmoothingIterations") }
+    }
+    @Published var adaptiveTensionEnabled: Bool {
+        didSet { UserDefaults.standard.set(adaptiveTensionEnabled, forKey: "adaptiveTensionEnabled") }
+    }
+
+    // FREEHAND TOOL SETTINGS (stored in UserDefaults)
+    @Published var freehandSmoothingTolerance: Double {
+        didSet { UserDefaults.standard.set(freehandSmoothingTolerance, forKey: "freehandSmoothingTolerance") }
+    }
+    @Published var realTimeSmoothingEnabled: Bool {
+        didSet { UserDefaults.standard.set(realTimeSmoothingEnabled, forKey: "realTimeSmoothingEnabled") }
+    }
+    @Published var realTimeSmoothingStrength: Double {
+        didSet { UserDefaults.standard.set(realTimeSmoothingStrength, forKey: "realTimeSmoothingStrength") }
+    }
+    @Published var preserveSharpCorners: Bool {
+        didSet { UserDefaults.standard.set(preserveSharpCorners, forKey: "preserveSharpCorners") }
+    }
+
+    // Freehand fill mode: .fill (use current fill color), .noFill (transparent)
+    enum FreehandFillMode: String, CaseIterable {
+        case fill = "Fill"
+        case noFill = "No Fill"
+    }
+    @Published var freehandFillMode: FreehandFillMode = .noFill {
+        didSet { UserDefaults.standard.set(freehandFillMode.rawValue, forKey: "freehandFillMode") }
+    }
+    @Published var freehandExpandStroke: Bool = false {
+        didSet { UserDefaults.standard.set(freehandExpandStroke, forKey: "freehandExpandStroke") }
+    }
+    @Published var freehandClosePath: Bool = false {
+        didSet { UserDefaults.standard.set(freehandClosePath, forKey: "freehandClosePath") }
+    }
+
     @Published var viewMode: ViewMode = .color
     @Published var zoomLevel: Double = 1.0
     @Published var canvasOffset: CGPoint = .zero
@@ -148,6 +255,7 @@ class VectorDocument: ObservableObject, Codable {
     @Published var showRulers: Bool = false
     @Published var showGrid: Bool = false
     @Published var snapToGrid: Bool = false
+    @Published var snapToPoint: Bool = false
     @Published var gridSpacing: Double = 12.0
     @Published var backgroundColor: VectorColor = .white
     
@@ -160,18 +268,63 @@ class VectorDocument: ObservableObject, Codable {
     // PROFESSIONAL TYPOGRAPHY MANAGEMENT
     @Published var fontManager: FontManager = FontManager()
     
-    // DEFAULT COLORS FOR NEW SHAPES
-    @Published var defaultFillColor: VectorColor = .appleSystem(.systemBlue) // Default fill: macOS system blue
-    @Published var defaultStrokeColor: VectorColor = .rgb(RGBColor(red: 1, green: 0, blue: 0)) // Default stroke: red
-    @Published var defaultFillOpacity: Double = 1.0  // 100% opacity by default
-    @Published var defaultStrokeOpacity: Double = 1.0  // 100% opacity by default
-    @Published var defaultStrokeWidth: Double = 1.0  // Default stroke width for new shapes
-    
-    // DEFAULT STROKE STYLE PROPERTIES FOR NEW SHAPES
-    @Published var defaultStrokePlacement: StrokePlacement = .center  // Default stroke placement for new shapes
-    @Published var defaultStrokeLineJoin: CGLineJoin = .miter  // Default line join for new shapes
-    @Published var defaultStrokeLineCap: CGLineCap = .butt  // Default line cap for new shapes
-    @Published var defaultStrokeMiterLimit: Double = 10.0  // Default miter limit for new shapes
+    // Computed properties for easy access to color defaults
+    var defaultFillColor: VectorColor {
+        get { colorDefaults.fillColor }
+        set {
+            objectWillChange.send() // Trigger UI update
+            var defaults = colorDefaults
+            defaults.fillColor = newValue
+            colorDefaults = defaults
+        }
+    }
+    var defaultStrokeColor: VectorColor {
+        get { colorDefaults.strokeColor }
+        set {
+            objectWillChange.send() // Trigger UI update
+            var defaults = colorDefaults
+            defaults.strokeColor = newValue
+            colorDefaults = defaults
+        }
+    }
+    var defaultFillOpacity: Double {
+        get { colorDefaults.fillOpacity }
+        set {
+            var defaults = colorDefaults
+            defaults.fillOpacity = newValue
+            colorDefaults = defaults
+        }
+    }
+    var defaultStrokeOpacity: Double {
+        get { colorDefaults.strokeOpacity }
+        set {
+            var defaults = colorDefaults
+            defaults.strokeOpacity = newValue
+            colorDefaults = defaults
+        }
+    }
+    var defaultStrokeWidth: Double {
+        get { colorDefaults.strokeWidth }
+        set {
+            var defaults = colorDefaults
+            defaults.strokeWidth = newValue
+            colorDefaults = defaults
+        }
+    }
+
+    // DEFAULT STROKE STYLE PROPERTIES FOR NEW SHAPES (stored in UserDefaults)
+    @Published var defaultStrokePlacement: StrokePlacement = .center {
+        didSet { saveStrokeStyleDefaults() }
+    }
+    @Published var defaultStrokeLineJoin: CGLineJoin = .miter {
+        didSet { saveStrokeStyleDefaults() }
+    }
+    @Published var defaultStrokeLineCap: CGLineCap = .butt {
+        didSet { saveStrokeStyleDefaults() }
+    }
+    @Published var defaultStrokeMiterLimit: Double = 10.0 {
+        didSet { saveStrokeStyleDefaults() }
+    }
     
     // ACTIVE COLOR STATE
     @Published var activeColorTarget: ColorTarget = .fill // Which color is currently active for editing
@@ -203,11 +356,33 @@ class VectorDocument: ObservableObject, Codable {
     
     init(settings: DocumentSettings = DocumentSettings()) {
         self.settings = settings
-        
-        // Initialize separate swatch arrays with defaults
-        self.rgbSwatches = Self.createDefaultRGBSwatches()
-        self.cmykSwatches = Self.createDefaultCMYKSwatches()
-        self.hsbSwatches = Self.createDefaultHSBSwatches()
+
+        // Initialize brush settings from UserDefaults
+        self.currentBrushThickness = UserDefaults.standard.object(forKey: "brushThickness") as? Double ?? 20.0
+        self.currentBrushPressureSensitivity = UserDefaults.standard.object(forKey: "brushPressureSensitivity") as? Double ?? 0.5
+        self.currentBrushTaper = UserDefaults.standard.object(forKey: "brushTaper") as? Double ?? 0.4
+        self.currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 2.0
+
+        // Initialize advanced smoothing settings from UserDefaults
+        self.advancedSmoothingEnabled = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? true
+        self.chaikinSmoothingIterations = UserDefaults.standard.object(forKey: "chaikinSmoothingIterations") as? Int ?? 1
+        self.adaptiveTensionEnabled = UserDefaults.standard.object(forKey: "adaptiveTensionEnabled") as? Bool ?? true
+
+        // Initialize freehand tool settings from UserDefaults
+        self.freehandSmoothingTolerance = UserDefaults.standard.object(forKey: "freehandSmoothingTolerance") as? Double ?? 2.0
+        self.realTimeSmoothingEnabled = UserDefaults.standard.object(forKey: "realTimeSmoothingEnabled") as? Bool ?? true
+        self.realTimeSmoothingStrength = UserDefaults.standard.object(forKey: "realTimeSmoothingStrength") as? Double ?? 0.3
+        self.preserveSharpCorners = UserDefaults.standard.object(forKey: "preserveSharpCorners") as? Bool ?? true
+        self.freehandFillMode = FreehandFillMode(rawValue: UserDefaults.standard.string(forKey: "freehandFillMode") ?? "No Fill") ?? .noFill
+        self.freehandExpandStroke = UserDefaults.standard.object(forKey: "freehandExpandStroke") as? Bool ?? false
+        self.freehandClosePath = UserDefaults.standard.object(forKey: "freehandClosePath") as? Bool ?? false
+
+        // Load stroke style defaults
+        loadStrokeStyleDefaults()
+
+        // Stroke properties defaults are loaded via loadUserDefaults()
+
+        // Color palettes are loaded from ColorManager
         
         self.selectedLayerIndex = nil // Will be set after layer creation
         self.selectedShapeIDs = []
@@ -221,6 +396,7 @@ class VectorDocument: ObservableObject, Codable {
         self.showRulers = settings.showRulers
         self.showGrid = settings.showGrid
         self.snapToGrid = settings.snapToGrid
+        self.snapToPoint = settings.snapToPoint
         self.gridSpacing = settings.gridSpacing
         self.backgroundColor = settings.backgroundColor
         self.undoStack = []
@@ -234,6 +410,14 @@ class VectorDocument: ObservableObject, Codable {
         
         // Set the selected layer index to working layer (not canvas or pasteboard)
         self.selectedLayerIndex = 2 // Working layer is now at index 2
+        self.layerIndex = 2 // Also set layerIndex
+
+        // Sync selected layer in settings with Layer 1 (working layer)
+        if layers.count > 2 {
+            let workingLayer = layers[2]
+            self.settings.selectedLayerId = workingLayer.id
+            self.settings.selectedLayerName = workingLayer.name
+        }
         // Logging removed
         
         // Set up settings change observation
@@ -364,53 +548,117 @@ class VectorDocument: ObservableObject, Codable {
     
     // MARK: - Codable Implementation
     enum CodingKeys: CodingKey {
-        case settings, layers, rgbSwatches, cmykSwatches, hsbSwatches, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, currentTool, viewMode, zoomLevel, canvasOffset, showRulers, snapToGrid, defaultFillColor, defaultStrokeColor, defaultFillOpacity, defaultStrokeOpacity, defaultStrokeWidth, defaultStrokePlacement, defaultStrokeLineJoin, defaultStrokeLineCap, defaultStrokeMiterLimit, unifiedObjects
+        case settings, layers, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, currentTool, viewMode, zoomLevel, canvasOffset, unifiedObjects
     }
     
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        // Initialize all simple stored properties first
         settings = try container.decode(DocumentSettings.self, forKey: .settings)
         layers = try container.decode([VectorLayer].self, forKey: .layers)
-        
-        // Load separate swatch arrays, fallback to defaults if not found
-        rgbSwatches = try container.decodeIfPresent([VectorColor].self, forKey: .rgbSwatches) ?? Self.createDefaultRGBSwatches()
-        cmykSwatches = try container.decodeIfPresent([VectorColor].self, forKey: .cmykSwatches) ?? Self.createDefaultCMYKSwatches()
-        hsbSwatches = try container.decodeIfPresent([VectorColor].self, forKey: .hsbSwatches) ?? Self.createDefaultHSBSwatches()
-        
-        selectedLayerIndex = try container.decodeIfPresent(Int.self, forKey: .selectedLayerIndex)
-        selectedShapeIDs = try container.decode(Set<UUID>.self, forKey: .selectedShapeIDs)
-        selectedTextIDs = try container.decodeIfPresent(Set<UUID>.self, forKey: .selectedTextIDs) ?? []
-        
-        // Text is now stored in unified system
-        
+        layerIndex = 0
+        pasteboard = VectorLayer(name: "Pasteboard")
+
+        // Color defaults are loaded from ColorManager
+
+        selectedLayerIndex = nil  // Never load from document - always start fresh
+        selectedShapeIDs = []  // Never load from document - always start fresh
+        selectedTextIDs = []  // Never load from document - always start fresh
+        selectedObjectIDs = []
+        directSelectedShapeIDs = []
+        isHandleScalingActive = false
+
         currentTool = try container.decode(DrawingTool.self, forKey: .currentTool)
+        scalingAnchor = .center
+        rotationAnchor = .center
+        shearAnchor = .center
+        transformOrigin = .center
+        objectPositionUpdateTrigger = false
+        currentDragOffset = .zero
+
         viewMode = try container.decodeIfPresent(ViewMode.self, forKey: .viewMode) ?? .color
         zoomLevel = try container.decode(Double.self, forKey: .zoomLevel)
         canvasOffset = try container.decode(CGPoint.self, forKey: .canvasOffset)
-        showRulers = try container.decode(Bool.self, forKey: .showRulers)
-        snapToGrid = try container.decode(Bool.self, forKey: .snapToGrid)
+        zoomRequest = nil
+
+        // Initialize all simple properties first
         undoStack = []
         redoStack = []
+        isUndoRedoOperation = false
         fontManager = FontManager() // PROFESSIONAL FONT MANAGEMENT
-        
-        // DEFAULT COLORS FOR NEW SHAPES
-        defaultFillColor = try container.decodeIfPresent(VectorColor.self, forKey: .defaultFillColor) ?? .white // Professional default
-        defaultStrokeColor = try container.decodeIfPresent(VectorColor.self, forKey: .defaultStrokeColor) ?? .black // Professional default
-        defaultFillOpacity = try container.decodeIfPresent(Double.self, forKey: .defaultFillOpacity) ?? 1.0
-        defaultStrokeOpacity = try container.decodeIfPresent(Double.self, forKey: .defaultStrokeOpacity) ?? 1.0
-        defaultStrokeWidth = try container.decodeIfPresent(Double.self, forKey: .defaultStrokeWidth) ?? 1.0
-        defaultStrokePlacement = try container.decodeIfPresent(StrokePlacement.self, forKey: .defaultStrokePlacement) ?? .center
-        defaultStrokeLineJoin = try container.decodeIfPresent(CGLineJoin.self, forKey: .defaultStrokeLineJoin) ?? .miter
-        defaultStrokeLineCap = try container.decodeIfPresent(CGLineCap.self, forKey: .defaultStrokeLineCap) ?? .butt
-        defaultStrokeMiterLimit = try container.decodeIfPresent(Double.self, forKey: .defaultStrokeMiterLimit) ?? 10.0
-        
+
         // CRITICAL FIX: Load unified objects array to preserve order during undo/redo
         unifiedObjects = try container.decodeIfPresent([VectorObject].self, forKey: .unifiedObjects) ?? []
+
+        // Color defaults are loaded from ColorManager, no need to set them here
+
+        // Stroke properties defaults
+        defaultStrokePlacement = .center
+        defaultStrokeLineJoin = .miter
+        defaultStrokeLineCap = .butt
+        defaultStrokeMiterLimit = 10.0
+
+        // Initialize other published properties that aren't persisted
+        hasPressureInput = false
+        brushApplyNoStroke = true
+        brushRemoveOverlap = true
+
+        activeColorTarget = .fill
+        colorChangeNotification = UUID()
+        lastColorChangeType = .fillOpacity
+
+        // Initialize marker settings (not persisted)
+        currentMarkerPressureSensitivity = 0.6
+        currentMarkerSmoothingTolerance = 2.0
+        currentMarkerTipSize = 8.0
+        currentMarkerOpacity = 0.9
+        currentMarkerFeathering = 0.3
+        currentMarkerTaperStart = 0.1
+        currentMarkerTaperEnd = 0.1
+        markerUseFillAsStroke = true
+        markerApplyNoStroke = false
+        markerRemoveOverlap = true
+
+        // Initialize other properties
+        originalHandlePositions = [:]
+
+        // Initialize brush settings from UserDefaults (properties with didSet) - MUST be done before accessing settings
+        currentBrushThickness = UserDefaults.standard.object(forKey: "brushThickness") as? Double ?? 20.0
+        currentBrushPressureSensitivity = UserDefaults.standard.object(forKey: "brushPressureSensitivity") as? Double ?? 0.5
+        currentBrushTaper = UserDefaults.standard.object(forKey: "brushTaper") as? Double ?? 0.4
+        currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 2.0
+
+        // Initialize advanced smoothing settings from UserDefaults (properties with didSet)
+        advancedSmoothingEnabled = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? true
+        chaikinSmoothingIterations = UserDefaults.standard.object(forKey: "chaikinSmoothingIterations") as? Int ?? 1
+        adaptiveTensionEnabled = UserDefaults.standard.object(forKey: "adaptiveTensionEnabled") as? Bool ?? true
+
+        // Initialize freehand tool settings from UserDefaults (properties with didSet)
+        freehandSmoothingTolerance = UserDefaults.standard.object(forKey: "freehandSmoothingTolerance") as? Double ?? 2.0
+        realTimeSmoothingEnabled = UserDefaults.standard.object(forKey: "realTimeSmoothingEnabled") as? Bool ?? true
+        realTimeSmoothingStrength = UserDefaults.standard.object(forKey: "realTimeSmoothingStrength") as? Double ?? 0.3
+        preserveSharpCorners = UserDefaults.standard.object(forKey: "preserveSharpCorners") as? Bool ?? true
+        freehandFillMode = FreehandFillMode(rawValue: UserDefaults.standard.string(forKey: "freehandFillMode") ?? "No Fill") ?? .noFill
+        freehandExpandStroke = UserDefaults.standard.object(forKey: "freehandExpandStroke") as? Bool ?? false
+        freehandClosePath = UserDefaults.standard.object(forKey: "freehandClosePath") as? Bool ?? false
+
+        // NOW we can safely access settings for display settings
+        // FIX: Sync display settings from DocumentSettings to ensure UserDefaults are respected
+        showRulers = settings.showRulers
+        showGrid = settings.showGrid
+        snapToGrid = settings.snapToGrid
+        snapToPoint = settings.snapToPoint
+        gridSpacing = settings.gridSpacing
+        backgroundColor = settings.backgroundColor
         
         // CRITICAL FIX: Only populate unified objects if they don't exist (for new documents)
         if unifiedObjects.isEmpty {
             populateUnifiedObjectsFromLayersPreservingOrder()
         }
+
+        // Validate that a layer is always selected after loading
+        validateSelectedLayer()
     }
     
 
@@ -419,32 +667,20 @@ class VectorDocument: ObservableObject, Codable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(settings, forKey: .settings)
         try container.encode(layers, forKey: .layers)
+
+        // Don't save default swatches - only save user-added custom swatches
+        // Swatches should be stored in UserDefaults if we want them to persist across documents
+        // For now, don't encode swatches at all to keep document files clean
         
-        // Save separate swatch arrays
-        try container.encode(rgbSwatches, forKey: .rgbSwatches)
-        try container.encode(cmykSwatches, forKey: .cmykSwatches)
-        try container.encode(hsbSwatches, forKey: .hsbSwatches)
-        
-        try container.encodeIfPresent(selectedLayerIndex, forKey: .selectedLayerIndex)
-        try container.encode(selectedShapeIDs, forKey: .selectedShapeIDs)
-        try container.encode(selectedTextIDs, forKey: .selectedTextIDs)
+        // NEVER save selection state in documents - they should not persist
+        // Don't encode selectedLayerIndex, selectedShapeIDs, or selectedTextIDs
         
         
         try container.encode(currentTool, forKey: .currentTool)
         try container.encode(viewMode, forKey: .viewMode)
         try container.encode(zoomLevel, forKey: .zoomLevel)
         try container.encode(canvasOffset, forKey: .canvasOffset)
-        try container.encode(showRulers, forKey: .showRulers)
-        try container.encode(snapToGrid, forKey: .snapToGrid)
-        try container.encode(defaultFillColor, forKey: .defaultFillColor)
-        try container.encode(defaultStrokeColor, forKey: .defaultStrokeColor)
-        try container.encode(defaultFillOpacity, forKey: .defaultFillOpacity)
-        try container.encode(defaultStrokeOpacity, forKey: .defaultStrokeOpacity)
-        try container.encode(defaultStrokeWidth, forKey: .defaultStrokeWidth)
-        try container.encode(defaultStrokePlacement, forKey: .defaultStrokePlacement)
-        try container.encode(defaultStrokeLineJoin, forKey: .defaultStrokeLineJoin)
-        try container.encode(defaultStrokeLineCap, forKey: .defaultStrokeLineCap)
-        try container.encode(defaultStrokeMiterLimit, forKey: .defaultStrokeMiterLimit)
+        // Default stroke/fill settings are now in UserDefaults, not saved with document
         try container.encode(unifiedObjects, forKey: .unifiedObjects)
     }
     
@@ -462,6 +698,34 @@ class VectorDocument: ObservableObject, Codable {
     
 
     
+    // MARK: - Color Collection
+    /// Collects all colors actually used in the document
+    private func collectUsedColors() -> Set<VectorColor> {
+        var colors = Set<VectorColor>()
+
+        // Collect colors from all shapes
+        for object in unifiedObjects {
+            if case .shape(let shape) = object.objectType {
+                // Collect fill colors
+                if let fillStyle = shape.fillStyle {
+                    colors.insert(fillStyle.color)
+                }
+
+                // Collect stroke colors
+                if let strokeStyle = shape.strokeStyle {
+                    colors.insert(strokeStyle.color)
+                }
+            }
+        }
+
+        // Only include backgroundColor if it's not white (the default)
+        if backgroundColor != .white {
+            colors.insert(backgroundColor)
+        }
+
+        return colors
+    }
+
     // MARK: - PROFESSIONAL STROKE OUTLINING
     /// Converts selected strokes to outlined filled paths ("Outline Stroke" feature)
 
@@ -482,10 +746,49 @@ class VectorDocument: ObservableObject, Codable {
 
     
 
-    
 
-    
 
-    
+
+
+
+
+    // MARK: - Palette Helper Functions
+
+    /// Checks if a color is permanent (non-deletable)
+    static func isPermanentColor(_ color: VectorColor) -> Bool {
+        switch color {
+        case .black, .white, .clear:
+            return true
+        default:
+            return false
+        }
+    }
+
+    // MARK: - Stroke Style UserDefaults Management
+    private func saveStrokeStyleDefaults() {
+        var prefs: [String: Any] = [:]
+        prefs["strokePlace"] = defaultStrokePlacement.rawValue
+        prefs["strokeJoin"] = Int(defaultStrokeLineJoin.rawValue)
+        prefs["strokeCap"] = Int(defaultStrokeLineCap.rawValue)
+        prefs["strokeMiter"] = defaultStrokeMiterLimit
+        UserDefaults.standard.set(prefs, forKey: "strokeStylePrefs")
+    }
+
+    private func loadStrokeStyleDefaults() {
+        guard let prefs = UserDefaults.standard.dictionary(forKey: "strokeStylePrefs") else { return }
+
+        if let placement = prefs["strokePlace"] as? String {
+            defaultStrokePlacement = StrokePlacement(rawValue: placement) ?? .center
+        }
+        if let joinInt = prefs["strokeJoin"] as? Int {
+            defaultStrokeLineJoin = CGLineJoin(rawValue: Int32(joinInt)) ?? .miter
+        }
+        if let capInt = prefs["strokeCap"] as? Int {
+            defaultStrokeLineCap = CGLineCap(rawValue: Int32(capInt)) ?? .butt
+        }
+        if let miter = prefs["strokeMiter"] as? Double {
+            defaultStrokeMiterLimit = miter
+        }
+    }
 
 }

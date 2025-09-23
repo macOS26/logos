@@ -21,10 +21,6 @@ struct MainView: View {
     @State private var importFileURL: URL?
     @State private var importResult: VectorImportResult?
     @State private var showingImportProgress = false
-    @State private var showingDWFExportDialog = false
-    @State private var dwfExportOptions = DWFExportOptions()
-    @State private var showingDWGExportDialog = false
-    @State private var dwgExportOptions = DWGExportOptions()
     @State private var showingSVGTestHarness = false // Add SVG test access
     @State private var showingNewDocumentSetup = false // New document setup window
     @State private var showingPressureCalibration = false // Pressure calibration window
@@ -102,23 +98,18 @@ struct MainView: View {
             }
         }
         .frame(minHeight: 524) // MINIMUM: Ensure overall height accommodates all elements + status bar (500 + 24)
+        .toolbarBackground(Color(NSColor.controlBackgroundColor), for: .windowToolbar)
+        .toolbarBackground(.visible, for: .windowToolbar)
         .toolbar {
             MainToolbarContent(
             document: document,
             appState: appState,
             currentDocumentURL: $currentDocumentURL,
             showingDocumentSettings: $showingDocumentSettings,
-            showingExportDialog: $showingExportDialog,
             showingColorPicker: $showingColorPicker,
-            onSave: saveDocument,
-            onSaveAs: saveDocumentAs,
-            onOpen: openDocument,
-            onNew: newDocument,
             showingImportDialog: $showingImportDialog,
             importResult: $importResult,
             showingImportProgress: $showingImportProgress,
-            showingDWFExportDialog: $showingDWFExportDialog,
-            showingDWGExportDialog: $showingDWGExportDialog,
             showingSVGTestHarness: $showingSVGTestHarness,
             showingPressureCalibration: $showingPressureCalibration,
             onRunDiagnostics: runPasteboardDiagnostics
@@ -137,7 +128,14 @@ struct MainView: View {
                     document.rgbSwatches = newDocument.rgbSwatches
                     document.cmykSwatches = newDocument.cmykSwatches
                     document.hsbSwatches = newDocument.hsbSwatches
-                    
+
+                    // CRITICAL FIX: Copy color defaults (was missing - causing black default bug!)
+                    document.defaultFillColor = newDocument.defaultFillColor
+                    document.defaultStrokeColor = newDocument.defaultStrokeColor
+                    document.defaultFillOpacity = newDocument.defaultFillOpacity
+                    document.defaultStrokeOpacity = newDocument.defaultStrokeOpacity
+                    document.defaultStrokeWidth = newDocument.defaultStrokeWidth
+
                     document.selectedLayerIndex = newDocument.selectedLayerIndex
                     document.selectedShapeIDs = newDocument.selectedShapeIDs
                     document.selectedTextIDs = newDocument.selectedTextIDs
@@ -185,17 +183,10 @@ struct MainView: View {
         .fileImporter(
             isPresented: $showingImportDialog,
             allowedContentTypes: [
-                .svg,                                    // SVG files
-                .pdf,                                    // PDF files
-                UTType("com.adobe.illustrator.ai-image")!, // AI files
-                UTType("com.adobe.encapsulated-postscript")!, // EPS files
-                UTType("com.adobe.postscript")!,         // PostScript files
-                UTType(filenameExtension: "ps")!,        // PostScript files (.ps)
-                UTType(filenameExtension: "ai")!,        // AI files (.ai)
-                UTType(filenameExtension: "eps")!,       // EPS files (.eps)
-                UTType(filenameExtension: "dwf")!,       // DWF files (.dwf)
-                .png, .jpeg, .tiff, .gif, .bmp, UTType("public.heic")!, // Raster images
-                .data                                    // Generic data for unknown formats
+                .svg, // SVG files
+                .pdf, // PDF files
+                .png, // PNG images only
+                .data // Generic data for unknown formats
             ],
             allowsMultipleSelection: false
         ) { result in
@@ -214,32 +205,6 @@ struct MainView: View {
                 importResult = nil
                 showingImportDialog = true
             })
-        }
-        .sheet(isPresented: $showingDWFExportDialog) {
-            DWFExportView(document: document, options: $dwfExportOptions) { finalOptions in
-                showingDWFExportDialog = false
-                exportToDWF(with: finalOptions)
-            }
-        }
-        .sheet(isPresented: $showingDWGExportDialog) {
-            DWGExportView(document: document, options: $dwgExportOptions) { finalOptions in
-                showingDWGExportDialog = false
-                exportToDWG(with: finalOptions)
-            }
-        }
-        .sheet(isPresented: Binding(
-            get: { appState.showingCoreGraphicsTest },
-            set: { appState.showingCoreGraphicsTest = $0 }
-        )) {
-            CoreGraphicsPathTestView()
-                .frame(width: 1000, height: 700)
-        }
-        .sheet(isPresented: $showingSVGTestHarness) {
-            SVGTestHarness { importedDoc in
-                // Load the imported document into the main app
-                loadImportedDocument(importedDoc)
-            }
-            .frame(width: 1000, height: 800)
         }
         .sheet(isPresented: $showingPressureCalibration) {
             PressureCalibrationView()
@@ -298,13 +263,13 @@ struct MainView: View {
     
     private func saveDocumentAs() {
         let panel = NSSavePanel()
-        panel.allowedContentTypes = [UTType.json, UTType.inkpen, UTType(filenameExtension: "svg")!]
+        panel.allowedContentTypes = [UTType.json, UTType.inkpen]
         panel.nameFieldStringValue = "Document.inkpen"
         panel.title = "Save Document"
-        
+
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
-            
+
             // Update current document URL
             currentDocumentURL = url
             saveDocumentToURL(url)
@@ -313,16 +278,10 @@ struct MainView: View {
     
     private func saveDocumentToURL(_ url: URL) {
         do {
-            // Check file extension to determine format
-            if url.pathExtension.lowercased() == "svg" {
-                try FileOperations.exportToSVG(document, url: url)
-                Log.info("✅ Successfully saved document as SVG to: \(url.path)", category: .fileOperations)
-            } else {
-                try FileOperations.exportToJSON(document, url: url)
-                // Generate and set custom document icon only for inkpen files
-                DocumentIconGenerator.shared.setCustomIcon(for: url, document: document)
-                Log.info("✅ Successfully saved document to: \(url.path)", category: .fileOperations)
-            }
+            try FileOperations.exportToJSON(document, url: url)
+            // Generate and set custom document icon only for inkpen files
+            DocumentIconGenerator.shared.setCustomIcon(for: url, document: document)
+            Log.info("✅ Successfully saved document to: \(url.path)", category: .fileOperations)
             
         } catch {
             Log.error("❌ Save failed: \(error)", category: .error)
@@ -337,12 +296,7 @@ struct MainView: View {
             }
         }
     }
-    
-    private func newDocument() {
-        // Show the new document setup window
-        showingNewDocumentSetup = true
-    }
-    
+        
     private func loadImportedDocument(_ importedDoc: VectorDocument) {
         // Reset view state BEFORE loading document to prevent two-step process
         document.zoomLevel = 1.0
@@ -398,87 +352,7 @@ struct MainView: View {
             Log.info("🔍 PROPER FIT TO PAGE: Applied for opened document after geometry established", category: .zoom)
         }
     }
-    
-    private func openDocument() {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [UTType.json, UTType.svg, UTType.inkpen]
-        panel.allowsMultipleSelection = false
-        panel.title = "Open Document"
         
-        panel.begin { response in
-            guard response == .OK, let url = panel.urls.first else { return }
-            
-            let fileExtension = url.pathExtension.lowercased()
-            
-            Task {
-                do {
-                    let loadedDocument: VectorDocument
-                    
-                    if fileExtension == "svg" {
-                        // Import SVG file
-                        loadedDocument = try await FileOperations.importFromSVG(url: url)
-                    } else if fileExtension == "inkpen" {
-                        // Import Ink Pen document file
-                        loadedDocument = try FileOperations.importFromJSON(url: url)
-                    } else {
-                        // Import JSON file (default)
-                        loadedDocument = try FileOperations.importFromJSON(url: url)
-                    }
-                    
-                    // Replace current document with loaded one
-                    await MainActor.run {
-                        // Reset view state BEFORE loading document to prevent two-step process
-                        document.zoomLevel = 1.0
-                        document.canvasOffset = .zero
-                        
-                        // Update the document by copying all properties
-                        document.settings = loadedDocument.settings
-                        document.layers = loadedDocument.layers
-                        document.rgbSwatches = loadedDocument.rgbSwatches
-                        document.cmykSwatches = loadedDocument.cmykSwatches
-                        document.hsbSwatches = loadedDocument.hsbSwatches
-                        
-                        document.selectedLayerIndex = loadedDocument.selectedLayerIndex
-                        document.selectedShapeIDs = loadedDocument.selectedShapeIDs
-                        document.selectedTextIDs = loadedDocument.selectedTextIDs
-                        // MIGRATION: Text is now stored as shapes in layers
-                        document.currentTool = loadedDocument.currentTool
-                        document.viewMode = loadedDocument.viewMode
-                        // DON'T copy zoom/offset - we'll set them to fit-to-page
-                        document.showRulers = loadedDocument.showRulers
-                        document.snapToGrid = loadedDocument.snapToGrid
-                        
-                        // CRITICAL FIX: Sync unified objects system to ensure imported images are properly registered
-                        document.updateUnifiedObjectsOptimized()
-                        
-                        // Update current document URL
-                        currentDocumentURL = url
-                        
-                        Log.info("✅ Successfully opened \(fileExtension.uppercased()) document from: \(url.path)", category: .fileOperations)
-                        
-                        // Defer fit to page operation to prevent blocking
-                        Task {
-                            await performMainViewOpenDocumentSetupAsync()
-                        }
-                        
-                    }
-                    
-                } catch {
-                    Log.error("❌ Open failed: \(error)", category: .error)
-                    
-                    // Show error notification
-                    await MainActor.run {
-                        let alert = NSAlert()
-                        alert.messageText = "Open Failed"
-                        alert.informativeText = "Error: \(error.localizedDescription)"
-                        alert.alertStyle = .critical
-                        alert.runModal()
-                    }
-                }
-            }
-        }
-    }
-    
     // MARK: - Professional Vector Import
     private func importVectorFile(from url: URL) {
         showingImportProgress = true
@@ -524,36 +398,7 @@ struct MainView: View {
             }
         }
     }
-    
-    // MARK: - Professional DWF Export
-    private func exportToDWF(with options: DWFExportOptions) {
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [UTType(filenameExtension: "dwf")].compactMap { $0 }
-        panel.nameFieldStringValue = "export.dwf"
-        panel.title = "Export as DWF"
-        
-        panel.begin { response in
-            guard response == .OK, let url = panel.url else { return }
-            
-            do {
-                try FileOperations.exportDWF(document, url: url, options: options)
-                
-                Log.info("✅ Successfully exported DWF to: \(url.path)", category: .fileOperations)
-                
-            } catch {
-                Log.error("❌ DWF export failed: \(error)", category: .error)
-                
-                // Show error notification
-                DispatchQueue.main.async {
-                    let alert = NSAlert()
-                    alert.messageText = "DWF Export Failed"
-                    alert.informativeText = "Error: \(error.localizedDescription)"
-                    alert.alertStyle = .critical
-                    alert.runModal()
-                }
-            }
-        }
-    }
+
     
     // MARK: - Debug Functions
     private func runPasteboardDiagnostics() {
@@ -570,127 +415,6 @@ struct MainView: View {
                 "❌ Some tests FAILED. Check the console for detailed results."
             alert.alertStyle = report.overallPassed ? .informational : .warning
             alert.runModal()
-        }
-    }
-    
-    // MARK: - Development Functions
-    private func runPathOperationsBenchmark() {
-        Log.performance("🚀 RUNNING PATH OPERATIONS BENCHMARK", level: .info)
-        Log.performance("Benchmarking CoreGraphics performance...", level: .info)
-        
-        // Create test paths
-        let testCases = [
-            ("Simple Circles", createTestCircles()),
-            ("Complex Curves", createTestComplexPaths()),
-            ("Many Points", createTestManyPointPaths())
-        ]
-        
-        for (name, paths) in testCases {
-            Log.performance("\n📊 Testing: \(name)", level: .info)
-            benchmarkPathOperations(name: name, pathA: paths.0, pathB: paths.1)
-        }
-        
-        Log.performance("\n✅ BENCHMARK COMPLETE", level: .info)
-    }
-    
-    private func createTestCircles() -> (CGPath, CGPath) {
-        let pathA = CGMutablePath()
-        pathA.addEllipse(in: CGRect(x: 0, y: 0, width: 100, height: 100))
-        
-        let pathB = CGMutablePath()
-        pathB.addEllipse(in: CGRect(x: 50, y: 50, width: 100, height: 100))
-        
-        return (pathA, pathB)
-    }
-    
-    private func createTestComplexPaths() -> (CGPath, CGPath) {
-        let pathA = CGMutablePath()
-        pathA.move(to: CGPoint(x: 0, y: 50))
-        pathA.addCurve(to: CGPoint(x: 100, y: 50), 
-                      control1: CGPoint(x: 25, y: 0), 
-                      control2: CGPoint(x: 75, y: 100))
-        pathA.addCurve(to: CGPoint(x: 0, y: 50), 
-                      control1: CGPoint(x: 75, y: 25), 
-                      control2: CGPoint(x: 25, y: 75))
-        pathA.closeSubpath()
-        
-        let pathB = CGMutablePath()
-        pathB.move(to: CGPoint(x: 50, y: 0))
-        pathB.addCurve(to: CGPoint(x: 50, y: 100), 
-                      control1: CGPoint(x: 100, y: 25), 
-                      control2: CGPoint(x: 0, y: 75))
-        pathB.addCurve(to: CGPoint(x: 50, y: 0), 
-                      control1: CGPoint(x: 25, y: 75), 
-                      control2: CGPoint(x: 75, y: 25))
-        pathB.closeSubpath()
-        
-        return (pathA, pathB)
-    }
-    
-    private func createTestManyPointPaths() -> (CGPath, CGPath) {
-        let pathA = CGMutablePath()
-        pathA.move(to: CGPoint(x: 0, y: 0))
-        for i in 1...100 {
-            let x = CGFloat(i)
-            let y = sin(CGFloat(i) * 0.1) * 50 + 50
-            pathA.addLine(to: CGPoint(x: x, y: y))
-        }
-        pathA.closeSubpath()
-        
-        let pathB = CGMutablePath()
-        pathB.move(to: CGPoint(x: 0, y: 25))
-        for i in 1...100 {
-            let x = CGFloat(i)
-            let y = cos(CGFloat(i) * 0.1) * 50 + 75
-            pathB.addLine(to: CGPoint(x: x, y: y))
-        }
-        pathB.closeSubpath()
-        
-        return (pathA, pathB)
-    }
-    
-    private func benchmarkPathOperations(name: String, pathA: CGPath, pathB: CGPath) {
-        let iterations = 100
-        
-        // Benchmark CoreGraphics
-        let coreGraphicsStart = CFAbsoluteTimeGetCurrent()
-        for _ in 0..<iterations {
-            let _ = pathA.union(pathB, using: .winding)
-            let _ = pathA.intersection(pathB, using: .winding)
-            let _ = pathA.subtracting(pathB, using: .winding)
-        }
-        let coreGraphicsTime = CFAbsoluteTimeGetCurrent() - coreGraphicsStart
-        
-        Log.performance("  CoreGraphics: \(String(format: "%.4f", coreGraphicsTime))s (\(iterations) iterations)", level: .info)
-    }
-    
-    // MARK: - Professional DWG Export
-    private func exportToDWG(with options: DWGExportOptions) {
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [UTType(filenameExtension: "dwg")].compactMap { $0 }
-        panel.nameFieldStringValue = "export.dwg"
-        panel.title = "Export as DWG"
-        
-        panel.begin { response in
-            guard response == .OK, let url = panel.url else { return }
-            
-            do {
-                try FileOperations.exportDWG(document, url: url, options: options)
-                
-                Log.info("✅ Successfully exported DWG to: \(url.path)", category: .fileOperations)
-                
-            } catch {
-                Log.error("❌ DWG export failed: \(error)", category: .error)
-                
-                // Show error notification
-                DispatchQueue.main.async {
-                    let alert = NSAlert()
-                    alert.messageText = "DWG Export Failed"
-                    alert.informativeText = "Error: \(error.localizedDescription)"
-                    alert.alertStyle = .critical
-                    alert.runModal()
-                }
-            }
         }
     }
 }

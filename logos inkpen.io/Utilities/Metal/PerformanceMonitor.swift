@@ -1,6 +1,5 @@
 import SwiftUI
-import Metal
-import Foundation
+import Combine
 
 /// Real-time performance monitoring for Metal pseudo-object rendering
 class PerformanceMonitor: ObservableObject {

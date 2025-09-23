@@ -8,7 +8,6 @@
 //  Created by Todd Bruss on 7/6/25.
 //
 
-import Foundation
 import SwiftUI
 
 // MARK: - Professional Bezier Mathematics Foundation

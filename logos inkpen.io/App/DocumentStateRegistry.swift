@@ -5,9 +5,7 @@
 //  Created by Todd Bruss on 8/23/25.
 //
 
-import Foundation
 import SwiftUI
-import CoreGraphics
 
 // MARK: - DocumentState Registry (replaces notifications)
 final class DocumentStateRegistry {

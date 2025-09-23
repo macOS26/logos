@@ -5,7 +5,6 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import Foundation
 import SwiftUI
 
 // MARK: - Parser Implementation Stubs
@@ -13,6 +12,7 @@ import SwiftUI
 struct SVGContent {
     let shapes: [VectorShape]
     let documentSize: CGSize
+    let viewBoxSize: CGSize?  // Added to detect 96 DPI SVGs
     let colorSpace: String
     let units: VectorUnit
     let dpi: Double
@@ -41,6 +41,7 @@ func parseSVGContent(_ data: Data, useExtremeValueHandling: Bool = false) throws
     return SVGContent(
         shapes: result.shapes,
         documentSize: result.documentSize,
+        viewBoxSize: result.viewBoxSize,
         colorSpace: "RGB",
         units: .points,
         dpi: 72.0,

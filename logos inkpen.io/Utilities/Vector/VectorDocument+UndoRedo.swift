@@ -5,8 +5,8 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import Foundation
-import CoreGraphics
+import SwiftUI
+import Combine
 
 // MARK: - Undo/Redo
 extension VectorDocument {
@@ -61,9 +61,8 @@ extension VectorDocument {
         currentTool = previousState.currentTool
         zoomLevel = previousState.zoomLevel
         canvasOffset = previousState.canvasOffset
-        showRulers = previousState.showRulers
-        snapToGrid = previousState.snapToGrid
-        showGrid = previousState.showGrid
+        // REMOVED: View-only properties (showRulers, snapToGrid, showGrid) should NOT be part of undo/redo
+        // These are UI preferences, not document content
         gridSpacing = previousState.gridSpacing
         backgroundColor = previousState.backgroundColor
         viewMode = previousState.viewMode
@@ -157,9 +156,8 @@ extension VectorDocument {
         currentTool = nextState.currentTool
         zoomLevel = nextState.zoomLevel
         canvasOffset = nextState.canvasOffset
-        showRulers = nextState.showRulers
-        snapToGrid = nextState.snapToGrid
-        showGrid = nextState.showGrid
+        // REMOVED: View-only properties (showRulers, snapToGrid, showGrid) should NOT be part of undo/redo
+        // These are UI preferences, not document content
         gridSpacing = nextState.gridSpacing
         backgroundColor = nextState.backgroundColor
         viewMode = nextState.viewMode
@@ -364,32 +362,11 @@ extension VectorDocument {
         
         defer { isUndoRedoOperation = wasUndoRedoOperation }
         
-        // Unified objects is the source - no need to preserve shapes array
-        // Clear unified objects for each layer
-        for layerIndex in layers.indices {
-            removeShapesUnified(layerIndex: layerIndex, where: { _ in true })
-        }
+        // CRITICAL FIX: Since shapes array has been removed from VectorLayer and unified objects
+        // is the single source of truth, we don't need to sync anything!
+        // The unified objects already contain the correct state from undo/redo.
+        // This function is now a no-op but kept for compatibility.
         
-        // Text is now fully managed in unified system
-        
-        // CRITICAL FIX: Rebuild legacy arrays from unified objects, maintaining order
-        // Sort by orderID to ensure proper stacking order
-        let sortedUnifiedObjects = unifiedObjects.sorted(by: { $0.orderID < $1.orderID })
-        
-        for unifiedObject in sortedUnifiedObjects {
-            switch unifiedObject.objectType {
-            case .shape(let shape):
-                if shape.isTextObject {
-                    // Text objects are already rebuilt from unified via rebuildTextObjectsFromUnified()
-                    // Just add to shapes array for unified system
-                    appendShapeToLayerUnified(layerIndex: unifiedObject.layerIndex, shape: shape)
-                } else {
-                    // Regular shape - use from unified objects
-                    appendShapeToLayerUnified(layerIndex: unifiedObject.layerIndex, shape: shape)
-                }
-            }
-        }
-        
-        Log.info("🔧 UNDO SYNC: Shapes synced to layers from unified system", category: .general)
+        Log.info("🔧 UNDO SYNC: Unified objects already contain correct state from undo/redo", category: .general)
     }
 }

@@ -5,13 +5,112 @@
 //  Split from VectorDocument+UnifiedObjectManagement.swift
 //
 
-import Foundation
-import CoreGraphics
+import SwiftUI
+import Combine
 
 // MARK: - UNIFIED TEXT COLOR HELPERS (MIGRATED FROM COLORSWATCHGRID)
 extension VectorDocument {
     
-    /// MIGRATED FROM ColorSwatchGrid - Update text fill color using unified system 
+    /// FAST O(1) update - change ONLY the font family
+    func updateTextFontFamilyDirect(id: UUID, fontFamily: String) {
+        if let index = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.id == id
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[index].objectType {
+                let oldFont = shape.typography?.fontFamily ?? ""
+
+                // ALWAYS UPDATE - USER WANTS IT
+                shape.typography?.fontFamily = fontFamily
+
+                // Create new object to trigger KVO
+                let newObj = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[index].layerIndex,
+                    orderID: unifiedObjects[index].orderID
+                )
+
+                // CRITICAL: Must replace the object to trigger didSet
+                unifiedObjects[index] = newObj
+
+                // FORCE UPDATE BY TRIGGERING WILL CHANGE
+                objectWillChange.send()
+
+                // Log the change
+                Log.fileOperation("🎯 FONT DIRECT UPDATE: \(oldFont) → \(fontFamily) for ID: \(id.uuidString.prefix(8))", level: .info)
+            }
+        }
+    }
+
+    /// FAST O(1) update - change ONLY the font weight
+    func updateTextFontWeightDirect(id: UUID, fontWeight: FontWeight) {
+        if let index = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.id == id
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[index].objectType {
+                let oldWeight = shape.typography?.fontWeight ?? .regular
+
+                // ALWAYS UPDATE - USER WANTS IT
+                shape.typography?.fontWeight = fontWeight
+
+                // Create new object to trigger KVO
+                let newObj = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[index].layerIndex,
+                    orderID: unifiedObjects[index].orderID
+                )
+
+                // CRITICAL: Must replace the object to trigger didSet
+                unifiedObjects[index] = newObj
+
+                // FORCE UPDATE BY TRIGGERING WILL CHANGE
+                objectWillChange.send()
+
+                // Log the change
+                Log.fileOperation("🎯 WEIGHT DIRECT UPDATE: \(oldWeight.rawValue) → \(fontWeight.rawValue) for ID: \(id.uuidString.prefix(8))", level: .info)
+            }
+        }
+    }
+
+    /// FAST O(1) update - change ONLY the font style
+    func updateTextFontStyleDirect(id: UUID, fontStyle: FontStyle) {
+        if let index = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.id == id
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[index].objectType {
+                let oldStyle = shape.typography?.fontStyle ?? .normal
+
+                // ALWAYS UPDATE - USER WANTS IT
+                shape.typography?.fontStyle = fontStyle
+
+                // Create new object to trigger KVO
+                let newObj = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[index].layerIndex,
+                    orderID: unifiedObjects[index].orderID
+                )
+
+                // CRITICAL: Must replace the object to trigger didSet
+                unifiedObjects[index] = newObj
+
+                // FORCE UPDATE BY TRIGGERING WILL CHANGE
+                objectWillChange.send()
+
+                // Log the change
+                Log.fileOperation("🎯 STYLE DIRECT UPDATE: \(oldStyle.rawValue) → \(fontStyle.rawValue) for ID: \(id.uuidString.prefix(8))", level: .info)
+            }
+        }
+    }
+
+    /// MIGRATED FROM ColorSwatchGrid - Update text fill color using unified system
     /// NO MORE DUPLICATES - USE THIS ONE HELPER EVERYWHERE
     func updateTextFillColorInUnified(id: UUID, color: VectorColor) {
         Log.fileOperation("🔍 updateTextFillColorInUnified START - id: \(id), color: \(color)", level: .info)
@@ -85,9 +184,8 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
-                // Sync the updated shape back to layers through unified system
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
-                Log.fileOperation("✅ Synced text color update to layer \(unifiedObjects[objectIndex].layerIndex)", level: .info)
+                // REMOVED: syncShapeToLayer call - it's a no-op and wastes cycles
+                Log.fileOperation("✅ Updated text color in unified objects for layer \(unifiedObjects[objectIndex].layerIndex)", level: .info)
                 
                 // Text is now fully managed in unified system
             } else {
@@ -109,7 +207,7 @@ extension VectorDocument {
     func updateTextTypographyInUnified(id: UUID, typography: TypographyProperties) {
         Log.fileOperation("🔍 updateTextTypographyInUnified START - id: \(id)", level: .info)
         Log.fileOperation("  - New Font: \(typography.fontFamily) \(typography.fontSize)pt", level: .info)
-        
+
         // Update in unified objects array
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
@@ -118,33 +216,36 @@ extension VectorDocument {
             return false
         }) {
             if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                // REMOVED: Skip check - always update when user selects something
+                // The user is explicitly requesting an update, so do it!
+
                 Log.fileOperation("📊 BEFORE - Unified Shape Typography:", level: .info)
                 Log.fileOperation("  - Old Font: \(shape.typography?.fontFamily ?? "nil") \(shape.typography?.fontSize ?? 0)pt", level: .info)
-                
+
                 // Update the typography
                 shape.typography = typography
-                
+
                 Log.fileOperation("📊 AFTER - Unified Shape Typography:", level: .info)
                 Log.fileOperation("  - New Font: \(shape.typography?.fontFamily ?? "nil") \(shape.typography?.fontSize ?? 0)pt", level: .info)
-                
-                // Update unified objects
+
+                // Update unified objects - must recreate due to value semantics
+                // TODO: Consider making VectorShape a class for better performance
                 unifiedObjects[objectIndex] = VectorObject(
                     shape: shape,
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                     orderID: unifiedObjects[objectIndex].orderID
                 )
-                
-                // Sync the updated shape back to layers through unified system
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
-                Log.fileOperation("✅ Synced typography update to layer \(unifiedObjects[objectIndex].layerIndex)", level: .info)
+
+                Log.fileOperation("✅ Updated typography in unified objects for layer \(unifiedObjects[objectIndex].layerIndex)", level: .info)
                 
                 // Text is now fully managed in unified system
+
+                // REMOVED: objectWillChange.send() - unifiedObjects is @Published and will auto-trigger updates
+                // REMOVED: Array reassignment - We already replaced the entire VectorObject above which triggers updates
             }
         } else {
             Log.fileOperation("⚠️ Could not find text in unified objects with id: \(id)", level: .warning)
         }
-        
-        // No need for explicit objectWillChange.send() - @Published properties handle this
         
         Log.fileOperation("🔍 updateTextTypographyInUnified END", level: .info)
     }
@@ -224,9 +325,8 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
-                // Sync the updated shape back to layers through unified system
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
-                Log.fileOperation("✅ Synced stroke color update to layer \(unifiedObjects[objectIndex].layerIndex)", level: .info)
+                // REMOVED: syncShapeToLayer call - it's a no-op and wastes cycles
+                Log.fileOperation("✅ Updated stroke color in unified objects for layer \(unifiedObjects[objectIndex].layerIndex)", level: .info)
                 
                 // Text is now fully managed in unified system
             } else {

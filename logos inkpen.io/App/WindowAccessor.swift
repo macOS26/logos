@@ -5,9 +5,7 @@
 //  Created by Todd Bruss on 8/23/25.
 //
 
-import Foundation
 import SwiftUI
-import CoreGraphics
 
 // MARK: - Window Accessor for macOS 15+ Floating Window Features
 struct WindowAccessor: NSViewRepresentable {

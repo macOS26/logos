@@ -132,13 +132,26 @@ struct HorizontalRuler: View {
                 let tickHeight: CGFloat
                 let lineWidth: CGFloat
                 if unit == .pixels || unit == .points {
-                    // Pixel ruler: 50 px major ticks with 10 px minors
+                    // Pixel/Point ruler: major ticks at 50, with 25%, 50%, 75% subticks
                     if isMajorTick {
                         tickHeight = 16
                         lineWidth = 1.0
                     } else {
-                        tickHeight = 6
-                        lineWidth = 0.5
+                        // Check position within major interval for different subtick heights
+                        let positionInMajor = abs(x.truncatingRemainder(dividingBy: 50.0))
+                        if abs(positionInMajor - 25.0) < 0.001 {
+                            // 50% mark (middle) - taller subtick
+                            tickHeight = 10
+                            lineWidth = 0.75
+                        } else if abs(positionInMajor - 12.5) < 0.001 || abs(positionInMajor - 37.5) < 0.001 {
+                            // 25% and 75% marks - shorter subticks
+                            tickHeight = 6
+                            lineWidth = 0.5
+                        } else {
+                            // Other positions (shouldn't happen with 12.5 spacing)
+                            tickHeight = 4
+                            lineWidth = 0.5
+                        }
                     }
                 } else if unit == .picas {
                     // Picas ruler hierarchy with controlled density
@@ -386,13 +399,26 @@ struct VerticalRuler: View {
                 let tickWidth: CGFloat
                 let lineWidth: CGFloat
                 if unit == .pixels || unit == .points {
-                    // Pixel ruler: 50 px major ticks with 10 px minors
+                    // Pixel/Point ruler: major ticks at 50, with 25%, 50%, 75% subticks
                     if isMajorTick {
                         tickWidth = 16
                         lineWidth = 1.0
                     } else {
-                        tickWidth = 6
-                        lineWidth = 0.5
+                        // Check position within major interval for different subtick heights
+                        let positionInMajor = abs(y.truncatingRemainder(dividingBy: 50.0))
+                        if abs(positionInMajor - 25.0) < 0.001 {
+                            // 50% mark (middle) - taller subtick
+                            tickWidth = 10
+                            lineWidth = 0.75
+                        } else if abs(positionInMajor - 12.5) < 0.001 || abs(positionInMajor - 37.5) < 0.001 {
+                            // 25% and 75% marks - shorter subticks
+                            tickWidth = 6
+                            lineWidth = 0.5
+                        } else {
+                            // Other positions (shouldn't happen with 12.5 spacing)
+                            tickWidth = 4
+                            lineWidth = 0.5
+                        }
                     }
                 } else if unit == .picas {
                     // Picas ruler hierarchy with controlled density (vertical)
@@ -607,15 +633,16 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
     
     switch unit {
     case .pixels, .points:
-        // Pixels/Points: adaptive minor spacing to keep 5 subdivisions per major
+        // Pixels/Points: spacing at 12.5 units to create ticks at 25%, 50%, 75% positions
+        // Major marks at 50, so 12.5 spacing gives 4 ticks (0, 12.5, 25, 37.5, 50)
         if zoomLevel >= 1.0 {
-            return 10.0 // 50 major / 5
+            return 12.5 // Creates ticks at 0, 12.5, 25, 37.5, 50
         } else if zoomLevel >= 0.5 {
-            return 20.0 // 100 major / 5
+            return 25.0 // Scaled for lower zoom
         } else if zoomLevel >= 0.25 {
-            return 40.0 // 200 major / 5
+            return 50.0 // Scaled for lower zoom
         } else {
-            return 80.0 // 400 major / 5
+            return 100.0 // Scaled for lower zoom
         }
     case .inches:
         // Adaptive tick spacing for inches based on zoom level

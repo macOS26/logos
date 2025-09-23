@@ -5,43 +5,7 @@
 //  Created by Todd Bruss on 8/31/25.
 //
 
-import Foundation
 import SwiftUI
-import CoreGraphics
-import PDFKit
-
-// MARK: - CoreGraphics Path Builder
-class PathBuilder {
-    var path = CGMutablePath()
-    
-    func buildPath(from commands: [PathCommand]) -> CGPath {
-        path = CGMutablePath()
-        
-        for command in commands {
-            switch command {
-            case .moveTo(let point):
-                path.move(to: point)
-                
-            case .lineTo(let point):
-                path.addLine(to: point)
-                
-            case .curveTo(let cp1, let cp2, let to):
-                path.addCurve(to: to, control1: cp1, control2: cp2)
-                
-            case .quadCurveTo(let cp, let to):
-                path.addQuadCurve(to: to, control: cp)
-                
-            case .closePath:
-                path.closeSubpath()
-                
-            case .rectangle(let rect):
-                path.addRect(rect)
-            }
-        }
-        
-        return path
-    }
-}
 
 // MARK: - PDF Vector Extraction using Working Parser
 func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {

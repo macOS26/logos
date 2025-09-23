@@ -5,24 +5,19 @@
 //  Created by Todd Bruss on 8/23/25.
 //
 
-import Foundation
 import SwiftUI
-import CoreGraphics
 import UniformTypeIdentifiers
+import Combine
 
 // MARK: - InkpenDocument for DocumentGroup (ADDITION - not replacement)
 struct InkpenDocument: FileDocument {
     var document: VectorDocument
     
     static var readableContentTypes: [UTType] { [.inkpen, .svg, .pdf] }
-    static var writableContentTypes: [UTType] { [.inkpen, UTType(filenameExtension: "svg")!, .pdf] }
+    static var writableContentTypes: [UTType] { [.inkpen, .svg, .pdf] }
     
     init() {
         self.document = VectorDocument()
-    }
-    
-    init(document: VectorDocument) {
-        self.document = document
     }
     
     init(configuration: ReadConfiguration) throws {
@@ -106,12 +101,12 @@ struct InkpenDocument: FileDocument {
         Log.info("🔍 SAVE DEBUG: contentType description = \(configuration.contentType.description)", category: .fileOperations)
         
         // Check content type to determine export format
-        if configuration.contentType == UTType(filenameExtension: "svg") || 
-           configuration.contentType.conforms(to: UTType(filenameExtension: "svg")!) ||
+        if configuration.contentType == .svg ||
+            configuration.contentType.conforms(to: .svg) ||
            configuration.contentType.identifier.contains("svg") {
-            // Export as SVG
+            // Export as SVG using proper SVG exporter
             do {
-                let svgContent = try FileOperations.generateSVGContent(from: document)
+                let svgContent = try SVGExporter.shared.exportToSVG(document)
                 let data = svgContent.data(using: .utf8) ?? Data()
                 Log.info("✅ Successfully exported SVG document data", category: .fileOperations)
                 return FileWrapper(regularFileWithContents: data)

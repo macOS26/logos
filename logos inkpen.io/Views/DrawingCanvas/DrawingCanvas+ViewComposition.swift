@@ -32,7 +32,22 @@ extension DrawingCanvas {
             .scaleEffect(document.zoomLevel, anchor: .topLeading)
             .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
         }
-        
+
+        // Show the actual polygon bounds (tight fit) with subtle blue styling
+        if let currentPath = currentPath,
+           (document.currentTool == .polygon || document.currentTool == .pentagon ||
+            document.currentTool == .hexagon || document.currentTool == .heptagon ||
+            document.currentTool == .octagon || document.currentTool == .nonagon ||
+            document.currentTool == .star) {
+            let actualBounds = currentPath.cgPath.boundingBoxOfPath
+            Path { path in
+                path.addRect(actualBounds)
+            }
+            .stroke(Color.blue.opacity(0.3), style: SwiftUI.StrokeStyle(lineWidth: 1.0 / document.zoomLevel, dash: [4 / document.zoomLevel, 2 / document.zoomLevel]))
+            .scaleEffect(document.zoomLevel, anchor: .topLeading)
+            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+        }
+
         // PROFESSIONAL REAL-TIME BEZIER PATH (Professional style - shows actual path with real colors)
         // Note: Real bezier shapes are now shown as actual VectorShapes in the document
         
@@ -128,14 +143,37 @@ extension DrawingCanvas {
         ZStack {
             // BRILLIANT USER SOLUTION: No more manual background!
             // Canvas is now a regular layer/shape that auto-syncs with everything else
-            
-            // Grid (if enabled)
-            if document.snapToGrid {
+
+            // First: Render the Pasteboard Background (behind everything)
+            PasteboardBackgroundView(
+                document: document,
+                zoomLevel: document.zoomLevel,
+                canvasOffset: document.canvasOffset,
+                selectedObjectIDs: document.selectedObjectIDs,
+                viewMode: document.viewMode,
+                dragPreviewDelta: currentDragDelta,
+                dragPreviewTrigger: dragPreviewUpdateTrigger
+            )
+
+            // Second: Render the Canvas Background (on top of pasteboard)
+            CanvasBackgroundView(
+                document: document,
+                zoomLevel: document.zoomLevel,
+                canvasOffset: document.canvasOffset,
+                selectedObjectIDs: document.selectedObjectIDs,
+                viewMode: document.viewMode,
+                dragPreviewDelta: currentDragDelta,
+                dragPreviewTrigger: dragPreviewUpdateTrigger
+            )
+
+            // Third: Grid (if enabled) - Renders on top of canvas background but below graphics
+            if document.showGrid {
                 GridView(document: document, geometry: geometry)
+                    .allowsHitTesting(false) // Grid should not intercept mouse events
             }
-            
-            // NEW: Unified object rendering for proper layer ordering
-            UnifiedObjectView(
+
+            // Fourth: Render all other graphics (excluding Canvas and Pasteboard backgrounds)
+            NonBackgroundObjectsView(
                 document: document,
                 zoomLevel: document.zoomLevel,
                 canvasOffset: document.canvasOffset,
@@ -145,7 +183,7 @@ extension DrawingCanvas {
                 dragPreviewDelta: currentDragDelta,
                 dragPreviewTrigger: dragPreviewUpdateTrigger
             )
-            
+
             canvasOverlays(geometry: geometry)
         }
     }
@@ -585,8 +623,15 @@ private struct FreehandPreviewStyleModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         // Freehand tool uses stroke preview with current stroke color and settings
+        // Always use round caps and joins for smooth appearance
         Path { p in addPathElements(preview.elements, to: &p) }
-            .stroke(document.defaultStrokeColor.color, lineWidth: document.defaultStrokeWidth)
+            .stroke(document.defaultStrokeColor.color,
+                    style: SwiftUI.StrokeStyle(
+                        lineWidth: document.defaultStrokeWidth,
+                        lineCap: .round,
+                        lineJoin: .round
+                    )
+            )
             .opacity(document.defaultStrokeOpacity)
     }
 }

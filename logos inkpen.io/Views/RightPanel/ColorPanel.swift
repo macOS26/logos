@@ -12,7 +12,7 @@ struct ColorPanel: View {
     @Environment(AppState.self) private var appState
     @State private var searchText = ""
     @State private var showingPantoneSearch = false
-    @State private var currentPreviewColor: VectorColor = .black // Shared color state
+    @State private var currentPreviewColor: VectorColor = .rgb(RGBColor(red: 0.0, green: 0.478, blue: 1.0, colorSpace: .displayP3)) // Display P3 Blue - Shared color state
     let onColorSelected: ((VectorColor) -> Void)?
     let showGradientEditing: Bool // New parameter to control gradient editing display
     

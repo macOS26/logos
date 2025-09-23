@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 struct CornerRadiusPanel: View {
     @ObservedObject var document: VectorDocument

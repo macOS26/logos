@@ -3,7 +3,8 @@ import SwiftUI
 // MARK: - Stable Ink HUD Content
 struct StableInkHUDContent: View {
     @Environment(AppState.self) private var appState
-    
+    @State private var colorPanelKey = UUID() // Force ColorPanel refresh
+
     var body: some View {
         if let document = appState.persistentInkHUD.currentDocument {
             VStack(spacing: 0) {
@@ -21,6 +22,7 @@ struct StableInkHUDContent: View {
                     }
                 }, showGradientEditing: false)
                 .frame(maxWidth: 350, maxHeight: 520)
+                .id(colorPanelKey) // Force refresh when key changes
                 
                 HStack {
                     Spacer()
@@ -37,6 +39,19 @@ struct StableInkHUDContent: View {
             .fixedSize()
             .background(Color(NSColor.windowBackgroundColor))
             .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+            // Listen for selection changes to update the Ink Panel color
+            .onChange(of: document.selectedObjectIDs) { _, _ in
+                // When selection changes, update the default colors to match selected object
+                if let selectedColor = document.getSelectedObjectColor() {
+                    if document.activeColorTarget == .stroke {
+                        document.defaultStrokeColor = selectedColor
+                    } else {
+                        document.defaultFillColor = selectedColor
+                    }
+                    // Force ColorPanel refresh to show new color
+                    colorPanelKey = UUID()
+                }
+            }
         } else {
             // No document yet; empty view
             EmptyView()

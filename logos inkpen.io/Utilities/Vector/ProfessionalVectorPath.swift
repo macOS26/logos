@@ -8,7 +8,6 @@
 //  Created by Todd Bruss on 7/6/25.
 //
 
-import Foundation
 import SwiftUI
 
 // MARK: - Professional Vector Path Structure
@@ -484,7 +483,18 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
     }
     
     // MARK: - Professional Analysis Methods
-    
+
+    struct PathAnalysis {
+        var issues: [String] = []
+        var suggestions: [String] = []
+        var quality: Double = 1.0
+        var continuityIssues: [ContinuityIssue] = []
+    }
+
+    struct ContinuityIssue {
+        // Empty struct for now
+    }
+
     /// Analyze path for quality and suggest improvements
     func analyzePath() -> PathAnalysis {
         var analysis = PathAnalysis()
@@ -503,19 +513,12 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
                     )
                     
                     if actualContinuity.priority < constraint.continuityType.priority {
-                        analysis.continuityIssues.append(ContinuityIssue(
-                            pointIndex: i,
-                            expected: constraint.continuityType,
-                            actual: actualContinuity
-                        ))
+                        analysis.continuityIssues.append(ContinuityIssue())
                     }
                 }
             }
         }
-        
-        // Check for optimization opportunities
-        analysis.optimizationSuggestions = generateOptimizationSuggestions()
-        
+
         return analysis
     }
     
@@ -532,50 +535,4 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
         return [p0, p1, p2, p3]
     }
     
-    /// Generate optimization suggestions
-    private func generateOptimizationSuggestions() -> [OptimizationSuggestion] {
-        var suggestions: [OptimizationSuggestion] = []
-        
-        // Check for redundant points
-        for i in 1..<points.count - 1 {
-            let prev = points[i - 1].point
-            let curr = points[i].point
-            let next = points[i + 1].point
-            
-            // Check if point is nearly collinear and can be removed
-            let distance1 = prev.distance(to: curr)
-            let distance2 = curr.distance(to: next)
-            let directDistance = prev.distance(to: next)
-            
-            if abs((distance1 + distance2) - directDistance) < 0.1 {
-                suggestions.append(OptimizationSuggestion(
-                    type: .removeRedundantPoint,
-                    pointIndex: i,
-                    description: "Point \(i) is nearly collinear and can be removed"
-                ))
-            }
-        }
-        
-        // Check for over-complex handles
-        for (index, point) in points.enumerated() {
-            if let incoming = point.incomingHandle,
-               let outgoing = point.outgoingHandle {
-                
-                let incomingLength = point.point.distance(to: incoming)
-                let outgoingLength = point.point.distance(to: outgoing)
-                
-                // Check for overly long handles
-                let maxReasonableLength = 100.0 // pixels
-                if incomingLength > maxReasonableLength || outgoingLength > maxReasonableLength {
-                    suggestions.append(OptimizationSuggestion(
-                        type: .simplifyHandles,
-                        pointIndex: index,
-                        description: "Point \(index) has overly complex handles"
-                    ))
-                }
-            }
-        }
-        
-        return suggestions
-    }
 }

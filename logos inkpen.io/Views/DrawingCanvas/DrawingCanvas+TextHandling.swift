@@ -6,7 +6,8 @@
 //
 
 import SwiftUI
-import Foundation
+import SwiftUI
+import Combine
 
 // MARK: - Enhanced Text and Font Handling Extension
 extension DrawingCanvas {
@@ -550,11 +551,9 @@ extension DrawingCanvas {
         
         // Reset text editing cursor mode
         isTextEditingMode = false
-        #if os(macOS)
         // Reset cursor to default arrow when exiting text editing
         NSCursor.arrow.set()
         Log.info("🎯 TEXT EDITING: Exited text editing mode - reset cursor to arrow", category: .selection)
-        #endif
         
         Log.info("✅ Finished text editing", category: .fileOperations)
     }
@@ -580,11 +579,9 @@ extension DrawingCanvas {
         
         // Reset text editing cursor mode
         isTextEditingMode = false
-        #if os(macOS)
         // Reset cursor to default arrow when cancelling text editing
         NSCursor.arrow.set()
         Log.info("🎯 TEXT EDITING: Cancelled text editing mode - reset cursor to arrow", category: .selection)
-        #endif
         
         Log.error("❌ Cancelled text editing", category: .error)
     }
@@ -950,7 +947,7 @@ extension DrawingCanvas {
             }
         }
         
-        Log.error("❌ NO RESIZE HANDLE: Location not near any text box resize handles", category: .error)
+        // Not near any resize handle - this is normal during drag operations
         return false
     }
 } 

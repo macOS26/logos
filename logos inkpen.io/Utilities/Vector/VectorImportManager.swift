@@ -5,7 +5,6 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import Foundation
 import SwiftUI
 
 /// PROFESSIONAL VECTOR GRAPHICS IMPORT MANAGER
@@ -56,24 +55,6 @@ class VectorImportManager {
             return await importSVG(from: url)
         case .pdf:
             return await importPDF(from: url)
-        case .adobeIllustrator:
-            return VectorImportResult(
-                success: false,
-                shapes: [],
-                metadata: createDefaultMetadata(),
-                errors: [.unsupportedFormat(.adobeIllustrator)],
-                warnings: ["Adobe Illustrator format is no longer supported"]
-            )
-        case .dwf:
-            return await importDWF(from: url)
-        case .dxf, .dwg:
-            return VectorImportResult(
-                success: false,
-                shapes: [],
-                metadata: createDefaultMetadata(),
-                errors: [.commercialLicenseRequired(format)],
-                warnings: ["DWG/DXF support requires Open Design Alliance licensing"]
-            )
         }
     }
     
@@ -112,24 +93,6 @@ class VectorImportManager {
             return await importSVG(from: url, useExtremeValueHandling: true)
         case .pdf:
             return await importPDF(from: url)
-        case .adobeIllustrator:
-            return VectorImportResult(
-                success: false,
-                shapes: [],
-                metadata: createDefaultMetadata(),
-                errors: [.unsupportedFormat(.adobeIllustrator)],
-                warnings: ["Adobe Illustrator format is no longer supported"]
-            )
-        case .dwf:
-            return await importDWF(from: url)
-        case .dxf, .dwg:
-            return VectorImportResult(
-                success: false,
-                shapes: [],
-                metadata: createDefaultMetadata(),
-                errors: [.commercialLicenseRequired(format)],
-                warnings: ["DWG/DXF support requires Open Design Alliance licensing"]
-            )
         }
     }
     
@@ -152,13 +115,6 @@ class VectorImportManager {
     // MARK: - Raster Detection
     enum RasterFormat: String, CaseIterable {
         case png = "png"
-        case jpg = "jpg"
-        case jpeg = "jpeg"
-        case tif = "tif"
-        case tiff = "tiff"
-        case gif = "gif"
-        case bmp = "bmp"
-        case heic = "heic"
         case webp = "webp"
     }
     
@@ -180,24 +136,9 @@ class VectorImportManager {
             return .pdf
         }
         
-        // AI file detection (contains embedded PDF)
-        if string.contains("%!PS-Adobe") && string.contains("%%Creator:") && string.contains("Adobe Illustrator") {
-            return .adobeIllustrator
-        }
-        
-        // PostScript/EPS detection - treat as PDF for import
+        // treat as PDF for import
         if string.hasPrefix("%!PS-Adobe") {
             return .pdf
-        }
-        
-        // DXF detection
-        if string.contains("0\nSECTION") || string.contains("AUTOCAD") {
-            return .dxf
-        }
-        
-        // DWF detection (Design Web Format header)
-        if string.hasPrefix("(DWF V") {
-            return .dwf
         }
         
         return nil
@@ -232,6 +173,7 @@ class VectorImportManager {
             let metadata = VectorImportMetadata(
                 originalFormat: .svg,
                 documentSize: svgContent.documentSize,
+                viewBoxSize: svgContent.viewBoxSize,
                 colorSpace: svgContent.colorSpace,
                 units: svgContent.units,
                 dpi: svgContent.dpi,
@@ -314,6 +256,7 @@ class VectorImportManager {
         let meta = VectorImportMetadata(
             originalFormat: .pdf, // placeholder; not used for raster
             documentSize: size,
+            viewBoxSize: nil,  // Raster images don't have viewBox
             colorSpace: "sRGB",
             units: .pixels,
             dpi: 72,
@@ -369,6 +312,7 @@ class VectorImportManager {
             let metadata = VectorImportMetadata(
                 originalFormat: .pdf,
                 documentSize: mediaBox.size,
+                viewBoxSize: nil,  // PDF doesn't have viewBox
                 colorSpace: "RGB", // PDF can contain multiple color spaces
                 units: .points,
                 dpi: 72.0,
@@ -406,81 +350,13 @@ class VectorImportManager {
     
     // MARK: - AI/EPS/PS Import Methods (REMOVED - No longer supported)
     
-    // MARK: - DWF Import (Design Web Format - Autodesk Published Standard)
-    
-    private func importDWF(from url: URL) async -> VectorImportResult {
-        var errors: [VectorImportError] = []
-        var warnings: [String] = []
-        var shapes: [VectorShape] = []
-        
-        Log.fileOperation("📊 Importing DWF (Design Web Format)...", level: .info)
-        Log.fileOperation("💡 DWF is Autodesk's published, open format for CAD/engineering drawings", level: .info)
-        
-        do {
-            guard let data = try? Data(contentsOf: url) else {
-                throw VectorImportError.fileNotFound
-            }
-            
-            // Parse DWF using professional parser
-            let dwfContent = try parseDWFContent(data)
-            shapes = dwfContent.shapes
-            
-            if !dwfContent.missingFonts.isEmpty {
-                warnings.append("Missing fonts: \(dwfContent.missingFonts.joined(separator: ", "))")
-            }
-            
-            if dwfContent.hasEncryptedData {
-                warnings.append("Some encrypted data sections were skipped")
-            }
-            
-            if dwfContent.layerCount > 1 {
-                warnings.append("Multiple layers detected - imported as flattened design")
-            }
-            
-            let metadata = VectorImportMetadata(
-                originalFormat: .dwf,
-                documentSize: dwfContent.documentSize,
-                colorSpace: dwfContent.colorSpace,
-                units: dwfContent.units,
-                dpi: dwfContent.dpi,
-                layerCount: dwfContent.layerCount,
-                shapeCount: shapes.count,
-                textObjectCount: dwfContent.textCount,
-                importDate: Date(),
-                sourceApplication: dwfContent.sourceApplication,
-                documentVersion: dwfContent.version
-            )
-            
-            Log.fileOperation("✅ DWF import successful: \(shapes.count) vector shapes, \(dwfContent.layerCount) layers", level: .info)
-            
-            return VectorImportResult(
-                success: true,
-                shapes: shapes,
-                metadata: metadata,
-                errors: errors,
-                warnings: warnings
-            )
-            
-        } catch {
-            errors.append(.parsingError(error.localizedDescription, line: nil))
-            Log.error("❌ DWF import failed: \(error)", category: .error)
-            
-            return VectorImportResult(
-                success: false,
-                shapes: [],
-                metadata: createDefaultMetadata(),
-                errors: errors,
-                warnings: warnings
-            )
-        }
-    }
-    
     // MARK: - Helper Functions
     
     private func createDefaultMetadata() -> VectorImportMetadata {
         return VectorImportMetadata(
             originalFormat: .svg,
             documentSize: CGSize(width: 8.5 * 72, height: 11 * 72), // Letter size in points
+            viewBoxSize: nil,  // Default has no viewBox
             colorSpace: "RGB",
             units: .points,
             dpi: 72.0,

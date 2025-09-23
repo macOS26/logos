@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 /*
  🔧 INLINE TOOL TRAY
@@ -10,23 +11,98 @@ import SwiftUI
 // MARK: - Tool Group Manager
 class ToolGroupManager: ObservableObject {
     static let shared = ToolGroupManager()
-    
+
     // DEPRECATED single-group fields (kept for backward compatibility with any legacy views)
     @Published var currentToolInGroup: DrawingTool? = nil
-    @Published var selectedVariant: StarVariant = .fivePoint
+    @Published var selectedVariant: StarVariant = .fivePoint {
+        didSet {
+            saveStarVariant()
+        }
+    }
     @Published var selectedVariantIndex: Int? = nil // For star variants
     @Published var showingAllItems: Bool = false
     @Published var expansionAnchorTool: DrawingTool? = nil // Tool that triggered expansion
     @Published var expansionAnchorVariant: StarVariant? = nil // Star variant that triggered expansion
 
     // New per-group state so tool groups act independently
-    @Published var expandedGroups: Set<String> = []
-    @Published var selectedToolByGroup: [String: DrawingTool] = [:]
+    @Published var expandedGroups: Set<String> = [] {
+        didSet {
+            saveExpandedGroups()
+        }
+    }
+    @Published var selectedToolByGroup: [String: DrawingTool] = [:] {
+        didSet {
+            saveSelectedTools()
+        }
+    }
     @Published var anchorVariantByGroup: [String: StarVariant?] = [:]
     var toolButtonFrames: [DrawingTool: CGRect] = [:]
-    
+
+    // UserDefaults keys
+    private let expandedGroupsKey = "ToolGroupManager.expandedGroups"
+    private let selectedToolsKey = "ToolGroupManager.selectedTools"
+    private let starVariantKey = "ToolGroupManager.starVariant"
+    private let hasInitializedGroupsKey = "ToolGroupManager.hasInitializedGroups"
+
     private init() {
-        // Shared instance for global access
+        // Load saved state from UserDefaults
+        loadSavedState()
+    }
+
+    // MARK: - Persistence Methods
+    private func saveExpandedGroups() {
+        UserDefaults.standard.set(Array(expandedGroups), forKey: expandedGroupsKey)
+    }
+
+    private func saveSelectedTools() {
+        // Convert to dictionary of strings for UserDefaults
+        let stringDict = selectedToolByGroup.reduce(into: [String: String]()) { result, pair in
+            result[pair.key] = pair.value.rawValue
+        }
+        UserDefaults.standard.set(stringDict, forKey: selectedToolsKey)
+    }
+
+    private func saveStarVariant() {
+        UserDefaults.standard.set(selectedVariant.rawValue, forKey: starVariantKey)
+    }
+
+    private func loadSavedState() {
+        // Check if this is the first time initializing the new groups
+        let hasInitialized = UserDefaults.standard.bool(forKey: hasInitializedGroupsKey)
+
+        // Load expanded groups
+        if let savedGroups = UserDefaults.standard.array(forKey: expandedGroupsKey) as? [String] {
+            expandedGroups = Set(savedGroups)
+
+            // Only set defaults for new groups if we haven't initialized them before
+            if !hasInitialized {
+                // First time seeing these groups - expand them by default
+                expandedGroups.insert("navigation")
+                expandedGroups.insert("utilities")
+                // Mark as initialized and save
+                UserDefaults.standard.set(true, forKey: hasInitializedGroupsKey)
+                saveExpandedGroups()
+            }
+        } else {
+            // No saved groups at all - set defaults
+            expandedGroups = Set(["navigation", "utilities"])
+            UserDefaults.standard.set(true, forKey: hasInitializedGroupsKey)
+        }
+
+        // Load selected tools per group
+        if let savedTools = UserDefaults.standard.dictionary(forKey: selectedToolsKey) as? [String: String] {
+            selectedToolByGroup = savedTools.reduce(into: [String: DrawingTool]()) { result, pair in
+                if let tool = DrawingTool(rawValue: pair.value) {
+                    result[pair.key] = tool
+                }
+            }
+        }
+
+        // Load star variant
+        if let savedVariant = UserDefaults.standard.string(forKey: starVariantKey),
+           let variant = StarVariant(rawValue: savedVariant) {
+            selectedVariant = variant
+        }
     }
     
     // Handle tool switching via keyboard shortcuts (per-group, non-interfering)
@@ -50,19 +126,23 @@ class ToolGroupManager: ObservableObject {
             anchorVariantByGroup[groupName] = selectedVariant
             return
         }
+
+        // Set this tool as the selected tool for the group (so it shows when collapsed)
+        selectedToolByGroup[groupName] = tool
+
         // Toggle only this group's expansion
         if expandedGroups.contains(groupName) {
             expandedGroups.remove(groupName)
             showingAllItems = false
             expansionAnchorTool = nil
             expansionAnchorVariant = nil
-            Log.fileOperation("🔧 Collapsed group \(groupName)", level: .info)
+            Log.fileOperation("🔧 Collapsed group \(groupName), showing tool: \(tool.rawValue)", level: .info)
         } else {
             expandedGroups.insert(groupName)
             showingAllItems = true
             expansionAnchorTool = tool
             expansionAnchorVariant = nil
-            Log.fileOperation("🔧 Expanded group \(groupName)", level: .info)
+            Log.fileOperation("🔧 Expanded group \(groupName) from tool: \(tool.rawValue)", level: .info)
         }
         currentToolInGroup = tool
     }
@@ -258,7 +338,7 @@ struct ToolDockButton: View {
                 .frame(width: 28, height: 28)
                 .background(
                     RoundedRectangle(cornerRadius: 4)
-                        .fill(isSelected ? Color.blue : Color.clear)
+                        .fill(isSelected ? InkPenUIColors.shared.primaryBlue : Color.clear)
                 )
         }
         .buttonStyle(PlainButtonStyle())

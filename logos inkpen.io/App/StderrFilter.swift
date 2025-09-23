@@ -5,9 +5,7 @@
 //  Created by Todd Bruss on 8/23/25.
 //
 
-import Foundation
 import SwiftUI
-import CoreGraphics
 
 // MARK: - Stderr Filter (Suppresses noisy system warnings)
 final class StderrFilter {

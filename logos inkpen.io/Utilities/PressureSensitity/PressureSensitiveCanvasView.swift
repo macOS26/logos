@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import AppKit
 
 /// NSView that handles real Apple Pencil pressure events on macOS
 class PressureSensitiveCanvasView: NSView {

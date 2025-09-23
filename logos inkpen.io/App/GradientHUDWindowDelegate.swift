@@ -5,9 +5,7 @@
 //  Created by Todd Bruss on 8/23/25.
 //
 
-import Foundation
 import SwiftUI
-import CoreGraphics
 
 // MARK: - Gradient HUD Window Delegate to Preserve Position
 class GradientHUDWindowDelegate: NSObject, NSWindowDelegate {

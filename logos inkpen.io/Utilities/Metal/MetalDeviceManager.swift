@@ -1,6 +1,5 @@
-import Metal
 import MetalKit
-import Foundation
+import Combine
 
 /// Metal device manager for GPU-only systems
 /// Requires Metal GPU support - no CPU fallbacks

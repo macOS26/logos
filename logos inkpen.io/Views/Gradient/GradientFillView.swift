@@ -7,7 +7,7 @@
 
 // MARK: - NSViewRepresentable Gradient Renderer
 
-import CoreGraphics
+import SwiftUI
 import SwiftUI
 
 struct GradientFillView: NSViewRepresentable {

@@ -152,6 +152,7 @@ struct CMYKInputSection: View {
                             .tint(Color.clear)
                             .onChange(of: cyanSlider) {
                                 cyanValue = String(Int(cyanSlider))
+                                updateSharedColor()
                             }
                         
                         // Gradient overlay
@@ -169,6 +170,7 @@ struct CMYKInputSection: View {
                             guard !isProgrammaticallyUpdating else { return }
                             if let intValue = Double(cyanValue) {
                                 cyanSlider = min(100, max(0, intValue))
+                                updateSharedColor()
                             }
                         }
                 }
@@ -199,6 +201,7 @@ struct CMYKInputSection: View {
                             .tint(Color.clear)
                             .onChange(of: magentaSlider) {
                                 magentaValue = String(Int(magentaSlider))
+                                updateSharedColor()
                             }
                         
                         // Gradient overlay
@@ -216,6 +219,7 @@ struct CMYKInputSection: View {
                             guard !isProgrammaticallyUpdating else { return }
                             if let intValue = Double(magentaValue) {
                                 magentaSlider = min(100, max(0, intValue))
+                                updateSharedColor()
                             }
                         }
                 }
@@ -246,6 +250,7 @@ struct CMYKInputSection: View {
                             .tint(Color.clear)
                             .onChange(of: yellowSlider) {
                                 yellowValue = String(Int(yellowSlider))
+                                updateSharedColor()
                             }
                         
                         // Gradient overlay
@@ -263,6 +268,7 @@ struct CMYKInputSection: View {
                             guard !isProgrammaticallyUpdating else { return }
                             if let intValue = Double(yellowValue) {
                                 yellowSlider = min(100, max(0, intValue))
+                                updateSharedColor()
                             }
                         }
                 }
@@ -293,6 +299,7 @@ struct CMYKInputSection: View {
                             .tint(Color.clear)
                             .onChange(of: blackSlider) {
                                 blackValue = String(Int(blackSlider))
+                                updateSharedColor()
                             }
                         
                         // Gradient overlay
@@ -310,6 +317,7 @@ struct CMYKInputSection: View {
                             guard !isProgrammaticallyUpdating else { return }
                             if let intValue = Double(blackValue) {
                                 blackSlider = min(100, max(0, intValue))
+                                updateSharedColor()
                             }
                         }
                 }
@@ -359,26 +367,25 @@ struct CMYKInputSection: View {
     private func updateSharedColor() {
         sharedColor = .cmyk(currentColor)
         let vectorColor = VectorColor.cmyk(currentColor)
-        
+
         // CRITICAL FIX: Don't update gradients during programmatic changes OR when just browsing
         // Only update gradients when user explicitly applies/selects colors
         if isProgrammaticallyUpdating {
             Log.fileOperation("🎨 CMYK INPUT: BLOCKED gradient update - programmatic change", level: .info)
             return
         }
-        
+
+        // Update document defaults based on active color target (like RGB does)
+        switch document.activeColorTarget {
+        case .fill:
+            document.defaultFillColor = vectorColor
+        case .stroke:
+            document.defaultStrokeColor = vectorColor
+        }
+
         // 🔥 CRITICAL FIX: Don't automatically update gradient stops when in gradient editing mode
         // This prevents unwanted gradient modifications when browsing Color Panel during gradient editing
         if showGradientEditing {
-            // When in gradient editing mode, only update document defaults and active selection
-            // DO NOT automatically modify gradient stops
-            switch document.activeColorTarget {
-            case .fill:
-                document.defaultFillColor = vectorColor
-            case .stroke:
-                document.defaultStrokeColor = vectorColor
-            }
-            
             // Apply to active shapes (regular or direct selection) - but NOT gradients
             let activeShapeIDs = document.getActiveShapeIDs()
             if !activeShapeIDs.isEmpty {
@@ -541,16 +548,20 @@ struct CMYKInputSection: View {
     
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.cmyk(currentColor)
-        
+
         // 🔥 CRITICAL FIX: Only use gradient callback if THIS section allows gradient editing
         // Priority 1: If we're in gradient editing mode AND this section supports it, use gradient callback
         if showGradientEditing, let gradientCallback = appState.gradientEditingState?.onColorSelected {
             gradientCallback(vectorColor)
+            // Also add to swatches when ink well is clicked
+            document.addColorSwatch(vectorColor)
             return
         }
-        
+
         // Priority 2: Otherwise, apply to document's active selection
         document.setActiveColor(vectorColor)
+        // Also add to swatches when ink well is clicked
+        document.addColorSwatch(vectorColor)
     }
     
     private func addCMYKColorToSwatches() {

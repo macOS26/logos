@@ -1,7 +1,5 @@
 import SwiftUI
-import Metal
-import Foundation
-import Darwin
+import Combine
 
 /// Optimized performance monitor that doesn't add CPU overhead
 class OptimizedPerformanceMonitor: ObservableObject {

@@ -1,6 +1,5 @@
 import SwiftUI
 
-
 @Observable
 class AppState {
     // MARK: - Shared Instance
@@ -88,7 +87,7 @@ class AppState {
     
     // MARK: - Preferences: Brush Preview
     enum BrushPreviewStyle: String, CaseIterable { case outline, fill }
-    var brushPreviewStyle: BrushPreviewStyle = .outline {
+    var brushPreviewStyle: BrushPreviewStyle = .fill {
         didSet { UserDefaults.standard.set(brushPreviewStyle.rawValue, forKey: "brushPreviewStyle") }
     }
     /// If true, the live preview is treated as final; we bake exactly that path on mouse up
@@ -214,83 +213,8 @@ class AppState {
     }
     
     // MARK: - Panel Actions
-    func showLayersPanel() {
-        selectedPanelTab = .layers
-    }
-    
-    func showColorPanel() {
-        selectedPanelTab = .color
-    }
-    
-    func showStrokeFillPanel() {
-        selectedPanelTab = .properties
-    }
-    
-    func showPathOpsPanel() {
-        selectedPanelTab = .pathOps
-    }
-    
-    func showFontPanel() {
-        selectedPanelTab = .font
-    }
     
     // MARK: - Gradient Editing Actions
-    
-    func startGradientStopEditing(gradientId: UUID, stopIndex: Int, onColorSelected: @escaping (VectorColor) -> Void) {
-        gradientEditingState = GradientEditingState(
-            gradientId: gradientId,
-            stopIndex: stopIndex,
-            onColorSelected: onColorSelected
-        )
-        selectedPanelTab = .color
-    }
-    
-    func finishGradientStopEditing() {
-        gradientEditingState = nil
-    }
-    
-    // 🔥 EMERGENCY RESET: Force clear all gradient editing state
-    func forceResetGradientEditingState() {
-        Log.fileOperation("🎨 GRADIENT HUD: Force resetting all gradient editing state", level: .info)
-        gradientEditingState = nil
-        persistentGradientHUD.forceResetHidingFlag()
-        persistentGradientHUD.hide()
-        
-        // 🔥 HIDE ALL GRADIENT WINDOWS (preserve position)
-        NSApplication.shared.windows.forEach { window in
-            if window.title.contains("Gradient Color Picker") {
-                Log.fileOperation("🎨 GRADIENT HUD: Hiding window in emergency reset: \(window.title)", level: .info)
-                // Use orderOut to hide without destroying, preserving position
-                window.orderOut(nil)
-            }
-        }
-        
-        Log.fileOperation("🎨 GRADIENT HUD: Force reset completed", level: .info)
-    }
-    
-    // MARK: - Gradient HUD Actions
-    
-    func showGradientHUD(data: GradientHUDData) {
-        gradientHUDData = data
-        showingGradientHUD = true
-    }
-    
-    func hideGradientHUD() {
-        showingGradientHUD = false
-        gradientHUDData = nil
-    }
-    
-    // MARK: - Development Actions
-    var showingCoreGraphicsTest = false
-    
-    func showCoreGraphicsTest() {
-        showingCoreGraphicsTest = true
-    }
-    
-    func runPathOperationsBenchmark() {
-        // TODO: Move benchmark logic to a utility class
-        // For now, silent execution
-    }
 
     // Removed: System Metal HUD control utilities and shell runner
 }

@@ -9,14 +9,7 @@ import SwiftUI
 
 // MARK: - Canvas Utility Functions
 extension DrawingCanvas {
-    
-    /// Calculate distance between two points
-    internal func distance(_ point1: CGPoint, _ point2: CGPoint) -> Double {
-        let dx = point1.x - point2.x
-        let dy = point1.y - point2.y
-        return sqrt(dx * dx + dy * dy)
-    }
-    
+
     /// Setup canvas with default settings
     internal func setupCanvas(geometry: GeometryProxy) {
         // SKIP INITIAL POSITIONING: Don't call setupDefaultView to avoid transition

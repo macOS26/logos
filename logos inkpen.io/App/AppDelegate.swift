@@ -5,9 +5,7 @@
 //  Created by Todd Bruss on 8/23/25.
 //
 
-import Foundation
 import SwiftUI
-import CoreGraphics
 
 // MARK: - AppDelegate to ensure proper document tabbing and window persistence
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -31,48 +29,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         // 🔥 NEW: Initialize display monitor to handle display changes
         _ = DisplayMonitor.shared
-        
+                
         // SETUP: Global error handling for system-level issues
         setupGlobalErrorHandling()
-        
-        // REMOVED: Repetitive app initialization logging
-        
-        // Use the startup coordinator for robust initialization
-        Task {
-            await StartupCoordinator.shared.performStartupTasks()
-            
-            // FIXED: Only show Document Setup window if NO document windows exist
-            // Check after a brief delay to let the app fully initialize
-            Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 100_000_000) // 100ms delay
-                
-                // Check if any document windows are open
-                let hasDocumentWindows = NSDocumentController.shared.documents.count > 0 ||
-                                        NSApplication.shared.windows.contains { window in
-                                            // Check for document windows (not setup or other utility windows)
-                                            return window.contentViewController != nil &&
-                                                   !window.title.contains("Setup") &&
-                                                   !window.title.contains("Preferences") &&
-                                                   window.isVisible
-                                        }
-                
-                // Only show setup if no documents are open
-                AppState.shared.shouldShowDocumentSetup = !hasDocumentWindows
-                
-                if !hasDocumentWindows {
-                    // Open the Document Setup window
-                    if let openWindow = AppState.shared.openWindowAction {
-                        openWindow("onboarding-setup")
-                    }
-                }
-            }
-        }
-        
+    
         // Set up a fallback timer to ensure the app doesn't hang
         setupFallbackTimer()
-        
-        // Normalize menus shortly after launch (once) so order is correct
-        
     }
     
     private func setupFallbackTimer() {
@@ -102,7 +64,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let exceptionName = exception.name.rawValue
             let exceptionReason = exception.reason ?? "Unknown reason"
             
-                    Log.error("📄 GlobalErrorHandler: Uncaught exception: \(exceptionName)", category: .error)
+        Log.error("📄 GlobalErrorHandler: Uncaught exception: \(exceptionName)", category: .error)
         Log.error("📄 GlobalErrorHandler: Reason: \(exceptionReason)", category: .error)
             
             // Check if this is a system-level error we should handle gracefully
@@ -123,43 +85,59 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
-    func applicationDidBecomeActive(_ notification: Notification) {
-        // Defer window operations to prevent blocking
-        Task {
-            await handleApplicationBecameActiveAsync()
-        }
-    }
-    
-    private func handleApplicationBecameActiveAsync() async {
-        await MainActor.run {
-            // No-op: individual windows manage their own tabbing preferences
-        }
-    }
-    
-    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
-        // Return false to prevent the Open Dialog, but we'll handle document creation ourselves
-        Log.startup("📄 App: Intercepting untitled file creation - will show New Document Setup Window instead")
-        return false
-    }
-    
-//    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-//        // Check if we have any document windows open (not just visible windows)
-//        let documentWindows = NSApplication.shared.windows.filter { window in
-//            return window.title != "Document Setup" && window.title != ""
-//        }
-//        
-//        // If no document windows are open, let DocumentGroup handle document creation
-//        if documentWindows.isEmpty {
-//            // REMOVED: Repetitive app reopen logging
-//            return true
-//        } else {
-//            // REMOVED: Repetitive app reopen logging
-//            return false
+//    func applicationDidBecomeActive(_ notification: Notification) {
+//        // Defer window operations to prevent blocking
+//        Task {
+//            await handleApplicationBecameActiveAsync()
 //        }
 //    }
     
+//    private func handleApplicationBecameActiveAsync() async {
+//        await MainActor.run {
+//            // No-op: individual windows manage their own tabbing preferences
+//        }
+//    }
+    
+    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
+        // Check if this is the very first launch ever
+        let hasLaunchedBefore = UserDefaults.standard.bool(forKey: "HasLaunchedBefore")
+        
+        // Only intercept if we're actually launching fresh without documents
+        let hasDocuments = NSDocumentController.shared.documents.count > 0
+        Log.startup("📄 App: applicationShouldOpenUntitledFile called - hasDocuments: \(hasDocuments), hasLaunchedBefore: \(hasLaunchedBefore)")
+        
+        // If we already have documents (from restoration), don't interfere
+        if hasDocuments {
+            Log.startup("📄 App: Documents already exist, not intercepting untitled file creation")
+            return false
+        }
+        
+        // Only show setup window on the VERY FIRST launch ever
+        if !hasLaunchedBefore {
+            Log.startup("📄 App: First launch ever detected - will show Document Setup")
+            UserDefaults.standard.set(true, forKey: "HasLaunchedBefore")
+            
+            // Show the document setup window for first launch
+            DispatchQueue.main.async {
+                AppState.shared.openWindowAction?("onboarding-setup")
+            }
+            return false
+        }
+        
+        Log.startup("📄 App: Not first launch - creating normal untitled document")
+        return true // Let the system create a normal untitled document
+    }
+    
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         Log.startup("📄 App: Application should terminate - starting graceful shutdown")
+        
+        // CRITICAL: Close Document Setup window before termination to prevent restoration
+        for window in NSApplication.shared.windows {
+            if window.title == "Document Setup" || window.identifier?.rawValue == "onboarding-setup" {
+                window.close()
+                Log.startup("📄 Closed Document Setup window before termination")
+            }
+        }
         
         // Directly instruct all DocumentState instances to stop updating immediately
         DocumentStateRegistry.shared.forceCleanupAll()
@@ -191,33 +169,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // SAVE: Window state when app is about to terminate
     func applicationWillTerminate(_ notification: Notification) {
         Log.startup("📄 App: Starting termination cleanup...")
-        
-        // CRITICAL: Clean up all state objects to prevent retain cycles during shutdown
-        cleanupAllStateObjects()
-        
+                
         // CRITICAL: Force cleanup of all DocumentState instances
-        cleanupAllDocumentStates()
+        DocumentStateRegistry.shared.forceCleanupAll()
         
         // Force synchronize UserDefaults before shutdown
         UserDefaults.standard.synchronize()
         
         Log.startup("📄 App: Application termination cleanup completed")
-    }
-    
-    private func cleanupAllStateObjects() {
-        // Clean up any remaining state objects
-        // This helps prevent retain cycles during SwiftUI cleanup
-        Log.startup("📄 App: Cleaning up state objects for shutdown")
-    }
-    
-    private func cleanupAllDocumentStates() {
-        // Force cleanup of any DocumentState instances that might still have active subscriptions
-        Log.startup("📄 App: Forcing cleanup of all DocumentState instances")
-        
-        // Directly force cleanup of all DocumentState instances
-        DocumentStateRegistry.shared.forceCleanupAll()
-        
-        // Give a brief moment for cleanup to complete
-        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))
     }
 }

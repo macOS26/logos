@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 extension DrawingCanvas {
     // TEXT EDITING FUNCTIONS REMOVED - Starting over with simple approach
@@ -252,8 +253,22 @@ extension DrawingCanvas {
                         Log.info("❌ TEXT MISS: Text object not selected", category: .selection)
                     }
                 } else {
-                    // REGULAR SHAPE - use direct selection hit detection logic
-                    isHit = performShapeHitTest(shape: shape, at: validatedLocation)
+                    // Check if this shape is clipped by a clipping path
+                    // If so, don't allow selection - the clipping path should be selected instead
+                    if shape.clippedByShapeID != nil {
+                        Log.info("🎭 SELECTION TAP: Shape '\(shape.name)' has clipping path - skipping", category: .selection)
+                        isHit = false
+                    } else if shape.isClippingPath {
+                        // For clipping paths, ONLY use path-based hit testing, never bounds
+                        Log.info("🎭 SELECTION TAP: Testing clipping path '\(shape.name)' - using path-only hit test", category: .selection)
+                        let baseTolerance: CGFloat = 8.0
+                        let tolerance = max(2.0, baseTolerance / document.zoomLevel)
+                        isHit = PathOperations.hitTest(shape.transformedPath, point: validatedLocation, tolerance: tolerance)
+                        Log.info("  - Clipping path hit: \(isHit)", category: .selection)
+                    } else {
+                        // REGULAR SHAPE - use direct selection hit detection logic
+                        isHit = performShapeHitTest(shape: shape, at: validatedLocation)
+                    }
                 }
             }
             
@@ -266,25 +281,10 @@ extension DrawingCanvas {
         
         if let hitObject = hitObject {
             Log.info("✅ SELECTION SUCCESS: Selected object '\(hitObject.id)' on layer \(hitObject.layerIndex)", category: .selection)
-            
-            var objectToSelect = hitObject
-            
-            // Handle clipping mask logic for shapes
-            if case .shape(let shape) = hitObject.objectType {
-                if let clippedByShapeID = shape.clippedByShapeID {
-                    // This shape is clipped by another shape - find the mask shape in unified objects
-                    if let maskObject = document.unifiedObjects.first(where: { 
-                        if case .shape(let maskShape) = $0.objectType {
-                            return maskShape.id == clippedByShapeID
-                        }
-                        return false
-                    }) {
-                        Log.info("🎭 CLIPPING MASK: Shape is clipped by another shape - selecting mask instead", category: .selection)
-                        objectToSelect = maskObject
-                    }
-                }
-            }
-            
+
+            // No need to redirect to clipping mask anymore - we already prevent selection of clipped shapes
+            let objectToSelect = hitObject
+
             if isShiftPressed {
                 // SHIFT+CLICK: Add to selection
                 document.selectedObjectIDs.insert(objectToSelect.id)
@@ -305,7 +305,16 @@ extension DrawingCanvas {
             
             // CRITICAL FIX: Sync selection arrays for compatibility
             document.syncSelectionArrays()
-            
+
+            // NEW: Update Ink Panel with selected object's color
+            if let selectedColor = document.getSelectedObjectColor() {
+                if document.activeColorTarget == .stroke {
+                    document.defaultStrokeColor = selectedColor
+                } else {
+                    document.defaultFillColor = selectedColor
+                }
+            }
+
             // Force UI update
             document.objectWillChange.send()
         } else {

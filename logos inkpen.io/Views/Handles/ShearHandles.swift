@@ -5,7 +5,7 @@
 //  Created by Todd Bruss on 8/20/25.
 //
 
-import CoreGraphics
+import SwiftUI
 import SwiftUI
 
 // MARK: - Shear Tool Handles
@@ -129,14 +129,14 @@ struct ShearHandles: View {
             
             // CENTER POINT: Always available (GREEN if not locked, RED if locked)
             let isCenterLockedPin = (lockedPinPointIndex == nil) // nil represents center as locked pin
-            Rectangle()
+            Circle()
                 .fill(isCenterLockedPin ? Color.red : Color.green)  // RED = locked pin, GREEN = shearable
                 .stroke(Color.white, lineWidth: 1.0)
-                .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
-                .position(center)
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(shape.transform)
+                .frame(width: handleSize, height: handleSize)
+                .position(CGPoint(
+                    x: center.x * zoomLevel + canvasOffset.x,
+                    y: center.y * zoomLevel + canvasOffset.y
+                ))
                 .onTapGesture {
                     if !isShearing {
                         // SINGLE CLICK: Set center as the locked pin point (RED)
@@ -191,10 +191,10 @@ struct ShearHandles: View {
                 let anchorScreenX = shearAnchorPoint.x * zoomLevel + canvasOffset.x
                 let anchorScreenY = shearAnchorPoint.y * zoomLevel + canvasOffset.y
                 let isCenterPinned = document.shearAnchor == .center
-                Rectangle()
+                Circle()
                     .fill(isCenterPinned ? Color.red : Color.green)
                     .stroke(Color.white, lineWidth: 1.0)
-                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
+                    .frame(width: handleSize, height: handleSize)
                     .position(x: anchorScreenX, y: anchorScreenY)
             }
             
@@ -284,7 +284,10 @@ struct ShearHandles: View {
             
             // CRITICAL FIX: Sync unified objects after shear to ensure UI updates
             document.updateUnifiedObjectsOptimized()
-            
+
+            // UPDATE X Y W H: Call common update function after shear
+            document.updateTransformPanelValues()
+
             // CRITICAL FIX: Force refresh of point selection system (same as rotation tool)
             // This updates the points to match the sheared object positions
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {

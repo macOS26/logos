@@ -7,7 +7,7 @@
 
 import SwiftUI
 import AppKit
-import CoreGraphics
+import SwiftUI
 
 // MARK: - NSView-Based Image View
 
@@ -16,9 +16,10 @@ struct ImageNSView: NSViewRepresentable {
     let bounds: CGRect
     let opacity: Double
     let fillStyle: FillStyle? // Add support for fill styling
+    let viewMode: ViewMode // Add view mode for keyline rendering
     
     func makeNSView(context: Context) -> ImageNSViewClass {
-        return ImageNSViewClass(image: image, bounds: bounds, opacity: opacity, fillStyle: fillStyle)
+        return ImageNSViewClass(image: image, bounds: bounds, opacity: opacity, fillStyle: fillStyle, viewMode: viewMode)
     }
     
     func updateNSView(_ nsView: ImageNSViewClass, context: Context) {
@@ -26,6 +27,7 @@ struct ImageNSView: NSViewRepresentable {
         nsView.imageBounds = bounds
         nsView.opacity = opacity
         nsView.fillStyle = fillStyle
+        nsView.viewMode = viewMode
         nsView.needsDisplay = true
     }
 }
@@ -35,12 +37,14 @@ class ImageNSViewClass: NSView {
     var imageBounds: CGRect
     var opacity: Double
     var fillStyle: FillStyle? // Add support for fill styling
+    var viewMode: ViewMode // Add view mode for keyline rendering
     
-    init(image: NSImage, bounds: CGRect, opacity: Double, fillStyle: FillStyle? = nil) {
+    init(image: NSImage, bounds: CGRect, opacity: Double, fillStyle: FillStyle? = nil, viewMode: ViewMode = .color) {
         self.image = image
         self.imageBounds = bounds
         self.opacity = opacity
         self.fillStyle = fillStyle
+        self.viewMode = viewMode
         super.init(frame: .zero)
         self.wantsLayer = true
         self.layer?.backgroundColor = NSColor.clear.cgColor
@@ -59,8 +63,9 @@ class ImageNSViewClass: NSView {
         
         context.saveGState()
         
-        // Apply opacity
-        context.setAlpha(CGFloat(opacity))
+        // Apply opacity - use 20% in keyline mode to ghost the image
+        let effectiveOpacity = viewMode == .keyline ? min(opacity * 0.2, 0.2) : opacity
+        context.setAlpha(CGFloat(effectiveOpacity))
         
         // FIXED: Flip image vertically without changing coordinate system
         // This keeps the bounds correct while fixing the image orientation

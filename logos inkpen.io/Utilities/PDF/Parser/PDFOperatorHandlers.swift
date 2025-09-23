@@ -6,8 +6,7 @@
 //  Extracted from PDFContent.swift - Path operation handlers
 //
 
-import Foundation
-import CoreGraphics
+import SwiftUI
 
 // MARK: - PDF Operator Handlers Extension
 extension PDFCommandParser {

@@ -5,8 +5,7 @@
 //  Split from VectorDocument+UnifiedObjectManagement.swift
 //
 
-import Foundation
-import CoreGraphics
+import SwiftUI
 
 // MARK: - UNIFIED SHAPE STROKE HELPERS
 extension VectorDocument {
@@ -23,7 +22,7 @@ extension VectorDocument {
                 if shape.strokeStyle == nil {
                     shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: defaultStrokePlacement, lineJoin: lineJoin, opacity: defaultStrokeOpacity)
                 } else {
-                    shape.strokeStyle?.lineJoin = lineJoin
+                    shape.strokeStyle?.lineJoin = LineJoin(lineJoin)
                 }
                 
                 // Update unified objects
@@ -51,7 +50,7 @@ extension VectorDocument {
                 if shape.strokeStyle == nil {
                     shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: defaultStrokePlacement, lineCap: lineCap, opacity: defaultStrokeOpacity)
                 } else {
-                    shape.strokeStyle?.lineCap = lineCap
+                    shape.strokeStyle?.lineCap = LineCap(lineCap)
                 }
                 
                 // Update unified objects
@@ -221,8 +220,8 @@ extension VectorDocument {
                         gradient: gradient, 
                         width: currentStroke?.width ?? defaultStrokeWidth,
                         placement: currentStroke?.placement ?? defaultStrokePlacement,
-                        lineCap: currentStroke?.lineCap ?? defaultStrokeLineCap,
-                        lineJoin: currentStroke?.lineJoin ?? defaultStrokeLineJoin,
+                        lineCap: currentStroke?.lineCap.cgLineCap ?? defaultStrokeLineCap,
+                        lineJoin: currentStroke?.lineJoin.cgLineJoin ?? defaultStrokeLineJoin,
                         miterLimit: currentStroke?.miterLimit ?? defaultStrokeMiterLimit,
                         opacity: currentStroke?.opacity ?? 1.0
                     )

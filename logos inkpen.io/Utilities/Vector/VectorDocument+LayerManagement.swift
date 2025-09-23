@@ -5,8 +5,7 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import Foundation
-import CoreGraphics
+import SwiftUI
 
 // MARK: - Layer Management
 extension VectorDocument {
@@ -25,7 +24,13 @@ extension VectorDocument {
         
         let oldName = layers[index].name
         layers[index].name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
-        
+
+        // Update settings if this is the selected layer
+        if settings.selectedLayerId == layers[index].id {
+            settings.selectedLayerName = layers[index].name
+            onSettingsChanged()
+        }
+
         saveToUndoStack()
         Log.info("✏️ Renamed layer '\(oldName)' to '\(layers[index].name)'", category: .general)
     }
@@ -75,6 +80,9 @@ extension VectorDocument {
         
         // Select the new layer
         selectedLayerIndex = index + 1
+        settings.selectedLayerId = duplicatedLayer.id
+        settings.selectedLayerName = duplicatedLayer.name
+        onSettingsChanged()
         
         Log.fileOperation("📋 Duplicated layer '\(originalLayer.name)' to '\(duplicatedLayer.name)'", level: .info)
     }
@@ -148,21 +156,77 @@ extension VectorDocument {
     }
     
     func addLayer(name: String = "New Layer") {
-        layers.append(VectorLayer(name: name))
+        let newLayer = VectorLayer(name: name)
+        layers.append(newLayer)
         selectedLayerIndex = layers.count - 1
+
+        // Update selected layer in settings
+        settings.selectedLayerId = newLayer.id
+        settings.selectedLayerName = newLayer.name
+        onSettingsChanged()
     }
     
     func removeLayer(at index: Int) {
         // Allow deletion of any layer, just prevent deleting the last layer
-        guard index >= 0 && index < layers.count && layers.count > 1 else { 
+        guard index >= 0 && index < layers.count && layers.count > 1 else {
             Log.fileOperation("⚠️ Cannot remove last remaining layer", level: .info)
-            return 
+            return
         }
+
+        let removingSelectedLayer = settings.selectedLayerId == layers[index].id
+
         layers.remove(at: index)
         if selectedLayerIndex == index {
             selectedLayerIndex = min(index, layers.count - 1)
         } else if let selected = selectedLayerIndex, selected > index {
             selectedLayerIndex = selected - 1
+        }
+
+        // Update selected layer if we removed it
+        if removingSelectedLayer || settings.selectedLayerId == nil {
+            validateSelectedLayer()
+        }
+    }
+
+    /// Ensures a layer is always selected, defaulting to Layer 1 or first available layer
+    func validateSelectedLayer() {
+        // First try to find the layer with the saved ID
+        if let savedId = settings.selectedLayerId,
+           layers.first(where: { $0.id == savedId }) != nil {
+            // Layer still exists, update index to match
+            if let index = layers.firstIndex(where: { $0.id == savedId }) {
+                selectedLayerIndex = index
+                layerIndex = index
+            }
+            return
+        }
+
+        // Try to find "Layer 1" as fallback
+        if let layer1Index = layers.firstIndex(where: { $0.name == "Layer 1" }) {
+            let layer1 = layers[layer1Index]
+            settings.selectedLayerId = layer1.id
+            settings.selectedLayerName = layer1.name
+            selectedLayerIndex = layer1Index
+            layerIndex = layer1Index
+            onSettingsChanged()
+            return
+        }
+
+        // Find first non-Canvas, non-Pasteboard layer as last resort
+        for (index, layer) in layers.enumerated() {
+            if layer.name != "Canvas" && layer.name != "Pasteboard" && !layer.isLocked {
+                settings.selectedLayerId = layer.id
+                settings.selectedLayerName = layer.name
+                selectedLayerIndex = index
+                layerIndex = index
+                onSettingsChanged()
+                return
+            }
+        }
+
+        // Absolute fallback: create Layer 1 if nothing exists
+        if layers.count <= 2 { // Only Canvas and Pasteboard
+            addLayer(name: "Layer 1")
         }
     }
 }

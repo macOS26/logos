@@ -5,7 +5,7 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import Foundation
+import SwiftUI
 
 // MARK: - Transformation Anchor Modes
 enum ScalingAnchor: String, CaseIterable, Codable {

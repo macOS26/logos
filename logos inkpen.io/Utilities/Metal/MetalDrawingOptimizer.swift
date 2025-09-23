@@ -1,7 +1,4 @@
-import Metal
 import MetalKit
-import CoreGraphics
-import Foundation
 
 /// Metal-based drawing optimization to reduce CPU usage during drawing
 class MetalDrawingOptimizer {

@@ -6,8 +6,7 @@
 //  Based on research from digital art applications and mathematical curve fitting
 //
 
-import Foundation
-import CoreGraphics
+import SwiftUI
 
 // MARK: - Advanced Curve Smoothing Utilities
 

@@ -187,6 +187,7 @@ struct HSBInputSection: View {
                                 updateHexFromHSB()
                                 // Clear live PMS preview when manually adjusting HSB
                                 livePMSPreview = nil
+                                updateSharedColor() // Update the color when slider changes
                             }
                         
                         // Gradient overlay
@@ -206,7 +207,8 @@ struct HSBInputSection: View {
                                     updateHexFromHSB()
                                     // Clear live PMS preview when manually adjusting HSB
                                     livePMSPreview = nil
-                                    // NO updateSharedColor() - HSB sliders are isolated
+                                    updateSharedColor()
+                                    updateSharedColor() // Update the color when value changes
                                 }
                             }
                 }
@@ -244,6 +246,7 @@ struct HSBInputSection: View {
                                 updateHexFromHSB()
                                 // Clear live PMS preview when manually adjusting HSB
                                 livePMSPreview = nil
+                                updateSharedColor() // Update the color when slider changes
                             }
                         
                         // Gradient overlay
@@ -263,6 +266,8 @@ struct HSBInputSection: View {
                                     updateHexFromHSB()
                                     // Clear live PMS preview when manually adjusting HSB
                                     livePMSPreview = nil
+                                    updateSharedColor()
+                                    updateSharedColor() // Update the color when value changes
                                 }
                             }
                 }
@@ -300,6 +305,7 @@ struct HSBInputSection: View {
                                 updateHexFromHSB()
                                 // Clear live PMS preview when manually adjusting HSB
                                 livePMSPreview = nil
+                                updateSharedColor() // Update the color when slider changes
                             }
                         
                         // Gradient overlay
@@ -319,6 +325,8 @@ struct HSBInputSection: View {
                                     updateHexFromHSB()
                                     // Clear live PMS preview when manually adjusting HSB
                                     livePMSPreview = nil
+                                    updateSharedColor()
+                                    updateSharedColor() // Update the color when value changes
                                 }
                             }
                 }
@@ -329,8 +337,8 @@ struct HSBInputSection: View {
                 HStack(spacing: 6) {
                     // HSB Color Swatch Preview (shows live preview approximation)
                     Button(action: {
-                        // Add to swatches
-                        addColorToSwatches()
+                        // Apply HSB color to selection and add to swatches
+                        applyHSBColorToActiveSelection()
                     }) {
                         VStack(spacing: 2) {
                             Rectangle()
@@ -346,7 +354,7 @@ struct HSBInputSection: View {
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
-                    .help("Click to add HSB color to swatches (preserves exact HSB values)")
+                    .help("Click to apply HSB color to selection")
                     
                     // PMS Color Swatch Preview (shows live PMS preview)
                     Button(action: {
@@ -399,7 +407,14 @@ struct HSBInputSection: View {
                         }
                     
                     Button("Add") {
-                        searchAndApplyPMSColor()
+                        // If there's text in PMS field, search and add PMS color
+                        // Otherwise add current HSB color to swatches
+                        if !pmsEntryText.isEmpty {
+                            searchAndApplyPMSColor()
+                        } else {
+                            // Add current HSB color to swatches
+                            addColorToSwatches()
+                        }
                     }
                     .font(.system(size: 10))
                     .foregroundColor(.primary)
@@ -485,26 +500,25 @@ struct HSBInputSection: View {
     private func updateSharedColor() {
         sharedColor = .hsb(currentColor)
         let vectorColor = VectorColor.hsb(currentColor)
-        
+
         // CRITICAL FIX: Don't update gradients during programmatic changes OR when just browsing
         // Only update gradients when user explicitly applies/selects colors
         if isProgrammaticallyUpdating {
             Log.fileOperation("🎨 HSB INPUT: BLOCKED gradient update - programmatic change", level: .info)
             return
         }
-        
+
+        // Update document defaults based on active color target (like RGB does)
+        switch document.activeColorTarget {
+        case .fill:
+            document.defaultFillColor = vectorColor
+        case .stroke:
+            document.defaultStrokeColor = vectorColor
+        }
+
         // 🔥 CRITICAL FIX: Don't automatically update gradient stops when in gradient editing mode
         // This prevents unwanted gradient modifications when browsing Color Panel during gradient editing
         if showGradientEditing {
-            // When in gradient editing mode, only update document defaults and active selection
-            // DO NOT automatically modify gradient stops
-            switch document.activeColorTarget {
-            case .fill:
-                document.defaultFillColor = vectorColor
-            case .stroke:
-                document.defaultStrokeColor = vectorColor
-            }
-            
             // Apply to active shapes (regular or direct selection) - but NOT gradients
             let activeShapeIDs = document.getActiveShapeIDs()
             if !activeShapeIDs.isEmpty {
@@ -627,16 +641,19 @@ struct HSBInputSection: View {
     
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.hsb(currentColor)
-        
+
         // 🔥 CRITICAL FIX: Only use gradient callback if THIS section allows gradient editing
         // Priority 1: If we're in gradient editing mode AND this section supports it, use gradient callback
         if showGradientEditing, let gradientCallback = appState.gradientEditingState?.onColorSelected {
             gradientCallback(vectorColor)
             return
         }
-        
+
         // Priority 2: Otherwise, apply to document's active selection
         document.setActiveColor(vectorColor)
+
+        // Update shared color to reflect in vertical toolbar
+        updateSharedColor()
     }
     
     private func addColorToSwatches() {
@@ -736,11 +753,14 @@ struct HSBInputSection: View {
             
             // Update hex value
             updateHexFromHSB()
-            
+
+            // Update the shared color to apply it
+            updateSharedColor()
+
             // Clear the search field and live preview
             pmsEntryText = ""
             livePMSPreview = nil
-            
+
             // Add to swatches
             let pmsColor = VectorColor.pantone(foundColor)
             document.addColorSwatch(pmsColor)
@@ -748,14 +768,14 @@ struct HSBInputSection: View {
     }
     
     private func applyHSBColorToActiveSelection() {
-        // First apply the color to active selection (including gradient editing)
+        // Apply the color to active selection and add to swatches
         applyColorToActiveSelection()
-        // Then add to swatches
+        // Also add to swatches when ink well is clicked
         addColorToSwatches()
     }
     
     private func applyPMSColorToActiveSelection() {
-        // First apply the color to active selection (including gradient editing)
+        // Apply the color to active selection and add to swatches
         if let pantoneColor = livePreviewColor.pms {
             let pmsVectorColor = VectorColor.pantone(pantoneColor)
             // 🔥 CRITICAL FIX: Only use gradient callback if THIS section allows gradient editing
@@ -765,11 +785,13 @@ struct HSBInputSection: View {
             } else {
                 document.setActiveColor(pmsVectorColor)
             }
+            // Add PMS color to swatches when ink well is clicked
+            document.addColorSwatch(pmsVectorColor)
         } else {
             // Fallback to HSB color
             applyColorToActiveSelection()
+            // Add HSB color to swatches
+            addColorToSwatches()
         }
-        // Then add to swatches
-        addPMSColorToSwatches()
     }
 } 

@@ -6,8 +6,7 @@
 //  Extracted from PDFContent.swift - Transparency and opacity handlers
 //
 
-import Foundation
-import CoreGraphics
+import SwiftUI
 
 // MARK: - PDF Transparency Handlers Extension
 extension PDFCommandParser {
@@ -229,7 +228,7 @@ extension PDFCommandParser {
         xObjectSavedFillOpacity = savedFillOpacity
         xObjectSavedStrokeOpacity = savedStrokeOpacity
         
-        // Now directly process the XObject content using the saved name
-        processXObjectPDF17(name: name)
+        // Now directly process the XObject content using the saved name (with image support)
+        processXObjectWithImageSupport(name: name)
     }
 }

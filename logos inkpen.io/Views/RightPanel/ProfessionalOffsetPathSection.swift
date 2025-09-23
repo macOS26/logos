@@ -6,42 +6,7 @@
 //
 
 import SwiftUI
-
-// MARK: - Join Type Definition (Local replacement for ClipperPath JoinType)
-
-enum JoinType: CaseIterable {
-    case round
-    case miter
-    case bevel
-    case square
-    
-    var displayName: String {
-        switch self {
-        case .round: return "Round"
-        case .miter: return "Miter"
-        case .bevel: return "Bevel"
-        case .square: return "Square"
-        }
-    }
-    
-    var iconName: String {
-        switch self {
-        case .round: return "circle"
-        case .miter: return "diamond"
-        case .bevel: return "octagon"
-        case .square: return "square"
-        }
-    }
-    
-    var description: String {
-        switch self {
-        case .round: return "Rounded corners (smooth curves)"
-        case .miter: return "Sharp pointed corners"
-        case .bevel: return "Flat angled corners"
-        case .square: return "Square corners"
-        }
-    }
-}
+import Combine
 
 // MARK: - Professional Offset Path Section (Professional Standards)
 
@@ -106,7 +71,7 @@ struct ProfessionalOffsetPathSection: View {
                         Slider(value: Binding(
                             get: { Double(offsetDistance) },
                             set: { offsetDistance = Int($0) }
-                        ), in: -30...30, step: 1) {
+                        ), in: -30...30) {
                             Text("Offset Distance")
                         }
                         .controlSize(.small)
@@ -189,7 +154,7 @@ struct ProfessionalOffsetPathSection: View {
                                     .monospacedDigit()
                             }
                             
-                            Slider(value: $miterLimit, in: 1.0...20.0, step: 0.1) {
+                            Slider(value: $miterLimit, in: 1.0...20.0) {
                                 Text("Miter Limit")
                             }
                             .controlSize(.small)

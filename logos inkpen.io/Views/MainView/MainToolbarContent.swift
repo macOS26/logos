@@ -5,25 +5,18 @@
 //  Created by Todd Bruss on 8/22/25.
 //
 
-import Foundation
 import SwiftUI
+import Combine
 
 struct MainToolbarContent: ToolbarContent {
     @ObservedObject var document: VectorDocument
     let appState: AppState
     @Binding var currentDocumentURL: URL?
     @Binding var showingDocumentSettings: Bool
-    @Binding var showingExportDialog: Bool
     @Binding var showingColorPicker: Bool
-    let onSave: () -> Void
-    let onSaveAs: () -> Void
-    let onOpen: () -> Void
-    let onNew: () -> Void
     @Binding var showingImportDialog: Bool
     @Binding var importResult: VectorImportResult?
     @Binding var showingImportProgress: Bool
-    @Binding var showingDWFExportDialog: Bool
-    @Binding var showingDWGExportDialog: Bool
     @Binding var showingSVGTestHarness: Bool
     @Binding var showingPressureCalibration: Bool
     let onRunDiagnostics: () -> Void
@@ -123,79 +116,42 @@ struct MainToolbarContent: ToolbarContent {
     
     var body: some ToolbarContent {
         ToolbarItemGroup(placement: .automatic) {
-            // File Operations
-            Menu {
-                Button("New Document") {
-                    onNew()
-                }
-                .keyboardShortcut("n", modifiers: [.command])
-                
-                Button("Open Document") {
-                    onOpen()
-                }
-                .keyboardShortcut("o", modifiers: [.command])
-                
-                Divider()
-                
-                Button("Save") {
-                    onSave()
-                }
-                .keyboardShortcut("s", modifiers: [.command])
-                
-                Button("Save As...") {
-                    onSaveAs()
-                }
-                .keyboardShortcut("s", modifiers: [.command, .shift])
-                
-                Divider()
-                
-                Menu("Export") {
-                    Button("Export as DWG (AutoCAD)") {
-                        showingDWGExportDialog = true
-                    }
-                    .help("Export to AutoCAD Drawing format with professional scaling")
-                    
-                    Button("Export as DWF (AutoCAD)") {
-                        showingDWFExportDialog = true
-                    }
-                    .help("Export to Design Web Format with professional scaling")
-                    
-                    Divider()
-                    
-                    Button("Export to Other Formats...") {
-                        showingExportDialog = true
-                    }
-                }
-                
-                Divider()
-                
-                Menu("Development") {
-                    Button("SVG Test Harness") {
-                        showingSVGTestHarness = true
-                    }
-                    .help("Test SVG import and Core Graphics conversion")
-                    
-                    Button("Pressure Calibration") {
-                        showingPressureCalibration = true
-                    }
-                    .help("Calibrate pressure-sensitive input devices")
-                    
-                    Divider()
-                    
-                    Button("Run Diagnostics") {
-                        onRunDiagnostics()
-                    }
-                    .help("Run pasteboard diagnostics")
-                }
-                
-            } label: {
-                Image(systemName: "doc.text")
-            }
-            .help("File Operations")
+            #if DEBUG
+            // do not remove, just leave commented it out
+            // Development Menu - Only shown in debug builds
+//            Menu {
+//                Button("SVG Test Harness") {
+//                    showingSVGTestHarness = true
+//                }
+//                .help("Test SVG import and Core Graphics conversion")
+//
+//                Button("Pressure Calibration") {
+//                    showingPressureCalibration = true
+//                }
+//                .help("Calibrate pressure-sensitive input devices")
+//
+//                Divider()
+//
+//                Button("Run Diagnostics") {
+//                    onRunDiagnostics()
+//                }
+//                .help("Run pasteboard diagnostics")
+//
+//            } label: {
+//                Image(systemName: "doc.text")
+//            }
+//            .help("Development Tools")
+            #endif
             
             // ✅ CLEAN TOOLBAR: No duplicate menu functionality
             // Edit and Object commands are handled by proper menu bar menus only
-            
+
+            // Transformation Controls (leftmost position)
+            TransformationControls(document: document)
+
+            // Corner Radius Controls (next to transformation controls)
+            CornerRadiusToolbar(document: document)
+
             // Close Path button (context-sensitive)
             Button {
                 closeOpenPaths()
@@ -204,60 +160,32 @@ struct MainToolbarContent: ToolbarContent {
             }
             .help("Close Open Paths (⌘⇧J)")
             .disabled(!hasOpenPaths())
-            
+
             // View Controls
             Button {
                 document.viewMode = document.viewMode == .color ? .keyline : .color
             } label: {
                 Image(systemName: document.viewMode.iconName)
-                    .foregroundColor(document.viewMode == .keyline ? .orange : .primary)
+                    .foregroundColor(document.viewMode == .keyline ? InkPenUIColors.shared.toolOrange : .primary)
             }
             .help(document.viewMode.description)
-            
+
             Button {
                 document.showRulers.toggle()
             } label: {
                 Image(systemName: document.showRulers ? "ruler.fill" : "ruler")
             }
             .help("Toggle Rulers")
-            
+
             Button {
-                document.snapToGrid.toggle()
+                // Toggle both grid visibility and snapping together
+                document.showGrid.toggle()
+                document.snapToGrid = document.showGrid
             } label: {
-                Image(systemName: document.snapToGrid ? "grid.circle.fill" : "grid.circle")
+                Image(systemName: document.showGrid ? "grid.circle.fill" : "grid.circle")
             }
-            .help("Toggle Snap to Grid")
-            
-            // Corner Radius Controls (for selected shapes)
-            CornerRadiusToolbar(document: document)
-            
-            // Zoom Controls
-            Menu {
-                Button("Zoom In") {
-                    onZoomIn()
-                }
-                .keyboardShortcut("=", modifiers: [.command])
-                
-                Button("Zoom Out") {
-                    onZoomOut()
-                }
-                .keyboardShortcut("-", modifiers: [.command])
-                
-                Button("Fit to Page") {
-                    onFitToPage()
-                }
-                .keyboardShortcut("0", modifiers: [.command])
-                
-                Button("Actual Size") {
-                    onActualSize()
-                }
-                .keyboardShortcut("1", modifiers: [.command])
-                
-            } label: {
-                Image(systemName: "magnifyingglass")
-            }
-            .help("Zoom Controls")
-            
+            .help("Toggle Grid")
+
             // Snap page to artwork/selection
             Button {
                 onSnapPageToArtwork()
@@ -286,50 +214,15 @@ struct MainToolbarContent: ToolbarContent {
 
             if showingImportProgress {
                 ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .blue))
+                    .progressViewStyle(CircularProgressViewStyle(tint: InkPenUIColors.shared.primaryBlue))
                     .scaleEffect(0.8)
             }
             
             // Performance monitor removed - not working properly
         }
-        
-        // Optional: Status bar item for zoom level
-        ToolbarItem(placement: .status) {
-            Text("Zoom: \(Int(document.zoomLevel * 100))%")
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
     }
     
     // Performance tracking helper removed - no longer needed
-    
-    // MARK: - Professional Zoom Functions (Professional Standards)
-    
-    private func onZoomIn() {
-        // Zoom in by 25% (professional standard)
-        let newZoom = min(16.0, document.zoomLevel * 1.25)
-        document.requestZoom(to: CGFloat(newZoom), mode: .zoomIn)
-        Log.info("🔍 ZOOM IN: \(String(format: "%.1f", document.zoomLevel * 100))% → \(String(format: "%.1f", newZoom * 100))%", category: .zoom)
-    }
-    
-    private func onZoomOut() {
-        // Zoom out by 25% (professional standard)
-        let newZoom = max(0.1, document.zoomLevel / 1.25)
-        document.requestZoom(to: CGFloat(newZoom), mode: .zoomOut)
-        Log.info("🔍 ZOOM OUT: \(String(format: "%.1f", document.zoomLevel * 100))% → \(String(format: "%.1f", newZoom * 100))%", category: .zoom)
-    }
-    
-    private func onFitToPage() {
-        // Fit the entire page to the view (professional standard)
-        document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
-        Log.info("🔍 FIT TO PAGE: Calculated optimal zoom to fit page in view", category: .zoom)
-    }
-    
-    private func onActualSize() {
-        // Set to 100% zoom (professional standard)
-        document.requestZoom(to: 1.0, mode: .actualSize)
-        Log.info("🔍 ACTUAL SIZE: Set to 100% zoom", category: .zoom)
-    }
 
     // MARK: - Page Snap Functions
     private func onSnapPageToArtwork() {

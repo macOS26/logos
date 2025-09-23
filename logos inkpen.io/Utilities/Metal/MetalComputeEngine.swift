@@ -1,8 +1,4 @@
-import Metal
 import MetalKit
-import Foundation
-
-
 
 /// Phase 2: Metal Compute Shaders for GPU-accelerated Core Graphics math
 class MetalComputeEngine {
@@ -42,20 +38,6 @@ class MetalComputeEngine {
     private var booleanGeometryPipeline: MTLComputePipelineState?
     private var pathIntersectionPipeline: MTLComputePipelineState?
     
-    // Phase 14: Advanced Shape Operations
-    private var bezierTessellationPipeline: MTLComputePipelineState?
-    private var shapeOptimizationPipeline: MTLComputePipelineState?
-    private var pathSimplificationPipeline: MTLComputePipelineState?
-    
-    // Phase 15: Color Processing
-    private var colorInterpolationPipeline: MTLComputePipelineState?
-    private var colorSpaceConversionPipeline: MTLComputePipelineState?
-    private var gradientCalculationPipeline: MTLComputePipelineState?
-    
-    // Phase 16: Performance Optimizations
-    private var batchOperationPipeline: MTLComputePipelineState?
-    private var memoryOptimizationPipeline: MTLComputePipelineState?
-    private var cacheOptimizationPipeline: MTLComputePipelineState?
     
     static let shared: MetalComputeEngine = {
         do {
@@ -408,67 +390,6 @@ class MetalComputeEngine {
     }
     
     // MARK: - Phase 5: GPU Path Rendering
-    
-    func renderPathGPU(pathPoints: [CGPoint], strokeWidth: Float, resolution: Int) -> Result<[CGPoint], MetalError> {
-        guard let pipeline = pathRenderingPipeline else {
-            return .failure(.pipelineNotAvailable)
-        }
-        
-        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
-            return .failure(.commandBufferCreationFailed)
-        }
-        
-        guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
-            return .failure(.computeEncoderCreationFailed)
-        }
-        
-        let inputPointCount = pathPoints.count
-        let outputPointCount = inputPointCount * resolution // Generate more points for smooth rendering
-        
-        // Convert to Metal format
-        let metalPathPoints = pathPoints.map { Point2D(x: Float($0.x), y: Float($0.y)) }
-        
-        // Create buffers
-        guard let inputBuffer = device.makeBuffer(bytes: metalPathPoints, length: inputPointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
-              let outputBuffer = device.makeBuffer(length: outputPointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared) else {
-            return .failure(.bufferCreationFailed)
-        }
-        var pathStrokeWidth = strokeWidth
-        var pathResolution = UInt32(resolution)
-        var pathInputCount = UInt32(inputPointCount)
-        
-        // Setup compute
-        computeEncoder.setComputePipelineState(pipeline)
-        computeEncoder.setBuffer(inputBuffer, offset: 0, index: 0)
-        computeEncoder.setBuffer(outputBuffer, offset: 0, index: 1)
-        computeEncoder.setBytes(&pathStrokeWidth, length: MemoryLayout<Float>.stride, index: 2)
-        computeEncoder.setBytes(&pathResolution, length: MemoryLayout<UInt32>.stride, index: 3)
-        computeEncoder.setBytes(&pathInputCount, length: MemoryLayout<UInt32>.stride, index: 4)
-        
-        // Dispatch
-        let threadsPerGroup = MTLSize(width: min(outputPointCount, pipeline.maxTotalThreadsPerThreadgroup), height: 1, depth: 1)
-        let groupsPerGrid = MTLSize(width: (outputPointCount + threadsPerGroup.width - 1) / threadsPerGroup.width, height: 1, depth: 1)
-        
-        computeEncoder.dispatchThreadgroups(groupsPerGrid, threadsPerThreadgroup: threadsPerGroup)
-        computeEncoder.endEncoding()
-        
-        commandBuffer.commit()
-        commandBuffer.waitUntilCompleted()
-        
-        // Read back results
-        let resultPointer = outputBuffer.contents().bindMemory(to: Point2D.self, capacity: outputPointCount)
-        
-        var result: [CGPoint] = []
-        for i in 0..<outputPointCount {
-            let point = resultPointer[i]
-            // Skip invalid points (Metal shader may output zeros for unused indices)
-            if point.x != 0 || point.y != 0 {
-                result.append(CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
-            }
-        }
-        
-        return .success(result)
-    }
     
     // MARK: - Phase 6: GPU Vector Operations
     

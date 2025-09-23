@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AppKit
+import Combine
 
 // MARK: - Gradient Panel
 
@@ -693,7 +694,7 @@ struct GradientFillSection: View {
         return gradient
     }
     
-    static func createDefaultGradient(type: GradientType) -> VectorGradient {
+    @MainActor static func createDefaultGradient(type: GradientType) -> VectorGradient {
         let stops = [
             GradientStop(position: 0.0, color: .black, opacity: 1.0),
             GradientStop(position: 1.0, color: .white, opacity: 1.0)
@@ -702,7 +703,7 @@ struct GradientFillSection: View {
         return createGradientWithStops(type: type, stops: stops)
     }
     
-    static func createGradientWithStops(type: GradientType, stops: [GradientStop]) -> VectorGradient {
+    @MainActor static func createGradientWithStops(type: GradientType, stops: [GradientStop]) -> VectorGradient {
         // Ensure we have at least 2 stops for a valid gradient
         let validStops = stops.isEmpty ? [
             GradientStop(position: 0.0, color: .black, opacity: 1.0),
@@ -743,7 +744,7 @@ struct GradientFillSection: View {
     }
     
     // NEW: Create gradient while preserving properties from existing gradient
-    static func createGradientPreservingProperties(type: GradientType, stops: [GradientStop], from existingGradient: VectorGradient) -> VectorGradient {
+    @MainActor static func createGradientPreservingProperties(type: GradientType, stops: [GradientStop], from existingGradient: VectorGradient) -> VectorGradient {
         // Ensure we have at least 2 stops for a valid gradient
         let validStops = stops.isEmpty ? [
             GradientStop(position: 0.0, color: .black, opacity: 1.0),

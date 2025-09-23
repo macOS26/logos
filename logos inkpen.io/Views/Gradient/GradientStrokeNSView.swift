@@ -5,7 +5,7 @@
 //  Created by Todd Bruss on 8/20/25.
 //
 
-import CoreGraphics
+import SwiftUI
 import SwiftUI
 
 class GradientStrokeNSView: NSView {
@@ -57,8 +57,8 @@ class GradientStrokeNSView: NSView {
         
         // Set stroke properties
         context.setLineWidth(strokeStyle.width)
-        context.setLineCap(strokeStyle.lineCap)
-        context.setLineJoin(strokeStyle.lineJoin)
+        context.setLineCap(strokeStyle.lineCap.cgLineCap)
+        context.setLineJoin(strokeStyle.lineJoin.cgLineJoin)
         context.setMiterLimit(strokeStyle.miterLimit)
         
         // Use CoreGraphics native gradient stroke support

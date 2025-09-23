@@ -7,9 +7,7 @@
 //
 
 import SwiftUI
-#if os(macOS)
 import AppKit
-#endif
 
 extension DrawingCanvas {
     // NOTE: Main gesture handling (tap, drag) moved to DrawingCanvas+UnifiedGestures.swift
@@ -20,7 +18,6 @@ extension DrawingCanvas {
             currentMouseLocation = location
             // Also update mouse position for zoom focal point
             currentMousePosition = location
-            #if os(macOS)
             // Maintain correct cursor while hovering over the canvas
             if isTextEditingMode {
                 // Keep I-beam cursor when in text editing mode
@@ -35,8 +32,7 @@ extension DrawingCanvas {
             } else if document.currentTool == .zoom {
                 MagnifyingGlassCursor.set()
             }
-            #endif
-            
+
             // PROFESSIONAL REAL-TIME PATH UPDATES (Professional Style)
             if isBezierDrawing && document.currentTool == .bezierPen && bezierPoints.count > 0 {
                 let canvasLocation = screenToCanvas(location, geometry: geometry)
@@ -56,18 +52,13 @@ extension DrawingCanvas {
                     if distance(canvasLocation, firstPointLocation) <= closeTolerance {
                         showClosePathHint = true
                         closePathHintLocation = firstPointLocation
-                        
                         // Let rubber band preview handle closing visualization
-                        // updateLivePathWithClosingPreview(mouseLocation: canvasLocation)
                     } else {
                         showClosePathHint = false
-                        
                         // Let rubber band preview handle visualization instead of live path updates
-                        // updateLivePathWithRubberBand(mouseLocation: canvasLocation)
                     }
                 } else {
                     // First point - let rubber band handle visualization
-                    // updateLivePathWithRubberBand(mouseLocation: canvasLocation)
                 }
             } else if document.currentTool == .bezierPen && !isBezierDrawing {
                 // CONTINUE PATH HINT: Show hint when bezier pen tool is active and a point is selected
@@ -86,13 +77,11 @@ extension DrawingCanvas {
         } else {
             currentMouseLocation = nil
             showClosePathHint = false
-            #if os(macOS)
             // SwiftUI may emit a transient hover exit during mouseDown; don't override zoom/hand cursors
             if !isCanvasHovering {
                 NSCursor.arrow.set()
             }
-            #endif
-            
+
             // Note: Using rubber band preview overlay instead of live path updates
             // The actual path remains unchanged until a new point is added
         }

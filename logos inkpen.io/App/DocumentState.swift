@@ -5,9 +5,7 @@
 //  Created by Todd Bruss on 8/23/25.
 //
 
-import Foundation
 import SwiftUI
-import CoreGraphics
 import Combine
 import UniformTypeIdentifiers
 
@@ -227,14 +225,7 @@ class DocumentState: ObservableObject {
         panel.allowedContentTypes = [
             .svg,
             .pdf,
-            UTType("com.adobe.illustrator.ai-image")!,
-            UTType("com.adobe.encapsulated-postscript")!,
-            UTType("com.adobe.postscript")!,
-            UTType(filenameExtension: "ps")!,
-            UTType(filenameExtension: "ai")!,
-            UTType(filenameExtension: "eps")!,
-            UTType(filenameExtension: "dwf")!,
-            .png, .jpeg, .tiff, .gif, .bmp, UTType("public.heic")!,
+            .png,
             .data
         ]
         panel.allowsMultipleSelection = false
@@ -265,6 +256,235 @@ class DocumentState: ObservableObject {
                         let errorText = result.errors.map { $0.localizedDescription }.joined(separator: ", ")
                         alert.informativeText = errorText.isEmpty ? "The selected file could not be imported." : errorText
                         alert.alertStyle = .warning
+                        alert.runModal()
+                    }
+                }
+            }
+        }
+    }
+    
+    func exportSVG() {
+        guard let document = document else { return }
+
+        let panel = NSSavePanel()
+        panel.title = "Export SVG"
+        panel.nameFieldStringValue = "Untitled.svg"
+        panel.allowedContentTypes = [.svg]
+        panel.canCreateDirectories = true
+        panel.showsTagField = false
+        panel.message = "Export as SVG (Scalable Vector Graphics)"
+
+        // Create accessory view for background option
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 60))
+
+        // Background checkbox
+        let bgCheckbox = NSButton(checkboxWithTitle: "Include background",
+                                   target: nil, action: nil)
+        bgCheckbox.frame = NSRect(x: 20, y: 20, width: 200, height: 20)
+        bgCheckbox.state = .off // Default to no background for SVG
+        accessoryView.addSubview(bgCheckbox)
+
+        panel.accessoryView = accessoryView
+
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+
+            // Get background option
+            let includeBackground = bgCheckbox.state == .on
+
+            Task {
+                do {
+                    // Generate SVG content with background option
+                    let svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: includeBackground)
+
+                    // Write to file
+                    try svgContent.write(to: url, atomically: true, encoding: .utf8)
+
+                    await MainActor.run {
+                        Log.info("✅ Exported SVG to: \(url.path) (background: \(includeBackground))", category: .fileOperations)
+                    }
+                } catch {
+                    await MainActor.run {
+                        Log.error("❌ Failed to export SVG: \(error)", category: .error)
+
+                        let alert = NSAlert()
+                        alert.messageText = "Export Failed"
+                        alert.informativeText = error.localizedDescription
+                        alert.alertStyle = .critical
+                        alert.runModal()
+                    }
+                }
+            }
+        }
+    }
+
+    func exportPDF() {
+        guard let document = document else { return }
+
+        let panel = NSSavePanel()
+        panel.title = "Export PDF"
+        panel.nameFieldStringValue = "Untitled.pdf"
+        panel.allowedContentTypes = [.pdf]
+        panel.canCreateDirectories = true
+        panel.showsTagField = false
+        panel.message = "Export as PDF (Portable Document Format)"
+
+        // Create accessory view for background option
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 60))
+
+        // Background checkbox
+        let bgCheckbox = NSButton(checkboxWithTitle: "Include background",
+                                   target: nil, action: nil)
+        bgCheckbox.frame = NSRect(x: 20, y: 20, width: 200, height: 20)
+        bgCheckbox.state = .off // Default to no background for PDF
+        accessoryView.addSubview(bgCheckbox)
+
+        panel.accessoryView = accessoryView
+
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+
+            // Get background option
+            let includeBackground = bgCheckbox.state == .on
+
+            Task {
+                do {
+                    // Export PDF with background option
+                    try FileOperations.exportToPDF(document, url: url, includeBackground: includeBackground)
+
+                    await MainActor.run {
+                        Log.info("✅ Exported PDF to: \(url.path) (background: \(includeBackground))", category: .fileOperations)
+                    }
+                } catch {
+                    await MainActor.run {
+                        Log.error("❌ Failed to export PDF: \(error)", category: .error)
+
+                        let alert = NSAlert()
+                        alert.messageText = "Export Failed"
+                        alert.informativeText = error.localizedDescription
+                        alert.alertStyle = .critical
+                        alert.runModal()
+                    }
+                }
+            }
+        }
+    }
+
+    func exportPNG() {
+        guard let document = document else { return }
+
+        let panel = NSSavePanel()
+        panel.title = "Export PNG"
+        panel.nameFieldStringValue = "Untitled.png"
+        panel.allowedContentTypes = [.png]
+        panel.canCreateDirectories = true
+        panel.showsTagField = false
+        panel.message = "Export as PNG (Portable Network Graphics)"
+
+        // Create accessory view for options
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 100))
+
+        // Scale control
+        let scaleLabel = NSTextField(labelWithString: "Scale:")
+        scaleLabel.frame = NSRect(x: 20, y: 60, width: 50, height: 20)
+        accessoryView.addSubview(scaleLabel)
+
+        let scalePopup = NSPopUpButton(frame: NSRect(x: 75, y: 58, width: 100, height: 25))
+        scalePopup.addItems(withTitles: ["1x", "2x", "3x", "4x"])
+        scalePopup.selectItem(withTitle: "2x") // Default to 2x
+        accessoryView.addSubview(scalePopup)
+
+        // Background checkbox
+        let bgCheckbox = NSButton(checkboxWithTitle: "Include background",
+                                   target: nil, action: nil)
+        bgCheckbox.frame = NSRect(x: 20, y: 20, width: 200, height: 20)
+        bgCheckbox.state = .off // Default to transparent background
+        accessoryView.addSubview(bgCheckbox)
+
+        panel.accessoryView = accessoryView
+
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+
+            // Get scale from popup
+            let scaleString = scalePopup.titleOfSelectedItem ?? "2x"
+            let scale = CGFloat(Int(scaleString.dropLast()) ?? 2)
+
+            // Get background option
+            let includeBackground = bgCheckbox.state == .on
+
+            Task {
+                do {
+                    try FileOperations.exportToPNG(document, url: url, scale: scale,
+                                                    includeBackground: includeBackground)
+
+                    await MainActor.run {
+                        Log.info("✅ Exported PNG to: \(url.path) (scale: \(scale)x, background: \(includeBackground))",
+                                category: .fileOperations)
+                    }
+                } catch {
+                    await MainActor.run {
+                        Log.error("❌ Failed to export PNG: \(error)", category: .error)
+
+                        let alert = NSAlert()
+                        alert.messageText = "Export Failed"
+                        alert.informativeText = error.localizedDescription
+                        alert.alertStyle = .critical
+                        alert.runModal()
+                    }
+                }
+            }
+        }
+    }
+
+    func exportAutoDeskSVG() {
+        guard let document = document else { return }
+
+        let panel = NSSavePanel()
+        panel.title = "Export AutoDesk SVG"
+        panel.nameFieldStringValue = "Untitled.svg"
+        panel.allowedContentTypes = [.svg]
+        panel.canCreateDirectories = true
+        panel.showsTagField = false
+        panel.message = "Export SVG at 96 DPI for AutoDesk applications"
+
+        // Create accessory view for background option
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 60))
+
+        // Background checkbox
+        let bgCheckbox = NSButton(checkboxWithTitle: "Include background",
+                                   target: nil, action: nil)
+        bgCheckbox.frame = NSRect(x: 20, y: 20, width: 200, height: 20)
+        bgCheckbox.state = .off // Default to no background for SVG
+        accessoryView.addSubview(bgCheckbox)
+
+        panel.accessoryView = accessoryView
+
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+
+            // Get background option
+            let includeBackground = bgCheckbox.state == .on
+
+            Task {
+                do {
+                    // Generate SVG content with 96 DPI scaling using proper exporter
+                    let svgContent = try SVGExporter.shared.exportToAutoDeskSVG(document, includeBackground: includeBackground)
+
+                    // Write to file
+                    try svgContent.write(to: url, atomically: true, encoding: .utf8)
+
+                    await MainActor.run {
+                        Log.info("✅ Exported AutoDesk SVG to: \(url.path) (background: \(includeBackground))", category: .fileOperations)
+                    }
+                } catch {
+                    await MainActor.run {
+                        Log.error("❌ Failed to export AutoDesk SVG: \(error)", category: .error)
+                        
+                        let alert = NSAlert()
+                        alert.messageText = "Export Failed"
+                        alert.informativeText = error.localizedDescription
+                        alert.alertStyle = .critical
                         alert.runModal()
                     }
                 }
@@ -472,13 +692,26 @@ class DocumentState: ObservableObject {
     }
     
     func toggleGrid() {
+        // Toggle both settings.showGrid and the actual showGrid property
         document?.settings.showGrid.toggle()
-        Log.info("🔲 MENU: Grid \(document?.settings.showGrid == true ? "shown" : "hidden")", category: .general)
+        document?.showGrid = document?.settings.showGrid ?? false
+        Log.info("🔲 MENU: Grid \(document?.showGrid == true ? "shown" : "hidden")", category: .general)
     }
-    
+
     func toggleSnapToGrid() {
+        // Toggle snap to grid
         document?.snapToGrid.toggle()
+        // Also sync with settings
+        document?.settings.snapToGrid = document?.snapToGrid ?? false
         Log.info("🧲 MENU: Snap to Grid \(document?.snapToGrid == true ? "enabled" : "disabled")", category: .general)
+    }
+
+    func toggleSnapToPoint() {
+        // Toggle snap to point
+        document?.snapToPoint.toggle()
+        // Also sync with settings if needed
+        document?.settings.snapToPoint = document?.snapToPoint ?? false
+        Log.info("📍 MENU: Snap to Point \(document?.snapToPoint == true ? "enabled" : "disabled")", category: .general)
     }
     
     // MARK: - Text Commands
