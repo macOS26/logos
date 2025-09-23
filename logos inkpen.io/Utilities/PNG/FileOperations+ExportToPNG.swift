@@ -9,6 +9,83 @@ import SwiftUI
 
 extension FileOperations {
 
+    // MARK: - Single Icon Export
+
+    static func exportSingleIcon(_ document: VectorDocument, url: URL, pixelSize: Int) throws {
+        Log.fileOperation("🎯 Exporting \(pixelSize)×\(pixelSize) icon to: \(url.path)", level: .info)
+
+        // Get artwork bounds for proper scaling
+        let artworkBounds = calculateArtworkBounds(from: document)
+        let artworkSize = artworkBounds.size
+
+        // Calculate scale to fit artwork into icon size (maintaining aspect ratio)
+        let scaleX = CGFloat(pixelSize) / artworkSize.width
+        let scaleY = CGFloat(pixelSize) / artworkSize.height
+        let scale = min(scaleX, scaleY)  // Use smaller scale to ensure it fits
+
+        // Create exact pixel-sized context
+        guard let context = CGContext(
+            data: nil,
+            width: pixelSize,
+            height: pixelSize,
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: ColorManager.shared.workingCGColorSpace,
+            bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
+        ) else {
+            throw VectorImportError.parsingError("Failed to create bitmap context for \(pixelSize)×\(pixelSize)", line: nil)
+        }
+
+        // Clear to transparent
+        context.clear(CGRect(x: 0, y: 0, width: pixelSize, height: pixelSize))
+
+        // Calculate centering offsets
+        let scaledWidth = artworkSize.width * scale
+        let scaledHeight = artworkSize.height * scale
+        let offsetX = (CGFloat(pixelSize) - scaledWidth) / 2.0
+        let offsetY = (CGFloat(pixelSize) - scaledHeight) / 2.0
+
+        // Set coordinate system and apply centering
+        context.translateBy(x: offsetX, y: CGFloat(pixelSize) - offsetY)
+        context.scaleBy(x: scale, y: -scale)
+
+        // Translate to compensate for artwork bounds origin
+        context.translateBy(x: -artworkBounds.minX, y: -artworkBounds.minY)
+
+        // Draw layers (skip pasteboard and canvas for icons)
+        for (index, layer) in document.layers.enumerated() {
+            if !layer.isVisible { continue }
+            if index <= 1 { continue }  // Skip Pasteboard (0) and Canvas (1)
+
+            context.saveGState()
+            context.setAlpha(layer.opacity)
+
+            let shapesInLayer = document.getShapesForLayer(index)
+            for shape in shapesInLayer {
+                if !shape.isVisible { continue }
+                drawShapeInPDF(shape, context: context)
+            }
+
+            context.restoreGState()
+        }
+
+        // Draw text objects
+        document.forEachTextInOrder { text in
+            if !text.isVisible { return }
+            drawTextInPDF(text, context: context)
+        }
+
+        // Export the icon
+        _ = try ColorExportManager.shared.exportFromContext(
+            context,
+            format: .png,
+            colorSpace: .displayP3,
+            to: url
+        )
+
+        Log.info("✅ Exported \(pixelSize)×\(pixelSize) icon", category: .fileOperations)
+    }
+
     // MARK: - Icon Set Export
 
     static func exportIconSet(_ document: VectorDocument, folderURL: URL) throws {

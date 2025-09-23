@@ -404,8 +404,28 @@ class DocumentState: ObservableObject {
         scaleLabel.frame = NSRect(x: 20, y: 45, width: 50, height: 20)
         accessoryView.addSubview(scaleLabel)
 
-        let scalePopup = NSPopUpButton(frame: NSRect(x: 75, y: 43, width: 100, height: 25))
-        scalePopup.addItems(withTitles: ["1x", "2x", "3x", "4x", "Icon Set"])
+        let scalePopup = NSPopUpButton(frame: NSRect(x: 75, y: 43, width: 150, height: 25))
+
+        // Check if app is sandboxed
+        let isSandboxed = ProcessInfo.processInfo.environment["APP_SANDBOX_CONTAINER_ID"] != nil
+
+        if isSandboxed {
+            // Sandboxed: show standard scales and individual icon sizes
+            scalePopup.addItems(withTitles: [
+                "1x", "2x", "3x", "4x",
+                "1024×1024 icon",
+                "512×512 icon",
+                "256×256 icon",
+                "128×128 icon",
+                "64×64 icon",
+                "32×32 icon",
+                "16×16 icon"
+            ])
+        } else {
+            // Not sandboxed: include Icon Set option for batch export
+            scalePopup.addItems(withTitles: ["1x", "2x", "3x", "4x", "Icon Set"])
+        }
+
         scalePopup.selectItem(withTitle: "2x") // Default to 2x
         accessoryView.addSubview(scalePopup)
 
@@ -451,12 +471,14 @@ class DocumentState: ObservableObject {
             }
 
             @objc func scaleChanged(_ sender: NSPopUpButton) {
-                let isIconSet = sender.titleOfSelectedItem == "Icon Set"
-                if isIconSet {
+                let selectedItem = sender.titleOfSelectedItem ?? ""
+                let isIconOption = selectedItem == "Icon Set" || selectedItem.contains("icon")
+
+                if isIconOption {
                     iconCheckbox.state = .on
                     bgCheckbox.isHidden = true
                     bgCheckbox.state = .off
-                    iconSizesLabel.isHidden = false
+                    iconSizesLabel.isHidden = selectedItem.contains("×") // Hide for individual sizes
                 } else {
                     iconCheckbox.state = .off
                     bgCheckbox.isHidden = false
@@ -510,32 +532,60 @@ class DocumentState: ObservableObject {
                     }
                 }
             } else {
-                // Regular PNG export
-                // Get scale from popup
-                let scaleString = scalePopup.titleOfSelectedItem ?? "2x"
-                let scale = CGFloat(Int(scaleString.dropLast()) ?? 2)
+                // Regular PNG export or individual icon export
+                let selectedOption = scalePopup.titleOfSelectedItem ?? "2x"
 
-                // Get background option
-                let includeBackground = bgCheckbox.state == .on
+                // Check if it's an individual icon size
+                if selectedOption.contains("icon") {
+                    // Extract size from string like "1024×1024 icon"
+                    let sizeString = selectedOption.replacingOccurrences(of: " icon", with: "")
+                    let pixelSize = Int(sizeString.split(separator: "×")[0]) ?? 512
 
-                Task {
-                    do {
-                        try FileOperations.exportToPNG(document, url: url, scale: scale,
-                                                        includeBackground: includeBackground)
+                    Task {
+                        do {
+                            // Export single icon size with transparent background
+                            try FileOperations.exportSingleIcon(document, url: url, pixelSize: pixelSize)
 
-                        await MainActor.run {
-                            Log.info("✅ Exported PNG to: \(url.path) (scale: \(scale)x, background: \(includeBackground))",
-                                    category: .fileOperations)
+                            await MainActor.run {
+                                Log.info("✅ Exported \(pixelSize)×\(pixelSize) icon to: \(url.path)",
+                                        category: .fileOperations)
+                            }
+                        } catch {
+                            await MainActor.run {
+                                Log.error("❌ Failed to export icon: \(error)", category: .error)
+
+                                let alert = NSAlert()
+                                alert.messageText = "Export Failed"
+                                alert.informativeText = error.localizedDescription
+                                alert.alertStyle = .critical
+                                alert.runModal()
+                            }
                         }
-                    } catch {
-                        await MainActor.run {
-                            Log.error("❌ Failed to export PNG: \(error)", category: .error)
+                    }
+                } else {
+                    // Standard scale export (1x, 2x, 3x, 4x)
+                    let scale = CGFloat(Int(selectedOption.dropLast()) ?? 2)
+                    let includeBackground = bgCheckbox.state == .on
 
-                            let alert = NSAlert()
-                            alert.messageText = "Export Failed"
-                            alert.informativeText = error.localizedDescription
-                            alert.alertStyle = .critical
-                            alert.runModal()
+                    Task {
+                        do {
+                            try FileOperations.exportToPNG(document, url: url, scale: scale,
+                                                            includeBackground: includeBackground)
+
+                            await MainActor.run {
+                                Log.info("✅ Exported PNG to: \(url.path) (scale: \(scale)x, background: \(includeBackground))",
+                                        category: .fileOperations)
+                            }
+                        } catch {
+                            await MainActor.run {
+                                Log.error("❌ Failed to export PNG: \(error)", category: .error)
+
+                                let alert = NSAlert()
+                                alert.messageText = "Export Failed"
+                                alert.informativeText = error.localizedDescription
+                                alert.alertStyle = .critical
+                                alert.runModal()
+                            }
                         }
                     }
                 }
