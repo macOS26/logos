@@ -47,31 +47,6 @@ struct RealTimeSmoothing {
     ///   - predictedPoints: Array of predicted points from Apple Pencil
     ///   - currentPoints: Current stroke points
     ///   - smoothingStrength: How much to smooth the predicted points
-    /// - Returns: Smoothed predicted points
-    static func smoothPredictedTouches(
-        predictedPoints: [CGPoint],
-        currentPoints: [CGPoint],
-        smoothingStrength: Double = 0.4
-    ) -> [CGPoint] {
-        guard !predictedPoints.isEmpty, !currentPoints.isEmpty else {
-            return predictedPoints
-        }
-        
-        // Create a combined array for smoothing context
-        let contextPoints = currentPoints.suffix(3) + predictedPoints
-        
-        // Apply light Chaikin smoothing to predicted points
-        let smoothed = CurveSmoothing.chaikinSmooth(
-            points: Array(contextPoints),
-            iterations: 1,
-            ratio: 0.2
-        )
-        
-        // Return only the predicted portion
-        let contextStart = min(3, currentPoints.count)
-        return Array(smoothed.suffix(smoothed.count - contextStart))
-    }
-    
     private static func weightedAverageSmoothing(points: [CGPoint], strength: Double) -> [CGPoint] {
         guard points.count >= 3 else { return points }
         

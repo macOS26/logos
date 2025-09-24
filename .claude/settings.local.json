@@ -61,7 +61,10 @@
       "Bash(/tmp/find_truly_unused.sh:*)",
       "Bash(do echo \"=== $struct ===\")",
       "Bash(/tmp/check_enums.sh:*)",
-      "mcp__xcf-server__analyze_swift_code"
+      "mcp__xcf-server__analyze_swift_code",
+      "Bash(/tmp/check_unused_functions.sh:*)",
+      "Bash(/tmp/find_unused_detailed.sh)",
+      "Bash(/tmp/verify_unused.sh:*)"
     ],
     "deny": [],
     "ask": []

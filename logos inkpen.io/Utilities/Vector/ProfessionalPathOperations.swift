@@ -143,44 +143,6 @@ extension ProfessionalPathOperations {
     
     // MARK: - FALLBACK OPERATIONS
     
-    private static func convexHullFallback(_ paths: [CGPath]) -> CGPath? {
-        Log.fileOperation("🔧 Using convex hull fallback", level: .info)
-        
-        var allPoints: [CGPoint] = []
-        
-        for path in paths {
-            path.applyWithBlock { element in
-                switch element.pointee.type {
-                case .moveToPoint, .addLineToPoint:
-                    allPoints.append(element.pointee.points[0])
-                case .addQuadCurveToPoint:
-                    allPoints.append(element.pointee.points[0])
-                    allPoints.append(element.pointee.points[1])
-                case .addCurveToPoint:
-                    allPoints.append(element.pointee.points[0])
-                    allPoints.append(element.pointee.points[1])
-                    allPoints.append(element.pointee.points[2])
-                default:
-                    break
-                }
-            }
-        }
-        
-        guard !allPoints.isEmpty else { return nil }
-        
-        let hull = convexHull(allPoints)
-        guard hull.count >= 3 else { return nil }
-        
-        let path = CGMutablePath()
-        path.move(to: hull[0])
-        for i in 1..<hull.count {
-            path.addLine(to: hull[i])
-        }
-        path.closeSubpath()
-        
-        return path
-    }
-    
     private static func convexHull(_ points: [CGPoint]) -> [CGPoint] {
         guard points.count > 2 else { return points }
         

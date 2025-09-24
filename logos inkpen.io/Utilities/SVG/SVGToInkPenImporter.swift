@@ -301,49 +301,6 @@ class SVGToInkPenImporter: ObservableObject {
         })
     }
     
-    private func createSampleShapes(from svgSize: CGSize) -> [VectorShape] {
-        var shapes: [VectorShape] = []
-        
-        // Create a rectangle shape
-        let rectPath = VectorPath(elements: [
-            .move(to: VectorPoint(50, 50)),
-            .line(to: VectorPoint(200, 50)),
-            .line(to: VectorPoint(200, 150)),
-            .line(to: VectorPoint(50, 150)),
-            .close
-        ], isClosed: true)
-        
-        let rectShape = VectorShape(
-            name: "Sample Rectangle",
-            path: rectPath,
-            strokeStyle: StrokeStyle(color: .black, width: 2.0, placement: .center),
-            fillStyle: FillStyle(color: .rgb(RGBColor(red: 0.0, green: 0.0, blue: 1.0))),
-            transform: .identity
-        )
-        
-        shapes.append(rectShape)
-        
-        // Create a circle shape
-        let centerX = svgSize.width / 2
-        let centerY = svgSize.height / 2
-        let radius: Double = 50
-        
-        // Approximate circle with bezier curves
-        let circlePath = createCirclePath(center: VectorPoint(centerX, centerY), radius: radius)
-        
-        let circleShape = VectorShape(
-            name: "Sample Circle",
-            path: circlePath,
-            strokeStyle: StrokeStyle(color: .black, width: 1.0, placement: .center),
-            fillStyle: FillStyle(color: .rgb(RGBColor(red: 1.0, green: 0.0, blue: 0.0))),
-            transform: .identity
-        )
-        
-        shapes.append(circleShape)
-        
-        return shapes
-    }
-    
     private func createCirclePath(center: VectorPoint, radius: Double) -> VectorPath {
         // Create a circle using cubic bezier curves
         let kappa = 0.5522848 // Magic number for circle approximation
@@ -399,12 +356,6 @@ class SVGToInkPenImporter: ObservableObject {
     
     /// Parse SVG XML and extract individual elements
     /// This would be implemented to parse actual SVG elements
-    private func parseSVGElements(_ svgData: Data) -> [SVGElement] {
-        // TODO: Implement XML parsing to extract SVG elements
-        // This would parse the SVG XML and convert each element to SVGElement
-        return []
-    }
-    
     struct SVGElement {
         let type: String // rect, circle, path, etc.
         let attributes: [String: String]
