@@ -317,6 +317,28 @@ extension FileOperations {
             return
         }
 
+        // Check if this is an image shape
+        if let imageData = shape.embeddedImageData {
+            // Handle embedded image data
+            if let nsImage = NSImage(data: imageData),
+               let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+                let bounds = shape.bounds
+                // Draw the image
+                context.draw(cgImage, in: bounds)
+            }
+            context.restoreGState()
+            return
+        } else if let image = ImageContentRegistry.image(for: shape.id) {
+            // Handle linked images via ImageContentRegistry
+            if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+                let bounds = shape.bounds
+                // Draw the image
+                context.draw(cgImage, in: bounds)
+            }
+            context.restoreGState()
+            return
+        }
+
         // Create path from shape
         let path = shape.path.cgPath
 
