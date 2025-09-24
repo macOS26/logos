@@ -9,7 +9,7 @@ import SwiftUI
 
 // MARK: - AppDelegate to ensure proper document tabbing and window persistence
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    func applicationDidFinishLaunching(_ notification: Notification) {        
+    func applicationDidFinishLaunching(_ notification: Notification) {
         // Install stderr filter to suppress noisy system-level SQLite warning lines
         StderrFilter.shared.installFilter(suppressing: [
             "/private/var/db/DetachedSignatures",
@@ -18,7 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             "invalid display identifier",
             "display identifier"
         ])
-        
+
         // Apply Apple Metal Performance HUD environment if enabled in preferences
         let enabled = UserDefaults.standard.bool(forKey: "enableSystemMetalHUD")
         if enabled {
@@ -26,15 +26,53 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             unsetenv("MTL_HUD_ENABLED")
         }
-        
+
         // 🔥 NEW: Initialize display monitor to handle display changes
         _ = DisplayMonitor.shared
-                
+
         // SETUP: Global error handling for system-level issues
         setupGlobalErrorHandling()
-    
+
         // Set up a fallback timer to ensure the app doesn't hang
         setupFallbackTimer()
+
+        // Add Donate menu after Help menu (only when not sandboxed)
+        if SandboxChecker.isNotSandboxed {
+            addDonateMenu()
+        }
+    }
+
+    private func addDonateMenu() {
+        // Wait a bit for SwiftUI to set up its menus first
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            guard let mainMenu = NSApp.mainMenu else { return }
+
+            // Create the Donate menu
+            let donateMenu = NSMenu(title: "Donate")
+            let donateMenuItem = NSMenuItem(title: "Donate", action: nil, keyEquivalent: "")
+            donateMenuItem.submenu = donateMenu
+
+            // Create Tip Jar menu item with icon
+            let tipJarItem = NSMenuItem(title: "Tip Jar", action: #selector(self.openTipJar), keyEquivalent: "")
+            tipJarItem.target = self
+            tipJarItem.image = NSImage(systemSymbolName: "dollarsign.circle", accessibilityDescription: "Tip Jar")
+            tipJarItem.image?.size = NSSize(width: 16, height: 16)
+            donateMenu.addItem(tipJarItem)
+
+            // Find the Help menu and insert Donate after it
+            if let helpIndex = mainMenu.items.firstIndex(where: { $0.title == "Help" }) {
+                mainMenu.insertItem(donateMenuItem, at: helpIndex + 1)
+            } else {
+                // If Help menu not found, add at the end
+                mainMenu.addItem(donateMenuItem)
+            }
+        }
+    }
+
+    @objc private func openTipJar() {
+        if let url = URL(string: "https://www.paypal.com/ncp/payment/3DTH3S7XARK98") {
+            NSWorkspace.shared.open(url)
+        }
     }
     
     private func setupFallbackTimer() {
