@@ -323,8 +323,16 @@ extension FileOperations {
             if let nsImage = NSImage(data: imageData),
                let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil) {
                 let bounds = shape.bounds
-                // Draw the image
-                context.draw(cgImage, in: bounds)
+
+                // Flip the image vertically since we already flipped the context
+                context.saveGState()
+                context.translateBy(x: bounds.minX, y: bounds.maxY)
+                context.scaleBy(x: 1.0, y: -1.0)
+
+                // Draw the image at origin with bounds size
+                context.draw(cgImage, in: CGRect(origin: .zero, size: bounds.size))
+
+                context.restoreGState()
             }
             context.restoreGState()
             return
@@ -332,8 +340,16 @@ extension FileOperations {
             // Handle linked images via ImageContentRegistry
             if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
                 let bounds = shape.bounds
-                // Draw the image
-                context.draw(cgImage, in: bounds)
+
+                // Flip the image vertically since we already flipped the context
+                context.saveGState()
+                context.translateBy(x: bounds.minX, y: bounds.maxY)
+                context.scaleBy(x: 1.0, y: -1.0)
+
+                // Draw the image at origin with bounds size
+                context.draw(cgImage, in: CGRect(origin: .zero, size: bounds.size))
+
+                context.restoreGState()
             }
             context.restoreGState()
             return
