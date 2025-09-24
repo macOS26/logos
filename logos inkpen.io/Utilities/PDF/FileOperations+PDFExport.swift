@@ -184,9 +184,19 @@ extension FileOperations {
         }
 
         // Check if this is an image shape
+        // First check for embedded data
         if let imageData = shape.embeddedImageData {
             try renderImageToPDF(shape: shape, imageData: imageData, context: context)
             return
+        }
+
+        // Try to hydrate linked images if available
+        if let image = ImageContentRegistry.hydrateImageIfAvailable(for: shape) {
+            // Convert to data for rendering
+            if let tiffRep = image.tiffRepresentation {
+                try renderImageToPDF(shape: shape, imageData: tiffRep, context: context)
+                return
+            }
         }
 
         // Regular vector shape rendering
@@ -268,12 +278,15 @@ extension FileOperations {
         // Draw the image within the shape bounds
         let bounds = shape.bounds
 
-        // Flip the image vertically since we already flipped the context
+        // Translate to the image position
         context.saveGState()
+        context.translateBy(x: bounds.minX, y: bounds.minY)
+
+        // Flip the image vertically since we already flipped the context
         context.translateBy(x: 0, y: bounds.height)
         context.scaleBy(x: 1.0, y: -1.0)
 
-        // Draw the image
+        // Draw the image at origin with correct size
         context.draw(cgImage, in: CGRect(origin: .zero, size: bounds.size))
 
         context.restoreGState()
