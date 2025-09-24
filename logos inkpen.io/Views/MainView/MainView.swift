@@ -263,16 +263,45 @@ struct MainView: View {
     
     private func saveDocumentAs() {
         let panel = NSSavePanel()
-        panel.allowedContentTypes = [UTType.json, UTType.inkpen]
-        panel.nameFieldStringValue = "Document.inkpen"
+        panel.allowedContentTypes = [UTType.inkpen, UTType.svg, UTType.pdf]
+
+        // Set initial filename with extension
+        let baseName = currentDocumentURL?.deletingPathExtension().lastPathComponent ?? "Document"
+        panel.nameFieldStringValue = "\(baseName).inkpen"
+        panel.nameFieldLabel = "Save As:"
+
         panel.title = "Save Document"
+        panel.isExtensionHidden = false  // Always show extensions
+        panel.canSelectHiddenExtension = false  // Don't allow hiding extensions
+        panel.allowsOtherFileTypes = false  // Only allow the specified types
+
+        // Create accessory view to detect format changes
+        let accessoryHandler = SavePanelAccessoryHandler(panel: panel, baseName: baseName)
+        panel.accessoryView = accessoryHandler.createAccessoryView()
 
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
 
-            // Update current document URL
-            currentDocumentURL = url
-            saveDocumentToURL(url)
+            // Handle different file types
+            let fileExtension = url.pathExtension.lowercased()
+            switch fileExtension {
+            case "svg":
+                do {
+                    try FileOperations.exportToSVG(self.document, url: url)
+                    Log.info("✅ Exported to SVG: \(url.path)", category: .fileOperations)
+                } catch {
+                    Log.error("❌ SVG export failed: \(error)", category: .error)
+                }
+            case "pdf":
+                do {
+                    try FileOperations.exportToPDF(self.document, url: url)
+                    Log.info("✅ Exported to PDF: \(url.path)", category: .fileOperations)
+                } catch {
+                    Log.error("❌ PDF export failed: \(error)", category: .error)
+                }
+            default: // inkpen
+                self.saveDocumentToURL(url)
+            }
         }
     }
     
@@ -419,6 +448,68 @@ struct MainView: View {
     }
 }
 
+
+// MARK: - Save Panel Accessory Handler
+private class SavePanelAccessoryHandler: NSObject {
+    weak var panel: NSSavePanel?
+    let baseName: String
+    private var formatObserver: Any?
+
+    init(panel: NSSavePanel, baseName: String) {
+        self.panel = panel
+        self.baseName = baseName
+        super.init()
+    }
+
+    func createAccessoryView() -> NSView {
+        // Create an empty accessory view (the system adds the format popup automatically)
+        let view = NSView(frame: NSRect(x: 0, y: 0, width: 1, height: 1))
+
+        // Start observing format changes after a brief delay to let the system set up the popup
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            self?.startObservingFormatChanges()
+        }
+
+        return view
+    }
+
+    private func startObservingFormatChanges() {
+        // Create a timer to periodically check the URL and update the filename
+        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] timer in
+            guard let self = self, let panel = self.panel else {
+                timer.invalidate()
+                return
+            }
+
+            // When panel is dismissed, stop the timer
+            if !panel.isVisible {
+                timer.invalidate()
+                return
+            }
+
+            // Get current filename and extension
+            let currentName = panel.nameFieldStringValue
+            let nameWithoutExt = (currentName as NSString).deletingPathExtension
+            let currentExt = (currentName as NSString).pathExtension
+
+            // Try to determine the selected format
+            // The panel automatically updates the URL with the selected type's extension
+            if let url = panel.url {
+                let expectedExt = url.pathExtension.lowercased()
+
+                // If the extension in the filename doesn't match the selected format, update it
+                if expectedExt != currentExt.lowercased() && ["inkpen", "svg", "pdf"].contains(expectedExt) {
+                    let newName = "\(nameWithoutExt.isEmpty ? self.baseName : nameWithoutExt).\(expectedExt)"
+                    panel.nameFieldStringValue = newName
+                }
+            }
+        }
+    }
+
+    deinit {
+        // Cleanup if needed
+    }
+}
 
 // Preview
 struct MainView_Previews: PreviewProvider {

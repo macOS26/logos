@@ -272,6 +272,7 @@ class DocumentState: ObservableObject {
         panel.allowedContentTypes = [.svg]
         panel.canCreateDirectories = true
         panel.showsTagField = false
+        panel.isExtensionHidden = false  // Show .svg extension
         panel.message = "Export as SVG (Scalable Vector Graphics)"
 
         // Create accessory view for background option
@@ -327,6 +328,7 @@ class DocumentState: ObservableObject {
         panel.allowedContentTypes = [.pdf]
         panel.canCreateDirectories = true
         panel.showsTagField = false
+        panel.isExtensionHidden = false  // Show .pdf extension
         panel.message = "Export as PDF (Portable Document Format)"
 
         // Create accessory view for background option
@@ -600,6 +602,7 @@ class DocumentState: ObservableObject {
         panel.allowedContentTypes = [.svg]
         panel.canCreateDirectories = true
         panel.showsTagField = false
+        panel.isExtensionHidden = false  // Show .svg extension
         panel.message = "Export SVG at 96 DPI for AutoDesk applications"
 
         // Create accessory view for background option

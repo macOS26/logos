@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+
 @main
 struct logos_inken_ioApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
@@ -809,6 +810,16 @@ struct logos_inken_ioApp: App {
                         .help("Support the developer with a tip via PayPal")
                     }
          
+                    CommandGroup(replacing: .help) {
+                        Button(action: {
+                            openLogosInkPenHelp()
+                        }) {
+                            Label("Logos InkPen Help", systemImage: "questionmark.circle")
+                        }
+                        .keyboardShortcut("?", modifiers: .command)
+                        .help("Open Logos InkPen Help documentation")
+                    }
+
                     CommandGroup(after: .help) {
                         Divider()
                         Button(action: {
@@ -1204,6 +1215,43 @@ struct ClipboardData: Codable {
 }
 
 // MARK: - Display Monitor for Handling Display Changes
+
+// MARK: - Help Functions
+
+func openLogosInkPenHelp() {
+    // Try to open the help book
+    let helpBookName = "LogosInkPenHelp"
+
+    // First try to open the bundled Help Book
+    if let helpBookPath = Bundle.main.path(forResource: helpBookName, ofType: "help") {
+        let helpBookURL = URL(fileURLWithPath: helpBookPath)
+        let indexPath = helpBookURL.appendingPathComponent("Contents/Resources/en.lproj/index.html")
+
+        if FileManager.default.fileExists(atPath: indexPath.path) {
+            NSWorkspace.shared.open(indexPath)
+            Log.info("📚 Opened Help Book at: \(indexPath.path)", category: .general)
+        } else {
+            // Fallback to opening the help book root
+            NSWorkspace.shared.open(helpBookURL)
+            Log.warning("📚 Help index not found, opening Help Book root", category: .general)
+        }
+    } else {
+        // If help book not found in bundle, try to open from project directory (for development)
+        let projectHelpPath = "/Users/toddbruss/Documents/GitHub/logos/logos inkpen.io/LogosInkPenHelp.help/Contents/Resources/en.lproj/index.html"
+        if FileManager.default.fileExists(atPath: projectHelpPath) {
+            NSWorkspace.shared.open(URL(fileURLWithPath: projectHelpPath))
+            Log.info("📚 Opened development Help Book", category: .general)
+        } else {
+            Log.error("📚 Help Book not found", category: .error)
+            // Show an alert
+            let alert = NSAlert()
+            alert.messageText = "Help Not Available"
+            alert.informativeText = "The help documentation could not be found."
+            alert.alertStyle = .informational
+            alert.runModal()
+        }
+    }
+}
 
 class DisplayMonitor: NSObject {
     static let shared = DisplayMonitor()
