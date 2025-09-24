@@ -780,9 +780,10 @@ struct logos_inken_ioApp: App {
                     .help("Switch to corner radius tool")
                 }
 
-                // Donate menu - only visible when not sandboxed
+                // Donate items added to Help menu - only visible when not sandboxed
                 if SandboxChecker.isNotSandboxed {
-                    CommandMenu("Donate") {
+                    CommandGroup(after: .help) {
+                        Divider()
                         Button(action: {
                             if let url = URL(string: "https://www.paypal.com/ncp/payment/3DTH3S7XARK98") {
                                 NSWorkspace.shared.open(url)
