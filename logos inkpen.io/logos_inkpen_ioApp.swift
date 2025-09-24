@@ -105,6 +105,18 @@ struct logos_inken_ioApp: App {
                 
                 // Application Menu commands (appears under the app name)
                 CommandGroup(replacing: .appSettings) {
+                    // Add Tip Jar menu only when not sandboxed
+                    if SandboxChecker.isNotSandboxed {
+                        Button("Tip Jar") {
+                            if let url = URL(string: "https://www.paypal.com/ncp/payment/3DTH3S7XARK98") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }
+                        .help("Support the developer with a tip via PayPal")
+
+                        Divider()
+                    }
+
                     Menu("Default Tool") {
                         Button(AppState.shared.defaultTool == .selection ? "✓ Selection Tool (Arrow)" : "Selection Tool (Arrow)") {
                             AppState.shared.defaultTool = .selection

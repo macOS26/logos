@@ -406,10 +406,8 @@ class DocumentState: ObservableObject {
 
         let scalePopup = NSPopUpButton(frame: NSRect(x: 75, y: 43, width: 150, height: 25))
 
-        // Check if app is sandboxed
-        let isSandboxed = ProcessInfo.processInfo.environment["APP_SANDBOX_CONTAINER_ID"] != nil
-
-        if isSandboxed {
+        // Check if app is sandboxed using common utility
+        if SandboxChecker.isSandboxed {
             // Sandboxed: show standard scales and individual icon sizes
             scalePopup.addItems(withTitles: [
                 "1x", "2x", "3x", "4x",
