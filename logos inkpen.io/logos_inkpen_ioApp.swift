@@ -779,6 +779,20 @@ struct logos_inken_ioApp: App {
                     .keyboardShortcut(.upArrow, modifiers: [.control])
                     .help("Switch to corner radius tool")
                 }
+
+                // Donate menu - only visible when not sandboxed
+                if SandboxChecker.isNotSandboxed {
+                    CommandMenu("Donate") {
+                        Button(action: {
+                            if let url = URL(string: "https://www.paypal.com/ncp/payment/3DTH3S7XARK98") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }) {
+                            Label("Tip Jar", systemImage: "dollarsign.circle")
+                        }
+                        .help("Support the developer with a tip via PayPal")
+                    }
+                }
             }
 
         }
