@@ -54,7 +54,14 @@
       "Bash(echo:*)",
       "Bash(python3:*)",
       "Bash(git push:*)",
-      "Bash(gh auth:*)"
+      "Bash(gh auth:*)",
+      "Bash(/tmp/check_classes.sh:*)",
+      "Bash(/tmp/check_classes_detailed.sh:*)",
+      "Bash(/tmp/check_structs.sh:*)",
+      "Bash(/tmp/find_truly_unused.sh:*)",
+      "Bash(do echo \"=== $struct ===\")",
+      "Bash(/tmp/check_enums.sh:*)",
+      "mcp__xcf-server__analyze_swift_code"
     ],
     "deny": [],
     "ask": []
