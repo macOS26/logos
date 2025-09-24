@@ -21,12 +21,16 @@ struct logos_inken_ioApp: App {
             "brushPreviewStyle": AppState.BrushPreviewStyle.fill.rawValue,
             "brushPreviewIsFinal": false
         ])
-        
+
         // Test Metal Compute Engine on app startup (silently)
         let metalWorking = MetalComputeEngine.testMetalEngine()
         if !metalWorking {
             Log.metal("❌ Metal Engine Failed", level: .error)
         }
+
+        // Debug sandbox status
+        print("🎁 App Sandbox Status: \(SandboxChecker.isSandboxed ? "SANDBOXED" : "NOT SANDBOXED")")
+        print("🎁 Tip Jar Menu: \(SandboxChecker.isNotSandboxed ? "WILL SHOW" : "HIDDEN")")
     }
     
     fileprivate func doNotRestoreThis(_ window: NSWindow) {
@@ -105,18 +109,6 @@ struct logos_inken_ioApp: App {
                 
                 // Application Menu commands (appears under the app name)
                 CommandGroup(replacing: .appSettings) {
-                    // Add Tip Jar menu only when not sandboxed
-                    if SandboxChecker.isNotSandboxed {
-                        Button("Tip Jar") {
-                            if let url = URL(string: "https://www.paypal.com/ncp/payment/3DTH3S7XARK98") {
-                                NSWorkspace.shared.open(url)
-                            }
-                        }
-                        .help("Support the developer with a tip via PayPal")
-
-                        Divider()
-                    }
-
                     Menu("Default Tool") {
                         Button(AppState.shared.defaultTool == .selection ? "✓ Selection Tool (Arrow)" : "Selection Tool (Arrow)") {
                             AppState.shared.defaultTool = .selection
@@ -786,6 +778,20 @@ struct logos_inken_ioApp: App {
                     }
                     .keyboardShortcut(.upArrow, modifiers: [.control])
                     .help("Switch to corner radius tool")
+                }
+
+                // DONATE menu - at the end, only visible when not sandboxed
+                if SandboxChecker.isNotSandboxed {
+                    CommandMenu("DONATE") {
+                        Button(action: {
+                            if let url = URL(string: "https://www.paypal.com/ncp/payment/3DTH3S7XARK98") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }) {
+                            Label("Tip Jar", systemImage: "dollarsign.circle")
+                        }
+                        .help("Open PayPal to send a tip")
+                    }
                 }
             }
         }
