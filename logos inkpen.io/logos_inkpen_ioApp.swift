@@ -38,13 +38,29 @@ struct logos_inken_ioApp: App {
         window.restorationClass = nil
         window.tabbingMode = .disallowed
     }
+
+    // Helper to determine window title with visible extensions for certain file types
+    private func windowTitle(for fileURL: URL?) -> String {
+        guard let fileURL = fileURL else { return "Untitled" }
+
+        let fileName = fileURL.lastPathComponent
+        let fileExtension = fileURL.pathExtension.lowercased()
+
+        // Show extension for .inkpen, .pdf, and .svg files
+        if ["inkpen", "pdf", "svg"].contains(fileExtension) {
+            return fileName  // Keep the full name with extension
+        } else {
+            // For other files, use the name without extension
+            return fileURL.deletingPathExtension().lastPathComponent
+        }
+    }
     
     var body: some Scene {
         // PRIMARY: DocumentGroup handles BOTH new docs AND file opening (preserves all UI)
         DocumentGroup(newDocument: InkpenDocument()) { file in
             DocumentBasedContentView(inkpenDocument: file.$document, fileURL: file.fileURL)
                 .environment(appState)
-                .navigationTitle("")  // Clear default title - we'll use custom toolbar
+                .navigationTitle(windowTitle(for: file.fileURL))
                 .onAppear {
                     // Set up window management for gradient HUD
                     appState.setWindowActions(
