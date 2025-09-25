@@ -295,16 +295,29 @@ struct StrokeFillPanel: View {
                         }
                     )
 
-                    // Expand Stroke Button - Only show when shapes selected
-                    if !document.selectedObjectIDs.isEmpty {
-                        Button("Expand Stroke") {
-                            document.outlineSelectedStrokes()
-                        }
-                        .buttonStyle(ProfessionalPrimaryButtonStyle())
-                        .controlSize(.regular)
-                        .help("Convert stroke to filled path (Cmd+Shift+O)")
-                        .keyboardShortcut("o", modifiers: [.command, .shift])
+                    // Expand Stroke Button - ALWAYS VISIBLE, NO RESTRICTIONS
+                    Button {
+                        document.outlineSelectedStrokes()
+                    } label: {
+                        Text("Expand Stroke")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            .frame(maxWidth: .infinity)
+                            .frame(minHeight: 36)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.blue)
+                            )
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(BorderlessButtonStyle())
+                    .onTapGesture { // Luna Display compatibility
+                        document.outlineSelectedStrokes()
+                    }
+                    .help("Convert stroke to filled path (Cmd+Shift+O)")
+                    .keyboardShortcut("o", modifiers: [.command, .shift])
 
                     // Tool-specific settings sections
                     switch document.currentTool {
