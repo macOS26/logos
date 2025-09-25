@@ -531,27 +531,27 @@ extension DrawingCanvas {
                 finalThickness *= pressureEffect
             }
 
-            // Apply gentle tapering to avoid unwanted bulges
+            // Apply proper tapering for clean strokes
             if centerPoints.count <= 10 {
-                // SHORT STROKE: Gentle linear taper at ends only
-                if progress < 0.1 {
-                    // Linear taper at start to avoid bulge
-                    finalThickness *= (progress / 0.1)
+                // SHORT STROKE: Smooth taper to avoid bulges
+                if progress < 0.2 {
+                    // Smooth quadratic taper at start
+                    finalThickness *= pow(progress / 0.2, 2.0)
                 }
-                if progress > 0.9 {
-                    // Linear taper at end
-                    let endProgress = (progress - 0.9) / 0.1
-                    finalThickness *= (1.0 - endProgress)
+                if progress > 0.8 {
+                    // Smooth quadratic taper at end
+                    let endProgress = (progress - 0.8) / 0.2
+                    finalThickness *= pow(1.0 - endProgress, 2.0)
                 }
             } else {
-                // LONGER STROKES: Very gentle tapering
-                if progress < 0.05 {
-                    // Gentle linear start taper
-                    finalThickness *= (progress / 0.05)
+                // LONGER STROKES: Gradual tapering
+                if progress < 0.1 {
+                    // Smooth quadratic start taper
+                    finalThickness *= pow(progress / 0.1, 2.0)
                 }
-                if progress > 0.95 {
-                    let endProgress = (progress - 0.95) / 0.05
-                    finalThickness *= (1.0 - endProgress)
+                if progress > 0.9 {
+                    let endProgress = (progress - 0.9) / 0.1
+                    finalThickness *= pow(1.0 - endProgress, 2.0)
                 }
             }
 
@@ -669,27 +669,27 @@ extension DrawingCanvas {
             let pressureEffect = interpolatedPressure * pressureSensitivity + (1.0 - pressureSensitivity) * 0.2  // Stronger pressure variation
             finalThickness *= pressureEffect
 
-            // Apply gentle tapering to avoid unwanted bulges
+            // Apply proper tapering for clean strokes
             if centerPoints.count <= 10 {
-                // SHORT STROKE: Gentle linear taper at ends only
-                if progress < 0.1 {
-                    // Linear taper at start to avoid bulge
-                    finalThickness *= (progress / 0.1)
+                // SHORT STROKE: Smooth taper to avoid bulges
+                if progress < 0.2 {
+                    // Smooth quadratic taper at start
+                    finalThickness *= pow(progress / 0.2, 2.0)
                 }
-                if progress > 0.9 {
-                    // Linear taper at end
-                    let endProgress = (progress - 0.9) / 0.1
-                    finalThickness *= (1.0 - endProgress)
+                if progress > 0.8 {
+                    // Smooth quadratic taper at end
+                    let endProgress = (progress - 0.8) / 0.2
+                    finalThickness *= pow(1.0 - endProgress, 2.0)
                 }
             } else {
-                // LONGER STROKES: Very gentle tapering
-                if progress < 0.05 {
-                    // Gentle linear start taper
-                    finalThickness *= (progress / 0.05)
+                // LONGER STROKES: Gradual tapering
+                if progress < 0.1 {
+                    // Smooth quadratic start taper
+                    finalThickness *= pow(progress / 0.1, 2.0)
                 }
-                if progress > 0.95 {
-                    let endProgress = (progress - 0.95) / 0.05
-                    finalThickness *= (1.0 - endProgress)
+                if progress > 0.9 {
+                    let endProgress = (progress - 0.9) / 0.1
+                    finalThickness *= pow(1.0 - endProgress, 2.0)
                 }
             }
             
@@ -733,19 +733,46 @@ extension DrawingCanvas {
                 let direction = CGPoint(x: point.location.x - prevPoint.x, y: point.location.y - prevPoint.y)
                 perpendicular = CGPoint(x: -direction.y, y: direction.x)
             } else {
-                // Use average of incoming and outgoing directions
+                // Use bisector method to prevent bulges at curves
                 let prevPoint = centerPoints[i - 1].location
                 let nextPoint = centerPoints[i + 1].location
-                
-                let incomingDir = CGPoint(x: point.location.x - prevPoint.x, y: point.location.y - prevPoint.y)
-                let outgoingDir = CGPoint(x: nextPoint.x - point.location.x, y: nextPoint.y - point.location.y)
-                
-                let avgDirection = CGPoint(
-                    x: (incomingDir.x + outgoingDir.x) / 2,
-                    y: (incomingDir.y + outgoingDir.y) / 2
+
+                // Normalize incoming and outgoing directions
+                var incomingDir = CGPoint(x: point.location.x - prevPoint.x, y: point.location.y - prevPoint.y)
+                var outgoingDir = CGPoint(x: nextPoint.x - point.location.x, y: nextPoint.y - point.location.y)
+
+                let inLength = sqrt(incomingDir.x * incomingDir.x + incomingDir.y * incomingDir.y)
+                let outLength = sqrt(outgoingDir.x * outgoingDir.x + outgoingDir.y * outgoingDir.y)
+
+                if inLength > 0 {
+                    incomingDir.x /= inLength
+                    incomingDir.y /= inLength
+                }
+                if outLength > 0 {
+                    outgoingDir.x /= outLength
+                    outgoingDir.y /= outLength
+                }
+
+                // Calculate bisector for smooth offset
+                let bisector = CGPoint(
+                    x: incomingDir.x + outgoingDir.x,
+                    y: incomingDir.y + outgoingDir.y
                 )
-                
-                perpendicular = CGPoint(x: -avgDirection.y, y: avgDirection.x)
+
+                // Get perpendicular to bisector
+                perpendicular = CGPoint(x: -bisector.y, y: bisector.x)
+
+                // Handle sharp corners by limiting offset
+                let dot = incomingDir.x * outgoingDir.x + incomingDir.y * outgoingDir.y
+                if dot < 0.5 { // Sharp corner detected
+                    // Use average perpendicular for sharp corners
+                    let perpIn = CGPoint(x: -incomingDir.y, y: incomingDir.x)
+                    let perpOut = CGPoint(x: -outgoingDir.y, y: outgoingDir.x)
+                    perpendicular = CGPoint(
+                        x: (perpIn.x + perpOut.x) / 2,
+                        y: (perpIn.y + perpOut.y) / 2
+                    )
+                }
             }
             
             // Normalize perpendicular vector
