@@ -313,9 +313,19 @@ struct GradientApplyButtonView: View {
             Button("Add Swatch", action: onAddSwatch)
                 .buttonStyle(ProfessionalSecondaryButtonStyle())
                 .disabled(currentGradient == nil)
+                .onTapGesture { // Luna Display compatibility
+                    if currentGradient != nil {
+                        onAddSwatch()
+                    }
+                }
             Button("Apply Gradient", action: onApply)
                 .buttonStyle(ProfessionalPrimaryButtonStyle())
                 .disabled(currentGradient == nil)
+                .onTapGesture { // Luna Display compatibility
+                    if currentGradient != nil {
+                        onApply()
+                    }
+                }
         }
     }
 }
