@@ -78,24 +78,14 @@ struct ProfessionalOffsetPathSection: View {
                         .tint(.blue)
                     }
                     
-                    // Keep Original Path Checkbox (Professional Standard)
+                    // Keep Original Path Toggle (Professional Standard)
                     HStack {
-                        Button {
-                            keepOriginalPath.toggle()
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: keepOriginalPath ? "checkmark.square.fill" : "square")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(keepOriginalPath ? .blue : .secondary)
-                                
-                                Text("Keep Original Path")
-                                    .font(.caption2)
-                                    .foregroundColor(.primary)
-                            }
-                        }
-                        .buttonStyle(BorderlessButtonStyle())
-                        .help("Keep the original path when creating offset (Professional default)")
-                        
+                        Toggle("Keep Original Path", isOn: $keepOriginalPath)
+                            .toggleStyle(.switch)
+                            .controlSize(.small)
+                            .font(.caption)
+                            .help("Keep the original path when creating offset (Professional default)")
+
                         Spacer()
                     }
                     
