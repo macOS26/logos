@@ -248,7 +248,27 @@ struct VerticalToolbar: View {
                                 }
                                 
                                 ForEach(toolGroup, id: \.toolIdentifier) { toolItem in
-                                    Button(action: {}) {
+                                    Button(action: {
+                                        // Handle tool selection
+                                        if let starVariant = toolItem.starVariant {
+                                            toolGroupManager.selectStarVariant(starVariant)
+                                            document.currentTool = .star
+                                            // Update tool group manager state
+                                            toolGroupManager.currentToolInGroup = .star
+                                            toolGroupManager.setSelectedToolInGroup(.star)
+                                            Log.info("⭐ Selected star variant: \(starVariant.rawValue)", category: .general)
+                                        } else {
+                                            document.currentTool = toolItem.tool
+                                            // Update tool group manager state
+                                            toolGroupManager.currentToolInGroup = toolItem.tool
+                                            toolGroupManager.setSelectedToolInGroup(toolItem.tool)
+                                            Log.info("🛠️ Switched to tool: \(toolItem.tool.rawValue)", category: .general)
+                                        }
+
+                                        // Do not force cursor here; let canvas hover control cursor visibility.
+                                        // This avoids requiring long-press to see the cursor. The canvas will set
+                                        // the correct cursor on hover/enter.
+                                    }) {
                                         ZStack {
                                             // Background highlight - always present but transparent when not selected
                                             RoundedRectangle(cornerRadius: 100)
@@ -277,38 +297,17 @@ struct VerticalToolbar: View {
                                         .contentShape(Rectangle()) // Extend hit area to match entire button area
                                         .frame(width: 58, height: 34)
                                         .position(x: 24.5, y: 17)
+                                        .onLongPressGesture(minimumDuration: 0.5) {
+                                            // Long press for expanding tool groups
+                                            if let starVariant = toolItem.starVariant {
+                                                let variantIndex = StarVariant.allCases.firstIndex(of: starVariant) ?? 0
+                                                handleToolLongPress(.star, variantIndex: variantIndex)
+                                            } else {
+                                                handleToolLongPress(toolItem.tool)
+                                            }
+                                        }
                                     }
                                     .buttonStyle(BorderlessButtonStyle())
-                                    .onLongPressGesture(minimumDuration: 0.5) {
-                                        // Long press for expanding tool groups
-                                        if let starVariant = toolItem.starVariant {
-                                            let variantIndex = StarVariant.allCases.firstIndex(of: starVariant) ?? 0
-                                            handleToolLongPress(.star, variantIndex: variantIndex)
-                                        } else {
-                                            handleToolLongPress(toolItem.tool)
-                                        }
-                                    }
-                                    .onTapGesture {
-                                        // Handle tool selection on tap
-                                        if let starVariant = toolItem.starVariant {
-                                            toolGroupManager.selectStarVariant(starVariant)
-                                            document.currentTool = .star
-                                            // Update tool group manager state
-                                            toolGroupManager.currentToolInGroup = .star
-                                            toolGroupManager.setSelectedToolInGroup(.star)
-                                            Log.info("⭐ Selected star variant: \(starVariant.rawValue)", category: .general)
-                                        } else {
-                                            document.currentTool = toolItem.tool
-                                            // Update tool group manager state
-                                            toolGroupManager.currentToolInGroup = toolItem.tool
-                                            toolGroupManager.setSelectedToolInGroup(toolItem.tool)
-                                            Log.info("🛠️ Switched to tool: \(toolItem.tool.rawValue)", category: .general)
-                                        }
-
-                                        // Do not force cursor here; let canvas hover control cursor visibility.
-                                        // This avoids requiring long-press to see the cursor. The canvas will set
-                                        // the correct cursor on hover/enter.
-                                    }
                                     .help(toolTooltip(for: toolItem.tool, variant: toolItem.starVariant))
                                     .background(
                                         GeometryReader { geometry in
