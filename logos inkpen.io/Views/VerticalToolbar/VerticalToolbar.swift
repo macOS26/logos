@@ -421,6 +421,8 @@ struct VerticalToolbarButton: View {
     let toolIconView: () -> AnyView
 
     @State private var inc: Double = 0.0
+    @State private var shouldRepeat: Bool = true
+    @State private var lastTappedTool: String = ""
 
     init(toolItem: ToolItem,
          isSelected: Bool,
@@ -440,23 +442,33 @@ struct VerticalToolbarButton: View {
 
     var body: some View {
         Button(action: {
-            inc += 0.01
+            inc += 0.1
+            print("\(inc)")
 
-            if inc > 0.01 {
-                Thread.sleep(forTimeInterval: 0.01)
-                return
-            }
-
-            if inc >= 0.5 {
-                inc = 0.0
-                onLongPress()
-                return
-            }
-
-            if inc == 0.01 {
+            // First click - handle tap
+            if inc <= 0.1 {
+                // Store the tool name that was tapped
+                lastTappedTool = toolItem.tool.rawValue
                 onTap()
 
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    inc = 0.0
+                    shouldRepeat = true
+                }
+                return
+            }
+
+            if shouldRepeat {
+                if inc > 0.1 {
+                    Thread.sleep(forTimeInterval: 0.1)
+                }
+
+                if inc >= 0.3 {
+                    // Check if the tool being long-pressed is the same as the one that was tapped
+                    if lastTappedTool == toolItem.tool.rawValue {
+                        onLongPress()
+                    }
+                    shouldRepeat = false  // Stop repeating after long press
                     inc = 0.0
                 }
             }
@@ -491,7 +503,7 @@ struct VerticalToolbarButton: View {
             .position(x: 24.5, y: 17)
         }
         .buttonStyle(BorderlessButtonStyle())
-        .buttonRepeatBehavior(.enabled)
+        .buttonRepeatBehavior(shouldRepeat ? .enabled : .disabled)
     }
 }
 
