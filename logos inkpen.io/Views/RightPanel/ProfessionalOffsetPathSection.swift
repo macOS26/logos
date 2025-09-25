@@ -164,33 +164,26 @@ struct ProfessionalOffsetPathSection: View {
                     
 
                     
-                    // Action Buttons (Professional style)
-                    VStack(spacing: 4) {
-                        HStack(spacing: 6) {
-                            // Offset Path button (handles both positive and negative offsets)
-                            Button {
-                                performOffsetPath()
-                            } label: {
-                                Text("Offset Path")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 6)
-                                            .fill(Color.blue)
-                                    )
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(BorderlessButtonStyle())
-                            .onTapGesture { // Luna Display compatibility
-                                performOffsetPath()
-                            }
-                            .help("Create offset path with current settings (⌘⌥O)")
-                            
-                            Spacer()
-                        }
+                    // Offset Path button - Full Width
+                    Button {
+                        performOffsetPath()
+                    } label: {
+                        Text("Offset Path")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.blue)
+                            )
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(BorderlessButtonStyle())
+                    .onTapGesture { // Luna Display compatibility
+                        performOffsetPath()
+                    }
+                    .help("Create offset path with current settings (⌘⌥O)")
                 }
                 .padding(.horizontal, 12)
                 .padding(.bottom, 8)
