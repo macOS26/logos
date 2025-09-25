@@ -92,20 +92,16 @@ extension DrawingCanvas {
     
     internal func handleFreehandDragEnd() {
         guard isFreehandDrawing else { return }
-
+        
         Log.fileOperation("🖊️ FREEHAND: Finishing drawing with \(freehandRawPoints.count) raw points", level: .info)
-
+        
         // Apply curve fitting algorithms to create smooth bezier curves
         processFreehandPath()
-
+        
         // Clean up state including clearing preview path for overlay system
         freehandPreviewPath = nil
         cancelFreehandDrawing()
-
-        // AUTO-DESELECT: Clear selection after completing freehand stroke
-        // This allows user to immediately change colors for the next stroke
-        document.selectedShapeIDs.removeAll()
-
+        
         Log.info("✅ FREEHAND: Path completed and converted to smooth curves", category: .fileOperations)
     }
     
