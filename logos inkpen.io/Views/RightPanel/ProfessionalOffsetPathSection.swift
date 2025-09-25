@@ -82,7 +82,7 @@ struct ProfessionalOffsetPathSection: View {
                     HStack {
                         Toggle("Keep Original Path", isOn: $keepOriginalPath)
                             .toggleStyle(.switch)
-                            .controlSize(.small)
+                            .controlSize(.regular)
                             .font(.caption)
                             .help("Keep the original path when creating offset (Professional default)")
 
