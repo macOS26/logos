@@ -256,20 +256,20 @@ extension DrawingCanvas {
         }
 
         let rawPointLocations = pointsToProcess.map { $0.location }
-        // Reduce tolerance to keep more points for proper leaf shapes
-        let previewTolerance = document.currentBrushSmoothingTolerance * 0.3  // Much less aggressive
+        // Use very low tolerance to keep almost all points for maximum smoothness
+        let previewTolerance = document.currentBrushSmoothingTolerance * 0.01  // Keep 99% of points
         var simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance)
 
-        // CRITICAL: Ensure we have enough points for proper leaf shape tapering
-        // If simplification reduced points too much, re-interpolate
-        if simplifiedPoints.count < 8 && rawPointLocations.count > 2 {
-            // Force minimum points for leaf shape by using less aggressive simplification
-            simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance * 0.1)
+        // CRITICAL: Ensure we have enough points for smooth curves
+        // Keep many more points for high fidelity
+        if simplifiedPoints.count < 30 && rawPointLocations.count > 2 {
+            // Use even less tolerance to keep more points
+            simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance * 0.001)
 
-            // If still too few, just use more of the original points
-            if simplifiedPoints.count < 8 {
-                // Sample evenly from raw points to get at least 8 points
-                let stepSize = max(1, rawPointLocations.count / 8)
+            // If still too few, just use most of the original points
+            if simplifiedPoints.count < 30 {
+                // Sample densely from raw points to get many points
+                let stepSize = max(1, rawPointLocations.count / 50)  // Keep up to 50 points
                 simplifiedPoints = []
                 for i in Swift.stride(from: 0, to: rawPointLocations.count, by: stepSize) {
                     simplifiedPoints.append(rawPointLocations[i])
@@ -354,15 +354,15 @@ extension DrawingCanvas {
         }
 
         let rawPointLocations = pointsToProcess.map { $0.location }
-        // Use reduced tolerance for better leaf shapes
-        var simplifiedPoints: [CGPoint] = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance * 0.3)
+        // Use extremely low tolerance for maximum smoothness
+        var simplifiedPoints: [CGPoint] = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance * 0.01)
 
-        // Ensure minimum points for proper leaf shape
-        if simplifiedPoints.count < 8 && rawPointLocations.count > 2 {
-            simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance * 0.05)
-            if simplifiedPoints.count < 8 {
-                // Sample evenly from raw points
-                let stepSize = max(1, rawPointLocations.count / 8)
+        // Ensure many points for smooth curves
+        if simplifiedPoints.count < 30 && rawPointLocations.count > 2 {
+            simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance * 0.001)
+            if simplifiedPoints.count < 30 {
+                // Sample densely from raw points
+                let stepSize = max(1, rawPointLocations.count / 50)  // Keep up to 50 points
                 simplifiedPoints = []
                 for i in Swift.stride(from: 0, to: rawPointLocations.count, by: stepSize) {
                     simplifiedPoints.append(rawPointLocations[i])
@@ -429,8 +429,8 @@ extension DrawingCanvas {
         }
         
         // Step 2: Apply improved Douglas-Peucker simplification with sharp corner preservation
-        // Reduce tolerance to preserve more points for proper leaf shapes
-        let smoothingTolerance = document.currentBrushSmoothingTolerance * 0.3  // Less aggressive for leaf shapes
+        // Use extremely low tolerance to preserve almost all points for maximum smoothness
+        let smoothingTolerance = document.currentBrushSmoothingTolerance * 0.01  // Keep 99% of points
         if processedPoints.count >= 200 {
             // Try GPU DP first; then apply CPU corner-preserving refinement if desired
             let metalEngine = MetalComputeEngine.shared
@@ -465,16 +465,16 @@ extension DrawingCanvas {
                 DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
         }
         
-        // CRITICAL: Ensure we have enough points for proper leaf shape generation
+        // CRITICAL: Keep many points for high-fidelity smooth curves
         // If simplification was too aggressive, re-interpolate points
-        if brushSimplifiedPoints.count < 8 && processedPoints.count > 2 {
-            // Try again with much less tolerance
-            let minTolerance = smoothingTolerance * 0.1
+        if brushSimplifiedPoints.count < 50 && processedPoints.count > 2 {
+            // Try again with minimal tolerance
+            let minTolerance = smoothingTolerance * 0.001
             brushSimplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: minTolerance)
 
-            // If still too few, sample from processed points
-            if brushSimplifiedPoints.count < 8 {
-                let stepSize = max(1, processedPoints.count / 10)
+            // If still too few, sample densely from processed points
+            if brushSimplifiedPoints.count < 50 {
+                let stepSize = max(1, processedPoints.count / 100)  // Keep up to 100 points
                 brushSimplifiedPoints = []
                 for i in Swift.stride(from: 0, to: processedPoints.count, by: stepSize) {
                     brushSimplifiedPoints.append(processedPoints[i])
