@@ -94,7 +94,7 @@ struct MarkerSettingsSection: View {
                         set: { appState.pressureSensitivityEnabled = $0 }
                     ))
                     .toggleStyle(SwitchToggleStyle())
-                    .controlSize(.regular)
+                    .controlSize(.small)
                 }
                 .help("Enable or disable pressure sensitivity for marker tool")
             }
@@ -272,7 +272,7 @@ struct MarkerSettingsSection: View {
                         set: { document.markerUseFillAsStroke = $0 }
                     ))
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-                    .controlSize(.regular)
+                    .controlSize(.small)
                     .help("When enabled, marker uses fill color for both fill and stroke. When disabled, uses stroke color for both.")
                 }
 
@@ -292,7 +292,7 @@ struct MarkerSettingsSection: View {
                         set: { document.markerApplyNoStroke = $0 }
                     ))
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-                    .controlSize(.regular)
+                    .controlSize(.small)
                     .help("When enabled, marker shapes will have no stroke regardless of current stroke settings")
                 }
 
@@ -312,7 +312,7 @@ struct MarkerSettingsSection: View {
                         set: { document.markerRemoveOverlap = $0 }
                     ))
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-                    .controlSize(.regular)
+                    .controlSize(.small)
                     .help("When enabled, overlapping parts of marker strokes will be merged using union operation")
                 }
             }

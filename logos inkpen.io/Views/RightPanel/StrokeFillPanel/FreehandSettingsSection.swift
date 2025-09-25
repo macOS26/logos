@@ -76,7 +76,7 @@ struct FreehandSettingsSection: View {
                     set: { document.freehandClosePath = $0 }
                 ))
                 .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-                .controlSize(.regular)
+                .controlSize(.small)
                 .help("When enabled, closes the path by connecting the end to the start")
             }
 
@@ -96,7 +96,7 @@ struct FreehandSettingsSection: View {
                     set: { document.freehandExpandStroke = $0 }
                 ))
                 .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-                .controlSize(.regular)
+                .controlSize(.small)
                 .help("When enabled, converts the stroke to a filled path outline")
             }
 
@@ -115,7 +115,7 @@ struct FreehandSettingsSection: View {
                         set: { document.realTimeSmoothingEnabled = $0 }
                     ))
                     .toggleStyle(SwitchToggleStyle())
-                    .controlSize(.regular)
+                    .controlSize(.small)
                 }
                 .help("Enable real-time smoothing during drawing")
 
@@ -155,7 +155,7 @@ struct FreehandSettingsSection: View {
                     set: { document.preserveSharpCorners = $0 }
                 ))
                 .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-                .controlSize(.regular)
+                .controlSize(.small)
                 .help("Preserve sharp corners when simplifying paths")
             }
 
@@ -176,7 +176,7 @@ struct FreehandSettingsSection: View {
                         set: { document.advancedSmoothingEnabled = $0 }
                     ))
                     .toggleStyle(SwitchToggleStyle(tint: .purple))
-                    .controlSize(.regular)
+                    .controlSize(.small)
                 }
                 .help("Enable advanced curve smoothing algorithms")
 
@@ -217,7 +217,7 @@ struct FreehandSettingsSection: View {
                             set: { document.adaptiveTensionEnabled = $0 }
                         ))
                         .toggleStyle(SwitchToggleStyle(tint: .purple))
-                        .controlSize(.regular)
+                        .controlSize(.small)
                         .help("Enable adaptive curve tension based on curvature")
                     }
                 }

@@ -53,7 +53,7 @@ struct VariableStrokeSection: View {
                         set: { appState.pressureSensitivityEnabled = $0 }
                     ))
                     .toggleStyle(SwitchToggleStyle())
-                    .controlSize(.regular)
+                    .controlSize(.small)
                 }
                 .help("Enable or disable pressure sensitivity for variable stroke")
             }
@@ -137,7 +137,7 @@ struct VariableStrokeSection: View {
                         set: { document.advancedSmoothingEnabled = $0 }
                     ))
                     .toggleStyle(SwitchToggleStyle(tint: .purple))
-                    .controlSize(.regular)
+                    .controlSize(.small)
                 }
                 .help("Enable advanced curve smoothing algorithms")
 
@@ -178,7 +178,7 @@ struct VariableStrokeSection: View {
                             set: { document.adaptiveTensionEnabled = $0 }
                         ))
                         .toggleStyle(SwitchToggleStyle(tint: .purple))
-                        .controlSize(.regular)
+                        .controlSize(.small)
                         .help("Enable adaptive curve tension based on curvature")
                     }
                 }

@@ -205,7 +205,7 @@ struct PathOperationsPanel: View {
                         set: { AppState.shared.enableClippingMaskContentSelection = $0 }
                     ))
                     .toggleStyle(.switch)
-                    .controlSize(.regular)
+                    .controlSize(.small)
                     .font(.caption)
                     
                     Spacer()
