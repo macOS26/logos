@@ -244,62 +244,57 @@ struct ShapeView: View {
             
         case .outside:
             // OUTSIDE STROKE - render a doubled centered stroke and mask it to only the exterior region
-            ZStack {
-                // Compute a large rect around the path to build an even-odd outside mask
-                let boundingBox = path.cgPath.boundingBoxOfPath
-                let expansion = max(strokeStyle.width * 4, 1000)
-                let largeRect = boundingBox.insetBy(dx: -expansion, dy: -expansion)
-                
-                // Build a mask that reveals only the area outside the shape path
-                let outsideMask = Path { maskPath in
-                    maskPath.addRect(largeRect)
-                    maskPath.addPath(path)
-                }
-                    .fill(Color.black, style: SwiftUI.FillStyle(eoFill: true))
-                
-                if strokeStyle.isGradient {
-                    // For gradient strokes, keep gradient coordinates stable via a centered style, then mask to outside
-                    let adjustedStrokeStyle = StrokeStyle(
-                        color: strokeStyle.color,
-                        width: strokeStyle.width * 2,
-                        placement: .center,
-                        dashPattern: strokeStyle.dashPattern.map { $0 * 2 },
-                        lineCap: strokeStyle.lineCap.cgLineCap,
-                        lineJoin: strokeStyle.lineJoin.cgLineJoin,
-                        miterLimit: strokeStyle.miterLimit,
-                        opacity: strokeStyle.opacity,
-                        blendMode: strokeStyle.blendMode
-                    )
-                    let doubleWidthStrokeStyle = SwiftUI.StrokeStyle(
-                        lineWidth: strokeStyle.width * 2,
-                        lineCap: swiftUIStrokeStyle.lineCap,
-                        lineJoin: swiftUIStrokeStyle.lineJoin,
-                        miterLimit: swiftUIStrokeStyle.miterLimit,
-                        dash: swiftUIStrokeStyle.dash.map { $0 * 2 }
-                    )
-                    
-                    renderStrokeColor(strokeStyle: adjustedStrokeStyle, path: path, swiftUIStyle: doubleWidthStrokeStyle, shape: shape)
-                        .mask(outsideMask)
-                        .opacity(strokeStyle.opacity)
-                } else {
-                    // Solid color stroke: double width, masked to outside only
-                    let doubleWidthStrokeStyle = SwiftUI.StrokeStyle(
-                        lineWidth: strokeStyle.width * 2,
-                        lineCap: swiftUIStrokeStyle.lineCap,
-                        lineJoin: swiftUIStrokeStyle.lineJoin,
-                        miterLimit: swiftUIStrokeStyle.miterLimit,
-                        dash: swiftUIStrokeStyle.dash.map { $0 * 2 }
-                    )
-                    
-                    renderStrokeColor(strokeStyle: strokeStyle, path: path, swiftUIStyle: doubleWidthStrokeStyle, shape: shape)
-                        .mask(outsideMask)
-                        .opacity(strokeStyle.opacity)
-                }
-                
-                // Draw the fill normally (no opaque underlay), preserving its alpha
-                if let fillStyle = shape.fillStyle, fillStyle.color != .clear {
-                    renderFill(fillStyle: fillStyle, path: path, shape: shape)
-                }
+            // IMPORTANT: Don't render fill separately - it's handled in the main body where fill is rendered first
+
+            // Compute a large rect around the path to build an even-odd outside mask
+            let boundingBox = path.cgPath.boundingBoxOfPath
+            let expansion = max(strokeStyle.width * 4, 1000)
+            let largeRect = boundingBox.insetBy(dx: -expansion, dy: -expansion)
+
+            // Build a mask that reveals only the area outside the shape path
+            let outsideMask = Path { maskPath in
+                maskPath.addRect(largeRect)
+                maskPath.addPath(path)
+            }
+                .fill(Color.black, style: SwiftUI.FillStyle(eoFill: true))
+
+            if strokeStyle.isGradient {
+                // For gradient strokes, keep gradient coordinates stable via a centered style, then mask to outside
+                let adjustedStrokeStyle = StrokeStyle(
+                    color: strokeStyle.color,
+                    width: strokeStyle.width * 2,
+                    placement: .center,
+                    dashPattern: strokeStyle.dashPattern.map { $0 * 2 },
+                    lineCap: strokeStyle.lineCap.cgLineCap,
+                    lineJoin: strokeStyle.lineJoin.cgLineJoin,
+                    miterLimit: strokeStyle.miterLimit,
+                    opacity: strokeStyle.opacity,
+                    blendMode: strokeStyle.blendMode
+                )
+                let doubleWidthStrokeStyle = SwiftUI.StrokeStyle(
+                    lineWidth: strokeStyle.width * 2,
+                    lineCap: swiftUIStrokeStyle.lineCap,
+                    lineJoin: swiftUIStrokeStyle.lineJoin,
+                    miterLimit: swiftUIStrokeStyle.miterLimit,
+                    dash: swiftUIStrokeStyle.dash.map { $0 * 2 }
+                )
+
+                renderStrokeColor(strokeStyle: adjustedStrokeStyle, path: path, swiftUIStyle: doubleWidthStrokeStyle, shape: shape)
+                    .mask(outsideMask)
+                    .opacity(strokeStyle.opacity)
+            } else {
+                // Solid color stroke: double width, masked to outside only
+                let doubleWidthStrokeStyle = SwiftUI.StrokeStyle(
+                    lineWidth: strokeStyle.width * 2,
+                    lineCap: swiftUIStrokeStyle.lineCap,
+                    lineJoin: swiftUIStrokeStyle.lineJoin,
+                    miterLimit: swiftUIStrokeStyle.miterLimit,
+                    dash: swiftUIStrokeStyle.dash.map { $0 * 2 }
+                )
+
+                renderStrokeColor(strokeStyle: strokeStyle, path: path, swiftUIStyle: doubleWidthStrokeStyle, shape: shape)
+                    .mask(outsideMask)
+                    .opacity(strokeStyle.opacity)
             }
         }
     }
