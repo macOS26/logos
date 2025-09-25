@@ -264,7 +264,7 @@ struct VerticalToolbar: View {
                                             toolGroupManager.setSelectedToolInGroup(toolItem.tool)
                                             Log.info("🛠️ Switched to tool: \(toolItem.tool.rawValue)", category: .general)
                                         }
-                                        
+
                                         // Do not force cursor here; let canvas hover control cursor visibility.
                                         // This avoids requiring long-press to see the cursor. The canvas will set
                                         // the correct cursor on hover/enter.
@@ -298,7 +298,7 @@ struct VerticalToolbar: View {
                                         .frame(width: 58, height: 34)
                                         .position(x: 24.5, y: 17)
                                     }
-                                    .buttonStyle(PlainButtonStyle())
+                                    .buttonStyle(BorderlessButtonStyle())
                                     .help(toolTooltip(for: toolItem.tool, variant: toolItem.starVariant))
                                     .background(
                                         GeometryReader { geometry in
@@ -314,40 +314,30 @@ struct VerticalToolbar: View {
                                                 }
                                         }
                                     )
-                                    .highPriorityGesture(
-                                        TapGesture()
-                                            .onEnded { _ in
-                                                // Handle tool selection
-                                                if let starVariant = toolItem.starVariant {
-                                                    toolGroupManager.selectStarVariant(starVariant)
-                                                    document.currentTool = .star
-                                                    // Update tool group manager state
-                                                    toolGroupManager.currentToolInGroup = .star
-                                                    toolGroupManager.setSelectedToolInGroup(.star)
-                                                    Log.fileOperation("🔧 Tool tap detected: \(starVariant.rawValue)", level: .info)
-                                                } else {
-                                                    document.currentTool = toolItem.tool
-                                                    // Update tool group manager state
-                                                    toolGroupManager.currentToolInGroup = toolItem.tool
-                                                    toolGroupManager.setSelectedToolInGroup(toolItem.tool)
-                                                    Log.fileOperation("🔧 Tool tap detected: \(toolItem.tool.rawValue)", level: .info)
-                                                }
-                                                
-                                                // Do not force cursor here; canvas hover logic will set it.
-                                            }
-                                    )
-                                    .simultaneousGesture(
-                                        LongPressGesture(minimumDuration: 0.5)
-                                            .onEnded { _ in
-                                                // Long press completed - expand tool group
-                                                if let starVariant = toolItem.starVariant {
-                                                    let variantIndex = StarVariant.allCases.firstIndex(of: starVariant) ?? 0
-                                                    handleToolLongPress(.star, variantIndex: variantIndex)
-                                                } else {
-                                                    handleToolLongPress(toolItem.tool)
-                                                }
-                                            }
-                                    )
+                                    .onTapGesture {
+                                        // Direct tap handler for stylus compatibility
+                                        if let starVariant = toolItem.starVariant {
+                                            toolGroupManager.selectStarVariant(starVariant)
+                                            document.currentTool = .star
+                                            toolGroupManager.currentToolInGroup = .star
+                                            toolGroupManager.setSelectedToolInGroup(.star)
+                                            Log.info("⭐ Selected star variant (tap): \(starVariant.rawValue)", category: .general)
+                                        } else {
+                                            document.currentTool = toolItem.tool
+                                            toolGroupManager.currentToolInGroup = toolItem.tool
+                                            toolGroupManager.setSelectedToolInGroup(toolItem.tool)
+                                            Log.info("🛠️ Switched to tool (tap): \(toolItem.tool.rawValue)", category: .general)
+                                        }
+                                    }
+                                    .onLongPressGesture(minimumDuration: 0.5) {
+                                        // Long press for expanding tool groups
+                                        if let starVariant = toolItem.starVariant {
+                                            let variantIndex = StarVariant.allCases.firstIndex(of: starVariant) ?? 0
+                                            handleToolLongPress(.star, variantIndex: variantIndex)
+                                        } else {
+                                            handleToolLongPress(toolItem.tool)
+                                        }
+                                    }
                                 }
                             }
                         }
