@@ -45,9 +45,7 @@ extension DrawingCanvas {
         
         // Initialize brush drawing state
         isBrushDrawing = true
-        // Start with actual pressure (usually near 0 when pen touches down)
-        let initialPressure = PressureManager.shared.getPressure(for: location, sensitivity: document.currentBrushPressureSensitivity)
-        brushRawPoints = [BrushPoint(location: location, pressure: initialPressure, timestamp: Date())]
+        brushRawPoints = [BrushPoint(location: location, pressure: 1.0, timestamp: Date())]
         brushSimplifiedPoints = []
         
         // Detect pressure input capability using PressureManager
@@ -91,7 +89,6 @@ extension DrawingCanvas {
         guard isBrushDrawing else { return }
         
         // Get pressure using smart detection (real or simulated)
-        // IMPORTANT: Don't modify pressure - it's naturally 0-1 range
         let pressure = PressureManager.shared.getPressure(for: location, sensitivity: document.currentBrushPressureSensitivity)
         
         // Add point to raw path with pressure data
@@ -110,29 +107,54 @@ extension DrawingCanvas {
         // Log the point count at drag end
         Log.info("🖌️ BRUSH DRAG END: \(brushRawPoints.count) points captured", category: .general)
 
-        // REMOVED DICK SHAPE HACK: Don't add artificial intermediate points for 2-point strokes
-        // This was causing short strokes to have a phallic bulge in the middle
+        // For straight lines (only 2 points), add intermediate points to ensure proper leaf shape generation
+        if brushRawPoints.count == 2 {
+            Log.info("🖌️ BRUSH DRAG END: Interpolating 2-point line in handleBrushDragEnd", category: .general)
+            let startPoint = brushRawPoints[0]
+            let endPoint = brushRawPoints[1]
 
-        // ALWAYS use the preview path - it already has the correct pressure!
-        if let preview = brushPreviewPath {
+            // Add intermediate points along the line for proper variable width calculation
+            var interpolatedPoints: [BrushPoint] = [startPoint]
+
+            // Add 3-5 intermediate points for smooth leaf shape
+            let numIntermediatePoints = 4
+            for i in 1...numIntermediatePoints {
+                let t = Double(i) / Double(numIntermediatePoints + 1)
+                let interpolatedLocation = CGPoint(
+                    x: startPoint.location.x + (endPoint.location.x - startPoint.location.x) * t,
+                    y: startPoint.location.y + (endPoint.location.y - startPoint.location.y) * t
+                )
+                // Interpolate pressure as well
+                let interpolatedPressure = startPoint.pressure + (endPoint.pressure - startPoint.pressure) * t
+                interpolatedPoints.append(BrushPoint(
+                    location: interpolatedLocation,
+                    pressure: interpolatedPressure,
+                    timestamp: Date()
+                ))
+            }
+
+            interpolatedPoints.append(endPoint)
+            brushRawPoints = interpolatedPoints
+        }
+
+        if appState.brushPreviewIsFinal, let preview = brushPreviewPath {
             // Bake the exact preview path
             finalizeFromPreview(preview)
         } else {
-            // Fallback only if no preview exists (shouldn't happen)
+            // Process brush stroke to create variable width path
             processBrushStroke()
         }
-
+        
         // Clean up state including clearing preview path for overlay system
         brushPreviewPath = nil
         cancelBrushDrawing()
-
-        // AUTO-DESELECT: Clear selection AFTER shape is added
-        // MUST happen after finalizeFromPreview/processBrushStroke since those select the shape
+        
+        // AUTO-DESELECT: Clear selection after completing brush stroke
+        // This allows user to immediately change colors for the next stroke
         document.selectedShapeIDs.removeAll()
-        document.selectedObjectIDs.removeAll()
         // Logging disabled in hot path to reduce CPU overhead
-
-        Log.info("✅ BRUSH: Stroke completed and deselected", category: .fileOperations)
+        
+        Log.info("✅ BRUSH: Stroke completed and converted to variable width path", category: .fileOperations)
     }
     
     // MARK: - Pressure Simulation
@@ -185,28 +207,91 @@ extension DrawingCanvas {
             return VectorPath(elements: [.move(to: VectorPoint(brushRawPoints[0].location))])
         }
 
-        // Use raw points directly - NO INTERPOLATION HACK
-        let rawPointLocations = brushRawPoints.map { $0.location }
-        // Use very minimal tolerance to keep maximum points for high-fidelity curves
-        let previewTolerance = document.currentBrushSmoothingTolerance * 0.01  // Keep almost all points for smoothness
-        let simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance)
+        // For very short strokes (2 points), add interpolation for smoother shape
+        var pointsToProcess = brushRawPoints
+        if brushRawPoints.count == 2 {
+            let startPoint = brushRawPoints[0]
+            let endPoint = brushRawPoints[1]
 
-        // REMOVED DICK SHAPE HACK: Don't force minimum points
-        // Let 2-point strokes remain as 2 points - tapering will handle them
+            var interpolatedPoints: [BrushPoint] = [startPoint]
 
-        Log.info("🖌️ PREVIEW: Simplified from \(rawPointLocations.count) to \(simplifiedPoints.count) points", category: .general)
+            // Calculate perpendicular direction for jitter
+            let dx = endPoint.location.x - startPoint.location.x
+            let dy = endPoint.location.y - startPoint.location.y
+            let lineLength = sqrt(dx * dx + dy * dy)
+
+            // Perpendicular vector (normalized) - handle zero-length lines
+            let perpX = lineLength > 0 ? -dy / lineLength : 0
+            let perpY = lineLength > 0 ? dx / lineLength : 0
+
+            // Add intermediate points with subtle jitter for natural brush look
+            let numIntermediatePoints = 5
+            for i in 1...numIntermediatePoints {
+                let t = Double(i) / Double(numIntermediatePoints + 1)
+
+                // Add subtle perpendicular jitter for organic feel
+                // Use sine wave for smooth variation
+                let jitterAmount = sin(t * .pi) * 2.0 // Max 2 pixels offset at middle
+
+                let interpolatedLocation = CGPoint(
+                    x: startPoint.location.x + (endPoint.location.x - startPoint.location.x) * t + perpX * jitterAmount,
+                    y: startPoint.location.y + (endPoint.location.y - startPoint.location.y) * t + perpY * jitterAmount
+                )
+
+                // Vary pressure for more natural tapering
+                // Create a subtle "bulge" in the middle
+                let basePressure = startPoint.pressure + (endPoint.pressure - startPoint.pressure) * t
+                let pressureVariation = sin(t * .pi) * 0.15 // Add up to 15% variation
+                let interpolatedPressure = min(1.0, basePressure * (1.0 + pressureVariation))
+
+                interpolatedPoints.append(BrushPoint(
+                    location: interpolatedLocation,
+                    pressure: interpolatedPressure,
+                    timestamp: Date()
+                ))
+            }
+
+            interpolatedPoints.append(endPoint)
+            pointsToProcess = interpolatedPoints
+        }
+
+        let rawPointLocations = pointsToProcess.map { $0.location }
+        // Reduce tolerance to keep more points for proper leaf shapes
+        let previewTolerance = document.currentBrushSmoothingTolerance * 0.3  // Much less aggressive
+        var simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance)
+
+        // CRITICAL: Ensure we have enough points for proper leaf shape tapering
+        // If simplification reduced points too much, re-interpolate
+        if simplifiedPoints.count < 8 && rawPointLocations.count > 2 {
+            // Force minimum points for leaf shape by using less aggressive simplification
+            simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance * 0.1)
+
+            // If still too few, just use more of the original points
+            if simplifiedPoints.count < 8 {
+                // Sample evenly from raw points to get at least 8 points
+                let stepSize = max(1, rawPointLocations.count / 8)
+                simplifiedPoints = []
+                for i in Swift.stride(from: 0, to: rawPointLocations.count, by: stepSize) {
+                    simplifiedPoints.append(rawPointLocations[i])
+                }
+                if let last = rawPointLocations.last, simplifiedPoints.last != last {
+                    simplifiedPoints.append(last)
+                }
+            }
+        }
+
+        Log.info("🖌️ PREVIEW: Simplified from \(pointsToProcess.count) to \(simplifiedPoints.count) points", category: .general)
 
         if simplifiedPoints.count >= 2 {
-            // USE THE SAME FUNCTION AS FINAL - NO DIFFERENT PREVIEW FUNCTION!
-            return generateSmoothVariableWidthPath(
+            return generatePreviewVariableWidthPath(
                 centerPoints: simplifiedPoints,
-                rawPoints: brushRawPoints,
+                recentRawPoints: pointsToProcess,
                 thickness: document.currentBrushThickness,
                 pressureSensitivity: document.currentBrushPressureSensitivity,
                 taper: document.currentBrushTaper
             )
         } else {
-            return VectorPath(elements: [.move(to: VectorPoint(brushRawPoints[0].location))])
+            return VectorPath(elements: [.move(to: VectorPoint(pointsToProcess[0].location))])
         }
     }
     
@@ -222,26 +307,82 @@ extension DrawingCanvas {
             return VectorPath(elements: [.move(to: VectorPoint(rawPoints[0].location))])
         }
 
-        // REMOVED DICK SHAPE HACK: Don't interpolate 2-point strokes
-        // Use raw points directly - let the tapering handle short strokes
-        let rawPointLocations = rawPoints.map { $0.location }
-        // Use minimal tolerance for maximum curve fidelity
-        let simplifiedPoints: [CGPoint] = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance * 0.05)
+        // For straight lines (only 2 points), interpolate for proper leaf shape
+        var pointsToProcess = rawPoints
+        if rawPoints.count == 2 {
+            let startPoint = rawPoints[0]
+            let endPoint = rawPoints[1]
 
-        // REMOVED DICK SHAPE HACK: Don't force minimum points
-        // Let 2-point strokes remain as 2 points - tapering will handle them
+            var interpolatedPoints: [BrushPoint] = [startPoint]
+
+            // Calculate perpendicular direction for jitter
+            let dx = endPoint.location.x - startPoint.location.x
+            let dy = endPoint.location.y - startPoint.location.y
+            let lineLength = sqrt(dx * dx + dy * dy)
+
+            // Perpendicular vector (normalized) - handle zero-length lines
+            let perpX = lineLength > 0 ? -dy / lineLength : 0
+            let perpY = lineLength > 0 ? dx / lineLength : 0
+
+            // Add intermediate points with subtle jitter
+            let numIntermediatePoints = 5
+            for i in 1...numIntermediatePoints {
+                let t = Double(i) / Double(numIntermediatePoints + 1)
+
+                // Add subtle perpendicular jitter for organic feel
+                let jitterAmount = sin(t * .pi) * 2.0 // Max 2 pixels offset at middle
+
+                let interpolatedLocation = CGPoint(
+                    x: startPoint.location.x + (endPoint.location.x - startPoint.location.x) * t + perpX * jitterAmount,
+                    y: startPoint.location.y + (endPoint.location.y - startPoint.location.y) * t + perpY * jitterAmount
+                )
+
+                // Vary pressure for more natural tapering
+                let basePressure = startPoint.pressure + (endPoint.pressure - startPoint.pressure) * t
+                let pressureVariation = sin(t * .pi) * 0.15 // Add up to 15% variation
+                let interpolatedPressure = min(1.0, basePressure * (1.0 + pressureVariation))
+
+                interpolatedPoints.append(BrushPoint(
+                    location: interpolatedLocation,
+                    pressure: interpolatedPressure,
+                    timestamp: Date()
+                ))
+            }
+
+            interpolatedPoints.append(endPoint)
+            pointsToProcess = interpolatedPoints
+        }
+
+        let rawPointLocations = pointsToProcess.map { $0.location }
+        // Use reduced tolerance for better leaf shapes
+        var simplifiedPoints: [CGPoint] = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance * 0.3)
+
+        // Ensure minimum points for proper leaf shape
+        if simplifiedPoints.count < 8 && rawPointLocations.count > 2 {
+            simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance * 0.05)
+            if simplifiedPoints.count < 8 {
+                // Sample evenly from raw points
+                let stepSize = max(1, rawPointLocations.count / 8)
+                simplifiedPoints = []
+                for i in Swift.stride(from: 0, to: rawPointLocations.count, by: stepSize) {
+                    simplifiedPoints.append(rawPointLocations[i])
+                }
+                if let last = rawPointLocations.last, simplifiedPoints.last != last {
+                    simplifiedPoints.append(last)
+                }
+            }
+        }
 
         if simplifiedPoints.count >= 2 {
-            // USE THE SAME FUNCTION AS FINAL - PREVIEW MUST MATCH FINAL!
-            return generateSmoothVariableWidthPath(
+            return generatePreviewVariableWidthPath(
                 centerPoints: simplifiedPoints,
-                rawPoints: rawPoints,
+                recentRawPoints: pointsToProcess,
                 thickness: thickness,
                 pressureSensitivity: pressureSensitivity,
                 taper: taper
             )
         } else {
-            return VectorPath(elements: [.move(to: VectorPoint(rawPoints[0].location))])
+            return VectorPath(elements: [.move(to: VectorPoint(pointsToProcess[0].location))])
         }
     }
     
@@ -288,8 +429,8 @@ extension DrawingCanvas {
         }
         
         // Step 2: Apply improved Douglas-Peucker simplification with sharp corner preservation
-        // Use extremely low tolerance to preserve maximum points for smooth, high-fidelity curves
-        let smoothingTolerance = document.currentBrushSmoothingTolerance * 0.01  // Keep almost all points for maximum smoothness
+        // Reduce tolerance to preserve more points for proper leaf shapes
+        let smoothingTolerance = document.currentBrushSmoothingTolerance * 0.3  // Less aggressive for leaf shapes
         if processedPoints.count >= 200 {
             // Try GPU DP first; then apply CPU corner-preserving refinement if desired
             let metalEngine = MetalComputeEngine.shared
@@ -324,16 +465,16 @@ extension DrawingCanvas {
                 DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
         }
         
-        // CRITICAL: Ensure we have enough points for smooth curves
+        // CRITICAL: Ensure we have enough points for proper leaf shape generation
         // If simplification was too aggressive, re-interpolate points
-        if brushSimplifiedPoints.count < 20 && processedPoints.count > 2 {
-            // Try again with minimal tolerance for maximum smoothness
-            let minTolerance = smoothingTolerance * 0.01
+        if brushSimplifiedPoints.count < 8 && processedPoints.count > 2 {
+            // Try again with much less tolerance
+            let minTolerance = smoothingTolerance * 0.1
             brushSimplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: minTolerance)
 
             // If still too few, sample from processed points
-            if brushSimplifiedPoints.count < 20 {
-                let stepSize = max(1, processedPoints.count / 30)  // Sample many more points
+            if brushSimplifiedPoints.count < 8 {
+                let stepSize = max(1, processedPoints.count / 10)
                 brushSimplifiedPoints = []
                 for i in Swift.stride(from: 0, to: processedPoints.count, by: stepSize) {
                     brushSimplifiedPoints.append(processedPoints[i])
@@ -497,7 +638,6 @@ extension DrawingCanvas {
     // MARK: - Live Preview Variable Width Path Generation
     
     /// Generate variable width path for live preview with proper pressure mapping
-    // REMOVED: Old preview function - now using main generateSmoothVariableWidthPath
     private func generatePreviewVariableWidthPath(centerPoints: [CGPoint], recentRawPoints: [BrushPoint], thickness: Double, pressureSensitivity: Double, taper: Double) -> VectorPath {
         guard centerPoints.count >= 2 else {
             // Fallback for single point
@@ -505,7 +645,7 @@ extension DrawingCanvas {
         }
 
         // DETECT STRAIGHT LINES for special leaf shape treatment
-        // Removed straight line detection - not needed anymore
+        let isStraightLine = detectStraightLine(points: centerPoints)
 
         // Calculate variable thickness at each simplified point with proper pressure mapping
         var thicknessPoints: [(location: CGPoint, thickness: Double)] = []
@@ -514,14 +654,76 @@ extension DrawingCanvas {
         for (index, point) in centerPoints.enumerated() {
             let progress = Double(index) / Double(centerPoints.count - 1)
 
-            // Start with base thickness
+            // Create leaf shape with smooth tapering
             var finalThickness = thickness
 
+            // ENHANCED LEAF SHAPE - Better end tapering for proper leaf form
+            // Creates characteristic leaf bulge at both start and end
+
+            // Create leaf shape with asymmetric tapering for better end shape
+            let distanceFromCenter = abs(progress - 0.5) * 2.0 // 0 at center, 1 at ends
+
+            // Use sine-based curve for the main shape (smooth and natural)
+            let sineShape = sin((1.0 - distanceFromCenter) * .pi * 0.5) // Half sine wave
+
+            // Add subtle power curve to enhance the leaf bulge
+            let powerShape = 1.0 - pow(distanceFromCenter, 2.0) // Quadratic for gentler curve
+
+            // Blend for best of both - more sine for smoothness, some power for bulge
+            let leafShape = sineShape * 0.7 + powerShape * 0.3
+
+            // Apply thickness with good base scaling
+            finalThickness = thickness * leafShape
+
+            // SPECIAL TREATMENT FOR STRAIGHT LINES - Aggressive taper at end to avoid phallic shape
+            if isStraightLine {
+                // For straight lines, AGGRESSIVE TAPER at end - no bulge whatsoever
+                if progress < 0.1 {
+                    // Start: Quick taper from point
+                    finalThickness *= pow(progress / 0.1, 2.0)
+                } else if progress > 0.5 {
+                    // END: Much more aggressive taper starting earlier
+                    let endProgress = (progress - 0.5) / 0.5
+                    // Use power of 3 for very aggressive thinning
+                    // This creates a sharp point with no bulge
+                    finalThickness *= pow(1.0 - endProgress, 3.0)
+                }
+            } else {
+                // Normal curved strokes - CLIP OFF NARROW TAILS
+                if progress < 0.03 {
+                    // START: Cut off very thin tails at beginning
+                    finalThickness = 0  // Completely remove narrow tail
+                } else if progress < 0.08 {
+                    // Quick taper from zero
+                    let startTaper = pow((progress - 0.03) / 0.05, 2.0)
+                    finalThickness *= startTaper
+                } else if progress > 0.15 && progress <= 0.3 {
+                    let bulgeAmount = sin((progress - 0.15) / 0.15 * .pi)
+                    finalThickness *= (1.0 + bulgeAmount * 0.15)
+                } else if progress > 0.8 && progress <= 0.88 {
+                    let endBulgeAmount = sin((progress - 0.8) / 0.08 * .pi)
+                    finalThickness *= (1.0 + endBulgeAmount * 0.3)
+                } else if progress > 0.88 && progress < 0.97 {
+                    // Quick taper to zero
+                    let endProgress = (progress - 0.88) / 0.09
+                    let endTaper = 1.0 - pow(endProgress, 1.5)
+                    finalThickness *= endTaper
+                } else if progress >= 0.97 {
+                    // END: Cut off very thin tails at end
+                    finalThickness = 0  // Completely remove narrow tail
+                }
+            }
+
+            // Ensure minimum thickness to avoid zero (unless explicitly set to 0 for tail removal)
+            if finalThickness > 0 {
+                finalThickness = max(finalThickness, 0.5)
+            }
+            
             // PROPER PRESSURE MAPPING: Find the closest raw point for pressure data
             if !recentRawPoints.isEmpty {
                 var closestDistance = Double.infinity
                 var closestPressure = 1.0
-
+                
                 for rawPoint in recentRawPoints {
                     let distance = sqrt(pow(point.x - rawPoint.location.x, 2) + pow(point.y - rawPoint.location.y, 2))
                     if distance < closestDistance {
@@ -529,37 +731,9 @@ extension DrawingCanvas {
                         closestPressure = rawPoint.pressure
                     }
                 }
-
-                // Apply pressure with stronger effect for better thick-to-thin transitions
-                let pressureEffect = closestPressure * pressureSensitivity + (1.0 - pressureSensitivity) * 0.2  // Stronger pressure variation
-                finalThickness *= pressureEffect
+                
+                finalThickness *= closestPressure
             }
-
-            // Apply proper tapering for clean strokes
-            if centerPoints.count <= 10 {
-                // SHORT STROKE: Smooth taper to avoid bulges
-                if progress < 0.2 {
-                    // Smooth quadratic taper at start
-                    finalThickness *= pow(progress / 0.2, 2.0)
-                }
-                if progress > 0.8 {
-                    // Smooth quadratic taper at end
-                    let endProgress = (progress - 0.8) / 0.2
-                    finalThickness *= pow(1.0 - endProgress, 2.0)
-                }
-            } else {
-                // LONGER STROKES: Gradual tapering
-                if progress < 0.1 {
-                    // Smooth quadratic start taper
-                    finalThickness *= pow(progress / 0.1, 2.0)
-                }
-                if progress > 0.9 {
-                    let endProgress = (progress - 0.9) / 0.1
-                    finalThickness *= pow(1.0 - endProgress, 2.0)
-                }
-            }
-
-            // Already applied pressure above - don't apply twice!
             
             thicknessPoints.append((location: point, thickness: finalThickness))
         }
@@ -648,121 +822,92 @@ extension DrawingCanvas {
 
     private func generateSmoothVariableWidthPath(centerPoints: [CGPoint], rawPoints: [BrushPoint], thickness: Double, pressureSensitivity: Double, taper: Double) -> VectorPath {
         guard centerPoints.count >= 2 else {
+            // Fallback for single point
             return VectorPath(elements: [.move(to: VectorPoint(rawPoints[0].location))])
         }
 
-        // CLEAN REWRITE: Simple pressure-based variable width with no complicated tapering
-        var pathElements: [PathElement] = []
+        // Detect if this is a straight line
+        let isStraightLine = detectStraightLine(points: centerPoints)
 
-        // Build arrays of left and right edge points based on pressure
-        var leftPoints: [CGPoint] = []
-        var rightPoints: [CGPoint] = []
+        // Calculate variable thickness at each simplified point with proper pressure interpolation
+        var thicknessPoints: [(location: CGPoint, thickness: Double)] = []
 
-        for i in 0..<centerPoints.count {
-            let centerPoint = centerPoints[i]
+        // ALWAYS ensure strong tapering for leaf shape
+        for (index, point) in centerPoints.enumerated() {
+            let progress = Double(index) / Double(centerPoints.count - 1)
 
-            // Get interpolated pressure for this point (0.0 to 1.0 range)
-            let pressure = interpolatePressureForPoint(centerPoint, from: rawPoints)
+            // ENHANCED LEAF SHAPE - matching preview generation
+            var finalThickness = thickness
 
-            // NATURAL LEAF SHAPE: Pressure is naturally 0 at start and end
-            // Just use the pressure directly for thickness - no extra math!
+            // Consistent with preview generation
+            let distanceFromCenter = abs(progress - 0.5) * 2.0
+            let sineShape = sin((1.0 - distanceFromCenter) * .pi * 0.5)
+            let powerShape = 1.0 - pow(distanceFromCenter, 2.0)
+            let leafShape = sineShape * 0.7 + powerShape * 0.3
+            finalThickness = thickness * leafShape
 
-            var variableThickness: Double
-
-            if pressureSensitivity > 0 {
-                // Direct pressure mapping: 0 pressure = thin, 1 pressure = thick
-                // This naturally creates leaf shapes since pressure starts/ends at ~0
-                let minThickness = thickness * 0.1  // 10% minimum so it's visible
-                let maxThickness = thickness
-
-                // Simple linear interpolation based on pressure and sensitivity
-                let effectivePressure = pressure * pressureSensitivity + (1.0 - pressureSensitivity) * 0.5
-                variableThickness = minThickness + (maxThickness - minThickness) * effectivePressure
-
-                // Make sure we have at least minimum thickness
-                variableThickness = max(minThickness, variableThickness)
-            } else {
-                // No pressure sensitivity - constant thickness
-                variableThickness = thickness
-            }
-
-            // Calculate perpendicular direction for this segment
-            var perpendicular: CGPoint
-
-            if i == 0 && centerPoints.count > 1 {
-                // First point: use direction to next point
-                let nextPoint = centerPoints[1]
-                let direction = CGPoint(x: nextPoint.x - centerPoint.x, y: nextPoint.y - centerPoint.y)
-                let length = sqrt(direction.x * direction.x + direction.y * direction.y)
-                if length > 0 {
-                    perpendicular = CGPoint(x: -direction.y / length, y: direction.x / length)
-                } else {
-                    perpendicular = CGPoint(x: 0, y: 1)
-                }
-            } else if i == centerPoints.count - 1 && i > 0 {
-                // Last point: use direction from previous point
-                let prevPoint = centerPoints[i - 1]
-                let direction = CGPoint(x: centerPoint.x - prevPoint.x, y: centerPoint.y - prevPoint.y)
-                let length = sqrt(direction.x * direction.x + direction.y * direction.y)
-                if length > 0 {
-                    perpendicular = CGPoint(x: -direction.y / length, y: direction.x / length)
-                } else {
-                    perpendicular = CGPoint(x: 0, y: 1)
-                }
-            } else if i > 0 && i < centerPoints.count - 1 {
-                // Middle points: use smoothed direction
-                let prevPoint = centerPoints[i - 1]
-                let nextPoint = centerPoints[i + 1]
-                let tangent = CGPoint(x: nextPoint.x - prevPoint.x, y: nextPoint.y - prevPoint.y)
-                let length = sqrt(tangent.x * tangent.x + tangent.y * tangent.y)
-                if length > 0 {
-                    perpendicular = CGPoint(x: -tangent.y / length, y: tangent.x / length)
-                } else {
-                    perpendicular = CGPoint(x: 0, y: 1)
+            // Special treatment for straight lines - aggressive taper to very thin end
+            if isStraightLine {
+                if progress < 0.1 {
+                    finalThickness *= pow(progress / 0.1, 2.0)
+                } else if progress > 0.5 {
+                    let endProgress = (progress - 0.5) / 0.5
+                    // Power of 3 for aggressive thinning
+                    finalThickness *= pow(1.0 - endProgress, 3.0)
                 }
             } else {
-                perpendicular = CGPoint(x: 0, y: 1)
-            }
-
-            // Calculate left and right edge points
-            let halfWidth = variableThickness / 2.0
-            leftPoints.append(CGPoint(
-                x: centerPoint.x + perpendicular.x * halfWidth,
-                y: centerPoint.y + perpendicular.y * halfWidth
-            ))
-            rightPoints.append(CGPoint(
-                x: centerPoint.x - perpendicular.x * halfWidth,
-                y: centerPoint.y - perpendicular.y * halfWidth
-            ))
-        }
-
-        // Build the path: left side forward, then right side backward
-        if !leftPoints.isEmpty {
-            pathElements.append(.move(to: VectorPoint(leftPoints[0])))
-
-            // Draw left side with straight lines (no bezier curves to avoid bulges)
-            for i in 1..<leftPoints.count {
-                pathElements.append(.line(to: VectorPoint(leftPoints[i])))
-            }
-
-            // Connect to right side at the end
-            if !rightPoints.isEmpty {
-                pathElements.append(.line(to: VectorPoint(rightPoints.last!)))
-
-                // Draw right side in reverse
-                for i in stride(from: rightPoints.count - 2, through: 0, by: -1) {
-                    pathElements.append(.line(to: VectorPoint(rightPoints[i])))
+                // CLIP OFF NARROW TAILS for curved strokes
+                if progress < 0.03 {
+                    // START: Cut off very thin tails at beginning
+                    finalThickness = 0  // Completely remove narrow tail
+                } else if progress < 0.08 {
+                    // Quick taper from zero
+                    let startTaper = pow((progress - 0.03) / 0.05, 2.0)
+                    finalThickness *= startTaper
+                } else if progress > 0.15 && progress <= 0.3 {
+                    let bulgeAmount = sin((progress - 0.15) / 0.15 * .pi)
+                    finalThickness *= (1.0 + bulgeAmount * 0.15)
+                } else if progress > 0.8 && progress <= 0.88 {
+                    let endBulgeAmount = sin((progress - 0.8) / 0.08 * .pi)
+                    finalThickness *= (1.0 + endBulgeAmount * 0.3)
+                } else if progress > 0.88 && progress < 0.97 {
+                    // Quick taper to zero
+                    let endProgress = (progress - 0.88) / 0.09
+                    let endTaper = 1.0 - pow(endProgress, 1.5)
+                    finalThickness *= endTaper
+                } else if progress >= 0.97 {
+                    // END: Cut off very thin tails at end
+                    finalThickness = 0  // Completely remove narrow tail
                 }
             }
 
-            // Close the path
-            pathElements.append(.close)
+            // Ensure minimum thickness (unless explicitly set to 0 for tail removal)
+            if finalThickness > 0 {
+                finalThickness = max(finalThickness, 0.5)
+            }
+            
+            // Interpolate pressure from raw points to simplified points
+            let interpolatedPressure = interpolatePressureForPoint(point, from: rawPoints)
+            
+            // Apply pressure variation with sensitivity control
+            let pressureMultiplier = 1.0 + (interpolatedPressure - 1.0) * pressureSensitivity
+            finalThickness *= pressureMultiplier
+            
+            thicknessPoints.append((location: point, thickness: finalThickness))
         }
-
-        return VectorPath(elements: pathElements)
+        
+        // Generate left and right edge points with variable thickness
+        let leftEdgePoints = generateOffsetPoints(centerPoints: thicknessPoints, isLeftSide: true)
+        let rightEdgePoints = generateOffsetPoints(centerPoints: thicknessPoints, isLeftSide: false)
+        
+        // Create smooth bezier curves for BOTH edges (like freehand tool!)
+        let leftEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: leftEdgePoints)
+        let rightEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: rightEdgePoints.reversed()) // Reverse for proper winding
+        
+        // Combine into a filled shape with smooth bezier curves
+        return createSmoothBrushOutline(leftEdgePath: leftEdgePath, rightEdgePath: rightEdgePath, startPoint: centerPoints.first!, endPoint: centerPoints.last!)
     }
     
-    // REMOVED: Old offset calculation - now integrated into main function
     private func generateOffsetPoints(centerPoints: [(location: CGPoint, thickness: Double)], isLeftSide: Bool) -> [CGPoint] {
         var offsetPoints: [CGPoint] = []
         
@@ -788,46 +933,19 @@ extension DrawingCanvas {
                 let direction = CGPoint(x: point.location.x - prevPoint.x, y: point.location.y - prevPoint.y)
                 perpendicular = CGPoint(x: -direction.y, y: direction.x)
             } else {
-                // Use bisector method to prevent bulges at curves
+                // Use average of incoming and outgoing directions
                 let prevPoint = centerPoints[i - 1].location
                 let nextPoint = centerPoints[i + 1].location
-
-                // Normalize incoming and outgoing directions
-                var incomingDir = CGPoint(x: point.location.x - prevPoint.x, y: point.location.y - prevPoint.y)
-                var outgoingDir = CGPoint(x: nextPoint.x - point.location.x, y: nextPoint.y - point.location.y)
-
-                let inLength = sqrt(incomingDir.x * incomingDir.x + incomingDir.y * incomingDir.y)
-                let outLength = sqrt(outgoingDir.x * outgoingDir.x + outgoingDir.y * outgoingDir.y)
-
-                if inLength > 0 {
-                    incomingDir.x /= inLength
-                    incomingDir.y /= inLength
-                }
-                if outLength > 0 {
-                    outgoingDir.x /= outLength
-                    outgoingDir.y /= outLength
-                }
-
-                // Calculate bisector for smooth offset
-                let bisector = CGPoint(
-                    x: incomingDir.x + outgoingDir.x,
-                    y: incomingDir.y + outgoingDir.y
+                
+                let incomingDir = CGPoint(x: point.location.x - prevPoint.x, y: point.location.y - prevPoint.y)
+                let outgoingDir = CGPoint(x: nextPoint.x - point.location.x, y: nextPoint.y - point.location.y)
+                
+                let avgDirection = CGPoint(
+                    x: (incomingDir.x + outgoingDir.x) / 2,
+                    y: (incomingDir.y + outgoingDir.y) / 2
                 )
-
-                // Get perpendicular to bisector
-                perpendicular = CGPoint(x: -bisector.y, y: bisector.x)
-
-                // Handle sharp corners by limiting offset
-                let dot = incomingDir.x * outgoingDir.x + incomingDir.y * outgoingDir.y
-                if dot < 0.5 { // Sharp corner detected
-                    // Use average perpendicular for sharp corners
-                    let perpIn = CGPoint(x: -incomingDir.y, y: incomingDir.x)
-                    let perpOut = CGPoint(x: -outgoingDir.y, y: outgoingDir.x)
-                    perpendicular = CGPoint(
-                        x: (perpIn.x + perpOut.x) / 2,
-                        y: (perpIn.y + perpOut.y) / 2
-                    )
-                }
+                
+                perpendicular = CGPoint(x: -avgDirection.y, y: avgDirection.x)
             }
             
             // Normalize perpendicular vector
@@ -852,7 +970,6 @@ extension DrawingCanvas {
         return offsetPoints
     }
     
-    // REMOVED: Old outline creation - now integrated into main function
     private func createBrushStrokeOutline(leftEdge: [CGPoint], rightEdge: [CGPoint]) -> VectorPath {
         var elements: [PathElement] = []
         
@@ -884,7 +1001,6 @@ extension DrawingCanvas {
         return VectorPath(elements: elements)
     }
     
-    // REMOVED: Old smooth outline - now using simple lines to avoid bulges
     /// Combine two smooth bezier edge paths into a closed brush stroke outline
     private func createSmoothBrushOutline(leftEdgePath: VectorPath, rightEdgePath: VectorPath, startPoint: CGPoint, endPoint: CGPoint) -> VectorPath {
         var elements: [PathElement] = []
