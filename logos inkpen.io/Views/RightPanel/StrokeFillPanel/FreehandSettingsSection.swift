@@ -57,6 +57,7 @@ struct FreehandSettingsSection: View {
                     get: { document.freehandSmoothingTolerance },
                     set: { document.freehandSmoothingTolerance = $0 }
                 ), in: 0.1...10)
+                .controlSize(.small)
                 .help("Curve fitting tolerance - lower values preserve more detail, higher values create smoother curves")
             }
 
@@ -135,6 +136,7 @@ struct FreehandSettingsSection: View {
                         get: { document.realTimeSmoothingStrength },
                         set: { document.realTimeSmoothingStrength = $0 }
                     ), in: 0...1)
+                    .controlSize(.small)
                     .help("Strength of real-time smoothing (0-100%)")
                 }
             }
@@ -198,6 +200,7 @@ struct FreehandSettingsSection: View {
                             get: { Double(document.chaikinSmoothingIterations) },
                             set: { document.chaikinSmoothingIterations = Int(round($0)) }
                         ), in: 1...3)
+                        .controlSize(.small)
                         .help("More iterations create smoother curves but may lose detail (1-3)")
                     }
 
