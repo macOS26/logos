@@ -118,17 +118,18 @@ extension DrawingCanvas {
             // Fallback only if no preview exists (shouldn't happen)
             processBrushStroke()
         }
-        
+
         // Clean up state including clearing preview path for overlay system
         brushPreviewPath = nil
         cancelBrushDrawing()
-        
-        // AUTO-DESELECT: Clear selection after completing brush stroke
-        // This allows user to immediately change colors for the next stroke
+
+        // AUTO-DESELECT: Clear selection AFTER shape is added
+        // MUST happen after finalizeFromPreview/processBrushStroke since those select the shape
         document.selectedShapeIDs.removeAll()
+        document.selectedObjectIDs.removeAll()
         // Logging disabled in hot path to reduce CPU overhead
-        
-        Log.info("✅ BRUSH: Stroke completed and converted to variable width path", category: .fileOperations)
+
+        Log.info("✅ BRUSH: Stroke completed and deselected", category: .fileOperations)
     }
     
     // MARK: - Pressure Simulation

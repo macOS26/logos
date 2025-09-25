@@ -102,9 +102,10 @@ extension DrawingCanvas {
         freehandPreviewPath = nil
         cancelFreehandDrawing()
 
-        // AUTO-DESELECT: Clear selection after completing freehand stroke
-        // This allows user to immediately change colors for the next stroke
+        // AUTO-DESELECT: Clear selection AFTER shape is added
+        // MUST happen after processFreehandPath since that selects the shape
         document.selectedShapeIDs.removeAll()
+        document.selectedObjectIDs.removeAll()
         Log.fileOperation("🎨 FREEHAND: Auto-deselected shape to enable color changes for next stroke", level: .info)
 
         Log.info("✅ FREEHAND: Path completed and converted to smooth curves", category: .fileOperations)

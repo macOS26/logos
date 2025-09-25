@@ -103,14 +103,15 @@ extension DrawingCanvas {
         
         // Process marker stroke to create smooth felt-tip stroke
         processMarkerStroke()
-        
+
         // Clean up state including clearing preview path for overlay system
         markerPreviewPath = nil
         cancelMarkerDrawing()
-        
-        // AUTO-DESELECT: Clear selection after completing marker stroke
-        // This allows user to immediately change colors for the next stroke
+
+        // AUTO-DESELECT: Clear selection AFTER shape is added
+        // MUST happen after processMarkerStroke since that selects the shape
         document.selectedShapeIDs.removeAll()
+        document.selectedObjectIDs.removeAll()
         Log.fileOperation("🎨 MARKER: Auto-deselected shape to enable color changes for next stroke", level: .info)
         
         Log.info("✅ MARKER: Stroke completed and converted to smooth felt-tip stroke", category: .fileOperations)
