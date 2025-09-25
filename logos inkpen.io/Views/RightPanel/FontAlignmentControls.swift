@@ -44,6 +44,9 @@ struct FontAlignmentControls: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(BorderlessButtonStyle())
+                .onTapGesture { // Luna Display compatibility
+                    updateAlignment(.left)
+                }
                 .help("Align Left")
                 
                 // Center Align
@@ -59,6 +62,9 @@ struct FontAlignmentControls: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(BorderlessButtonStyle())
+                .onTapGesture { // Luna Display compatibility
+                    updateAlignment(.center)
+                }
                 .help("Align Center")
                 
                 // Right Align
@@ -74,6 +80,9 @@ struct FontAlignmentControls: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(BorderlessButtonStyle())
+                .onTapGesture { // Luna Display compatibility
+                    updateAlignment(.right)
+                }
                 .help("Align Right")
                 
                 // Justify
@@ -89,6 +98,9 @@ struct FontAlignmentControls: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(BorderlessButtonStyle())
+                .onTapGesture { // Luna Display compatibility
+                    updateAlignment(.justified)
+                }
                 .help("Justify")
                 
                 Spacer()
