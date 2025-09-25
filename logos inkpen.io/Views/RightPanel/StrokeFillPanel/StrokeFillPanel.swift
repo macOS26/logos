@@ -76,13 +76,13 @@ struct StrokeFillPanel: View {
             switch unifiedObject.objectType {
             case .shape(let shape):
                 if shape.isTextObject {
-                    return .center // Text objects don't have stroke placement - use default
+                    return document.defaultStrokePlacement // Text objects use default
                 } else {
-                    return shape.strokeStyle?.placement ?? .center
+                    return shape.strokeStyle?.placement ?? document.defaultStrokePlacement
                 }
             }
         }
-        return .center
+        return document.defaultStrokePlacement // Return default when no selection
     }
 
     private var fillOpacity: Double {
@@ -234,7 +234,12 @@ struct StrokeFillPanel: View {
                     FillPropertiesSection(
                         fillOpacity: fillOpacity,
                         onApplyFill: applyFillToSelectedShapes,
-                        onUpdateFillOpacity: updateFillOpacity
+                        onUpdateFillOpacity: { value in
+                            // ALWAYS update defaults immediately, no conditions
+                            document.defaultFillOpacity = value
+                            document.objectWillChange.send() // Force UI update
+                            updateFillOpacity(value)
+                        }
                     )
 
                     // Image Properties - Only show when images are selected
@@ -249,16 +254,45 @@ struct StrokeFillPanel: View {
                     StrokePropertiesSection(
                         strokeWidth: strokeWidth,
                         strokePlacement: strokePlacement,
-                        strokeOpacity: strokeOpacity, // PROFESSIONAL STROKE TRANSPARENCY
-                        strokeLineJoin: strokeLineJoin, // PROFESSIONAL JOIN TYPES
-                        strokeLineCap: strokeLineCap, // PROFESSIONAL ENDCAPS
-                        strokeMiterLimit: strokeMiterLimit, // PROFESSIONAL MITER LIMIT
-                        onUpdateStrokeWidth: updateStrokeWidth,
-                        onUpdateStrokePlacement: updateStrokePlacement,
-                        onUpdateStrokeOpacity: updateStrokeOpacity, // PROFESSIONAL STROKE TRANSPARENCY
-                        onUpdateLineJoin: updateStrokeLineJoin, // PROFESSIONAL JOIN TYPES
-                        onUpdateLineCap: updateStrokeLineCap, // PROFESSIONAL ENDCAPS
-                        onUpdateMiterLimit: updateStrokeMiterLimit // PROFESSIONAL MITER LIMIT
+                        strokeOpacity: strokeOpacity,
+                        strokeLineJoin: strokeLineJoin,
+                        strokeLineCap: strokeLineCap,
+                        strokeMiterLimit: strokeMiterLimit,
+                        onUpdateStrokeWidth: { value in
+                            // ALWAYS update defaults immediately, no conditions
+                            document.defaultStrokeWidth = value
+                            document.objectWillChange.send() // Force UI update
+                            updateStrokeWidth(value)
+                        },
+                        onUpdateStrokePlacement: { value in
+                            // ALWAYS allow placement changes
+                            document.objectWillChange.send() // Force UI update
+                            updateStrokePlacement(value)
+                        },
+                        onUpdateStrokeOpacity: { value in
+                            // ALWAYS update defaults immediately, no conditions
+                            document.defaultStrokeOpacity = value
+                            document.objectWillChange.send() // Force UI update
+                            updateStrokeOpacity(value)
+                        },
+                        onUpdateLineJoin: { value in
+                            // ALWAYS update defaults immediately, no conditions
+                            document.defaultStrokeLineJoin = value
+                            document.objectWillChange.send() // Force UI update
+                            updateStrokeLineJoin(value)
+                        },
+                        onUpdateLineCap: { value in
+                            // ALWAYS update defaults immediately, no conditions
+                            document.defaultStrokeLineCap = value
+                            document.objectWillChange.send() // Force UI update
+                            updateStrokeLineCap(value)
+                        },
+                        onUpdateMiterLimit: { value in
+                            // ALWAYS update defaults immediately, no conditions
+                            document.defaultStrokeMiterLimit = value
+                            document.objectWillChange.send() // Force UI update
+                            updateStrokeMiterLimit(value)
+                        }
                     )
 
                     // Expand Stroke Button - Only show when shapes selected
@@ -450,8 +484,15 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokePlacement(_ placement: StrokePlacement) {
+        // ALWAYS update default placement first - NO RESTRICTIONS
+        document.defaultStrokePlacement = placement
+        document.objectWillChange.send() // Force immediate UI update
+
         let activeShapeIDs = document.getActiveShapeIDs()
-        if activeShapeIDs.isEmpty { return }
+        if activeShapeIDs.isEmpty {
+            // No shapes selected, but default has been updated
+            return
+        }
 
         document.saveToUndoStack()
 
