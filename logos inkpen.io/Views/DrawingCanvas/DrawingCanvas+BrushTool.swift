@@ -137,11 +137,13 @@ extension DrawingCanvas {
             brushRawPoints = interpolatedPoints
         }
 
-        if appState.brushPreviewIsFinal, let preview = brushPreviewPath {
-            // Bake the exact preview path
+        // ALWAYS use the preview path as final - it's already calculated correctly
+        if let preview = brushPreviewPath {
+            // Use the exact preview path as final
             finalizeFromPreview(preview)
         } else {
-            // Process brush stroke to create variable width path
+            // Fallback: generate the path if no preview exists (shouldn't happen)
+            Log.info("⚠️ BRUSH: No preview path, generating final path", category: .general)
             processBrushStroke()
         }
         
@@ -256,29 +258,10 @@ extension DrawingCanvas {
         }
 
         let rawPointLocations = pointsToProcess.map { $0.location }
-        // Use very low tolerance to keep almost all points for maximum smoothness
-        let previewTolerance = document.currentBrushSmoothingTolerance * 0.01  // Keep 99% of points
-        var simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance)
+        // Use ALL points for maximum smoothness - no simplification during preview
+        let simplifiedPoints = rawPointLocations  // Keep 100% of points for smooth curves
 
-        // CRITICAL: Ensure we have enough points for smooth curves
-        // Keep many more points for high fidelity
-        if simplifiedPoints.count < 30 && rawPointLocations.count > 2 {
-            // Use even less tolerance to keep more points
-            simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance * 0.001)
-
-            // If still too few, just use most of the original points
-            if simplifiedPoints.count < 30 {
-                // Sample densely from raw points to get many points
-                let stepSize = max(1, rawPointLocations.count / 50)  // Keep up to 50 points
-                simplifiedPoints = []
-                for i in Swift.stride(from: 0, to: rawPointLocations.count, by: stepSize) {
-                    simplifiedPoints.append(rawPointLocations[i])
-                }
-                if let last = rawPointLocations.last, simplifiedPoints.last != last {
-                    simplifiedPoints.append(last)
-                }
-            }
-        }
+        // No need to check minimum points - we're using all of them
 
         Log.info("🖌️ PREVIEW: Simplified from \(pointsToProcess.count) to \(simplifiedPoints.count) points", category: .general)
 
