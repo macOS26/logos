@@ -314,6 +314,21 @@ struct VerticalToolbar: View {
                                                 }
                                         }
                                     )
+                                    .onTapGesture {
+                                        // Direct tap handler for stylus compatibility
+                                        if let starVariant = toolItem.starVariant {
+                                            toolGroupManager.selectStarVariant(starVariant)
+                                            document.currentTool = .star
+                                            toolGroupManager.currentToolInGroup = .star
+                                            toolGroupManager.setSelectedToolInGroup(.star)
+                                            Log.info("⭐ Selected star variant (tap): \(starVariant.rawValue)", category: .general)
+                                        } else {
+                                            document.currentTool = toolItem.tool
+                                            toolGroupManager.currentToolInGroup = toolItem.tool
+                                            toolGroupManager.setSelectedToolInGroup(toolItem.tool)
+                                            Log.info("🛠️ Switched to tool (tap): \(toolItem.tool.rawValue)", category: .general)
+                                        }
+                                    }
                                     .onLongPressGesture(minimumDuration: 0.5) {
                                         // Long press for expanding tool groups
                                         if let starVariant = toolItem.starVariant {
