@@ -445,8 +445,21 @@ extension DrawingCanvas {
         }
         
         // Step 2: Apply improved Douglas-Peucker simplification with sharp corner preservation
-        // Use smoothing tolerance from settings (separate from liquid)
-        let smoothingTolerance = document.currentBrushSmoothingTolerance * 0.1  // Scale down for better fidelity
+        // Use Liquid setting to control tolerance (merged with old smoothing tolerance)
+        // Liquid controls both preview and final smoothing now
+        let liquidValue = document.currentBrushLiquid
+        let smoothingTolerance: Double
+        if abs(liquidValue - 50.0) < 0.01 {
+            smoothingTolerance = 0.01  // Liquid = 50%: Minimal tolerance, keep all points
+        } else if liquidValue < 50.0 {
+            // 0-49%: Increasing smoothing
+            let factor = (50.0 - liquidValue) / 50.0
+            smoothingTolerance = 0.5 + (2.0 * factor)  // 0.5 to 2.5
+        } else {
+            // 51-100%: Maximum smoothing
+            let factor = (liquidValue - 50.0) / 50.0
+            smoothingTolerance = 2.5 + (7.5 * factor)  // 2.5 to 10.0
+        }
         if processedPoints.count >= 200 {
             // Try GPU DP first; then apply CPU corner-preserving refinement if desired
             let metalEngine = MetalComputeEngine.shared

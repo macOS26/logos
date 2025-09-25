@@ -84,26 +84,7 @@ struct VariableStrokeSection: View {
 
             // REMOVED: Taper is no longer used - natural pressure creates tapering
 
-            // Brush Smoothness
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Smoothness")
-                        .font(.subheadline)
-                        .foregroundColor(Color.ui.secondaryText)
-                    Spacer()
-                    Text("\(formatNumberForDisplay(document.currentBrushSmoothingTolerance))")
-                        .font(.subheadline)
-                        .foregroundColor(Color.ui.primaryText)
-                        .monospacedDigit()
-                }
-
-                Slider(value: Binding(
-                    get: { document.currentBrushSmoothingTolerance },
-                    set: { document.currentBrushSmoothingTolerance = $0 }
-                ), in: 0.5...10)
-                .controlSize(.regular)
-                .help("Curve fitting tolerance - lower values preserve more detail, higher values create smoother curves")
-            }
+            // MERGED WITH LIQUID: Smoothness is now controlled by Liquid setting
 
             // Liquid (Curve Fluidity)
             VStack(alignment: .leading, spacing: 8) {
@@ -124,7 +105,7 @@ struct VariableStrokeSection: View {
                     set: { document.currentBrushLiquid = 100.0 - $0 }  // Reverse when setting
                 ), in: 0...100)
                 .controlSize(.regular)
-                .help("Controls point density - 0% = keep all points, 100% = maximum point reduction for fluid curves")
+                .help("Controls curve fluidity and smoothness - 0% = raw input (choppy), 50% = balanced, 100% = maximum liquid smoothing")
             }
 
             // Advanced Smoothing Section
