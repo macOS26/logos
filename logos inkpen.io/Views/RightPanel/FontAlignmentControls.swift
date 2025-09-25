@@ -97,13 +97,15 @@ struct FontAlignmentControls: View {
     }
     
     private func updateAlignment(_ alignment: TextAlignment) {
+        // ALWAYS update defaults first - NO RESTRICTIONS
+        document.fontManager.selectedTextAlignment = alignment
+
+        // Then update selected text if any
         if let textID = document.selectedTextIDs.first,
            let freshText = document.allTextObjects.first(where: { $0.id == textID }) {
             var updatedTypography = freshText.typography
             updatedTypography.alignment = alignment
             document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
-        } else {
-            document.fontManager.selectedTextAlignment = alignment
         }
     }
 }

@@ -42,12 +42,13 @@ struct FontPickerView: View {
                     return selectedTextTypography?.fontFamily ?? document.fontManager.selectedFontFamily
                 },
                 set: { newFamily in
+                    // ALWAYS update defaults first - NO RESTRICTIONS
+                    document.fontManager.selectedFontFamily = newFamily
+                    fontFamilyUpdateTrigger.toggle()
+
+                    // Then update selected text if any
                     if let textID = document.selectedTextIDs.first {
                         document.updateTextFontFamilyDirect(id: textID, fontFamily: newFamily)
-                        fontFamilyUpdateTrigger.toggle()
-                    } else {
-                        document.fontManager.selectedFontFamily = newFamily
-                        fontFamilyUpdateTrigger.toggle()
                     }
                 }
             )) {
@@ -74,10 +75,12 @@ struct FontPickerView: View {
                     return availableFontWeights.contains(selectedText.typography.fontWeight) ? selectedText.typography.fontWeight : availableFontWeights.first ?? .regular
                 },
                 set: { newWeight in
+                    // ALWAYS update defaults first - NO RESTRICTIONS
+                    document.fontManager.selectedFontWeight = newWeight
+
+                    // Then update selected text if any
                     if let textID = document.selectedTextIDs.first {
                         document.updateTextFontWeightDirect(id: textID, fontWeight: newWeight)
-                    } else {
-                        document.fontManager.selectedFontWeight = newWeight
                     }
                 }
             )) {
@@ -101,10 +104,12 @@ struct FontPickerView: View {
                     return availableFontStyles.contains(selectedText.typography.fontStyle) ? selectedText.typography.fontStyle : availableFontStyles.first ?? .normal
                 },
                 set: { newStyle in
+                    // ALWAYS update defaults first - NO RESTRICTIONS
+                    document.fontManager.selectedFontStyle = newStyle
+
+                    // Then update selected text if any
                     if let textID = document.selectedTextIDs.first {
                         document.updateTextFontStyleDirect(id: textID, fontStyle: newStyle)
-                    } else {
-                        document.fontManager.selectedFontStyle = newStyle
                     }
                 }
             )) {
