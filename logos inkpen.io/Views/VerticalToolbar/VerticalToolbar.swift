@@ -248,8 +248,45 @@ struct VerticalToolbar: View {
                                 }
                                 
                                 ForEach(toolGroup, id: \.toolIdentifier) { toolItem in
-                                    Button {
-                                        // Handle tool selection
+                                    ZStack {
+                                        // Background highlight - always present but transparent when not selected
+                                        RoundedRectangle(cornerRadius: 100)
+                                            .fill(isToolSelected(toolItem)
+                                                  ? InkPenUIColors.shared.toolSelectionBlue
+                                                  : Color.clear)
+                                            .frame(width: 47, height: 34)
+
+                                        toolIconView(for: toolItem)
+                                            .frame(width: 47)
+
+                                        // Orange triangle indicator - always present but transparent when not needed
+                                        Path { path in
+                                            // Triangle pointing to bottom-right corner
+                                            path.move(to: CGPoint(x: 0, y: 6))    // Left point
+                                            path.addLine(to: CGPoint(x: 6, y: 0)) // Top point
+                                            path.addLine(to: CGPoint(x: 6, y: 6)) // Bottom-right corner
+                                            path.closeSubpath()
+                                        }
+                                        .fill((isToolSelected(toolItem) && isToolInExpandableGroup(toolItem) && !isGroupExpanded(for: toolItem))
+                                              ? Color(.displayP3, red: 1.0, green: 0.584, blue: 0.0) // Display P3 orange at full 1.0 opacity
+                                              : Color.clear)
+                                        .frame(width: 6, height: 6)
+                                        .position(x: 42, y: 26)
+                                    }
+                                    .contentShape(Rectangle()) // Extend hit area to match entire button area
+                                    .frame(width: 58, height: 34)
+                                    .position(x: 24.5, y: 17)
+                                    .onLongPressGesture(minimumDuration: 0.5) {
+                                        // Long press for expanding tool groups
+                                        if let starVariant = toolItem.starVariant {
+                                            let variantIndex = StarVariant.allCases.firstIndex(of: starVariant) ?? 0
+                                            handleToolLongPress(.star, variantIndex: variantIndex)
+                                        } else {
+                                            handleToolLongPress(toolItem.tool)
+                                        }
+                                    }
+                                    .onTapGesture {
+                                        // Handle tool selection on tap
                                         if let starVariant = toolItem.starVariant {
                                             toolGroupManager.selectStarVariant(starVariant)
                                             document.currentTool = .star
@@ -268,37 +305,7 @@ struct VerticalToolbar: View {
                                         // Do not force cursor here; let canvas hover control cursor visibility.
                                         // This avoids requiring long-press to see the cursor. The canvas will set
                                         // the correct cursor on hover/enter.
-                                    } label: {
-                                        ZStack {
-                                            // Background highlight - always present but transparent when not selected
-                                            RoundedRectangle(cornerRadius: 100)
-                                                .fill(isToolSelected(toolItem)
-                                                      ? InkPenUIColors.shared.toolSelectionBlue
-                                                      : Color.clear)
-                                                .frame(width: 47, height: 34)
-                                            
-                                            toolIconView(for: toolItem)
-                                                .frame(width: 47)
-                                            
-                                            // Orange triangle indicator - always present but transparent when not needed
-                                            Path { path in
-                                                // Triangle pointing to bottom-right corner
-                                                path.move(to: CGPoint(x: 0, y: 6))    // Left point
-                                                path.addLine(to: CGPoint(x: 6, y: 0)) // Top point
-                                                path.addLine(to: CGPoint(x: 6, y: 6)) // Bottom-right corner
-                                                path.closeSubpath()
-                                            }
-                                            .fill((isToolSelected(toolItem) && isToolInExpandableGroup(toolItem) && !isGroupExpanded(for: toolItem))
-                                                  ? Color(.displayP3, red: 1.0, green: 0.584, blue: 0.0) // Display P3 orange at full 1.0 opacity
-                                                  : Color.clear)
-                                            .frame(width: 6, height: 6)
-                                            .position(x: 42, y: 26)
-                                        }
-                                        .contentShape(Rectangle()) // Extend hit area to match entire button area
-                                        .frame(width: 58, height: 34)
-                                        .position(x: 24.5, y: 17)
                                     }
-                                    .buttonStyle(BorderlessButtonStyle())
                                     .help(toolTooltip(for: toolItem.tool, variant: toolItem.starVariant))
                                     .background(
                                         GeometryReader { geometry in
@@ -314,15 +321,6 @@ struct VerticalToolbar: View {
                                                 }
                                         }
                                     )
-                                    .onLongPressGesture(minimumDuration: 0.5) {
-                                        // Long press for expanding tool groups
-                                        if let starVariant = toolItem.starVariant {
-                                            let variantIndex = StarVariant.allCases.firstIndex(of: starVariant) ?? 0
-                                            handleToolLongPress(.star, variantIndex: variantIndex)
-                                        } else {
-                                            handleToolLongPress(toolItem.tool)
-                                        }
-                                    }
                                 }
                             }
                         }
