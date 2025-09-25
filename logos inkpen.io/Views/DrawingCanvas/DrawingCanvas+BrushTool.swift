@@ -692,29 +692,18 @@ extension DrawingCanvas {
                     finalThickness *= pow(1.0 - endProgress, 3.0)
                 }
             } else {
-                // Normal curved strokes - CLIP OFF NARROW TAILS
-                if progress < 0.03 {
-                    // START: Cut off very thin tails at beginning
-                    finalThickness = 0  // Completely remove narrow tail
-                } else if progress < 0.08 {
-                    // Quick taper from zero
-                    let startTaper = pow((progress - 0.03) / 0.05, 2.0)
+                // Normal curved strokes - proper tapering at both ends
+                if progress < 0.05 {
+                    // START: Smooth taper from beginning (not cut off)
+                    let startTaper = pow(progress / 0.05, 2.0)
                     finalThickness *= startTaper
-                } else if progress > 0.15 && progress <= 0.3 {
-                    let bulgeAmount = sin((progress - 0.15) / 0.15 * .pi)
-                    finalThickness *= (1.0 + bulgeAmount * 0.15)
-                } else if progress > 0.8 && progress <= 0.88 {
-                    let endBulgeAmount = sin((progress - 0.8) / 0.08 * .pi)
-                    finalThickness *= (1.0 + endBulgeAmount * 0.3)
-                } else if progress > 0.88 && progress < 0.97 {
-                    // Quick taper to zero
-                    let endProgress = (progress - 0.88) / 0.09
-                    let endTaper = 1.0 - pow(endProgress, 1.5)
+                } else if progress > 0.95 {
+                    // END: Smooth taper to end
+                    let endProgress = (progress - 0.95) / 0.05
+                    let endTaper = 1.0 - pow(endProgress, 2.0)
                     finalThickness *= endTaper
-                } else if progress >= 0.97 {
-                    // END: Cut off very thin tails at end
-                    finalThickness = 0  // Completely remove narrow tail
                 }
+                // Remove bulge logic to prevent blobby strokes
             }
 
             // Ensure minimum thickness to avoid zero (unless explicitly set to 0 for tail removal)
@@ -859,29 +848,18 @@ extension DrawingCanvas {
                     finalThickness *= pow(1.0 - endProgress, 3.0)
                 }
             } else {
-                // CLIP OFF NARROW TAILS for curved strokes
-                if progress < 0.03 {
-                    // START: Cut off very thin tails at beginning
-                    finalThickness = 0  // Completely remove narrow tail
-                } else if progress < 0.08 {
-                    // Quick taper from zero
-                    let startTaper = pow((progress - 0.03) / 0.05, 2.0)
+                // Normal curved strokes - proper tapering at both ends
+                if progress < 0.05 {
+                    // START: Smooth taper from beginning (not cut off)
+                    let startTaper = pow(progress / 0.05, 2.0)
                     finalThickness *= startTaper
-                } else if progress > 0.15 && progress <= 0.3 {
-                    let bulgeAmount = sin((progress - 0.15) / 0.15 * .pi)
-                    finalThickness *= (1.0 + bulgeAmount * 0.15)
-                } else if progress > 0.8 && progress <= 0.88 {
-                    let endBulgeAmount = sin((progress - 0.8) / 0.08 * .pi)
-                    finalThickness *= (1.0 + endBulgeAmount * 0.3)
-                } else if progress > 0.88 && progress < 0.97 {
-                    // Quick taper to zero
-                    let endProgress = (progress - 0.88) / 0.09
-                    let endTaper = 1.0 - pow(endProgress, 1.5)
+                } else if progress > 0.95 {
+                    // END: Smooth taper to end
+                    let endProgress = (progress - 0.95) / 0.05
+                    let endTaper = 1.0 - pow(endProgress, 2.0)
                     finalThickness *= endTaper
-                } else if progress >= 0.97 {
-                    // END: Cut off very thin tails at end
-                    finalThickness = 0  // Completely remove narrow tail
                 }
+                // Remove bulge logic to prevent blobby strokes
             }
 
             // Ensure minimum thickness (unless explicitly set to 0 for tail removal)

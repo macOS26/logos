@@ -440,38 +440,42 @@ struct VerticalToolbarButton: View {
         self.toolIconView = { AnyView(toolIconView()) }
     }
 
+    fileprivate func FreeHandMXLongPress() {
+        inc += 0.1
+        print("\(inc)")
+        
+        // First click - handle tap
+        if inc <= 0.1 {
+            // Store the tool name that was tapped
+            lastTappedTool = toolItem.tool.rawValue
+            onTap()
+            shouldRepeat = true
+            return
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            inc = 0.0
+            shouldRepeat = true
+            lastTappedTool = ""
+        }
+        
+        if shouldRepeat {
+            if inc > 0.1 {
+                Thread.sleep(forTimeInterval: 0.1)
+            }
+            
+            if inc >= 0.5 && lastTappedTool == toolItem.tool.rawValue  {
+                // Check if the tool being long-pressed is the same as the one that was tapped
+                onLongPress()
+                shouldRepeat = false  // Stop repeating after long press
+                inc = 0.0
+            }
+        }
+    }
+    
     var body: some View {
         Button(action: {
-            inc += 0.1
-            print("\(inc)")
-
-            // First click - handle tap
-            if inc <= 0.1 {
-                // Store the tool name that was tapped
-                lastTappedTool = toolItem.tool.rawValue
-                onTap()
-
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                    inc = 0.0
-                    shouldRepeat = true
-                }
-                return
-            }
-
-            if shouldRepeat {
-                if inc > 0.1 {
-                    Thread.sleep(forTimeInterval: 0.1)
-                }
-
-                if inc >= 0.3 {
-                    // Check if the tool being long-pressed is the same as the one that was tapped
-                    if lastTappedTool == toolItem.tool.rawValue {
-                        onLongPress()
-                    }
-                    shouldRepeat = false  // Stop repeating after long press
-                    inc = 0.0
-                }
-            }
+            FreeHandMXLongPress()
         }) {
             ZStack {
                 // Background highlight - always present but transparent when not selected
