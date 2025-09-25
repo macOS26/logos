@@ -38,7 +38,6 @@ struct PathfinderOperationButton: View {
             .contentShape(Rectangle()) // Extend hit area to match entire button background
         }
         .buttonStyle(BorderlessButtonStyle())
-        .disabled(!isEnabled)
         .help(operation.description)
     }
 } 

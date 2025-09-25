@@ -302,7 +302,6 @@ struct StrokeFillPanel: View {
                         }
                         .buttonStyle(ProfessionalPrimaryButtonStyle())
                         .controlSize(.regular)
-                        .disabled(!document.canOutlineStrokes)
                         .help("Convert stroke to filled path (Cmd+Shift+O)")
                         .keyboardShortcut("o", modifiers: [.command, .shift])
                     }

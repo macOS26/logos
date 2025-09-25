@@ -98,7 +98,6 @@ struct PathOperationsPanel: View {
                         .buttonStyle(ProfessionalPrimaryButtonStyle())
                         .controlSize(.small)
                         .help("Remove overlapping points and merge their curve data smoothly (⌘⇧K)")
-                        .disabled(document.unifiedObjects.isEmpty)
                         
                         Button("Clean All Paths") {
                             ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 1.0)
@@ -106,7 +105,6 @@ struct PathOperationsPanel: View {
                         .buttonStyle(ProfessionalSecondaryButtonStyle())
                         .controlSize(.small)
                         .help("Clean duplicate points in all shapes in the document (⌘⌥K)")
-                        .disabled(document.unifiedObjects.isEmpty)
                     }
                     
                     HStack(spacing: 6) {
@@ -116,7 +114,6 @@ struct PathOperationsPanel: View {
                         .buttonStyle(ProfessionalPrimaryButtonStyle())
                         .controlSize(.small)
                         .help("Remove self-intersections and overlapping areas within selected shapes")
-                        .disabled(document.selectedShapeIDs.isEmpty)
                         
                         Button("Remove All Overlaps") {
                             removeOverlapFromAllShapes()
@@ -124,7 +121,6 @@ struct PathOperationsPanel: View {
                         .buttonStyle(ProfessionalSecondaryButtonStyle())
                         .controlSize(.small)
                         .help("Remove overlaps from all shapes in the document")
-                        .disabled(document.unifiedObjects.isEmpty)
                     }
                 }
                 .padding(.horizontal, 12)
@@ -158,13 +154,11 @@ struct PathOperationsPanel: View {
                     }
                     .buttonStyle(ProfessionalPrimaryButtonStyle())
                     .controlSize(.small)
-                    .disabled(document.selectedObjectIDs.count < 2)
                     Button("Release Clipping Mask") {
                         document.releaseClippingMaskForSelection()
                     }
                     .buttonStyle(ProfessionalSecondaryButtonStyle())
                     .controlSize(.small)
-                    .disabled(document.selectedObjectIDs.isEmpty)
                 }
                 .padding(.horizontal, 12)
             }

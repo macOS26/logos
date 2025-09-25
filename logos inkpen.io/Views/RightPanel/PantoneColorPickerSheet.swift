@@ -175,7 +175,6 @@ struct PantoneColorPickerSheet: View {
                             presentationMode.wrappedValue.dismiss()
                         }
                     }
-                    .disabled(selectedColor == nil)
                     .buttonStyle(ProfessionalPrimaryButtonStyle())
                 }
             }

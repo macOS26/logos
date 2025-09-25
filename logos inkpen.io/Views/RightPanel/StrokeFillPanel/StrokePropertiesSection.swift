@@ -161,27 +161,24 @@ struct StrokePropertiesSection: View {
                 }
             }
 
-            // Miter Limit (only show for miter joins)
-            if strokeLineJoin == .miter {
-                VStack(spacing: 8) {
-                    HStack {
-                        Text("Miter Limit")
-                            .font(.caption)
-                            .foregroundColor(Color.ui.secondaryText)
-                        Spacer()
-                        Text("\(String(format: "%.1f", strokeMiterLimit))")
-                            .font(.caption)
-                            .foregroundColor(Color.ui.secondaryText)
-                    }
-
-                    Slider(value: Binding(
-                        get: { strokeMiterLimit },
-                        set: { onUpdateMiterLimit($0) }
-                    ), in: 1...20)
-                    .controlSize(.small)
-                    .tint(.blue)
+            // Miter Limit - ALWAYS VISIBLE, NO RESTRICTIONS
+            VStack(spacing: 8) {
+                HStack {
+                    Text("Miter Limit")
+                        .font(.caption)
+                        .foregroundColor(Color.ui.secondaryText)
+                    Spacer()
+                    Text("\(String(format: "%.1f", strokeMiterLimit))")
+                        .font(.caption)
+                        .foregroundColor(Color.ui.secondaryText)
                 }
-                .transition(.opacity.combined(with: .move(edge: .top)))
+
+                Slider(value: Binding(
+                    get: { strokeMiterLimit },
+                    set: { onUpdateMiterLimit($0) }
+                ), in: 1...20)
+                .controlSize(.small)
+                .tint(.blue)
             }
         }
         .padding()
