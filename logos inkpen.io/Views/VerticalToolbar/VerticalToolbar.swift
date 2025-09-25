@@ -248,66 +248,36 @@ struct VerticalToolbar: View {
                                 }
                                 
                                 ForEach(toolGroup, id: \.toolIdentifier) { toolItem in
-                                    Button(action: {}) {
-                                        ZStack {
-                                            // Background highlight - always present but transparent when not selected
-                                            RoundedRectangle(cornerRadius: 100)
-                                                .fill(isToolSelected(toolItem)
-                                                      ? InkPenUIColors.shared.toolSelectionBlue
-                                                      : Color.clear)
-                                                .frame(width: 47, height: 34)
-
-                                            toolIconView(for: toolItem)
-                                                .frame(width: 47)
-
-                                            // Orange triangle indicator - always present but transparent when not needed
-                                            Path { path in
-                                                // Triangle pointing to bottom-right corner
-                                                path.move(to: CGPoint(x: 0, y: 6))    // Left point
-                                                path.addLine(to: CGPoint(x: 6, y: 0)) // Top point
-                                                path.addLine(to: CGPoint(x: 6, y: 6)) // Bottom-right corner
-                                                path.closeSubpath()
+                                    VerticalToolbarButton(
+                                        toolItem: toolItem,
+                                        isSelected: isToolSelected(toolItem),
+                                        isExpandable: isToolInExpandableGroup(toolItem),
+                                        isGroupExpanded: isGroupExpanded(for: toolItem),
+                                        onTap: {
+                                            // Handle tool selection
+                                            if let starVariant = toolItem.starVariant {
+                                                toolGroupManager.selectStarVariant(starVariant)
+                                                document.currentTool = .star
+                                                toolGroupManager.currentToolInGroup = .star
+                                                toolGroupManager.setSelectedToolInGroup(.star)
+                                                Log.info("⭐ Selected star variant: \(starVariant.rawValue)", category: .general)
+                                            } else {
+                                                document.currentTool = toolItem.tool
+                                                toolGroupManager.currentToolInGroup = toolItem.tool
+                                                toolGroupManager.setSelectedToolInGroup(toolItem.tool)
+                                                Log.info("🛠️ Switched to tool: \(toolItem.tool.rawValue)", category: .general)
                                             }
-                                            .fill((isToolSelected(toolItem) && isToolInExpandableGroup(toolItem) && !isGroupExpanded(for: toolItem))
-                                                  ? Color(.displayP3, red: 1.0, green: 0.584, blue: 0.0) // Display P3 orange at full 1.0 opacity
-                                                  : Color.clear)
-                                            .frame(width: 6, height: 6)
-                                            .position(x: 42, y: 26)
-                                        }
-                                        .contentShape(Rectangle()) // Extend hit area to match entire button area
-                                        .frame(width: 58, height: 34)
-                                        .position(x: 24.5, y: 17)
-                                    }
-                                    .buttonStyle(BorderlessButtonStyle())
-                                    .simultaneousGesture(
-                                        LongPressGesture(minimumDuration: 0.5)
-                                            .onEnded { _ in
-                                                // Long press for expanding tool groups
-                                                if let starVariant = toolItem.starVariant {
-                                                    let variantIndex = StarVariant.allCases.firstIndex(of: starVariant) ?? 0
-                                                    handleToolLongPress(.star, variantIndex: variantIndex)
-                                                } else {
-                                                    handleToolLongPress(toolItem.tool)
-                                                }
+                                        },
+                                        onLongPress: {
+                                            // Long press for expanding tool groups
+                                            if let starVariant = toolItem.starVariant {
+                                                let variantIndex = StarVariant.allCases.firstIndex(of: starVariant) ?? 0
+                                                handleToolLongPress(.star, variantIndex: variantIndex)
+                                            } else {
+                                                handleToolLongPress(toolItem.tool)
                                             }
-                                    )
-                                    .highPriorityGesture(
-                                        TapGesture()
-                                            .onEnded { _ in
-                                                // Handle tool selection on tap
-                                                if let starVariant = toolItem.starVariant {
-                                                    toolGroupManager.selectStarVariant(starVariant)
-                                                    document.currentTool = .star
-                                                    toolGroupManager.currentToolInGroup = .star
-                                                    toolGroupManager.setSelectedToolInGroup(.star)
-                                                    Log.info("⭐ Selected star variant: \(starVariant.rawValue)", category: .general)
-                                                } else {
-                                                    document.currentTool = toolItem.tool
-                                                    toolGroupManager.currentToolInGroup = toolItem.tool
-                                                    toolGroupManager.setSelectedToolInGroup(toolItem.tool)
-                                                    Log.info("🛠️ Switched to tool: \(toolItem.tool.rawValue)", category: .general)
-                                                }
-                                            }
+                                        },
+                                        toolIconView: { toolIconView(for: toolItem) }
                                     )
                                     .help(toolTooltip(for: toolItem.tool, variant: toolItem.starVariant))
                                     .background(
@@ -436,6 +406,70 @@ struct VerticalToolbar: View {
             return "Gradient Tool (G) - Edit gradient origin and focal points"
         case .cornerRadius:
             return "Corner Radius Tool (⌥R) - Edit corner radius of rectangles"
+        }
+    }
+}
+
+// MARK: - Vertical Toolbar Button
+struct VerticalToolbarButton: View {
+    let toolItem: ToolItem
+    let isSelected: Bool
+    let isExpandable: Bool
+    let isGroupExpanded: Bool
+    let onTap: () -> Void
+    let onLongPress: () -> Void
+    let toolIconView: () -> AnyView
+
+    init(toolItem: ToolItem,
+         isSelected: Bool,
+         isExpandable: Bool,
+         isGroupExpanded: Bool,
+         onTap: @escaping () -> Void,
+         onLongPress: @escaping () -> Void,
+         toolIconView: @escaping () -> some View) {
+        self.toolItem = toolItem
+        self.isSelected = isSelected
+        self.isExpandable = isExpandable
+        self.isGroupExpanded = isGroupExpanded
+        self.onTap = onTap
+        self.onLongPress = onLongPress
+        self.toolIconView = { AnyView(toolIconView()) }
+    }
+
+    var body: some View {
+        ZStack {
+            // Background highlight - always present but transparent when not selected
+            RoundedRectangle(cornerRadius: 100)
+                .fill(isSelected
+                      ? InkPenUIColors.shared.toolSelectionBlue
+                      : Color.clear)
+                .frame(width: 47, height: 34)
+
+            toolIconView()
+                .frame(width: 47)
+
+            // Orange triangle indicator - always present but transparent when not needed
+            Path { path in
+                // Triangle pointing to bottom-right corner
+                path.move(to: CGPoint(x: 0, y: 6))    // Left point
+                path.addLine(to: CGPoint(x: 6, y: 0)) // Top point
+                path.addLine(to: CGPoint(x: 6, y: 6)) // Bottom-right corner
+                path.closeSubpath()
+            }
+            .fill((isSelected && isExpandable && !isGroupExpanded)
+                  ? Color(.displayP3, red: 1.0, green: 0.584, blue: 0.0) // Display P3 orange at full 1.0 opacity
+                  : Color.clear)
+            .frame(width: 6, height: 6)
+            .position(x: 42, y: 26)
+        }
+        .contentShape(Rectangle()) // Extend hit area to match entire button area
+        .frame(width: 58, height: 34)
+        .position(x: 24.5, y: 17)
+        .onTapGesture {
+            onTap()
+        }
+        .onLongPressGesture(minimumDuration: 0.5) {
+            onLongPress()
         }
     }
 }
