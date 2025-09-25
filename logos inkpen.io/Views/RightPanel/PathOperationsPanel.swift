@@ -88,38 +88,102 @@ struct PathOperationsPanel: View {
                 
                 VStack(spacing: 6) {
                     HStack(spacing: 6) {
-                        Button("Clean Duplicate Points") {
+                        Button {
+                            if !document.selectedShapeIDs.isEmpty {
+                                ProfessionalPathOperations.cleanupSelectedShapesDuplicates(document, tolerance: 5.0)
+                            } else {
+                                ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
+                            }
+                        } label: {
+                            Text("Clean Duplicate Points")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.blue)
+                                )
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(BorderlessButtonStyle())
+                        .onTapGesture { // Luna Display compatibility
                             if !document.selectedShapeIDs.isEmpty {
                                 ProfessionalPathOperations.cleanupSelectedShapesDuplicates(document, tolerance: 5.0)
                             } else {
                                 ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
                             }
                         }
-                        .buttonStyle(ProfessionalPrimaryButtonStyle())
-                        .controlSize(.small)
                         .help("Remove overlapping points and merge their curve data smoothly (⌘⇧K)")
                         
-                        Button("Clean All Paths") {
+                        Button {
+                            ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 1.0)
+                        } label: {
+                            Text("Clean All Paths")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.primary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.gray.opacity(0.1))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 6)
+                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                        )
+                                )
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(BorderlessButtonStyle())
+                        .onTapGesture { // Luna Display compatibility
                             ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 1.0)
                         }
-                        .buttonStyle(ProfessionalSecondaryButtonStyle())
-                        .controlSize(.small)
                         .help("Clean duplicate points in all shapes in the document (⌘⌥K)")
                     }
                     
                     HStack(spacing: 6) {
-                        Button("Remove Overlap") {
+                        Button {
+                            removeOverlapFromSelectedShapes()
+                        } label: {
+                            Text("Remove Overlap")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.blue)
+                                )
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(BorderlessButtonStyle())
+                        .onTapGesture { // Luna Display compatibility
                             removeOverlapFromSelectedShapes()
                         }
-                        .buttonStyle(ProfessionalPrimaryButtonStyle())
-                        .controlSize(.small)
                         .help("Remove self-intersections and overlapping areas within selected shapes")
                         
-                        Button("Remove All Overlaps") {
+                        Button {
+                            removeOverlapFromAllShapes()
+                        } label: {
+                            Text("Remove All Overlaps")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.primary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.gray.opacity(0.1))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 6)
+                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                        )
+                                )
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(BorderlessButtonStyle())
+                        .onTapGesture { // Luna Display compatibility
                             removeOverlapFromAllShapes()
                         }
-                        .buttonStyle(ProfessionalSecondaryButtonStyle())
-                        .controlSize(.small)
                         .help("Remove overlaps from all shapes in the document")
                     }
                 }
@@ -149,16 +213,46 @@ struct PathOperationsPanel: View {
                 .padding(.horizontal, 12)
                 
                 HStack(spacing: 6) {
-                    Button("Make Clipping Mask") {
+                    Button {
+                        document.makeClippingMaskFromSelection()
+                    } label: {
+                        Text("Make Clipping Mask")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.blue)
+                            )
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(BorderlessButtonStyle())
+                    .onTapGesture { // Luna Display compatibility
                         document.makeClippingMaskFromSelection()
                     }
-                    .buttonStyle(ProfessionalPrimaryButtonStyle())
-                    .controlSize(.small)
-                    Button("Release Clipping Mask") {
+                    Button {
+                        document.releaseClippingMaskForSelection()
+                    } label: {
+                        Text("Release Clipping Mask")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.primary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.gray.opacity(0.1))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
+                            )
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(BorderlessButtonStyle())
+                    .onTapGesture { // Luna Display compatibility
                         document.releaseClippingMaskForSelection()
                     }
-                    .buttonStyle(ProfessionalSecondaryButtonStyle())
-                    .controlSize(.small)
                 }
                 .padding(.horizontal, 12)
             }

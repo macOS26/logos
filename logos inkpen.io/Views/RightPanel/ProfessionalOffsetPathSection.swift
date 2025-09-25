@@ -168,11 +168,24 @@ struct ProfessionalOffsetPathSection: View {
                     VStack(spacing: 4) {
                         HStack(spacing: 6) {
                             // Offset Path button (handles both positive and negative offsets)
-                            Button("Offset Path") {
+                            Button {
+                                performOffsetPath()
+                            } label: {
+                                Text("Offset Path")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .fill(Color.blue)
+                                    )
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(BorderlessButtonStyle())
+                            .onTapGesture { // Luna Display compatibility
                                 performOffsetPath()
                             }
-                            .buttonStyle(ProfessionalPrimaryButtonStyle())
-                            .controlSize(.small)
                             .help("Create offset path with current settings (⌘⌥O)")
                             
                             Spacer()
