@@ -410,25 +410,8 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokeWidth(_ width: Double) {
-        // ALWAYS update the default stroke width for new shapes AND current tool settings
+        // ALWAYS update the default stroke width - NO RESTRICTIONS, NO CHECKS
         document.defaultStrokeWidth = width
-
-        // ALSO update current tool settings when drawing tools are active
-        // This allows real-time updates while using brush/marker/freehand tools
-        switch document.currentTool {
-        case .brush:
-            // Brush tool uses its own thickness setting, not stroke width
-            break
-        case .marker:
-            // Marker tool uses its own thickness setting, not stroke width
-            break
-        case .freehand:
-            // Freehand tool DOES use stroke width - update it
-            document.defaultStrokeWidth = width
-        default:
-            break
-        }
-
         //Log.fileOperation("🎨 Set default stroke width: \(width)pt", level: .info)
 
         // REFACTORED: Use unified objects system for stroke width application
