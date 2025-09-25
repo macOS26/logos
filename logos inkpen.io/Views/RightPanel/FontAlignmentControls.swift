@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 struct FontAlignmentControls: View {
     @ObservedObject var document: VectorDocument
@@ -99,6 +100,7 @@ struct FontAlignmentControls: View {
     private func updateAlignment(_ alignment: TextAlignment) {
         // ALWAYS update defaults first - NO RESTRICTIONS
         document.fontManager.selectedTextAlignment = alignment
+        document.objectWillChange.send() // Force UI update
 
         // Then update selected text if any
         if let textID = document.selectedTextIDs.first,

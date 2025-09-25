@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AppKit
+import Combine
 
 struct FontPickerView: View {
     @ObservedObject var document: VectorDocument
@@ -44,6 +45,7 @@ struct FontPickerView: View {
                 set: { newFamily in
                     // ALWAYS update defaults first - NO RESTRICTIONS
                     document.fontManager.selectedFontFamily = newFamily
+                    document.objectWillChange.send() // Force UI update
                     fontFamilyUpdateTrigger.toggle()
 
                     // Then update selected text if any
@@ -77,6 +79,7 @@ struct FontPickerView: View {
                 set: { newWeight in
                     // ALWAYS update defaults first - NO RESTRICTIONS
                     document.fontManager.selectedFontWeight = newWeight
+                    document.objectWillChange.send() // Force UI update
 
                     // Then update selected text if any
                     if let textID = document.selectedTextIDs.first {
@@ -106,6 +109,7 @@ struct FontPickerView: View {
                 set: { newStyle in
                     // ALWAYS update defaults first - NO RESTRICTIONS
                     document.fontManager.selectedFontStyle = newStyle
+                    document.objectWillChange.send() // Force UI update
 
                     // Then update selected text if any
                     if let textID = document.selectedTextIDs.first {
