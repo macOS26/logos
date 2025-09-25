@@ -82,9 +82,47 @@ struct VariableStrokeSection: View {
             }
             }
 
-            // REMOVED: Taper is no longer used - natural pressure creates tapering
+            // Brush Taper
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Taper")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.secondaryText)
+                    Spacer()
+                    Text("\(Int(document.currentBrushTaper * 100))%")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.primaryText)
+                        .monospacedDigit()
+                }
 
-            // MERGED WITH LIQUID: Smoothness is now controlled by Liquid setting
+                Slider(value: Binding(
+                    get: { document.currentBrushTaper },
+                    set: { document.currentBrushTaper = $0 }
+                ), in: 0...1)
+                .controlSize(.regular)
+                .help("Amount of tapering at start and end of stroke")
+            }
+
+            // Brush Smoothness
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Smoothness")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.secondaryText)
+                    Spacer()
+                    Text("\(formatNumberForDisplay(document.currentBrushSmoothingTolerance))")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.primaryText)
+                        .monospacedDigit()
+                }
+
+                Slider(value: Binding(
+                    get: { document.currentBrushSmoothingTolerance },
+                    set: { document.currentBrushSmoothingTolerance = $0 }
+                ), in: 0.5...10)
+                .controlSize(.regular)
+                .help("Curve fitting tolerance - lower values preserve more detail, higher values create smoother curves")
+            }
 
             // Liquid (Curve Fluidity)
             VStack(alignment: .leading, spacing: 8) {
@@ -105,7 +143,7 @@ struct VariableStrokeSection: View {
                     set: { document.currentBrushLiquid = 100.0 - $0 }  // Reverse when setting
                 ), in: 0...100)
                 .controlSize(.regular)
-                .help("Controls curve fluidity and smoothness - 0% = raw input (choppy), 50% = balanced, 100% = maximum liquid smoothing")
+                .help("Controls curve fluidity - 0% = no smoothing (all points), 50% = moderate smoothing, 100% = maximum liquid smoothing")
             }
 
             // Advanced Smoothing Section
@@ -127,7 +165,7 @@ struct VariableStrokeSection: View {
                     .toggleStyle(SwitchToggleStyle(tint: .purple))
                     .controlSize(.small)
                 }
-                .help("Enable advanced curve smoothing algorithms for ultra-smooth strokes")
+                .help("Enable advanced curve smoothing algorithms")
 
                 if document.advancedSmoothingEnabled {
                     // Chaikin Smoothing Iterations
@@ -146,18 +184,18 @@ struct VariableStrokeSection: View {
                         Slider(value: Binding<Double>(
                             get: { Double(document.chaikinSmoothingIterations) },
                             set: { document.chaikinSmoothingIterations = Int(round($0)) }
-                        ), in: 0...5)
+                        ), in: 1...3)
                         .controlSize(.regular)
-                        .help("Number of smoothing passes - 0 = off, 5 = maximum smoothing")
+                        .help("More iterations create smoother curves but may lose detail (1-3)")
                     }
 
-                    // Preserve Sharp Corners Toggle
+                    // Adaptive Tension Toggle
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Preserve Sharp Corners")
+                            Text("Adaptive Tension")
                                 .font(.subheadline)
                                 .foregroundColor(Color.ui.primaryText)
-                            Text("Keep intentional sharp angles in strokes")
+                            Text("Adjust curve tension based on curvature")
                                 .font(.caption)
                                 .foregroundColor(Color.ui.secondaryText)
                         }

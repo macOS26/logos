@@ -367,7 +367,7 @@ class VectorDocument: ObservableObject, Codable {
         self.currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 2.0
 
         // Initialize advanced smoothing settings from UserDefaults
-        self.advancedSmoothingEnabled = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? false
+        self.advancedSmoothingEnabled = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? true
         self.chaikinSmoothingIterations = UserDefaults.standard.object(forKey: "chaikinSmoothingIterations") as? Int ?? 1
         self.adaptiveTensionEnabled = UserDefaults.standard.object(forKey: "adaptiveTensionEnabled") as? Bool ?? true
 
@@ -633,7 +633,7 @@ class VectorDocument: ObservableObject, Codable {
         currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 2.0
 
         // Initialize advanced smoothing settings from UserDefaults (properties with didSet)
-        advancedSmoothingEnabled = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? false
+        advancedSmoothingEnabled = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? true
         chaikinSmoothingIterations = UserDefaults.standard.object(forKey: "chaikinSmoothingIterations") as? Int ?? 1
         adaptiveTensionEnabled = UserDefaults.standard.object(forKey: "adaptiveTensionEnabled") as? Bool ?? true
 
