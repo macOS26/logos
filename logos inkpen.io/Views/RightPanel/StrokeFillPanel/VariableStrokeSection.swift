@@ -227,6 +227,7 @@ struct VariableStrokeSection: View {
                         set: { document.brushApplyNoStroke = $0 }
                     ))
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                    .controlSize(.small)
                     .help("When enabled, brush shapes will have no stroke regardless of current stroke settings")
                 }
 
@@ -246,6 +247,7 @@ struct VariableStrokeSection: View {
                         set: { document.brushRemoveOverlap = $0 }
                     ))
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                    .controlSize(.small)
                     .help("When enabled, overlapping parts of brush strokes will be merged using union operation")
                 }
             }
