@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 struct FontSizeControls: View {
     @ObservedObject var document: VectorDocument
@@ -126,40 +127,49 @@ struct FontSizeControls: View {
     }
     
     private func updateFontSize(_ newSize: CGFloat) {
+        // ALWAYS update defaults first - NO RESTRICTIONS
+        document.fontManager.selectedFontSize = newSize
+        document.fontManager.selectedLineHeight = newSize
+        document.objectWillChange.send() // Force UI update
+
+        // Then update selected text if any
         if let textID = document.selectedTextIDs.first,
            let freshText = document.allTextObjects.first(where: { $0.id == textID }) {
             var updatedTypography = freshText.typography
             let oldFontSize = updatedTypography.fontSize
             let lineHeightRatio = updatedTypography.lineHeight / oldFontSize
-            
+
             updatedTypography.fontSize = newSize
             updatedTypography.lineHeight = newSize * lineHeightRatio
             document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
-        } else {
-            document.fontManager.selectedFontSize = newSize
-            document.fontManager.selectedLineHeight = newSize
         }
     }
     
     private func updateLineSpacing(_ newSpacing: CGFloat) {
+        // ALWAYS update defaults first - NO RESTRICTIONS
+        document.fontManager.selectedLineSpacing = Double(newSpacing)
+        document.objectWillChange.send() // Force UI update
+
+        // Then update selected text if any
         if let textID = document.selectedTextIDs.first,
            let freshText = document.allTextObjects.first(where: { $0.id == textID }) {
             var updatedTypography = freshText.typography
             updatedTypography.lineSpacing = Double(newSpacing)
             document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
-        } else {
-            document.fontManager.selectedLineSpacing = Double(newSpacing)
         }
     }
     
     private func updateLineHeight(_ newHeight: CGFloat) {
+        // ALWAYS update defaults first - NO RESTRICTIONS
+        document.fontManager.selectedLineHeight = Double(newHeight)
+        document.objectWillChange.send() // Force UI update
+
+        // Then update selected text if any
         if let textID = document.selectedTextIDs.first,
            let freshText = document.allTextObjects.first(where: { $0.id == textID }) {
             var updatedTypography = freshText.typography
             updatedTypography.lineHeight = Double(newHeight)
             document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
-        } else {
-            document.fontManager.selectedLineHeight = Double(newHeight)
         }
     }
 }
