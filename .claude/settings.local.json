@@ -64,7 +64,16 @@
       "mcp__xcf-server__analyze_swift_code",
       "Bash(/tmp/check_unused_functions.sh:*)",
       "Bash(/tmp/find_unused_detailed.sh)",
-      "Bash(/tmp/verify_unused.sh:*)"
+      "Bash(/tmp/verify_unused.sh:*)",
+      "Bash(do if [ \"$file\" != \"index.html\" ])",
+      "Bash(then echo \"$file\")",
+      "Bash(fi)",
+      "Bash(do)",
+      "Bash(do sed -i '' 's#    <div class=\"\"footer\"\">.*</div>\\n</body>#    <div id=\"\"footer-container\"\"></div>\\n    <script src=\"\"common.js\"\"></script>\\n</body>#' \"$file\")",
+      "Bash(do perl -i -0pe 's#    <div class=\"\"footer\"\">.*?    </div>\\n</body>#    <div id=\"\"footer-container\"\"></div>\\n    <script src=\"\"common.js\"\"></script>\\n</body>#s' \"$file\")",
+      "Bash(do if [ \"$file\" != \"footer.html\" ])",
+      "Bash(then echo \"=== $file ===\")",
+      "Bash(tail:*)"
     ],
     "deny": [],
     "ask": []

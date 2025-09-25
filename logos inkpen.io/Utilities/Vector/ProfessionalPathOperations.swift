@@ -95,10 +95,6 @@ extension ProfessionalPathOperations {
     }
     
     /// PROFESSIONAL KICK: Back subtracts from front (Professional "Kick", formerly "Minus Back")
-    static func professionalMinusBack(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
-        // This is just the reverse of Punch
-        return professionalMinusFront(backPath, from: frontPath)
-    }
     
     // MARK: - PROFESSIONAL DIVIDE & SPLIT OPERATIONS
     

@@ -17,31 +17,6 @@ extension FileOperations {
     }
 
     /// Render VectorDocument to PDF context
-    static func renderDocumentToPDF(document: VectorDocument, context: CGContext, canvasSize: CGSize) throws {
-        Log.fileOperation("🎨 Rendering document to PDF context", level: .info)
-
-        // Save graphics state
-        context.saveGState()
-
-        // Render layers (skip pasteboard and canvas background)
-        for (index, layer) in document.layers.enumerated() {
-            // Skip pasteboard (index 0) and canvas (index 1) for PDF export
-            guard index >= 2, !layer.isLocked, layer.isVisible else { continue }
-
-            Log.fileOperation("🎨 Rendering layer: \(layer.name)", level: .info)
-
-            // Render shapes in layer using unified objects
-            let shapesInLayer = document.getShapesForLayer(index)
-            for shape in shapesInLayer where shape.isVisible {
-                try renderShapeToPDF(shape: shape, context: context)
-            }
-        }
-
-        // Restore graphics state
-        context.restoreGState()
-
-        Log.fileOperation("✅ Document rendered to PDF context", level: .info)
-    }
 
     /// Render individual shape to PDF context
     static func renderShapeToPDF(shape: VectorShape, context: CGContext) throws {

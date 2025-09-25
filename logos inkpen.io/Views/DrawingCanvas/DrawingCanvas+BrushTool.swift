@@ -137,11 +137,12 @@ extension DrawingCanvas {
             brushRawPoints = interpolatedPoints
         }
 
-        if appState.brushPreviewIsFinal, let preview = brushPreviewPath {
+        // ALWAYS use the preview path - it already has the correct pressure!
+        if let preview = brushPreviewPath {
             // Bake the exact preview path
             finalizeFromPreview(preview)
         } else {
-            // Process brush stroke to create variable width path
+            // Fallback only if no preview exists (shouldn't happen)
             processBrushStroke()
         }
         
@@ -283,9 +284,10 @@ extension DrawingCanvas {
         Log.info("🖌️ PREVIEW: Simplified from \(pointsToProcess.count) to \(simplifiedPoints.count) points", category: .general)
 
         if simplifiedPoints.count >= 2 {
-            return generatePreviewVariableWidthPath(
+            // USE THE SAME FUNCTION AS FINAL - NO DIFFERENT PREVIEW FUNCTION!
+            return generateSmoothVariableWidthPath(
                 centerPoints: simplifiedPoints,
-                recentRawPoints: pointsToProcess,
+                rawPoints: pointsToProcess,
                 thickness: document.currentBrushThickness,
                 pressureSensitivity: document.currentBrushPressureSensitivity,
                 taper: document.currentBrushTaper
@@ -374,9 +376,10 @@ extension DrawingCanvas {
         }
 
         if simplifiedPoints.count >= 2 {
-            return generatePreviewVariableWidthPath(
+            // USE THE SAME FUNCTION AS FINAL - PREVIEW MUST MATCH FINAL!
+            return generateSmoothVariableWidthPath(
                 centerPoints: simplifiedPoints,
-                recentRawPoints: pointsToProcess,
+                rawPoints: pointsToProcess,
                 thickness: thickness,
                 pressureSensitivity: pressureSensitivity,
                 taper: taper
@@ -888,10 +891,9 @@ extension DrawingCanvas {
             
             // Interpolate pressure from raw points to simplified points
             let interpolatedPressure = interpolatePressureForPoint(point, from: rawPoints)
-            
-            // Apply pressure variation with sensitivity control
-            let pressureMultiplier = 1.0 + (interpolatedPressure - 1.0) * pressureSensitivity
-            finalThickness *= pressureMultiplier
+
+            // USE PRESSURE DIRECTLY AS-IS!
+            finalThickness *= interpolatedPressure
             
             thicknessPoints.append((location: point, thickness: finalThickness))
         }

@@ -117,30 +117,29 @@ struct MainToolbarContent: ToolbarContent {
     var body: some ToolbarContent {
         ToolbarItemGroup(placement: .automatic) {
             #if DEBUG
-            // do not remove, just leave commented it out
             // Development Menu - Only shown in debug builds
-//            Menu {
-//                Button("SVG Test Harness") {
-//                    showingSVGTestHarness = true
-//                }
-//                .help("Test SVG import and Core Graphics conversion")
-//
-//                Button("Pressure Calibration") {
-//                    showingPressureCalibration = true
-//                }
-//                .help("Calibrate pressure-sensitive input devices")
-//
-//                Divider()
-//
-//                Button("Run Diagnostics") {
-//                    onRunDiagnostics()
-//                }
-//                .help("Run pasteboard diagnostics")
-//
-//            } label: {
-//                Image(systemName: "doc.text")
-//            }
-//            .help("Development Tools")
+            Menu {
+                Button("SVG Test Harness") {
+                    showingSVGTestHarness = true
+                }
+                .help("Test SVG import and Core Graphics conversion")
+
+                Button("Pressure Calibration") {
+                    showingPressureCalibration = true
+                }
+                .help("Calibrate pressure-sensitive input devices")
+
+                Divider()
+
+                Button("Run Diagnostics") {
+                    onRunDiagnostics()
+                }
+                .help("Run pasteboard diagnostics")
+
+            } label: {
+                Image(systemName: "doc.text")
+            }
+            .help("Development Tools")
             #endif
             
             // ✅ CLEAN TOOLBAR: No duplicate menu functionality

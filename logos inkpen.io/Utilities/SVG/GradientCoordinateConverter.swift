@@ -293,41 +293,6 @@ struct GradientCoordinateConverter {
 // MARK: - Utility Functions for App Integration
 extension GradientCoordinateConverter {
     /// Convert gradients in an SVG file and return the modified content
-    static func convertSVGFile(inputContent: String, reverse: Bool = false) throws -> String {
-        // Parse bounding box
-        guard let boundingBox = parseBoundingBox(from: inputContent) else {
-            throw VectorImportError.parsingError("Could not parse bounding box from SVG", line: nil)
-        }
-        
-        // Parse gradients
-        let gradients = parseSVGGradients(from: inputContent)
-        
-        if gradients.isEmpty {
-            return inputContent // Return original content if no gradients found
-        }
-        
-        // Convert gradients
-        let convertedGradients = gradients.map { gradient in
-            if reverse {
-                return convertUserSpaceToBoundingBox(
-                    gradient: gradient,
-                    boundingBox: boundingBox
-                )
-            } else {
-                return convertBoundingBoxToUserSpace(
-                    gradient: gradient,
-                    boundingBox: boundingBox
-                )
-            }
-        }
-        
-        // Generate output SVG
-        return generateSVG(
-            originalContent: inputContent,
-            convertedGradients: convertedGradients,
-            boundingBox: boundingBox
-        )
-    }
     
     // MARK: - Advanced Gradient Coordinate Parsing
     
