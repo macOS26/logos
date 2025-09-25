@@ -131,18 +131,19 @@ struct VariableStrokeSection: View {
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("\(Int(document.currentBrushLiquid))")
+                    // Display reversed: internal 0 shows as 100%, internal 100 shows as 0%
+                    Text("\(Int(100.0 - document.currentBrushLiquid))%")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.primaryText)
                         .monospacedDigit()
                 }
 
                 Slider(value: Binding(
-                    get: { document.currentBrushLiquid },
-                    set: { document.currentBrushLiquid = $0 }
+                    get: { 100.0 - document.currentBrushLiquid },  // Reverse for display
+                    set: { document.currentBrushLiquid = 100.0 - $0 }  // Reverse when setting
                 ), in: 0...100)
                 .controlSize(.regular)
-                .help("Controls curve fluidity - 0% = moderate smoothing, 50% = no smoothing (all points), 100% = maximum liquid smoothing")
+                .help("Controls curve fluidity - 0% = no smoothing (all points), 50% = moderate smoothing, 100% = maximum liquid smoothing")
             }
 
             // Advanced Smoothing Section

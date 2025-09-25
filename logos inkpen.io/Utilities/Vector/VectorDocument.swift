@@ -201,7 +201,7 @@ class VectorDocument: ObservableObject, Codable {
     @Published var currentBrushSmoothingTolerance: Double = 2.0 {
         didSet { UserDefaults.standard.set(currentBrushSmoothingTolerance, forKey: "brushSmoothingTolerance") }
     }
-    @Published var currentBrushLiquid: Double = 0.0 {  // 0=moderate, 50=none, 100=maximum smoothing
+    @Published var currentBrushLiquid: Double = 0.0 {  // Internal: 0=moderate, 50=none, 100=max (UI shows reversed)
         didSet { UserDefaults.standard.set(currentBrushLiquid, forKey: "brushLiquid") }
     }
     @Published var hasPressureInput: Bool = false // Whether pressure-sensitive input is detected
