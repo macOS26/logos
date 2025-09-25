@@ -97,12 +97,16 @@ struct PathOperationsPanel: View {
                     } label: {
                         Text("Clean Duplicate Points")
                             .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.white)
+                            .foregroundColor(.primary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.blue)
+                                    .fill(Color.gray.opacity(0.1))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
                             )
                             .contentShape(Rectangle())
                     }
@@ -147,12 +151,16 @@ struct PathOperationsPanel: View {
                     } label: {
                         Text("Remove Overlap")
                             .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.white)
+                            .foregroundColor(.primary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.blue)
+                                    .fill(Color.gray.opacity(0.1))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
                             )
                             .contentShape(Rectangle())
                     }
@@ -219,12 +227,16 @@ struct PathOperationsPanel: View {
                     } label: {
                         Text("Make Clipping Mask")
                             .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.white)
+                            .foregroundColor(.primary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.blue)
+                                    .fill(Color.gray.opacity(0.1))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
                             )
                             .contentShape(Rectangle())
                     }
