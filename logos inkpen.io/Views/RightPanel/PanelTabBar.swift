@@ -27,7 +27,7 @@ struct PanelTabBar: View {
                     .background(selectedTab == tab ? Color.blue.opacity(0.1) : Color.clear)
                     .contentShape(Rectangle()) // Extend hit area to match entire highlight area
                 }
-                .buttonStyle(BorderlessButtonStyle())
+                .buttonStyle(PlainButtonStyle())
             }
         }
         .background(Color(NSColor.controlBackgroundColor))
