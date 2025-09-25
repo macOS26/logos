@@ -22,7 +22,7 @@ struct CurrentColorsView: View {
                 Button(action: onFillColorTap) {
                     renderColorSwatchRightPanel(fillColor, width: 30, height: 30, cornerRadius: 0, borderWidth: 1, opacity: fillOpacity)
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(BorderlessButtonStyle())
 
                 Text("Fill")
                     .font(.caption2)  // Smaller font to match ColorPanel
@@ -34,7 +34,7 @@ struct CurrentColorsView: View {
                 Button(action: onStrokeColorTap) {
                     renderColorSwatchRightPanel(strokeColor, width: 30, height: 30, cornerRadius: 0, borderWidth: 1, opacity: strokeOpacity)
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(BorderlessButtonStyle())
 
                 Text("Stroke")
                     .font(.caption2)  // Smaller font to match ColorPanel

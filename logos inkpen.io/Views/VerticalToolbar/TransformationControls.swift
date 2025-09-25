@@ -181,16 +181,16 @@ struct TransformationControls: View {
                             Color(.displayP3, red: 0.0, green: 0.478, blue: 1.0) : // Display P3 system blue
                             Color(.displayP3, red: 1.0, green: 0.584, blue: 0.0) // Display P3 orange matching toolbar
                         )
-                        .frame(width: 28, height: 24)
+                        .frame(width: 35, height: 30)  // 25% larger
 
                     // Lock icon
                     Image(systemName: keepProportions ? "lock.fill" : "lock.open.fill")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 15, weight: .medium))  // 25% larger icon
                         .foregroundColor(.white)
                 }
-                .frame(width: 28, height: 24)
+                .frame(width: 35, height: 30)  // 25% larger click area
             }
-            .buttonStyle(PlainButtonStyle())
+            .buttonStyle(BorderlessButtonStyle())
             .overlay(
                 RoundedRectangle(cornerRadius: 4)
                     .stroke(keepProportions ?

@@ -104,7 +104,7 @@ struct DocumentSettingsView: View {
                                 .fill(Color.ui.lightGrayBackground)
                         )
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(BorderlessButtonStyle())
                 .help("Close")
             }
             .padding(.horizontal, 24)
@@ -335,14 +335,11 @@ struct DocumentSettingsView: View {
                             .foregroundColor(.primary)
                             .frame(width: 120, alignment: .leading)
 
-                        Toggle("", isOn: $document.settings.showRulers)
-                            .toggleStyle(SwitchToggleStyle())
-                            .scaleEffect(0.8)
-                            .onChange(of: document.settings.showRulers) { _, newValue in
-                                document.showRulers = newValue
-                                UserDefaults.standard.set(newValue, forKey: "showRulers")
-                                document.onSettingsChanged()
-                            }
+                        StylusToggleButton(isOn: $document.settings.showRulers) { newValue in
+                            document.showRulers = newValue
+                            UserDefaults.standard.set(newValue, forKey: "showRulers")
+                            document.onSettingsChanged()
+                        }
                     }
 
                     // Snap to Point
@@ -352,14 +349,11 @@ struct DocumentSettingsView: View {
                             .foregroundColor(.primary)
                             .frame(width: 120, alignment: .leading)
 
-                        Toggle("", isOn: $document.settings.snapToPoint)
-                            .toggleStyle(SwitchToggleStyle())
-                            .scaleEffect(0.8)
-                            .onChange(of: document.settings.snapToPoint) { _, newValue in
-                                document.snapToPoint = newValue
-                                UserDefaults.standard.set(newValue, forKey: "snapToPoint")
-                                document.onSettingsChanged()
-                            }
+                        StylusToggleButton(isOn: $document.settings.snapToPoint) { newValue in
+                            document.snapToPoint = newValue
+                            UserDefaults.standard.set(newValue, forKey: "snapToPoint")
+                            document.onSettingsChanged()
+                        }
                     }
                 }
 
@@ -372,14 +366,11 @@ struct DocumentSettingsView: View {
                             .foregroundColor(.primary)
                             .frame(width: 120, alignment: .leading)
 
-                        Toggle("", isOn: $document.settings.showGrid)
-                            .toggleStyle(SwitchToggleStyle())
-                            .scaleEffect(0.8)
-                            .onChange(of: document.settings.showGrid) { _, newValue in
-                                document.showGrid = newValue
-                                UserDefaults.standard.set(newValue, forKey: "showGrid")
-                                document.onSettingsChanged()
-                            }
+                        StylusToggleButton(isOn: $document.settings.showGrid) { newValue in
+                            document.showGrid = newValue
+                            UserDefaults.standard.set(newValue, forKey: "showGrid")
+                            document.onSettingsChanged()
+                        }
                     }
 
                     // Snap to Grid
@@ -389,14 +380,11 @@ struct DocumentSettingsView: View {
                             .foregroundColor(.primary)
                             .frame(width: 120, alignment: .leading)
 
-                        Toggle("", isOn: $document.settings.snapToGrid)
-                            .toggleStyle(SwitchToggleStyle())
-                            .scaleEffect(0.8)
-                            .onChange(of: document.settings.snapToGrid) { _, newValue in
-                                document.snapToGrid = newValue
-                                UserDefaults.standard.set(newValue, forKey: "snapToGrid")
-                                document.onSettingsChanged()
-                            }
+                        StylusToggleButton(isOn: $document.settings.snapToGrid) { newValue in
+                            document.snapToGrid = newValue
+                            UserDefaults.standard.set(newValue, forKey: "snapToGrid")
+                            document.onSettingsChanged()
+                        }
                     }
                 }
             }
@@ -436,10 +424,22 @@ struct DocumentSettingsView: View {
             HStack {
                 Spacer()
                 
-                Button("Done") {
+                Button {
                     presentationMode.wrappedValue.dismiss()
+                } label: {
+                    Text("Done")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .frame(minHeight: 36)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.blue)
+                        )
+                        .contentShape(Rectangle())
                 }
-                .buttonStyle(ProfessionalPrimaryButtonStyle())
+                .buttonStyle(BorderlessButtonStyle())
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 20)

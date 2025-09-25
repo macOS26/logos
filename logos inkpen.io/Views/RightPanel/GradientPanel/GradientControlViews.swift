@@ -311,10 +311,10 @@ struct GradientApplyButtonView: View {
         HStack {
             Spacer()
             Button("Add Swatch", action: onAddSwatch)
-                .buttonStyle(.bordered)
+                .buttonStyle(ProfessionalSecondaryButtonStyle())
                 .disabled(currentGradient == nil)
             Button("Apply Gradient", action: onApply)
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(ProfessionalPrimaryButtonStyle())
                 .disabled(currentGradient == nil)
         }
     }

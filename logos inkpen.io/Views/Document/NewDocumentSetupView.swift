@@ -97,7 +97,7 @@ struct NewDocumentSetupView: View {
                 .padding(.trailing, -11) //FIXME: adjust this later?
 
                 .padding(.top, -55) //FIXME: adjust this later?
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(BorderlessButtonStyle())
                 .help("Cancel")
             }
             .padding(.horizontal, 24)

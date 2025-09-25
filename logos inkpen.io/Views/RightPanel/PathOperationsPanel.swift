@@ -95,7 +95,7 @@ struct PathOperationsPanel: View {
                                 ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
                             }
                         }
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(ProfessionalPrimaryButtonStyle())
                         .controlSize(.small)
                         .help("Remove overlapping points and merge their curve data smoothly (⌘⇧K)")
                         .disabled(document.unifiedObjects.isEmpty)
@@ -103,7 +103,7 @@ struct PathOperationsPanel: View {
                         Button("Clean All Paths") {
                             ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 1.0)
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(ProfessionalSecondaryButtonStyle())
                         .controlSize(.small)
                         .help("Clean duplicate points in all shapes in the document (⌘⌥K)")
                         .disabled(document.unifiedObjects.isEmpty)
@@ -113,7 +113,7 @@ struct PathOperationsPanel: View {
                         Button("Remove Overlap") {
                             removeOverlapFromSelectedShapes()
                         }
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(ProfessionalPrimaryButtonStyle())
                         .controlSize(.small)
                         .help("Remove self-intersections and overlapping areas within selected shapes")
                         .disabled(document.selectedShapeIDs.isEmpty)
@@ -121,7 +121,7 @@ struct PathOperationsPanel: View {
                         Button("Remove All Overlaps") {
                             removeOverlapFromAllShapes()
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(ProfessionalSecondaryButtonStyle())
                         .controlSize(.small)
                         .help("Remove overlaps from all shapes in the document")
                         .disabled(document.unifiedObjects.isEmpty)
@@ -156,13 +156,13 @@ struct PathOperationsPanel: View {
                     Button("Make Clipping Mask") {
                         document.makeClippingMaskFromSelection()
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(ProfessionalPrimaryButtonStyle())
                     .controlSize(.small)
                     .disabled(document.selectedObjectIDs.count < 2)
                     Button("Release Clipping Mask") {
                         document.releaseClippingMaskForSelection()
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(ProfessionalSecondaryButtonStyle())
                     .controlSize(.small)
                     .disabled(document.selectedObjectIDs.isEmpty)
                 }

@@ -30,6 +30,7 @@ struct ColorPickerModal: View {
                         Button("Done") {
                             presentationMode.wrappedValue.dismiss()
                         }
+                        .buttonStyle(BorderlessButtonStyle())
                     }
                 }
         }

@@ -42,7 +42,7 @@ struct FillPropertiesSection: View {
                 Button("Apply Fill") {
                     onApplyFill()
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(ProfessionalPrimaryButtonStyle())
             }
         }
         .padding()

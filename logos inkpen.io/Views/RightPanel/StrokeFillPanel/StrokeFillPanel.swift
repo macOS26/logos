@@ -266,7 +266,7 @@ struct StrokeFillPanel: View {
                         Button("Expand Stroke") {
                             document.outlineSelectedStrokes()
                         }
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(ProfessionalPrimaryButtonStyle())
                         .controlSize(.regular)
                         .disabled(!document.canOutlineStrokes)
                         .help("Convert stroke to filled path (Cmd+Shift+O)")

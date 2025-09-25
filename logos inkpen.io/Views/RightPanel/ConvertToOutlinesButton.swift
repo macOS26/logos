@@ -20,7 +20,7 @@ struct ConvertToOutlinesButton: View {
                     Button("Convert to Outlines") {
                         convertSelectedTextToOutlines()
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(ProfessionalPrimaryButtonStyle())
                     .font(.caption)
                     .help("Convert text to vector paths (⌘⇧O)")
                     .keyboardShortcut("o", modifiers: [.command, .shift])

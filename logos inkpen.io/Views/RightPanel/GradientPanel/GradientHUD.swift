@@ -51,7 +51,7 @@ struct StableGradientHUDContent: View, Equatable {
                 Button("Close") {
                     hudManager.hide()
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(ProfessionalPrimaryButtonStyle())
                 .controlSize(.small)
                 .padding(.trailing, 16)
                 .padding(.bottom, 12)
@@ -152,7 +152,7 @@ struct GradientColorPickerSheet: View {
                         window.orderOut(nil)
                     }
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(ProfessionalPrimaryButtonStyle())
                 .padding(.trailing, 16)
                 .padding(.bottom, 16)
             }

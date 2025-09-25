@@ -65,7 +65,7 @@ struct PressureCalibrationView: View {
                     Button("Done") {
                         presentationMode.wrappedValue.dismiss()
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(ProfessionalPrimaryButtonStyle())
                 }
                 
                 // Main content - follows NewDocumentSetupView pattern

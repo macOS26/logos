@@ -115,7 +115,7 @@ struct ColorPanel: View {
                             }
                         }
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(BorderlessButtonStyle())
                     .help(colorDescription(for: color))
                     .contextMenu {
                         Button("Delete Swatch") {

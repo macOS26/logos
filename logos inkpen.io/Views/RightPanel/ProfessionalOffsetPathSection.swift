@@ -171,7 +171,7 @@ struct ProfessionalOffsetPathSection: View {
                             Button("Offset Path") {
                                 performOffsetPath()
                             }
-                            .buttonStyle(.borderedProminent)
+                            .buttonStyle(ProfessionalPrimaryButtonStyle())
                             .controlSize(.small)
                             .help("Create offset path with current settings (⌘⌥O)")
                             .disabled(!canPerformOffset())

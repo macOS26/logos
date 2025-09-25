@@ -155,7 +155,7 @@ struct ColorSwatchGrid: View {
                         }
                     }
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(BorderlessButtonStyle())
                 .focusable(false)
                 .help("Current Stroke Color (Opacity: \(Int(currentStrokeOpacity * 100))%) - Click to make active")
                 .offset(x: 6, y: 6)  // Bottom-right offset
@@ -219,7 +219,7 @@ struct ColorSwatchGrid: View {
                         }
                     }
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(BorderlessButtonStyle())
                 .focusable(false)
                 .help("Current Fill Color (Opacity: \(Int(currentFillOpacity * 100))%) - Click to make active")
                 .offset(x: -6, y: -6)  // Top-left offset
@@ -287,7 +287,7 @@ struct ColorSwatchGrid: View {
                         }
                         .contentShape(Rectangle())
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(BorderlessButtonStyle())
                     .help("\(colorDescription(for: color)) (Click to apply to \(document.activeColorTarget == .fill ? "fill" : "stroke"))")
                 }
             }
@@ -302,7 +302,7 @@ struct ColorSwatchGrid: View {
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
             }
-            .buttonStyle(PlainButtonStyle())
+            .buttonStyle(BorderlessButtonStyle())
             .help("Add Custom Color")
             // HUD handles color selection and swatch additions; no sheet here
         }

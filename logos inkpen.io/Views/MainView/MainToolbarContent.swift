@@ -156,7 +156,11 @@ struct MainToolbarContent: ToolbarContent {
                 closeOpenPaths()
             } label: {
                 Image(systemName: "circle.dashed")
+                    .font(.system(size: 20))  // 25% larger (was ~16)
+                    .frame(width: 36, height: 36)  // Larger click area
+                    .contentShape(Rectangle())  // Entire frame is clickable
             }
+            .buttonStyle(BorderlessButtonStyle())
             .help("Close Open Paths (⌘⇧J)")
             .disabled(!hasOpenPaths())
 
@@ -165,15 +169,23 @@ struct MainToolbarContent: ToolbarContent {
                 document.viewMode = document.viewMode == .color ? .keyline : .color
             } label: {
                 Image(systemName: document.viewMode.iconName)
+                    .font(.system(size: 20))  // 25% larger
                     .foregroundColor(document.viewMode == .keyline ? InkPenUIColors.shared.toolOrange : .primary)
+                    .frame(width: 36, height: 36)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(BorderlessButtonStyle())
             .help(document.viewMode.description)
 
             Button {
                 document.showRulers.toggle()
             } label: {
                 Image(systemName: document.showRulers ? "ruler.fill" : "ruler")
+                    .font(.system(size: 20))  // 25% larger
+                    .frame(width: 36, height: 36)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(BorderlessButtonStyle())
             .help("Toggle Rulers")
 
             Button {
@@ -182,7 +194,11 @@ struct MainToolbarContent: ToolbarContent {
                 document.snapToGrid = document.showGrid
             } label: {
                 Image(systemName: document.showGrid ? "grid.circle.fill" : "grid.circle")
+                    .font(.system(size: 20))  // 25% larger
+                    .frame(width: 36, height: 36)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(BorderlessButtonStyle())
             .help("Toggle Grid")
 
             // Snap page to artwork/selection
@@ -190,14 +206,22 @@ struct MainToolbarContent: ToolbarContent {
                 onSnapPageToArtwork()
             } label: {
                 Image(systemName: "rectangle.3.group")
+                    .font(.system(size: 20))  // 25% larger
+                    .frame(width: 36, height: 36)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(BorderlessButtonStyle())
             .help("Snap Page to Artwork Bounds")
 
             Button {
                 onSnapPageToSelection()
             } label: {
                 Image(systemName: "selection.pin.in.out")
+                    .font(.system(size: 20))  // 25% larger
+                    .frame(width: 36, height: 36)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(BorderlessButtonStyle())
             .help("Snap Page to Selection Bounds")
 
             // Document Settings
@@ -205,7 +229,11 @@ struct MainToolbarContent: ToolbarContent {
                 showingDocumentSettings = true
             } label: {
                 Image(systemName: "gear")
+                    .font(.system(size: 20))  // 25% larger
+                    .frame(width: 36, height: 36)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(BorderlessButtonStyle())
             .help("Document Settings")
             
             

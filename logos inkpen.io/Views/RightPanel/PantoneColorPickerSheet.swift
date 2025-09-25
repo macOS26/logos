@@ -176,7 +176,7 @@ struct PantoneColorPickerSheet: View {
                         }
                     }
                     .disabled(selectedColor == nil)
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(ProfessionalPrimaryButtonStyle())
                 }
             }
         }

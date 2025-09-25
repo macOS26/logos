@@ -29,7 +29,7 @@ struct StableInkHUDContent: View {
                     Button("Close") {
                         appState.persistentInkHUD.hide()
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(ProfessionalPrimaryButtonStyle())
                     .controlSize(.small)
                     .padding(.trailing, 16)
                     .padding(.bottom, 12)
