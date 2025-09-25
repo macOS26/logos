@@ -34,18 +34,18 @@ extension DrawingCanvas {
         let startPoint = VectorPoint(location)
         freehandPath = VectorPath(elements: [.move(to: startPoint)])
         
-        // Create real VectorShape with round joins and caps for smoother appearance
+        // Create real VectorShape using CURRENT stroke/fill settings (not defaults!)
         let strokeStyle = StrokeStyle(
-            color: document.defaultStrokeColor,
-            width: document.defaultStrokeWidth, // Use user's default stroke width setting
+            color: getCurrentStrokeColor(), // Use current stroke color from UI
+            width: getCurrentStrokeWidth(), // Use current stroke width from UI
             lineCap: .round, // Always use round caps for freehand
             lineJoin: .round, // Always use round joins for freehand
             miterLimit: document.defaultStrokeMiterLimit, // Use user's default miter limit
-            opacity: document.defaultStrokeOpacity
+            opacity: getCurrentStrokeOpacity() // Use current stroke opacity from UI
         )
         // Use fill mode setting to determine fill style
         let fillStyle: FillStyle? = document.freehandFillMode == .fill
-            ? FillStyle(color: document.defaultFillColor, opacity: document.defaultFillOpacity)
+            ? FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
             : nil
 
         activeFreehandShape = VectorShape(
@@ -217,19 +217,19 @@ extension DrawingCanvas {
     // MARK: - Final Shape Update
     
     private func updateFinalFreehandShape(with smoothPath: VectorPath) {
-        // Create and add the final freehand shape to the document with round joins and caps
+        // Create and add the final freehand shape using CURRENT settings (not defaults!)
         let strokeStyle = StrokeStyle(
-            color: document.defaultStrokeColor,
-            width: document.defaultStrokeWidth,
+            color: getCurrentStrokeColor(), // Use current stroke color from UI
+            width: getCurrentStrokeWidth(), // Use current stroke width from UI
             lineCap: .round, // Always use round caps for freehand
             lineJoin: .round, // Always use round joins for freehand
             miterLimit: document.defaultStrokeMiterLimit,
-            opacity: document.defaultStrokeOpacity
+            opacity: getCurrentStrokeOpacity() // Use current stroke opacity from UI
         )
-        
+
         // Use fill mode setting to determine fill style
         let fillStyle: FillStyle? = document.freehandFillMode == .fill
-            ? FillStyle(color: document.defaultFillColor, opacity: document.defaultFillOpacity)
+            ? FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
             : nil
 
         // Check if we need to expand stroke to outline
