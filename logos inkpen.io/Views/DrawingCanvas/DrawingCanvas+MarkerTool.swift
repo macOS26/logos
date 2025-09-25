@@ -362,18 +362,18 @@ extension DrawingCanvas {
 
             // For very short strokes, use minimal tapering to maintain marker appearance
             let strokeLength = Double(centerPoints.count)
-            let isShortStroke = strokeLength < 20
+            let isShortStroke = strokeLength < 5  // Reduced threshold from 20 to 5
 
             if isShortStroke {
-                // Short strokes: Maintain consistent marker width with minimal tapering
+                // Very short strokes: Maintain consistent marker width with minimal tapering
                 // Only taper the very tips to avoid harsh cutoffs
-                if progress < 0.1 {
+                if progress < 0.2 {
                     // Very subtle start taper for marker tip entry
-                    finalThickness *= (0.85 + progress * 1.5) // Start at 85% quickly to full
-                } else if progress > 0.9 {
+                    finalThickness *= (0.9 + progress * 0.5) // Start at 90% quickly to full
+                } else if progress > 0.8 {
                     // Very subtle end taper
-                    let endProgress = (1.0 - progress) * 10.0
-                    finalThickness *= (0.85 + endProgress * 0.15) // End at 85% of full
+                    let endProgress = (1.0 - progress) * 5.0
+                    finalThickness *= (0.9 + endProgress * 0.1) // End at 90% of full
                 }
                 // Else maintain full thickness for marker body
             } else {
@@ -400,10 +400,10 @@ extension DrawingCanvas {
             }
 
             // Apply feathering effect for felt-tip appearance
-            // Reduce feathering on short strokes to maintain solid appearance
+            // Apply feathering consistently regardless of stroke length
             let feathering = document.currentMarkerFeathering
             if isShortStroke {
-                finalThickness *= (1.0 - feathering * 0.05) // Minimal feathering for short strokes
+                finalThickness *= (1.0 - feathering * 0.15) // Moderate feathering for short strokes (was 0.05)
             } else {
                 finalThickness *= (1.0 - feathering * 0.2) // Normal feathering for longer strokes
             }
