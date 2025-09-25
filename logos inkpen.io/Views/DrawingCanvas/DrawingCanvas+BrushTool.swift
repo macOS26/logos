@@ -45,7 +45,9 @@ extension DrawingCanvas {
         
         // Initialize brush drawing state
         isBrushDrawing = true
-        brushRawPoints = [BrushPoint(location: location, pressure: 1.0, timestamp: Date())]
+        // Start with actual pressure (usually near 0 when pen touches down)
+        let initialPressure = PressureManager.shared.getPressure(for: location, sensitivity: document.currentBrushPressureSensitivity)
+        brushRawPoints = [BrushPoint(location: location, pressure: initialPressure, timestamp: Date())]
         brushSimplifiedPoints = []
         
         // Detect pressure input capability using PressureManager
@@ -89,6 +91,7 @@ extension DrawingCanvas {
         guard isBrushDrawing else { return }
         
         // Get pressure using smart detection (real or simulated)
+        // IMPORTANT: Don't modify pressure - it's naturally 0-1 range
         let pressure = PressureManager.shared.getPressure(for: location, sensitivity: document.currentBrushPressureSensitivity)
         
         // Add point to raw path with pressure data
@@ -661,11 +664,27 @@ extension DrawingCanvas {
             // Get interpolated pressure for this point (0.0 to 1.0 range)
             let pressure = interpolatePressureForPoint(centerPoint, from: rawPoints)
 
-            // Apply pressure sensitivity: 0 = no variation, 1 = full variation
-            // When sensitivity is 1.0 and pressure is 0, thickness should be very thin
-            // When sensitivity is 1.0 and pressure is 1, thickness should be full
-            let minThickness = thickness * 0.1  // Minimum 10% of base thickness
-            let variableThickness = minThickness + (thickness - minThickness) * (pressure * pressureSensitivity + (1.0 - pressureSensitivity))
+            // NATURAL LEAF SHAPE: Pressure is naturally 0 at start and end
+            // Just use the pressure directly for thickness - no extra math!
+
+            var variableThickness: Double
+
+            if pressureSensitivity > 0 {
+                // Direct pressure mapping: 0 pressure = thin, 1 pressure = thick
+                // This naturally creates leaf shapes since pressure starts/ends at ~0
+                let minThickness = thickness * 0.1  // 10% minimum so it's visible
+                let maxThickness = thickness
+
+                // Simple linear interpolation based on pressure and sensitivity
+                let effectivePressure = pressure * pressureSensitivity + (1.0 - pressureSensitivity) * 0.5
+                variableThickness = minThickness + (maxThickness - minThickness) * effectivePressure
+
+                // Make sure we have at least minimum thickness
+                variableThickness = max(minThickness, variableThickness)
+            } else {
+                // No pressure sensitivity - constant thickness
+                variableThickness = thickness
+            }
 
             // Calculate perpendicular direction for this segment
             var perpendicular: CGPoint
