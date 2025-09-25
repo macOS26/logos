@@ -259,17 +259,26 @@ extension DrawingCanvas {
 
         let rawPointLocations = pointsToProcess.map { $0.location }
 
-        // Liquid setting controls point reduction: 0 = all points (choppy), 100 = maximum smoothing
-        let liquidFactor = document.currentBrushLiquid / 100.0  // Convert 0-100 to 0-1
+        // Liquid setting: 0% = moderate smoothing, 50% = no smoothing (all points), 100% = maximum smoothing
+        let liquidValue = document.currentBrushLiquid
 
         let simplifiedPoints: [CGPoint]
-        if liquidFactor < 0.01 {
-            // Liquid = 0: Keep ALL points for maximum detail (may be choppy)
+        if abs(liquidValue - 50.0) < 0.01 {
+            // Liquid = 50%: Keep ALL points for maximum detail (may be choppy)
             simplifiedPoints = rawPointLocations
+        } else if liquidValue < 50.0 {
+            // Liquid 0-49%: Increasing smoothing as we go from 50 to 0
+            // At 0% we want moderate smoothing (like old 50%)
+            let smoothFactor = (50.0 - liquidValue) / 50.0  // 0 to 1 as liquid goes from 50 to 0
+            let tolerance = 0.5 + (2.0 * smoothFactor)  // Range: 0.5 to 2.5 for moderate smoothing
+            simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
+                points: rawPointLocations,
+                tolerance: tolerance
+            )
         } else {
-            // Liquid > 0: Apply smoothing based on liquid value
-            // Higher liquid = more aggressive simplification = smoother curves
-            let tolerance = 0.1 + (10.0 * liquidFactor)  // Range: 0.1 to 10.1
+            // Liquid 51-100%: Maximum smoothing
+            let smoothFactor = (liquidValue - 50.0) / 50.0  // 0 to 1 as liquid goes from 50 to 100
+            let tolerance = 2.5 + (7.5 * smoothFactor)  // Range: 2.5 to 10.0 for heavy smoothing
             simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
                 points: rawPointLocations,
                 tolerance: tolerance
@@ -277,8 +286,9 @@ extension DrawingCanvas {
         }
 
         // Ensure minimum points for smooth curves based on liquid setting
-        // Lower liquid values need more points, higher liquid values need fewer
-        let minPointsNeeded = Int(50.0 * (1.0 - liquidFactor * 0.8))  // 50 points at liquid=0, 10 points at liquid=100
+        // At liquid=50% we want all points, at 0% or 100% we want fewer points
+        let distanceFromCenter = abs(liquidValue - 50.0) / 50.0  // 0 to 1
+        let minPointsNeeded = Int(50.0 * (1.0 - distanceFromCenter * 0.8))  // 50 points at center, 10 at extremes
 
         if simplifiedPoints.count < minPointsNeeded && rawPointLocations.count > 2 {
             // If we don't have enough points after simplification, interpolate to add smoothness

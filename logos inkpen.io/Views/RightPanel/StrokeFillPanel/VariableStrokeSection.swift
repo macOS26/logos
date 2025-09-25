@@ -142,7 +142,7 @@ struct VariableStrokeSection: View {
                     set: { document.currentBrushLiquid = $0 }
                 ), in: 0...100)
                 .controlSize(.regular)
-                .help("Controls curve fluidity - 0 keeps all points (choppy), 100 creates perfectly smooth liquid curves")
+                .help("Controls curve fluidity - 0% = moderate smoothing, 50% = no smoothing (all points), 100% = maximum liquid smoothing")
             }
 
             // Advanced Smoothing Section
