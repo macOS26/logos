@@ -420,6 +420,8 @@ struct VerticalToolbarButton: View {
     let onLongPress: () -> Void
     let toolIconView: () -> AnyView
 
+    @State private var inc: Double = 0.0
+
     init(toolItem: ToolItem,
          isSelected: Bool,
          isExpandable: Bool,
@@ -437,7 +439,28 @@ struct VerticalToolbarButton: View {
     }
 
     var body: some View {
-        Button(action: onTap) {
+        Button(action: {
+            inc += 0.01
+
+            if inc > 0.01 {
+                Thread.sleep(forTimeInterval: 0.01)
+                return
+            }
+
+            if inc >= 0.5 {
+                inc = 0.0
+                onLongPress()
+                return
+            }
+
+            if inc == 0.01 {
+                onTap()
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    inc = 0.0
+                }
+            }
+        }) {
             ZStack {
                 // Background highlight - always present but transparent when not selected
                 RoundedRectangle(cornerRadius: 100)
@@ -468,9 +491,7 @@ struct VerticalToolbarButton: View {
             .position(x: 24.5, y: 17)
         }
         .buttonStyle(BorderlessButtonStyle())
-        .onLongPressGesture(minimumDuration: 0.3) {
-            onLongPress()
-        }
+        .buttonRepeatBehavior(.enabled)
     }
 }
 
