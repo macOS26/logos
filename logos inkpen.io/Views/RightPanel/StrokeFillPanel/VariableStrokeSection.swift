@@ -124,6 +124,27 @@ struct VariableStrokeSection: View {
                 .help("Curve fitting tolerance - lower values preserve more detail, higher values create smoother curves")
             }
 
+            // Liquid (Curve Fluidity)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Liquid")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.secondaryText)
+                    Spacer()
+                    Text("\(Int(document.currentBrushLiquid))")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.primaryText)
+                        .monospacedDigit()
+                }
+
+                Slider(value: Binding(
+                    get: { document.currentBrushLiquid },
+                    set: { document.currentBrushLiquid = $0 }
+                ), in: 0...100)
+                .controlSize(.regular)
+                .help("Controls curve fluidity - 0 keeps all points (choppy), 100 creates perfectly smooth liquid curves")
+            }
+
             // Advanced Smoothing Section
             Divider()
                 .padding(.vertical, 8)

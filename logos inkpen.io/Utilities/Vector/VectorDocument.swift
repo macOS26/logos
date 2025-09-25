@@ -201,6 +201,9 @@ class VectorDocument: ObservableObject, Codable {
     @Published var currentBrushSmoothingTolerance: Double = 2.0 {
         didSet { UserDefaults.standard.set(currentBrushSmoothingTolerance, forKey: "brushSmoothingTolerance") }
     }
+    @Published var currentBrushLiquid: Double = 50.0 {  // 0-100: controls curve smoothness/fluidity
+        didSet { UserDefaults.standard.set(currentBrushLiquid, forKey: "brushLiquid") }
+    }
     @Published var hasPressureInput: Bool = false // Whether pressure-sensitive input is detected
     @Published var brushApplyNoStroke: Bool = true // When enabled, applies no stroke regardless of current stroke settings
     

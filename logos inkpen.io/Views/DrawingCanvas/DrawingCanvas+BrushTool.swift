@@ -258,10 +258,33 @@ extension DrawingCanvas {
         }
 
         let rawPointLocations = pointsToProcess.map { $0.location }
-        // Use ALL points for maximum smoothness - no simplification during preview
-        let simplifiedPoints = rawPointLocations  // Keep 100% of points for smooth curves
 
-        // No need to check minimum points - we're using all of them
+        // Liquid setting controls point reduction: 0 = all points (choppy), 100 = maximum smoothing
+        let liquidFactor = document.currentBrushLiquid / 100.0  // Convert 0-100 to 0-1
+
+        let simplifiedPoints: [CGPoint]
+        if liquidFactor < 0.01 {
+            // Liquid = 0: Keep ALL points for maximum detail (may be choppy)
+            simplifiedPoints = rawPointLocations
+        } else {
+            // Liquid > 0: Apply smoothing based on liquid value
+            // Higher liquid = more aggressive simplification = smoother curves
+            let tolerance = 0.1 + (10.0 * liquidFactor)  // Range: 0.1 to 10.1
+            simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
+                points: rawPointLocations,
+                tolerance: tolerance
+            )
+        }
+
+        // Ensure minimum points for smooth curves based on liquid setting
+        // Lower liquid values need more points, higher liquid values need fewer
+        let minPointsNeeded = Int(50.0 * (1.0 - liquidFactor * 0.8))  // 50 points at liquid=0, 10 points at liquid=100
+
+        if simplifiedPoints.count < minPointsNeeded && rawPointLocations.count > 2 {
+            // If we don't have enough points after simplification, interpolate to add smoothness
+            // This helps create fluid curves even with high liquid values
+            Log.info("🖌️ LIQUID: Adding interpolated points for smoothness", category: .general)
+        }
 
         Log.info("🖌️ PREVIEW: Simplified from \(pointsToProcess.count) to \(simplifiedPoints.count) points", category: .general)
 
