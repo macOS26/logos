@@ -38,7 +38,7 @@ struct ImagePropertiesSection: View {
                     get: { imageOpacity },
                     set: { onUpdateImageOpacity($0) }
                 ), in: 0...1)
-                .controlSize(.small)
+                .controlSize(.regular)
                 .help("Adjust image opacity (0-100%)")
             }
         }

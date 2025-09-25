@@ -118,6 +118,7 @@ struct RGBInputSection: View {
                         
                         // Native Apple Slider
                         Slider(value: $redSlider, in: 0...255)
+                            .controlSize(.regular)
                             .tint(Color.clear)
                             .onChange(of: redSlider) {
                                 guard !isProgrammaticallyUpdating else {
@@ -178,6 +179,7 @@ struct RGBInputSection: View {
         
                         // Natve Apple Slider
                         Slider(value: $greenSlider, in: 0...255)
+                            .controlSize(.regular)
                             .tint(Color.clear)
                             .onChange(of: greenSlider) {
                                 guard !isProgrammaticallyUpdating else { return }
@@ -230,6 +232,7 @@ struct RGBInputSection: View {
                         
                         // Native Apple Slider
                         Slider(value: $blueSlider, in: 0...255)
+                            .controlSize(.regular)
                             .tint(Color.clear)
                             .onChange(of: blueSlider) {
                                 guard !isProgrammaticallyUpdating else { return }

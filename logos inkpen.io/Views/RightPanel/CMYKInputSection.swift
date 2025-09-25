@@ -149,6 +149,7 @@ struct CMYKInputSection: View {
                         
                         // Native Apple Slider
                         Slider(value: $cyanSlider, in: 0...100)
+                            .controlSize(.regular)
                             .tint(Color.clear)
                             .onChange(of: cyanSlider) {
                                 cyanValue = String(Int(cyanSlider))
@@ -198,6 +199,7 @@ struct CMYKInputSection: View {
                         
                         // Native Apple Slider
                         Slider(value: $magentaSlider, in: 0...100)
+                            .controlSize(.regular)
                             .tint(Color.clear)
                             .onChange(of: magentaSlider) {
                                 magentaValue = String(Int(magentaSlider))
@@ -247,6 +249,7 @@ struct CMYKInputSection: View {
                         
                         // Native Apple Slider
                         Slider(value: $yellowSlider, in: 0...100)
+                            .controlSize(.regular)
                             .tint(Color.clear)
                             .onChange(of: yellowSlider) {
                                 yellowValue = String(Int(yellowSlider))
@@ -296,6 +299,7 @@ struct CMYKInputSection: View {
                         
                         // Native Apple Slider
                         Slider(value: $blackSlider, in: 0...100)
+                            .controlSize(.regular)
                             .tint(Color.clear)
                             .onChange(of: blackSlider) {
                                 blackValue = String(Int(blackSlider))

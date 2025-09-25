@@ -74,7 +74,7 @@ struct ProfessionalOffsetPathSection: View {
                         ), in: -30...30) {
                             Text("Offset Distance")
                         }
-                        .controlSize(.small)
+                        .controlSize(.regular)
                         .tint(.blue)
                     }
                     
@@ -147,7 +147,7 @@ struct ProfessionalOffsetPathSection: View {
                             Slider(value: $miterLimit, in: 1.0...20.0) {
                                 Text("Miter Limit")
                             }
-                            .controlSize(.small)
+                            .controlSize(.regular)
                         }
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
@@ -160,12 +160,16 @@ struct ProfessionalOffsetPathSection: View {
                     } label: {
                         Text("Offset Path")
                             .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.white)
+                            .foregroundColor(.primary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.blue)
+                                    .fill(Color.gray.opacity(0.1))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
                             )
                             .contentShape(Rectangle())
                     }

@@ -71,7 +71,7 @@ struct FontSizeControls: View {
                 ), in: 1...288, onEditingChanged: { editing in
                     isDraggingFontSize = editing
                 })
-                .controlSize(.small)
+                .controlSize(.regular)
             }
             
             // Line Spacing Control
@@ -96,7 +96,7 @@ struct FontSizeControls: View {
                 ), in: 0...(currentFontSize / 2), onEditingChanged: { editing in
                     isDraggingLineSpacing = editing
                 })
-                .controlSize(.small)
+                .controlSize(.regular)
             }
             
             // Line Height Control
@@ -121,7 +121,7 @@ struct FontSizeControls: View {
                 ), in: (currentFontSize / 2)...(currentFontSize * 2), onEditingChanged: { editing in
                     isDraggingLineHeight = editing
                 })
-                .controlSize(.small)
+                .controlSize(.regular)
             }
         }
     }

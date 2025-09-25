@@ -181,6 +181,7 @@ struct HSBInputSection: View {
                         
                         // Native Apple Slider
                         Slider(value: $hueSlider, in: 0...360)
+                            .controlSize(.regular)
                             .tint(Color.clear)
                             .onChange(of: hueSlider) { _, _ in
                                 hueValue = String(Int(hueSlider))
@@ -240,6 +241,7 @@ struct HSBInputSection: View {
                         
                         // Native Apple Slider
                         Slider(value: $saturationSlider, in: 0...100)
+                            .controlSize(.regular)
                             .tint(Color.clear)
                             .onChange(of: saturationSlider) { _, _ in
                                 saturationValue = String(Int(saturationSlider))
@@ -299,6 +301,7 @@ struct HSBInputSection: View {
                         
                         // Native Apple Slider
                         Slider(value: $brightnessSlider, in: 0...100)
+                            .controlSize(.regular)
                             .tint(Color.clear)
                             .onChange(of: brightnessSlider) { _, _ in
                                 brightnessValue = String(Int(brightnessSlider))

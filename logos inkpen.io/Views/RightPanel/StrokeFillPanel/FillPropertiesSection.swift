@@ -33,7 +33,7 @@ struct FillPropertiesSection: View {
                     get: { fillOpacity },
                     set: { onUpdateFillOpacity($0) }
                 ), in: 0...1)
-                .controlSize(.small)
+                .controlSize(.regular)
             }
 
             HStack {

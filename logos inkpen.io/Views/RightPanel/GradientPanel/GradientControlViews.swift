@@ -84,7 +84,7 @@ struct GradientAngleControlView: View {
                             document.saveToUndoStack() 
                         }
                     })
-                    .controlSize(.small)
+                    .controlSize(.regular)
                     
                     TextField("", text: createNaturalNumberBinding(
                         getValue: { angle },
@@ -141,7 +141,7 @@ struct GradientOriginControlView: View {
                                     document.saveToUndoStack() 
                                 }
                             })
-                            .controlSize(.small)
+                            .controlSize(.regular)
                             
                             TextField("", text: createNaturalNumberBinding(
                                 getValue: { currentGradient != nil ? getOriginX(currentGradient!) : 0.0 },
@@ -170,7 +170,7 @@ struct GradientOriginControlView: View {
                                     document.saveToUndoStack() 
                                 }
                             })
-                            .controlSize(.small)
+                            .controlSize(.regular)
                             
                             TextField("", text: createNaturalNumberBinding(
                                 getValue: { currentGradient != nil ? getOriginY(currentGradient!) : 0.0 },
@@ -220,7 +220,7 @@ struct GradientScaleControlView: View {
                                 document.saveToUndoStack() 
                             }
                         })
-                        .controlSize(.small)
+                        .controlSize(.regular)
                         
                         TextField("", text: createNaturalNumberBinding(
                             getValue: { currentGradient != nil ? getScale(currentGradient!) : 1.0 },
@@ -253,7 +253,7 @@ struct GradientScaleControlView: View {
                                     document.saveToUndoStack() 
                                 }
                             })
-                            .controlSize(.small)
+                            .controlSize(.regular)
                             
                             TextField("", text: createNaturalNumberBinding(
                                 getValue: { currentGradient != nil ? getAspectRatio(currentGradient!) : 1.0 },
@@ -285,7 +285,7 @@ struct GradientScaleControlView: View {
                                     document.saveToUndoStack() 
                                 }
                             })
-                            .controlSize(.small)
+                            .controlSize(.regular)
                             
                             TextField("", text: createNaturalNumberBinding(
                                 getValue: { currentGradient != nil ? getRadius(currentGradient!) : 0.5 },

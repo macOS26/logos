@@ -197,7 +197,7 @@ struct GradientPreviewAndStopsView: View {
                                         get: { stop.position },
                                         set: { updateStopPosition(stop.id, $0) }
                                     ), in: 0...1)
-                                    .controlSize(.small)
+                                    .controlSize(.regular)
                                     
                                     // Position text field
                                     TextField("", text: Binding(

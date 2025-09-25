@@ -38,6 +38,7 @@ struct VariableStrokeSection: View {
                     get: { document.currentBrushThickness },
                     set: { document.currentBrushThickness = $0 }
                 ), in: 1...100)
+                .controlSize(.regular)
                 .help("Adjust brush stroke thickness (1-100 points)")
             }
 
@@ -76,6 +77,7 @@ struct VariableStrokeSection: View {
                     get: { document.currentBrushPressureSensitivity },
                     set: { document.currentBrushPressureSensitivity = $0 }
                 ), in: 0...1)
+                .controlSize(.regular)
                 .help("How much pressure affects thickness (simulated if no pressure input)")
             }
             }
@@ -97,6 +99,7 @@ struct VariableStrokeSection: View {
                     get: { document.currentBrushTaper },
                     set: { document.currentBrushTaper = $0 }
                 ), in: 0...1)
+                .controlSize(.regular)
                 .help("Amount of tapering at start and end of stroke")
             }
 
@@ -117,6 +120,7 @@ struct VariableStrokeSection: View {
                     get: { document.currentBrushSmoothingTolerance },
                     set: { document.currentBrushSmoothingTolerance = $0 }
                 ), in: 0.5...10)
+                .controlSize(.regular)
                 .help("Curve fitting tolerance - lower values preserve more detail, higher values create smoother curves")
             }
 
@@ -159,6 +163,7 @@ struct VariableStrokeSection: View {
                             get: { Double(document.chaikinSmoothingIterations) },
                             set: { document.chaikinSmoothingIterations = Int(round($0)) }
                         ), in: 1...3)
+                        .controlSize(.regular)
                         .help("More iterations create smoother curves but may lose detail (1-3)")
                     }
 

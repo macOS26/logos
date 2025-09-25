@@ -49,6 +49,7 @@ struct MarkerSettingsSection: View {
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                 }
+                .controlSize(.regular)
                 .help("Adjust marker tip thickness (1-50 points)")
             }
 
@@ -79,6 +80,7 @@ struct MarkerSettingsSection: View {
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                 }
+                .controlSize(.regular)
                 .help("Adjust marker ink opacity (0-100%)")
             }
 
@@ -127,6 +129,7 @@ struct MarkerSettingsSection: View {
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                 }
+                .controlSize(.regular)
                 .help("How much pressure affects marker thickness (simulated if no pressure input)")
             }
             }
@@ -158,6 +161,7 @@ struct MarkerSettingsSection: View {
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                 }
+                .controlSize(.regular)
                 .help("Curve fitting tolerance - lower values preserve more detail, higher values create smoother curves")
             }
 
@@ -188,6 +192,7 @@ struct MarkerSettingsSection: View {
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                 }
+                .controlSize(.regular)
                 .help("Edge softness for felt-tip marker appearance")
             }
 
@@ -218,6 +223,7 @@ struct MarkerSettingsSection: View {
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                 }
+                .controlSize(.regular)
                 .help("Thickness tapering at the start of marker strokes")
             }
 
@@ -248,6 +254,7 @@ struct MarkerSettingsSection: View {
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                 }
+                .controlSize(.regular)
                 .help("Thickness tapering at the end of marker strokes")
             }
 

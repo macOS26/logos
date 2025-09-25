@@ -340,7 +340,7 @@ extension DrawingCanvas {
     @ViewBuilder
     internal func pressureSensitiveOverlay(geometry: GeometryProxy) -> some View {
         // Only show pressure overlay for drawing tools that use pressure
-        if document.currentTool == .brush || document.currentTool == .marker {
+        if document.currentTool == .brush || document.currentTool == .marker || document.currentTool == .freehand {
             PressureSensitiveCanvasRepresentable(
                                             onPressureEvent: { location, pressure, eventType, isTabletEvent in
                                 handlePressureEvent(location: location, pressure: pressure, eventType: eventType, isTabletEvent: isTabletEvent, geometry: geometry)
@@ -414,6 +414,13 @@ extension DrawingCanvas {
             } else {
                 Log.info("🎨 PRESSURE DRAWING START: Marker already drawing, skipping start", category: .pressure)
             }
+        case .freehand:
+            if !isFreehandDrawing {
+                Log.info("🎨 PRESSURE DRAWING START: Starting freehand drawing", category: .pressure)
+                handleFreehandDragStart(at: location)
+            } else {
+                Log.info("🎨 PRESSURE DRAWING START: Freehand already drawing, skipping start", category: .pressure)
+            }
         default:
             Log.info("🎨 PRESSURE DRAWING START: Unknown tool, skipping", category: .pressure)
             break
@@ -440,6 +447,13 @@ extension DrawingCanvas {
             } else {
                 Log.info("🎨 PRESSURE DRAWING UPDATE: Marker not drawing, skipping update", category: .pressure)
             }
+        case .freehand:
+            if isFreehandDrawing {
+                // Freehand drag update - logging removed for performance
+                handleFreehandDragUpdate(at: location)
+            } else {
+                Log.info("🎨 PRESSURE DRAWING UPDATE: Freehand not drawing, skipping update", category: .pressure)
+            }
         default:
             Log.info("🎨 PRESSURE DRAWING UPDATE: Unknown tool, skipping", category: .pressure)
             break
@@ -455,6 +469,10 @@ extension DrawingCanvas {
         case .marker:
             if isMarkerDrawing {
                 handleMarkerDragEnd()
+            }
+        case .freehand:
+            if isFreehandDrawing {
+                handleFreehandDragEnd()
             }
         default:
             break

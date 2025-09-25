@@ -43,7 +43,7 @@ struct StrokePropertiesSection: View {
                     get: { strokeWidth },
                     set: { onUpdateStrokeWidth($0) }
                 ), in: 0...20)
-                .controlSize(.small)
+                .controlSize(.regular)
             }
 
             // PROFESSIONAL STROKE TRANSPARENCY (Professional Standard)
@@ -62,7 +62,7 @@ struct StrokePropertiesSection: View {
                     get: { strokeOpacity },
                     set: { onUpdateStrokeOpacity($0) }
                 ), in: 0...1)
-                .controlSize(.small)
+                .controlSize(.regular)
             }
 
             // Stroke Placement
@@ -177,7 +177,7 @@ struct StrokePropertiesSection: View {
                     get: { strokeMiterLimit },
                     set: { onUpdateMiterLimit($0) }
                 ), in: 1...20)
-                .controlSize(.small)
+                .controlSize(.regular)
                 .tint(.blue)
             }
         }
