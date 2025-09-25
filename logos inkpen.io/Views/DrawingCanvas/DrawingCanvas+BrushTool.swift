@@ -184,8 +184,8 @@ extension DrawingCanvas {
 
         // Use raw points directly - NO INTERPOLATION HACK
         let rawPointLocations = brushRawPoints.map { $0.location }
-        // Reduce tolerance to keep more points for proper leaf shapes
-        let previewTolerance = document.currentBrushSmoothingTolerance * 0.3  // Much less aggressive
+        // Use minimal tolerance to keep maximum points for high-fidelity curves
+        let previewTolerance = document.currentBrushSmoothingTolerance * 0.05  // Keep many more points for smoothness
         let simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance)
 
         // REMOVED DICK SHAPE HACK: Don't force minimum points
@@ -222,8 +222,8 @@ extension DrawingCanvas {
         // REMOVED DICK SHAPE HACK: Don't interpolate 2-point strokes
         // Use raw points directly - let the tapering handle short strokes
         let rawPointLocations = rawPoints.map { $0.location }
-        // Use reduced tolerance for better leaf shapes
-        let simplifiedPoints: [CGPoint] = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance * 0.3)
+        // Use minimal tolerance for maximum curve fidelity
+        let simplifiedPoints: [CGPoint] = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance * 0.05)
 
         // REMOVED DICK SHAPE HACK: Don't force minimum points
         // Let 2-point strokes remain as 2 points - tapering will handle them
@@ -285,8 +285,8 @@ extension DrawingCanvas {
         }
         
         // Step 2: Apply improved Douglas-Peucker simplification with sharp corner preservation
-        // Reduce tolerance to preserve more points for proper leaf shapes
-        let smoothingTolerance = document.currentBrushSmoothingTolerance * 0.3  // Less aggressive for leaf shapes
+        // Use very low tolerance to preserve maximum points for smooth, high-fidelity curves
+        let smoothingTolerance = document.currentBrushSmoothingTolerance * 0.05  // Keep many points for smoothness
         if processedPoints.count >= 200 {
             // Try GPU DP first; then apply CPU corner-preserving refinement if desired
             let metalEngine = MetalComputeEngine.shared
@@ -321,16 +321,16 @@ extension DrawingCanvas {
                 DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
         }
         
-        // CRITICAL: Ensure we have enough points for proper leaf shape generation
+        // CRITICAL: Ensure we have enough points for smooth curves
         // If simplification was too aggressive, re-interpolate points
-        if brushSimplifiedPoints.count < 8 && processedPoints.count > 2 {
-            // Try again with much less tolerance
-            let minTolerance = smoothingTolerance * 0.1
+        if brushSimplifiedPoints.count < 20 && processedPoints.count > 2 {
+            // Try again with minimal tolerance for maximum smoothness
+            let minTolerance = smoothingTolerance * 0.01
             brushSimplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: minTolerance)
 
             // If still too few, sample from processed points
-            if brushSimplifiedPoints.count < 8 {
-                let stepSize = max(1, processedPoints.count / 10)
+            if brushSimplifiedPoints.count < 20 {
+                let stepSize = max(1, processedPoints.count / 30)  // Sample many more points
                 brushSimplifiedPoints = []
                 for i in Swift.stride(from: 0, to: processedPoints.count, by: stepSize) {
                     brushSimplifiedPoints.append(processedPoints[i])
@@ -526,31 +526,32 @@ extension DrawingCanvas {
                     }
                 }
 
-                // Apply pressure FIRST before any tapering
-                finalThickness *= closestPressure * pressureSensitivity + (1.0 - pressureSensitivity)
+                // Apply pressure with stronger effect for better thick-to-thin transitions
+                let pressureEffect = closestPressure * pressureSensitivity + (1.0 - pressureSensitivity) * 0.2  // Stronger pressure variation
+                finalThickness *= pressureEffect
             }
 
-            // NOW apply tapering based on stroke type
+            // Apply gentle tapering to avoid unwanted bulges
             if centerPoints.count <= 10 {
-                // SHORT STROKE: Aggressive start taper to prevent bulge
-                if progress < 0.3 {
-                    // More aggressive start taper - power of 3 for sharper beginning
-                    finalThickness *= pow(progress / 0.3, 3.0)
-                }
-                if progress > 0.8 {
-                    // End taper
-                    let endProgress = (progress - 0.8) / 0.2
-                    finalThickness *= pow(1.0 - endProgress, 2.0)
-                }
-            } else {
-                // LONGER STROKES: More aggressive start taper
-                if progress < 0.15 {
-                    // Use power of 3 for sharper start
-                    finalThickness *= pow(progress / 0.15, 3.0)
+                // SHORT STROKE: Gentle linear taper at ends only
+                if progress < 0.1 {
+                    // Linear taper at start to avoid bulge
+                    finalThickness *= (progress / 0.1)
                 }
                 if progress > 0.9 {
+                    // Linear taper at end
                     let endProgress = (progress - 0.9) / 0.1
-                    finalThickness *= pow(1.0 - endProgress, 2.0)
+                    finalThickness *= (1.0 - endProgress)
+                }
+            } else {
+                // LONGER STROKES: Very gentle tapering
+                if progress < 0.05 {
+                    // Gentle linear start taper
+                    finalThickness *= (progress / 0.05)
+                }
+                if progress > 0.95 {
+                    let endProgress = (progress - 0.95) / 0.05
+                    finalThickness *= (1.0 - endProgress)
                 }
             }
 
@@ -663,30 +664,32 @@ extension DrawingCanvas {
             // Interpolate pressure from raw points to simplified points
             let interpolatedPressure = interpolatePressureForPoint(point, from: rawPoints)
 
-            // Apply pressure FIRST before any tapering
-            finalThickness *= interpolatedPressure
+            // Apply pressure with stronger effect for better thick-to-thin transitions
+            // Use pressure sensitivity parameter properly
+            let pressureEffect = interpolatedPressure * pressureSensitivity + (1.0 - pressureSensitivity) * 0.2  // Stronger pressure variation
+            finalThickness *= pressureEffect
 
-            // NOW apply tapering based on stroke type
+            // Apply gentle tapering to avoid unwanted bulges
             if centerPoints.count <= 10 {
-                // SHORT STROKE: Aggressive start taper to prevent bulge
-                if progress < 0.3 {
-                    // More aggressive start taper - power of 3 for sharper beginning
-                    finalThickness *= pow(progress / 0.3, 3.0)
-                }
-                if progress > 0.8 {
-                    // End taper
-                    let endProgress = (progress - 0.8) / 0.2
-                    finalThickness *= pow(1.0 - endProgress, 2.0)
-                }
-            } else {
-                // LONGER STROKES: More aggressive start taper
-                if progress < 0.15 {
-                    // Use power of 3 for sharper start
-                    finalThickness *= pow(progress / 0.15, 3.0)
+                // SHORT STROKE: Gentle linear taper at ends only
+                if progress < 0.1 {
+                    // Linear taper at start to avoid bulge
+                    finalThickness *= (progress / 0.1)
                 }
                 if progress > 0.9 {
+                    // Linear taper at end
                     let endProgress = (progress - 0.9) / 0.1
-                    finalThickness *= pow(1.0 - endProgress, 2.0)
+                    finalThickness *= (1.0 - endProgress)
+                }
+            } else {
+                // LONGER STROKES: Very gentle tapering
+                if progress < 0.05 {
+                    // Gentle linear start taper
+                    finalThickness *= (progress / 0.05)
+                }
+                if progress > 0.95 {
+                    let endProgress = (progress - 0.95) / 0.05
+                    finalThickness *= (1.0 - endProgress)
                 }
             }
             

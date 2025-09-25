@@ -453,7 +453,7 @@ struct VerticalToolbarButton: View {
             return
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
             inc = 0.0
             shouldRepeat = true
             lastTappedTool = ""
@@ -464,7 +464,7 @@ struct VerticalToolbarButton: View {
                 Thread.sleep(forTimeInterval: 0.1)
             }
             
-            if inc >= 0.5 && lastTappedTool == toolItem.tool.rawValue  {
+            if inc >= 0.3 && lastTappedTool == toolItem.tool.rawValue  {
                 // Check if the tool being long-pressed is the same as the one that was tapped
                 onLongPress()
                 shouldRepeat = false  // Stop repeating after long press
