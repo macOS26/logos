@@ -157,7 +157,7 @@ struct GradientPreviewAndStopsView: View {
                             Image(systemName: "plus.circle.fill")
                                 .foregroundColor(Color.ui.primaryBlue)
                         }
-                        .buttonStyle(PlainButtonStyle())
+                        .buttonStyle(BorderlessButtonStyle())
                     }
                     
                     // Memoize gradient stops calculation for performance
@@ -171,7 +171,7 @@ struct GradientPreviewAndStopsView: View {
                             }) {
                                 renderColorSwatchRightPanel(stop.color, width: 20, height: 20, cornerRadius: 0, borderWidth: 1, opacity: stop.opacity)
                             }
-                            .buttonStyle(PlainButtonStyle())
+                            .buttonStyle(BorderlessButtonStyle())
                             // .overlay(
                             //     // Visual indicator for currently editing stop
                             //     RoundedRectangle(cornerRadius: 0)
@@ -244,7 +244,7 @@ struct GradientPreviewAndStopsView: View {
                                     Image(systemName: "minus.circle.fill")
                                         .foregroundColor(Color.ui.errorColor)
                                 }
-                                .buttonStyle(PlainButtonStyle())
+                                .buttonStyle(BorderlessButtonStyle())
                             }
                         }
                         .padding(.vertical, 4)

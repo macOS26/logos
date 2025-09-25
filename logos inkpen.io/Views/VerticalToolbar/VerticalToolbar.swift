@@ -248,27 +248,7 @@ struct VerticalToolbar: View {
                                 }
                                 
                                 ForEach(toolGroup, id: \.toolIdentifier) { toolItem in
-                                    Button {
-                                        // Handle tool selection
-                                        if let starVariant = toolItem.starVariant {
-                                            toolGroupManager.selectStarVariant(starVariant)
-                                            document.currentTool = .star
-                                            // Update tool group manager state
-                                            toolGroupManager.currentToolInGroup = .star
-                                            toolGroupManager.setSelectedToolInGroup(.star)
-                                            Log.info("⭐ Selected star variant: \(starVariant.rawValue)", category: .general)
-                                        } else {
-                                            document.currentTool = toolItem.tool
-                                            // Update tool group manager state
-                                            toolGroupManager.currentToolInGroup = toolItem.tool
-                                            toolGroupManager.setSelectedToolInGroup(toolItem.tool)
-                                            Log.info("🛠️ Switched to tool: \(toolItem.tool.rawValue)", category: .general)
-                                        }
-
-                                        // Do not force cursor here; let canvas hover control cursor visibility.
-                                        // This avoids requiring long-press to see the cursor. The canvas will set
-                                        // the correct cursor on hover/enter.
-                                    } label: {
+                                    Button(action: {}) {
                                         ZStack {
                                             // Background highlight - always present but transparent when not selected
                                             RoundedRectangle(cornerRadius: 100)
@@ -276,10 +256,10 @@ struct VerticalToolbar: View {
                                                       ? InkPenUIColors.shared.toolSelectionBlue
                                                       : Color.clear)
                                                 .frame(width: 47, height: 34)
-                                            
+
                                             toolIconView(for: toolItem)
                                                 .frame(width: 47)
-                                            
+
                                             // Orange triangle indicator - always present but transparent when not needed
                                             Path { path in
                                                 // Triangle pointing to bottom-right corner
@@ -299,6 +279,36 @@ struct VerticalToolbar: View {
                                         .position(x: 24.5, y: 17)
                                     }
                                     .buttonStyle(BorderlessButtonStyle())
+                                    .simultaneousGesture(
+                                        LongPressGesture(minimumDuration: 0.5)
+                                            .onEnded { _ in
+                                                // Long press for expanding tool groups
+                                                if let starVariant = toolItem.starVariant {
+                                                    let variantIndex = StarVariant.allCases.firstIndex(of: starVariant) ?? 0
+                                                    handleToolLongPress(.star, variantIndex: variantIndex)
+                                                } else {
+                                                    handleToolLongPress(toolItem.tool)
+                                                }
+                                            }
+                                    )
+                                    .highPriorityGesture(
+                                        TapGesture()
+                                            .onEnded { _ in
+                                                // Handle tool selection on tap
+                                                if let starVariant = toolItem.starVariant {
+                                                    toolGroupManager.selectStarVariant(starVariant)
+                                                    document.currentTool = .star
+                                                    toolGroupManager.currentToolInGroup = .star
+                                                    toolGroupManager.setSelectedToolInGroup(.star)
+                                                    Log.info("⭐ Selected star variant: \(starVariant.rawValue)", category: .general)
+                                                } else {
+                                                    document.currentTool = toolItem.tool
+                                                    toolGroupManager.currentToolInGroup = toolItem.tool
+                                                    toolGroupManager.setSelectedToolInGroup(toolItem.tool)
+                                                    Log.info("🛠️ Switched to tool: \(toolItem.tool.rawValue)", category: .general)
+                                                }
+                                            }
+                                    )
                                     .help(toolTooltip(for: toolItem.tool, variant: toolItem.starVariant))
                                     .background(
                                         GeometryReader { geometry in
@@ -314,30 +324,6 @@ struct VerticalToolbar: View {
                                                 }
                                         }
                                     )
-                                    .onTapGesture {
-                                        // Direct tap handler for stylus compatibility
-                                        if let starVariant = toolItem.starVariant {
-                                            toolGroupManager.selectStarVariant(starVariant)
-                                            document.currentTool = .star
-                                            toolGroupManager.currentToolInGroup = .star
-                                            toolGroupManager.setSelectedToolInGroup(.star)
-                                            Log.info("⭐ Selected star variant (tap): \(starVariant.rawValue)", category: .general)
-                                        } else {
-                                            document.currentTool = toolItem.tool
-                                            toolGroupManager.currentToolInGroup = toolItem.tool
-                                            toolGroupManager.setSelectedToolInGroup(toolItem.tool)
-                                            Log.info("🛠️ Switched to tool (tap): \(toolItem.tool.rawValue)", category: .general)
-                                        }
-                                    }
-                                    .onLongPressGesture(minimumDuration: 0.5) {
-                                        // Long press for expanding tool groups
-                                        if let starVariant = toolItem.starVariant {
-                                            let variantIndex = StarVariant.allCases.firstIndex(of: starVariant) ?? 0
-                                            handleToolLongPress(.star, variantIndex: variantIndex)
-                                        } else {
-                                            handleToolLongPress(toolItem.tool)
-                                        }
-                                    }
                                 }
                             }
                         }

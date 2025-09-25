@@ -43,7 +43,7 @@ struct ProfessionalQuickSizeButton: View {
             )
             .contentShape(Rectangle())
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(BorderlessButtonStyle())
         .help("\(displayText) \(displayUnit.rawValue)")
     }
     

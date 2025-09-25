@@ -118,7 +118,7 @@ struct StrokePropertiesSection: View {
                             )
                             .contentShape(Rectangle())
                         }
-                        .buttonStyle(PlainButtonStyle())
+                        .buttonStyle(BorderlessButtonStyle())
                         .help(joinType.description)
                     }
                 }
@@ -155,7 +155,7 @@ struct StrokePropertiesSection: View {
                             )
                             .contentShape(Rectangle())
                         }
-                        .buttonStyle(PlainButtonStyle())
+                        .buttonStyle(BorderlessButtonStyle())
                         .help(capType.description)
                     }
                 }

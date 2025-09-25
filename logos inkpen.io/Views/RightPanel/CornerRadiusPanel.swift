@@ -44,7 +44,7 @@ struct CornerRadiusPanel: View {
                 Image(systemName: isEditing ? "checkmark" : "pencil")
                     .font(.system(size: 14, weight: .medium))
             }
-            .buttonStyle(PlainButtonStyle())
+            .buttonStyle(BorderlessButtonStyle())
             .help(isEditing ? "Apply Changes" : "Edit Corner Values")
         }
         .padding(.horizontal, 12)
@@ -121,7 +121,7 @@ struct CornerRadiusPanel: View {
                 .background(Color.blue.opacity(0.1))
                 .cornerRadius(4)
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(BorderlessButtonStyle())
     }
     
     // MARK: - Actions

@@ -42,7 +42,7 @@ struct FontAlignmentControls: View {
                         .cornerRadius(4)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(BorderlessButtonStyle())
                 .help("Align Left")
                 
                 // Center Align
@@ -57,7 +57,7 @@ struct FontAlignmentControls: View {
                         .cornerRadius(4)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(BorderlessButtonStyle())
                 .help("Align Center")
                 
                 // Right Align
@@ -72,7 +72,7 @@ struct FontAlignmentControls: View {
                         .cornerRadius(4)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(BorderlessButtonStyle())
                 .help("Align Right")
                 
                 // Justify
@@ -87,7 +87,7 @@ struct FontAlignmentControls: View {
                         .cornerRadius(4)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(BorderlessButtonStyle())
                 .help("Justify")
                 
                 Spacer()

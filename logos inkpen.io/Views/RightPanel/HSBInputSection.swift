@@ -353,7 +353,7 @@ struct HSBInputSection: View {
                                 .foregroundColor(.secondary)
                         }
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(BorderlessButtonStyle())
                     .help("Click to apply HSB color to selection")
                     
                     // PMS Color Swatch Preview (shows live PMS preview)
@@ -388,7 +388,7 @@ struct HSBInputSection: View {
                                 .foregroundColor(.secondary)
                         }
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(BorderlessButtonStyle())
                     .help("Click to add PMS/Pantone color to swatches (converts to closest Pantone match)")
                     
                     Spacer()

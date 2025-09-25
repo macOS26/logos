@@ -35,7 +35,7 @@ struct LayersPanel: View {
                 Image(systemName: "plus")
                     .font(.system(size: 14, weight: .medium))
             }
-            .buttonStyle(PlainButtonStyle())
+            .buttonStyle(BorderlessButtonStyle())
             .help("Add New Layer")
         }
         .padding(.horizontal, 12)

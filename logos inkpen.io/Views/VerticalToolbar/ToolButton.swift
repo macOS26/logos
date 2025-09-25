@@ -29,7 +29,7 @@ struct ToolButton: View {
             .background(isSelected ? InkPenUIColors.shared.primaryBlue : Color.clear)
             .cornerRadius(6)
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(BorderlessButtonStyle())
         .help(tool.rawValue)
     }
 }

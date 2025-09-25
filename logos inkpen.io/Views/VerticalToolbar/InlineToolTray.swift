@@ -341,7 +341,7 @@ struct ToolDockButton: View {
                         .fill(isSelected ? InkPenUIColors.shared.primaryBlue : Color.clear)
                 )
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(BorderlessButtonStyle())
         .onLongPressGesture(minimumDuration: 0.3) {
             onLongPress()
         }

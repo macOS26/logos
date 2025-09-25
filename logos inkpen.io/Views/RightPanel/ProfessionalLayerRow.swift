@@ -30,7 +30,7 @@ struct ProfessionalLayerRow: View {
                         .animation(.easeInOut(duration: 0.15), value: isExpanded)
                         .frame(width: 12, height: 12)
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(BorderlessButtonStyle())
                 
                 // Layer Color Indicator (Professional Color Strip)
                 RoundedRectangle(cornerRadius: 2)
@@ -65,7 +65,7 @@ struct ProfessionalLayerRow: View {
                             .foregroundColor(layer.isVisible ? .secondary : .secondary.opacity(0.5))
                             .frame(width: 14, height: 14)
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(BorderlessButtonStyle())
                     .help(layer.isVisible ? "Hide Layer" : "Show Layer")
                     
                     // Lock Toggle  
@@ -78,7 +78,7 @@ struct ProfessionalLayerRow: View {
                             .foregroundColor(layer.isLocked ? .orange : .secondary.opacity(0.5))
                             .frame(width: 14, height: 14)
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(BorderlessButtonStyle())
                     .help(layer.isLocked ? "Unlock Layer" : "Lock Layer")
                 }
             }

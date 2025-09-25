@@ -40,7 +40,7 @@ struct ProfessionalOffsetPathSection: View {
                             .foregroundColor(.secondary)
                     }
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(BorderlessButtonStyle())
                 
                 Spacer()
                 
@@ -93,7 +93,7 @@ struct ProfessionalOffsetPathSection: View {
                                     .foregroundColor(.primary)
                             }
                         }
-                        .buttonStyle(PlainButtonStyle())
+                        .buttonStyle(BorderlessButtonStyle())
                         .help("Keep the original path when creating offset (Professional default)")
                         
                         Spacer()
@@ -132,7 +132,7 @@ struct ProfessionalOffsetPathSection: View {
                                     )
                                     .contentShape(Rectangle()) // Extend hit area to match entire button background
                                 }
-                                .buttonStyle(PlainButtonStyle())
+                                .buttonStyle(BorderlessButtonStyle())
                                 .help(joinType.description)
                             }
                         }

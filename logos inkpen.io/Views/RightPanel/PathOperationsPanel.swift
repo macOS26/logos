@@ -27,7 +27,7 @@ struct PathOperationsPanel: View {
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(BorderlessButtonStyle())
                 .help("Professional Path Operations")
             }
             .padding(.horizontal, 12)

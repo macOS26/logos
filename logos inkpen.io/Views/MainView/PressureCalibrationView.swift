@@ -770,7 +770,7 @@ struct PressureCalibrationView: View {
                     .background(pressureManager.isCalibrating ? Color.red : Color.blue)
                     .cornerRadius(6)
             }
-            .buttonStyle(PlainButtonStyle())
+            .buttonStyle(BorderlessButtonStyle())
             
             // Reset button
             Button(action: {
@@ -787,7 +787,7 @@ struct PressureCalibrationView: View {
                     .background(Color.gray)
                     .cornerRadius(6)
             }
-            .buttonStyle(PlainButtonStyle())
+            .buttonStyle(BorderlessButtonStyle())
             
             // Clear Canvas button
             Button(action: {
@@ -801,7 +801,7 @@ struct PressureCalibrationView: View {
                     .background(Color.orange)
                     .cornerRadius(6)
             }
-            .buttonStyle(PlainButtonStyle())
+            .buttonStyle(BorderlessButtonStyle())
         }
     }
     

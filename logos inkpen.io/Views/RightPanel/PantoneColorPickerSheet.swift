@@ -150,7 +150,7 @@ struct PantoneColorPickerSheet: View {
                                         .allowsTightening(true)
                                 }
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(BorderlessButtonStyle())
                             .help("PANTONE \(color.pantone) - \(color.name)")
                         }
                     }

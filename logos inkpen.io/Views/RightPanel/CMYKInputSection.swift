@@ -337,7 +337,7 @@ struct CMYKInputSection: View {
                                 .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                     )
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(BorderlessButtonStyle())
                 .help("Click to apply color to active fill or stroke")
                 
                 VStack(alignment: .leading, spacing: 2) {
