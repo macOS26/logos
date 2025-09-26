@@ -103,8 +103,12 @@ struct ProfessionalTextCanvas: View {
 
     private func handleToolChange(oldTool: DrawingTool, newTool: DrawingTool) {
         // NEW: When user selects type tool and this text box is GREEN (selected), change to BLUE (editing)
-        if oldTool != .font && newTool == .font && textBoxState == .green {
-            Log.fileOperation("🔧 TOOL CHANGE: Type tool selected with GREEN text box - switching to BLUE (editing)", level: .info)
+        // FIXED: Also check if this text is in the selected text IDs to handle the case where state might not be green yet
+        let isThisTextSelected = document.selectedTextIDs.contains(textObjectID)
+
+        if oldTool != .font && newTool == .font && (textBoxState == .green || isThisTextSelected) {
+            Log.fileOperation("🔧 TOOL CHANGE: Type tool selected with selected text box - switching to BLUE (editing)", level: .info)
+            Log.fileOperation("   Current state: \(textBoxState), isSelected: \(isThisTextSelected)", level: .info)
 
             // CRITICAL: Ensure only one text box can be edited at a time
             // Stop editing on all other text boxes first
@@ -123,11 +127,10 @@ struct ProfessionalTextCanvas: View {
 
             // CRITICAL FIX: Force immediate state update and sync
             textBoxState = .blue
-            Log.info("🔵 FORCED STATE CHANGE: GREEN → BLUE due to type tool selection", category: .general)
+            Log.info("🔵 FORCED STATE CHANGE: → BLUE due to type tool selection", category: .general)
 
-            DispatchQueue.main.async {
-                updateTextBoxState(selectedIDs: document.selectedTextIDs)
-            }
+            // Update state immediately
+            updateTextBoxState(selectedIDs: document.selectedTextIDs)
         }
 
         // PROFESSIONAL UX: Stop editing when user switches away from font tool
@@ -176,8 +179,9 @@ struct ProfessionalTextCanvas: View {
             textBoxState = .blue
             Log.info("  → BLUE (NSTextView focus) - focus=\(hasTextViewFocus), fontTool=\(isTextToolActive)", category: .general)
         } else if isThisTextSelected && isTextToolActive {
-            textBoxState = .green
-            Log.info("  → GREEN (selected with font tool) - selected=\(isThisTextSelected), fontTool=\(isTextToolActive)", category: .general)
+            // FIXED: When text is selected AND font tool is active, go to BLUE (editing) mode, not GREEN!
+            textBoxState = .blue
+            Log.info("  → BLUE (selected with font tool active) - selected=\(isThisTextSelected), fontTool=\(isTextToolActive)", category: .general)
         } else if isThisTextSelected {
             textBoxState = .green
             Log.info("  → GREEN (selected) - selected=\(isThisTextSelected)", category: .general)

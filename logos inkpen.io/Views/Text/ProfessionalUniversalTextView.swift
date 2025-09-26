@@ -243,30 +243,11 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         }
 
 
-        // CRITICAL FIX: Always ensure frame is set properly
-        // The frame should ALWAYS be the text box frame, regardless of mode
-        let correctFrame = CGRect(
-            x: 0, y: 0,
-            width: viewModel.textBoxFrame.width,
-            height: viewModel.textBoxFrame.height
-        )
+        // DON'T force frame - let SwiftUI handle positioning
+        // Just ensure we're not changing first responder status which affects layout
 
-        if nsView.frame != correctFrame {
-            nsView.frame = correctFrame
-        }
-
-        // Only make first responder in blue (editing) mode
-        // Gray and green modes should NOT be first responder to match layout
-        if isEditingMode {
-            if nsView.window != nil && nsView.window?.firstResponder != nsView {
-                nsView.window?.makeFirstResponder(nsView)
-            }
-        } else {
-            // In gray/green modes, resign first responder if we have it
-            if nsView.window?.firstResponder == nsView {
-                nsView.window?.makeFirstResponder(nil)
-            }
-        }
+        // CRITICAL: Keep text view state EXACTLY THE SAME in all modes
+        // Don't change first responder - it causes layout shifts
         nsView.textContainerInset = NSSize(width: 0, height: 0)
         nsView.textContainer?.lineFragmentPadding = 0
         
