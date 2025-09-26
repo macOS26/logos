@@ -24,9 +24,10 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
     func makeNSView(context: Context) -> NSTextView {
         let textView = DisabledContextMenuTextView()
         
-        // CRITICAL: Configure NSTextView to NEVER grow horizontally, only wrap text
-        textView.isEditable = viewModel.isEditing && isEditingAllowed
-        textView.isSelectable = isSelectable // CRITICAL: Allow selection in both BLUE and GREEN modes for drag operations
+        // CRITICAL: Configure NSTextView IDENTICALLY for ALL modes
+        // ALWAYS make it editable and selectable - control interaction via allowsHitTesting instead
+        textView.isEditable = true
+        textView.isSelectable = true
         textView.backgroundColor = NSColor.clear
         textView.textContainerInset = NSSize(width: 0, height: 0)
         textView.textContainer?.lineFragmentPadding = 0
@@ -60,8 +61,8 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.maxSize = NSSize(width: fixedWidth, height: CGFloat.greatestFiniteMagnitude)
         textView.minSize = NSSize(width: fixedWidth, height: 50)
         
-        textView.allowsUndo = isEditingAllowed
-        textView.usesFindPanel = isSelectable
+        textView.allowsUndo = true
+        textView.usesFindPanel = true
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isAutomaticTextReplacementEnabled = false
@@ -256,20 +257,12 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             }
         }
         
-        // PERFORMANCE: Only update editing properties if they actually changed
-        let newIsEditable = viewModel.isEditing && isEditingAllowed
-        let newIsSelectable = isSelectable
-
-        Log.fileOperation("🔧 UPDATE NSTextView: textID=\(viewModel.textObject.id.uuidString.prefix(8)) isEditing=\(viewModel.isEditing) isEditingAllowed=\(isEditingAllowed) isSelectable=\(isSelectable) → isEditable=\(newIsEditable), isSelectable=\(newIsSelectable)", level: .info)
-
-        // Only update if changed to avoid layout jumps
-        if nsView.isEditable != newIsEditable {
-            nsView.isEditable = newIsEditable
-        }
-
-        if nsView.isSelectable != newIsSelectable {
-            nsView.isSelectable = newIsSelectable
-        }
+        // CRITICAL: NEVER change NSTextView properties - keep them ALWAYS the same
+        // Control interaction via allowsHitTesting on the parent view instead
+        nsView.isEditable = true
+        nsView.isSelectable = true
+        nsView.textContainerInset = NSSize(width: 0, height: 0)
+        nsView.textContainer?.lineFragmentPadding = 0
         
         // PERFORMANCE: Only force display update if format changed and view is first responder
         if needsFormatUpdate && nsView.window?.firstResponder == nsView {

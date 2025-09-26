@@ -83,13 +83,11 @@ struct ProfessionalTextContentView: View {
     let textBoxState: ProfessionalTextCanvas.TextBoxState
 
     var body: some View {
-        // ALWAYS USE NSTextView for consistent rendering - just control editing state
-        // CRITICAL FIX: Allow selection in both BLUE (editing) and GREEN (selected) states for drag operations
-        let isSelectable = textBoxState == .blue || textBoxState == .green
-        // FIXED: Allow hit testing when in BLUE (editing) mode so NSTextView can receive clicks for text editing
-        let shouldAllowHitTesting = textBoxState == .blue
-        ProfessionalUniversalTextView(viewModel: viewModel, isEditingAllowed: textBoxState == .blue, isSelectable: isSelectable)
-            .allowsHitTesting(shouldAllowHitTesting) // FIXED: Allow hit testing in BLUE mode for text editing
+        // ALWAYS USE NSTextView IDENTICALLY - control interaction via allowsHitTesting ONLY
+        // NSTextView is ALWAYS editable and selectable internally
+        let shouldAllowHitTesting = textBoxState == .blue  // Only allow interaction in blue mode
+        ProfessionalUniversalTextView(viewModel: viewModel, isEditingAllowed: true, isSelectable: true)
+            .allowsHitTesting(shouldAllowHitTesting) // Control interaction here, not in NSTextView properties
             .frame(
                 width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES
                 height: viewModel.textBoxFrame.height,   // CURRENT HEIGHT
