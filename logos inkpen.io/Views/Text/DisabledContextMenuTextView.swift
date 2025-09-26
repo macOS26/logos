@@ -48,4 +48,26 @@ class DisabledContextMenuTextView: NSTextView {
         // The cursor visibility is controlled in drawInsertionPoint
         super.setNeedsDisplay(rect, avoidAdditionalLayout: flag)
     }
+
+    // FIXED: Override layout to prevent position jumping
+    override func layout() {
+        // Ensure layout is consistent across state changes
+        layoutManager?.ensureLayout(for: textContainer!)
+        super.layout()
+    }
+
+    // FIXED: Provide stable intrinsic content size to prevent frame shifts
+    override var intrinsicContentSize: NSSize {
+        guard let layoutManager = layoutManager,
+              let textContainer = textContainer else {
+            return super.intrinsicContentSize
+        }
+
+        // Ensure layout is complete before calculating size
+        layoutManager.ensureLayout(for: textContainer)
+        let usedRect = layoutManager.usedRect(for: textContainer)
+
+        // Return consistent size based on actual text layout
+        return NSSize(width: -1.0, height: ceil(usedRect.height))
+    }
 }
