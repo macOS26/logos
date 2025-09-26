@@ -19,14 +19,14 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         self.textBoxState = textBoxState
     }
     
-    func makeNSView(context: Context) -> NSTextView {
+    func makeNSView(context: Context) -> DisabledContextMenuTextView {
         let textView = DisabledContextMenuTextView()
-        
-        // CRITICAL FIX: Only make NSTextView editable in blue (editing) mode
-        // This prevents i-beam cursor from appearing in gray/green modes
-        let isEditingMode = (textBoxState == .blue)
-        textView.isEditable = isEditingMode
-        textView.isSelectable = isEditingMode
+
+        // CRITICAL: Keep NSTextView ALWAYS configured the same way to prevent text position shifts
+        // Control interaction via allowsInteraction property
+        textView.allowsInteraction = (textBoxState == .blue)
+        textView.isEditable = true
+        textView.isSelectable = true
         textView.backgroundColor = NSColor.clear
         textView.textContainerInset = NSSize(width: 0, height: 0)
         textView.textContainer?.lineFragmentPadding = 0
@@ -103,7 +103,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
     
 
     
-    func updateNSView(_ nsView: NSTextView, context: Context) {
+    func updateNSView(_ nsView: DisabledContextMenuTextView, context: Context) {
         let coordinator = context.coordinator
         
         // CRITICAL FIX: Always preserve exact text box dimensions without size restrictions
@@ -215,15 +215,25 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             Log.info("📏 TEXT REFLOW: Container updated, text should now wrap to new width", category: .general)
         }
         
-        // CRITICAL FIX: Update NSTextView editability based on text box state
-        // This prevents i-beam cursor from appearing in gray/green modes
-        let isEditingMode = (textBoxState == .blue)
-        nsView.isEditable = isEditingMode
-        nsView.isSelectable = isEditingMode
+        // CRITICAL: Keep NSTextView ALWAYS configured the same to prevent text shifts
+        // Control interaction via allowsInteraction property
+        nsView.isEditable = true
+        nsView.isSelectable = true
 
-        // If not in editing mode and NSTextView is first responder, resign it
-        if !isEditingMode && nsView.window?.firstResponder == nsView {
-            nsView.window?.makeFirstResponder(nil)
+        let isEditingMode = (textBoxState == .blue)
+        nsView.allowsInteraction = isEditingMode
+
+        // Manage first responder based on editing mode
+        if isEditingMode {
+            // In blue mode, make it first responder if it isn't already
+            if nsView.window?.firstResponder != nsView {
+                nsView.window?.makeFirstResponder(nsView)
+            }
+        } else {
+            // In gray/green modes, resign first responder to hide cursor
+            if nsView.window?.firstResponder == nsView {
+                nsView.window?.makeFirstResponder(nil)
+            }
         }
         nsView.textContainerInset = NSSize(width: 0, height: 0)
         nsView.textContainer?.lineFragmentPadding = 0
