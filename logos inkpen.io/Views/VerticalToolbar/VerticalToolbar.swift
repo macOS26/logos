@@ -105,21 +105,35 @@ struct VerticalToolbar: View {
             // Expanded state is now per-group
             if toolGroupManager.expandedGroups.contains(groupName) {
                 if primaryTool == .star {
-                    // If we have a per-group anchor variant, put it first; otherwise natural order
-                    if let anchorVariant = (toolGroupManager.anchorVariantByGroup[groupName] ?? nil) {
-                        groupTools.append(ToolItem(tool: .star, starVariant: anchorVariant))
-                        let otherVariants = StarVariant.allCases.filter { $0 != anchorVariant }
-                        for variant in otherVariants {
-                            groupTools.append(ToolItem(tool: .star, starVariant: variant))
-                        }
-                    } else {
-                        for variant in StarVariant.allCases {
+                    // Always show the currently selected variant first
+                    let currentVariant = toolGroupManager.selectedVariant
+                    groupTools.append(ToolItem(tool: .star, starVariant: currentVariant))
+
+                    // Then add other variants
+                    for variant in StarVariant.allCases {
+                        if variant != currentVariant {
                             groupTools.append(ToolItem(tool: .star, starVariant: variant))
                         }
                     }
                 } else {
-                    for tool in toolGroup {
-                        groupTools.append(ToolItem(tool: tool, starVariant: nil))
+                    // Show current tool first if it's in this group
+                    let currentTool = document.currentTool
+
+                    if toolGroup.contains(currentTool) {
+                        // Current tool is in this group - show it first
+                        groupTools.append(ToolItem(tool: currentTool, starVariant: nil))
+
+                        // Then add other tools in the group
+                        for tool in toolGroup {
+                            if tool != currentTool {
+                                groupTools.append(ToolItem(tool: tool, starVariant: nil))
+                            }
+                        }
+                    } else {
+                        // Current tool not in this group - show tools in original order
+                        for tool in toolGroup {
+                            groupTools.append(ToolItem(tool: tool, starVariant: nil))
+                        }
                     }
                 }
             } else {
