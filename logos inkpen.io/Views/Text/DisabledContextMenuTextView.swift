@@ -10,6 +10,7 @@ import AppKit
 // MARK: - Custom NSTextView with Disabled Context Menu
 class DisabledContextMenuTextView: NSTextView {
     var allowsInteraction: Bool = true
+    var shouldShowCursor: Bool = true
 
     override func menu(for event: NSEvent) -> NSMenu? {
         // Return nil to completely disable the context menu
@@ -34,5 +35,18 @@ class DisabledContextMenuTextView: NSTextView {
             return super.becomeFirstResponder()
         }
         return false
+    }
+
+    override func drawInsertionPoint(in rect: NSRect, color: NSColor, turnedOn flag: Bool) {
+        // Only draw the cursor if we should show it
+        if shouldShowCursor {
+            super.drawInsertionPoint(in: rect, color: color, turnedOn: flag)
+        }
+    }
+
+    override func setNeedsDisplay(_ rect: NSRect, avoidAdditionalLayout flag: Bool) {
+        // Always call super to ensure proper text rendering
+        // The cursor visibility is controlled in drawInsertionPoint
+        super.setNeedsDisplay(rect, avoidAdditionalLayout: flag)
     }
 }

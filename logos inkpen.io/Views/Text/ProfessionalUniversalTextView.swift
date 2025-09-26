@@ -23,8 +23,10 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         let textView = DisabledContextMenuTextView()
 
         // CRITICAL: Keep NSTextView ALWAYS configured the same way to prevent text position shifts
-        // Control interaction via allowsInteraction property
-        textView.allowsInteraction = (textBoxState == .blue)
+        // Control interaction and cursor visibility based on mode
+        let isEditingMode = (textBoxState == .blue)
+        textView.allowsInteraction = isEditingMode
+        textView.shouldShowCursor = isEditingMode
         textView.isEditable = true
         textView.isSelectable = true
         textView.backgroundColor = NSColor.clear
@@ -216,24 +218,19 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         }
         
         // CRITICAL: Keep NSTextView ALWAYS configured the same to prevent text shifts
-        // Control interaction via allowsInteraction property
+        // Control interaction and cursor visibility based on mode
         nsView.isEditable = true
         nsView.isSelectable = true
 
         let isEditingMode = (textBoxState == .blue)
         nsView.allowsInteraction = isEditingMode
+        nsView.shouldShowCursor = isEditingMode
 
-        // Manage first responder based on editing mode
-        if isEditingMode {
-            // In blue mode, make it first responder if it isn't already
-            if nsView.window?.firstResponder != nsView {
-                nsView.window?.makeFirstResponder(nsView)
-            }
-        } else {
-            // In gray/green modes, resign first responder to hide cursor
-            if nsView.window?.firstResponder == nsView {
-                nsView.window?.makeFirstResponder(nil)
-            }
+        // EXPERIMENTAL: Keep text view always as first responder to prevent layout shifts
+        // Only control cursor visibility, not first responder status
+        // This should prevent vertical text shifts when switching modes
+        if nsView.window != nil && nsView.window?.firstResponder != nsView {
+            nsView.window?.makeFirstResponder(nsView)
         }
         nsView.textContainerInset = NSSize(width: 0, height: 0)
         nsView.textContainer?.lineFragmentPadding = 0
