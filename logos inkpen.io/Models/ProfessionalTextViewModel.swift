@@ -379,11 +379,11 @@ class ProfessionalTextViewModel: ObservableObject {
                 // For justified text, we need lineRect.origin.x as the base, not actualUsedRect
                 // The glyph location already includes the proper justification spacing
                 let glyphX = self.textBoxFrame.origin.x + lineRect.origin.x + glyphLocation.x
-                
-                // For Y positioning, we need to account for the baseline
-                // NSTextView positions text from top, but glyphs are drawn from baseline
-                // The baseline is at actualUsedRect.origin.y + ascent
-                let glyphY = self.textBoxFrame.origin.y + actualUsedRect.origin.y + fontAscent
+
+                // CRITICAL FIX: For Y positioning, use actualLineRect to match NSTextView exactly
+                // NSTextView positions text from top, using lineRect for consistent positioning
+                // The baseline is at actualLineRect.origin.y + ascent
+                let glyphY = self.textBoxFrame.origin.y + actualLineRect.origin.y + fontAscent
 
                 // Enhanced debug logging for first glyph of each line
                 if glyphIndex == lineRange.location {
