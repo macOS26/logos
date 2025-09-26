@@ -12,18 +12,21 @@ import AppKit
 struct ProfessionalUniversalTextView: NSViewRepresentable {
     @ObservedObject var viewModel: ProfessionalTextViewModel
     @State var isUpdatingFromTyping: Bool = false  // Prevents NSTextView reset during typing
+    let textBoxState: ProfessionalTextCanvas.TextBoxState  // Pass text box state to control editability
 
-    init(viewModel: ProfessionalTextViewModel) {
+    init(viewModel: ProfessionalTextViewModel, textBoxState: ProfessionalTextCanvas.TextBoxState = .gray) {
         self.viewModel = viewModel
+        self.textBoxState = textBoxState
     }
     
     func makeNSView(context: Context) -> NSTextView {
         let textView = DisabledContextMenuTextView()
         
-        // CRITICAL: Configure NSTextView IDENTICALLY for ALL modes
-        // ALWAYS make it editable and selectable - control interaction via allowsHitTesting instead
-        textView.isEditable = true
-        textView.isSelectable = true
+        // CRITICAL FIX: Only make NSTextView editable in blue (editing) mode
+        // This prevents i-beam cursor from appearing in gray/green modes
+        let isEditingMode = (textBoxState == .blue)
+        textView.isEditable = isEditingMode
+        textView.isSelectable = isEditingMode
         textView.backgroundColor = NSColor.clear
         textView.textContainerInset = NSSize(width: 0, height: 0)
         textView.textContainer?.lineFragmentPadding = 0
@@ -212,12 +215,16 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             Log.info("📏 TEXT REFLOW: Container updated, text should now wrap to new width", category: .general)
         }
         
-        // REMOVED: Cursor management based on editing state - let NSTextView handle it naturally
-        
-        // CRITICAL: NEVER change NSTextView properties - keep them ALWAYS the same
-        // Control interaction via allowsHitTesting on the parent view instead
-        nsView.isEditable = true
-        nsView.isSelectable = true
+        // CRITICAL FIX: Update NSTextView editability based on text box state
+        // This prevents i-beam cursor from appearing in gray/green modes
+        let isEditingMode = (textBoxState == .blue)
+        nsView.isEditable = isEditingMode
+        nsView.isSelectable = isEditingMode
+
+        // If not in editing mode and NSTextView is first responder, resign it
+        if !isEditingMode && nsView.window?.firstResponder == nsView {
+            nsView.window?.makeFirstResponder(nil)
+        }
         nsView.textContainerInset = NSSize(width: 0, height: 0)
         nsView.textContainer?.lineFragmentPadding = 0
         

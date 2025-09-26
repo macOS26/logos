@@ -83,11 +83,11 @@ struct ProfessionalTextContentView: View {
     let textBoxState: ProfessionalTextCanvas.TextBoxState
 
     var body: some View {
-        // ALWAYS USE NSTextView IDENTICALLY - control interaction via allowsHitTesting ONLY
-        // NSTextView is ALWAYS editable and selectable internally
+        // CRITICAL FIX: Pass text box state to control NSTextView editability
+        // This prevents i-beam cursor from appearing when not in edit mode
         let shouldAllowHitTesting = textBoxState == .blue  // Only allow interaction in blue mode
-        ProfessionalUniversalTextView(viewModel: viewModel)
-            .allowsHitTesting(shouldAllowHitTesting) // Control interaction here, not in NSTextView properties
+        ProfessionalUniversalTextView(viewModel: viewModel, textBoxState: textBoxState)
+            .allowsHitTesting(shouldAllowHitTesting) // Additional safety: control interaction here too
             .frame(
                 width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES
                 height: viewModel.textBoxFrame.height,   // CURRENT HEIGHT
