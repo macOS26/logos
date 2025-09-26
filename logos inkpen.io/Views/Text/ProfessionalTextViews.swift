@@ -86,7 +86,7 @@ struct ProfessionalTextContentView: View {
         // ALWAYS USE NSTextView IDENTICALLY - control interaction via allowsHitTesting ONLY
         // NSTextView is ALWAYS editable and selectable internally
         let shouldAllowHitTesting = textBoxState == .blue  // Only allow interaction in blue mode
-        ProfessionalUniversalTextView(viewModel: viewModel, isEditingAllowed: true, isSelectable: true)
+        ProfessionalUniversalTextView(viewModel: viewModel)
             .allowsHitTesting(shouldAllowHitTesting) // Control interaction here, not in NSTextView properties
             .frame(
                 width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES

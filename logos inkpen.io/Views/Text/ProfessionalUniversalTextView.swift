@@ -12,13 +12,9 @@ import AppKit
 struct ProfessionalUniversalTextView: NSViewRepresentable {
     @ObservedObject var viewModel: ProfessionalTextViewModel
     @State var isUpdatingFromTyping: Bool = false  // Prevents NSTextView reset during typing
-    let isEditingAllowed: Bool // New parameter to control editing
-    let isSelectable: Bool // New parameter to control selection
-    
-    init(viewModel: ProfessionalTextViewModel, isEditingAllowed: Bool = true, isSelectable: Bool = true) {
+
+    init(viewModel: ProfessionalTextViewModel) {
         self.viewModel = viewModel
-        self.isEditingAllowed = isEditingAllowed
-        self.isSelectable = isSelectable
     }
     
     func makeNSView(context: Context) -> NSTextView {
@@ -216,46 +212,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             Log.info("📏 TEXT REFLOW: Container updated, text should now wrap to new width", category: .general)
         }
         
-        // CRITICAL FIX: Only restore cursor position when text content changes, not font changes
-        // This prevents the I-beam from falling behind when switching fonts
-        let textContentChanged = !isUpdatingFromTyping && nsView.string != viewModel.text
-        let needsCursorRestore = textContentChanged && viewModel.isEditing && isEditingAllowed
-        
-        if needsCursorRestore {
-            // Use the trusted source of truth from the view model
-            let savedCursorPosition = viewModel.userInitiatedCursorPosition
-            let savedSelectionLength = viewModel.userInitiatedSelectionLength
-
-            // Ensure cursor position is within text bounds
-            let textLength = nsView.string.count
-            let safePosition = min(savedCursorPosition, textLength)
-            let safeLength = min(savedSelectionLength, textLength - safePosition)
-            let newRange = NSRange(location: safePosition, length: safeLength)
-            
-            // Only update if the range is different to avoid cursor jumping
-            if nsView.selectedRange() != newRange {
-                nsView.setSelectedRange(newRange)
-                Log.fileOperation("🎯 RESTORED CURSOR: position=\(safePosition) length=\(safeLength)", level: .info)
-                nsView.scrollRangeToVisible(newRange)
-            }
-        } else if viewModel.isEditing && isEditingAllowed && needsFormatUpdate {
-            // When only font/formatting changes, preserve current cursor position
-            // but ensure it's still valid within the text bounds
-            let currentRange = nsView.selectedRange()
-            let textLength = nsView.string.count
-            
-            if currentRange.location > textLength {
-                // Cursor is beyond text bounds, move it to end
-                let newRange = NSRange(location: textLength, length: 0)
-                nsView.setSelectedRange(newRange)
-                Log.fileOperation("🎯 ADJUSTED CURSOR: Moved from \(currentRange.location) to end (\(textLength)) due to font change", level: .info)
-            } else if currentRange.location + currentRange.length > textLength {
-                // Selection extends beyond text bounds, adjust it
-                let newRange = NSRange(location: currentRange.location, length: textLength - currentRange.location)
-                nsView.setSelectedRange(newRange)
-                Log.fileOperation("🎯 ADJUSTED SELECTION: Adjusted length from \(currentRange.length) to \(newRange.length) due to font change", level: .info)
-            }
-        }
+        // REMOVED: Cursor management based on editing state - let NSTextView handle it naturally
         
         // CRITICAL: NEVER change NSTextView properties - keep them ALWAYS the same
         // Control interaction via allowsHitTesting on the parent view instead
@@ -294,17 +251,8 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             nsView.minSize = newMinSize
         }
         
-        // FIXED: Ensure text view gets focus when editing is active
-        let shouldBeFirstResponder = viewModel.isEditing && isEditingAllowed
-        let isCurrentlyFirstResponder = nsView.window?.firstResponder == nsView
-        
-        if shouldBeFirstResponder && !isCurrentlyFirstResponder {
-            Log.fileOperation("🎯 MAKING FIRST RESPONDER: textID=\(viewModel.textObject.id.uuidString.prefix(8))", level: .info)
-            nsView.window?.makeFirstResponder(nsView)
-        } else if !shouldBeFirstResponder && isCurrentlyFirstResponder {
-            Log.fileOperation("🎯 REMOVING FIRST RESPONDER: textID=\(viewModel.textObject.id.uuidString.prefix(8))", level: .info)
-            nsView.window?.makeFirstResponder(nil)
-        }
+        // REMOVED: First responder changes can cause text position shifts
+        // Let the system handle first responder naturally through user interaction
         
         // PERFORMANCE: Only force layout update if formatting or size changed
         if needsFormatUpdate || abs(currentContainerWidth - newWidth) > 1.0 {
