@@ -595,8 +595,8 @@ class CoreGraphicsPathOperations {
         
         var resultPaths: [(CGPath, Int)] = []
         
-        // STEP 3: For each color group, find connected components and union them
-        Log.info("   🔄 STEP 3: Union connected same-color pieces only...", category: .general)
+        // STEP 3: For each color group, union ALL pieces of the same color together
+        Log.info("   🔄 STEP 3: Union ALL same-color pieces together...", category: .general)
         
         for (color, group) in colorGroups {
             if group.count == 1 {
@@ -605,37 +605,24 @@ class CoreGraphicsPathOperations {
                 resultPaths.append((path, originalIndex))
                 Log.info("   ✅ Color \(color): Single piece, no union needed", category: .general)
             } else {
-                // Multiple pieces of same color - find which ones are connected
-                let connectedSameColorGroups = Self.findConnectedComponents(group, using: fillRule)
-                
-                for (groupIndex, connectedGroup) in connectedSameColorGroups.enumerated() {
-                    if connectedGroup.count == 1 {
-                        // Single disconnected piece of this color
-                        let (path, originalIndex) = connectedGroup[0]
+                // Multiple pieces of same color - union ALL of them together (not just connected ones)
+                let pathsToUnion = group.map { $0.0 }
+                let firstOriginalIndex = group[0].1
+
+                if let unionedPath = Self.unionMultiplePaths(pathsToUnion, using: fillRule) {
+                    resultPaths.append((unionedPath, firstOriginalIndex))
+                    Log.info("   ✅ Color \(color): Unioned ALL \(group.count) pieces → 1 shape", category: .general)
+                } else {
+                    // Union failed, keep pieces separate as fallback
+                    for (path, originalIndex) in group {
                         resultPaths.append((path, originalIndex))
-                    } else {
-                        // Multiple connected pieces of same color - union them
-                        let pathsToUnion = connectedGroup.map { $0.0 }
-                        let firstOriginalIndex = connectedGroup[0].1
-                        
-                        if let unionedPath = Self.unionMultiplePaths(pathsToUnion, using: fillRule) {
-                            resultPaths.append((unionedPath, firstOriginalIndex))
-                            Log.info("   ✅ Color \(color) Group \(groupIndex + 1): Unioned \(connectedGroup.count) connected pieces → 1 shape", category: .general)
-                        } else {
-                            // Union failed, keep pieces separate as fallback
-                            for (path, originalIndex) in connectedGroup {
-                                resultPaths.append((path, originalIndex))
-                            }
-                            Log.info("   ⚠️ Color \(color) Group \(groupIndex + 1): Union failed, kept \(connectedGroup.count) pieces separate", category: .general)
-                        }
                     }
+                    Log.info("   ⚠️ Color \(color): Union failed, kept \(group.count) pieces separate", category: .general)
                 }
-                
-                Log.info("   ✅ Color \(color): \(group.count) pieces → \(connectedSameColorGroups.count) connected groups", category: .general)
             }
         }
         
-        Log.info("✅ PROFESSIONAL MERGE (CoreGraphics): Created \(resultPaths.count) shapes from connected same-color components (stacking order respected)", category: .fileOperations)
+        Log.info("✅ PROFESSIONAL MERGE (CoreGraphics): Created \(resultPaths.count) unified color shapes (knockouts applied, same colors merged)", category: .fileOperations)
         return resultPaths
     }
     
