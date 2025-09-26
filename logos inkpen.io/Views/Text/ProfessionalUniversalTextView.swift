@@ -345,13 +345,15 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             
             // CRITICAL FIX: Update both view model AND document immediately to prevent data loss
             parent.isUpdatingFromTyping = true
-            parent.viewModel.text = newText
-            
-            // SAVE TO DOCUMENT IMMEDIATELY to prevent losing text content
+
+            // Use async to avoid publishing changes during view updates
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
+                self.parent.viewModel.text = newText
+
+                // SAVE TO DOCUMENT IMMEDIATELY to prevent losing text content
                 self.parent.viewModel.document.updateTextContent(
-                    self.parent.viewModel.textObject.id, 
+                    self.parent.viewModel.textObject.id,
                     content: newText
                 )
             }
@@ -370,11 +372,15 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             }
             guard let textView = notification.object as? NSTextView else { return }
             let selectedRange = textView.selectedRange()
-            
+
             // Save to the new source of truth in the view model
-            parent.viewModel.userInitiatedCursorPosition = selectedRange.location
-            parent.viewModel.userInitiatedSelectionLength = selectedRange.length
-            Log.info("💾 COORDINATOR SAVED CURSOR: position=\(selectedRange.location) length=\(selectedRange.length)", category: .general)
+            // Use async to avoid publishing changes during view updates
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.parent.viewModel.userInitiatedCursorPosition = selectedRange.location
+                self.parent.viewModel.userInitiatedSelectionLength = selectedRange.length
+                Log.info("💾 COORDINATOR SAVED CURSOR: position=\(selectedRange.location) length=\(selectedRange.length)", category: .general)
+            }
         }
 
         func textDidBeginEditing(_ notification: Notification) {
