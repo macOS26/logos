@@ -51,15 +51,21 @@ class MetalComputeEngine {
         guard let device = MTLCreateSystemDefaultDevice() else {
             throw MetalError.deviceNotAvailable
         }
-        
+
         self.device = device
-        
+
+        // Create command queue with standard method (MTLCommandQueueDescriptor is macOS 15+)
         guard let commandQueue = device.makeCommandQueue() else {
             throw MetalError.commandBufferCreationFailed
         }
         self.commandQueue = commandQueue
         
-        // Create Metal library from .metal file
+        // Create Metal library with macOS 14.6 optimizations
+        let compileOptions = MTLCompileOptions()
+        compileOptions.fastMathEnabled = true
+        compileOptions.languageVersion = .version3_1  // Metal 3.1 for macOS 14.6
+        compileOptions.preserveInvariance = false
+
         guard let library = device.makeDefaultLibrary() else {
             throw MetalError.libraryCreationFailed
         }
@@ -205,7 +211,7 @@ class MetalComputeEngine {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             return .failure(.commandBufferCreationFailed)
         }
-        
+
         guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return .failure(.computeEncoderCreationFailed)
         }
@@ -218,9 +224,10 @@ class MetalComputeEngine {
         // Convert to Metal-compatible format
         let metalPoints = points.map { Point2D(x: Float($0.x), y: Float($0.y)) }
         
-        // Create buffers
-        guard let pointsBuffer = device.makeBuffer(bytes: metalPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
-              let distancesBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Float>.stride, options: .storageModeShared) else {
+        // Create buffers with macOS 14.6 optimizations
+        let bufferOptions: MTLResourceOptions = device.hasUnifiedMemory ? .storageModeShared : .storageModeManaged
+        guard let pointsBuffer = device.makeBuffer(bytes: metalPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: bufferOptions),
+              let distancesBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Float>.stride, options: bufferOptions) else {
             return .failure(.bufferCreationFailed)
         }
         
@@ -281,7 +288,7 @@ class MetalComputeEngine {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             return .failure(.commandBufferCreationFailed)
         }
-        
+
         guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return .failure(.computeEncoderCreationFailed)
         }
@@ -341,7 +348,7 @@ class MetalComputeEngine {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             return .failure(.commandBufferCreationFailed)
         }
-        
+
         guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return .failure(.computeEncoderCreationFailed)
         }
@@ -405,7 +412,7 @@ class MetalComputeEngine {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             return .failure(.commandBufferCreationFailed)
         }
-        
+
         guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return .failure(.computeEncoderCreationFailed)
         }
@@ -456,7 +463,7 @@ class MetalComputeEngine {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             return .failure(.commandBufferCreationFailed)
         }
-        
+
         guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return .failure(.computeEncoderCreationFailed)
         }
@@ -509,7 +516,7 @@ class MetalComputeEngine {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             return .failure(.commandBufferCreationFailed)
         }
-        
+
         guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return .failure(.computeEncoderCreationFailed)
         }
@@ -570,7 +577,7 @@ class MetalComputeEngine {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             return .failure(.commandBufferCreationFailed)
         }
-        
+
         guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return .failure(.computeEncoderCreationFailed)
         }
@@ -631,7 +638,7 @@ class MetalComputeEngine {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             return .failure(.commandBufferCreationFailed)
         }
-        
+
         guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return .failure(.computeEncoderCreationFailed)
         }
@@ -686,7 +693,7 @@ class MetalComputeEngine {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             return .failure(.commandBufferCreationFailed)
         }
-        
+
         guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return .failure(.computeEncoderCreationFailed)
         }
@@ -774,7 +781,7 @@ class MetalComputeEngine {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             return .failure(.commandBufferCreationFailed)
         }
-        
+
         guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return .failure(.computeEncoderCreationFailed)
         }
@@ -826,7 +833,7 @@ class MetalComputeEngine {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             return .failure(.commandBufferCreationFailed)
         }
-        
+
         guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return .failure(.computeEncoderCreationFailed)
         }
@@ -873,7 +880,7 @@ class MetalComputeEngine {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             return .failure(.commandBufferCreationFailed)
         }
-        
+
         guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return .failure(.computeEncoderCreationFailed)
         }
@@ -925,7 +932,7 @@ class MetalComputeEngine {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             return .failure(.commandBufferCreationFailed)
         }
-        
+
         guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return .failure(.computeEncoderCreationFailed)
         }
@@ -979,7 +986,7 @@ class MetalComputeEngine {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             return .failure(.commandBufferCreationFailed)
         }
-        
+
         guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return .failure(.computeEncoderCreationFailed)
         }
@@ -1033,7 +1040,7 @@ class MetalComputeEngine {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             return .failure(.commandBufferCreationFailed)
         }
-        
+
         guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
             return .failure(.computeEncoderCreationFailed)
         }
@@ -1130,13 +1137,40 @@ class MetalComputeEngine {
         }
     }
     
+    // MARK: - Parallel Command Encoding (macOS 14.6 optimization)
+
+    func executeParallelOperations<T>(_ operations: [(MTLCommandBuffer) -> T]) -> [T] {
+        let group = DispatchGroup()
+        var results: [T?] = Array(repeating: nil, count: operations.count)
+        let resultsQueue = DispatchQueue(label: "com.logos.parallel.results", attributes: .concurrent)
+
+        for (index, operation) in operations.enumerated() {
+            group.enter()
+            DispatchQueue.global(qos: .userInitiated).async {
+                if let commandBuffer = self.commandQueue.makeCommandBuffer() {
+                    let result = operation(commandBuffer)
+
+                    resultsQueue.async(flags: .barrier) {
+                        results[index] = result
+                    }
+
+                    commandBuffer.commit()
+                }
+                group.leave()
+            }
+        }
+
+        group.wait()
+        return results.compactMap { $0 }
+    }
+
     // MARK: - Performance Monitoring
-    
+
     var isFullGPUAccelerationAvailable: Bool {
-        return douglasPeuckerPipeline != nil && 
-               bezierCalculationPipeline != nil && 
-               matrixTransformPipeline != nil && 
-               collisionDetectionPipeline != nil && 
+        return douglasPeuckerPipeline != nil &&
+               bezierCalculationPipeline != nil &&
+               matrixTransformPipeline != nil &&
+               collisionDetectionPipeline != nil &&
                pathRenderingPipeline != nil
     }
     

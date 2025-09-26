@@ -97,43 +97,46 @@ extension SVGParser {
                 let r = Double(Int(hex.prefix(2), radix: 16) ?? 0) / 255.0
                 let g = Double(Int(hex.dropFirst(2).prefix(2), radix: 16) ?? 0) / 255.0
                 let b = Double(Int(hex.suffix(2), radix: 16) ?? 0) / 255.0
-                return .rgb(RGBColor(red: r, green: g, blue: b))
+                // SVG colors are always in sRGB, so we need to convert to P3
+                return .rgb(convertSRGBToP3(red: r, green: g, blue: b))
             } else if hex.count == 3 {
                 // Short hex format #RGB -> #RRGGBB
                 let r = Double(Int(String(hex.prefix(1)), radix: 16) ?? 0) / 15.0
                 let g = Double(Int(String(hex.dropFirst().prefix(1)), radix: 16) ?? 0) / 15.0
                 let b = Double(Int(String(hex.suffix(1)), radix: 16) ?? 0) / 15.0
-                return .rgb(RGBColor(red: r, green: g, blue: b))
+                // SVG colors are always in sRGB, so we need to convert to P3
+                return .rgb(convertSRGBToP3(red: r, green: g, blue: b))
             }
         } else if color.hasPrefix("rgb(") {
             // RGB color
             let content = color.dropFirst(4).dropLast()
             let components = content.split(separator: ",").compactMap { Double($0.trimmingCharacters(in: .whitespaces)) }
             if components.count >= 3 {
-                return .rgb(RGBColor(red: components[0]/255.0, green: components[1]/255.0, blue: components[2]/255.0))
+                // SVG colors are always in sRGB, so we need to convert to P3
+                return .rgb(convertSRGBToP3(red: components[0]/255.0, green: components[1]/255.0, blue: components[2]/255.0))
             }
         } else {
             // Named colors
             switch color.lowercased() {
             case "black": return .black
             case "white": return .white
-            case "red": return .rgb(RGBColor(red: 1, green: 0, blue: 0))
-            case "green": return .rgb(RGBColor(red: 0, green: 1, blue: 0))
-            case "blue": return .rgb(RGBColor(red: 0, green: 0, blue: 1))
-            case "yellow": return .rgb(RGBColor(red: 1, green: 1, blue: 0))
-            case "cyan": return .rgb(RGBColor(red: 0, green: 1, blue: 1))
-            case "magenta": return .rgb(RGBColor(red: 1, green: 0, blue: 1))
-            case "orange": return .rgb(RGBColor(red: 1, green: 0.5, blue: 0))
-            case "purple": return .rgb(RGBColor(red: 0.5, green: 0, blue: 1))
-            case "lime": return .rgb(RGBColor(red: 0, green: 1, blue: 0))
-            case "navy": return .rgb(RGBColor(red: 0, green: 0, blue: 0.5))
-            case "teal": return .rgb(RGBColor(red: 0, green: 0.5, blue: 0.5))
-            case "silver": return .rgb(RGBColor(red: 0.75, green: 0.75, blue: 0.75))
-            case "gray", "grey": return .rgb(RGBColor(red: 0.5, green: 0.5, blue: 0.5))
-            case "maroon": return .rgb(RGBColor(red: 0.5, green: 0, blue: 0))
-            case "olive": return .rgb(RGBColor(red: 0.5, green: 0.5, blue: 0))
-            case "aqua": return .rgb(RGBColor(red: 0, green: 1, blue: 1))
-            case "fuchsia": return .rgb(RGBColor(red: 1, green: 0, blue: 1))
+            case "red": return .rgb(convertSRGBToP3(red: 1, green: 0, blue: 0))
+            case "green": return .rgb(convertSRGBToP3(red: 0, green: 1, blue: 0))
+            case "blue": return .rgb(convertSRGBToP3(red: 0, green: 0, blue: 1))
+            case "yellow": return .rgb(convertSRGBToP3(red: 1, green: 1, blue: 0))
+            case "cyan": return .rgb(convertSRGBToP3(red: 0, green: 1, blue: 1))
+            case "magenta": return .rgb(convertSRGBToP3(red: 1, green: 0, blue: 1))
+            case "orange": return .rgb(convertSRGBToP3(red: 1, green: 0.5, blue: 0))
+            case "purple": return .rgb(convertSRGBToP3(red: 0.5, green: 0, blue: 1))
+            case "lime": return .rgb(convertSRGBToP3(red: 0, green: 1, blue: 0))
+            case "navy": return .rgb(convertSRGBToP3(red: 0, green: 0, blue: 0.5))
+            case "teal": return .rgb(convertSRGBToP3(red: 0, green: 0.5, blue: 0.5))
+            case "silver": return .rgb(convertSRGBToP3(red: 0.75, green: 0.75, blue: 0.75))
+            case "gray", "grey": return .rgb(convertSRGBToP3(red: 0.5, green: 0.5, blue: 0.5))
+            case "maroon": return .rgb(convertSRGBToP3(red: 0.5, green: 0, blue: 0))
+            case "olive": return .rgb(convertSRGBToP3(red: 0.5, green: 0.5, blue: 0))
+            case "aqua": return .rgb(convertSRGBToP3(red: 0, green: 1, blue: 1))
+            case "fuchsia": return .rgb(convertSRGBToP3(red: 1, green: 0, blue: 1))
             default: return .black
             }
         }
@@ -141,6 +144,33 @@ extension SVGParser {
         return nil
     }
     
+    /// Convert sRGB color values to Display P3 color space
+    private func convertSRGBToP3(red: Double, green: Double, blue: Double, alpha: Double = 1.0) -> RGBColor {
+        // Create sRGB CGColor
+        let srgbComponents: [CGFloat] = [CGFloat(red), CGFloat(green), CGFloat(blue), CGFloat(alpha)]
+        guard let srgbColor = CGColor(colorSpace: ColorManager.shared.sRGBCG, components: srgbComponents) else {
+            // Fallback to direct values if conversion fails
+            return RGBColor(red: red, green: green, blue: blue, alpha: alpha, colorSpace: .displayP3)
+        }
+
+        // Convert to Display P3
+        let p3Color = ColorManager.shared.toWorking(srgbColor)
+
+        // Extract P3 components
+        if let components = p3Color.components, components.count >= 3 {
+            return RGBColor(
+                red: Double(components[0]),
+                green: Double(components[1]),
+                blue: Double(components[2]),
+                alpha: components.count > 3 ? Double(components[3]) : alpha,
+                colorSpace: .displayP3
+            )
+        }
+
+        // Fallback to direct values if conversion fails
+        return RGBColor(red: red, green: green, blue: blue, alpha: alpha, colorSpace: .displayP3)
+    }
+
     func parseLength(_ value: String?) -> Double? {
         guard let value = value else { return nil }
         
