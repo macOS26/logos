@@ -89,6 +89,12 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         paragraphStyle.minimumLineHeight = viewModel.textObject.typography.lineHeight
         paragraphStyle.maximumLineHeight = viewModel.textObject.typography.lineHeight
         textView.defaultParagraphStyle = paragraphStyle
+
+        // CRITICAL FIX: Apply paragraph style to existing text immediately
+        if textView.string.count > 0 {
+            let range = NSRange(location: 0, length: textView.string.count)
+            textView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
+        }
         
         // First responder will be set in updateNSView when needed
         
@@ -151,27 +157,30 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             Log.fileOperation("🎨 COLOR CHANGED: \(currentColor) → \(newTextColor) (opacity: \(viewModel.textObject.typography.fillOpacity))", level: .info)
         }
         
-        // FIXED: Always update paragraph style to ensure line height and spacing are preserved
+        // CRITICAL FIX: ALWAYS update paragraph style consistently regardless of editing state
         let newAlignment = viewModel.textAlignment
         let newLineSpacing = max(0, viewModel.textObject.typography.lineSpacing)
         let newLineHeight = viewModel.textObject.typography.lineHeight
-        
+
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = newAlignment
         paragraphStyle.lineSpacing = newLineSpacing
         paragraphStyle.minimumLineHeight = newLineHeight
         paragraphStyle.maximumLineHeight = newLineHeight
-        
-        // Apply paragraph style to all text
+
+        // CRITICAL: Set default style first for new text
+        nsView.defaultParagraphStyle = paragraphStyle
+
+        // CRITICAL: Always apply paragraph style to ALL existing text
+        // This ensures consistent rendering between editing and non-editing states
         if nsView.string.count > 0 {
             let range = NSRange(location: 0, length: nsView.string.count)
             nsView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
-            // CRITICAL FIX: Force layout update for paragraph style changes to take effect immediately
+            // Force immediate layout update for consistent display
             nsView.layoutManager?.ensureLayout(for: nsView.textContainer!)
             nsView.needsDisplay = true
         }
-        
-        nsView.defaultParagraphStyle = paragraphStyle
+
         needsFormatUpdate = true
         
         // CRITICAL FIX: Update text container width when text box is resized
@@ -250,17 +259,14 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         // PERFORMANCE: Only update editing properties if they actually changed
         let newIsEditable = viewModel.isEditing && isEditingAllowed
         let newIsSelectable = isSelectable
-        
-        nsView.isEditable = viewModel.isEditing && isEditingAllowed
-        nsView.isSelectable = isSelectable // CRITICAL: Allow selection in both BLUE and GREEN modes for drag operations
-        
-        Log.fileOperation("🔧 UPDATE NSTextView: textID=\(viewModel.textObject.id.uuidString.prefix(8)) isEditing=\(viewModel.isEditing) isEditingAllowed=\(isEditingAllowed) isSelectable=\(isSelectable) → isEditable=\(nsView.isEditable), isSelectable=\(nsView.isSelectable)", level: .info)
-        
-        
+
+        Log.fileOperation("🔧 UPDATE NSTextView: textID=\(viewModel.textObject.id.uuidString.prefix(8)) isEditing=\(viewModel.isEditing) isEditingAllowed=\(isEditingAllowed) isSelectable=\(isSelectable) → isEditable=\(newIsEditable), isSelectable=\(newIsSelectable)", level: .info)
+
+        // Only update if changed to avoid layout jumps
         if nsView.isEditable != newIsEditable {
             nsView.isEditable = newIsEditable
         }
-        
+
         if nsView.isSelectable != newIsSelectable {
             nsView.isSelectable = newIsSelectable
         }
