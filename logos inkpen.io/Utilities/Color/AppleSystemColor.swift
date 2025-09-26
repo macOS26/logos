@@ -67,11 +67,6 @@ struct AppleSystemColor: Codable, Hashable {
     
     // Predefined Apple System Colors with light/dark mode RGB values
     // Using P3 color space for more vibrant colors
-    static let systemBlue = AppleSystemColor(
-        name: "systemBlue",
-        lightMode: RGBColor(red: 0.0, green: 0.478, blue: 1.0, colorSpace: .displayP3), // P3 system blue
-        darkMode: RGBColor(red: 0.04, green: 0.518, blue: 1.0, colorSpace: .displayP3)  // P3 system blue dark
-    )
     
     static let systemRed = AppleSystemColor(
         name: "systemRed",
@@ -275,7 +270,7 @@ struct AppleSystemColor: Codable, Hashable {
     
     // Get all available system colors
     static let allSystemColors: [AppleSystemColor] = [
-        .systemBlue, .systemRed, .systemGreen, .systemYellow, .systemOrange,
+        .systemRed, .systemGreen, .systemYellow, .systemOrange,
         .systemPurple, .systemPink, .systemTeal, .systemIndigo, .systemBrown,
         .systemGray, .systemGray2, .systemGray3, .systemGray4, .systemGray5, .systemGray6,
         .label, .secondaryLabel, .tertiaryLabel, .quaternaryLabel,
