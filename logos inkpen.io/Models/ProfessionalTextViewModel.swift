@@ -326,13 +326,18 @@ class ProfessionalTextViewModel: ObservableObject {
         let layoutManager = NSLayoutManager()
         textStorage.addLayoutManager(layoutManager)
 
-        // Create text container matching our text box
+        // Create text container matching our text box with same settings as NSTextView
         let textContainer = NSTextContainer(size: CGSize(width: textBoxFrame.width, height: textBoxFrame.height))
-        textContainer.lineFragmentPadding = 0
+        textContainer.lineFragmentPadding = 0 // Match NSTextView settings
+        textContainer.lineBreakMode = .byWordWrapping
         layoutManager.addTextContainer(textContainer)
 
-        // Force layout
-        _ = layoutManager.glyphRange(for: textContainer)
+        // Force complete layout
+        layoutManager.ensureGlyphs(forGlyphRange: NSRange(location: 0, length: text.count))
+        layoutManager.ensureLayout(for: textContainer)
+        
+        // Get the actual used rect to understand where text is positioned
+        let usedRect = layoutManager.usedRect(for: textContainer)
 
         // Create paths from glyphs
         linePaths = []
@@ -350,7 +355,7 @@ class ProfessionalTextViewModel: ObservableObject {
         // Enumerate through all glyphs
         let glyphRange = layoutManager.glyphRange(for: textContainer)
 
-        layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { (lineRect, usedRect, container, lineRange, stop) in
+        layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { (lineRect, lineUsedRect, container, lineRange, stop) in
             let linePath = CGMutablePath()
 
             for glyphIndex in lineRange.location..<NSMaxRange(lineRange) {
@@ -358,49 +363,39 @@ class ProfessionalTextViewModel: ObservableObject {
                 let glyph = layoutManager.cgGlyph(at: glyphIndex)
                 let glyphLocation = layoutManager.location(forGlyphAt: glyphIndex)
 
-                // Get the line fragment rect for this glyph
-                _ = layoutManager.lineFragmentRect(forGlyphAt: glyphIndex, effectiveRange: nil, withoutAdditionalLayout: true)
-
-                // Calculate actual position
-                // CRITICAL FIX: Use the line fragment rect position, not usedRect
-                // The lineRect gives us the actual line position within the text container
+                // CRITICAL FIX: Get the actual line fragment rect and used rect for this specific glyph
+                var actualLineRect = CGRect.zero
+                var actualUsedRect = CGRect.zero
+                var effectiveRange = NSRange()
+                actualLineRect = layoutManager.lineFragmentRect(forGlyphAt: glyphIndex, effectiveRange: &effectiveRange, withoutAdditionalLayout: true)
+                actualUsedRect = layoutManager.lineFragmentUsedRect(forGlyphAt: glyphIndex, effectiveRange: &effectiveRange, withoutAdditionalLayout: true)
 
                 // Get the typographic bounds for accurate baseline positioning
                 let fontAscent = nsFont.ascender
-
-                // The glyph X position is text box X + line rect X + glyph location X
-                let glyphX = self.textBoxFrame.origin.x + lineRect.origin.x + glyphLocation.x
-
-                // The glyph Y position needs to account for:
-                // 1. Text box Y position
-                // 2. Line rect Y position (distance from top of container)
-                // 3. Baseline position within the line
                 let fontDescent = abs(nsFont.descender)
                 let fontLeading = nsFont.leading
 
-                // CRITICAL FIX: The usedRect from NSLayoutManager already positions the text correctly
-                // within the text container. The baseline is at the bottom of the ascent within usedRect.
-                // We should use lineRect which gives us the actual line position, then add ascent for baseline
-                let baselineOffset = fontAscent
-
-                // Calculate the baseline Y position:
-                // Text box Y + line rect Y (not usedRect) + baseline offset
-                // This matches how NSTextView actually renders the text
-                let glyphY = self.textBoxFrame.origin.y + lineRect.origin.y + baselineOffset
+                // CRITICAL FIX: Use lineRect for justified alignment positioning
+                // For justified text, we need lineRect.origin.x as the base, not actualUsedRect
+                // The glyph location already includes the proper justification spacing
+                let glyphX = self.textBoxFrame.origin.x + lineRect.origin.x + glyphLocation.x
+                
+                // For Y positioning, we need to account for the baseline
+                // NSTextView positions text from top, but glyphs are drawn from baseline
+                // The baseline is at actualUsedRect.origin.y + ascent
+                let glyphY = self.textBoxFrame.origin.y + actualUsedRect.origin.y + fontAscent
 
                 // Enhanced debug logging for first glyph of each line
                 if glyphIndex == lineRange.location {
-                    print("=== LINE \((self.linePaths.count)) DEBUG ===")
+                    print("=== LINE \(self.linePaths.count) POSITIONING FIX ===")
                     print("TextBox Frame: \(self.textBoxFrame)")
-                    print("Line Rect: \(lineRect)")
-                    print("Used Rect: \(usedRect)")
-                    print("Font Ascender: \(fontAscent)")
-                    print("Font Descender: \(fontDescent)")
-                    print("Font Leading: \(fontLeading)")
-                    print("Baseline Offset: \(baselineOffset)")
-                    print("Calculated Baseline Y: \(glyphY)")
-                    print("First Glyph X: \(glyphX)")
-                    print("========================")
+                    print("Container Used Rect: \(usedRect)")
+                    print("Actual Line Rect: \(actualLineRect)")
+                    print("Actual Used Rect: \(actualUsedRect)")
+                    print("Font Metrics: ascent=\(fontAscent), descent=\(fontDescent), leading=\(fontLeading)")
+                    print("Glyph Location in Line: \(glyphLocation)")
+                    print("Calculated Position: X=\(glyphX), Y=\(glyphY)")
+                    print("====================================")
                 }
 
                 // Create glyph path
@@ -425,8 +420,6 @@ class ProfessionalTextViewModel: ObservableObject {
             self.linePaths.append(linePath)
             combinedPath.addPath(linePath)
         }
-
-        // Removed unused textPath and showPath assignments
     }
 
     // MARK: - Convert to Core Text Path (ORIGINAL WORKING CODE)

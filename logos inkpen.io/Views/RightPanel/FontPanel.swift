@@ -25,7 +25,17 @@ struct FontPanel: View {
             return false
         }) {
             if case .shape(let shape) = unifiedObj.objectType {
-                return shape.typography
+                // CRITICAL FIX: If typography is nil, create it from the shape's stroke/fill styles
+                // This handles the case when text is restored from undo but typography wasn't preserved
+                if let typography = shape.typography {
+                    return typography
+                } else if shape.isTextObject {
+                    // Fallback: create typography from shape properties
+                    return TypographyProperties(
+                        strokeColor: shape.strokeStyle?.color ?? .black,
+                        fillColor: shape.fillStyle?.color ?? .black
+                    )
+                }
             }
         }
         return nil
@@ -45,7 +55,8 @@ struct FontPanel: View {
             return false
         }) {
             if case .shape(let shape) = unifiedObj.objectType {
-                return shape.name.replacingOccurrences(of: "Text: ", with: "")
+                // CRITICAL FIX: Use textContent if available, otherwise parse from name
+                return shape.textContent ?? shape.name.replacingOccurrences(of: "Text: ", with: "")
             }
         }
         return nil
@@ -55,6 +66,20 @@ struct FontPanel: View {
         guard let textID = selectedTextID,
               let typography = selectedTextTypography else { return nil }
 
+        // CRITICAL FIX: Try to get the actual VectorText from the shape first
+        if let unifiedObj = document.unifiedObjects.first(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject && shape.id == textID
+            }
+            return false
+        }) {
+            if case .shape(let shape) = unifiedObj.objectType {
+                // Use VectorText.from to properly reconstruct the text object
+                return VectorText.from(shape)
+            }
+        }
+        
+        // Fallback to creating a minimal VectorText
         var text = VectorText(
             content: selectedTextContent ?? "",
             typography: typography,

@@ -138,6 +138,7 @@ struct MainToolbarContent: ToolbarContent {
 
             } label: {
                 Image(systemName: "doc.text")
+                    .offset(y: 2)  // Lower icon by 2px
             }
             .help("Development Tools")
             #endif
@@ -159,6 +160,7 @@ struct MainToolbarContent: ToolbarContent {
                     .font(.system(size: 20))  // 25% larger (was ~16)
                     .frame(width: 36, height: 36)  // Larger click area
                     .contentShape(Rectangle())  // Entire frame is clickable
+                    .offset(y: 2)  // Lower icon by 2px
             }
             .buttonStyle(BorderlessButtonStyle())
             .help("Close Open Paths (⌘⇧J)")
@@ -173,6 +175,7 @@ struct MainToolbarContent: ToolbarContent {
                     .foregroundColor(document.viewMode == .keyline ? InkPenUIColors.shared.toolOrange : .primary)
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
+                    .offset(y: 2)  // Lower icon by 2px
             }
             .buttonStyle(BorderlessButtonStyle())
             .help(document.viewMode.description)
@@ -184,6 +187,7 @@ struct MainToolbarContent: ToolbarContent {
                     .font(.system(size: 20))  // 25% larger
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
+                    .offset(y: 2)  // Lower icon by 2px
             }
             .buttonStyle(BorderlessButtonStyle())
             .help("Toggle Rulers")
@@ -197,6 +201,7 @@ struct MainToolbarContent: ToolbarContent {
                     .font(.system(size: 20))  // 25% larger
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
+                    .offset(y: 2)  // Lower icon by 2px
             }
             .buttonStyle(BorderlessButtonStyle())
             .help("Toggle Grid")
@@ -209,6 +214,7 @@ struct MainToolbarContent: ToolbarContent {
                     .font(.system(size: 20))  // 25% larger
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
+                    .offset(y: 2)  // Lower icon by 2px
             }
             .buttonStyle(BorderlessButtonStyle())
             .help("Snap Page to Artwork Bounds")
@@ -220,6 +226,7 @@ struct MainToolbarContent: ToolbarContent {
                     .font(.system(size: 20))  // 25% larger
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
+                    .offset(y: 2)  // Lower icon by 2px
             }
             .buttonStyle(BorderlessButtonStyle())
             .help("Snap Page to Selection Bounds")
@@ -232,6 +239,7 @@ struct MainToolbarContent: ToolbarContent {
                     .font(.system(size: 20))  // 25% larger
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
+                    .offset(y: 2)  // Lower icon by 2px
             }
             .buttonStyle(BorderlessButtonStyle())
             .help("Document Settings")
