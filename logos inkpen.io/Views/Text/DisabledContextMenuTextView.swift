@@ -38,10 +38,10 @@ class DisabledContextMenuTextView: NSTextView {
     }
 
     override func drawInsertionPoint(in rect: NSRect, color: NSColor, turnedOn flag: Bool) {
-        // Only draw the cursor if we should show it
-        if shouldShowCursor {
-            super.drawInsertionPoint(in: rect, color: color, turnedOn: flag)
-        }
+        // Draw the cursor with transparent color when not editing
+        // This keeps the layout consistent while hiding the cursor visually
+        let cursorColor = shouldShowCursor ? color : NSColor.clear
+        super.drawInsertionPoint(in: rect, color: cursorColor, turnedOn: flag)
     }
 
     override func setNeedsDisplay(_ rect: NSRect, avoidAdditionalLayout flag: Bool) {

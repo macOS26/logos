@@ -226,9 +226,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         nsView.allowsInteraction = isEditingMode
         nsView.shouldShowCursor = isEditingMode
 
-        // EXPERIMENTAL: Keep text view always as first responder to prevent layout shifts
-        // Only control cursor visibility, not first responder status
-        // This should prevent vertical text shifts when switching modes
+        // CRITICAL: Always keep text view as first responder to prevent layout shifts
+        // The cursor is made transparent in non-editing modes instead of being hidden
+        // This maintains consistent text layout across all modes
         if nsView.window != nil && nsView.window?.firstResponder != nsView {
             nsView.window?.makeFirstResponder(nsView)
         }
