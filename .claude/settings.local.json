@@ -74,9 +74,7 @@
       "Bash(do if [ \"$file\" != \"footer.html\" ])",
       "Bash(then echo \"=== $file ===\")",
       "Bash(tail:*)",
-      "Bash(periphery scan:*)",
-      "WebFetch(domain:inkpen.io)",
-      "Bash(xargs:*)"
+      "Bash(periphery scan:*)"
     ],
     "deny": [],
     "ask": []
