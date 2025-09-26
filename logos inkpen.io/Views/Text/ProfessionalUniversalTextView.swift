@@ -245,16 +245,30 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             nsView.insertionPointColor = textColor
         }
 
+        // LOG TEXT VIEW FRAME AND BOUNDS
+        let textContainer = nsView.textContainer!
+        let layoutManager = nsView.layoutManager!
+        let usedRect = layoutManager.usedRect(for: textContainer)
+
+        Log.info("📐 NSTEXTVIEW STATE: mode=\(textBoxState)", category: .general)
+        Log.info("📐 NSTEXTVIEW FRAME: \(nsView.frame)", category: .general)
+        Log.info("📐 NSTEXTVIEW BOUNDS: \(nsView.bounds)", category: .general)
+        Log.info("📐 TEXT CONTAINER SIZE: \(textContainer.containerSize)", category: .general)
+        Log.info("📐 USED RECT: \(usedRect)", category: .general)
+        Log.info("📐 FIRST RESPONDER: \(nsView.window?.firstResponder == nsView)", category: .general)
+
         // Only make first responder in blue (editing) mode
         // Gray and green modes should NOT be first responder to match layout
         if isEditingMode {
             if nsView.window != nil && nsView.window?.firstResponder != nsView {
                 nsView.window?.makeFirstResponder(nsView)
+                Log.info("📐 MADE FIRST RESPONDER for BLUE mode", category: .general)
             }
         } else {
             // In gray/green modes, resign first responder if we have it
             if nsView.window?.firstResponder == nsView {
                 nsView.window?.makeFirstResponder(nil)
+                Log.info("📐 RESIGNED FIRST RESPONDER for \(textBoxState) mode", category: .general)
             }
         }
         nsView.textContainerInset = NSSize(width: 0, height: 0)

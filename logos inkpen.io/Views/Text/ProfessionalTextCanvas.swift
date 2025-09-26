@@ -187,7 +187,11 @@ struct ProfessionalTextCanvas: View {
         }
 
         if oldState != textBoxState {
-            // Text box state changed - reduced logging for performance
+            // LOG TEXT POSITION ON STATE CHANGE
+            Log.info("📍 TEXT POSITION - State change: \(oldState) → \(textBoxState)", category: .general)
+            Log.info("📍 TEXT FRAME: x=\(viewModel.textBoxFrame.minX), y=\(viewModel.textBoxFrame.minY), w=\(viewModel.textBoxFrame.width), h=\(viewModel.textBoxFrame.height)", category: .general)
+            Log.info("📍 TEXT BOUNDS: \(viewModel.textObject.bounds)", category: .general)
+            Log.info("📍 TEXT POSITION: \(viewModel.textObject.position)", category: .general)
 
             // VECTOR APP OPTIMIZATION: Save text to document when exiting editing mode
             if oldState == .blue && (textBoxState == .green || textBoxState == .gray) {
