@@ -118,7 +118,9 @@ struct VerticalToolbar: View {
                         }
                     }
                 } else {
-                    for tool in toolGroup {
+                    // Use custom order if available, otherwise use default order
+                    let orderedTools = toolGroupManager.getOrderedToolsForGroup(groupName, defaultTools: toolGroup)
+                    for tool in orderedTools {
                         groupTools.append(ToolItem(tool: tool, starVariant: nil))
                     }
                 }
