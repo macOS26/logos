@@ -638,16 +638,6 @@ class CoreGraphicsPathOperations {
         Log.info("✅ PROFESSIONAL MERGE (CoreGraphics): Created \(resultPaths.count) shapes from connected same-color components (stacking order respected)", category: .fileOperations)
         return resultPaths
     }
-    
-    /// Merge operation: Simplified version that returns only paths  
-    /// - Parameters:
-    ///   - paths: Array of paths to merge
-    ///   - colors: Array of fill colors (same order as paths)
-    ///   - fillRule: Fill rule to use (.winding or .evenOdd)
-    /// - Returns: Array of color-unified shapes with maintained composite appearance
-    static func merge(_ paths: [CGPath], colors: [VectorColor], using fillRule: CGPathFillRule = .winding) -> [CGPath] {
-        return mergeWithShapeTracking(paths, colors: colors, using: fillRule).map { $0.0 }
-    }
 
     // MARK: - Crop Operations (CoreGraphics Alternative to ClipperPath)
     
@@ -737,14 +727,5 @@ class CoreGraphicsPathOperations {
             Log.info("✅ PROFESSIONAL CROP (CoreGraphics): Created \(finalResults.count) shapes (\(finalResults.count-1) cropped + 1 invisible)", category: .fileOperations)
             return finalResults
         }
-    }
-    
-    /// Crop operation: Simplified version that returns only paths
-    /// - Parameters:
-    ///   - paths: Array of paths in stacking order (first = back, last = front)
-    ///   - fillRule: Fill rule to use (.winding or .evenOdd)
-    /// - Returns: Array of cropped paths with hidden parts removed
-    static func crop(_ paths: [CGPath], using fillRule: CGPathFillRule = .winding) -> [CGPath] {
-        return cropWithShapeTracking(paths, using: fillRule).map { $0.0 }
     }
 }
