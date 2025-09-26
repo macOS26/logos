@@ -381,9 +381,9 @@ class ProfessionalTextViewModel: ObservableObject {
                 let glyphX = self.textBoxFrame.origin.x + lineRect.origin.x + glyphLocation.x
 
                 // CRITICAL FIX: Match NSTextView positioning exactly
-                // The text baseline in NSTextView is at actualLineRect.origin.y + fontAscent
-                // We need the middle ground between the two extremes we tried
-                let glyphY = self.textBoxFrame.origin.y + actualLineRect.origin.y + (fontAscent / 2.0)
+                // glyphLocation.y already contains the baseline position within the line (e.g., 19.0)
+                // We just need to add it to the text box origin and line rect origin
+                let glyphY = self.textBoxFrame.origin.y + actualLineRect.origin.y + glyphLocation.y
 
                 // Enhanced debug logging for first glyph of each line
                 if glyphIndex == lineRange.location {
