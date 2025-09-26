@@ -15,7 +15,7 @@ struct ExportView: View {
     @State private var exportScale: Double = 1.0  // For PNG scale (1x, 2x, 3x, etc.)
     @State private var exportQuality: Double = 0.9  // For JPEG quality (0.1-1.0)
     @State private var includeBackground: Bool = true  // For SVG/PNG background inclusion
-    @State private var isIconExport: Bool = false  // For PNG icon set export
+    @State private var isIconExport: Bool = false  // For PNG icon set export (disabled when sandboxed)
 
     enum ExportFormat: String, CaseIterable {
         case svg = "SVG"
@@ -79,9 +79,12 @@ struct ExportView: View {
                 }
 
                 if exportFormat == .png {
-                    Section(header: Text("PNG Export Type")) {
-                        Toggle("Export as Icon Set", isOn: $isIconExport)
-                            .help("Export multiple icon sizes (16x16 to 1024x1024) without background")
+                    // Only show icon set export option when not sandboxed
+                    if SandboxChecker.isNotSandboxed {
+                        Section(header: Text("PNG Export Type")) {
+                            Toggle("Export as Icon Set", isOn: $isIconExport)
+                                .help("Export multiple icon sizes (16x16 to 1024x1024) without background")
+                        }
                     }
 
                     if !isIconExport {
@@ -133,7 +136,8 @@ struct ExportView: View {
         }
     
     private func exportDocument() {
-        if exportFormat == .png && isIconExport {
+        // Don't allow icon export when sandboxed
+        if exportFormat == .png && isIconExport && SandboxChecker.isNotSandboxed {
             // For icon export, let user choose a folder
             let panel = NSOpenPanel()
             panel.canChooseFiles = false

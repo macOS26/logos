@@ -227,9 +227,10 @@ struct DocumentBasedMainView: View {
         // Load the imported document into the current document
         document.settings = importedDoc.settings
         document.layers = importedDoc.layers
-        document.rgbSwatches = importedDoc.rgbSwatches
-        document.cmykSwatches = importedDoc.cmykSwatches
-        document.hsbSwatches = importedDoc.hsbSwatches
+        document.customRgbSwatches = importedDoc.customRgbSwatches
+        document.customCmykSwatches = importedDoc.customCmykSwatches
+        document.customHsbSwatches = importedDoc.customHsbSwatches
+        document.documentColorDefaults = importedDoc.documentColorDefaults
         
         document.selectedLayerIndex = importedDoc.selectedLayerIndex
         document.selectedShapeIDs = importedDoc.selectedShapeIDs

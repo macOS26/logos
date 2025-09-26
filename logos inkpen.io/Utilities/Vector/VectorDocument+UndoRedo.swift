@@ -49,9 +49,10 @@ extension VectorDocument {
         let previousState = undoStack.removeLast()
         settings = previousState.settings
         layers = previousState.layers
-        rgbSwatches = previousState.rgbSwatches
-        cmykSwatches = previousState.cmykSwatches
-        hsbSwatches = previousState.hsbSwatches
+        customRgbSwatches = previousState.customRgbSwatches
+        customCmykSwatches = previousState.customCmykSwatches
+        customHsbSwatches = previousState.customHsbSwatches
+        documentColorDefaults = previousState.documentColorDefaults
         selectedLayerIndex = previousState.selectedLayerIndex
         selectedShapeIDs = previousState.selectedShapeIDs
         selectedTextIDs = previousState.selectedTextIDs
@@ -144,9 +145,10 @@ extension VectorDocument {
         let nextState = redoStack.removeLast()
         settings = nextState.settings
         layers = nextState.layers
-        rgbSwatches = nextState.rgbSwatches
-        cmykSwatches = nextState.cmykSwatches
-        hsbSwatches = nextState.hsbSwatches
+        customRgbSwatches = nextState.customRgbSwatches
+        customCmykSwatches = nextState.customCmykSwatches
+        customHsbSwatches = nextState.customHsbSwatches
+        documentColorDefaults = nextState.documentColorDefaults
         selectedLayerIndex = nextState.selectedLayerIndex
         selectedShapeIDs = nextState.selectedShapeIDs
         selectedTextIDs = nextState.selectedTextIDs

@@ -25,36 +25,43 @@ class VectorDocument: ObservableObject, Codable {
     // Direct selection state (managed by DrawingCanvas, used by panels)
     @Published var directSelectedShapeIDs: Set<UUID> = []
     
-    // Color defaults are now managed by ColorManager
-    var colorDefaults: ColorDefaults {
-        get { ColorManager.shared.colorDefaults }
-        set { ColorManager.shared.updateColorDefaults(newValue) }
+    // Document-specific color defaults (saved with document)
+    @Published var documentColorDefaults: ColorDefaults = ColorDefaults() {
+        didSet {
+            // Update document settings when colors change
+            settings.fillColor = documentColorDefaults.fillColor
+            settings.strokeColor = documentColorDefaults.strokeColor
+        }
     }
 
-    // Computed properties for swatches
+    // Document-specific custom swatches (only user-added swatches)
+    @Published var customRgbSwatches: [VectorColor] = [] {
+        didSet { settings.customRgbSwatches = customRgbSwatches }
+    }
+    @Published var customCmykSwatches: [VectorColor] = [] {
+        didSet { settings.customCmykSwatches = customCmykSwatches }
+    }
+    @Published var customHsbSwatches: [VectorColor] = [] {
+        didSet { settings.customHsbSwatches = customHsbSwatches }
+    }
+
+    // Computed properties for combined swatches (default + custom)
     var rgbSwatches: [VectorColor] {
-        get { colorDefaults.rgbSwatches }
-        set {
-            var defaults = colorDefaults
-            defaults.rgbSwatches = newValue
-            colorDefaults = defaults
-        }
+        // Start with default swatches from ColorManager
+        var swatches = ColorManager.shared.colorDefaults.rgbSwatches
+        // Add document-specific custom swatches
+        swatches.append(contentsOf: customRgbSwatches)
+        return swatches
     }
     var cmykSwatches: [VectorColor] {
-        get { colorDefaults.cmykSwatches }
-        set {
-            var defaults = colorDefaults
-            defaults.cmykSwatches = newValue
-            colorDefaults = defaults
-        }
+        var swatches = ColorManager.shared.colorDefaults.cmykSwatches
+        swatches.append(contentsOf: customCmykSwatches)
+        return swatches
     }
     var hsbSwatches: [VectorColor] {
-        get { colorDefaults.hsbSwatches }
-        set {
-            var defaults = colorDefaults
-            defaults.hsbSwatches = newValue
-            colorDefaults = defaults
-        }
+        var swatches = ColorManager.shared.colorDefaults.hsbSwatches
+        swatches.append(contentsOf: customHsbSwatches)
+        return swatches
     }
     
     // CRITICAL FIX: Shared state to prevent double transformations  
@@ -271,47 +278,37 @@ class VectorDocument: ObservableObject, Codable {
     // PROFESSIONAL TYPOGRAPHY MANAGEMENT
     @Published var fontManager: FontManager = FontManager()
     
-    // Computed properties for easy access to color defaults
+    // Computed properties for easy access to document color defaults
     var defaultFillColor: VectorColor {
-        get { colorDefaults.fillColor }
+        get { documentColorDefaults.fillColor }
         set {
             objectWillChange.send() // Trigger UI update
-            var defaults = colorDefaults
-            defaults.fillColor = newValue
-            colorDefaults = defaults
+            documentColorDefaults.fillColor = newValue
         }
     }
     var defaultStrokeColor: VectorColor {
-        get { colorDefaults.strokeColor }
+        get { documentColorDefaults.strokeColor }
         set {
             objectWillChange.send() // Trigger UI update
-            var defaults = colorDefaults
-            defaults.strokeColor = newValue
-            colorDefaults = defaults
+            documentColorDefaults.strokeColor = newValue
         }
     }
     var defaultFillOpacity: Double {
-        get { colorDefaults.fillOpacity }
+        get { documentColorDefaults.fillOpacity }
         set {
-            var defaults = colorDefaults
-            defaults.fillOpacity = newValue
-            colorDefaults = defaults
+            documentColorDefaults.fillOpacity = newValue
         }
     }
     var defaultStrokeOpacity: Double {
-        get { colorDefaults.strokeOpacity }
+        get { documentColorDefaults.strokeOpacity }
         set {
-            var defaults = colorDefaults
-            defaults.strokeOpacity = newValue
-            colorDefaults = defaults
+            documentColorDefaults.strokeOpacity = newValue
         }
     }
     var defaultStrokeWidth: Double {
-        get { colorDefaults.strokeWidth }
+        get { documentColorDefaults.strokeWidth }
         set {
-            var defaults = colorDefaults
-            defaults.strokeWidth = newValue
-            colorDefaults = defaults
+            documentColorDefaults.strokeWidth = newValue
         }
     }
 
@@ -359,6 +356,14 @@ class VectorDocument: ObservableObject, Codable {
     
     init(settings: DocumentSettings = DocumentSettings()) {
         self.settings = settings
+
+        // Initialize document color defaults first
+        self.documentColorDefaults = ColorDefaults()
+
+        // Initialize custom swatches arrays first
+        self.customRgbSwatches = []
+        self.customCmykSwatches = []
+        self.customHsbSwatches = []
 
         // Initialize brush settings from UserDefaults
         self.currentBrushThickness = UserDefaults.standard.object(forKey: "brushThickness") as? Double ?? 20.0
@@ -425,6 +430,30 @@ class VectorDocument: ObservableObject, Codable {
         
         // Set up settings change observation
         setupSettingsObservation()
+
+        // Load document-specific colors from settings after initialization
+        if let fillColor = settings.fillColor {
+            self.documentColorDefaults.fillColor = fillColor
+        } else {
+            self.documentColorDefaults.fillColor = ColorManager.shared.colorDefaults.fillColor
+        }
+
+        if let strokeColor = settings.strokeColor {
+            self.documentColorDefaults.strokeColor = strokeColor
+        } else {
+            self.documentColorDefaults.strokeColor = ColorManager.shared.colorDefaults.strokeColor
+        }
+
+        // Load custom swatches from document settings
+        if let rgbSwatches = settings.customRgbSwatches {
+            self.customRgbSwatches = rgbSwatches
+        }
+        if let cmykSwatches = settings.customCmykSwatches {
+            self.customCmykSwatches = cmykSwatches
+        }
+        if let hsbSwatches = settings.customHsbSwatches {
+            self.customHsbSwatches = hsbSwatches
+        }
     }
     
     // Current color swatches based on mode - computed property
@@ -436,6 +465,36 @@ class VectorDocument: ObservableObject, Codable {
             return cmykSwatches
         case .pms:
             return hsbSwatches
+        }
+    }
+
+    // Add a custom swatch to the current document
+    func addCustomSwatch(_ color: VectorColor) {
+        switch settings.colorMode {
+        case .rgb:
+            if !customRgbSwatches.contains(where: { $0 == color }) {
+                customRgbSwatches.append(color)
+            }
+        case .cmyk:
+            if !customCmykSwatches.contains(where: { $0 == color }) {
+                customCmykSwatches.append(color)
+            }
+        case .pms:
+            if !customHsbSwatches.contains(where: { $0 == color }) {
+                customHsbSwatches.append(color)
+            }
+        }
+    }
+
+    // Remove a custom swatch from the current document
+    func removeCustomSwatch(_ color: VectorColor) {
+        switch settings.colorMode {
+        case .rgb:
+            customRgbSwatches.removeAll(where: { $0 == color })
+        case .cmyk:
+            customCmykSwatches.removeAll(where: { $0 == color })
+        case .pms:
+            customHsbSwatches.removeAll(where: { $0 == color })
         }
     }
     
@@ -563,7 +622,11 @@ class VectorDocument: ObservableObject, Codable {
         layerIndex = 0
         pasteboard = VectorLayer(name: "Pasteboard")
 
-        // Color defaults are loaded from ColorManager
+        // Initialize document color defaults and swatches arrays first
+        documentColorDefaults = ColorDefaults()
+        customRgbSwatches = []
+        customCmykSwatches = []
+        customHsbSwatches = []
 
         selectedLayerIndex = nil  // Never load from document - always start fresh
         selectedShapeIDs = []  // Never load from document - always start fresh
@@ -594,7 +657,7 @@ class VectorDocument: ObservableObject, Codable {
         // CRITICAL FIX: Load unified objects array to preserve order during undo/redo
         unifiedObjects = try container.decodeIfPresent([VectorObject].self, forKey: .unifiedObjects) ?? []
 
-        // Color defaults are loaded from ColorManager, no need to set them here
+        // Document color defaults were already loaded above from settings
 
         // Stroke properties defaults
         defaultStrokePlacement = .center
@@ -662,12 +725,44 @@ class VectorDocument: ObservableObject, Codable {
 
         // Validate that a layer is always selected after loading
         validateSelectedLayer()
+
+        // Load document-specific colors from settings after all properties are initialized
+        if let fillColor = settings.fillColor {
+            documentColorDefaults.fillColor = fillColor
+        } else {
+            documentColorDefaults.fillColor = ColorManager.shared.colorDefaults.fillColor
+        }
+
+        if let strokeColor = settings.strokeColor {
+            documentColorDefaults.strokeColor = strokeColor
+        } else {
+            documentColorDefaults.strokeColor = ColorManager.shared.colorDefaults.strokeColor
+        }
+
+        // Load custom swatches from document settings
+        if let rgbSwatches = settings.customRgbSwatches {
+            customRgbSwatches = rgbSwatches
+        }
+        if let cmykSwatches = settings.customCmykSwatches {
+            customCmykSwatches = cmykSwatches
+        }
+        if let hsbSwatches = settings.customHsbSwatches {
+            customHsbSwatches = hsbSwatches
+        }
     }
     
 
     
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
+
+        // Update settings with current document colors and swatches before saving
+        settings.fillColor = documentColorDefaults.fillColor
+        settings.strokeColor = documentColorDefaults.strokeColor
+        settings.customRgbSwatches = customRgbSwatches.isEmpty ? nil : customRgbSwatches
+        settings.customCmykSwatches = customCmykSwatches.isEmpty ? nil : customCmykSwatches
+        settings.customHsbSwatches = customHsbSwatches.isEmpty ? nil : customHsbSwatches
+
         try container.encode(settings, forKey: .settings)
         try container.encode(layers, forKey: .layers)
 

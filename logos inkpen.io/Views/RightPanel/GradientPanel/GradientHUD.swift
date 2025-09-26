@@ -123,9 +123,10 @@ struct GradientColorPickerSheet: View {
         localDoc.settings = document.settings  // Includes colorMode, etc.
         
         // Copy color swatches based on current mode
-        localDoc.rgbSwatches = document.rgbSwatches
-        localDoc.cmykSwatches = document.cmykSwatches
-        localDoc.hsbSwatches = document.hsbSwatches
+        localDoc.customRgbSwatches = document.customRgbSwatches
+        localDoc.customCmykSwatches = document.customCmykSwatches
+        localDoc.customHsbSwatches = document.customHsbSwatches
+        localDoc.documentColorDefaults = document.documentColorDefaults
         
         self._localDocument = State(initialValue: localDoc)
     }

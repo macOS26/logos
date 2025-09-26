@@ -125,9 +125,10 @@ struct MainView: View {
                     // Replace current document with new one
                     document.settings = newDocument.settings
                     document.layers = newDocument.layers
-                    document.rgbSwatches = newDocument.rgbSwatches
-                    document.cmykSwatches = newDocument.cmykSwatches
-                    document.hsbSwatches = newDocument.hsbSwatches
+                    document.customRgbSwatches = newDocument.customRgbSwatches
+                    document.customCmykSwatches = newDocument.customCmykSwatches
+                    document.customHsbSwatches = newDocument.customHsbSwatches
+                    document.documentColorDefaults = newDocument.documentColorDefaults
 
                     // CRITICAL FIX: Copy color defaults (was missing - causing black default bug!)
                     document.defaultFillColor = newDocument.defaultFillColor
@@ -334,9 +335,10 @@ struct MainView: View {
         // Load the imported SVG document into the main Ink Pen interface
         document.settings = importedDoc.settings
         document.layers = importedDoc.layers
-        document.rgbSwatches = importedDoc.rgbSwatches
-        document.cmykSwatches = importedDoc.cmykSwatches
-        document.hsbSwatches = importedDoc.hsbSwatches
+        document.customRgbSwatches = importedDoc.customRgbSwatches
+        document.customCmykSwatches = importedDoc.customCmykSwatches
+        document.customHsbSwatches = importedDoc.customHsbSwatches
+        document.documentColorDefaults = importedDoc.documentColorDefaults
         
         document.selectedLayerIndex = importedDoc.selectedLayerIndex
         document.selectedShapeIDs = importedDoc.selectedShapeIDs

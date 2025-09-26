@@ -23,10 +23,17 @@ struct DocumentSettings: Codable, Hashable {
     var selectedLayerId: UUID?
     var selectedLayerName: String?
 
+    // Document-specific colors and custom swatches (only user-added swatches)
+    var fillColor: VectorColor?
+    var strokeColor: VectorColor?
+    var customRgbSwatches: [VectorColor]?
+    var customCmykSwatches: [VectorColor]?
+    var customHsbSwatches: [VectorColor]?
+
     // FIX: Store actual document size in points to prevent coordinate system corruption
     private var _sizeInPoints: CGSize?
     
-    init(width: Double = 11.0, height: Double = 8.5, unit: MeasurementUnit = .inches, colorMode: ColorMode = .rgb, resolution: Double = 72.0, showRulers: Bool? = nil, showGrid: Bool? = nil, snapToGrid: Bool? = nil, snapToPoint: Bool? = nil, gridSpacing: Double = 0.125, backgroundColor: VectorColor = .white, selectedLayerId: UUID? = nil, selectedLayerName: String? = "Layer 1") {
+    init(width: Double = 11.0, height: Double = 8.5, unit: MeasurementUnit = .inches, colorMode: ColorMode = .rgb, resolution: Double = 72.0, showRulers: Bool? = nil, showGrid: Bool? = nil, snapToGrid: Bool? = nil, snapToPoint: Bool? = nil, gridSpacing: Double = 0.125, backgroundColor: VectorColor = .white, selectedLayerId: UUID? = nil, selectedLayerName: String? = "Layer 1", fillColor: VectorColor? = nil, strokeColor: VectorColor? = nil, customRgbSwatches: [VectorColor]? = nil, customCmykSwatches: [VectorColor]? = nil, customHsbSwatches: [VectorColor]? = nil) {
         self.width = width
         self.height = height
         self.unit = unit
@@ -53,11 +60,19 @@ struct DocumentSettings: Codable, Hashable {
         self.backgroundColor = backgroundColor
         self.selectedLayerId = selectedLayerId
         self.selectedLayerName = selectedLayerName ?? "Layer 1"
+
+        // Initialize document-specific colors and custom swatches
+        self.fillColor = fillColor
+        self.strokeColor = strokeColor
+        self.customRgbSwatches = customRgbSwatches
+        self.customCmykSwatches = customCmykSwatches
+        self.customHsbSwatches = customHsbSwatches
     }
     
     // MARK: - Custom Decoding for Backward Compatibility
     enum CodingKeys: String, CodingKey {
         case width, height, unit, colorMode, resolution, showRulers, showGrid, snapToGrid, snapToPoint, gridSpacing, backgroundColor, selectedLayerId, selectedLayerName
+        case fillColor, strokeColor, customRgbSwatches, customCmykSwatches, customHsbSwatches
     }
     
     init(from decoder: Decoder) throws {
@@ -75,6 +90,13 @@ struct DocumentSettings: Codable, Hashable {
         backgroundColor = try container.decode(VectorColor.self, forKey: .backgroundColor)
         selectedLayerId = try container.decodeIfPresent(UUID.self, forKey: .selectedLayerId)
         selectedLayerName = try container.decodeIfPresent(String.self, forKey: .selectedLayerName) ?? "Layer 1"
+
+        // Decode document-specific colors and custom swatches
+        fillColor = try container.decodeIfPresent(VectorColor.self, forKey: .fillColor)
+        strokeColor = try container.decodeIfPresent(VectorColor.self, forKey: .strokeColor)
+        customRgbSwatches = try container.decodeIfPresent([VectorColor].self, forKey: .customRgbSwatches)
+        customCmykSwatches = try container.decodeIfPresent([VectorColor].self, forKey: .customCmykSwatches)
+        customHsbSwatches = try container.decodeIfPresent([VectorColor].self, forKey: .customHsbSwatches)
     }
     
     func encode(to encoder: Encoder) throws {
@@ -92,6 +114,13 @@ struct DocumentSettings: Codable, Hashable {
         try container.encode(backgroundColor, forKey: .backgroundColor)
         try container.encode(selectedLayerId, forKey: .selectedLayerId)
         try container.encode(selectedLayerName, forKey: .selectedLayerName)
+
+        // Encode document-specific colors and custom swatches
+        try container.encodeIfPresent(fillColor, forKey: .fillColor)
+        try container.encodeIfPresent(strokeColor, forKey: .strokeColor)
+        try container.encodeIfPresent(customRgbSwatches, forKey: .customRgbSwatches)
+        try container.encodeIfPresent(customCmykSwatches, forKey: .customCmykSwatches)
+        try container.encodeIfPresent(customHsbSwatches, forKey: .customHsbSwatches)
     }
     
     var sizeInPoints: CGSize {

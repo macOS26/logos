@@ -444,11 +444,11 @@ struct VerticalToolbarButton: View {
         inc += 0.1
         print("\(inc)")
         
-        // First click - handle tap
+        // always handle tap
+        lastTappedTool = toolItem.tool.rawValue
+        onTap()
+        
         if inc <= 0.1 {
-            // Store the tool name that was tapped
-            lastTappedTool = toolItem.tool.rawValue
-            onTap()
             shouldRepeat = true
             return
         }

@@ -15,22 +15,19 @@ extension VectorDocument {
     func addColorToCurrentMode(_ color: VectorColor) {
         switch settings.colorMode {
         case .rgb:
-            if !rgbSwatches.contains(color) {
-                rgbSwatches.append(color)
+            if !customRgbSwatches.contains(color) {
+                customRgbSwatches.append(color)
                 objectWillChange.send() // Trigger UI update
-                colorDefaults.saveToUserDefaults() // Save immediately
             }
         case .cmyk:
-            if !cmykSwatches.contains(color) {
-                cmykSwatches.append(color)
+            if !customCmykSwatches.contains(color) {
+                customCmykSwatches.append(color)
                 objectWillChange.send() // Trigger UI update
-                colorDefaults.saveToUserDefaults() // Save immediately
             }
         case .pms:
-            if !hsbSwatches.contains(color) {
-                hsbSwatches.append(color)
+            if !customHsbSwatches.contains(color) {
+                customHsbSwatches.append(color)
                 objectWillChange.send() // Trigger UI update
-                colorDefaults.saveToUserDefaults() // Save immediately
             }
         }
     }
@@ -46,12 +43,13 @@ extension VectorDocument {
     func removeColorFromCurrentMode(_ color: VectorColor) {
         switch settings.colorMode {
         case .rgb:
-            rgbSwatches.removeAll { $0 == color }
+            customRgbSwatches.removeAll { $0 == color }
         case .cmyk:
-            cmykSwatches.removeAll { $0 == color }
+            customCmykSwatches.removeAll { $0 == color }
         case .pms:
-            hsbSwatches.removeAll { $0 == color }
+            customHsbSwatches.removeAll { $0 == color }
         }
+        objectWillChange.send() // Trigger UI update
     }
     
     // MARK: - Active Drawing Tool Notification
