@@ -1,152 +1,110 @@
+// ProfessionalTextViewModel.swift - Professional Text View Model
 //
-//  ProfessionalTextViewModel.swift
-//  logos inkpen.io
-//
-//  View model for professional text handling
-//
+// CRITICAL DESIGN PRINCIPLE:
+// This view model manages the RENDERED state of a text object for display and interaction.
+// It syncs with the VectorText from the document but maintains its own state for UI.
 
 import SwiftUI
+import AppKit
 import CoreText
 import Combine
 
-// MARK: - Professional Text View Model (Based on Working TextEditorViewModel)
+// CRITICAL: Text View Model manages the PRESENTATION LAYER only
+// - The VectorDocument owns VectorText objects as the source of truth
+// - This view model creates the visual representation and handles user interaction
+// - Changes flow: User -> ViewModel -> Document -> VectorText
+
+@MainActor
 class ProfessionalTextViewModel: ObservableObject {
-    @Published var text: String = "" {
-        didSet {
-            // NO AUTO-RESIZE: User controls text box size manually like rectangle tool
-            // Text content changes don't affect size - only user drag resizing
-        }
-    }
-    @Published var fontSize: CGFloat = 24 {
-        didSet {
-            guard !isUpdatingProperties else { return }
-            isUpdatingProperties = true
-            
-            if selectedFont.pointSize != fontSize {
-                let fontName = selectedFont.fontName
-                selectedFont = NSFont(name: fontName, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
-            }
-            
-            isUpdatingProperties = false
-        }
-    }
-    @Published var selectedFont: NSFont = NSFont.systemFont(ofSize: 24) {
-        didSet {
-            guard !isUpdatingProperties else { return }
-            isUpdatingProperties = true
-            
-            if fontSize != selectedFont.pointSize {
-                fontSize = selectedFont.pointSize
-            }
-            
-            isUpdatingProperties = false
-        }
-    }
-    @Published var textBoxFrame: CGRect = CGRect.zero  // FIXED: Start at zero so user-drawn size is used
-    @Published var isEditing: Bool = false
+    // MARK: - The DISPLAY state (what the user sees)
+    @Published var text: String = ""
+    @Published var fontSize: CGFloat = 24.0
+    @Published var selectedFont: NSFont = NSFont.systemFont(ofSize: 24.0)
     @Published var textAlignment: NSTextAlignment = .left
-    // Line spacing now handled via textObject.typography.lineSpacing
-    
-    // ORIGINAL WORKING PROPERTIES FOR CORE TEXT PATH
-    var linePaths: [CGPath] = []  // Store individual line paths for compound path creation
+    @Published var isEditing: Bool = false
+    @Published var textBoxFrame: CGRect = CGRect(x: 100, y: 100, width: 200, height: 100) // MANUAL SIZE
+    @Published var userInitiatedCursorPosition: Int = 0  // SINGLE SOURCE OF TRUTH for cursor position
+    @Published var userInitiatedSelectionLength: Int = 0  // SINGLE SOURCE OF TRUTH for selection length
 
-    @Published var textObject: VectorText
-    let document: VectorDocument
-    
-    // Flags and properties from working code
-    private var isUpdatingProperties: Bool = false
-    
-    // THE SOURCE OF TRUTH for cursor position, only updated by user input
-    var userInitiatedCursorPosition: Int = 0
-    var userInitiatedSelectionLength: Int = 0
+    // MARK: - References
+    @Published var textObject: VectorText  // Reference to document's VectorText
+    let document: VectorDocument  // Weak reference to parent document
 
+    // MARK: - Path Conversion Output
+    var linePaths: [CGPath] = []
+
+    // MARK: - Initialize from VectorText
     init(textObject: VectorText, document: VectorDocument) {
         self.textObject = textObject
         self.document = document
-        
-        Log.fileOperation("🔧 INIT ProfessionalTextViewModel for text: '\(textObject.content)'", level: .info)
-        
-        // Direct initialization from VectorText
+
+        // CRITICAL FIX: Calculate height based on actual text content with proper typography
         self.text = textObject.content
         self.fontSize = CGFloat(textObject.typography.fontSize)
         self.selectedFont = textObject.typography.nsFont
-        self.isEditing = textObject.isEditing
         self.textAlignment = textObject.typography.alignment.nsTextAlignment
-        
-        // Initialize text box frame with proper bounds
-        // CRITICAL FIX: Prioritize areaSize (user-drawn dimensions) over calculated bounds
-        // This preserves text box size during copy/paste operations
-        let width: CGFloat
-        let height: CGFloat
-        
-        if let userAreaSize = textObject.areaSize {
-            // Use user-defined area size (preserves manual text box sizing)
-            width = userAreaSize.width
-            height = userAreaSize.height
-            Log.info("📦 USING AREA SIZE: \(userAreaSize) for text box frame", category: .general)
-        } else {
-            // Fallback to bounds-based sizing for legacy text or SVG imports
-            let hasReasonableBounds = textObject.bounds.width > 50 && textObject.bounds.height > 20
-            let useMinimum = !hasReasonableBounds // Only use minimum for native text with small bounds
-            
-            width = useMinimum ? max(textObject.bounds.width, 200) : textObject.bounds.width   // Preserve SVG width
-            height = useMinimum ? max(textObject.bounds.height, 50) : textObject.bounds.height   // Preserve SVG height
-            Log.info("📦 USING BOUNDS: (\(textObject.bounds.width), \(textObject.bounds.height)) for text box frame", category: .general)
-        }
-        
+
+        // CRITICAL FIX: Always use the text object's area size and position
+        // This ensures consistency between VectorText and text canvas
+        let width = textObject.areaSize?.width ?? 200.0
+        let height = textObject.areaSize?.height ?? calculateTextHeight(for: textObject.content)
+
         self.textBoxFrame = CGRect(
             x: textObject.position.x,
             y: textObject.position.y,
             width: width,
             height: height
         )
-        
-        Log.info("📦 TEXT BOX INITIALIZATION: Frame = \(self.textBoxFrame)", category: .general)
-        
+
+        self.isEditing = textObject.isEditing
+
+        Log.info("📝 TEXT INIT: '\(textObject.content)' at \(textObject.position)", category: .general)
+        Log.info("📝 TEXT INIT: Using areaSize \(textObject.areaSize?.debugDescription ?? "nil") for text box", category: .general)
     }
 
-    // MARK: - PUBLIC method for external syncing
-    func syncFromVectorText(_ textObject: VectorText) {
-        // CURSOR PRESERVATION: Prevent text resets that move cursor to end
+    // MARK: - Calculate Text Height
+    private func calculateTextHeight(for content: String) -> CGFloat {
+        guard !content.isEmpty else { return 50.0 }  // Default minimum height
 
-        // SELECTIVE BLOCKING: Only block content changes during auto-resize, allow color/font updates
-        if isAutoResizing && textObject.content == self.text {
-            Log.info("🚫 SYNC PARTIAL BLOCK: Auto-resize in progress, only syncing non-content properties", category: .general)
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = textAlignment
+        paragraphStyle.lineSpacing = max(0, textObject.typography.lineSpacing)
+        paragraphStyle.minimumLineHeight = textObject.typography.lineHeight
+        paragraphStyle.maximumLineHeight = textObject.typography.lineHeight
 
-            // Still sync colors, fonts, and other properties during auto-resize
-            let colorChanged = self.textObject.typography.fillColor != textObject.typography.fillColor
-            let typographyChanged = (
-                self.textObject.typography.alignment != textObject.typography.alignment ||
-                self.textObject.typography.fontFamily != textObject.typography.fontFamily ||
-                self.textObject.typography.fontWeight != textObject.typography.fontWeight ||
-                self.textObject.typography.fontStyle != textObject.typography.fontStyle ||
-                abs(self.textObject.typography.lineHeight - textObject.typography.lineHeight) > 0.01 ||
-                abs(self.textObject.typography.lineSpacing - textObject.typography.lineSpacing) > 0.01
-            )
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: selectedFont,
+            .paragraphStyle: paragraphStyle
+        ]
 
-            // CRITICAL FIX: Store old font to detect style changes even when font name doesn't change
-            let oldFont = self.selectedFont
+        let attributedString = NSAttributedString(string: content, attributes: attributes)
+        let textStorage = NSTextStorage(attributedString: attributedString)
+        let layoutManager = NSLayoutManager()
+        textStorage.addLayoutManager(layoutManager)
 
-            self.textObject = textObject  // Update for color changes
-            self.fontSize = CGFloat(textObject.typography.fontSize)
-            self.selectedFont = textObject.typography.nsFont
+        let textContainer = NSTextContainer(size: CGSize(width: textBoxFrame.width, height: CGFloat.greatestFiniteMagnitude))
+        textContainer.lineFragmentPadding = 0
+        textContainer.lineBreakMode = .byWordWrapping
+        layoutManager.addTextContainer(textContainer)
 
-            // CRITICAL FIX: Detect font style changes that don't change the font name
-            let fontStyleChanged = oldFont != self.selectedFont
+        layoutManager.ensureGlyphs(forGlyphRange: NSRange(location: 0, length: content.count))
+        layoutManager.ensureLayout(for: textContainer)
 
-            // CRITICAL FIX: Don't reset editing state during active typing
-            if !self.isEditing {
-                self.isEditing = textObject.isEditing
-            }
+        let usedRect = layoutManager.usedRect(for: textContainer)
+        return max(50.0, ceil(usedRect.height + 10)) // Add small padding
+    }
 
-            self.textAlignment = textObject.typography.alignment.nsTextAlignment
-            // Line spacing is now handled separately in the typography properties
-
-            if colorChanged || typographyChanged || fontStyleChanged {
-                Log.fileOperation("🎨 Color/typography/style changed during auto-resize", level: .debug)
-                // NO MANUAL REFRESH NEEDED - SwiftUI handles this automatically
-            }
+    // MARK: - Sync FROM Document VectorText
+    func syncFromDocument(_ textObject: VectorText) {
+        // CRITICAL: Check if we should update at all
+        guard self.textObject.id == textObject.id else {
+            Log.error("❌ SYNC ERROR: Mismatched text IDs", category: .error)
             return
+        }
+
+        // Skip rapid updates during active typing to prevent cursor jumping
+        if isEditing && Date().timeIntervalSince1970 - lastTypingTime < 0.1 {
+            return // Skip this sync - too frequent during typing
         }
 
         // VECTOR APP OPTIMIZATION: Prevent overwriting typed text with empty document text
@@ -249,6 +207,7 @@ class ProfessionalTextViewModel: ObservableObject {
       //  Log.info("📦 EXTERNAL SYNC: Preserved user text box size, only updated position", category: .general)
     }
 
+    private var lastTypingTime: TimeInterval = 0
 
     // MARK: - Manual Resize Support Only
 
@@ -326,8 +285,9 @@ class ProfessionalTextViewModel: ObservableObject {
         let layoutManager = NSLayoutManager()
         textStorage.addLayoutManager(layoutManager)
 
-        // Create text container matching our text box with same settings as NSTextView
-        let textContainer = NSTextContainer(size: CGSize(width: textBoxFrame.width, height: textBoxFrame.height))
+        // CRITICAL FIX: Use infinite height for text container to ensure no text is cut off
+        // The text box height is just the visible area, but text might extend beyond it
+        let textContainer = NSTextContainer(size: CGSize(width: textBoxFrame.width, height: CGFloat.greatestFiniteMagnitude))
         textContainer.lineFragmentPadding = 0 // Match NSTextView settings
         textContainer.lineBreakMode = .byWordWrapping
         layoutManager.addTextContainer(textContainer)

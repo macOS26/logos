@@ -54,7 +54,7 @@ struct StableProfessionalTextCanvas: View {
                 // Check if our text object has changed
                 if let currentTextObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
                     // Always sync when document changes - the unified system is the source of truth
-                    viewModel.syncFromVectorText(currentTextObject)
+                    viewModel.syncFromDocument(currentTextObject)
                 }
             }
             // Additional fix: Use id to force view refresh when text content changes
@@ -65,7 +65,7 @@ struct StableProfessionalTextCanvas: View {
     private func updateViewModelFromDocument() {
         // Use allTextObjects from unified system
         if let currentTextObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
-            viewModel.syncFromVectorText(currentTextObject)
+            viewModel.syncFromDocument(currentTextObject)
             Log.fileOperation("✅ TEXT CANVAS: Found text object \(textObjectID.uuidString.prefix(8)) content: '\(currentTextObject.content)'", level: .info)
         } else {
             // FALLBACK: If text object missing from unified objects, log issue with debugging info

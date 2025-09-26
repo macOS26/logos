@@ -145,7 +145,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         var needsFormatUpdate = false
         
         if nsView.font != newFont {
-            nsView.font = newFont
+            DispatchQueue.main.async {
+                nsView.font = newFont
+            }
             needsFormatUpdate = true
             Log.fileOperation("🔤 FONT CHANGED: \(newFont.fontName) \(newFont.pointSize)pt", level: .info)
         }
@@ -175,16 +177,20 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         paragraphStyle.maximumLineHeight = newLineHeight
 
         // CRITICAL: Set default style first for new text
-        nsView.defaultParagraphStyle = paragraphStyle
+        DispatchQueue.main.async {
+            nsView.defaultParagraphStyle = paragraphStyle
+        }
 
         // CRITICAL: Always apply paragraph style to ALL existing text
         // This ensures consistent rendering between editing and non-editing states
         if nsView.string.count > 0 {
             let range = NSRange(location: 0, length: nsView.string.count)
-            nsView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
-            // Force immediate layout update for consistent display
-            nsView.layoutManager?.ensureLayout(for: nsView.textContainer!)
-            nsView.needsDisplay = true
+            DispatchQueue.main.async {
+                nsView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
+                // Force immediate layout update for consistent display
+                nsView.layoutManager?.ensureLayout(for: nsView.textContainer!)
+                nsView.needsDisplay = true
+            }
         }
 
         needsFormatUpdate = true
@@ -253,7 +259,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         
         // PERFORMANCE: Only force display update if format changed and view is first responder
         if needsFormatUpdate && nsView.window?.firstResponder == nsView {
-            nsView.setNeedsDisplay(nsView.visibleRect)
+            DispatchQueue.main.async {
+                nsView.setNeedsDisplay(nsView.visibleRect)
+            }
         }
         
         // PERFORMANCE: Only update frame constraints if size actually changed
