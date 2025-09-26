@@ -22,13 +22,15 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
     func makeNSView(context: Context) -> DisabledContextMenuTextView {
         let textView = DisabledContextMenuTextView()
 
-        // CRITICAL: Keep NSTextView ALWAYS configured the same way to prevent text position shifts
-        // Control interaction and cursor visibility based on mode
+        // CRITICAL: Keep NSTextView COMPLETELY STATIC to prevent ANY layout shifts
+        // Always editable, always selectable, always the same
+        textView.isEditable = true
+        textView.isSelectable = true
+
+        // Control ONLY visual feedback, not actual state
         let isEditingMode = (textBoxState == .blue)
         textView.allowsInteraction = isEditingMode
         textView.shouldShowCursor = isEditingMode
-        textView.isEditable = true
-        textView.isSelectable = true
         textView.backgroundColor = NSColor.clear
         textView.textContainerInset = NSSize(width: 0, height: 0)
         textView.textContainer?.lineFragmentPadding = 0
@@ -91,6 +93,11 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         paragraphStyle.minimumLineHeight = viewModel.textObject.typography.lineHeight
         paragraphStyle.maximumLineHeight = viewModel.textObject.typography.lineHeight
         textView.defaultParagraphStyle = paragraphStyle
+
+        // CRITICAL: Make text view first responder immediately to establish consistent layout
+        DispatchQueue.main.async {
+            textView.window?.makeFirstResponder(textView)
+        }
 
         // CRITICAL FIX: Apply paragraph style to existing text immediately
         if textView.string.count > 0 {
@@ -217,18 +224,28 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             Log.info("📏 TEXT REFLOW: Container updated, text should now wrap to new width", category: .general)
         }
         
-        // CRITICAL: Keep NSTextView ALWAYS configured the same to prevent text shifts
-        // Control interaction and cursor visibility based on mode
+        // CRITICAL: Keep NSTextView COMPLETELY STATIC to prevent ANY layout shifts
+        // Do NOT change any properties that could affect layout
         nsView.isEditable = true
         nsView.isSelectable = true
 
+        // Control ONLY visual feedback, not actual state
         let isEditingMode = (textBoxState == .blue)
         nsView.allowsInteraction = isEditingMode
         nsView.shouldShowCursor = isEditingMode
 
-        // CRITICAL: Always keep text view as first responder to prevent layout shifts
-        // The cursor is made transparent in non-editing modes instead of being hidden
-        // This maintains consistent text layout across all modes
+        // Update insertion point color to be transparent when not editing
+        // This keeps cursor space but makes it invisible
+        if !isEditingMode {
+            nsView.insertionPointColor = NSColor.clear
+        } else {
+            // Restore normal cursor color when editing
+            let baseColor = NSColor(viewModel.textObject.typography.fillColor.color)
+            let textColor = baseColor.withAlphaComponent(viewModel.textObject.typography.fillOpacity)
+            nsView.insertionPointColor = textColor
+        }
+
+        // Always ensure text view is first responder for consistent layout
         if nsView.window != nil && nsView.window?.firstResponder != nsView {
             nsView.window?.makeFirstResponder(nsView)
         }
