@@ -90,52 +90,6 @@ struct AppleSystemColor: Codable, Hashable {
     
     
     
-    // System background colors
-    
-    static let secondarySystemBackground = AppleSystemColor(
-        name: "secondarySystemBackground",
-        lightMode: RGBColor(red: 0.949, green: 0.949, blue: 0.969), // #F2F2F7
-        darkMode: RGBColor(red: 0.110, green: 0.110, blue: 0.118)   // #1C1C1E
-    )
-    
-    static let tertiarySystemBackground = AppleSystemColor(
-        name: "tertiarySystemBackground",
-        lightMode: RGBColor(red: 1.0, green: 1.0, blue: 1.0), // #FFFFFF
-        darkMode: RGBColor(red: 0.173, green: 0.173, blue: 0.180)   // #2C2C2E
-    )
-    
-    
-    static let secondarySystemGroupedBackground = AppleSystemColor(
-        name: "secondarySystemGroupedBackground",
-        lightMode: RGBColor(red: 1.0, green: 1.0, blue: 1.0), // #FFFFFF
-        darkMode: RGBColor(red: 0.110, green: 0.110, blue: 0.118)   // #1C1C1E
-    )
-    
-    static let tertiarySystemGroupedBackground = AppleSystemColor(
-        name: "tertiarySystemGroupedBackground",
-        lightMode: RGBColor(red: 0.949, green: 0.949, blue: 0.969), // #F2F2F7
-        darkMode: RGBColor(red: 0.173, green: 0.173, blue: 0.180)   // #2C2C2E
-    )
-    
-    // System fill colors
-    
-    static let secondarySystemFill = AppleSystemColor(
-        name: "secondarySystemFill",
-        lightMode: RGBColor(red: 0.471, green: 0.471, blue: 0.502, alpha: 0.16), // #787880 16%
-        darkMode: RGBColor(red: 0.471, green: 0.471, blue: 0.502, alpha: 0.32)   // #787880 32%
-    )
-    
-    static let tertiarySystemFill = AppleSystemColor(
-        name: "tertiarySystemFill",
-        lightMode: RGBColor(red: 0.463, green: 0.463, blue: 0.502, alpha: 0.12), // #767680 12%
-        darkMode: RGBColor(red: 0.463, green: 0.463, blue: 0.502, alpha: 0.24)   // #767680 24%
-    )
-    
-    static let quaternarySystemFill = AppleSystemColor(
-        name: "quaternarySystemFill",
-        lightMode: RGBColor(red: 0.455, green: 0.455, blue: 0.502, alpha: 0.08), // #747480 8%
-        darkMode: RGBColor(red: 0.455, green: 0.455, blue: 0.502, alpha: 0.18)   // #747480 18%
-    )
     
 }
 
