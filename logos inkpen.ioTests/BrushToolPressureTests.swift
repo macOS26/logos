@@ -15,8 +15,8 @@ final class BrushToolPressureTests: XCTestCase {
 
     func testBrushPressureSensitivity() throws {
         // Create a test document and canvas
-        let document = Document()
-        let canvas = DrawingCanvas(document: document, appState: AppState.shared, exportManager: ExportManager())
+        let document = VectorDocument()
+        let canvas = DrawingCanvas(document: document)
 
         // Enable pressure sensitivity
         AppState.shared.pressureSensitivityEnabled = true
@@ -66,8 +66,8 @@ final class BrushToolPressureTests: XCTestCase {
 
     func testBrushSmoothness() throws {
         // Create a test document and canvas
-        let document = Document()
-        let canvas = DrawingCanvas(document: document, appState: AppState.shared, exportManager: ExportManager())
+        let document = VectorDocument()
+        let canvas = DrawingCanvas(document: document)
 
         document.currentTool = .brush
         document.currentBrushSmoothingTolerance = 1.0  // Default tolerance
@@ -129,14 +129,13 @@ final class BrushToolPressureTests: XCTestCase {
     }
 
     func testBrushThicknessVariationWithPressure() throws {
-        let document = Document()
-        let canvas = DrawingCanvas(document: document, appState: AppState.shared, exportManager: ExportManager())
+        let document = VectorDocument()
+        let canvas = DrawingCanvas(document: document)
 
         // Set up brush with maximum pressure sensitivity
         document.currentTool = .brush
         document.currentBrushPressureSensitivity = 1.0
         document.currentBrushThickness = 30.0
-        document.currentBrushTaper = 0.5
         AppState.shared.pressureSensitivityEnabled = true
 
         // Create points with extreme pressure variations

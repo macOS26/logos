@@ -82,26 +82,7 @@ struct VariableStrokeSection: View {
             }
             }
 
-            // Brush Taper
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Taper")
-                        .font(.subheadline)
-                        .foregroundColor(Color.ui.secondaryText)
-                    Spacer()
-                    Text("\(Int(document.currentBrushTaper * 100))%")
-                        .font(.subheadline)
-                        .foregroundColor(Color.ui.primaryText)
-                        .monospacedDigit()
-                }
-
-                Slider(value: Binding(
-                    get: { document.currentBrushTaper },
-                    set: { document.currentBrushTaper = $0 }
-                ), in: 0...1)
-                .controlSize(.regular)
-                .help("Amount of tapering at start and end of stroke")
-            }
+            // REMOVED: Taper is no longer used - natural pressure creates tapering
 
             // Brush Smoothness
             VStack(alignment: .leading, spacing: 8) {
@@ -165,7 +146,7 @@ struct VariableStrokeSection: View {
                     .toggleStyle(SwitchToggleStyle(tint: .purple))
                     .controlSize(.small)
                 }
-                .help("Enable advanced curve smoothing algorithms")
+                .help("Enable advanced curve smoothing algorithms for ultra-smooth strokes")
 
                 if document.advancedSmoothingEnabled {
                     // Chaikin Smoothing Iterations
@@ -184,18 +165,18 @@ struct VariableStrokeSection: View {
                         Slider(value: Binding<Double>(
                             get: { Double(document.chaikinSmoothingIterations) },
                             set: { document.chaikinSmoothingIterations = Int(round($0)) }
-                        ), in: 1...3)
+                        ), in: 0...6)
                         .controlSize(.regular)
-                        .help("More iterations create smoother curves but may lose detail (1-3)")
+                        .help("Number of smoothing passes - 0 = off, 6 = maximum smoothing")
                     }
 
-                    // Adaptive Tension Toggle
+                    // Preserve Sharp Corners Toggle
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Adaptive Tension")
+                            Text("Preserve Sharp Corners")
                                 .font(.subheadline)
                                 .foregroundColor(Color.ui.primaryText)
-                            Text("Adjust curve tension based on curvature")
+                            Text("Keep intentional sharp angles in strokes")
                                 .font(.caption)
                                 .foregroundColor(Color.ui.secondaryText)
                         }

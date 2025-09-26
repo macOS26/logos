@@ -73,7 +73,8 @@
       "Bash(do perl -i -0pe 's#    <div class=\"\"footer\"\">.*?    </div>\\n</body>#    <div id=\"\"footer-container\"\"></div>\\n    <script src=\"\"common.js\"\"></script>\\n</body>#s' \"$file\")",
       "Bash(do if [ \"$file\" != \"footer.html\" ])",
       "Bash(then echo \"=== $file ===\")",
-      "Bash(tail:*)"
+      "Bash(tail:*)",
+      "Bash(periphery scan:*)"
     ],
     "deny": [],
     "ask": []
