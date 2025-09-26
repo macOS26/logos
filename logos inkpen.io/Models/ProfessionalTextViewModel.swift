@@ -380,21 +380,30 @@ class ProfessionalTextViewModel: ObservableObject {
                 // The glyph location already includes the proper justification spacing
                 let glyphX = self.textBoxFrame.origin.x + lineRect.origin.x + glyphLocation.x
 
-                // CRITICAL FIX: For Y positioning, use actualLineRect to match NSTextView exactly
-                // NSTextView positions text from top, using lineRect for consistent positioning
-                // The baseline is at actualLineRect.origin.y + ascent
-                let glyphY = self.textBoxFrame.origin.y + actualLineRect.origin.y + fontAscent
+                // CRITICAL FIX: Match NSTextView positioning exactly
+                // NSTextView renders glyphs from the top of the frame
+                // The Y position is simply the frame origin plus the line's Y position
+                let glyphY = self.textBoxFrame.origin.y + actualLineRect.origin.y
 
                 // Enhanced debug logging for first glyph of each line
                 if glyphIndex == lineRange.location {
-                    print("=== LINE \(self.linePaths.count) POSITIONING FIX ===")
+                    print("=== LINE \(self.linePaths.count) TEXT TO PATH CONVERSION ===")
                     print("TextBox Frame: \(self.textBoxFrame)")
-                    print("Container Used Rect: \(usedRect)")
-                    print("Actual Line Rect: \(actualLineRect)")
-                    print("Actual Used Rect: \(actualUsedRect)")
-                    print("Font Metrics: ascent=\(fontAscent), descent=\(fontDescent), leading=\(fontLeading)")
-                    print("Glyph Location in Line: \(glyphLocation)")
-                    print("Calculated Position: X=\(glyphX), Y=\(glyphY)")
+                    print("  - Origin: (\(self.textBoxFrame.origin.x), \(self.textBoxFrame.origin.y))")
+                    print("  - Size: \(self.textBoxFrame.width) x \(self.textBoxFrame.height)")
+                    print("NSTextView Layout Info:")
+                    print("  - Container Used Rect: \(usedRect)")
+                    print("  - Line Rect: \(lineRect)")
+                    print("  - Actual Line Rect: \(actualLineRect)")
+                    print("  - Actual Used Rect: \(actualUsedRect)")
+                    print("Font Metrics:")
+                    print("  - Ascent: \(fontAscent)")
+                    print("  - Descent: \(fontDescent)")
+                    print("  - Leading: \(fontLeading)")
+                    print("Glyph Positioning:")
+                    print("  - Glyph Location in Line: \(glyphLocation)")
+                    print("  - Final X: \(glyphX)")
+                    print("  - Final Y: \(glyphY)")
                     print("====================================")
                 }
 
