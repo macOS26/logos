@@ -38,14 +38,9 @@ class DisabledContextMenuTextView: NSTextView {
     }
 
     override func drawInsertionPoint(in rect: NSRect, color: NSColor, turnedOn flag: Bool) {
-        // ALWAYS draw a shorter cursor to prevent text layout shifts
-        // Make it 1/3 the height so it doesn't push text around
-        var shortRect = rect
-        shortRect.size.height = rect.height * 0.3
-        shortRect.origin.y = rect.origin.y + (rect.height * 0.35) // Center it vertically
-
+        // Draw cursor with normal height but transparent when not editing
         let cursorColor = shouldShowCursor ? color : NSColor.clear
-        super.drawInsertionPoint(in: shortRect, color: cursorColor, turnedOn: flag)
+        super.drawInsertionPoint(in: rect, color: cursorColor, turnedOn: flag)
     }
 
     override func setNeedsDisplay(_ rect: NSRect, avoidAdditionalLayout flag: Bool) {

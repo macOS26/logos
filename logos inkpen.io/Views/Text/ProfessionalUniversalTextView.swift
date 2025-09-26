@@ -245,9 +245,17 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             nsView.insertionPointColor = textColor
         }
 
-        // Always ensure text view is first responder for consistent layout
-        if nsView.window != nil && nsView.window?.firstResponder != nsView {
-            nsView.window?.makeFirstResponder(nsView)
+        // Only make first responder in blue (editing) mode
+        // Gray and green modes should NOT be first responder to match layout
+        if isEditingMode {
+            if nsView.window != nil && nsView.window?.firstResponder != nsView {
+                nsView.window?.makeFirstResponder(nsView)
+            }
+        } else {
+            // In gray/green modes, resign first responder if we have it
+            if nsView.window?.firstResponder == nsView {
+                nsView.window?.makeFirstResponder(nil)
+            }
         }
         nsView.textContainerInset = NSSize(width: 0, height: 0)
         nsView.textContainer?.lineFragmentPadding = 0
