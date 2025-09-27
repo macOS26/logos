@@ -36,13 +36,14 @@ extension FileOperations {
         }
     }
     
+    @MainActor
     static func exportToJSONData(_ document: VectorDocument) throws -> Data {
         Log.info("💾 Exporting document to JSON data", category: .general)
-        
+
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
-        
+
         do {
             let jsonData = try encoder.encode(document)
             Log.info("✅ Successfully exported JSON document data", category: .fileOperations)

@@ -121,6 +121,7 @@ struct InkpenDocument: FileDocument {
         }
     }
     
+    @MainActor
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
         // Debug logging to see what content type we're getting
         Log.info("🔍 SAVE DEBUG: contentType = \(configuration.contentType.identifier)", category: .fileOperations)

@@ -45,6 +45,7 @@ struct SafeMetalView: NSViewRepresentable {
 
     func updateNSView(_ metalView: MTKView, context: Context) {
         // On-demand redraw only when SwiftUI updates propagate here
+        // This method is already called on main thread by SwiftUI
         metalView.setNeedsDisplay(metalView.bounds)
     }
 }
