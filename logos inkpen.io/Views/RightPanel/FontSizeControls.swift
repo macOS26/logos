@@ -78,10 +78,7 @@ struct FontSizeControls: View {
                 ), in: 1...288, onEditingChanged: { editing in
                     isDraggingFontSize = editing
                     if !editing {
-                        // Drag ended - ensure final value is committed
-                        if let preview = previewFontSize {
-                            updateFontSize(preview, isPreview: false)
-                        }
+                        // Drag ended - don't update here, the set closure will handle it
                         previewFontSize = nil
                         // Clear preview typography
                         if let textID = document.selectedTextIDs.first {
@@ -117,10 +114,7 @@ struct FontSizeControls: View {
                 ), in: 0...(currentFontSize / 2), onEditingChanged: { editing in
                     isDraggingLineSpacing = editing
                     if !editing {
-                        // Drag ended - ensure final value is committed
-                        if let preview = previewLineSpacing {
-                            updateLineSpacing(preview, isPreview: false)
-                        }
+                        // Drag ended - don't update here, the set closure will handle it
                         previewLineSpacing = nil
                         // Clear preview typography
                         if let textID = document.selectedTextIDs.first {
@@ -155,10 +149,7 @@ struct FontSizeControls: View {
                 ), in: (currentFontSize / 2)...(currentFontSize * 2), onEditingChanged: { editing in
                     isDraggingLineHeight = editing
                     if !editing {
-                        // Drag ended - ensure final value is committed
-                        if let preview = previewLineHeight {
-                            updateLineHeight(preview, isPreview: false)
-                        }
+                        // Drag ended - don't update here, the set closure will handle it
                         previewLineHeight = nil
                         // Clear preview typography
                         if let textID = document.selectedTextIDs.first {
