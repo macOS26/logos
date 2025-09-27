@@ -101,15 +101,15 @@ struct FontSizeControls: View {
                         .foregroundColor(.secondary)
                     Spacer()
                     let spacing = previewLineSpacing ?? currentLineSpacing
-                    Text(spacing == 0 ? "0 pt" : "\(Int(spacing)) pt")
+                    Text(spacing == 0 ? "0 pt" : String(format: "%.1f pt", spacing))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-                
+
                 Slider(value: Binding(
                     get: { previewLineSpacing ?? currentLineSpacing },
                     set: { newSpacing in
-                        let rounded = CGFloat(Int(newSpacing.rounded()))
+                        let rounded = (newSpacing * 10).rounded() / 10 // Round to 0.1 precision
                         previewLineSpacing = rounded
                         // Live update during drag AND on direct value changes
                         updateLineSpacing(rounded, isPreview: isDraggingLineSpacing)
