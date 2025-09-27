@@ -335,10 +335,10 @@ class ProfessionalTextViewModel: ObservableObject {
                 let fontDescent = abs(nsFont.descender)
                 let fontLeading = nsFont.leading
 
-                // CRITICAL FIX: Use lineRect for justified alignment positioning
-                // For justified text, we need lineRect.origin.x as the base, not actualUsedRect
-                // The glyph location already includes the proper justification spacing
-                let glyphX = self.textBoxFrame.origin.x + lineRect.origin.x + glyphLocation.x
+                // CRITICAL FIX: Use actualUsedRect for precise X positioning
+                // This ensures text starts exactly where it appears in the NSTextView
+                // The actualUsedRect.origin.x gives us the exact start position of text on this line
+                let glyphX = self.textBoxFrame.origin.x + actualUsedRect.origin.x + glyphLocation.x
 
                 // CRITICAL FIX: Match NSTextView positioning exactly
                 // glyphLocation.y already contains the baseline position within the line (e.g., 19.0)
