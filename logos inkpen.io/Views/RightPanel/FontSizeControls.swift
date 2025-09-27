@@ -72,15 +72,13 @@ struct FontSizeControls: View {
                     set: { newSize in
                         let rounded = (newSize * 10).rounded() / 10 // Round to 0.1 precision
                         previewFontSize = rounded
-                        // Only update during drag (when isDraggingFontSize is true)
-                        if isDraggingFontSize {
-                            updateFontSize(rounded, isPreview: true)
-                        }
+                        // Live update during drag AND on direct value changes
+                        updateFontSize(rounded, isPreview: isDraggingFontSize)
                     }
                 ), in: 1...288, onEditingChanged: { editing in
                     isDraggingFontSize = editing
                     if !editing {
-                        // Drag ended - commit final value once
+                        // Drag ended - ensure final value is committed
                         if let preview = previewFontSize {
                             updateFontSize(preview, isPreview: false)
                         }
@@ -113,15 +111,13 @@ struct FontSizeControls: View {
                     set: { newSpacing in
                         let rounded = (newSpacing * 10).rounded() / 10 // Round to 0.1 precision
                         previewLineSpacing = rounded
-                        // Only update during drag (when isDraggingLineSpacing is true)
-                        if isDraggingLineSpacing {
-                            updateLineSpacing(rounded, isPreview: true)
-                        }
+                        // Live update during drag AND on direct value changes
+                        updateLineSpacing(rounded, isPreview: isDraggingLineSpacing)
                     }
                 ), in: 0...(currentFontSize / 2), onEditingChanged: { editing in
                     isDraggingLineSpacing = editing
                     if !editing {
-                        // Drag ended - commit final value once
+                        // Drag ended - ensure final value is committed
                         if let preview = previewLineSpacing {
                             updateLineSpacing(preview, isPreview: false)
                         }
@@ -153,15 +149,13 @@ struct FontSizeControls: View {
                     set: { newHeight in
                         let rounded = (newHeight * 10).rounded() / 10 // Round to 0.1 precision
                         previewLineHeight = rounded
-                        // Only update during drag (when isDraggingLineHeight is true)
-                        if isDraggingLineHeight {
-                            updateLineHeight(rounded, isPreview: true)
-                        }
+                        // Live update during drag AND on direct value changes
+                        updateLineHeight(rounded, isPreview: isDraggingLineHeight)
                     }
                 ), in: (currentFontSize / 2)...(currentFontSize * 2), onEditingChanged: { editing in
                     isDraggingLineHeight = editing
                     if !editing {
-                        // Drag ended - commit final value once
+                        // Drag ended - ensure final value is committed
                         if let preview = previewLineHeight {
                             updateLineHeight(preview, isPreview: false)
                         }
