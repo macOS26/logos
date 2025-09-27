@@ -103,7 +103,15 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         }
         
         // First responder will be set in updateNSView when needed
-        
+
+        // Listen for live preview updates
+        NotificationCenter.default.addObserver(
+            context.coordinator,
+            selector: #selector(Coordinator.handleTextPreviewUpdate(_:)),
+            name: Notification.Name("TextPreviewUpdate"),
+            object: nil
+        )
+
         return textView
     }
     
@@ -389,12 +397,12 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         
         func textDidEndEditing(_ notification: Notification) {
             Log.info("✅ TEXT EDITING ENDED", category: .fileOperations)
-            
+
             // VECTOR APP OPTIMIZATION: Save to document ONLY when editing ends
             let finalText = parent.viewModel.text
             let textFrame = parent.viewModel.textBoxFrame
             let textObjectId = parent.viewModel.textObject.id
-            
+
             // Use async to avoid modifying @Published properties during view update
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
@@ -402,6 +410,66 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                 self.parent.viewModel.updateDocumentTextBounds(textFrame)
                 self.parent.isUpdatingFromTyping = false
             }
+        }
+
+        @objc func handleTextPreviewUpdate(_ notification: Notification) {
+            guard let userInfo = notification.userInfo,
+                  let textID = userInfo["textID"] as? UUID,
+                  let typography = userInfo["typography"] as? TypographyProperties,
+                  parent.viewModel.textObject.id == textID else { return }
+
+            // Get the text view from the parent's update context
+            guard let window = NSApp.windows.first,
+                  let contentView = window.contentView,
+                  let textView = findTextView(in: contentView, for: textID) else { return }
+
+            // Apply typography changes directly to NSTextView for smooth preview
+            DispatchQueue.main.async {
+                // Update font
+                let newFont = typography.nsFont
+                if textView.font != newFont {
+                    textView.font = newFont
+                }
+
+                // Update paragraph style for line spacing and height
+                let paragraphStyle = NSMutableParagraphStyle()
+                paragraphStyle.alignment = typography.alignment.nsTextAlignment
+                paragraphStyle.lineSpacing = max(0, typography.lineSpacing)
+                paragraphStyle.minimumLineHeight = typography.lineHeight
+                paragraphStyle.maximumLineHeight = typography.lineHeight
+
+                textView.defaultParagraphStyle = paragraphStyle
+
+                // Apply to existing text
+                if textView.string.count > 0 {
+                    let range = NSRange(location: 0, length: textView.string.count)
+                    textView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
+                    textView.textStorage?.addAttribute(.font, value: newFont, range: range)
+                }
+
+                // Force immediate layout update for smooth preview
+                textView.layoutManager?.ensureLayout(for: textView.textContainer!)
+                textView.needsDisplay = true
+            }
+        }
+
+        private func findTextView(in view: NSView, for textID: UUID) -> DisabledContextMenuTextView? {
+            // Check if this view is our text view
+            if let textView = view as? DisabledContextMenuTextView {
+                // We can check if it's the right one by comparing with parent's text ID
+                if parent.viewModel.textObject.id == textID {
+                    return textView
+                }
+            }
+
+            // Recursively search subviews
+            for subview in view.subviews {
+                if let found = findTextView(in: subview, for: textID) {
+                    return found
+                }
+            }
+
+            return nil
         }
     }
 }

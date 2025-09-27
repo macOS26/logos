@@ -83,6 +83,10 @@ struct FontSizeControls: View {
                             updateFontSize(preview, isPreview: false)
                         }
                         previewFontSize = nil
+                        // Clear preview typography
+                        if let textID = document.selectedTextIDs.first {
+                            document.clearTextPreviewTypography(id: textID)
+                        }
                     }
                 })
                 .controlSize(.regular)
@@ -118,6 +122,10 @@ struct FontSizeControls: View {
                             updateLineSpacing(preview, isPreview: false)
                         }
                         previewLineSpacing = nil
+                        // Clear preview typography
+                        if let textID = document.selectedTextIDs.first {
+                            document.clearTextPreviewTypography(id: textID)
+                        }
                     }
                 })
                 .controlSize(.regular)
@@ -152,6 +160,10 @@ struct FontSizeControls: View {
                             updateLineHeight(preview, isPreview: false)
                         }
                         previewLineHeight = nil
+                        // Clear preview typography
+                        if let textID = document.selectedTextIDs.first {
+                            document.clearTextPreviewTypography(id: textID)
+                        }
                     }
                 })
                 .controlSize(.regular)
@@ -164,14 +176,13 @@ struct FontSizeControls: View {
         document.fontManager.selectedFontSize = newSize
         document.fontManager.selectedLineHeight = newSize
 
-        // For preview, use lighter update mechanism
         if isPreview {
-            // Light update for preview
+            // For preview, use the lightweight preview update
             if let textID = document.selectedTextIDs.first {
                 document.updateTextFontSizePreview(id: textID, fontSize: newSize)
             }
         } else {
-            // Full update when not previewing
+            // Full update when not previewing - commit to unified objects
             document.objectWillChange.send() // Force UI update
 
             // Then update selected text if any
@@ -193,12 +204,12 @@ struct FontSizeControls: View {
         document.fontManager.selectedLineSpacing = Double(newSpacing)
 
         if isPreview {
-            // Light update for preview
+            // For preview, use the lightweight preview update
             if let textID = document.selectedTextIDs.first {
                 document.updateTextLineSpacingPreview(id: textID, lineSpacing: Double(newSpacing))
             }
         } else {
-            // Full update when not previewing
+            // Full update when not previewing - commit to unified objects
             document.objectWillChange.send() // Force UI update
 
             // Then update selected text if any
@@ -216,12 +227,12 @@ struct FontSizeControls: View {
         document.fontManager.selectedLineHeight = Double(newHeight)
 
         if isPreview {
-            // Light update for preview
+            // For preview, use the lightweight preview update
             if let textID = document.selectedTextIDs.first {
                 document.updateTextLineHeightPreview(id: textID, lineHeight: Double(newHeight))
             }
         } else {
-            // Full update when not previewing
+            // Full update when not previewing - commit to unified objects
             document.objectWillChange.send() // Force UI update
 
             // Then update selected text if any

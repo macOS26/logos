@@ -75,6 +75,10 @@ class VectorDocument: ObservableObject, Codable {
     // PERFORMANCE: O(1) object lookup cache to replace O(n) searches
     private var unifiedObjectLookupCache: [UUID: VectorObject] = [:]
     private var lookupCacheValid: Bool = false
+
+    // PREVIEW: Temporary typography storage for smooth live preview during drag
+    // This avoids updating unified objects which causes choppy updates
+    var textPreviewTypography: [UUID: TypographyProperties] = [:]
     
     // MIGRATION: Safe computed properties for gradual transition to unified-only access
     // These provide unified access while preserving backward compatibility
