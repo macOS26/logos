@@ -124,32 +124,48 @@ struct Log {
     
     // Main logging methods
     static func info(_ message: String, category: LogCategory = .general) {
+        #if !DEBUG
+        return  // Don't log in release mode
+        #endif
+
         // Check for spam suppression first
         if shouldSuppressMessage(message) {
             return
         }
-        
+
         let logger = logger(for: category)
         logger.info("\(message, privacy: .public)")
     }
     
     static func warning(_ message: String, category: LogCategory = .general) {
+        #if !DEBUG
+        return  // Don't log in release mode
+        #endif
+
         // Check for spam suppression first
         if shouldSuppressMessage(message) {
             return
         }
-        
+
         let logger = logger(for: category)
         logger.warning("\(message, privacy: .public)")
     }
     
     static func error(_ message: String, category: LogCategory = .error) {
+        #if !DEBUG
+        return  // Don't log in release mode
+        #endif
+
         // Don't suppress errors - they're important
         let logger = logger(for: category)
         logger.error("\(message, privacy: .public)")
     }
     
     static func fault(_ message: String, category: LogCategory = .error) {
+        #if !DEBUG
+        return  // Don't log in release mode
+        #endif
+
         // Don't suppress faults - they're critical
         let logger = logger(for: category)
         logger.fault("\(message, privacy: .public)")

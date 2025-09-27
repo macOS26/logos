@@ -37,13 +37,13 @@ struct ClippingMaskShapeView: View {
         // The NSView will handle zoom, offset, and transforms internally
         .onAppear {
             // Debug clipping mask rendering
-            print("🎭 RENDERING CLIPPED SHAPE: '\(clippedShape.name)' clipped by '\(maskShape.name)'")
-            print("   📊 Clipped shape bounds: \(clippedShape.bounds)")
-            print("   📊 Mask shape bounds: \(maskShape.bounds)")
-            print("   🔄 Clipped shape transform: \(clippedShape.transform)")
-            print("   🔄 Mask shape transform: \(maskShape.transform)")
-            print("   🔍 Zoom level: \(zoomLevel)")
-            print("   📍 Canvas offset: \(canvasOffset)")
+            // print("🎭 RENDERING CLIPPED SHAPE: '\(clippedShape.name)' clipped by '\(maskShape.name)'")
+            // print("   📊 Clipped shape bounds: \(clippedShape.bounds)")
+            // print("   📊 Mask shape bounds: \(maskShape.bounds)")
+            // print("   🔄 Clipped shape transform: \(clippedShape.transform)")
+            // print("   🔄 Mask shape transform: \(maskShape.transform)")
+            // print("   🔍 Zoom level: \(zoomLevel)")
+            // print("   📍 Canvas offset: \(canvasOffset)")
         }
     }
 }
@@ -132,15 +132,15 @@ class ClippingMaskNSView: NSView {
         context.clip()
         
         // Draw the clipped content (image or shape)
-        print("CLIPPING MASK: 🔍 Checking for image with ID: \(clippedShape.id)")
-        print("CLIPPING MASK: Shape name: '\(clippedShape.name)'")
-        print("CLIPPING MASK: Has embedded data: \(clippedShape.embeddedImageData != nil)")
+        // print("CLIPPING MASK: 🔍 Checking for image with ID: \(clippedShape.id)")
+        // print("CLIPPING MASK: Shape name: '\(clippedShape.name)'")
+        // print("CLIPPING MASK: Has embedded data: \(clippedShape.embeddedImageData != nil)")
 
-        if ImageContentRegistry.containsImage(clippedShape) {
-            print("CLIPPING MASK: ✅ Found image in registry for shape '\(clippedShape.name)'")
-        } else {
-            print("CLIPPING MASK: ❌ No image in registry for shape '\(clippedShape.name)'")
-        }
+        // if ImageContentRegistry.containsImage(clippedShape) {
+        //     print("CLIPPING MASK: ✅ Found image in registry for shape '\(clippedShape.name)'")
+        // } else {
+        //     print("CLIPPING MASK: ❌ No image in registry for shape '\(clippedShape.name)'")
+        // }
 
         if ImageContentRegistry.containsImage(clippedShape),
            let image = ImageContentRegistry.image(for: clippedShape.id) {

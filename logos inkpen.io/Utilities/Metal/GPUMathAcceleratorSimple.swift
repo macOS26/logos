@@ -17,7 +17,7 @@ class GPUMathAcceleratorSimple {
         self.isMetalAvailable = (device != nil && commandQueue != nil)
         
         if isMetalAvailable {
-            print("✅ GPU Math Accelerator (Simple): Ready with \(device?.name ?? "Unknown GPU")")
+            // print("✅ GPU Math Accelerator (Simple): Ready with \(device?.name ?? "Unknown GPU")")
         } else {
             Log.fileOperation("⚠️ GPU Math Accelerator (Simple): Using CPU-only mode", level: .info)
         }
