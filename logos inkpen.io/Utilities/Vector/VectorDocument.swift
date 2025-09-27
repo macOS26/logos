@@ -352,9 +352,25 @@ class VectorDocument: ObservableObject, Codable {
     
     // BRUSH SETTINGS (Variable width brush strokes)
     
-
+    // Thread-safe backing storage for encoding
+    private var _encodableSettings: DocumentSettings
+    private var _encodableLayers: [VectorLayer]
+    private var _encodableCurrentTool: DrawingTool
+    private var _encodableViewMode: ViewMode
+    private var _encodableZoomLevel: Double
+    private var _encodableCanvasOffset: CGPoint
+    private var _encodableUnifiedObjects: [VectorObject]
     
     init(settings: DocumentSettings = DocumentSettings()) {
+        // Initialize encodable backing storage first
+        self._encodableSettings = settings
+        self._encodableLayers = []
+        self._encodableCurrentTool = .brush
+        self._encodableViewMode = .color
+        self._encodableZoomLevel = 1.0
+        self._encodableCanvasOffset = .zero
+        self._encodableUnifiedObjects = []
+        
         self.settings = settings
 
         // Initialize document color defaults first
@@ -454,6 +470,20 @@ class VectorDocument: ObservableObject, Codable {
         if let hsbSwatches = settings.customHsbSwatches {
             self.customHsbSwatches = hsbSwatches
         }
+        
+        // Sync encodable storage
+        syncEncodableStorage()
+    }
+    
+    // Sync encodable storage with current values
+    private func syncEncodableStorage() {
+        _encodableSettings = settings
+        _encodableLayers = layers
+        _encodableCurrentTool = currentTool
+        _encodableViewMode = viewMode
+        _encodableZoomLevel = zoomLevel
+        _encodableCanvasOffset = canvasOffset
+        _encodableUnifiedObjects = unifiedObjects
     }
     
     // Current color swatches based on mode - computed property
@@ -622,6 +652,15 @@ class VectorDocument: ObservableObject, Codable {
         layerIndex = 0
         pasteboard = VectorLayer(name: "Pasteboard")
 
+        // Initialize encodable backing storage
+        _encodableSettings = settings
+        _encodableLayers = layers
+        _encodableCurrentTool = try container.decode(DrawingTool.self, forKey: .currentTool)
+        _encodableViewMode = try container.decodeIfPresent(ViewMode.self, forKey: .viewMode) ?? .color
+        _encodableZoomLevel = try container.decode(Double.self, forKey: .zoomLevel)
+        _encodableCanvasOffset = try container.decode(CGPoint.self, forKey: .canvasOffset)
+        _encodableUnifiedObjects = try container.decodeIfPresent([VectorObject].self, forKey: .unifiedObjects) ?? []
+
         // Initialize document color defaults and swatches arrays first
         documentColorDefaults = ColorDefaults()
         customRgbSwatches = []
@@ -635,7 +674,7 @@ class VectorDocument: ObservableObject, Codable {
         directSelectedShapeIDs = []
         isHandleScalingActive = false
 
-        currentTool = try container.decode(DrawingTool.self, forKey: .currentTool)
+        currentTool = _encodableCurrentTool
         scalingAnchor = .center
         rotationAnchor = .center
         shearAnchor = .center
@@ -643,9 +682,9 @@ class VectorDocument: ObservableObject, Codable {
         objectPositionUpdateTrigger = false
         currentDragOffset = .zero
 
-        viewMode = try container.decodeIfPresent(ViewMode.self, forKey: .viewMode) ?? .color
-        zoomLevel = try container.decode(Double.self, forKey: .zoomLevel)
-        canvasOffset = try container.decode(CGPoint.self, forKey: .canvasOffset)
+        viewMode = _encodableViewMode
+        zoomLevel = _encodableZoomLevel
+        canvasOffset = _encodableCanvasOffset
         zoomRequest = nil
 
         // Initialize all simple properties first
@@ -655,7 +694,7 @@ class VectorDocument: ObservableObject, Codable {
         fontManager = FontManager() // PROFESSIONAL FONT MANAGEMENT
 
         // CRITICAL FIX: Load unified objects array to preserve order during undo/redo
-        unifiedObjects = try container.decodeIfPresent([VectorObject].self, forKey: .unifiedObjects) ?? []
+        unifiedObjects = _encodableUnifiedObjects
 
         // Document color defaults were already loaded above from settings
 
@@ -754,32 +793,26 @@ class VectorDocument: ObservableObject, Codable {
 
     
     func encode(to encoder: Encoder) throws {
+        // Sync encodable storage before encoding
+        syncEncodableStorage()
+        
         var container = encoder.container(keyedBy: CodingKeys.self)
 
         // Update settings with current document colors and swatches before saving
-        settings.fillColor = documentColorDefaults.fillColor
-        settings.strokeColor = documentColorDefaults.strokeColor
-        settings.customRgbSwatches = customRgbSwatches.isEmpty ? nil : customRgbSwatches
-        settings.customCmykSwatches = customCmykSwatches.isEmpty ? nil : customCmykSwatches
-        settings.customHsbSwatches = customHsbSwatches.isEmpty ? nil : customHsbSwatches
+        _encodableSettings.fillColor = documentColorDefaults.fillColor
+        _encodableSettings.strokeColor = documentColorDefaults.strokeColor
+        _encodableSettings.customRgbSwatches = customRgbSwatches.isEmpty ? nil : customRgbSwatches
+        _encodableSettings.customCmykSwatches = customCmykSwatches.isEmpty ? nil : customCmykSwatches
+        _encodableSettings.customHsbSwatches = customHsbSwatches.isEmpty ? nil : customHsbSwatches
 
-        try container.encode(settings, forKey: .settings)
-        try container.encode(layers, forKey: .layers)
-
-        // Don't save default swatches - only save user-added custom swatches
-        // Swatches should be stored in UserDefaults if we want them to persist across documents
-        // For now, don't encode swatches at all to keep document files clean
-        
-        // NEVER save selection state in documents - they should not persist
-        // Don't encode selectedLayerIndex, selectedShapeIDs, or selectedTextIDs
-        
-        
-        try container.encode(currentTool, forKey: .currentTool)
-        try container.encode(viewMode, forKey: .viewMode)
-        try container.encode(zoomLevel, forKey: .zoomLevel)
-        try container.encode(canvasOffset, forKey: .canvasOffset)
-        // Default stroke/fill settings are now in UserDefaults, not saved with document
-        try container.encode(unifiedObjects, forKey: .unifiedObjects)
+        // Use thread-safe backing storage instead of @Published properties
+        try container.encode(_encodableSettings, forKey: .settings)
+        try container.encode(_encodableLayers, forKey: .layers)
+        try container.encode(_encodableCurrentTool, forKey: .currentTool)
+        try container.encode(_encodableViewMode, forKey: .viewMode)
+        try container.encode(_encodableZoomLevel, forKey: .zoomLevel)
+        try container.encode(_encodableCanvasOffset, forKey: .canvasOffset)
+        try container.encode(_encodableUnifiedObjects, forKey: .unifiedObjects)
     }
     
 

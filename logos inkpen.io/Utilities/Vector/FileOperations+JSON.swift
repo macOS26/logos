@@ -15,19 +15,14 @@ extension FileOperations {
     static func exportToJSON(_ document: VectorDocument, url: URL) throws {
         Log.info("💾 Exporting document to JSON: \(url.path)", category: .general)
         
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        encoder.dateEncodingStrategy = .iso8601
+        // Create a thread-safe copy of the data before encoding
+        let jsonData = try exportToJSONData(document)
         
         // Before encoding, ensure raster shapes carry link info by default
-        // Rule: default to linked path; embedding happens via explicit menu action elsewhere.
-        // We cannot mutate the live document here; instead, we rely on the model fields already being set
-        // during import or explicit actions. We do, however, set the base directory for path resolution.
         let baseDir = url.deletingLastPathComponent()
         ImageContentRegistry.setBaseDirectory(baseDir)
         
         do {
-            let jsonData = try encoder.encode(document)
             try jsonData.write(to: url)
             Log.info("✅ Successfully exported JSON document", category: .fileOperations)
         } catch {
@@ -36,16 +31,19 @@ extension FileOperations {
         }
     }
     
-    @MainActor
     static func exportToJSONData(_ document: VectorDocument) throws -> Data {
         Log.info("💾 Exporting document to JSON data", category: .general)
 
+        // Create a thread-safe snapshot of the document data
+        // This avoids accessing @Published properties from background thread
+        let snapshot = DocumentSnapshot(from: document)
+        
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
 
         do {
-            let jsonData = try encoder.encode(document)
+            let jsonData = try encoder.encode(snapshot)
             Log.info("✅ Successfully exported JSON document data", category: .fileOperations)
             return jsonData
         } catch {
@@ -74,10 +72,7 @@ extension FileOperations {
                     _ = ImageContentRegistry.hydrateImageIfAvailable(for: shape)
                 }
             }
-            // Trigger UI refresh after hydration
-            DispatchQueue.main.async {
-                document.objectWillChange.send()
-            }
+            // Don't trigger UI updates from background thread - let the caller handle it
             return document
         } catch {
             Log.error("❌ JSON import failed: \(error)", category: .error)
@@ -104,14 +99,39 @@ extension FileOperations {
                     _ = ImageContentRegistry.hydrateImageIfAvailable(for: shape)
                 }
             }
-            // Trigger UI refresh after hydration
-            DispatchQueue.main.async {
-                document.objectWillChange.send()
-            }
+            // Don't trigger UI updates from background thread - let the caller handle it
             return document
         } catch {
             Log.error("❌ JSON data import failed: \(error)", category: .error)
             throw VectorImportError.parsingError("Failed to import JSON: \(error.localizedDescription)", line: nil)
         }
+    }
+}
+
+// MARK: - Thread-Safe Document Snapshot
+
+/// A thread-safe snapshot of VectorDocument that can be encoded without accessing @Published properties
+private struct DocumentSnapshot: Codable {
+    let settings: DocumentSettings
+    let layers: [VectorLayer]
+    let currentTool: DrawingTool
+    let viewMode: ViewMode
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+    let unifiedObjects: [VectorObject]
+    
+    init(from document: VectorDocument) {
+        // Create deep copies of all data to avoid any reference to @Published properties
+        self.settings = document.settings
+        self.layers = document.layers
+        self.currentTool = document.currentTool
+        self.viewMode = document.viewMode
+        self.zoomLevel = document.zoomLevel
+        self.canvasOffset = document.canvasOffset
+        self.unifiedObjects = document.unifiedObjects
+    }
+    
+    enum CodingKeys: CodingKey {
+        case settings, layers, currentTool, viewMode, zoomLevel, canvasOffset, unifiedObjects
     }
 }

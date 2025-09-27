@@ -155,10 +155,9 @@ struct InkpenDocument: FileDocument {
         } else {
             // Export as JSON (default for .inkpen and .json files)
             do {
-                // Use MainActor.assumeIsolated to safely call the MainActor method
-                let data = try MainActor.assumeIsolated {
-                    try FileOperations.exportToJSONData(document)
-                }
+                // Use the thread-safe exportToJSONData method
+                let data = try FileOperations.exportToJSONData(document)
+                Log.info("✅ Successfully exported JSON document data", category: .fileOperations)
                 return FileWrapper(regularFileWithContents: data)
             } catch {
                 Log.error("❌ Failed to save JSON document: \(error)", category: .error)
