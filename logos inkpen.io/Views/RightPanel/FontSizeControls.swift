@@ -62,15 +62,15 @@ struct FontSizeControls: View {
                         .fontWeight(.semibold)
                         .foregroundColor(.secondary)
                     Spacer()
-                    Text("\(Int(previewFontSize ?? currentFontSize)) pt")
+                    Text(String(format: "%.1f pt", previewFontSize ?? currentFontSize))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-                
+
                 Slider(value: Binding(
                     get: { previewFontSize ?? currentFontSize },
                     set: { newSize in
-                        let rounded = CGFloat(Int(newSize.rounded()))
+                        let rounded = (newSize * 10).rounded() / 10 // Round to 0.1 precision
                         previewFontSize = rounded
                         // Live update during drag AND on direct value changes
                         updateFontSize(rounded, isPreview: isDraggingFontSize)
@@ -139,15 +139,15 @@ struct FontSizeControls: View {
                         .fontWeight(.semibold)
                         .foregroundColor(.secondary)
                     Spacer()
-                    Text("\(Int(previewLineHeight ?? currentLineHeight)) pt")
+                    Text(String(format: "%.1f pt", previewLineHeight ?? currentLineHeight))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-                
+
                 Slider(value: Binding(
                     get: { previewLineHeight ?? currentLineHeight },
                     set: { newHeight in
-                        let rounded = CGFloat(Int(newHeight.rounded()))
+                        let rounded = (newHeight * 10).rounded() / 10 // Round to 0.1 precision
                         previewLineHeight = rounded
                         // Live update during drag AND on direct value changes
                         updateLineHeight(rounded, isPreview: isDraggingLineHeight)
