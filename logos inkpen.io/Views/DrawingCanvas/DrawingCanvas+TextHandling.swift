@@ -15,7 +15,7 @@ extension DrawingCanvas {
     // MARK: - Font Tool Handler (Professional Core Graphics Based)
     
     func handleFontToolTap(at location: CGPoint) {
-        Log.fileOperation("🎯 FONT TOOL TAP at: \(location)", level: .info)
+        Log.fileOperation("🎯 TYPE TOOL TAP at: \(location)", level: .info)
         lastTapLocation = location
         
         // Check if tapping on existing text to edit it
@@ -146,7 +146,7 @@ extension DrawingCanvas {
             
             Log.info("✏️ STARTING EDIT MODE:", category: .general)
             Log.info("  - Text: '\(textObject.content)'", category: .general)
-            Log.info("  - Font: \(textObject.typography.fontFamily) \(textObject.typography.fontSize)pt", category: .general)
+            Log.info("  - Type: \(textObject.typography.fontFamily) \(textObject.typography.fontSize)pt", category: .general)
             Log.info("  - State: GRAY/GREEN → BLUE (editing)", category: .general)
             Log.info("  - Click location: (\(String(format: "%.1f", location.x)), \(String(format: "%.1f", location.y)))", category: .general)
             
@@ -210,7 +210,7 @@ extension DrawingCanvas {
                 // If font tool is active and this is a corner click, also start editing
                 if document.currentTool == .font && isCornerClick {
                     startEditingText(textID: textID, at: .zero)
-                    Log.fileOperation("🎯 CORNER CLICK WITH FONT TOOL: GRAY → GREEN → BLUE", level: .info)
+                    Log.fileOperation("🎯 CORNER CLICK WITH TYPE TOOL: GRAY → GREEN → BLUE", level: .info)
                 }
                 
             case .selected: // GREEN
@@ -218,17 +218,17 @@ extension DrawingCanvas {
                 if isDoubleClick {
                     // Switch to font tool
                     document.currentTool = .font
-                    Log.fileOperation("🔧 DOUBLE-CLICK: Switched to font tool", level: .info)
+                    Log.fileOperation("🔧 DOUBLE-CLICK: Switched to type tool", level: .info)
                     
                     // Start editing the text
                     startEditingText(textID: textID, at: .zero)
-                    Log.fileOperation("🎯 DOUBLE-CLICK: GREEN → BLUE (switched to font tool)", level: .info)
+                    Log.fileOperation("🎯 DOUBLE-CLICK: GREEN → BLUE (switched to type tool)", level: .info)
                 } else if document.currentTool == .font {
                     // Single click with font tool active - start editing
                     startEditingText(textID: textID, at: .zero)
                     Log.fileOperation("🎯 START EDITING: GREEN → BLUE", level: .info)
                 } else {
-                    Log.fileOperation("🎯 FONT TOOL NOT ACTIVE: Staying GREEN", level: .info)
+                    Log.fileOperation("🎯 TYPE TOOL NOT ACTIVE: Staying GREEN", level: .info)
                 }
                 
             case .editing: // BLUE
@@ -360,11 +360,11 @@ extension DrawingCanvas {
         )
         
         Log.fileOperation("🔤 TYPOGRAPHY CREATION:", level: .info)
-        Log.info("  - Font Manager Line Spacing: \(document.fontManager.selectedLineSpacing)", category: .general)
+        Log.info("  - Type Manager Line Spacing: \(document.fontManager.selectedLineSpacing)", category: .general)
         Log.info("  - Typography Line Spacing: \(typography.lineSpacing)", category: .general)
-        Log.info("  - Font Manager Line Height: \(document.fontManager.selectedLineHeight)", category: .general)
+        Log.info("  - Type Manager Line Height: \(document.fontManager.selectedLineHeight)", category: .general)
         Log.info("  - Typography Line Height: \(typography.lineHeight)", category: .general)
-        Log.info("  - Font Manager Alignment: \(document.fontManager.selectedTextAlignment)", category: .general)
+        Log.info("  - Type Manager Alignment: \(document.fontManager.selectedTextAlignment)", category: .general)
         Log.info("  - Typography Alignment: \(typography.alignment)", category: .general)
         
         // Create new text object with USER-DEFINED bounds
@@ -775,7 +775,7 @@ extension DrawingCanvas {
         // CRITICAL FIX: Don't create new text boxes when any text box is in editing mode (blue state)
         let hasEditingTextBox = document.allTextObjects.contains { $0.isEditing }
         if hasEditingTextBox {
-            Log.info("🚫 FONT TOOL: Blocked - text box is in editing mode, not creating new text box", category: .general)
+            Log.info("🚫 TYPE TOOL: Blocked - text box is in editing mode, not creating new text box", category: .general)
             Log.info("🚫 BLUE OUTLINE: Will NOT appear - this is a resize operation", category: .general)
             return
         }
@@ -786,7 +786,7 @@ extension DrawingCanvas {
         let isDraggingResizeHandle = isLocationOnTextResizeHandle(startLocation)
         
         if isDraggingResizeHandle {
-            Log.info("🚫 FONT TOOL: Blocked - drag started on resize handle, not creating new text box", category: .general)
+            Log.info("🚫 TYPE TOOL: Blocked - drag started on resize handle, not creating new text box", category: .general)
             Log.info("🚫 BLUE OUTLINE: Will NOT appear - this is a resize operation", category: .general)
             return
         }
@@ -794,7 +794,7 @@ extension DrawingCanvas {
         // CRITICAL FIX: Also check if we're dragging ON TOP of an existing text box
         // This prevents creating overlapping text boxes
         if let existingTextID = findTextAt(location: startLocation) {
-            Log.info("🚫 FONT TOOL: Blocked - drag started on existing text box \(existingTextID.uuidString.prefix(8))", category: .general)
+            Log.info("🚫 TYPE TOOL: Blocked - drag started on existing text box \(existingTextID.uuidString.prefix(8))", category: .general)
             Log.info("🚫 BLUE OUTLINE: Will NOT appear - would overlap existing text", category: .general)
             return
         }
@@ -803,7 +803,7 @@ extension DrawingCanvas {
         
         if !isDrawing {
             // START DRAWING: Initialize shape creation state
-            Log.fileOperation("🎨 FONT TOOL: Starting text box creation (like rectangle tool)", level: .info)
+            Log.fileOperation("🎨 TYPE TOOL: Starting text box creation (like rectangle tool)", level: .info)
             Log.info("🔵 BLUE OUTLINE: Will appear - creating new text box", category: .general)
             isDrawing = true
             shapeDragStart = startLocation
@@ -838,7 +838,7 @@ extension DrawingCanvas {
         // CRITICAL FIX: Don't create new text boxes when any text box is in editing mode (blue state)
         let hasEditingTextBox = document.allTextObjects.contains { $0.isEditing }
         if hasEditingTextBox {
-            Log.info("🚫 FONT TOOL: Blocked - text box is in editing mode, not creating new text box", category: .general)
+            Log.info("🚫 TYPE TOOL: Blocked - text box is in editing mode, not creating new text box", category: .general)
             return
         }
         

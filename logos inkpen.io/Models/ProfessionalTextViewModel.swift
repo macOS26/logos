@@ -331,9 +331,9 @@ class ProfessionalTextViewModel: ObservableObject {
                 actualUsedRect = layoutManager.lineFragmentUsedRect(forGlyphAt: glyphIndex, effectiveRange: &effectiveRange, withoutAdditionalLayout: true)
 
                 // Get the typographic bounds for accurate baseline positioning
-                let fontAscent = nsFont.ascender
-                let fontDescent = abs(nsFont.descender)
-                let fontLeading = nsFont.leading
+                let textAscent = nsFont.ascender
+                let textDescent = abs(nsFont.descender)
+                let textLeading = nsFont.leading
 
                 // CRITICAL FIX: Handle X positioning based on text alignment
                 // Different alignments need different approaches for accurate positioning
@@ -369,10 +369,10 @@ class ProfessionalTextViewModel: ObservableObject {
                     print("  - Line Rect: \(lineRect)")
                     print("  - Actual Line Rect: \(actualLineRect)")
                     print("  - Actual Used Rect: \(actualUsedRect)")
-                    print("Font Metrics:")
-                    print("  - Ascent: \(fontAscent)")
-                    print("  - Descent: \(fontDescent)")
-                    print("  - Leading: \(fontLeading)")
+                    print("Type Metrics:")
+                    print("  - Ascent: \(textAscent)")
+                    print("  - Descent: \(textDescent)")
+                    print("  - Leading: \(textLeading)")
                     print("Glyph Positioning:")
                     print("  - Glyph Location in Line: \(glyphLocation)")
                     print("  - Final X: \(glyphX)")
@@ -552,7 +552,7 @@ class ProfessionalTextViewModel: ObservableObject {
                 // If font tool is active and this is a corner click, also start editing
                 if document.currentTool == .font && isCornerClick {
                     startEditingText(textID: textID)
-                    Log.fileOperation("🎯 CORNER CLICK WITH FONT TOOL: GRAY → GREEN → BLUE", level: .info)
+                    Log.fileOperation("🎯 CORNER CLICK WITH TYPE TOOL: GRAY → GREEN → BLUE", level: .info)
                 }
 
             case .selected: // GREEN
@@ -560,17 +560,17 @@ class ProfessionalTextViewModel: ObservableObject {
                 if isDoubleClick {
                     // Switch to font tool
                     document.currentTool = .font
-                    Log.fileOperation("🔧 DOUBLE-CLICK: Switched to font tool", level: .info)
+                    Log.fileOperation("🔧 DOUBLE-CLICK: Switched to type tool", level: .info)
 
                     // Start editing the text
                     startEditingText(textID: textID)
-                    Log.fileOperation("🎯 DOUBLE-CLICK: GREEN → BLUE (switched to font tool)", level: .info)
+                    Log.fileOperation("🎯 DOUBLE-CLICK: GREEN → BLUE (switched to type tool)", level: .info)
                 } else if document.currentTool == .font {
                     // Single click with font tool active - start editing
                     startEditingText(textID: textID)
                     Log.fileOperation("🎯 START EDITING: GREEN → BLUE", level: .info)
                 } else {
-                    Log.fileOperation("🎯 FONT TOOL NOT ACTIVE: Staying GREEN", level: .info)
+                    Log.fileOperation("🎯 TYPE TOOL NOT ACTIVE: Staying GREEN", level: .info)
                 }
 
             case .editing: // BLUE
@@ -619,7 +619,7 @@ class ProfessionalTextViewModel: ObservableObject {
 
             Log.info("✏️ STARTING EDIT MODE:", category: .general)
             Log.info("  - Text: '\(textObject.content)'", category: .general)
-            Log.info("  - Font: \(textObject.typography.fontFamily) \(textObject.typography.fontSize)pt", category: .general)
+            Log.info("  - Type: \(textObject.typography.fontFamily) \(textObject.typography.fontSize)pt", category: .general)
             Log.info("  - State: GRAY/GREEN → BLUE (editing)", category: .general)
             Log.info("  - Click location: (\(String(format: "%.1f", location.x)), \(String(format: "%.1f", location.y)))", category: .general)
 

@@ -19,7 +19,7 @@ extension DrawingCanvas {
         // CRITICAL: Stop all text editing when switching away from font tool or to arrow tool
         // This ensures text boxes don't get stuck in editing mode
         if (previousTool == .font || oldTool == .font) && newTool != .font {
-            Log.fileOperation("🔧 TOOL SWITCH: Exiting text editing mode when switching away from font tool", level: .info)
+            Log.fileOperation("🔧 TOOL SWITCH: Exiting text editing mode when switching away from type tool", level: .info)
             stopAllTextEditing()
         } else if newTool == .selection {
             // Also stop text editing when switching to arrow tool from any tool
@@ -43,12 +43,12 @@ extension DrawingCanvas {
         // CRITICAL FIX: Preserve text box font settings when switching tools
         // This prevents font settings from changing when switching between font tool and arrow tool
         if previousTool == .font && newTool == .selection {
-            Log.fileOperation("🔧 TOOL SWITCH: Font → Arrow: Preserving all text box font settings", level: .info)
+            Log.fileOperation("🔧 TOOL SWITCH: Type → Arrow: Preserving all text box type settings", level: .info)
             // Font settings remain unchanged per text box UUID
         }
 
         if previousTool == .selection && newTool == .font {
-            Log.fileOperation("🔧 TOOL SWITCH: Arrow → Font: Preserving all text box font settings", level: .info)
+            Log.fileOperation("🔧 TOOL SWITCH: Arrow → Type: Preserving all text box type settings", level: .info)
             // Keep selected text boxes selected (GREEN stays GREEN)
             // Font settings remain unchanged per text box UUID
         }
@@ -106,7 +106,7 @@ extension DrawingCanvas {
         currentSelectionRange = NSRange(location: 0, length: 0)
 
         Log.info("🎯 TEXT STATE: \(textID.uuidString.prefix(8)) → GREEN (Selected, not editing)", category: .selection)
-        Log.info("🔧 FONT SETTINGS: Preserved all typography properties for this text box", category: .selection)
+        Log.info("🔧 TYPE SETTINGS: Preserved all typography properties for this text box", category: .selection)
     }
     
     // MARK: - Selection Conversion Between Tools

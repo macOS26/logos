@@ -39,7 +39,7 @@ extension VectorDocument {
                 objectWillChange.send()
 
                 // Log the change
-                Log.fileOperation("🎯 FONT DIRECT UPDATE: \(oldFont) → \(fontFamily) for ID: \(id.uuidString.prefix(8))", level: .info)
+                Log.fileOperation("🎯 TYPE DIRECT UPDATE: \(oldFont) → \(fontFamily) for ID: \(id.uuidString.prefix(8))", level: .info)
             }
         }
     }
@@ -118,7 +118,7 @@ extension VectorDocument {
         // LOG INITIAL STATE
         if let textObject = findText(by: id) {
             Log.fileOperation("📝 BEFORE COLOR CHANGE - Text Typography:", level: .info)
-            Log.fileOperation("  - Font: \(textObject.typography.fontFamily)", level: .info)
+            Log.fileOperation("  - Type: \(textObject.typography.fontFamily)", level: .info)
             Log.fileOperation("  - Size: \(textObject.typography.fontSize)", level: .info)
             Log.fileOperation("  - Weight: \(String(describing: textObject.typography.fontWeight))", level: .info)
             Log.fileOperation("  - Style: \(String(describing: textObject.typography.fontStyle))", level: .info)
@@ -139,7 +139,7 @@ extension VectorDocument {
             if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
                 Log.fileOperation("📊 BEFORE - Unified Shape Typography:", level: .info)
                 if let typo = shape.typography {
-                    Log.fileOperation("  - Font: \(typo.fontFamily)", level: .info)
+                    Log.fileOperation("  - Type: \(typo.fontFamily)", level: .info)
                     Log.fileOperation("  - Size: \(typo.fontSize)", level: .info)
                     Log.fileOperation("  - Weight: \(String(describing: typo.fontWeight))", level: .info)
                     Log.fileOperation("  - Style: \(String(describing: typo.fontStyle))", level: .info)
@@ -160,7 +160,7 @@ extension VectorDocument {
                         shape.typography = textObject.typography
                         shape.typography?.fillColor = color
                         shape.typography?.fillOpacity = defaultFillOpacity
-                        Log.fileOperation("✅ Restored typography with font: \(textObject.typography.fontFamily)", level: .info)
+                        Log.fileOperation("✅ Restored typography with type: \(textObject.typography.fontFamily)", level: .info)
                     } else {
                         Log.fileOperation("❌ COULD NOT RESTORE TYPOGRAPHY - NO TEXT OBJECT!", level: .error)
                     }
@@ -168,7 +168,7 @@ extension VectorDocument {
                 
                 Log.fileOperation("📊 AFTER COLOR UPDATE - Shape Typography:", level: .info)
                 if let typo = shape.typography {
-                    Log.fileOperation("  - Font: \(typo.fontFamily)", level: .info)
+                    Log.fileOperation("  - Type: \(typo.fontFamily)", level: .info)
                     Log.fileOperation("  - Size: \(typo.fontSize)", level: .info)
                     Log.fileOperation("  - Weight: \(String(describing: typo.fontWeight))", level: .info)
                     Log.fileOperation("  - Style: \(String(describing: typo.fontStyle))", level: .info)
@@ -206,7 +206,7 @@ extension VectorDocument {
     /// This prevents typography from being reset when color changes
     func updateTextTypographyInUnified(id: UUID, typography: TypographyProperties) {
         Log.fileOperation("🔍 updateTextTypographyInUnified START - id: \(id)", level: .info)
-        Log.fileOperation("  - New Font: \(typography.fontFamily) \(typography.fontSize)pt", level: .info)
+        Log.fileOperation("  - New Type: \(typography.fontFamily) \(typography.fontSize)pt", level: .info)
 
         // Update in unified objects array
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
@@ -220,13 +220,13 @@ extension VectorDocument {
                 // The user is explicitly requesting an update, so do it!
 
                 Log.fileOperation("📊 BEFORE - Unified Shape Typography:", level: .info)
-                Log.fileOperation("  - Old Font: \(shape.typography?.fontFamily ?? "nil") \(shape.typography?.fontSize ?? 0)pt", level: .info)
+                Log.fileOperation("  - Old Type: \(shape.typography?.fontFamily ?? "nil") \(shape.typography?.fontSize ?? 0)pt", level: .info)
 
                 // Update the typography
                 shape.typography = typography
 
                 Log.fileOperation("📊 AFTER - Unified Shape Typography:", level: .info)
-                Log.fileOperation("  - New Font: \(shape.typography?.fontFamily ?? "nil") \(shape.typography?.fontSize ?? 0)pt", level: .info)
+                Log.fileOperation("  - New Type: \(shape.typography?.fontFamily ?? "nil") \(shape.typography?.fontSize ?? 0)pt", level: .info)
 
                 // Update unified objects - must recreate due to value semantics
                 // TODO: Consider making VectorShape a class for better performance
@@ -256,7 +256,7 @@ extension VectorDocument {
         // LOG INITIAL STATE
         if let textObject = findText(by: id) {
             Log.fileOperation("📝 BEFORE STROKE COLOR CHANGE - Text Typography:", level: .info)
-            Log.fileOperation("  - Font: \(textObject.typography.fontFamily)", level: .info)
+            Log.fileOperation("  - Type: \(textObject.typography.fontFamily)", level: .info)
             Log.fileOperation("  - Size: \(textObject.typography.fontSize)", level: .info)
             Log.fileOperation("  - Weight: \(String(describing: textObject.typography.fontWeight))", level: .info)
             Log.fileOperation("  - Style: \(String(describing: textObject.typography.fontStyle))", level: .info)
@@ -278,7 +278,7 @@ extension VectorDocument {
             if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
                 Log.fileOperation("📊 BEFORE - Unified Shape Typography:", level: .info)
                 if let typo = shape.typography {
-                    Log.fileOperation("  - Font: \(typo.fontFamily)", level: .info)
+                    Log.fileOperation("  - Type: \(typo.fontFamily)", level: .info)
                     Log.fileOperation("  - Size: \(typo.fontSize)", level: .info)
                     Log.fileOperation("  - Weight: \(String(describing: typo.fontWeight))", level: .info)
                     Log.fileOperation("  - Style: \(String(describing: typo.fontStyle))", level: .info)
@@ -300,7 +300,7 @@ extension VectorDocument {
                         shape.typography = textObject.typography
                         shape.typography?.hasStroke = true
                         shape.typography?.strokeColor = color
-                        Log.fileOperation("✅ Restored typography with font: \(textObject.typography.fontFamily)", level: .info)
+                        Log.fileOperation("✅ Restored typography with type: \(textObject.typography.fontFamily)", level: .info)
                     } else {
                         Log.fileOperation("❌ COULD NOT RESTORE TYPOGRAPHY - NO TEXT OBJECT!", level: .error)
                     }
@@ -308,7 +308,7 @@ extension VectorDocument {
                 
                 Log.fileOperation("📊 AFTER STROKE COLOR UPDATE - Shape Typography:", level: .info)
                 if let typo = shape.typography {
-                    Log.fileOperation("  - Font: \(typo.fontFamily)", level: .info)
+                    Log.fileOperation("  - Type: \(typo.fontFamily)", level: .info)
                     Log.fileOperation("  - Size: \(typo.fontSize)", level: .info)
                     Log.fileOperation("  - Weight: \(String(describing: typo.fontWeight))", level: .info)
                     Log.fileOperation("  - Style: \(String(describing: typo.fontStyle))", level: .info)

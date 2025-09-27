@@ -160,8 +160,8 @@ struct FontPanel: View {
             // NO CACHE - always use fresh data
         }
         .onChange(of: document.currentTool) { oldTool, newTool in
-            Log.fileOperation("🔧 FONT PANEL: Tool changed from \(oldTool.rawValue) to \(newTool.rawValue)", level: .info)
-            Log.info("🔒 PROTECTION: Font settings remain isolated per text box UUID - no syncing", category: .general)
+            Log.fileOperation("🔧 TYPE PANEL: Tool changed from \(oldTool.rawValue) to \(newTool.rawValue)", level: .info)
+            Log.info("🔒 PROTECTION: Type settings remain isolated per text box UUID - no syncing", category: .general)
             
             if let editingText = editingText {
                 Log.fileOperation("🎯 EDITING UUID: \(editingText.id.uuidString.prefix(8)) - BLUE state maintained", level: .info)
@@ -178,21 +178,21 @@ struct FontPanel: View {
             let addedIDs = newIDs.subtracting(oldIDs)
 
             for removedID in removedIDs {
-                Log.fileOperation("🎯 TEXT DESELECTED: \(removedID.uuidString.prefix(8)) - font settings preserved", level: .info)
+                Log.fileOperation("🎯 TEXT DESELECTED: \(removedID.uuidString.prefix(8)) - type settings preserved", level: .info)
             }
             for addedID in addedIDs {
-                Log.fileOperation("🎯 TEXT SELECTED: \(addedID.uuidString.prefix(8)) - loading unique font settings", level: .info)
+                Log.fileOperation("🎯 TEXT SELECTED: \(addedID.uuidString.prefix(8)) - loading unique type settings", level: .info)
             }
 
             if let newSelectedText = document.allTextObjects.first(where: { newIDs.contains($0.id) }) {
                 if newSelectedText.id != lastLoggedSelection {
                     lastLoggedSelection = newSelectedText.id
-                    Log.fileOperation("🎯 FONT PANEL: Found selected text - UUID: \(newSelectedText.id.uuidString.prefix(8)), Line Spacing: \(newSelectedText.typography.lineSpacing)", level: .info)
+                    Log.fileOperation("🎯 TYPE PANEL: Found selected text - UUID: \(newSelectedText.id.uuidString.prefix(8)), Line Spacing: \(newSelectedText.typography.lineSpacing)", level: .info)
                 }
             } else {
                 if lastLoggedSelection != nil {
                     lastLoggedSelection = nil
-                    Log.fileOperation("🎯 FONT PANEL: No selected text found - selectedTextIDs count: \(document.selectedTextIDs.count)", level: .info)
+                    Log.fileOperation("🎯 TYPE PANEL: No selected text found - selectedTextIDs count: \(document.selectedTextIDs.count)", level: .info)
                 }
             }
         }
@@ -202,12 +202,12 @@ struct FontPanel: View {
             if let newEditingText = freshEditingText {
                 if newEditingText.id != lastLoggedEditing {
                     lastLoggedEditing = newEditingText.id
-                    Log.fileOperation("🎯 FONT PANEL: Found editing text - UUID: \(newEditingText.id.uuidString.prefix(8))", level: .info)
+                    Log.fileOperation("🎯 TYPE PANEL: Found editing text - UUID: \(newEditingText.id.uuidString.prefix(8))", level: .info)
                 }
             } else {
                 if lastLoggedEditing != nil {
                     lastLoggedEditing = nil
-                    Log.fileOperation("🎯 FONT PANEL: No editing text found", level: .info)
+                    Log.fileOperation("🎯 TYPE PANEL: No editing text found", level: .info)
                 }
             }
         }

@@ -174,14 +174,14 @@ struct ProfessionalTextCanvas: View {
         // FIXED: Prioritize editing state correctly
         if currentTextObject.isEditing {
             textBoxState = .blue
-            Log.info("  → BLUE (editing mode) - isEditing=\(currentTextObject.isEditing), fontTool=\(isTextToolActive)", category: .general)
+            Log.info("  → BLUE (editing mode) - isEditing=\(currentTextObject.isEditing), typeTool=\(isTextToolActive)", category: .general)
         } else if hasTextViewFocus && isTextToolActive {
             textBoxState = .blue
-            Log.info("  → BLUE (NSTextView focus) - focus=\(hasTextViewFocus), fontTool=\(isTextToolActive)", category: .general)
+            Log.info("  → BLUE (NSTextView focus) - focus=\(hasTextViewFocus), typeTool=\(isTextToolActive)", category: .general)
         } else if isThisTextSelected && isTextToolActive {
             // FIXED: When text is selected AND font tool is active, go to BLUE (editing) mode, not GREEN!
             textBoxState = .blue
-            Log.info("  → BLUE (selected with font tool active) - selected=\(isThisTextSelected), fontTool=\(isTextToolActive)", category: .general)
+            Log.info("  → BLUE (selected with type tool active) - selected=\(isThisTextSelected), typeTool=\(isTextToolActive)", category: .general)
         } else if isThisTextSelected {
             textBoxState = .green
             Log.info("  → GREEN (selected) - selected=\(isThisTextSelected)", category: .general)

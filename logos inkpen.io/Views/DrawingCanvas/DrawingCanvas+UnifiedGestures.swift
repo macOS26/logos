@@ -48,7 +48,7 @@ extension DrawingCanvas {
         if let textID = findTextAt(location: canvasLocation) {
             // 1. Switch to Font tool (Aa)
             document.currentTool = .font
-            Log.info("🎯 DOUBLE CLICK: Switched to Font tool", category: .selection)
+            Log.info("🎯 DOUBLE CLICK: Switched to Type tool", category: .selection)
             
             // 2. Turn text box to blue edit mode
             startEditingText(textID: textID, at: canvasLocation)
@@ -162,7 +162,7 @@ extension DrawingCanvas {
             if let existingTextID = findTextAt(location: canvasLocation) {
                 startEditingText(textID: existingTextID, at: canvasLocation)
             } else {
-                Log.fileOperation("📝 FONT TOOL: Tap on empty area - drag to create new text box (like rectangle tool)", level: .info)
+                Log.fileOperation("📝 TYPE TOOL: Tap on empty area - drag to create new text box (like rectangle tool)", level: .info)
             }
             // Keep background tap handling for font tool only (this makes sense for font tool)
             handleAggressiveBackgroundTap(at: canvasLocation)

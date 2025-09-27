@@ -49,7 +49,7 @@ extension SVGParser {
             }
         }
         // Nothing matched; fall back to Helvetica Neue
-        Log.fileOperation("⚠️ Font not found in system: \(raw). Falling back to Helvetica Neue.", level: .info)
+        Log.fileOperation("⚠️ Type not found in system: \(raw). Falling back to Helvetica Neue.", level: .info)
         return "Helvetica Neue"
     }
     
