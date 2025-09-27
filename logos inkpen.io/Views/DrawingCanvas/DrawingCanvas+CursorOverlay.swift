@@ -200,7 +200,9 @@ private final class CursorOverlayNSView: NSView {
                 self.applyForcedCursor()
             }
         }
-        RunLoop.main.add(cursorLockTimer!, forMode: .common)
+        if let timer = cursorLockTimer {
+            RunLoop.main.add(timer, forMode: .common)
+        }
     }
 
     private func invalidateCursorLock() {

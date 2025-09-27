@@ -67,8 +67,7 @@ private func bezierPoint(t: Double, p0: CGPoint, p1: CGPoint, p2: CGPoint, p3: C
 func detectStraightLine(points: [CGPoint]) -> Bool {
     guard points.count >= 3 else { return true }
 
-    let first = points.first!
-    let last = points.last!
+    guard let first = points.first, let last = points.last else { return false }
 
     // Calculate the expected line
     let dx = last.x - first.x

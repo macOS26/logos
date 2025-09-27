@@ -357,7 +357,9 @@ struct EnvelopeHandles: View {
                 document.warpBounds[shape.id] = newBounds
                 document.warpEnvelopeCorners[shape.id] = newOriginalCorners
             } else {
-                print("✅ KEEPING EXISTING WARP BOUNDS (4-point shape): \(document.warpBounds[shape.id]!)")
+                if let warpBounds = document.warpBounds[shape.id] {
+                    print("✅ KEEPING EXISTING WARP BOUNDS (4-point shape): \(warpBounds)")
+                }
             }
         } else {
             let bounds = shape.bounds
@@ -376,7 +378,9 @@ struct EnvelopeHandles: View {
                 document.warpBounds[shape.id] = bounds
                 document.warpEnvelopeCorners[shape.id] = newOriginalCorners
             } else {
-                print("✅ KEEPING EXISTING WARP BOUNDS (regular shape): \(document.warpBounds[shape.id]!)")
+                if let warpBounds = document.warpBounds[shape.id] {
+                    print("✅ KEEPING EXISTING WARP BOUNDS (regular shape): \(warpBounds)")
+                }
             }
         }
         
@@ -649,7 +653,9 @@ struct EnvelopeHandles: View {
             let maxY = warpedCorners.map { $0.y }.max() ?? 0
             document.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
             document.warpEnvelopeCorners[shape.id] = warpedCorners
-            print("📍 WARP FINISH: Stored final bounds: \(document.warpBounds[shape.id]!)")
+            if let warpBounds = document.warpBounds[shape.id] {
+                print("📍 WARP FINISH: Stored final bounds: \(warpBounds)")
+            }
         }
         
         // ENVELOPE DRAG FINISHED: Minimal logging for performance
@@ -816,7 +822,9 @@ struct EnvelopeHandles: View {
             let maxY = warpedCorners.map { $0.y }.max() ?? 0
             document.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
             document.warpEnvelopeCorners[shape.id] = warpedCorners
-            print("📍 WARP COMMIT: Stored final bounds: \(document.warpBounds[shape.id]!)")
+            if let warpBounds = document.warpBounds[shape.id] {
+                print("📍 WARP COMMIT: Stored final bounds: \(warpBounds)")
+            }
         }
 
         // The shape has already been updated in real-time during editing

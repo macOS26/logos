@@ -764,7 +764,10 @@ extension DrawingCanvas {
         let rightEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: rightEdgePoints.reversed()) // Reverse for proper winding
         
         // Combine into a filled shape with smooth bezier curves
-        return createSmoothBrushOutline(leftEdgePath: leftEdgePath, rightEdgePath: rightEdgePath, startPoint: centerPoints.first!, endPoint: centerPoints.last!)
+        guard let firstPoint = centerPoints.first, let lastPoint = centerPoints.last else {
+            return VectorPath(elements: [])
+        }
+        return createSmoothBrushOutline(leftEdgePath: leftEdgePath, rightEdgePath: rightEdgePath, startPoint: firstPoint, endPoint: lastPoint)
     }
     
     // MARK: - Pressure Interpolation
@@ -814,8 +817,9 @@ extension DrawingCanvas {
         guard points.count >= 2 else { return false }
 
         // Calculate the direct line from start to end
-        let start = points.first!
-        let end = points.last!
+        guard let start = points.first, let end = points.last else {
+            return false
+        }
         let dx = end.x - start.x
         let dy = end.y - start.y
         let lineLength = sqrt(dx * dx + dy * dy)
@@ -922,7 +926,10 @@ extension DrawingCanvas {
         let rightEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: rightEdgePoints.reversed()) // Reverse for proper winding
         
         // Combine into a filled shape with smooth bezier curves
-        return createSmoothBrushOutline(leftEdgePath: leftEdgePath, rightEdgePath: rightEdgePath, startPoint: centerPoints.first!, endPoint: centerPoints.last!)
+        guard let firstPoint = centerPoints.first, let lastPoint = centerPoints.last else {
+            return VectorPath(elements: [])
+        }
+        return createSmoothBrushOutline(leftEdgePath: leftEdgePath, rightEdgePath: rightEdgePath, startPoint: firstPoint, endPoint: lastPoint)
     }
     
     private func generateOffsetPoints(centerPoints: [(location: CGPoint, thickness: Double)], isLeftSide: Bool) -> [CGPoint] {
@@ -1003,8 +1010,8 @@ extension DrawingCanvas {
         }
         
         // Connect to right edge at the end
-        if !rightEdge.isEmpty {
-            elements.append(.line(to: VectorPoint(rightEdge.last!)))
+        if let lastRightEdge = rightEdge.last {
+            elements.append(.line(to: VectorPoint(lastRightEdge)))
         }
         
         // Draw back along right edge (in reverse)

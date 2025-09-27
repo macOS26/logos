@@ -513,10 +513,10 @@ class SVGParser: NSObject, XMLParserDelegate {
                     let clipId = String(idPart[..<endRange.lowerBound])
                     // CRITICAL: Validate the clip path exists before setting pendingClipPathId
                     // This prevents race conditions where groups reference non-existent clip paths
-                    if clipPathDefinitions[clipId] != nil {
+                    if let clipPath = clipPathDefinitions[clipId] {
                         // Store this for elements within the group
                         pendingClipPathId = clipId
-                        Log.info("📎 Group will apply existing clip path: \(clipId) with \(clipPathDefinitions[clipId]!.elements.count) elements", category: .fileOperations)
+                        Log.info("📎 Group will apply existing clip path: \(clipId) with \(clipPath.elements.count) elements", category: .fileOperations)
                     } else {
                         // Clip path not yet defined, store for later resolution
                         // This can happen if clipPath is defined after the group in the SVG

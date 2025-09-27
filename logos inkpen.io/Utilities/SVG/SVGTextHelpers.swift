@@ -119,7 +119,7 @@ extension SVGParser {
         // Check center alignment pattern: shorter lines have larger x offsets
         if sortedByLength.count >= 2 {
             let longestLine = sortedByLength[0]
-            let shortestLine = sortedByLength.last!
+            guard let shortestLine = sortedByLength.last else { return .left }
             
             // Center alignment: shorter text has larger x offset
             if shortestLine.x > longestLine.x {

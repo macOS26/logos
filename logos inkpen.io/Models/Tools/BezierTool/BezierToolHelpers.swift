@@ -88,7 +88,7 @@ extension DrawingCanvas {
         
         // Apply angle constraint if Shift is pressed and we're adding to existing path
         if isShiftPressed && isBezierDrawing && !bezierPoints.isEmpty {
-            let lastPoint = bezierPoints.last!
+            guard let lastPoint = bezierPoints.last else { return }
             let referencePoint = CGPoint(x: lastPoint.x, y: lastPoint.y)
             constrainedLocation = constrainToAngle(from: referencePoint, to: location)
         }
@@ -506,14 +506,20 @@ extension DrawingCanvas {
                 let point = bezierPoints[activeIndex]
                 referencePoint = CGPoint(x: point.x, y: point.y)
             } else if !bezierPoints.isEmpty {
-                let lastPoint = bezierPoints.last!
-                referencePoint = CGPoint(x: lastPoint.x, y: lastPoint.y)
+                if let lastPoint = bezierPoints.last {
+                    referencePoint = CGPoint(x: lastPoint.x, y: lastPoint.y)
+                } else {
+                    referencePoint = currentLocation
+                }
             } else {
                 referencePoint = startLocation
             }
         } else {
-            let lastPoint = bezierPoints.last!
-            referencePoint = CGPoint(x: lastPoint.x, y: lastPoint.y)
+            if let lastPoint = bezierPoints.last {
+                referencePoint = CGPoint(x: lastPoint.x, y: lastPoint.y)
+            } else {
+                referencePoint = currentLocation
+            }
         }
         return constrainToAngle(from: referencePoint, to: currentLocation)
     }

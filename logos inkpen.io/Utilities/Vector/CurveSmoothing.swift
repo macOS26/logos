@@ -81,7 +81,9 @@ struct CurveSmoothing {
         }
         
         // Keep last point
-        newPoints.append(points.last!)
+        if let lastPoint = points.last {
+            newPoints.append(lastPoint)
+        }
         
         return newPoints
     }

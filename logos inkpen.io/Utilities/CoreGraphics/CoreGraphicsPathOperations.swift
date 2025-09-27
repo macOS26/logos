@@ -654,7 +654,10 @@ class CoreGraphicsPathOperations {
         
         Log.info("🔨 PROFESSIONAL CROP (CoreGraphics): Processing \(paths.count) paths with curve preservation", category: .general)
         
-        let cropShape = paths.last!  // Top shape is the crop shape
+        guard let cropShape = paths.last else {
+            Log.error("❌ CROP: No crop shape found", category: .general)
+            return []
+        }  // Top shape is the crop shape
         let shapesToCrop = Array(paths.dropLast())
         let cropShapeIndex = paths.count - 1
         

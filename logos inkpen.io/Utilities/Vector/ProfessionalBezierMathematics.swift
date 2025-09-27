@@ -426,8 +426,7 @@ case independent = "Independent"  // Handles move independently (professional co
         
         // For now, implement a simple approximation
         // Professional implementation would use least squares fitting
-        let p0 = points.first!
-        let p3 = points.last!
+        guard let p0 = points.first, let p3 = points.last else { return nil }
         
         // Estimate control points based on point distribution
         let midIndex1 = points.count / 3

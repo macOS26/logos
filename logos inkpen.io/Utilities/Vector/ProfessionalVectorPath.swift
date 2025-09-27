@@ -379,9 +379,9 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
         }
         
         // Handle closing segment for closed paths
-        if isClosed {
-            let lastPoint = points.last!
-            let firstPoint = points.first!
+        if isClosed,
+           let lastPoint = points.last,
+           let firstPoint = points.first {
             
             if let lastOutgoing = lastPoint.outgoingHandle,
                let firstIncoming = firstPoint.incomingHandle {

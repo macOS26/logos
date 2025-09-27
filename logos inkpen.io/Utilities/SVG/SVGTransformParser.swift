@@ -17,7 +17,10 @@ extension SVGParser {
         var transform = CGAffineTransform.identity
         
         // Split the transform string into individual transform functions
-        let transformRegex = try! NSRegularExpression(pattern: "(\\w+)\\s*\\(([^)]*)\\)", options: [])
+        guard let transformRegex = try? NSRegularExpression(pattern: "(\\w+)\\s*\\(([^)]*)\\)", options: []) else {
+            Log.fileOperation("Failed to create regex for transform parsing", level: .info)
+            return CGAffineTransform.identity
+        }
         let matches = transformRegex.matches(in: transformString, options: [], range: NSRange(location: 0, length: transformString.count))
         
         // Process transforms in order (they should be applied left to right)

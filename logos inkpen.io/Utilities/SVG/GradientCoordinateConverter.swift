@@ -117,7 +117,10 @@ struct GradientCoordinateConverter {
         // Simple regex-based parsing for radial gradients
         let gradientPattern = #"<radialGradient[^>]*id="([^"]*)"[^>]*gradientUnits="([^"]*)"[^>]*cx="([^"]*)"[^>]*cy="([^"]*)"[^>]*r="([^"]*)"[^>]*>(.*?)</radialGradient>"#
         
-        let regex = try! NSRegularExpression(pattern: gradientPattern, options: [.dotMatchesLineSeparators])
+        guard let regex = try? NSRegularExpression(pattern: gradientPattern, options: [.dotMatchesLineSeparators]) else {
+            print("Failed to create regex for gradient pattern")
+            return []
+        }
         let matches = regex.matches(in: svgContent, options: [], range: NSRange(svgContent.startIndex..., in: svgContent))
         
         for match in matches {
@@ -138,8 +141,11 @@ struct GradientCoordinateConverter {
             let fxPattern = #"fx="([^"]*)"#
             let fyPattern = #"fy="([^"]*)"#
             
-            let fxRegex = try! NSRegularExpression(pattern: fxPattern)
-            let fyRegex = try! NSRegularExpression(pattern: fyPattern)
+            guard let fxRegex = try? NSRegularExpression(pattern: fxPattern),
+                  let fyRegex = try? NSRegularExpression(pattern: fyPattern) else {
+                print("Failed to create regex for fx/fy patterns")
+                continue
+            }
             
             let fxMatch = fxRegex.firstMatch(in: svgContent, options: [], range: match.range)
             let fyMatch = fyRegex.firstMatch(in: svgContent, options: [], range: match.range)
@@ -172,7 +178,10 @@ struct GradientCoordinateConverter {
         var stops: [GradientStop] = []
         
         let stopPattern = #"<stop[^>]*offset="([^"]*)"[^>]*stop-color="([^"]*)"[^>]*/>"#
-        let regex = try! NSRegularExpression(pattern: stopPattern)
+        guard let regex = try? NSRegularExpression(pattern: stopPattern) else {
+            print("Failed to create regex for stop pattern")
+            return []
+        }
         let matches = regex.matches(in: content, options: [], range: NSRange(content.startIndex..., in: content))
         
         for match in matches {
@@ -200,7 +209,10 @@ struct GradientCoordinateConverter {
     static func parseBoundingBox(from svgContent: String) -> BoundingBox? {
         // Look for viewBox attribute
         let viewBoxPattern = #"viewBox="([^"]*)"#
-        let viewBoxRegex = try! NSRegularExpression(pattern: viewBoxPattern)
+        guard let viewBoxRegex = try? NSRegularExpression(pattern: viewBoxPattern) else {
+            print("Failed to create regex for viewBox pattern")
+            return nil
+        }
         
         if let match = viewBoxRegex.firstMatch(in: svgContent, options: [], range: NSRange(svgContent.startIndex..., in: svgContent)),
            let viewBoxStr = extractValue(from: svgContent, range: match.range(at: 1)) {
@@ -219,8 +231,11 @@ struct GradientCoordinateConverter {
         let widthPattern = #"width="([^"]*)"#
         let heightPattern = #"height="([^"]*)"#
         
-        let widthRegex = try! NSRegularExpression(pattern: widthPattern)
-        let heightRegex = try! NSRegularExpression(pattern: heightPattern)
+        guard let widthRegex = try? NSRegularExpression(pattern: widthPattern),
+              let heightRegex = try? NSRegularExpression(pattern: heightPattern) else {
+            print("Failed to create regex for width/height patterns")
+            return nil
+        }
         
         let widthMatch = widthRegex.firstMatch(in: svgContent, options: [], range: NSRange(svgContent.startIndex..., in: svgContent))
         let heightMatch = heightRegex.firstMatch(in: svgContent, options: [], range: NSRange(svgContent.startIndex..., in: svgContent))
@@ -258,7 +273,10 @@ struct GradientCoordinateConverter {
             let oldGradientPattern = #"<radialGradient[^>]*id="\#(gradient.id)"[^>]*>.*?</radialGradient>"#
             let newGradientContent = generateGradientSVG(gradient: gradient)
             
-            let regex = try! NSRegularExpression(pattern: oldGradientPattern, options: [.dotMatchesLineSeparators])
+            guard let regex = try? NSRegularExpression(pattern: oldGradientPattern, options: [.dotMatchesLineSeparators]) else {
+                print("Failed to create regex for old gradient pattern")
+                continue
+            }
             result = regex.stringByReplacingMatches(
                 in: result,
                 options: [],

@@ -63,9 +63,10 @@ extension DrawingCanvas {
             opacity: markerOpacity
         )
         
+        guard let path = markerPath else { return }
         activeMarkerShape = VectorShape(
             name: "Marker Stroke",
-            path: markerPath!,
+            path: path,
             strokeStyle: strokeStyle,
             fillStyle: fillStyle
         )
@@ -542,7 +543,9 @@ extension DrawingCanvas {
         }
         
         // Connect to right edge at end (smooth transition)
-        elements.append(.line(to: VectorPoint(rightEdgePoints.last!)))
+        if let lastRightEdge = rightEdgePoints.last {
+            elements.append(.line(to: VectorPoint(lastRightEdge)))
+        }
         
         // Create smooth bezier curves along right edge (in reverse)
         let reversedRightPoints = rightEdgePoints.reversed()

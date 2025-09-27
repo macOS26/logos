@@ -173,10 +173,13 @@ extension SVGParser {
     
     internal func extractNumbers(from string: String) -> [Double] {
         let pattern = #"-?\d*\.?\d+"#
-        let regex = try! NSRegularExpression(pattern: pattern)
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            Log.fileOperation("Failed to create regex for number extraction", level: .info)
+            return []
+        }
         let range = NSRange(string.startIndex..<string.endIndex, in: string)
         let matches = regex.matches(in: string, range: range)
-        
+
         return matches.compactMap { match in
             if let range = Range(match.range, in: string) {
                 return Double(String(string[range]))

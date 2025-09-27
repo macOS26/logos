@@ -317,7 +317,10 @@ struct PathOperationsPanel: View {
         case .union:
             // UNION: Combines exactly two shapes, result takes color of TOPMOST object
             if let unionPath = ProfessionalPathOperations.union(paths) {
-                let topmostShape = selectedShapes.last! // Last in array = topmost in stacking order
+                guard let topmostShape = selectedShapes.last else {
+                    Log.error("❌ UNION: No topmost shape found", category: .general)
+                    return
+                } // Last in array = topmost in stacking order
                 let unionShape = VectorShape(
                     name: "Union Shape",
                     path: VectorPath(cgPath: unionPath),
@@ -337,7 +340,10 @@ struct PathOperationsPanel: View {
                 return 
             }
             
-            let backShape = selectedShapes.first!    // First in array = bottommost = back
+            guard let backShape = selectedShapes.first else {
+                Log.error("❌ PUNCH: No back shape found", category: .general)
+                return
+            }    // First in array = bottommost = back
             let frontShapes = Array(selectedShapes.dropFirst()) // All others = front
             
             Log.info("🔪 PUNCH: Back shape '\(backShape.name)' - Front shapes: \(frontShapes.map { $0.name })", category: .general)
@@ -372,7 +378,10 @@ struct PathOperationsPanel: View {
             }
             
             if let intersectedPath = ProfessionalPathOperations.intersect(paths[0], paths[1]) {
-                let topmostShape = selectedShapes.last! // Last = topmost
+                guard let topmostShape = selectedShapes.last else {
+                    Log.error("❌ INTERSECT: No topmost shape found", category: .general)
+                    return
+                } // Last = topmost
                 let intersectedShape = VectorShape(
                     name: "Intersected Shape",
                     path: VectorPath(cgPath: intersectedPath),
@@ -393,7 +402,10 @@ struct PathOperationsPanel: View {
             }
             
             let excludedPaths = ProfessionalPathOperations.exclude(paths[0], paths[1])
-            let topmostShape = selectedShapes.last! // Last = topmost
+            guard let topmostShape = selectedShapes.last else {
+                Log.error("❌ EXCLUDE: No topmost shape found", category: .general)
+                return
+            } // Last = topmost
             
             for (index, excludedPath) in excludedPaths.enumerated() {
                 let excludedShape = VectorShape(
@@ -443,7 +455,7 @@ struct PathOperationsPanel: View {
                 
                 // Track how many pieces we've created from this original shape
                 shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
-                let pieceNumber = shapeCounters[originalShapeIndex]!
+                let pieceNumber = shapeCounters[originalShapeIndex] ?? 1
                 
                 let cutShape = VectorShape(
                     name: pieceNumber > 1 ? "Cut \(originalShape.name) (\(pieceNumber))" : "Cut \(originalShape.name)",
@@ -478,7 +490,7 @@ struct PathOperationsPanel: View {
                 
                 // Track how many pieces we've created from this original shape
                 shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
-                let pieceNumber = shapeCounters[originalShapeIndex]!
+                let pieceNumber = shapeCounters[originalShapeIndex] ?? 1
                 
                 let mergedShape = VectorShape(
                     name: pieceNumber > 1 ? "Merged \(originalShape.name) (\(pieceNumber))" : "Merged \(originalShape.name)",
@@ -519,7 +531,7 @@ struct PathOperationsPanel: View {
                 } else {
                     // Track how many pieces we've created from this original shape
                     shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
-                    let pieceNumber = shapeCounters[originalShapeIndex]!
+                    let pieceNumber = shapeCounters[originalShapeIndex] ?? 1
                     
                     let croppedShape = VectorShape(
                         name: pieceNumber > 1 ? "Cropped \(originalShape.name) (\(pieceNumber))" : "Cropped \(originalShape.name)",
@@ -595,7 +607,10 @@ struct PathOperationsPanel: View {
                 return
             }
             
-            let frontShape = selectedShapes.last!     // Last in array = topmost = front
+            guard let frontShape = selectedShapes.last else {
+                Log.error("❌ KICK: No front shape found", category: .general)
+                return
+            }     // Last in array = topmost = front
             let backShapes = Array(selectedShapes.dropLast()) // All others = back
             
             Log.info("🔪 KICK: Front shape '\(frontShape.name)' - Back shapes: \(backShapes.map { $0.name })", category: .general)

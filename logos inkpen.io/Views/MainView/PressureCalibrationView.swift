@@ -445,7 +445,9 @@ struct PressureCalibrationView: View {
     private func createVariableWidthStroke(from pressurePoints: [PressurePoint]) -> Path {
         guard pressurePoints.count >= 2 else {
             // Single point - create a small circle
-            let point = pressurePoints.first!
+            guard let point = pressurePoints.first else {
+                return Path()
+            }
             // Use pressure curve to get thickness
             let curveThickness = getThicknessFromCurve(pressure: point.pressure)
             let radius = CGFloat(curveThickness * 10.0) * 1.0 // Scale to reasonable size (0.1-10.0)
