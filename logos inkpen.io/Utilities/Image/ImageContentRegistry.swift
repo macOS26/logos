@@ -72,7 +72,7 @@ enum ImageContentRegistry {
                 // Try as relative to home or Documents
                 let homeURL = FileManager.default.homeDirectoryForCurrentUser
                 url = homeURL.appendingPathComponent(path)
-                if !FileManager.default.fileExists(atPath: url!.path) {
+                if let urlPath = url?.path, !FileManager.default.fileExists(atPath: urlPath) {
                     let docsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
                     url = docsURL?.appendingPathComponent(path)
                 }

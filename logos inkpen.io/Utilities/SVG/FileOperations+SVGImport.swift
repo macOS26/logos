@@ -163,8 +163,8 @@ extension FileOperations {
             Log.fileOperation("🔷 Adding standalone shape: \(shape.name)", level: .debug)
             Log.fileOperation("   📍 Position: \(shape.bounds.origin)", level: .debug)
             Log.fileOperation("   📏 Size: \(shape.bounds.size)", level: .debug)
-            Log.fileOperation("   🎨 Fill: \(shape.fillStyle != nil ? String(describing: shape.fillStyle!.color) : "none")", level: .debug)
-            Log.fileOperation("   🖌️ Stroke: \(shape.strokeStyle != nil ? String(describing: shape.strokeStyle!.color) : "none")", level: .debug)
+            Log.fileOperation("   🎨 Fill: \(shape.fillStyle.map { String(describing: $0.color) } ?? "none")", level: .debug)
+            Log.fileOperation("   🖌️ Stroke: \(shape.strokeStyle.map { String(describing: $0.color) } ?? "none")", level: .debug)
 
             // Add shape to unified system (layer index 2 for imported layer)
             document.addShapeToUnifiedSystem(shape, layerIndex: 2)

@@ -129,7 +129,7 @@ struct StatusBar: View {
                 if combinedBounds == nil {
                     combinedBounds = shapeBounds
                 } else {
-                    combinedBounds = combinedBounds!.union(shapeBounds)
+                    combinedBounds = combinedBounds?.union(shapeBounds)
                 }
             }
         }
@@ -150,7 +150,7 @@ struct StatusBar: View {
                 if combinedBounds == nil {
                     combinedBounds = textBounds
                 } else {
-                    combinedBounds = combinedBounds!.union(textBounds)
+                    combinedBounds = combinedBounds?.union(textBounds)
                 }
             }
         }

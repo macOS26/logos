@@ -145,7 +145,8 @@ extension PDFCommandParser {
         print("PDF: 🔍 DEBUG: Extracting gradient from shading '\(shadingName)'")
         
         let stream = CGPDFScannerGetContentStream(scanner)
-        guard let pdfShading = CGPDFContentStreamGetResource(stream, "Shading", shadingName.cString(using: .utf8)!) else {
+        guard let shadingCString = shadingName.cString(using: .utf8),
+              let pdfShading = CGPDFContentStreamGetResource(stream, "Shading", shadingCString) else {
             print("PDF: ❌ Could not find shading resource '\(shadingName)' in content stream resources")
             
             // DEBUG: Let's see what resources are available

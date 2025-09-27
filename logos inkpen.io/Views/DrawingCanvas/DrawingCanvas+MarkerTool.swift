@@ -125,9 +125,10 @@ extension DrawingCanvas {
             return 1.0
         }
         
-        guard markerRawPoints.count > 1 else { return 1.0 }
-        
-        let lastPoint = markerRawPoints.last!.location
+        guard markerRawPoints.count > 1,
+              let lastPointData = markerRawPoints.last else { return 1.0 }
+
+        let lastPoint = lastPointData.location
         let distance = sqrt(pow(location.x - lastPoint.x, 2) + pow(location.y - lastPoint.y, 2))
         
         // Simulate pressure based on drawing speed for felt-tip marker
@@ -709,10 +710,10 @@ extension DrawingCanvas {
         let hasStroke = markerStroke.strokeStyle != nil
         let hasFill = markerStroke.fillStyle != nil
         
-        if hasStroke && hasFill {
-            let strokeColor = markerStroke.strokeStyle!.color
-            let fillColor = markerStroke.fillStyle!.color
-            
+        if hasStroke && hasFill,
+           let strokeColor = markerStroke.strokeStyle?.color,
+           let fillColor = markerStroke.fillStyle?.color {
+
             if strokeColor == fillColor {
                 // Same color: expand stroke and combine with fill as one shape
                 applyExpandedStrokeUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
@@ -819,8 +820,8 @@ extension DrawingCanvas {
                     updatedShape.path = finalVectorPath
                     updatedShape.strokeStyle = nil // Remove stroke since it's now part of the fill
                     updatedShape.fillStyle = FillStyle(
-                        color: markerStroke.strokeStyle!.color, // Use stroke color for the combined fill
-                        opacity: markerStroke.strokeStyle!.opacity
+                        color: markerStroke.strokeStyle?.color ?? .black, // Use stroke color for the combined fill
+                        opacity: markerStroke.strokeStyle?.opacity ?? 1.0
                     )
                     
                     // Use unified helper to update shape

@@ -48,7 +48,10 @@ extension PDFCommandParser {
         if CGPDFObjectGetValue(funcObj, .stream, &functionStream),
            let stream = functionStream {
             
-            let streamDict = CGPDFStreamGetDictionary(stream)!
+            guard let streamDict = CGPDFStreamGetDictionary(stream) else {
+                print("PDF: Failed to get stream dictionary")
+                return []
+            }
             print("PDF: 📊 Found Function stream - extracting sampled function data")
             
             // DEBUG: Check function stream dictionary for Adobe metadata or original gradient info
@@ -159,7 +162,10 @@ extension PDFCommandParser {
                    CGPDFObjectGetValue(funcObj, .stream, &functionStream),
                    let stream = functionStream {
                     
-                    let streamDict = CGPDFStreamGetDictionary(stream)!
+                    guard let streamDict = CGPDFStreamGetDictionary(stream) else {
+                print("PDF: Failed to get stream dictionary")
+                return []
+            }
                     // Extract colors from stream like PDF 1.3 does
                     allColors = extractColorsFromSampledFunctionStream(stream: stream, dictionary: streamDict)
                     print("PDF: ✅ Extracted \(allColors.count) colors from PDF stream")

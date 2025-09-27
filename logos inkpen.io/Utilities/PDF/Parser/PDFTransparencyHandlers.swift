@@ -43,13 +43,18 @@ extension PDFCommandParser {
         var namePtr: UnsafePointer<CChar>?
         var name: String
         
-        if CGPDFScannerPopName(scanner, &namePtr) {
+        if CGPDFScannerPopName(scanner, &namePtr), let namePtrUnwrapped = namePtr {
             // PDF 1.4+ format - name
-            name = String(cString: namePtr!)
+            name = String(cString: namePtrUnwrapped)
             print("PDF: Graphics state '\(name)' (as name) - attempting to parse ExtGState...")
         } else if CGPDFScannerPopString(scanner, &nameRef) {
             // PDF 1.3 format - string
-            name = CGPDFStringCopyTextString(nameRef!)! as String
+            guard let nameRefUnwrapped = nameRef,
+                  let textString = CGPDFStringCopyTextString(nameRefUnwrapped) else {
+                print("PDF: Failed to copy text string from graphics state name")
+                return
+            }
+            name = textString as String
             print("PDF: Graphics state '\(name)' (as string) - attempting to parse ExtGState...")
         } else {
             print("PDF: Failed to read graphics state name (tried both name and string formats)")

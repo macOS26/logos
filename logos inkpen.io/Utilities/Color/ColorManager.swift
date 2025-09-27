@@ -46,11 +46,18 @@ final class ColorManager {
 	
 	/// CoreGraphics color space for the current working space
 	var workingCGColorSpace: CGColorSpace {
+		// Create a guaranteed fallback color space
+		let fallback = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+
 		switch workingSpace {
-		case .displayP3: return CGColorSpace(name: CGColorSpace.displayP3)!
-		case .sRGB: return CGColorSpace(name: CGColorSpace.sRGB)!
-		case .linearSRGB: return CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!
-		case .extendedSRGB: return CGColorSpace(name: CGColorSpace.extendedSRGB)!
+		case .displayP3:
+			return CGColorSpace(name: CGColorSpace.displayP3) ?? fallback
+		case .sRGB:
+			return CGColorSpace(name: CGColorSpace.sRGB) ?? fallback
+		case .linearSRGB:
+			return CGColorSpace(name: CGColorSpace.extendedLinearSRGB) ?? fallback
+		case .extendedSRGB:
+			return CGColorSpace(name: CGColorSpace.extendedSRGB) ?? fallback
 		}
 	}
 	
@@ -85,8 +92,12 @@ final class ColorManager {
 		return Color(working)
 	}
 	// MARK: - Convenience for common spaces
-	var sRGBCG: CGColorSpace { CGColorSpace(name: CGColorSpace.sRGB)! }
-	var displayP3CG: CGColorSpace { CGColorSpace(name: CGColorSpace.displayP3)! }
+	var sRGBCG: CGColorSpace {
+		CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+	}
+	var displayP3CG: CGColorSpace {
+		CGColorSpace(name: CGColorSpace.displayP3) ?? CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+ }
 	
 	// MARK: - SVG Helpers
 	/// Convert a CGColor in any space to 8-bit sRGB hex string for SVG output

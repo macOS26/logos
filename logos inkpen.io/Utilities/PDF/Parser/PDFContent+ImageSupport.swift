@@ -54,7 +54,7 @@ extension PDFCommandParser {
             var maskFormat: CGPDFDataFormat = .raw
             if let sMaskData = CGPDFStreamCopyData(sMask, &maskFormat) {
                 maskData = sMaskData as Data
-                print("PDF: Extracted SMask data: \(maskData!.count) bytes")
+                print("PDF: Extracted SMask data: \(maskData?.count ?? 0) bytes")
 
                 // Mark that we found a transparent image
                 hasUpcomingTransparentImage = true
@@ -108,7 +108,10 @@ extension PDFCommandParser {
             // Handle RGB (3 bytes per pixel) by converting to RGBA
             if bytesPerPixel == 3 {
                 // Convert RGB to RGBA by adding alpha channel
-                let rgbaData = NSMutableData(capacity: width * height * 4)!
+                guard let rgbaData = NSMutableData(capacity: width * height * 4) else {
+                    print("PDF: Failed to allocate RGBA data")
+                    return
+                }
                 let sourceBytes = nsData.bytes.assumingMemoryBound(to: UInt8.self)
                 let maskBytes = maskData?.withUnsafeBytes { $0.bindMemory(to: UInt8.self) }
 
@@ -118,7 +121,7 @@ extension PDFCommandParser {
 
                     // Use mask data for alpha if available, otherwise full opacity
                     var alpha: UInt8
-                    if let maskBytes = maskBytes, i < maskData!.count {
+                    if let maskBytes = maskBytes, i < (maskData?.count ?? 0) {
                         alpha = maskBytes[i]
                     } else {
                         alpha = 255 // Full opacity if no mask

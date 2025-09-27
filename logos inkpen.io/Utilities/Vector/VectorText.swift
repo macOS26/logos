@@ -492,7 +492,9 @@ class FontManager: ObservableObject {
         }
         
         return Array(weights).sorted { weight1, weight2 in
-            FontWeight.allCases.firstIndex(of: weight1)! < FontWeight.allCases.firstIndex(of: weight2)!
+            let index1 = FontWeight.allCases.firstIndex(of: weight1) ?? 0
+            let index2 = FontWeight.allCases.firstIndex(of: weight2) ?? 0
+            return index1 < index2
         }
     }
     
@@ -543,7 +545,9 @@ class FontManager: ObservableObject {
         }
         
         return Array(styles).sorted { style1, style2 in
-            FontStyle.allCases.firstIndex(of: style1)! < FontStyle.allCases.firstIndex(of: style2)!
+            let index1 = FontStyle.allCases.firstIndex(of: style1) ?? 0
+            let index2 = FontStyle.allCases.firstIndex(of: style2) ?? 0
+            return index1 < index2
         }
     }
 }

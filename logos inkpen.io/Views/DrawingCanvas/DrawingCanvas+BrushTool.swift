@@ -167,9 +167,10 @@ extension DrawingCanvas {
             return 1.0
         }
         
-        guard brushRawPoints.count > 1 else { return 1.0 }
-        
-        let lastPoint = brushRawPoints.last!.location
+        guard brushRawPoints.count > 1,
+              let lastPointData = brushRawPoints.last else { return 1.0 }
+
+        let lastPoint = lastPointData.location
         let distance = sqrt(pow(location.x - lastPoint.x, 2) + pow(location.y - lastPoint.y, 2))
         
         // Simulate pressure based on drawing speed

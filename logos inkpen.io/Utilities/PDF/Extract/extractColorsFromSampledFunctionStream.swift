@@ -66,10 +66,10 @@ extension PDFCommandParser {
                     // Read RGB values based on bits per sample
                     switch bitsPerSample {
                     case 8:
-                        if outputComponents >= 3 {
-                            r = Double(dataBytes![baseOffset]) / 255.0
-                            g = Double(dataBytes![baseOffset + 1]) / 255.0
-                            b = Double(dataBytes![baseOffset + 2]) / 255.0
+                        if outputComponents >= 3, let bytes = dataBytes {
+                            r = Double(bytes[baseOffset]) / 255.0
+                            g = Double(bytes[baseOffset + 1]) / 255.0
+                            b = Double(bytes[baseOffset + 2]) / 255.0
                         }
                     default:
                         print("PDF: ⚠️ Unsupported bits per sample: \(bitsPerSample)")

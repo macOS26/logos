@@ -13,7 +13,8 @@ extension PDFCommandParser {
     func extractGradientFromPattern(patternName: String, scanner: CGPDFScannerRef) -> VectorGradient? {
         // Get the current PDF page context
         let stream = CGPDFScannerGetContentStream(scanner)
-        guard let pdfPage = CGPDFContentStreamGetResource(stream, "Pattern", patternName.cString(using: .utf8)!) else {
+        guard let patternCString = patternName.cString(using: .utf8),
+              let pdfPage = CGPDFContentStreamGetResource(stream, "Pattern", patternCString) else {
             return nil
         }
         
