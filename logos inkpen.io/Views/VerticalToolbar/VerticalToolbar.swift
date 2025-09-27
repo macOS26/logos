@@ -444,7 +444,7 @@ struct VerticalToolbarButton: View {
 
     fileprivate func FreeHandMXLongPress() {
         inc += 0.1
-        print("\(inc)")
+        Log.info("\(inc)", category: .general)
         
         // always handle tap
         lastTappedTool = toolItem.tool.rawValue

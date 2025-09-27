@@ -30,8 +30,8 @@ struct logos_inken_ioApp: App {
         }
 
         // Debug sandbox status
-        print("🎁 App Sandbox Status: \(SandboxChecker.isSandboxed ? "SANDBOXED" : "NOT SANDBOXED")")
-        print("🎁 Tip Jar Menu: \(SandboxChecker.isNotSandboxed ? "WILL SHOW" : "HIDDEN")")
+        Log.info("🎁 App Sandbox Status: \(SandboxChecker.isSandboxed ? "SANDBOXED" : "NOT SANDBOXED")", category: .general)
+        Log.info("🎁 Tip Jar Menu: \(SandboxChecker.isNotSandboxed ? "WILL SHOW" : "HIDDEN")", category: .general)
     }
     
     fileprivate func doNotRestoreThis(_ window: NSWindow) {

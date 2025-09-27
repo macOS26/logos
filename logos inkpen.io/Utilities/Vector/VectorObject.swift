@@ -22,7 +22,7 @@ struct VectorObject: Identifiable, Hashable {
     init(shape: VectorShape, layerIndex: Int, orderID: Int) {
         // DEBUG: Log clipping properties during VectorObject creation
         if shape.isClippingPath || shape.clippedByShapeID != nil {
-            print("🎭 VECTOROBJECT INIT DEBUG: Input shape '\(shape.name)' - isClippingPath: \(shape.isClippingPath), clippedByShapeID: \(shape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")")
+            Log.info("🎭 VECTOROBJECT INIT DEBUG: Input shape '\(shape.name)' - isClippingPath: \(shape.isClippingPath), clippedByShapeID: \(shape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .debug)
         }
         
         self.id = shape.id
@@ -33,7 +33,7 @@ struct VectorObject: Identifiable, Hashable {
         // DEBUG: Check if properties are preserved after storing in enum
         if case .shape(let storedShape) = self.objectType {
             if storedShape.isClippingPath || storedShape.clippedByShapeID != nil {
-                print("🎭 VECTOROBJECT INIT DEBUG: Stored shape '\(storedShape.name)' - isClippingPath: \(storedShape.isClippingPath), clippedByShapeID: \(storedShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")")
+                Log.info("🎭 VECTOROBJECT INIT DEBUG: Stored shape '\(storedShape.name)' - isClippingPath: \(storedShape.isClippingPath), clippedByShapeID: \(storedShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .debug)
             }
         }
     }
@@ -78,7 +78,7 @@ extension VectorObject: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         // Debug: Print all keys available
-        print("🔍 DECODE DEBUG: Available keys in VectorObject container: \(container.allKeys.map { $0.stringValue })")
+        Log.info("🔍 DECODE DEBUG: Available keys in VectorObject container: \(container.allKeys.map { $0.stringValue })", category: .debug)
 
         id = try container.decode(UUID.self, forKey: .id)
         orderID = try container.decode(Int.self, forKey: .orderID)
@@ -87,34 +87,34 @@ extension VectorObject: Codable {
         // Decode objectType with detailed error handling
         do {
             let objectContainer = try container.nestedContainer(keyedBy: ObjectTypeCodingKeys.self, forKey: .objectType)
-            print("🔍 DECODE DEBUG: Available keys in objectType container: \(objectContainer.allKeys.map { $0.stringValue })")
+            Log.info("🔍 DECODE DEBUG: Available keys in objectType container: \(objectContainer.allKeys.map { $0.stringValue })", category: .debug)
 
             // Try to decode shape with more detailed error catching
             do {
                 let shape = try objectContainer.decode(VectorShape.self, forKey: .shape)
                 objectType = .shape(shape)
-                print("✅ DECODE DEBUG: Successfully decoded VectorShape")
+                Log.info("✅ DECODE DEBUG: Successfully decoded VectorShape", category: .debug)
             } catch let shapeError {
-                print("❌ DECODE DEBUG: Failed to decode VectorShape - Error: \(shapeError)")
-                print("❌ DECODE DEBUG: Error type: \(type(of: shapeError))")
+                Log.error("❌ DECODE DEBUG: Failed to decode VectorShape - Error: \(shapeError)", category: .error)
+                Log.error("❌ DECODE DEBUG: Error type: \(type(of: shapeError))", category: .error)
                 if let decodingError = shapeError as? DecodingError {
                     switch decodingError {
                     case .typeMismatch(let type, let context):
-                        print("   Type mismatch: expected \(type), context: \(context)")
+                        Log.info("   Type mismatch: expected \(type), context: \(context)", category: .general)
                     case .valueNotFound(let type, let context):
-                        print("   Value not found: type \(type), context: \(context)")
+                        Log.info("   Value not found: type \(type), context: \(context)", category: .general)
                     case .keyNotFound(let key, let context):
-                        print("   Key not found: \(key), context: \(context)")
+                        Log.info("   Key not found: \(key), context: \(context)", category: .general)
                     case .dataCorrupted(let context):
-                        print("   Data corrupted: \(context)")
+                        Log.info("   Data corrupted: \(context)", category: .general)
                     @unknown default:
-                        print("   Unknown decoding error")
+                        Log.error("   Unknown decoding error", category: .error)
                     }
                 }
                 throw shapeError
             }
         } catch {
-            print("❌ DECODE DEBUG: Failed to get nested container for objectType - Error: \(error)")
+            Log.error("❌ DECODE DEBUG: Failed to get nested container for objectType - Error: \(error)", category: .error)
             throw DecodingError.dataCorrupted(DecodingError.Context(
                 codingPath: decoder.codingPath,
                 debugDescription: "Unable to decode VectorObject.objectType - \(error.localizedDescription)"

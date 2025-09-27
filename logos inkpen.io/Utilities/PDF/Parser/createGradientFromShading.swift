@@ -10,20 +10,20 @@ import SwiftUI
 extension PDFCommandParser {
     
     func createGradientFromShading(from shadingDict: CGPDFDictionaryRef? = nil) -> VectorGradient {
-        print("PDF: 🌈 Creating gradient with proper transformation from PDF stream data")
+        Log.info("PDF: 🌈 Creating gradient with proper transformation from PDF stream data", category: .general)
         
         var stops: [GradientStop] = []
         
         // Try to extract actual gradient stops from PDF stream if dictionary is provided
         if let shadingDict = shadingDict {
             stops = extractGradientStopsFromPDFStream(shadingDict: shadingDict)
-            print("PDF: 📊 Extracted \(stops.count) stops from PDF stream")
+            Log.info("PDF: 📊 Extracted \(stops.count) stops from PDF stream", category: .debug)
         }
         
         // If no stops were extracted, this is an error - we should never use hardcoded stops
         if stops.isEmpty {
-            print("PDF: ❌ CRITICAL ERROR: No gradient stops extracted from PDF stream!")
-            print("PDF: ❌ Cannot create gradient without actual PDF data")
+            Log.error("PDF: ❌ CRITICAL ERROR: No gradient stops extracted from PDF stream!", category: .error)
+            Log.error("PDF: ❌ Cannot create gradient without actual PDF data", category: .error)
             // Return a simple two-color gradient as absolute fallback
             stops = [
                 GradientStop(position: 0.0, color: .rgb(RGBColor(red: 1.0, green: 0.0, blue: 0.0)), opacity: 1.0),
@@ -45,7 +45,7 @@ extension PDFCommandParser {
         // Apply the transformation matrix angle
         linearGradient.storedAngle = correctedAngle
         
-        print("PDF: ✅ Created gradient with \(stops.count) stops from PDF stream data, angle: \(correctedAngle)°")
+        Log.info("PDF: ✅ Created gradient with \(stops.count) stops from PDF stream data, angle: \(correctedAngle)°", category: .general)
         return .linear(linearGradient)
     }
 }

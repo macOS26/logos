@@ -301,7 +301,7 @@ struct ProfessionalOffsetPathSection: View {
         // Force document refresh so arrow tool can see newly created shapes
         document.objectWillChange.send()
          
-         print("✅ OFFSET PATH: Created offset shapes \(keepOriginalPath ? "behind" : "replacing") originals")
+         Log.info("✅ OFFSET PATH: Created offset shapes \(keepOriginalPath ? "behind" : "replacing") originals", category: .general)
     }
     
 

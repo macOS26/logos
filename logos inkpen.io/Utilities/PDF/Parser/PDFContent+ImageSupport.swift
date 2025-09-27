@@ -14,19 +14,19 @@ extension PDFCommandParser {
 
     /// Process an Image XObject
     func processImageXObject(name: String, xObjectStream: CGPDFStreamRef, currentTransform: CGAffineTransform) {
-        print("PDF: 🖼️ =================  IMAGE PROCESSING START =================  🖼️")
-        print("PDF: Processing Image XObject '\(name)'...")
-        print("PDF: Current transform matrix: \(currentTransform)")
+        Log.info("PDF: 🖼️ =================  IMAGE PROCESSING START =================  🖼️", category: .general)
+        Log.info("PDF: Processing Image XObject '\(name)'...", category: .general)
+        Log.info("PDF: Current transform matrix: \(currentTransform)", category: .general)
 
         // Check if we have a pending clip operator - this means the W was for image clipping
         if hasClipOperatorPending {
-            print("PDF: 🎯 Image after W operator - creating clipping path for image")
+            Log.info("PDF: 🎯 Image after W operator - creating clipping path for image", category: .general)
             createClippingPathFromPending()
         }
 
         // Get the stream dictionary
         guard let streamDict = CGPDFStreamGetDictionary(xObjectStream) else {
-            print("PDF: Failed to get stream dictionary for image '\(name)'")
+            Log.error("PDF: Failed to get stream dictionary for image '\(name)'", category: .error)
             return
         }
 
@@ -36,17 +36,17 @@ extension PDFCommandParser {
 
         guard CGPDFDictionaryGetInteger(streamDict, "Width", &width),
               CGPDFDictionaryGetInteger(streamDict, "Height", &height) else {
-            print("PDF: Failed to get image dimensions for '\(name)'")
+            Log.error("PDF: Failed to get image dimensions for '\(name)'", category: .error)
             return
         }
 
-        print("PDF: Image '\(name)' dimensions: \(width)x\(height)")
-        print("PDF: Current CTM for image: \(currentTransform)")
+        Log.info("PDF: Image '\(name)' dimensions: \(width)x\(height)", category: .general)
+        Log.info("PDF: Current CTM for image: \(currentTransform)", category: .general)
 
         // Check for SMask (Soft Mask) - indicates transparency
         var sMaskRef: CGPDFStreamRef?
         let hasSMask = CGPDFDictionaryGetStream(streamDict, "SMask", &sMaskRef)
-        print("PDF: Has SMask (transparency): \(hasSMask)")
+        Log.info("PDF: Has SMask (transparency): \(hasSMask)", category: .general)
 
         // Extract SMask data if present
         var maskData: Data?
@@ -54,32 +54,32 @@ extension PDFCommandParser {
             var maskFormat: CGPDFDataFormat = .raw
             if let sMaskData = CGPDFStreamCopyData(sMask, &maskFormat) {
                 maskData = sMaskData as Data
-                print("PDF: Extracted SMask data: \(maskData?.count ?? 0) bytes")
+                Log.info("PDF: Extracted SMask data: \(maskData?.count ?? 0) bytes", category: .general)
 
                 // Mark that we found a transparent image
                 hasUpcomingTransparentImage = true
             }
         }
 
-        print("PDF: 📏 Expected total bytes: \(width * height * 3) for RGB or \(width * height * 4) for RGBA")
+        Log.info("PDF: 📏 Expected total bytes: \(width * height * 3) for RGB or \(width * height * 4) for RGBA", category: .general)
 
         // Get the image data from the stream
         var format: CGPDFDataFormat = .raw
         guard let imageData = CGPDFStreamCopyData(xObjectStream, &format) else {
-            print("PDF: Failed to extract image data for '\(name)'")
+            Log.error("PDF: Failed to extract image data for '\(name)'", category: .error)
             return
         }
 
-        print("PDF: Image data format: \(format.rawValue) (0=raw, 1=JPEG, 2=JPEG2000)")
+        Log.info("PDF: Image data format: \(format.rawValue) (0=raw, 1=JPEG, 2=JPEG2000)", category: .general)
 
         // Convert to NSData
         let nsData = imageData as NSData
-        print("PDF: 📦 Actual data size: \(nsData.length) bytes")
+        Log.info("PDF: 📦 Actual data size: \(nsData.length) bytes", category: .general)
 
         // DEBUG: Save raw PDF image data to disk for inspection
         let debugPath = "/Users/toddbruss/Documents/pdf_raw_image_\(name)_\(width)x\(height).dat"
         try? (nsData as Data).write(to: URL(fileURLWithPath: debugPath))
-        print("PDF: 💾 DEBUG - Saved raw image data to: \(debugPath)")
+        Log.info("PDF: 💾 DEBUG - Saved raw image data to: \(debugPath)", category: .debug)
 
         // Create a shape to represent the image
         var imageShape = VectorShape(name: "Image \(name)", path: VectorPath(elements: []))
@@ -88,28 +88,28 @@ extension PDFCommandParser {
         if format == .jpegEncoded {
             // JPEG data can be used directly
             imageShape.embeddedImageData = nsData as Data
-            print("PDF: ✅ Stored JPEG image data (\(nsData.length) bytes)")
-            print("PDF: 🔍 Shape ID for image: \(imageShape.id)")
+            Log.info("PDF: ✅ Stored JPEG image data (\(nsData.length) bytes)", category: .general)
+            Log.info("PDF: 🔍 Shape ID for image: \(imageShape.id)", category: .debug)
         } else if format == .JPEG2000 {
             // JPEG2000 data can be used directly
             imageShape.embeddedImageData = nsData as Data
-            print("PDF: ✅ Stored JPEG2000 image data (\(nsData.length) bytes)")
-            print("PDF: 🔍 Shape ID for image: \(imageShape.id)")
+            Log.info("PDF: ✅ Stored JPEG2000 image data (\(nsData.length) bytes)", category: .general)
+            Log.info("PDF: 🔍 Shape ID for image: \(imageShape.id)", category: .debug)
         } else {
             // Raw format - this is likely raw RGB pixel data
             // Create an NSImage from the raw pixel data
-            print("PDF: Processing raw image data (\(nsData.length) bytes)")
+            Log.info("PDF: Processing raw image data (\(nsData.length) bytes)", category: .general)
 
             // Calculate bytes per pixel (usually 3 for RGB or 4 for RGBA)
             let totalPixels = width * height
             let bytesPerPixel = nsData.length / totalPixels
-            print("PDF: Calculated \(bytesPerPixel) bytes per pixel for \(width)x\(height) image")
+            Log.info("PDF: Calculated \(bytesPerPixel) bytes per pixel for \(width)x\(height) image", category: .general)
 
             // Handle RGB (3 bytes per pixel) by converting to RGBA
             if bytesPerPixel == 3 {
                 // Convert RGB to RGBA by adding alpha channel
                 guard let rgbaData = NSMutableData(capacity: width * height * 4) else {
-                    print("PDF: Failed to allocate RGBA data")
+                    Log.error("PDF: Failed to allocate RGBA data", category: .error)
                     return
                 }
                 let sourceBytes = nsData.bytes.assumingMemoryBound(to: UInt8.self)
@@ -132,7 +132,7 @@ extension PDFCommandParser {
                 // DEBUG: Save RGBA data
                 let rgbaDebugPath = "/Users/toddbruss/Documents/pdf_rgba_image_\(name)_\(width)x\(height).dat"
                 try? (rgbaData as Data).write(to: URL(fileURLWithPath: rgbaDebugPath))
-                print("PDF: 💾 DEBUG - Saved RGBA data to: \(rgbaDebugPath)")
+                Log.info("PDF: 💾 DEBUG - Saved RGBA data to: \(rgbaDebugPath)", category: .debug)
 
                 // Create bitmap representation with proper alpha handling
                 let bitmapRep = NSBitmapImageRep(
@@ -161,20 +161,20 @@ extension PDFCommandParser {
                     // Convert to PNG
                     if let pngData = bitmapRep.representation(using: .png, properties: [:]) {
                         imageShape.embeddedImageData = pngData
-                        print("PDF: ✅ Successfully converted RGB to PNG via NSBitmapImageRep (\(pngData.count) bytes)")
-                        print("PDF: 🔍 Shape ID for image: \(imageShape.id)")
+                        Log.info("PDF: ✅ Successfully converted RGB to PNG via NSBitmapImageRep (\(pngData.count) bytes)", category: .general)
+                        Log.info("PDF: 🔍 Shape ID for image: \(imageShape.id)", category: .debug)
 
                         // DEBUG: Save PNG data
                         let pngDebugPath = "/Users/toddbruss/Documents/pdf_final_image_\(name).png"
                         try? pngData.write(to: URL(fileURLWithPath: pngDebugPath))
-                        print("PDF: 💾 DEBUG - Saved final PNG to: \(pngDebugPath)")
+                        Log.info("PDF: 💾 DEBUG - Saved final PNG to: \(pngDebugPath)", category: .debug)
                     } else {
                         // Fallback: store RGBA data directly
                         imageShape.embeddedImageData = rgbaData as Data
-                        print("PDF: Stored as RGBA data (fallback)")
+                        Log.info("PDF: Stored as RGBA data (fallback)", category: .general)
                     }
                 } else {
-                    print("PDF: Could not create NSBitmapImageRep")
+                    Log.info("PDF: Could not create NSBitmapImageRep", category: .general)
                     imageShape.embeddedImageData = nsData as Data
                 }
             } else if bytesPerPixel == 4 {
@@ -199,28 +199,28 @@ extension PDFCommandParser {
                            let bitmap = NSBitmapImageRep(data: tiffData),
                            let pngData = bitmap.representation(using: .png, properties: [:]) {
                             imageShape.embeddedImageData = pngData
-                            print("PDF: Successfully converted RGBA to PNG (\(pngData.count) bytes)")
+                            Log.info("PDF: Successfully converted RGBA to PNG (\(pngData.count) bytes)", category: .general)
                         } else {
                             imageShape.embeddedImageData = nsData as Data
-                            print("PDF: Stored as RGBA data")
+                            Log.info("PDF: Stored as RGBA data", category: .general)
                         }
                     } else {
-                        print("PDF: Could not create CGImage from context")
+                        Log.info("PDF: Could not create CGImage from context", category: .general)
                         imageShape.embeddedImageData = nsData as Data
                     }
                 } else {
-                    print("PDF: Could not create RGBA context")
+                    Log.info("PDF: Could not create RGBA context", category: .general)
                     imageShape.embeddedImageData = nsData as Data
                 }
             } else {
                 // Unknown format - try as-is
-                print("PDF: Unknown image format with \(bytesPerPixel) bytes per pixel")
+                Log.info("PDF: Unknown image format with \(bytesPerPixel) bytes per pixel", category: .general)
                 if NSImage(data: nsData as Data) != nil {
                     imageShape.embeddedImageData = nsData as Data
-                    print("PDF: Raw data is actually a valid image format")
+                    Log.info("PDF: Raw data is actually a valid image format", category: .general)
                 } else {
                     imageShape.embeddedImageData = nsData as Data
-                    print("PDF: WARNING - Storing raw data as-is, may not render")
+                    Log.warning("PDF: WARNING - Storing raw data as-is, may not render", category: .general)
                 }
             }
         }
@@ -241,7 +241,7 @@ extension PDFCommandParser {
         // Store transparent image bounds if applicable
         if hasUpcomingTransparentImage {
             transparentImageBounds = finalRect
-            print("PDF: Stored transparent image bounds: \(finalRect)")
+            Log.info("PDF: Stored transparent image bounds: \(finalRect)", category: .general)
         }
 
         // Create a rectangle path for the image bounds using actual dimensions
@@ -263,7 +263,7 @@ extension PDFCommandParser {
             // Mark this image as clipped by the current clipping path
             if let clipId = currentClippingPathId {
                 imageShape.clippedByShapeID = clipId
-                print("PDF: Image '\(name)' is clipped by path ID: \(clipId)")
+                Log.info("PDF: Image '\(name)' is clipped by path ID: \(clipId)", category: .general)
             }
         }
 
@@ -278,19 +278,19 @@ extension PDFCommandParser {
         if let pendingClip = pendingClippingPath {
             shapes.append(pendingClip)
             pendingClippingPath = nil
-            print("PDF: ✅ Added clipping path AFTER image for correct layer order")
+            Log.info("PDF: ✅ Added clipping path AFTER image for correct layer order", category: .general)
         }
 
         // Clear the transparent image flag now that we've processed it
         if hasUpcomingTransparentImage {
             hasUpcomingTransparentImage = false
-            print("PDF: Cleared transparent image flag after processing")
+            Log.info("PDF: Cleared transparent image flag after processing", category: .general)
         }
 
-        print("PDF: ✅ Created image shape '\(imageShape.name)' at \(finalRect.origin) size: \(finalRect.size)")
-        print("PDF: 📦 Image has embedded data: \(imageShape.embeddedImageData != nil) (\(imageShape.embeddedImageData?.count ?? 0) bytes)")
-        print("PDF: 🆔 Final shape ID: \(imageShape.id)")
-        print("PDF: 🖼️ =================  IMAGE PROCESSING END =================  🖼️")
+        Log.info("PDF: ✅ Created image shape '\(imageShape.name)' at \(finalRect.origin) size: \(finalRect.size)", category: .general)
+        Log.info("PDF: 📦 Image has embedded data: \(imageShape.embeddedImageData != nil) (\(imageShape.embeddedImageData?.count ?? 0) bytes)", category: .general)
+        Log.info("PDF: 🆔 Final shape ID: \(imageShape.id)", category: .general)
+        Log.info("PDF: 🖼️ =================  IMAGE PROCESSING END =================  🖼️", category: .general)
     }
 
     /// Enhanced XObject handler that supports both Form and Image XObjects
@@ -298,7 +298,7 @@ extension PDFCommandParser {
         var namePtr: UnsafePointer<CChar>?
 
         guard CGPDFScannerPopName(scanner, &namePtr) else {
-            print("PDF: Failed to read XObject name")
+            Log.error("PDF: Failed to read XObject name", category: .error)
             return
         }
 
@@ -308,37 +308,37 @@ extension PDFCommandParser {
 
     /// Process an XObject with support for both Form and Image types
     func processXObjectWithImageSupport(name: String) {
-        print("PDF: Processing XObject '\(name)' with image support...")
+        Log.info("PDF: Processing XObject '\(name)' with image support...", category: .general)
 
         guard let page = currentPage,
               let resourceDict = page.dictionary else {
-            print("PDF: No current page or dictionary available")
+            Log.info("PDF: No current page or dictionary available", category: .general)
             return
         }
 
         var resourcesRef: CGPDFDictionaryRef? = nil
         guard CGPDFDictionaryGetDictionary(resourceDict, "Resources", &resourcesRef),
               let resourcesDict = resourcesRef else {
-            print("PDF: Page has no Resources dictionary")
+            Log.info("PDF: Page has no Resources dictionary", category: .general)
             return
         }
 
         var xObjectDictRef: CGPDFDictionaryRef? = nil
         guard CGPDFDictionaryGetDictionary(resourcesDict, "XObject", &xObjectDictRef),
               let xObjectDict = xObjectDictRef else {
-            print("PDF: Resources has no XObject dictionary")
+            Log.info("PDF: Resources has no XObject dictionary", category: .general)
             return
         }
 
         var xObjectStreamRef: CGPDFStreamRef? = nil
         guard CGPDFDictionaryGetStream(xObjectDict, name, &xObjectStreamRef),
               let xObjectStream = xObjectStreamRef else {
-            print("PDF: XObject '\(name)' is not a valid stream")
+            Log.info("PDF: XObject '\(name)' is not a valid stream", category: .general)
             return
         }
 
         guard let xObjectStreamDict = CGPDFStreamGetDictionary(xObjectStream) else {
-            print("PDF: XObject '\(name)' has no stream dictionary")
+            Log.info("PDF: XObject '\(name)' has no stream dictionary", category: .general)
             return
         }
 
@@ -346,7 +346,7 @@ extension PDFCommandParser {
         var subtypeNamePtr: UnsafePointer<CChar>? = nil
         guard CGPDFDictionaryGetName(xObjectStreamDict, "Subtype", &subtypeNamePtr),
               let subtypeName = subtypeNamePtr else {
-            print("PDF: XObject '\(name)' has no Subtype")
+            Log.info("PDF: XObject '\(name)' has no Subtype", category: .general)
             return
         }
 
@@ -355,14 +355,14 @@ extension PDFCommandParser {
         switch subtype {
         case "Form":
             // Handle Form XObject - parse the form content stream directly
-            print("PDF: XObject '\(name)' is a Form XObject - parsing content stream...")
+            Log.info("PDF: XObject '\(name)' is a Form XObject - parsing content stream...", category: .general)
 
             // Check if XObject has its own Resources dictionary
             var xObjectResourcesDict: CGPDFDictionaryRef? = nil
             if CGPDFDictionaryGetDictionary(xObjectStreamDict, "Resources", &xObjectResourcesDict) {
-                print("PDF: XObject '\(name)' has its own Resources dictionary")
+                Log.info("PDF: XObject '\(name)' has its own Resources dictionary", category: .general)
             } else {
-                print("PDF: XObject '\(name)' will inherit parent Resources")
+                Log.info("PDF: XObject '\(name)' will inherit parent Resources", category: .general)
                 xObjectResourcesDict = resourcesDict
             }
 
@@ -371,11 +371,11 @@ extension PDFCommandParser {
 
         case "Image":
             // Handle Image XObject
-            print("PDF: XObject '\(name)' is an Image XObject - extracting image data...")
+            Log.info("PDF: XObject '\(name)' is an Image XObject - extracting image data...", category: .general)
             processImageXObject(name: name, xObjectStream: xObjectStream, currentTransform: currentTransformMatrix)
 
         default:
-            print("PDF: XObject '\(name)' has unknown subtype: \(subtype)")
+            Log.info("PDF: XObject '\(name)' has unknown subtype: \(subtype)", category: .general)
         }
     }
 }
@@ -385,13 +385,13 @@ extension PDFCommandParser {
 
     /// Handle clip operator 'W' or 'W*'
     func handleClipOperator() {
-        print("PDF: Clip operator 'W' encountered")
+        Log.info("PDF: Clip operator 'W' encountered", category: .general)
 
         // For both single and compound paths, defer the decision until we see what comes next
         // We need to determine if it's for a gradient or an image
 
         if isInCompoundPath || !compoundPathParts.isEmpty {
-            print("PDF: W operator with compound path - deferring decision until we see gradient or image")
+            Log.info("PDF: W operator with compound path - deferring decision until we see gradient or image", category: .general)
             hasClipOperatorPending = true
 
             // Store the compound path parts
@@ -405,14 +405,14 @@ extension PDFCommandParser {
 
         // For single paths, defer the decision
         if !currentPath.isEmpty {
-            print("PDF: W operator - deferring clipping path decision until we see gradient or image")
+            Log.info("PDF: W operator - deferring clipping path decision until we see gradient or image", category: .general)
             hasClipOperatorPending = true
             clipOperatorPath = currentPath  // Store the path
             // Don't clear currentPath - it will be used for gradient or converted to clipping for image
             return
         }
 
-        print("PDF: Setting up clipping path for image/content clipping")
+        Log.info("PDF: Setting up clipping path for image/content clipping", category: .general)
 
         // Create a clipping path shape from current path (only for actual image clipping)
         if !currentPath.isEmpty {
@@ -459,7 +459,7 @@ extension PDFCommandParser {
             // It will be added AFTER the content it clips
             pendingClippingPath = clipShape
 
-            print("PDF: Created PENDING clipping path with ID: \(clipShape.id) - will add after clipped content")
+            Log.info("PDF: Created PENDING clipping path with ID: \(clipShape.id) - will add after clipped content", category: .general)
         }
     }
 
@@ -467,13 +467,13 @@ extension PDFCommandParser {
     func createClippingPathFromPending() {
         guard hasClipOperatorPending else { return }
 
-        print("PDF: Creating clipping path from pending W operator path")
+        Log.info("PDF: Creating clipping path from pending W operator path", category: .general)
 
         // Check if we have a compound path
         var allPathCommands: [[PathCommand]] = []
 
         if !compoundPathParts.isEmpty {
-            print("PDF: Creating compound clipping path from \(compoundPathParts.count) parts")
+            Log.info("PDF: Creating compound clipping path from \(compoundPathParts.count) parts", category: .general)
             allPathCommands = compoundPathParts
             // Add current path if not empty
             if !clipOperatorPath.isEmpty {
@@ -531,7 +531,7 @@ extension PDFCommandParser {
         // It will be added AFTER the content it clips
         pendingClippingPath = clipShape
 
-        print("PDF: Created PENDING clipping path with ID: \(clipShape.id) - will add after clipped content")
+        Log.info("PDF: Created PENDING clipping path with ID: \(clipShape.id) - will add after clipped content", category: .general)
 
         // Clear the pending state and compound path state if used
         hasClipOperatorPending = false
@@ -548,13 +548,13 @@ extension PDFCommandParser {
     /// Reset clipping state (called on restore graphics state 'Q')
     func resetClippingState() {
         if isInsideClippingPath {
-            print("PDF: Resetting clipping state")
+            Log.info("PDF: Resetting clipping state", category: .general)
 
             // If we still have a pending clipping path, add it now
             if let pendingClip = pendingClippingPath {
                 shapes.append(pendingClip)
                 pendingClippingPath = nil
-                print("PDF: Added pending clipping path at reset")
+                Log.info("PDF: Added pending clipping path at reset", category: .general)
             }
 
             isInsideClippingPath = false

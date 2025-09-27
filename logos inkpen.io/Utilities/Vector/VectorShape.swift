@@ -821,27 +821,27 @@ extension VectorShape: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         // Debug logging
-        print("🔍 VectorShape DECODE: Available keys: \(container.allKeys.map { $0.stringValue })")
+        Log.info("🔍 VectorShape DECODE: Available keys: \(container.allKeys.map { $0.stringValue })", category: .debug)
 
         // Decode each field with detailed error handling
         do {
             id = try container.decode(UUID.self, forKey: .id)
         } catch {
-            print("❌ Failed to decode 'id': \(error)")
+            Log.error("❌ Failed to decode 'id': \(error)", category: .error)
             throw error
         }
 
         do {
             name = try container.decode(String.self, forKey: .name)
         } catch {
-            print("❌ Failed to decode 'name': \(error)")
+            Log.error("❌ Failed to decode 'name': \(error)", category: .error)
             throw error
         }
 
         do {
             path = try container.decode(VectorPath.self, forKey: .path)
         } catch {
-            print("❌ Failed to decode 'path': \(error)")
+            Log.error("❌ Failed to decode 'path': \(error)", category: .error)
             throw error
         }
 

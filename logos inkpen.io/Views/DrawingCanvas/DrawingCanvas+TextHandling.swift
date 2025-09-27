@@ -866,7 +866,7 @@ extension DrawingCanvas {
         let finalWidth = max(width, 50.0)
         let finalHeight = max(height, 30.0)
         
-        print("📝 TEXT BOX CREATED: User-drawn size (\(String(format: "%.1f", finalWidth)) × \(String(format: "%.1f", finalHeight)))")
+        Log.info("📝 TEXT BOX CREATED: User-drawn size (\(String(format: "%.1f", finalWidth)) × \(String(format: "%.1f", finalHeight)))", category: .general)
         
         // Create text with user-defined size
         createNewTextWithSize(at: CGPoint(x: minX, y: minY), width: finalWidth, height: finalHeight)
@@ -931,7 +931,7 @@ extension DrawingCanvas {
             for (index, handle) in handles.enumerated() {
                 let distance = sqrt(pow(location.x - handle.x, 2) + pow(location.y - handle.y, 2))
                 if distance <= totalTolerance {
-                    print("✅ RESIZE HANDLE HIT: Handle \(index) at \(handle), distance: \(String(format: "%.1f", distance))")
+                    Log.info("✅ RESIZE HANDLE HIT: Handle \(index) at \(handle), distance: \(String(format: "%.1f", distance))", category: .general)
                     return true
                 }
             }

@@ -309,9 +309,9 @@ struct ScaleHandles: View {
             
             // NEW: Use selected scaling anchor mode from toolbar
             scalingAnchorPoint = getAnchorPoint(for: document.scalingAnchor, in: bounds, cornerIndex: index)
-            print("🔄 SCALING START: Corner \(index) → Anchor mode: \(document.scalingAnchor.displayName) at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
-            print("   📐 Initial bounds: (\(String(format: "%.1f", bounds.minX)), \(String(format: "%.1f", bounds.minY))) → (\(String(format: "%.1f", bounds.maxX)), \(String(format: "%.1f", bounds.maxY)))")
-            print("   🖱️ Start cursor: screen(\(String(format: "%.1f", startLocation.x)), \(String(format: "%.1f", startLocation.y)))")
+            Log.info("🔄 SCALING START: Corner \(index) → Anchor mode: \(document.scalingAnchor.displayName) at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))", category: .general)
+            Log.info("   📐 Initial bounds: (\(String(format: "%.1f", bounds.minX)), \(String(format: "%.1f", bounds.minY))) → (\(String(format: "%.1f", bounds.maxX)), \(String(format: "%.1f", bounds.maxY)))", category: .general)
+            Log.info("   🖱️ Start cursor: screen(\(String(format: "%.1f", startLocation.x)), \(String(format: "%.1f", startLocation.y)))", category: .general)
         }
         
         // PROFESSIONAL SCALING: Calculate scale from anchor point to current cursor position
@@ -399,8 +399,8 @@ struct ScaleHandles: View {
             applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
 
             if let finalShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                print("🔴 FINAL SHAPE BOUNDS AFTER SCALING: \(finalShape.bounds)")
-                print("🔴 FINAL SHAPE WIDTH: \(finalShape.bounds.width), HEIGHT: \(finalShape.bounds.height)")
+                Log.info("🔴 FINAL SHAPE BOUNDS AFTER SCALING: \(finalShape.bounds)", category: .general)
+                Log.info("🔴 FINAL SHAPE WIDTH: \(finalShape.bounds.width), HEIGHT: \(finalShape.bounds.height)", category: .general)
             }
             
             // Reset preview transform and marquee bounds
@@ -412,9 +412,9 @@ struct ScaleHandles: View {
             // Use common update function for transform panel (same as dragging)
             // CRITICAL: Update AFTER a delay to ensure bounds are recalculated
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                print("🔴 CALLING updateTransformPanelValues AFTER SCALING")
+                Log.info("🔴 CALLING updateTransformPanelValues AFTER SCALING", category: .general)
                 self.document.updateTransformPanelValues()
-                print("🔴 CALLED updateTransformPanelValues - CHECK IF X Y W H UPDATED")
+                Log.info("🔴 CALLED updateTransformPanelValues - CHECK IF X Y W H UPDATED", category: .general)
             }
 
             // CRITICAL FIX: Force refresh of point selection system (same as rotate/shear tools)
@@ -527,7 +527,7 @@ struct ScaleHandles: View {
                 // Path point
                 let point = pathPoints[index]
                 scalingAnchorPoint = CGPoint(x: point.x, y: point.y)
-                print("🔴 LOCKED PIN: Set to path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))")
+                Log.info("🔴 LOCKED PIN: Set to path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))", category: .general)
             } else {
                 // Bounds corner point
                 let cornerIndex = index - pathPoints.count
@@ -543,12 +543,12 @@ struct ScaleHandles: View {
                 }
                 let center = CGPoint(x: bounds.midX, y: bounds.midY)
                 scalingAnchorPoint = cornerPosition(for: cornerIndex, in: bounds, center: center)
-                print("🔴 LOCKED PIN: Set to bounds corner \(cornerIndex) at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
+                Log.info("🔴 LOCKED PIN: Set to bounds corner \(cornerIndex) at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))", category: .general)
             }
         } else {
             // Center point
             scalingAnchorPoint = CGPoint(x: centerPoint.x, y: centerPoint.y)
-            print("🔴 LOCKED PIN: Set to center point at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
+            Log.info("🔴 LOCKED PIN: Set to center point at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))", category: .general)
         }
     }
     

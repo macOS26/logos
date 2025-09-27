@@ -14,17 +14,17 @@ extension PDFCommandParser {
     // MARK: - Fill and Stroke Handlers
     
     func handleFill() {
-        print("PDF: Fill operation - creating filled shape")
+        Log.info("PDF: Fill operation - creating filled shape", category: .general)
 
         // Check if this is a black background shape for a transparent image
         if shouldSkipBlackBackground() {
-            print("PDF: Skipping black background shape for transparent image")
+            Log.info("PDF: Skipping black background shape for transparent image", category: .general)
             currentPath.removeAll()
             return
         }
 
         if isInCompoundPath && !compoundPathParts.isEmpty {
-            print("PDF: 🔍 COMPOUND PATH FILL - Creating compound shape from \(compoundPathParts.count + 1) parts")
+            Log.info("PDF: 🔍 COMPOUND PATH FILL - Creating compound shape from \(compoundPathParts.count + 1) parts", category: .debug)
             createCompoundShapeFromParts(filled: true, stroked: false)
         } else {
             createShapeFromCurrentPath(filled: true, stroked: false)
@@ -49,7 +49,7 @@ extension PDFCommandParser {
             if case .rectangle(let rect) = command {
                 // Check if this rectangle contains or matches the transparent image bounds
                 if rect.contains(imageBounds) || rect.equalTo(imageBounds) {
-                    print("PDF: Found black rectangle matching transparent image bounds")
+                    Log.info("PDF: Found black rectangle matching transparent image bounds", category: .general)
                     return true
                 }
             }
@@ -77,7 +77,7 @@ extension PDFCommandParser {
 
             let pathBounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
             if pathBounds.contains(imageBounds) || pathBounds.equalTo(imageBounds) {
-                print("PDF: Found black path matching transparent image bounds")
+                Log.info("PDF: Found black path matching transparent image bounds", category: .general)
                 return true
             }
         }
@@ -98,7 +98,7 @@ extension PDFCommandParser {
 
                 // If paths are similar, add stroke to the existing shape
                 if abs(lastPathElementCount - currentPathCommandCount) <= 1 {
-                    print("PDF: Merging stroke with previous filled shape")
+                    Log.info("PDF: Merging stroke with previous filled shape", category: .general)
 
                     // Create stroke style using CGColor
                     let r = Double(currentStrokeColor.components?[0] ?? 0.0)
@@ -128,7 +128,7 @@ extension PDFCommandParser {
                     // Replace the last shape with the merged one
                     shapes[lastShapeIndex] = mergedShape
                     currentPath.removeAll()
-                    print("PDF: Successfully merged stroke with filled shape")
+                    Log.info("PDF: Successfully merged stroke with filled shape", category: .general)
                     return
                 }
             }
@@ -139,7 +139,7 @@ extension PDFCommandParser {
     }
     
     func handleFillAndStroke() {
-        print("PDF: Fill and stroke operation (B operator) - creating single shape with both")
+        Log.info("PDF: Fill and stroke operation (B operator) - creating single shape with both", category: .general)
         createShapeFromCurrentPath(filled: true, stroked: true)
     }
     
@@ -152,13 +152,13 @@ extension PDFCommandParser {
             allParts.append(currentPath)
         }
         
-        print("PDF: 🔧 Creating compound shape with \(allParts.count) subpaths")
+        Log.info("PDF: 🔧 Creating compound shape with \(allParts.count) subpaths", category: .general)
         
         // Convert all parts to VectorPath elements
         var combinedElements: [PathElement] = []
         
         for (partIndex, part) in allParts.enumerated() {
-            print("PDF: Processing compound part #\(partIndex + 1) with \(part.count) commands")
+            Log.info("PDF: Processing compound part #\(partIndex + 1) with \(part.count) commands", category: .general)
             
             for command in part {
                 switch command {
@@ -206,11 +206,11 @@ extension PDFCommandParser {
         
         if filled {
             let shapeName = "PDF Compound Shape \(shapes.count + 1)"
-            print("PDF: 🔍 Compound shape creation - filled=true, activeGradient=\(activeGradient != nil)")
+            Log.info("PDF: 🔍 Compound shape creation - filled=true, activeGradient=\(activeGradient != nil)", category: .debug)
             
             if let gradient = activeGradient {
                 fillStyle = FillStyle(gradient: gradient)
-                print("PDF: ✅ GRADIENT ASSIGNED TO COMPOUND SHAPE: '\(shapeName)' gets active gradient with \(allParts.count) subpaths")
+                Log.info("PDF: ✅ GRADIENT ASSIGNED TO COMPOUND SHAPE: '\(shapeName)' gets active gradient with \(allParts.count) subpaths", category: .general)
             } else {
                 let r = Double(currentFillColor.components?[0] ?? 0.0)
                 let g = Double(currentFillColor.components?[1] ?? 0.0)
@@ -218,7 +218,7 @@ extension PDFCommandParser {
                 
                 let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: 1.0))
                 fillStyle = FillStyle(color: vectorColor, opacity: currentFillOpacity)
-                print("PDF: 🎨 SOLID COLOR ASSIGNED TO COMPOUND SHAPE: '\(shapeName)' gets fill color RGB(\(r), \(g), \(b)) with opacity: \(currentFillOpacity)")
+                Log.info("PDF: 🎨 SOLID COLOR ASSIGNED TO COMPOUND SHAPE: '\(shapeName)' gets fill color RGB(\(r), \(g), \(b)) with opacity: \(currentFillOpacity)", category: .general)
             }
         }
         
@@ -258,30 +258,30 @@ extension PDFCommandParser {
         // Clear the active gradient since it's been applied
         activeGradient = nil
         
-        print("PDF: ✅ Compound shape created with \(allParts.count) subpaths")
+        Log.info("PDF: ✅ Compound shape created with \(allParts.count) subpaths", category: .general)
     }
     
     func createShapeFromCurrentPath(filled: Bool, stroked: Bool) {
         guard !currentPath.isEmpty else {
-            print("PDF: Cannot create shape - current path is empty")
+            Log.info("PDF: Cannot create shape - current path is empty", category: .general)
             return
         }
 
-        print("PDF: Creating shape with \(currentPath.count) path commands, filled: \(filled), stroked: \(stroked)")
+        Log.info("PDF: Creating shape with \(currentPath.count) path commands, filled: \(filled), stroked: \(stroked)", category: .general)
 
         // Convert to VectorPath elements with coordinate system fix
         var vectorElements: [PathElement] = []
 
         // Check if CTM already includes Y-flip (d component is negative)
         let ctmHasYFlip = currentTransformMatrix.d < 0
-        print("PDF: CTM analysis - d=\(currentTransformMatrix.d), has Y-flip: \(ctmHasYFlip)")
+        Log.info("PDF: CTM analysis - d=\(currentTransformMatrix.d), has Y-flip: \(ctmHasYFlip)", category: .general)
 
         // Apply Y-flip based on combination of fill/stroke and CTM state
         // Fill-only: always flip (PDF -> App conversion)
         // Fill+Stroke with CTM Y-flip: don't flip (already correct)
         // Stroke-only: don't flip (coordinates are already correct)
         let shouldApplyFlip = filled && !stroked  // Only flip for fill-only shapes
-        print("PDF: Should apply Y-flip: \(shouldApplyFlip) (filled: \(filled), stroked: \(stroked), ctmHasYFlip: \(ctmHasYFlip))")
+        Log.info("PDF: Should apply Y-flip: \(shouldApplyFlip) (filled: \(filled), stroked: \(stroked), ctmHasYFlip: \(ctmHasYFlip))", category: .general)
 
         for command in currentPath {
             switch command {
@@ -359,8 +359,8 @@ extension PDFCommandParser {
         
         if filled {
             let shapeName = "PDF Shape \(shapes.count + 1)"
-            print("PDF: 🔍 OLD Shape creation - filled=true, activeGradient=\(activeGradient != nil), currentFillGradient=\(currentFillGradient != nil)")
-            print("PDF: 🎨 OPACITY DEBUG - currentFillOpacity=\(currentFillOpacity), currentStrokeOpacity=\(currentStrokeOpacity)")
+            Log.info("PDF: 🔍 OLD Shape creation - filled=true, activeGradient=\(activeGradient != nil), currentFillGradient=\(currentFillGradient != nil)", category: .debug)
+            Log.info("PDF: 🎨 OPACITY DEBUG - currentFillOpacity=\(currentFillOpacity), currentStrokeOpacity=\(currentStrokeOpacity)", category: .debug)
             // Check if this is a white shape first
             let r = Double(currentFillColor.components?[0] ?? 0.0)
             let g = Double(currentFillColor.components?[1] ?? 0.0) 
@@ -374,18 +374,18 @@ extension PDFCommandParser {
                     // White shape + compound path context = track for compound path
                     gradientShapes.append(shapes.count) // Will be the index after we add this shape
                     fillStyle = FillStyle(gradient: gradient)
-                    print("PDF: ✅ COMPOUND GRADIENT: '\(shapeName)' (WHITE) tracked for compound path")
+                    Log.info("PDF: ✅ COMPOUND GRADIENT: '\(shapeName)' (WHITE) tracked for compound path", category: .general)
                 } else {
                     // Direct gradient application - regardless of color
                     fillStyle = FillStyle(gradient: gradient)
-                    print("PDF: ✅ DIRECT GRADIENT: '\(shapeName)' gets gradient directly (not compound)")
+                    Log.info("PDF: ✅ DIRECT GRADIENT: '\(shapeName)' gets gradient directly (not compound)", category: .general)
                     // Note: Don't clear activeGradient here - will be cleared after shape creation
                 }
             } else if let gradient = currentFillGradient {
                 fillStyle = FillStyle(gradient: gradient)
-                print("PDF: ✅ PATTERN GRADIENT: '\(shapeName)' gets pattern gradient fill")
+                Log.info("PDF: ✅ PATTERN GRADIENT: '\(shapeName)' gets pattern gradient fill", category: .general)
             } else {
-                print("PDF: 🎨 SOLID COLOR: '\(shapeName)' gets fill color RGB(\(r), \(g), \(b)) with separate opacity: \(currentFillOpacity)")
+                Log.info("PDF: 🎨 SOLID COLOR: '\(shapeName)' gets fill color RGB(\(r), \(g), \(b)) with separate opacity: \(currentFillOpacity)", category: .general)
                 let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: 1.0))
                 fillStyle = FillStyle(color: vectorColor, opacity: currentFillOpacity)
             }
@@ -395,7 +395,7 @@ extension PDFCommandParser {
             let r = Double(currentStrokeColor.components?[0] ?? 0.0)
             let g = Double(currentStrokeColor.components?[1] ?? 0.0)
             let b = Double(currentStrokeColor.components?[2] ?? 0.0)
-            print("PDF: Applying stroke color RGB(\(r), \(g), \(b)) with width: \(currentLineWidth), opacity: \(currentStrokeOpacity)")
+            Log.info("PDF: Applying stroke color RGB(\(r), \(g), \(b)) with width: \(currentLineWidth), opacity: \(currentStrokeOpacity)", category: .general)
 
             let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: 1.0))
             strokeStyle = StrokeStyle(
@@ -412,7 +412,7 @@ extension PDFCommandParser {
         
         // If no explicit fill or stroke, skip creating the shape - it's likely a construction path
         if fillStyle == nil && strokeStyle == nil {
-            print("PDF: No fill or stroke specified - skipping invisible construction path")
+            Log.info("PDF: No fill or stroke specified - skipping invisible construction path", category: .general)
             currentPath.removeAll()
             return
         }
@@ -429,7 +429,7 @@ extension PDFCommandParser {
         // Clear activeGradient if it was used for direct application (not compound)
         if activeGradient != nil && gradientShapes.isEmpty {
             activeGradient = nil
-            print("PDF: 🔄 Cleared activeGradient after direct application")
+            Log.info("PDF: 🔄 Cleared activeGradient after direct application", category: .general)
         }
         
         currentPath.removeAll()

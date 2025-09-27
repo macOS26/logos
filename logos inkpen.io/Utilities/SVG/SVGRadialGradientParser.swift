@@ -96,7 +96,7 @@ extension SVGParser {
         let fy = fyRaw != nil ? parseGradientCoordinate(fyRaw!, gradientUnits: gradientUnits, isXCoordinate: false, useExtremeValueHandling: useExtremeHandling) : cy
         
         Log.fileOperation("🔧 Parsed radial coordinates: cx=\(cx), cy=\(cy), r=\(r), fx=\(fx), fy=\(fy)", level: .info)
-        print("🔧 Raw values: cxRaw=\(cxRaw), cyRaw=\(cyRaw), rRaw=\(rRaw), fxRaw=\(fxRaw ?? "nil"), fyRaw=\(fyRaw ?? "nil")")
+        Log.info("🔧 Raw values: cxRaw=\(cxRaw), cyRaw=\(cyRaw), rRaw=\(rRaw), fxRaw=\(fxRaw ?? "nil"), fyRaw=\(fyRaw ?? "nil")", category: .general)
         
         var centerPoint: CGPoint
         var focalPoint: CGPoint
@@ -121,7 +121,7 @@ extension SVGParser {
         }
         
         Log.fileOperation("🎯 GRADIENT COORDINATES: center=(\(centerPoint.x),\(centerPoint.y)), focal=(\(focalPoint.x),\(focalPoint.y)), radius=\(finalRadius)", level: .info)
-        print("   Original: cx=\(cxRaw), cy=\(cyRaw), r=\(rRaw), fx=\(fxRaw ?? "nil"), fy=\(fyRaw ?? "nil")")
+        Log.info("   Original: cx=\(cxRaw), cy=\(cyRaw), r=\(rRaw), fx=\(fxRaw ?? "nil"), fy=\(fyRaw ?? "nil")", category: .general)
         Log.info("   Converted: cx=\(cx), cy=\(cy), r=\(r), fx=\(fx), fy=\(fy)", category: .general)
         Log.info("   Final: center=(\(centerPoint.x),\(centerPoint.y)), radius=\(finalRadius)", category: .general)
         Log.info("   Units: \(gradientUnits) - parseGradientCoordinate handled conversion", category: .general)
@@ -153,7 +153,7 @@ extension SVGParser {
         
         let vectorGradient = VectorGradient.radial(radialGradient)
         Log.info("✅ Created radial gradient: \(currentGradientId ?? "") with \(currentGradientStops.count) stops (FORCED objectBoundingBox)", category: .fileOperations)
-        print("   - Center: \(centerPoint), Radius: \(String(format: "%.3f", finalRadius)) (shape-relative)")
+        Log.info("   - Center: \(centerPoint), Radius: \(String(format: "%.3f", finalRadius)) (shape-relative)", category: .general)
         Log.info("   - Origin Point: \(radialGradient.originPoint)", category: .general)
         Log.info("   - Scale: X=\(gradientScaleX), Y=\(gradientScaleY)", category: .general)
         if useExtremeHandling {

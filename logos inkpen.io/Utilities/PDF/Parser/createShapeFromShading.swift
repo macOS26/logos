@@ -13,7 +13,7 @@ extension PDFCommandParser {
         // For standalone shadings, we need to create a shape that covers the entire page
         // or the current clipping area. This is common for background gradients.
         
-        print("PDF: 📐 Creating standalone shading shape covering page bounds")
+        Log.info("PDF: 📐 Creating standalone shading shape covering page bounds", category: .general)
         
         // Create a rectangle covering the entire page
         let pageRect = [
@@ -52,6 +52,6 @@ extension PDFCommandParser {
         )
         
         shapes.append(shadingShape)
-        print("PDF: ✅ Created standalone shading shape")
+        Log.info("PDF: ✅ Created standalone shading shape", category: .general)
     }
 }

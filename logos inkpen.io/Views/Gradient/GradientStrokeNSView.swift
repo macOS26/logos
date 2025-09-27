@@ -107,7 +107,7 @@ class GradientStrokeNSView: NSView {
     
     /// Calculate TRUE AXIS DETECTION for ANY shape on ANY axis/plane
     func calculateOrientedBoundingBox(for shape: VectorShape) -> [CGPoint] {
-        print("📐 TRUE AXIS DETECTION for \(shape.geometricType?.rawValue ?? "unknown")")
+        Log.info("📐 TRUE AXIS DETECTION for \(shape.geometricType?.rawValue ?? "unknown")", category: .general)
         
         // NOTE: Warp objects are handled in initializeEnvelopeCorners() 
         // This function only handles fresh objects for TRUE AXIS DETECTION
@@ -130,8 +130,8 @@ class GradientStrokeNSView: NSView {
                 corner.applying(shape.transform)
             }
             
-            print("   📍 Group Bounds: (\(String(format: "%.1f", bounds.origin.x)), \(String(format: "%.1f", bounds.origin.y))) size (\(String(format: "%.1f", bounds.width)) × \(String(format: "%.1f", bounds.height)))")
-            print("   📐 World Corners: [\(worldSpaceCorners.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]")
+            Log.info("   📍 Group Bounds: (\(String(format: "%.1f", bounds.origin.x)), \(String(format: "%.1f", bounds.origin.y))) size (\(String(format: "%.1f", bounds.width)) × \(String(format: "%.1f", bounds.height)))", category: .general)
+            Log.info("   📐 World Corners: [\(worldSpaceCorners.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]", category: .general)
             
             return worldSpaceCorners
         }
@@ -147,16 +147,16 @@ class GradientStrokeNSView: NSView {
             switch element {
             case .move(let to):
                 actualCorners.append(to.cgPoint)
-                print("     ➤ Move to: (\(String(format: "%.1f", to.cgPoint.x)), \(String(format: "%.1f", to.cgPoint.y)))")
+                Log.info("     ➤ Move to: (\(String(format: "%.1f", to.cgPoint.x)), \(String(format: "%.1f", to.cgPoint.y)))", category: .general)
             case .line(let to):
                 actualCorners.append(to.cgPoint)
-                print("     ➤ Line to: (\(String(format: "%.1f", to.cgPoint.x)), \(String(format: "%.1f", to.cgPoint.y)))")
+                Log.info("     ➤ Line to: (\(String(format: "%.1f", to.cgPoint.x)), \(String(format: "%.1f", to.cgPoint.y)))", category: .general)
             case .curve(let to, _, _):
                 actualCorners.append(to.cgPoint)
-                print("     ➤ Curve to: (\(String(format: "%.1f", to.cgPoint.x)), \(String(format: "%.1f", to.cgPoint.y)))")
+                Log.info("     ➤ Curve to: (\(String(format: "%.1f", to.cgPoint.x)), \(String(format: "%.1f", to.cgPoint.y)))", category: .general)
             case .quadCurve(let to, _):
                 actualCorners.append(to.cgPoint)
-                print("     ➤ Quad curve to: (\(String(format: "%.1f", to.cgPoint.x)), \(String(format: "%.1f", to.cgPoint.y)))")
+                Log.info("     ➤ Quad curve to: (\(String(format: "%.1f", to.cgPoint.x)), \(String(format: "%.1f", to.cgPoint.y)))", category: .general)
             case .close:
                 Log.info("     ➤ Close path", category: .general)
                 break
@@ -172,7 +172,7 @@ class GradientStrokeNSView: NSView {
         if actualCorners.count >= 4 && (shape.geometricType == .rectangle || shape.geometricType == .star || pathElements.count <= 8) {
             let detectedCorners = Array(actualCorners.prefix(4))
             Log.info("   ✅ TRUE AXIS DETECTION: Using ACTUAL PATH CORNERS", category: .general)
-            print("   📐 Detected Corners: [\(detectedCorners.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]")
+            Log.info("   📐 Detected Corners: [\(detectedCorners.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]", category: .general)
             return detectedCorners
         }
         
@@ -193,8 +193,8 @@ class GradientStrokeNSView: NSView {
             corner.applying(shape.transform)
         }
         
-        print("   📍 Object Bounds: (\(String(format: "%.1f", objectSpaceBounds.origin.x)), \(String(format: "%.1f", objectSpaceBounds.origin.y))) size (\(String(format: "%.1f", objectSpaceBounds.width)) × \(String(format: "%.1f", objectSpaceBounds.height)))")
-        print("   🔄 Transform: [\(String(format: "%.3f", shape.transform.a)), \(String(format: "%.3f", shape.transform.b)), \(String(format: "%.3f", shape.transform.c)), \(String(format: "%.3f", shape.transform.d)), \(String(format: "%.1f", shape.transform.tx)), \(String(format: "%.1f", shape.transform.ty))]")
-        print("   📐 World Corners: [\(worldSpaceCorners.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]")
+        Log.info("   📍 Object Bounds: (\(String(format: "%.1f", objectSpaceBounds.origin.x)), \(String(format: "%.1f", objectSpaceBounds.origin.y))) size (\(String(format: "%.1f", objectSpaceBounds.width)) × \(String(format: "%.1f", objectSpaceBounds.height)))", category: .general)
+        Log.info("   🔄 Transform: [\(String(format: "%.3f", shape.transform.a)), \(String(format: "%.3f", shape.transform.b)), \(String(format: "%.3f", shape.transform.c)), \(String(format: "%.3f", shape.transform.d)), \(String(format: "%.1f", shape.transform.tx)), \(String(format: "%.1f", shape.transform.ty))]", category: .general)
+        Log.info("   📐 World Corners: [\(worldSpaceCorners.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]", category: .general)
         return worldSpaceCorners
     }

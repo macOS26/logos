@@ -124,12 +124,12 @@ extension PDFCommandParser {
         // Graphics state operators
         CGPDFOperatorTableSetCallback(operatorTable, "q") { (scanner, info) in
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            print("\(parser.detectedPDFVersion): XObject 'q' (save graphics state)")
+            Log.fileOperation("\(parser.detectedPDFVersion): XObject 'q' (save graphics state)")
         }
         
         CGPDFOperatorTableSetCallback(operatorTable, "Q") { (scanner, info) in
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            print("\(parser.detectedPDFVersion): XObject 'Q' (restore graphics state)")
+            Log.info("\(parser.detectedPDFVersion): XObject 'Q' (restore graphics state)", category: .general)
         }
         
         CGPDFOperatorTableSetCallback(operatorTable, "gs") { (scanner, info) in
@@ -146,7 +146,7 @@ extension PDFCommandParser {
         // Path construction no-op
         CGPDFOperatorTableSetCallback(operatorTable, "n") { (scanner, info) in
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            print("\(parser.detectedPDFVersion): XObject path construction no-op 'n'")
+            Log.info("\(parser.detectedPDFVersion): XObject path construction no-op 'n'", category: .general)
         }
         
         return operatorTable

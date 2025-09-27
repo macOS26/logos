@@ -210,7 +210,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         let newHeight = viewModel.textBoxFrame.height
         
         if abs(currentContainerWidth - newWidth) > 1.0 { // Only update if significantly different
-            print("📏 UPDATING TEXT CONTAINER WIDTH: \(String(format: "%.1f", currentContainerWidth))pt → \(String(format: "%.1f", newWidth))pt")
+            Log.info("📏 UPDATING TEXT CONTAINER WIDTH: \(String(format: "%.1f", currentContainerWidth))pt → \(String(format: "%.1f", newWidth))pt", category: .general)
             
             // Update text container size for proper text reflow
             nsView.textContainer?.containerSize = NSSize(

@@ -409,7 +409,7 @@ struct ShearHandles: View {
                 // Path point
                 let point = pathPoints[index]
                 shearAnchorPoint = CGPoint(x: point.x, y: point.y)
-                print("🔴 LOCKED PIN: Set to path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))")
+                Log.info("🔴 LOCKED PIN: Set to path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))", category: .general)
             } else {
                 // Bounds corner point (if we add them later)
                 // CRITICAL FIX: Use the same bounds calculation for consistency

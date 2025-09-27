@@ -110,17 +110,17 @@ extension FileOperations {
 
             // Register embedded images in ImageContentRegistry
             if let imageData = importedShape.embeddedImageData {
-                print("PDF IMPORT: 🔍 Found embedded image data for '\(importedShape.name)' - \(imageData.count) bytes")
+                Log.info("PDF IMPORT: 🔍 Found embedded image data for '\(importedShape.name)' - \(imageData.count) bytes", category: .debug)
                 if let nsImage = NSImage(data: imageData) {
                     ImageContentRegistry.register(image: nsImage, for: importedShape.id)
                     Log.info("📸 REGISTERED image '\(importedShape.name)' ID: \(importedShape.id) - Size: \(nsImage.size)", category: .fileOperations)
-                    print("PDF IMPORT: ✅ Successfully registered image in ImageContentRegistry")
+                    Log.info("PDF IMPORT: ✅ Successfully registered image in ImageContentRegistry", category: .general)
                 } else {
-                    print("PDF IMPORT: ❌ Failed to create NSImage from \(imageData.count) bytes of data")
+                    Log.error("PDF IMPORT: ❌ Failed to create NSImage from \(imageData.count) bytes of data", category: .error)
                     Log.error("❌ Could not create NSImage from embedded data for '\(importedShape.name)'", category: .error)
                 }
             } else {
-                print("PDF IMPORT: ℹ️ Shape '\(importedShape.name)' has no embedded image data")
+                Log.info("PDF IMPORT: ℹ️ Shape '\(importedShape.name)' has no embedded image data", category: .general)
             }
 
             // Add shape to unified system (layer index 2 for working layer)

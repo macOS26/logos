@@ -234,7 +234,7 @@ struct RotateHandles: View {
                 .onTapGesture {
                     if !isRotating {
                         selectedAnchorPointIndex = index
-                        print("🎯 ANCHOR SELECTED: Path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))")
+                        Log.info("🎯 ANCHOR SELECTED: Path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))", category: .general)
                     }
                 }
                 .highPriorityGesture(

@@ -16,7 +16,7 @@ class MetalDrawingOptimizer {
         self.isMetalAvailable = (device != nil && commandQueue != nil)
         
         if isMetalAvailable {
-            print("✅ Metal Drawing Optimizer: Initialized with \(device?.name ?? "Unknown GPU")")
+            Log.info("✅ Metal Drawing Optimizer: Initialized with \(device?.name ?? "Unknown GPU")", category: .general)
         } else {
             Log.fileOperation("⚠️ Metal Drawing Optimizer: Falling back to CPU-based optimizations", level: .info)
         }

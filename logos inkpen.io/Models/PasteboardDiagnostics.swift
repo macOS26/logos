@@ -80,9 +80,9 @@ class PasteboardDiagnostics {
         test.passed = test.layerCountCorrect && test.layerNamesCorrect && test.lockStatusCorrect
         
         Log.info("  Layer count: \(test.layerCount)/\(test.expectedLayerCount) ✓", category: .general)
-        print("  Layer names: \(test.layerNamesCorrect ? "✓" : "✗")")
-        print("  Lock status: \(test.lockStatusCorrect ? "✓" : "✗")")
-        print("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")")
+        Log.info("  Layer names: \(test.layerNamesCorrect ? "✓" : "✗")", category: .general)
+        Log.info("  Lock status: \(test.lockStatusCorrect ? "✓" : "✗")", category: .general)
+        Log.error("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
         
         return test
     }
@@ -146,11 +146,11 @@ class PasteboardDiagnostics {
         
         test.passed = test.pasteboardShapeCorrect && test.canvasShapeCorrect && test.sizingCorrect && test.positioningCorrect
         
-        print("  Pasteboard shape: \(test.pasteboardShapeCorrect ? "✓" : "✗")")
-        print("  Canvas shape: \(test.canvasShapeCorrect ? "✓" : "✗")")
-        print("  Sizing: \(test.sizingCorrect ? "✓" : "✗")")
-        print("  Positioning: \(test.positioningCorrect ? "✓" : "✗")")
-        print("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")")
+        Log.info("  Pasteboard shape: \(test.pasteboardShapeCorrect ? "✓" : "✗")", category: .general)
+        Log.info("  Canvas shape: \(test.canvasShapeCorrect ? "✓" : "✗")", category: .general)
+        Log.info("  Sizing: \(test.sizingCorrect ? "✓" : "✗")", category: .general)
+        Log.info("  Positioning: \(test.positioningCorrect ? "✓" : "✗")", category: .general)
+        Log.error("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
         
         return test
     }
@@ -198,10 +198,10 @@ class PasteboardDiagnostics {
         
         test.passed = test.pasteboardHitCorrect && test.canvasPriorityCorrect && test.layerIterationTest.passed
         
-        print("  Pasteboard hit: \(test.pasteboardHitCorrect ? "✓" : "✗")")
-        print("  Canvas priority: \(test.canvasPriorityCorrect ? "✓" : "✗")")
-        print("  Layer iteration: \(test.layerIterationTest.passed ? "✓" : "✗")")
-        print("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")")
+        Log.info("  Pasteboard hit: \(test.pasteboardHitCorrect ? "✓" : "✗")", category: .general)
+        Log.info("  Canvas priority: \(test.canvasPriorityCorrect ? "✓" : "✗")", category: .general)
+        Log.info("  Layer iteration: \(test.layerIterationTest.passed ? "✓" : "✗")", category: .general)
+        Log.error("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
         
         return test
     }
@@ -235,7 +235,7 @@ class PasteboardDiagnostics {
                     let shapeBounds = shape.bounds.applying(shape.transform)
                     let isHit = shapeBounds.contains(testPoint)
                     
-                    print("      Testing Layer \(layerIndex) - \(shape.name): \(isHit ? "HIT" : "miss")")
+                    Log.info("      Testing Layer \(layerIndex) - \(shape.name): \(isHit ? "HIT" : "miss")", category: .general)
                     
                     if isHit {
                         break
@@ -258,8 +258,8 @@ class PasteboardDiagnostics {
         
         test.passed = test.allLayersTested && test.allBackgroundShapesTested
         
-        print("      Layers tested: \(test.allLayersTested ? "✓" : "✗")")
-        print("      Background shapes tested: \(test.allBackgroundShapesTested ? "✓" : "✗")")
+        Log.info("      Layers tested: \(test.allLayersTested ? "✓" : "✗")", category: .general)
+        Log.info("      Background shapes tested: \(test.allBackgroundShapesTested ? "✓" : "✗")", category: .general)
         
         return test
     }
@@ -355,10 +355,10 @@ class PasteboardDiagnostics {
         
         test.passed = test.pasteboardObjectHitCorrect && test.canvasObjectHitCorrect && test.emptyPasteboardHitCorrect
         
-        print("  Pasteboard object hit: \(test.pasteboardObjectHitCorrect ? "✓" : "✗")")
-        print("  Canvas object hit: \(test.canvasObjectHitCorrect ? "✓" : "✗")")
-        print("  Empty pasteboard hit: \(test.emptyPasteboardHitCorrect ? "✓" : "✗")")
-        print("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")")
+        Log.info("  Pasteboard object hit: \(test.pasteboardObjectHitCorrect ? "✓" : "✗")", category: .general)
+        Log.info("  Canvas object hit: \(test.canvasObjectHitCorrect ? "✓" : "✗")", category: .general)
+        Log.info("  Empty pasteboard hit: \(test.emptyPasteboardHitCorrect ? "✓" : "✗")", category: .general)
+        Log.error("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
         
         return test
     }
@@ -404,9 +404,9 @@ class PasteboardDiagnostics {
         
         test.passed = test.averageTimePerHitTest < 0.001 // Less than 1ms per hit test
         
-        print("  Total time: \(String(format: "%.4f", test.totalTime))s")
-        print("  Average per hit test: \(String(format: "%.6f", test.averageTimePerHitTest))s")
-        print("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")")
+        Log.info("  Total time: \(String(format: "%.4f", test.totalTime))s", category: .general)
+        Log.info("  Average per hit test: \(String(format: "%.6f", test.averageTimePerHitTest))s", category: .general)
+        Log.error("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
         
         return test
     }
@@ -480,13 +480,13 @@ struct DiagnosticReport {
     func printSummary() {
         Log.info("\n📊 DIAGNOSTIC REPORT SUMMARY", category: .general)
         Log.info("=" * 40, category: .general)
-        print("Layer Structure:     \(layerStructure.passed ? "✓ PASS" : "✗ FAIL")")
-        print("Background Shapes:   \(backgroundShapes.passed ? "✓ PASS" : "✗ FAIL")")
-        print("Hit Testing:         \(hitTesting.passed ? "✓ PASS" : "✗ FAIL")")
-        print("Real-World Scenarios:\(realWorldScenarios.passed ? "✓ PASS" : "✗ FAIL")")
-        print("Performance:         \(performance.passed ? "✓ PASS" : "✗ FAIL")")
+        Log.error("Layer Structure:     \(layerStructure.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
+        Log.error("Background Shapes:   \(backgroundShapes.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
+        Log.error("Hit Testing:         \(hitTesting.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
+        Log.error("Real-World Scenarios:\(realWorldScenarios.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
+        Log.error("Performance:         \(performance.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
         Log.info("=" * 40, category: .general)
-        print("OVERALL:             \(overallPassed ? "✅ PASS" : "❌ FAIL")")
+        Log.error("OVERALL:             \(overallPassed ? "✅ PASS" : "❌ FAIL")", category: .error)
         Log.info("=" * 40, category: .general)
     }
 }

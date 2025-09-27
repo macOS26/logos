@@ -27,8 +27,8 @@ extension DrawingCanvas {
             
             if enableHandToolLogging {
                 Log.info("✋ HAND TOOL: Established reference location (Professional Standard), UI responsive", category: .general)
-                print("   Reference canvas offset: (\(String(format: "%.1f", initialCanvasOffset.x)), \(String(format: "%.1f", initialCanvasOffset.y)))")
-                print("   Reference cursor location: (\(String(format: "%.1f", handToolDragStart.x)), \(String(format: "%.1f", handToolDragStart.y)))")
+                Log.info("   Reference canvas offset: (\(String(format: "%.1f", initialCanvasOffset.x)), \(String(format: "%.1f", initialCanvasOffset.y)))", category: .general)
+                Log.info("   Reference cursor location: (\(String(format: "%.1f", handToolDragStart.x)), \(String(format: "%.1f", handToolDragStart.y)))", category: .general)
             }
 
             // Show closed hand when panning begins

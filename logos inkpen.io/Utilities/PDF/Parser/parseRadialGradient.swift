@@ -43,7 +43,7 @@ extension PDFCommandParser {
             spreadMethod: GradientSpreadMethod.pad
         )
         
-        print("PDF: Created radial gradient at (\(centerPoint)) with radius \(radius) and \(stops.count) stops")
+        Log.info("PDF: Created radial gradient at (\(centerPoint)) with radius \(radius) and \(stops.count) stops", category: .general)
         
         return .radial(radialGradient)
     }

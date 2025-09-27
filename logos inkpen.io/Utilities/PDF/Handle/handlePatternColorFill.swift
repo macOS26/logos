@@ -15,12 +15,12 @@ extension PDFCommandParser {
         if CGPDFScannerPopName(scanner, &nameObj),
            let name = nameObj {
             let patternName = String(cString: name)
-            print("PDF: Pattern fill color set to pattern: \(patternName)")
+            Log.info("PDF: Pattern fill color set to pattern: \(patternName)", category: .general)
             
             // Check if we have a gradient shading for this pattern
             if let gradient = extractGradientFromPattern(patternName: patternName, scanner: scanner) {
                 // Store gradient for later use in fill operations
-                print("PDF: Found gradient fill from pattern \(patternName)")
+                Log.info("PDF: Found gradient fill from pattern \(patternName)", category: .general)
                 currentFillGradient = gradient
                 // Note: We can't store gradient in CGColor, need to handle differently
             }

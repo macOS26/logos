@@ -8,6 +8,15 @@
 import SwiftUI
 import Combine
 
+// Custom button style that works in both toolbar and overflow menu
+struct AdaptiveToolbarButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.6 : 1.0)
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+    }
+}
+
 struct MainToolbarContent: ToolbarContent {
     @ObservedObject var document: VectorDocument
     let appState: AppState
@@ -162,9 +171,10 @@ struct MainToolbarContent: ToolbarContent {
                     .contentShape(Rectangle())  // Entire frame is clickable
                     .offset(y: 2)  // Lower icon by 2px
             }
-            .buttonStyle(BorderlessButtonStyle())
+            .buttonStyle(AdaptiveToolbarButtonStyle())
             .help("Close Open Paths (⌘⇧J)")
             .disabled(!hasOpenPaths())
+            .allowsHitTesting(true)  // Ensure hit testing works in overflow
 
             // View Controls
             Button {
@@ -177,8 +187,9 @@ struct MainToolbarContent: ToolbarContent {
                     .contentShape(Rectangle())
                     .offset(y: 2)  // Lower icon by 2px
             }
-            .buttonStyle(BorderlessButtonStyle())
+            .buttonStyle(AdaptiveToolbarButtonStyle())
             .help(document.viewMode.description)
+            .allowsHitTesting(true)  // Ensure hit testing works in overflow
 
             Button {
                 document.showRulers.toggle()
@@ -189,8 +200,9 @@ struct MainToolbarContent: ToolbarContent {
                     .contentShape(Rectangle())
                     .offset(y: 2)  // Lower icon by 2px
             }
-            .buttonStyle(BorderlessButtonStyle())
+            .buttonStyle(AdaptiveToolbarButtonStyle())
             .help("Toggle Rulers")
+            .allowsHitTesting(true)  // Ensure hit testing works in overflow
 
             Button {
                 // Toggle both grid visibility and snapping together
@@ -203,8 +215,9 @@ struct MainToolbarContent: ToolbarContent {
                     .contentShape(Rectangle())
                     .offset(y: 2)  // Lower icon by 2px
             }
-            .buttonStyle(BorderlessButtonStyle())
+            .buttonStyle(AdaptiveToolbarButtonStyle())
             .help("Toggle Grid")
+            .allowsHitTesting(true)  // Ensure hit testing works in overflow
 
             // Snap page to artwork/selection
             Button {
@@ -216,8 +229,9 @@ struct MainToolbarContent: ToolbarContent {
                     .contentShape(Rectangle())
                     .offset(y: 2)  // Lower icon by 2px
             }
-            .buttonStyle(BorderlessButtonStyle())
+            .buttonStyle(AdaptiveToolbarButtonStyle())
             .help("Snap Page to Artwork Bounds")
+            .allowsHitTesting(true)  // Ensure hit testing works in overflow
 
             Button {
                 onSnapPageToSelection()
@@ -228,8 +242,9 @@ struct MainToolbarContent: ToolbarContent {
                     .contentShape(Rectangle())
                     .offset(y: 2)  // Lower icon by 2px
             }
-            .buttonStyle(BorderlessButtonStyle())
+            .buttonStyle(AdaptiveToolbarButtonStyle())
             .help("Snap Page to Selection Bounds")
+            .allowsHitTesting(true)  // Ensure hit testing works in overflow
 
             // Document Settings
             Button {
@@ -241,8 +256,9 @@ struct MainToolbarContent: ToolbarContent {
                     .contentShape(Rectangle())
                     .offset(y: 2)  // Lower icon by 2px
             }
-            .buttonStyle(BorderlessButtonStyle())
+            .buttonStyle(AdaptiveToolbarButtonStyle())
             .help("Document Settings")
+            .allowsHitTesting(true)  // Ensure hit testing works in overflow
             
             
           

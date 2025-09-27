@@ -16,14 +16,14 @@ extension PDFCommandParser {
     func handleMoveTo(scanner: CGPDFScannerRef) {
         // COMPOUND PATH DETECTION: Multiple MoveTo operations before fill = compound path
         if !currentPath.isEmpty {
-            print("PDF: COMPOUND PATH DETECTED - MoveTo with existing path, storing current path as part of compound")
+            Log.info("PDF: COMPOUND PATH DETECTED - MoveTo with existing path, storing current path as part of compound", category: .general)
             
             // Store the current path as part of a compound path
             compoundPathParts.append(currentPath)
             isInCompoundPath = true
             moveToCount += 1
             
-            print("PDF: Compound path part #\(compoundPathParts.count) stored (\(currentPath.count) commands)")
+            Log.info("PDF: Compound path part #\(compoundPathParts.count) stored (\(currentPath.count) commands)", category: .general)
         } else {
             // Reset compound path tracking for new path sequence
             moveToCount = 1
@@ -41,7 +41,7 @@ extension PDFCommandParser {
         currentPoint = point
         pathStartPoint = point
         currentPath.append(.moveTo(point))
-        print("PDF: MoveTo(\(x), \(y))")
+        Log.info("PDF: MoveTo(\(x), \(y))", category: .general)
     }
     
     func handleLineTo(scanner: CGPDFScannerRef) {
@@ -141,7 +141,7 @@ extension PDFCommandParser {
         
         // Use geometry module to filter out page boundary rectangles
         if PDFBoundsCalculator.isPageBoundaryRectangle(rect, pageSize: pageSize) {
-            print("PDF: Skipping page boundary rectangle (\(width) x \(height))")
+            Log.info("PDF: Skipping page boundary rectangle (\(width) x \(height))", category: .general)
             return
         }
         

@@ -392,7 +392,7 @@ extension DrawingCanvas {
         initialCanvasOffset = CGPoint.zero
         handToolDragStart = CGPoint.zero
         isPanGestureActive = false
-        print("✋ UNIFIED: Hand tool completed - final position: (\(String(format: "%.1f", finalOffset.x)), \(String(format: "%.1f", finalOffset.y)))")
+        Log.info("✋ UNIFIED: Hand tool completed - final position: (\(String(format: "%.1f", finalOffset.x)), \(String(format: "%.1f", finalOffset.y)))", category: .general)
         // After pan ends, show open hand if still hovering and tool is still hand, else arrow
         if isCanvasHovering && document.currentTool == .hand {
             NSCursor.openHand.set()

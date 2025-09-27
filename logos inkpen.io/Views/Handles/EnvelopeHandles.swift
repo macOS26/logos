@@ -317,7 +317,7 @@ struct EnvelopeHandles: View {
             warpedCorners = shape.warpEnvelope  // Current warp envelope
 
             Log.fileOperation("🔧 WARP OBJECT: Using saved warp envelope", level: .info)
-            print("   Current Warp Envelope: [\(shape.warpEnvelope.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]")
+            Log.info("   Current Warp Envelope: [\(shape.warpEnvelope.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]", category: .general)
 
             Log.info("   🎯 Continuous warping enabled - can warp from current state", category: .general)
 
@@ -335,7 +335,7 @@ struct EnvelopeHandles: View {
             originalCorners = storedCorners
             warpedCorners = storedCorners
             Log.fileOperation("🔧 SESSION WARP RESTORED: Using stored envelope from current session", level: .info)
-            print("📍 USING SESSION WARP BOUNDS: \(storedBounds)")
+            Log.info("📍 USING SESSION WARP BOUNDS: \(storedBounds)", category: .general)
             return
         }
         
@@ -353,12 +353,12 @@ struct EnvelopeHandles: View {
                 let minY = newOriginalCorners.map { $0.y }.min() ?? 0
                 let maxY = newOriginalCorners.map { $0.y }.max() ?? 0
                 let newBounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-                print("⚠️ INITIALIZING NEW WARP BOUNDS (4-point shape): \(newBounds)")
+                Log.warning("⚠️ INITIALIZING NEW WARP BOUNDS (4-point shape): \(newBounds)", category: .general)
                 document.warpBounds[shape.id] = newBounds
                 document.warpEnvelopeCorners[shape.id] = newOriginalCorners
             } else {
                 if let warpBounds = document.warpBounds[shape.id] {
-                    print("✅ KEEPING EXISTING WARP BOUNDS (4-point shape): \(warpBounds)")
+                    Log.info("✅ KEEPING EXISTING WARP BOUNDS (4-point shape): \(warpBounds)", category: .general)
                 }
             }
         } else {
@@ -374,12 +374,12 @@ struct EnvelopeHandles: View {
 
             // ONLY initialize warp bounds if they don't exist yet - NEVER overwrite!
             if document.warpBounds[shape.id] == nil {
-                print("⚠️ INITIALIZING NEW WARP BOUNDS (regular shape): \(bounds)")
+                Log.warning("⚠️ INITIALIZING NEW WARP BOUNDS (regular shape): \(bounds)", category: .general)
                 document.warpBounds[shape.id] = bounds
                 document.warpEnvelopeCorners[shape.id] = newOriginalCorners
             } else {
                 if let warpBounds = document.warpBounds[shape.id] {
-                    print("✅ KEEPING EXISTING WARP BOUNDS (regular shape): \(warpBounds)")
+                    Log.info("✅ KEEPING EXISTING WARP BOUNDS (regular shape): \(warpBounds)", category: .general)
                 }
             }
         }
@@ -446,7 +446,7 @@ struct EnvelopeHandles: View {
             let minY = min(originalCorners[0].y, originalCorners[1].y, originalCorners[2].y, originalCorners[3].y)
             let maxY = max(originalCorners[0].y, originalCorners[1].y, originalCorners[2].y, originalCorners[3].y)
             initialBounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-            print("🔧 WARP OBJECT: Using original bounds for reference: (\(String(format: "%.1f", minX)), \(String(format: "%.1f", minY))) → (\(String(format: "%.1f", maxX)), \(String(format: "%.1f", maxY)))")
+            Log.info("🔧 WARP OBJECT: Using original bounds for reference: (\(String(format: "%.1f", minX)), \(String(format: "%.1f", minY))) → (\(String(format: "%.1f", maxX)), \(String(format: "%.1f", maxY)))", category: .general)
         } else if shape.isWarpObject, let originalPath = shape.originalPath {
             // Fallback: Use original path bounds if corners aren't available
             initialBounds = originalPath.cgPath.boundingBoxOfPath
@@ -654,7 +654,7 @@ struct EnvelopeHandles: View {
             document.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
             document.warpEnvelopeCorners[shape.id] = warpedCorners
             if let warpBounds = document.warpBounds[shape.id] {
-                print("📍 WARP FINISH: Stored final bounds: \(warpBounds)")
+                Log.info("📍 WARP FINISH: Stored final bounds: \(warpBounds)", category: .general)
             }
         }
         
@@ -665,7 +665,7 @@ struct EnvelopeHandles: View {
         
         // Note: Bounds update happens automatically when the warp object is created and stored
         
-        print("   Current envelope: TL(\(String(format: "%.1f", warpedCorners[0].x)), \(String(format: "%.1f", warpedCorners[0].y))), TR(\(String(format: "%.1f", warpedCorners[1].x)), \(String(format: "%.1f", warpedCorners[1].y))), BR(\(String(format: "%.1f", warpedCorners[2].x)), \(String(format: "%.1f", warpedCorners[2].y))), BL(\(String(format: "%.1f", warpedCorners[3].x)), \(String(format: "%.1f", warpedCorners[3].y)))")
+        Log.info("   Current envelope: TL(\(String(format: "%.1f", warpedCorners[0].x)), \(String(format: "%.1f", warpedCorners[0].y))), TR(\(String(format: "%.1f", warpedCorners[1].x)), \(String(format: "%.1f", warpedCorners[1].y))), BR(\(String(format: "%.1f", warpedCorners[2].x)), \(String(format: "%.1f", warpedCorners[2].y))), BL(\(String(format: "%.1f", warpedCorners[3].x)), \(String(format: "%.1f", warpedCorners[3].y)))", category: .general)
         
         // Keep preview for visual feedback but refresh it for next transformation
         calculateEnvelopeWarpPreview()
@@ -806,7 +806,7 @@ struct EnvelopeHandles: View {
     }
     
     // Log final warp state
-    print("🏁 WARP COMPLETED: Final envelope TL(\(String(format: "%.1f", warpedCorners[0].x)), \(String(format: "%.1f", warpedCorners[0].y))), TR(\(String(format: "%.1f", warpedCorners[1].x)), \(String(format: "%.1f", warpedCorners[1].y))), BR(\(String(format: "%.1f", warpedCorners[2].x)), \(String(format: "%.1f", warpedCorners[2].y))), BL(\(String(format: "%.1f", warpedCorners[3].x)), \(String(format: "%.1f", warpedCorners[3].y)))")
+    Log.info("🏁 WARP COMPLETED: Final envelope TL(\(String(format: "%.1f", warpedCorners[0].x)), \(String(format: "%.1f", warpedCorners[0].y))), TR(\(String(format: "%.1f", warpedCorners[1].x)), \(String(format: "%.1f", warpedCorners[1].y))), BR(\(String(format: "%.1f", warpedCorners[2].x)), \(String(format: "%.1f", warpedCorners[2].y))), BL(\(String(format: "%.1f", warpedCorners[3].x)), \(String(format: "%.1f", warpedCorners[3].y)))", category: .general)
     
     document.objectWillChange.send()
     }
@@ -823,7 +823,7 @@ struct EnvelopeHandles: View {
             document.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
             document.warpEnvelopeCorners[shape.id] = warpedCorners
             if let warpBounds = document.warpBounds[shape.id] {
-                print("📍 WARP COMMIT: Stored final bounds: \(warpBounds)")
+                Log.info("📍 WARP COMMIT: Stored final bounds: \(warpBounds)", category: .general)
             }
         }
 

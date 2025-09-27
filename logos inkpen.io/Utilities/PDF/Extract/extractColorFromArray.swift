@@ -11,7 +11,7 @@ extension PDFCommandParser {
     
     func extractColorFromArray(_ array: CGPDFArrayRef) -> VectorColor {
         let count = CGPDFArrayGetCount(array)
-        print("PDF: 🎨 Extracting color from array with \(count) components")
+        Log.info("PDF: 🎨 Extracting color from array with \(count) components", category: .general)
         
         if count >= 3 {
             var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
@@ -19,17 +19,17 @@ extension PDFCommandParser {
             CGPDFArrayGetNumber(array, 1, &g)
             CGPDFArrayGetNumber(array, 2, &b)
             
-            print("PDF: 🌈 RGB values: R=\(r), G=\(g), B=\(b)")
+            Log.info("PDF: 🌈 RGB values: R=\(r), G=\(g), B=\(b)", category: .general)
             return .rgb(RGBColor(red: Double(r), green: Double(g), blue: Double(b)))
         } else if count == 1 {
             // Grayscale
             var gray: CGFloat = 0
             CGPDFArrayGetNumber(array, 0, &gray)
-            print("PDF: ⚫ Grayscale value: \(gray)")
+            Log.info("PDF: ⚫ Grayscale value: \(gray)", category: .general)
             return .rgb(RGBColor(red: Double(gray), green: Double(gray), blue: Double(gray)))
         }
         
-        print("PDF: ❌ Invalid color array, using black")
+        Log.error("PDF: ❌ Invalid color array, using black", category: .error)
         return .black
     }
 }
