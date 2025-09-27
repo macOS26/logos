@@ -646,20 +646,29 @@ class VectorDocument: ObservableObject, Codable {
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        // Initialize all simple stored properties first
-        settings = try container.decode(DocumentSettings.self, forKey: .settings)
-        layers = try container.decode([VectorLayer].self, forKey: .layers)
+        // Decode all values first into temporary variables
+        let decodedSettings = try container.decode(DocumentSettings.self, forKey: .settings)
+        let decodedLayers = try container.decode([VectorLayer].self, forKey: .layers)
+        let decodedCurrentTool = try container.decode(DrawingTool.self, forKey: .currentTool)
+        let decodedViewMode = try container.decodeIfPresent(ViewMode.self, forKey: .viewMode) ?? .color
+        let decodedZoomLevel = try container.decode(Double.self, forKey: .zoomLevel)
+        let decodedCanvasOffset = try container.decode(CGPoint.self, forKey: .canvasOffset)
+        let decodedUnifiedObjects = try container.decodeIfPresent([VectorObject].self, forKey: .unifiedObjects) ?? []
+
+        // Initialize encodable backing storage first with decoded values
+        _encodableSettings = decodedSettings
+        _encodableLayers = decodedLayers
+        _encodableCurrentTool = decodedCurrentTool
+        _encodableViewMode = decodedViewMode
+        _encodableZoomLevel = decodedZoomLevel
+        _encodableCanvasOffset = decodedCanvasOffset
+        _encodableUnifiedObjects = decodedUnifiedObjects
+
+        // Now initialize all stored properties
+        settings = decodedSettings
+        layers = decodedLayers
         layerIndex = 0
         pasteboard = VectorLayer(name: "Pasteboard")
-
-        // Initialize encodable backing storage
-        _encodableSettings = settings
-        _encodableLayers = layers
-        _encodableCurrentTool = try container.decode(DrawingTool.self, forKey: .currentTool)
-        _encodableViewMode = try container.decodeIfPresent(ViewMode.self, forKey: .viewMode) ?? .color
-        _encodableZoomLevel = try container.decode(Double.self, forKey: .zoomLevel)
-        _encodableCanvasOffset = try container.decode(CGPoint.self, forKey: .canvasOffset)
-        _encodableUnifiedObjects = try container.decodeIfPresent([VectorObject].self, forKey: .unifiedObjects) ?? []
 
         // Initialize document color defaults and swatches arrays first
         documentColorDefaults = ColorDefaults()
@@ -674,17 +683,21 @@ class VectorDocument: ObservableObject, Codable {
         directSelectedShapeIDs = []
         isHandleScalingActive = false
 
-        currentTool = _encodableCurrentTool
+        currentTool = decodedCurrentTool
         scalingAnchor = .center
         rotationAnchor = .center
         shearAnchor = .center
         transformOrigin = .center
         objectPositionUpdateTrigger = false
         currentDragOffset = .zero
+        dragPreviewCoordinates = .zero
+        scalePreviewDimensions = .zero
+        warpEnvelopeCorners = [:]
+        warpBounds = [:]
 
-        viewMode = _encodableViewMode
-        zoomLevel = _encodableZoomLevel
-        canvasOffset = _encodableCanvasOffset
+        viewMode = decodedViewMode
+        zoomLevel = decodedZoomLevel
+        canvasOffset = decodedCanvasOffset
         zoomRequest = nil
 
         // Initialize all simple properties first
@@ -694,7 +707,7 @@ class VectorDocument: ObservableObject, Codable {
         fontManager = FontManager() // PROFESSIONAL FONT MANAGEMENT
 
         // CRITICAL FIX: Load unified objects array to preserve order during undo/redo
-        unifiedObjects = _encodableUnifiedObjects
+        unifiedObjects = decodedUnifiedObjects
 
         // Document color defaults were already loaded above from settings
 
@@ -733,6 +746,7 @@ class VectorDocument: ObservableObject, Codable {
         currentBrushPressureSensitivity = UserDefaults.standard.object(forKey: "brushPressureSensitivity") as? Double ?? 0.5
         currentBrushTaper = UserDefaults.standard.object(forKey: "brushTaper") as? Double ?? 0.4
         currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 2.0
+        currentBrushLiquid = UserDefaults.standard.object(forKey: "brushLiquid") as? Double ?? 0.0
 
         // Initialize advanced smoothing settings from UserDefaults (properties with didSet)
         advancedSmoothingEnabled = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? false
@@ -788,6 +802,9 @@ class VectorDocument: ObservableObject, Codable {
         if let hsbSwatches = settings.customHsbSwatches {
             customHsbSwatches = hsbSwatches
         }
+        
+        // Load stroke style defaults
+        loadStrokeStyleDefaults()
     }
     
 
