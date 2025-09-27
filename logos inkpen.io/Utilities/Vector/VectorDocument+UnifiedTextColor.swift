@@ -110,6 +110,77 @@ extension VectorDocument {
         }
     }
 
+    /// FAST O(1) preview update - change ONLY the font size for live preview
+    func updateTextFontSizePreview(id: UUID, fontSize: CGFloat) {
+        if let index = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.id == id
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[index].objectType {
+                // Update typography
+                if shape.typography != nil {
+                    let oldFontSize = shape.typography!.fontSize
+                    let lineHeightRatio = shape.typography!.lineHeight / oldFontSize
+                    shape.typography!.fontSize = fontSize
+                    shape.typography!.lineHeight = fontSize * lineHeightRatio
+                }
+
+                // Light update without full object replacement for performance
+                unifiedObjects[index] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[index].layerIndex,
+                    orderID: unifiedObjects[index].orderID
+                )
+            }
+        }
+    }
+
+    /// FAST O(1) preview update - change ONLY the line spacing for live preview
+    func updateTextLineSpacingPreview(id: UUID, lineSpacing: Double) {
+        if let index = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.id == id
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[index].objectType {
+                // Update typography
+                shape.typography?.lineSpacing = lineSpacing
+
+                // Light update without full object replacement for performance
+                unifiedObjects[index] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[index].layerIndex,
+                    orderID: unifiedObjects[index].orderID
+                )
+            }
+        }
+    }
+
+    /// FAST O(1) preview update - change ONLY the line height for live preview
+    func updateTextLineHeightPreview(id: UUID, lineHeight: Double) {
+        if let index = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.id == id
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[index].objectType {
+                // Update typography
+                shape.typography?.lineHeight = lineHeight
+
+                // Light update without full object replacement for performance
+                unifiedObjects[index] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[index].layerIndex,
+                    orderID: unifiedObjects[index].orderID
+                )
+            }
+        }
+    }
+
     /// MIGRATED FROM ColorSwatchGrid - Update text fill color using unified system
     /// NO MORE DUPLICATES - USE THIS ONE HELPER EVERYWHERE
     func updateTextFillColorInUnified(id: UUID, color: VectorColor) {

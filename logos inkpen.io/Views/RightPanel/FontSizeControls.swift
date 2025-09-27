@@ -71,25 +71,18 @@ struct FontSizeControls: View {
                     get: { previewFontSize ?? currentFontSize },
                     set: { newSize in
                         let rounded = CGFloat(Int(newSize.rounded()))
-                        if isDraggingFontSize {
-                            // Just update preview during drag - no document update!
-                            previewFontSize = rounded
-                        } else {
-                            // Not dragging - update document
-                            updateFontSize(rounded)
-                        }
+                        previewFontSize = rounded
+                        // Live update during drag AND on direct value changes
+                        updateFontSize(rounded, isPreview: isDraggingFontSize)
                     }
                 ), in: 1...288, onEditingChanged: { editing in
                     isDraggingFontSize = editing
                     if !editing {
-                        // Drag ended - commit the preview value to document
+                        // Drag ended - ensure final value is committed
                         if let preview = previewFontSize {
-                            updateFontSize(preview)
+                            updateFontSize(preview, isPreview: false)
                         }
                         previewFontSize = nil
-                    } else {
-                        // Drag started - initialize preview
-                        previewFontSize = currentFontSize
                     }
                 })
                 .controlSize(.regular)
@@ -113,25 +106,18 @@ struct FontSizeControls: View {
                     get: { previewLineSpacing ?? currentLineSpacing },
                     set: { newSpacing in
                         let rounded = CGFloat(Int(newSpacing.rounded()))
-                        if isDraggingLineSpacing {
-                            // Just update preview during drag - no document update!
-                            previewLineSpacing = rounded
-                        } else {
-                            // Not dragging - update document
-                            updateLineSpacing(rounded)
-                        }
+                        previewLineSpacing = rounded
+                        // Live update during drag AND on direct value changes
+                        updateLineSpacing(rounded, isPreview: isDraggingLineSpacing)
                     }
                 ), in: 0...(currentFontSize / 2), onEditingChanged: { editing in
                     isDraggingLineSpacing = editing
                     if !editing {
-                        // Drag ended - commit the preview value to document
+                        // Drag ended - ensure final value is committed
                         if let preview = previewLineSpacing {
-                            updateLineSpacing(preview)
+                            updateLineSpacing(preview, isPreview: false)
                         }
                         previewLineSpacing = nil
-                    } else {
-                        // Drag started - initialize preview
-                        previewLineSpacing = currentLineSpacing
                     }
                 })
                 .controlSize(.regular)
@@ -154,25 +140,18 @@ struct FontSizeControls: View {
                     get: { previewLineHeight ?? currentLineHeight },
                     set: { newHeight in
                         let rounded = CGFloat(Int(newHeight.rounded()))
-                        if isDraggingLineHeight {
-                            // Just update preview during drag - no document update!
-                            previewLineHeight = rounded
-                        } else {
-                            // Not dragging - update document
-                            updateLineHeight(rounded)
-                        }
+                        previewLineHeight = rounded
+                        // Live update during drag AND on direct value changes
+                        updateLineHeight(rounded, isPreview: isDraggingLineHeight)
                     }
                 ), in: (currentFontSize / 2)...(currentFontSize * 2), onEditingChanged: { editing in
                     isDraggingLineHeight = editing
                     if !editing {
-                        // Drag ended - commit the preview value to document
+                        // Drag ended - ensure final value is committed
                         if let preview = previewLineHeight {
-                            updateLineHeight(preview)
+                            updateLineHeight(preview, isPreview: false)
                         }
                         previewLineHeight = nil
-                    } else {
-                        // Drag started - initialize preview
-                        previewLineHeight = currentLineHeight
                     }
                 })
                 .controlSize(.regular)
@@ -180,50 +159,78 @@ struct FontSizeControls: View {
         }
     }
     
-    private func updateFontSize(_ newSize: CGFloat) {
+    private func updateFontSize(_ newSize: CGFloat, isPreview: Bool = false) {
         // ALWAYS update defaults first - NO RESTRICTIONS
         document.fontManager.selectedFontSize = newSize
         document.fontManager.selectedLineHeight = newSize
-        document.objectWillChange.send() // Force UI update
 
-        // Then update selected text if any
-        if let textID = document.selectedTextIDs.first,
-           let freshText = document.allTextObjects.first(where: { $0.id == textID }) {
-            var updatedTypography = freshText.typography
-            let oldFontSize = updatedTypography.fontSize
-            let lineHeightRatio = updatedTypography.lineHeight / oldFontSize
+        // For preview, use lighter update mechanism
+        if isPreview {
+            // Light update for preview
+            if let textID = document.selectedTextIDs.first {
+                document.updateTextFontSizePreview(id: textID, fontSize: newSize)
+            }
+        } else {
+            // Full update when not previewing
+            document.objectWillChange.send() // Force UI update
 
-            updatedTypography.fontSize = newSize
-            updatedTypography.lineHeight = newSize * lineHeightRatio
-            document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+            // Then update selected text if any
+            if let textID = document.selectedTextIDs.first,
+               let freshText = document.allTextObjects.first(where: { $0.id == textID }) {
+                var updatedTypography = freshText.typography
+                let oldFontSize = updatedTypography.fontSize
+                let lineHeightRatio = updatedTypography.lineHeight / oldFontSize
+
+                updatedTypography.fontSize = newSize
+                updatedTypography.lineHeight = newSize * lineHeightRatio
+                document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+            }
         }
     }
     
-    private func updateLineSpacing(_ newSpacing: CGFloat) {
+    private func updateLineSpacing(_ newSpacing: CGFloat, isPreview: Bool = false) {
         // ALWAYS update defaults first - NO RESTRICTIONS
         document.fontManager.selectedLineSpacing = Double(newSpacing)
-        document.objectWillChange.send() // Force UI update
 
-        // Then update selected text if any
-        if let textID = document.selectedTextIDs.first,
-           let freshText = document.allTextObjects.first(where: { $0.id == textID }) {
-            var updatedTypography = freshText.typography
-            updatedTypography.lineSpacing = Double(newSpacing)
-            document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+        if isPreview {
+            // Light update for preview
+            if let textID = document.selectedTextIDs.first {
+                document.updateTextLineSpacingPreview(id: textID, lineSpacing: Double(newSpacing))
+            }
+        } else {
+            // Full update when not previewing
+            document.objectWillChange.send() // Force UI update
+
+            // Then update selected text if any
+            if let textID = document.selectedTextIDs.first,
+               let freshText = document.allTextObjects.first(where: { $0.id == textID }) {
+                var updatedTypography = freshText.typography
+                updatedTypography.lineSpacing = Double(newSpacing)
+                document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+            }
         }
     }
     
-    private func updateLineHeight(_ newHeight: CGFloat) {
+    private func updateLineHeight(_ newHeight: CGFloat, isPreview: Bool = false) {
         // ALWAYS update defaults first - NO RESTRICTIONS
         document.fontManager.selectedLineHeight = Double(newHeight)
-        document.objectWillChange.send() // Force UI update
 
-        // Then update selected text if any
-        if let textID = document.selectedTextIDs.first,
-           let freshText = document.allTextObjects.first(where: { $0.id == textID }) {
-            var updatedTypography = freshText.typography
-            updatedTypography.lineHeight = Double(newHeight)
-            document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+        if isPreview {
+            // Light update for preview
+            if let textID = document.selectedTextIDs.first {
+                document.updateTextLineHeightPreview(id: textID, lineHeight: Double(newHeight))
+            }
+        } else {
+            // Full update when not previewing
+            document.objectWillChange.send() // Force UI update
+
+            // Then update selected text if any
+            if let textID = document.selectedTextIDs.first,
+               let freshText = document.allTextObjects.first(where: { $0.id == textID }) {
+                var updatedTypography = freshText.typography
+                updatedTypography.lineHeight = Double(newHeight)
+                document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+            }
         }
     }
 }

@@ -45,13 +45,15 @@ struct FontPickerView: View {
                 set: { newFamily in
                     // ALWAYS update defaults first - NO RESTRICTIONS
                     document.fontManager.selectedFontFamily = newFamily
-                    document.objectWillChange.send() // Force UI update
                     fontFamilyUpdateTrigger.toggle()
 
-                    // Then update selected text if any
+                    // Then update selected text if any - with immediate update
                     if let textID = document.selectedTextIDs.first {
                         document.updateTextFontFamilyDirect(id: textID, fontFamily: newFamily)
                     }
+
+                    // Force UI update after the change
+                    document.objectWillChange.send()
                 }
             )) {
                 ForEach(document.fontManager.availableFonts, id: \.self) { fontFamily in
@@ -79,12 +81,14 @@ struct FontPickerView: View {
                 set: { newWeight in
                     // ALWAYS update defaults first - NO RESTRICTIONS
                     document.fontManager.selectedFontWeight = newWeight
-                    document.objectWillChange.send() // Force UI update
 
-                    // Then update selected text if any
+                    // Then update selected text if any - with immediate update
                     if let textID = document.selectedTextIDs.first {
                         document.updateTextFontWeightDirect(id: textID, fontWeight: newWeight)
                     }
+
+                    // Force UI update after the change
+                    document.objectWillChange.send()
                 }
             )) {
                 ForEach(availableFontWeights, id: \.self) { weight in
@@ -109,12 +113,14 @@ struct FontPickerView: View {
                 set: { newStyle in
                     // ALWAYS update defaults first - NO RESTRICTIONS
                     document.fontManager.selectedFontStyle = newStyle
-                    document.objectWillChange.send() // Force UI update
 
-                    // Then update selected text if any
+                    // Then update selected text if any - with immediate update
                     if let textID = document.selectedTextIDs.first {
                         document.updateTextFontStyleDirect(id: textID, fontStyle: newStyle)
                     }
+
+                    // Force UI update after the change
+                    document.objectWillChange.send()
                 }
             )) {
                 ForEach(availableFontStyles, id: \.self) { style in
