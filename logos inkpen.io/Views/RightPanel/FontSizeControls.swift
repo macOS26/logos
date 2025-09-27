@@ -78,7 +78,10 @@ struct FontSizeControls: View {
                 ), in: 1...288, onEditingChanged: { editing in
                     isDraggingFontSize = editing
                     if !editing {
-                        // Drag ended - don't update here, the set closure will handle it
+                        // Drag ended - ensure final value is committed
+                        if let preview = previewFontSize {
+                            updateFontSize(preview, isPreview: false)
+                        }
                         previewFontSize = nil
                         // Clear preview typography
                         if let textID = document.selectedTextIDs.first {
@@ -114,7 +117,10 @@ struct FontSizeControls: View {
                 ), in: 0...(currentFontSize / 2), onEditingChanged: { editing in
                     isDraggingLineSpacing = editing
                     if !editing {
-                        // Drag ended - don't update here, the set closure will handle it
+                        // Drag ended - ensure final value is committed
+                        if let preview = previewLineSpacing {
+                            updateLineSpacing(preview, isPreview: false)
+                        }
                         previewLineSpacing = nil
                         // Clear preview typography
                         if let textID = document.selectedTextIDs.first {
@@ -149,7 +155,10 @@ struct FontSizeControls: View {
                 ), in: (currentFontSize / 2)...(currentFontSize * 2), onEditingChanged: { editing in
                     isDraggingLineHeight = editing
                     if !editing {
-                        // Drag ended - don't update here, the set closure will handle it
+                        // Drag ended - ensure final value is committed
+                        if let preview = previewLineHeight {
+                            updateLineHeight(preview, isPreview: false)
+                        }
                         previewLineHeight = nil
                         // Clear preview typography
                         if let textID = document.selectedTextIDs.first {
@@ -181,11 +190,14 @@ struct FontSizeControls: View {
                let freshText = document.allTextObjects.first(where: { $0.id == textID }) {
                 var updatedTypography = freshText.typography
                 let oldFontSize = updatedTypography.fontSize
-                let lineHeightRatio = updatedTypography.lineHeight / oldFontSize
 
-                updatedTypography.fontSize = newSize
-                updatedTypography.lineHeight = newSize * lineHeightRatio
-                document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+                // Check if font size actually changed
+                if abs(oldFontSize - newSize) > 0.01 {
+                    let lineHeightRatio = updatedTypography.lineHeight / oldFontSize
+                    updatedTypography.fontSize = newSize
+                    updatedTypography.lineHeight = newSize * lineHeightRatio
+                    document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+                }
             }
         }
     }
@@ -207,8 +219,12 @@ struct FontSizeControls: View {
             if let textID = document.selectedTextIDs.first,
                let freshText = document.allTextObjects.first(where: { $0.id == textID }) {
                 var updatedTypography = freshText.typography
-                updatedTypography.lineSpacing = Double(newSpacing)
-                document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+
+                // Check if line spacing actually changed
+                if abs(updatedTypography.lineSpacing - Double(newSpacing)) > 0.01 {
+                    updatedTypography.lineSpacing = Double(newSpacing)
+                    document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+                }
             }
         }
     }
@@ -230,8 +246,12 @@ struct FontSizeControls: View {
             if let textID = document.selectedTextIDs.first,
                let freshText = document.allTextObjects.first(where: { $0.id == textID }) {
                 var updatedTypography = freshText.typography
-                updatedTypography.lineHeight = Double(newHeight)
-                document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+
+                // Check if line height actually changed
+                if abs(updatedTypography.lineHeight - Double(newHeight)) > 0.01 {
+                    updatedTypography.lineHeight = Double(newHeight)
+                    document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+                }
             }
         }
     }
