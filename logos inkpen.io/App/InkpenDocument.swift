@@ -121,7 +121,6 @@ struct InkpenDocument: FileDocument {
         }
     }
     
-    @MainActor
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
         // Debug logging to see what content type we're getting
         Log.info("🔍 SAVE DEBUG: contentType = \(configuration.contentType.identifier)", category: .fileOperations)
@@ -156,7 +155,10 @@ struct InkpenDocument: FileDocument {
         } else {
             // Export as JSON (default for .inkpen and .json files)
             do {
-                let data = try FileOperations.exportToJSONData(document)
+                // Use MainActor.assumeIsolated to safely call the MainActor method
+                let data = try MainActor.assumeIsolated {
+                    try FileOperations.exportToJSONData(document)
+                }
                 return FileWrapper(regularFileWithContents: data)
             } catch {
                 Log.error("❌ Failed to save JSON document: \(error)", category: .error)
