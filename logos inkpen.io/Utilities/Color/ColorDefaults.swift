@@ -91,42 +91,6 @@ struct ColorDefaults: Codable {
         }
     }
 
-    func saveToUserDefaults() {
-        var dict: [String: Data] = [:]
-
-        // Save color settings with short keys (but never save black as fill color)
-        if fillColor != .black, let data = try? JSONEncoder().encode(fillColor) {
-            dict["fill"] = data
-        }
-        if let data = try? JSONEncoder().encode(strokeColor) {
-            dict["stroke"] = data
-        }
-        if let data = try? JSONEncoder().encode(fillOpacity) {
-            dict["fillOp"] = data
-        }
-        if let data = try? JSONEncoder().encode(strokeOpacity) {
-            dict["strokeOp"] = data
-        }
-        if let data = try? JSONEncoder().encode(strokeWidth) {
-            dict["strokeW"] = data
-        }
-
-        // Save swatches
-        if let data = try? JSONEncoder().encode(rgbSwatches) {
-            dict["rgb"] = data
-        }
-        if let data = try? JSONEncoder().encode(cmykSwatches) {
-            dict["cmyk"] = data
-        }
-        if let data = try? JSONEncoder().encode(hsbSwatches) {
-            dict["hsb"] = data
-        }
-
-        if let data = try? JSONEncoder().encode(dict) {
-            UserDefaults.standard.set(data, forKey: Self.userDefaultsKey)
-        }
-    }
-
     // MARK: - Default Palette Creation (40 colors each)
     static func createDefaultRGBSwatches() -> [VectorColor] {
         var colors: [VectorColor] = []
