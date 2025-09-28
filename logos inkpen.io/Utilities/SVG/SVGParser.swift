@@ -154,14 +154,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         useExtremeValueHandling = true
         Log.fileOperation("🔧 Enabled extreme value handling for radial gradients", level: .info)
     }
-    
-    /// Disable extreme value handling (default behavior)
-    func disableExtremeValueHandling() {
-        useExtremeValueHandling = false
-        detectedExtremeValues = false
-        Log.fileOperation("🔧 Disabled extreme value handling for radial gradients", level: .info)
-    }
-    
     // MARK: - XMLParserDelegate
     
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
