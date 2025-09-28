@@ -349,7 +349,7 @@ struct CMYKInputSection: View {
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(.primary)
                     
-                    Button("Add to Swatches") {
+                    Button("Add Swatch") {
                         addCMYKColorToSwatches()
                     }
                     .font(.system(size: 10))

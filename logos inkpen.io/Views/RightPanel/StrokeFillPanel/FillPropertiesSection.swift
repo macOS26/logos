@@ -36,14 +36,24 @@ struct FillPropertiesSection: View {
                 .controlSize(.regular)
             }
 
-            HStack {
-                Spacer()
-
-                Button("Apply Fill") {
-                    onApplyFill()
-                }
-                .buttonStyle(ProfessionalPrimaryButtonStyle())
+            Button("Apply Fill") {
+                onApplyFill()
             }
+            .font(.system(size: 13, weight: .medium))
+            .foregroundColor(.primary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .frame(minHeight: 36)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.gray.opacity(0.1))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+            )
+            .buttonStyle(BorderlessButtonStyle())
+            .contentShape(Rectangle())
         }
         .padding()
         .background(Color.ui.semiTransparentControlBackground)

@@ -284,7 +284,7 @@ struct RGBInputSection: View {
                 .help("Click to apply color to active fill or stroke")
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Button("Add to Swatches") {
+                    Button("Add Swatch") {
                         addColorToSwatches()
                     }
                     .font(.system(size: 10))

@@ -168,7 +168,7 @@ struct PantoneColorPickerSheet: View {
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Add to Swatches") {
+                    Button("Add Swatch") {
                         if let selectedColor = selectedColor {
                             let vectorColor = VectorColor.pantone(selectedColor)
                             document.addColorSwatch(vectorColor)
