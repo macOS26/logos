@@ -44,14 +44,17 @@ extension PDFCommandParser {
         let vectorPath = VectorPath(elements: vectorElements, isClosed: true)
         let fillStyle = FillStyle(gradient: gradient)
         
+        Log.info("PDF: 🌈 Creating GRADIENT COMPOUND PATH from shading - marking as compound for editor compatibility", category: .general)
+
         let shadingShape = VectorShape(
             name: "PDF Shading Shape \(shapes.count + 1)",
             path: vectorPath,
             strokeStyle: nil,
-            fillStyle: fillStyle
+            fillStyle: fillStyle,
+            isCompoundPath: true  // Mark gradient shapes as compound paths for editor compatibility
         )
-        
+
         shapes.append(shadingShape)
-        Log.info("PDF: ✅ Created standalone shading shape", category: .general)
+        Log.info("PDF: ✅ Created standalone shading shape as compound path", category: .general)
     }
 }

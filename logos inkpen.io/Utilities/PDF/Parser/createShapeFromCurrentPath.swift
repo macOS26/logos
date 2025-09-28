@@ -118,13 +118,21 @@ extension PDFCommandParser {
             fillStyle = FillStyle(color: defaultColor)
         }
         
+        // Check if this is a gradient shape that should be marked as compound path
+        let isGradientShape = fillStyle?.isGradient ?? false
+
+        if isGradientShape {
+            Log.info("PDF: 🌈 Creating GRADIENT COMPOUND PATH - marking as compound for editor compatibility", category: .general)
+        }
+
         let shape = VectorShape(
             name: "PDF Shape \(shapes.count + 1)",
             path: vectorPath,
             strokeStyle: strokeStyle,
-            fillStyle: fillStyle
+            fillStyle: fillStyle,
+            isCompoundPath: isGradientShape  // Mark gradient shapes as compound paths for editor compatibility
         )
-        
+
         shapes.append(shape)
         
         // Clear activeGradient if it was used for direct application (not compound)
