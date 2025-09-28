@@ -130,7 +130,8 @@ extension VectorDocument {
         // CRITICAL FIX: Sync legacy arrays to ensure consistency
         syncLegacyArraysAfterUndo()
 
-        syncSelectionArrays()
+        // DON'T CALL syncSelectionArrays() HERE! It clears the selections we just restored!
+        // syncSelectionArrays()
 
         // CRITICAL FIX: Force refresh of text selection state after undo
         // This ensures the Font panel properly recognizes restored text selection
@@ -267,7 +268,8 @@ extension VectorDocument {
         // CRITICAL FIX: Sync legacy arrays to ensure consistency
         syncLegacyArraysAfterUndo()
 
-        syncSelectionArrays()
+        // DON'T CALL syncSelectionArrays() HERE! It clears the selections we just restored!
+        // syncSelectionArrays()
 
         // CRITICAL FIX: Force refresh of text selection state after redo
         // This ensures the Font panel properly recognizes restored text selection
