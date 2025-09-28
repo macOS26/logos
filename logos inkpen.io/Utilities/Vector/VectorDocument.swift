@@ -836,6 +836,11 @@ class VectorDocument: ObservableObject, Codable {
         try container.encode(_encodableZoomLevel, forKey: .zoomLevel)
         try container.encode(_encodableCanvasOffset, forKey: .canvasOffset)
         try container.encode(_encodableUnifiedObjects, forKey: .unifiedObjects)
+
+        // CRITICAL FIX: Encode selection state for undo/redo
+        try container.encode(selectedLayerIndex, forKey: .selectedLayerIndex)
+        try container.encode(selectedShapeIDs, forKey: .selectedShapeIDs)
+        try container.encode(selectedTextIDs, forKey: .selectedTextIDs)
     }
     
 
