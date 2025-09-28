@@ -536,13 +536,13 @@ class SVGExporter {
     private func generateGradientDef(_ gradient: VectorGradient, id: String, dpiScale: CGFloat) -> String {
         switch gradient {
         case .linear(let linearGradient):
-            return generateLinearGradientDef(linearGradient, id: id, dpiScale: dpiScale)
+            return generateLinearGradientDef(linearGradient, id: id)
         case .radial(let radialGradient):
-            return generateRadialGradientDef(radialGradient, id: id, dpiScale: dpiScale)
+            return generateRadialGradientDef(radialGradient, id: id)
         }
     }
     
-    private func generateLinearGradientDef(_ gradient: LinearGradient, id: String, dpiScale: CGFloat) -> String {
+    private func generateLinearGradientDef(_ gradient: LinearGradient, id: String) -> String {
         var svg = "<linearGradient id=\"\(id)\""
         
         // Calculate gradient vector from angle
@@ -565,7 +565,7 @@ class SVGExporter {
         return svg
     }
     
-    private func generateRadialGradientDef(_ gradient: RadialGradient, id: String, dpiScale: CGFloat) -> String {
+    private func generateRadialGradientDef(_ gradient: RadialGradient, id: String) -> String {
         var svg = "<radialGradient id=\"\(id)\""
         svg += " cx=\"50%\" cy=\"50%\" r=\"50%\">\n"
         
