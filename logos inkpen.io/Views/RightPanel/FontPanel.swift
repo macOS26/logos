@@ -136,10 +136,7 @@ struct FontPanel: View {
                             selectedText: selectedText,
                             editingText: editingText
                         )
-                        
-                        // Color Display Component
-                        FontColorDisplay(selectedText: selectedText)
-                        
+
                         // Convert to Outlines Component
                         ConvertToOutlinesButton(
                             document: document,
