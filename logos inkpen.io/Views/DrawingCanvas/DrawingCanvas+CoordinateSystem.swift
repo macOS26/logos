@@ -43,14 +43,14 @@ extension DrawingCanvas {
                 return transformedPoints
             case .failure(_):
                 // Fallback to CPU calculation
-                return screenToCanvasCPU(points, geometry: geometry)
+                return screenToCanvasCPU(points)
             }
         }
         // CPU fallback
-        return screenToCanvasCPU(points, geometry: geometry)
+        return screenToCanvasCPU(points)
     }
     
-    private func screenToCanvasCPU(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
+    private func screenToCanvasCPU(_ points: [CGPoint]) -> [CGPoint] {
         // Use high precision to prevent floating-point drift
         let preciseOffsetX = Double(document.canvasOffset.x)
         let preciseOffsetY = Double(document.canvasOffset.y)
