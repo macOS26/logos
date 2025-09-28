@@ -5,17 +5,13 @@ import Combine
 class ToolGroupManager: ObservableObject {
     static let shared = ToolGroupManager()
 
-    // DEPRECATED single-group fields (kept for backward compatibility with any legacy views)
+    // Keep currentToolInGroup as it's actually used externally
     @Published var currentToolInGroup: DrawingTool? = nil
     @Published var selectedVariant: StarVariant = .fivePoint {
         didSet {
             saveStarVariant()
         }
     }
-    @Published var selectedVariantIndex: Int? = nil // For star variants
-    @Published var showingAllItems: Bool = false
-    @Published var expansionAnchorTool: DrawingTool? = nil // Tool that triggered expansion
-    @Published var expansionAnchorVariant: StarVariant? = nil // Star variant that triggered expansion
 
     // New per-group state so tool groups act independently
     @Published var expandedGroups: Set<String> = [] {
@@ -128,12 +124,8 @@ class ToolGroupManager: ObservableObject {
     func handleKeyboardToolSwitch(tool: DrawingTool, toolGroup: [DrawingTool]) {
         let groupName = getGroupName(for: tool)
         selectedToolByGroup[groupName] = tool
-        // Do not change expansion state of any group here to avoid side-effects
-        // Maintain deprecated fields for any legacy code paths
+        // Maintain currentToolInGroup for any legacy code paths
         currentToolInGroup = tool
-        showingAllItems = expandedGroups.contains(groupName)
-        expansionAnchorTool = tool
-        expansionAnchorVariant = (tool == .star) ? selectedVariant : nil
         Log.fileOperation("🔧 KEYBOARD: Selected \(tool.rawValue) in group \(groupName)", level: .info)
     }
 
@@ -152,9 +144,6 @@ class ToolGroupManager: ObservableObject {
         // Toggle only this group's expansion
         if expandedGroups.contains(groupName) {
             expandedGroups.remove(groupName)
-            showingAllItems = false
-            expansionAnchorTool = nil
-            expansionAnchorVariant = nil
             Log.fileOperation("🔧 Collapsed group \(groupName), showing tool: \(tool.rawValue)", level: .info)
         } else {
             // When expanding, reorder the group to put current tool first
@@ -168,16 +157,12 @@ class ToolGroupManager: ObservableObject {
             customToolOrder[groupName] = reorderedTools
 
             expandedGroups.insert(groupName)
-            showingAllItems = true
-            expansionAnchorTool = tool
-            expansionAnchorVariant = nil
             Log.fileOperation("🔧 Expanded group \(groupName) from tool: \(tool.rawValue) - reordered with \(tool.rawValue) first", level: .info)
         }
         currentToolInGroup = tool
     }
 
     private func handleStarVariantLongPress(variantIndex: Int) {
-        selectedVariantIndex = variantIndex
         let groupName = "stars"
 
         // Map index to star variant
@@ -193,24 +178,16 @@ class ToolGroupManager: ObservableObject {
                 anchorVariantByGroup[groupName] = variant
                 Log.fileOperation("🔧 Expanded star variants from: \(variant.rawValue)", level: .info)
             }
-            // Maintain deprecated fields for compatibility
-            showingAllItems = expandedGroups.contains(groupName)
-            expansionAnchorTool = .star
-            expansionAnchorVariant = variant
         }
     }
 
     func selectStarVariant(_ variant: StarVariant) {
         selectedVariant = variant
-        selectedVariantIndex = StarVariant.allCases.firstIndex(of: variant)
         Log.fileOperation("⭐ Selected star variant: \(variant.rawValue)", level: .info)
     }
 
     func collapseAllGroups() {
         expandedGroups.removeAll()
-        showingAllItems = false
-        expansionAnchorTool = nil
-        expansionAnchorVariant = nil
         anchorVariantByGroup.removeAll()
         Log.fileOperation("🔧 Collapsed all tool groups", level: .info)
     }
