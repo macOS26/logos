@@ -26,8 +26,20 @@ extension PDFCommandParser {
         if isInCompoundPath && !compoundPathParts.isEmpty {
             Log.info("PDF: 🔍 COMPOUND PATH FILL - Creating compound shape from \(compoundPathParts.count + 1) parts", category: .debug)
             createCompoundShapeFromParts(filled: true, stroked: false)
-        } else {
+            // CRITICAL: Return here to prevent creating individual shapes for compound path parts
+            return
+        }
+
+        // Only create individual shape if NOT in a compound path
+        if !isInCompoundPath {
             createShapeFromCurrentPath(filled: true, stroked: false)
+        } else {
+            // We're in a compound path but haven't collected all parts yet
+            // Just store the current path as a part
+            if !currentPath.isEmpty {
+                compoundPathParts.append(currentPath)
+                currentPath.removeAll()
+            }
         }
     }
 
