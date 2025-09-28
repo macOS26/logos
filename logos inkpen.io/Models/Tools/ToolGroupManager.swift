@@ -186,20 +186,9 @@ class ToolGroupManager: ObservableObject {
         Log.fileOperation("⭐ Selected star variant: \(variant.rawValue)", level: .info)
     }
 
-    func collapseAllGroups() {
-        expandedGroups.removeAll()
-        anchorVariantByGroup.removeAll()
-        Log.fileOperation("🔧 Collapsed all tool groups", level: .info)
-    }
-
     func setSelectedToolInGroup(_ tool: DrawingTool) {
         let groupName = getGroupName(for: tool)
         selectedToolByGroup[groupName] = tool
-    }
-
-    func getSelectedToolInGroup(for tool: DrawingTool) -> DrawingTool {
-        let groupName = getGroupName(for: tool)
-        return selectedToolByGroup[groupName] ?? tool
     }
 
     private func getGroupName(for tool: DrawingTool) -> String {
@@ -217,9 +206,5 @@ class ToolGroupManager: ObservableObject {
     // Frame management for button positioning
     func setToolButtonFrame(_ tool: DrawingTool, frame: CGRect) {
         toolButtonFrames[tool] = frame
-    }
-
-    func getToolButtonFrame(_ tool: DrawingTool) -> CGRect? {
-        return toolButtonFrames[tool]
     }
 }
