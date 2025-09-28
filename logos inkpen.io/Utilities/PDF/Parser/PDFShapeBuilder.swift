@@ -158,29 +158,56 @@ extension PDFCommandParser {
     // MARK: - Shape Creation Methods
     
     func createCompoundShapeFromParts(filled: Bool, stroked: Bool) {
+        defer {
+            // Reset compound path state at the end
+            compoundPathParts.removeAll()
+            currentPath.removeAll()
+            isInCompoundPath = false
+            moveToCount = 0
+
+            // Clear the active gradient since it's been applied
+            activeGradient = nil
+
+            Log.info("PDF: 🔄 Deferred cleanup of compound path state", category: .debug)
+        }
+
         // Add the current path as the final part if not empty
         var allParts = compoundPathParts
         if !currentPath.isEmpty {
             allParts.append(currentPath)
         }
 
-        // Simple duplicate removal - only remove EXACT duplicates
-        var uniqueParts: [[PathCommand]] = []
-        
-        for part in allParts {
-            // Check if this exact path already exists
-            let isDuplicate = uniqueParts.contains { existingPart in
-                pathCommandsAreEqual(existingPart, part)
+        // Handle gradients vs flat shapes differently
+        if activeGradient != nil {
+            // GRADIENT: Paths were accumulated, use as-is
+            Log.info("PDF: 🎨 GRADIENT compound shape - using accumulated paths", category: .general)
+        } else {
+            // FLAT SHAPES: Paths were accumulated but we need separate parts
+            // Extract the unique portions of each part
+            var separateParts: [[PathCommand]] = []
+            var previousCommands: [PathCommand] = []
+
+            for part in allParts {
+                // Find commands that are NEW in this part
+                var newCommands: [PathCommand] = []
+                for command in part {
+                    if !previousCommands.contains(where: { pathCommandEquals($0, command) }) {
+                        newCommands.append(command)
+                    }
+                }
+
+                if !newCommands.isEmpty {
+                    separateParts.append(newCommands)
+                    previousCommands = part // Update to full part for next iteration
+                    Log.info("PDF: 📝 Extracted \(newCommands.count) new commands from part with \(part.count) total", category: .debug)
+                }
             }
-            
-            if !isDuplicate {
-                uniqueParts.append(part)
-            } else {
-                Log.info("PDF: 🗑️ Removing exact duplicate path in compound shape", category: .general)
+
+            if !separateParts.isEmpty {
+                allParts = separateParts
+                Log.info("PDF: ✂️ Separated accumulated paths into \(separateParts.count) distinct parts", category: .general)
             }
         }
-        
-        allParts = uniqueParts
 
         Log.info("PDF: 🔧 Creating compound shape with \(allParts.count) unique subpaths (from \(compoundPathParts.count + (currentPath.isEmpty ? 0 : 1)) total)", category: .general)
         
@@ -285,16 +312,7 @@ extension PDFCommandParser {
         )
         
         shapes.append(compoundShape)
-        
-        // Reset compound path state
-        compoundPathParts.removeAll()
-        currentPath.removeAll()
-        isInCompoundPath = false
-        moveToCount = 0
-        
-        // Clear the active gradient since it's been applied
-        activeGradient = nil
-        
+
         Log.info("PDF: ✅ Compound shape created with \(allParts.count) subpaths", category: .general)
     }
     
@@ -470,6 +488,34 @@ extension PDFCommandParser {
         }
         
         currentPath.removeAll()
+    }
+
+    // Helper function to compare individual path commands
+    private func pathCommandEquals(_ cmd1: PathCommand, _ cmd2: PathCommand) -> Bool {
+        let tolerance: CGFloat = 0.01
+
+        switch (cmd1, cmd2) {
+        case (.moveTo(let p1), .moveTo(let p2)):
+            return abs(p1.x - p2.x) < tolerance && abs(p1.y - p2.y) < tolerance
+        case (.lineTo(let p1), .lineTo(let p2)):
+            return abs(p1.x - p2.x) < tolerance && abs(p1.y - p2.y) < tolerance
+        case (.curveTo(let cp1_1, let cp2_1, let to1), .curveTo(let cp1_2, let cp2_2, let to2)):
+            return abs(cp1_1.x - cp1_2.x) < tolerance && abs(cp1_1.y - cp1_2.y) < tolerance &&
+                   abs(cp2_1.x - cp2_2.x) < tolerance && abs(cp2_1.y - cp2_2.y) < tolerance &&
+                   abs(to1.x - to2.x) < tolerance && abs(to1.y - to2.y) < tolerance
+        case (.quadCurveTo(let cp1, let to1), .quadCurveTo(let cp2, let to2)):
+            return abs(cp1.x - cp2.x) < tolerance && abs(cp1.y - cp2.y) < tolerance &&
+                   abs(to1.x - to2.x) < tolerance && abs(to1.y - to2.y) < tolerance
+        case (.closePath, .closePath):
+            return true
+        case (.rectangle(let r1), .rectangle(let r2)):
+            return abs(r1.origin.x - r2.origin.x) < tolerance &&
+                   abs(r1.origin.y - r2.origin.y) < tolerance &&
+                   abs(r1.size.width - r2.size.width) < tolerance &&
+                   abs(r1.size.height - r2.size.height) < tolerance
+        default:
+            return false
+        }
     }
 
     // Helper function to compare path commands for exact equality

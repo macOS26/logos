@@ -16,16 +16,16 @@ extension PDFCommandParser {
         // COMPOUND PATH DETECTION: Multiple MoveTo operations before fill = compound path
         if !currentPath.isEmpty {
             Log.info("PDF: COMPOUND PATH DETECTED - MoveTo with existing path, storing current path as part of compound", category: .general)
-            
+
             // Store the current path as part of a compound path
             compoundPathParts.append(currentPath)
             isInCompoundPath = true
             moveToCount += 1
-            
+
             Log.info("PDF: Compound path part #\(compoundPathParts.count) stored (\(currentPath.count) commands)", category: .general)
-            
-            // CRITICAL: Clear currentPath after storing it to prevent accumulation
-            currentPath.removeAll()
+
+            // DON'T clear currentPath here - we can't know yet if it's a gradient
+            // The decision to clear or keep will be made later when we know
         } else {
             // Reset compound path tracking for new path sequence
             moveToCount = 1
