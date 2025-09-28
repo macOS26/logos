@@ -30,7 +30,7 @@ struct PathOperationsPanel: View {
                 .buttonStyle(BorderlessButtonStyle())
                 .help("Professional Path Operations")
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 16)
             .padding(.top, 12)
             
             // Shape Modes Section (professional standard)
@@ -39,7 +39,7 @@ struct PathOperationsPanel: View {
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(.secondary)
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 16)
                 
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 4), spacing: 6) {
                     ForEach([PathfinderOperation.union, .minusFront, .intersect, .exclude], id: \.self) { operation in
@@ -51,7 +51,7 @@ struct PathOperationsPanel: View {
                         }
                     }
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 16)
             }
             
             // Path Operations Effects Section (professional standard)
@@ -60,7 +60,7 @@ struct PathOperationsPanel: View {
                         .font(.caption)
                     .fontWeight(.semibold)
                         .foregroundColor(.secondary)
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 16)
                 
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 4), spacing: 6) {
                                             ForEach([PathfinderOperation.mosaic, .cut, .merge, .separate, .crop, .dieline, .kick], id: \.self) { operation in
@@ -72,7 +72,7 @@ struct PathOperationsPanel: View {
                         }
                     }
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 16)
             }
             
             // PROFESSIONAL OFFSET PATH SECTION (Professional Standards)
@@ -84,7 +84,7 @@ struct PathOperationsPanel: View {
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(.secondary)
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 16)
                 
                 VStack(spacing: 8) {
                     // Clean Duplicate Points - Full Width
@@ -195,7 +195,7 @@ struct PathOperationsPanel: View {
                     }
                     .help("Remove overlaps from all shapes in the document")
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 16)
             }
             
             // Clipping Masks
@@ -204,7 +204,7 @@ struct PathOperationsPanel: View {
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(.secondary)
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 16)
                 
                 // Clipping Mask Selection Mode Toggle - Full Width
                 HStack {
@@ -226,7 +226,7 @@ struct PathOperationsPanel: View {
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                     .controlSize(.small)
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 16)
                 
                 VStack(spacing: 8) {
                     // Make Clipping Mask - Full Width
@@ -277,7 +277,7 @@ struct PathOperationsPanel: View {
                         document.releaseClippingMaskForSelection()
                     }
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 16)
             }
             
             Spacer()

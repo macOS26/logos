@@ -80,14 +80,22 @@ struct ProfessionalOffsetPathSection: View {
                     
                     // Keep Original Path Toggle (Professional Standard)
                     HStack {
-                        Toggle("Keep Original Path", isOn: $keepOriginalPath)
-                            .toggleStyle(.switch)
-                            .controlSize(.small)
-                            .font(.caption)
-                            .help("Keep the original path when creating offset (Professional default)")
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Keep Original Path")
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                            Text("Preserve original when creating offset")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
 
                         Spacer()
+
+                        Toggle("", isOn: $keepOriginalPath)
+                            .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                            .controlSize(.small)
                     }
+                    .help("Keep the original path when creating offset (Professional default)")
                     
 
                     
