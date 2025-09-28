@@ -680,9 +680,11 @@ class VectorDocument: ObservableObject, Codable {
         customCmykSwatches = []
         customHsbSwatches = []
 
-        selectedLayerIndex = nil  // Never load from document - always start fresh
-        selectedShapeIDs = []  // Never load from document - always start fresh
-        selectedTextIDs = []  // Never load from document - always start fresh
+        // CRITICAL FIX: Decode selection state for undo/redo to work properly
+        // These MUST be decoded, not reset to empty!
+        selectedLayerIndex = try? container.decodeIfPresent(Int.self, forKey: .selectedLayerIndex)
+        selectedShapeIDs = (try? container.decodeIfPresent(Set<UUID>.self, forKey: .selectedShapeIDs)) ?? []
+        selectedTextIDs = (try? container.decodeIfPresent(Set<UUID>.self, forKey: .selectedTextIDs)) ?? []
         selectedObjectIDs = []
         directSelectedShapeIDs = []
         isHandleScalingActive = false

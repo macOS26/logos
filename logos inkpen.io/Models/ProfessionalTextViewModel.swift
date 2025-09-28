@@ -462,9 +462,8 @@ class ProfessionalTextViewModel: ObservableObject {
 
         Log.info("✅ TEXT CONVERSION COMPLETE: Created \(linePaths.count) compound path(s)", category: .fileOperations)
 
-        // Select all converted shapes
-        document.selectedShapeIDs = Set(createdShapeIDs)
-        document.selectedTextIDs.removeAll()
+        // DON'T modify selection here - let parent function handle it
+        // This was corrupting the undo state by modifying selection after saveToUndoStack()
 
         // Remove from unified system (which will also update textObjects array)
         document.removeTextFromUnifiedSystem(id: textObject.id)
