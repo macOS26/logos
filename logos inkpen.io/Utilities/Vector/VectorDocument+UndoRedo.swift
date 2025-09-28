@@ -109,10 +109,33 @@ extension VectorDocument {
         // No need to fix ordering - undo restored the exact state that was saved
         // CRITICAL FIX: Sync legacy arrays to ensure consistency
         syncLegacyArraysAfterUndo()
-        
+
         syncSelectionArrays()
+
+        // CRITICAL FIX: Force refresh of text selection state after undo
+        // This ensures the Font panel properly recognizes restored text selection
+        if !selectedTextIDs.isEmpty {
+            // Verify text objects still exist and update their selection state
+            let validTextIDs = selectedTextIDs.filter { textID in
+                unifiedObjects.contains { obj in
+                    if case .shape(let shape) = obj.objectType {
+                        return shape.isTextObject && shape.id == textID
+                    }
+                    return false
+                }
+            }
+
+            // Update selection to only valid text IDs
+            if validTextIDs != selectedTextIDs {
+                selectedTextIDs = validTextIDs
+            }
+
+            // Log for debugging
+            Log.info("🔧 UNDO: Restored \(validTextIDs.count) text selections", category: .general)
+        }
+
         objectWillChange.send()
-        
+
         Log.info("✅ Undo completed - restored state with \(unifiedObjects.count) unified objects", category: .general)
     }
     
@@ -205,10 +228,33 @@ extension VectorDocument {
         // No need to fix ordering - redo restored the exact state that was saved
         // CRITICAL FIX: Sync legacy arrays to ensure consistency
         syncLegacyArraysAfterUndo()
-        
+
         syncSelectionArrays()
+
+        // CRITICAL FIX: Force refresh of text selection state after redo
+        // This ensures the Font panel properly recognizes restored text selection
+        if !selectedTextIDs.isEmpty {
+            // Verify text objects still exist and update their selection state
+            let validTextIDs = selectedTextIDs.filter { textID in
+                unifiedObjects.contains { obj in
+                    if case .shape(let shape) = obj.objectType {
+                        return shape.isTextObject && shape.id == textID
+                    }
+                    return false
+                }
+            }
+
+            // Update selection to only valid text IDs
+            if validTextIDs != selectedTextIDs {
+                selectedTextIDs = validTextIDs
+            }
+
+            // Log for debugging
+            Log.info("🔧 REDO: Restored \(validTextIDs.count) text selections", category: .general)
+        }
+
         objectWillChange.send()
-        
+
         Log.info("✅ Redo completed - restored state with \(unifiedObjects.count) unified objects", category: .general)
     }
     
