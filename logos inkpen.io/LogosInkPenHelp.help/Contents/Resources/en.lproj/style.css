@@ -5,7 +5,7 @@ body {
     font-size: 13px;
     line-height: 1.6;
     color: #000;
-    background-color: #d0d0d0;
+    background-color: #000;
     margin: 0;
     padding: 0;
 }
@@ -90,10 +90,7 @@ body {
 }
 
 .footer {
-    text-align: center;
-    padding: 20px;
-    color: #666;
-    font-size: 11px;
+    display: none;
 }
 
 /* Page-specific styles */

@@ -75,7 +75,10 @@
       "Bash(then echo \"=== $file ===\")",
       "Bash(tail:*)",
       "Bash(periphery scan:*)",
-      "Bash(sort:*)"
+      "Bash(sort:*)",
+      "Bash(if [ \"$file\" != \"/Users/toddbruss/Documents/GitHub/logos/logos inkpen.io/LogosInkPenHelp.help/Contents/Resources/en.lproj/footer.html\" ])",
+      "Bash(then)",
+      "Bash(hiutil:*)"
     ],
     "deny": [],
     "ask": []
