@@ -42,41 +42,4 @@ func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
     )
 }
 
-func convertCGPathToVectorPath(_ cgPath: CGPath) -> VectorPath {
-    var elements: [PathElement] = []
-    
-    cgPath.applyWithBlock { elementPtr in
-        let element = elementPtr.pointee
-        let points = element.points
-        
-        switch element.type {
-        case .moveToPoint:
-            elements.append(.move(to: VectorPoint(Double(points[0].x), Double(points[0].y))))
-            
-        case .addLineToPoint:
-            elements.append(.line(to: VectorPoint(Double(points[0].x), Double(points[0].y))))
-            
-        case .addCurveToPoint:
-            elements.append(.curve(
-                to: VectorPoint(Double(points[2].x), Double(points[2].y)),
-                control1: VectorPoint(Double(points[0].x), Double(points[0].y)),
-                control2: VectorPoint(Double(points[1].x), Double(points[1].y))
-            ))
-            
-        case .addQuadCurveToPoint:
-            elements.append(.quadCurve(
-                to: VectorPoint(Double(points[1].x), Double(points[1].y)),
-                control: VectorPoint(Double(points[0].x), Double(points[0].y))
-            ))
-            
-        case .closeSubpath:
-            elements.append(.close)
-            
-        @unknown default:
-            break
-        }
-    }
-    
-    return VectorPath(elements: elements)
-}
 
