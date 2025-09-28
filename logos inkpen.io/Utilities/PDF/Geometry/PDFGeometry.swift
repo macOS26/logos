@@ -9,31 +9,6 @@ import SwiftUI
 
 // MARK: - Geometry and Coordinate Transformation Utilities
 
-/// Handles coordinate system transformations between PDF and screen coordinates
-struct PDFGeometryTransformer {
-    let pageSize: CGSize
-    
-    /// Transform PDF coordinates (origin at bottom-left) to screen coordinates (origin at top-left)
-    func transformPoint(_ point: CGPoint) -> VectorPoint {
-        return VectorPoint(Double(point.x), Double(pageSize.height - point.y))
-    }
-    
-    /// Transform multiple points efficiently
-    func transformPoints(_ points: [CGPoint]) -> [VectorPoint] {
-        return points.map { transformPoint($0) }
-    }
-    
-    /// Transform a rectangle from PDF to screen coordinates
-    func transformRect(_ rect: CGRect) -> CGRect {
-        return CGRect(
-            x: rect.origin.x,
-            y: pageSize.height - rect.origin.y - rect.height,
-            width: rect.width,
-            height: rect.height
-        )
-    }
-}
-
 /// Calculates bounds and dimensions for PDF content
 struct PDFBoundsCalculator {
     
@@ -81,35 +56,5 @@ struct PDFBoundsCalculator {
         }
         
         return false
-    }
-}
-
-/// Handles matrix transformations for gradients and graphics state
-struct PDFMatrixTransformer {
-    var currentTransformMatrix: CGAffineTransform = .identity
-    
-    /// Apply a matrix concatenation
-    mutating func applyMatrix(_ transform: CGAffineTransform) {
-        currentTransformMatrix = currentTransformMatrix.concatenating(transform)
-    }
-    
-    /// Extract rotation angle from current transformation matrix
-    var rotationAngle: CGFloat {
-        return atan2(currentTransformMatrix.b, currentTransformMatrix.a)
-    }
-    
-    /// Get rotation angle in degrees
-    var rotationAngleDegrees: CGFloat {
-        return rotationAngle * 180.0 / .pi
-    }
-    
-    /// Get Y-axis flipped angle for screen coordinates
-    var screenCorrectedAngle: CGFloat {
-        return -rotationAngleDegrees
-    }
-    
-    /// Reset transformation matrix
-    mutating func reset() {
-        currentTransformMatrix = .identity
     }
 }
