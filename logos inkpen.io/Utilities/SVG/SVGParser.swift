@@ -11,9 +11,6 @@ import SwiftUI
 class SVGParser: NSObject, XMLParserDelegate {
     var shapes: [VectorShape] = []
     internal var textObjects: [VectorText] = []
-    private var currentPath: VectorPath?
-    private var currentStroke: StrokeStyle?
-    private var currentFill: FillStyle?
     internal var currentTransform = CGAffineTransform.identity
     private var transformStack: [CGAffineTransform] = []
     private var documentSize = CGSize(width: 100, height: 100)
