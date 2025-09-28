@@ -9,7 +9,6 @@ import SwiftUI
 
 // MARK: - Command Outline (Red with white outline)
 struct PathOutline: View {
-    @ObservedObject var document: VectorDocument
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint

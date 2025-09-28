@@ -7,7 +7,6 @@
 
 import SwiftUI
 import AppKit
-import SwiftUI
 
 struct SelectionHandlesView: View {
     @ObservedObject var document: VectorDocument
@@ -53,7 +52,6 @@ struct SelectionHandlesView: View {
                                     // Command key: show red with white outline instead of transform box
                                     if isCommandPressed {
                                         PathOutline(
-                                            document: document,
                                             shape: shape,
                                             zoomLevel: document.zoomLevel,
                                             canvasOffset: document.canvasOffset
