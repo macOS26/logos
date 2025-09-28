@@ -16,6 +16,12 @@ extension PDFCommandParser {
     func handleFill() {
         Log.info("PDF: Fill operation - creating filled shape", category: .general)
 
+        // Check if we already processed this as a gradient
+        if !isInCompoundPath && currentPath.isEmpty && compoundPathParts.isEmpty {
+            Log.info("PDF: 🚫 Skipping fill - no paths to process (likely already handled by gradient)", category: .general)
+            return
+        }
+
         // Check if this is a black background shape for a transparent image
         if shouldSkipBlackBackground() {
             Log.info("PDF: Skipping black background shape for transparent image", category: .general)

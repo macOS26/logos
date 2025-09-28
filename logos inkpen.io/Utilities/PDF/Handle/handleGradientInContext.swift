@@ -17,12 +17,27 @@ extension PDFCommandParser {
             // Case 1: We have a current path - create a shape immediately with this gradient
             Log.info("PDF: 🔥 DIRECT PATH GRADIENT - Creating shape immediately from current path", category: .general)
             createShapeFromCurrentPath(filled: true, stroked: false, customFillStyle: FillStyle(gradient: gradient))
+
+            // CRITICAL: Clear compound path state after gradient shape creation
+            compoundPathParts.removeAll()
+            isInCompoundPath = false
+            Log.info("PDF: 🧹 Cleared compound path state after gradient shape creation", category: .general)
             
         } else if isInCompoundPath || !compoundPathParts.isEmpty {
             // Case 2: We're building compound paths - gradient applies to the compound shape
             Log.info("PDF: 🔗 COMPOUND PATH GRADIENT - Shading applies to compound shape being built", category: .general)
-            activeGradient = gradient
-            // This will be applied during compound path creation
+
+            // Create the gradient compound shape immediately
+            if !compoundPathParts.isEmpty || !currentPath.isEmpty {
+                Log.info("PDF: 🎨 Creating gradient compound shape now to prevent duplicate flat shape", category: .general)
+                activeGradient = gradient
+                createCompoundShapeFromParts(filled: true, stroked: false)
+                // Clear state to prevent duplicate flat shape creation
+                compoundPathParts.removeAll()
+                currentPath.removeAll()
+                isInCompoundPath = false
+                activeGradient = nil
+            }
             
         } else {
             // Case 3: Standalone shading - create a shape from the shading itself
