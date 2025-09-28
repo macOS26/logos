@@ -313,16 +313,6 @@ struct ProfessionalOffsetPathSection: View {
     }
     
 
-    
-    private func resetToDefaults() {
-        withAnimation(.easeInOut(duration: 0.2)) {
-            offsetDistance = 10
-            selectedJoinType = .miter
-            miterLimit = 4.0
-            keepOriginalPath = true
-        }
-    }
-    
     private func mapJoinTypeToCoreGraphics(_ joinType: JoinType) -> CGLineJoin {
         switch joinType {
         case .round: return .round

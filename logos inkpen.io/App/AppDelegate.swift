@@ -35,7 +35,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Set up a fallback timer to ensure the app doesn't hang
         setupFallbackTimer()
+        
+        // Set up custom help menu
+        setupHelpMenu()
 
+    }
+    
+    private func setupHelpMenu() {
+        if let helpMenu = NSApp.mainMenu?.item(withTitle: "Help")?.submenu {
+            // Add custom help item at the beginning
+            let helpItem = NSMenuItem(
+                title: "Logos InkPen Help",
+                action: #selector(showInternalHelp),
+                keyEquivalent: "?"
+            )
+            helpItem.target = self
+            helpMenu.insertItem(helpItem, at: 0)
+            helpMenu.insertItem(NSMenuItem.separator(), at: 1)
+        }
+    }
+    
+    @objc private func showInternalHelp() {
+        InternalHelpViewer.shared.showHelp()
     }
     
     private func setupFallbackTimer() {

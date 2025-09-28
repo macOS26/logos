@@ -312,20 +312,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         }
     }
     
-    // HELPER: Reliable color comparison using color components
-    private func colorsAreEqual(_ color1: NSColor, _ color2: NSColor) -> Bool {
-        // Convert to Display P3 color space for reliable comparison
-        guard let rgb1 = color1.usingColorSpace(.displayP3),
-              let rgb2 = color2.usingColorSpace(.displayP3) else {
-            return false
-        }
-        
-        return abs(rgb1.redComponent - rgb2.redComponent) < 0.001 &&
-               abs(rgb1.greenComponent - rgb2.greenComponent) < 0.001 &&
-               abs(rgb1.blueComponent - rgb2.blueComponent) < 0.001 &&
-               abs(rgb1.alphaComponent - rgb2.alphaComponent) < 0.001
-    }
-    
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }

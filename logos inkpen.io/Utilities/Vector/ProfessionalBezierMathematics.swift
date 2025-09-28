@@ -555,11 +555,6 @@ extension VectorPoint {
             return vectors.map { $0.normalized }
         }
     }
-    
-    /// Vector length/magnitude
-    var magnitude: Double {
-        return sqrt(x * x + y * y)
-    }
 }
 
 // MARK: - Professional Bezier Curve Factory
