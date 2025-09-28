@@ -10,28 +10,19 @@ import SwiftUI
 struct ConvertToOutlinesButton: View {
     @ObservedObject var document: VectorDocument
     let selectedText: VectorText?
-    
+
     var body: some View {
         VStack {
             if selectedText != nil {
                 Divider()
-                
-                HStack {
-                    Button("Convert to Outlines") {
-                        convertSelectedTextToOutlines()
-                    }
-                    .buttonStyle(ProfessionalPrimaryButtonStyle())
-                    .font(.caption)
-                    .help("Convert text to vector paths (⌘⇧O)")
-                    .keyboardShortcut("o", modifiers: [.command, .shift])
-                    // Removed content check - if text is selected, allow conversion
 
-                    Spacer()
-
-                    Text("Creates vector paths")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
+                Button("Convert to Outlines") {
+                    convertSelectedTextToOutlines()
                 }
+                .buttonStyle(ProfessionalSecondaryButtonStyle())
+                .frame(maxWidth: .infinity)
+                .help("Convert text to vector paths (⌘⇧O)")
+                .keyboardShortcut("o", modifiers: [.command, .shift])
             }
         }
     }
