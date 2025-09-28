@@ -114,11 +114,6 @@ class InkPenUIColors: ObservableObject {
         Color.red
     }
     
-    /// Light error background
-    var lightErrorBackground: Color {
-        Color.red.opacity(0.1)
-    }
-    
     /// Light error background (alternative)
     var lightErrorBackground2: Color {
         Color.red.opacity(0.2)
@@ -136,21 +131,6 @@ class InkPenUIColors: ObservableObject {
         Color.white
     }
     
-    /// Pure black color
-    var black: Color {
-        Color.black
-    }
-    
-    /// White with high opacity for overlays
-    var whiteOverlay: Color {
-        Color.white.opacity(0.9)
-    }
-    
-    /// White with medium opacity
-    var whiteMediumOverlay: Color {
-        Color.white.opacity(0.3)
-    }
-    
     // MARK: - Tool and Editor Colors
 
     /// Orange color for tools and editing states - Using P3 vibrant orange
@@ -159,36 +139,10 @@ class InkPenUIColors: ObservableObject {
         ColorManager.shared.makeColor(r: 1.0, g: 0.584, b: 0.0, a: 1.0, source: ColorManager.shared.displayP3CG)
     }
 
-    /// Orange with opacity for tool backgrounds
-    var lightToolOrange: Color {
-        // P3 vibrant orange with opacity
-        ColorManager.shared.makeColor(r: 1.0, g: 0.584, b: 0.0, a: 0.8, source: ColorManager.shared.displayP3CG)
-    }
-    
-    /// Purple for special UI elements
-    var specialPurple: Color {
-        Color.purple
-    }
-    
-    /// Light purple background
-    var lightPurpleBackground: Color {
-        Color.purple.opacity(0.2)
-    }
-    
-    /// Light purple background (alternative)
-    var veryLightPurpleBackground: Color {
-        Color.purple.opacity(0.1)
-    }
-    
     // MARK: - Content and Drawing Colors
-    
+
     /// Text background color
     var textBackground: Color {
-        Color(NSColor.textBackgroundColor)
-    }
-    
-    /// Fill color for drawing backgrounds
-    var drawingBackground: Color {
         Color(NSColor.textBackgroundColor)
     }
     
