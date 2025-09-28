@@ -14,7 +14,6 @@ struct RGBInputSection: View {
     @Environment(AppState.self) private var appState
     
     // Callback indicates we're in gradient editing mode
-    let onColorSelected: ((VectorColor) -> Void)?
     let showGradientEditing: Bool  // 🔥 NEW: Controls whether this section allows gradient editing
     
     @State private var redValue: String = "133"
@@ -544,7 +543,7 @@ struct RGBInputSection: View {
 }
 
 #Preview {
-    RGBInputSection(document: VectorDocument(), sharedColor: .constant(.black), onColorSelected: nil, showGradientEditing: false)
+    RGBInputSection(document: VectorDocument(), sharedColor: .constant(.black), showGradientEditing: false)
         .padding()
         .environment(AppState.shared)
 }

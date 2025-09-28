@@ -15,7 +15,6 @@ struct HSBInputSection: View {
     @Environment(AppState.self) private var appState
     
     // Callback indicates we're in gradient editing mode
-    let onColorSelected: ((VectorColor) -> Void)?
     let showGradientEditing: Bool  // 🔥 NEW: Controls whether this section allows gradient editing
     
     @State private var hueValue: String = "0"

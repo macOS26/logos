@@ -78,13 +78,13 @@ struct ColorPanel: View {
             
             // Mode-specific input sections
             if document.settings.colorMode == .pms {
-                HSBInputSection(document: document, sharedColor: $currentPreviewColor, onColorSelected: onColorSelected, showGradientEditing: showGradientEditing)
+                HSBInputSection(document: document, sharedColor: $currentPreviewColor, showGradientEditing: showGradientEditing)
                     .padding(.horizontal, 12)
             } else if document.settings.colorMode == .cmyk {
                 CMYKInputSection(document: document, sharedColor: $currentPreviewColor, onColorSelected: onColorSelected, showGradientEditing: showGradientEditing)
                         .padding(.horizontal, 12)
             } else if document.settings.colorMode == .rgb {
-                RGBInputSection(document: document, sharedColor: $currentPreviewColor, onColorSelected: onColorSelected, showGradientEditing: showGradientEditing)
+                RGBInputSection(document: document, sharedColor: $currentPreviewColor, showGradientEditing: showGradientEditing)
                         .padding(.horizontal, 12)
             }
                 
