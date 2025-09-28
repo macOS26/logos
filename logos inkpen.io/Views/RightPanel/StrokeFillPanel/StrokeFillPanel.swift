@@ -349,6 +349,7 @@ struct StrokeFillPanel: View {
                         .help("Duplicate selected shapes (Cmd+D)")
                         .keyboardShortcut("d", modifiers: .command)
                     }
+                    .padding(.horizontal, 12)
 
                     // Tool-specific settings sections
                     switch document.currentTool {
