@@ -954,10 +954,9 @@ class DocumentState: ObservableObject {
         
         // PROPER TOOL GROUP HANDLING: When switching to a tool via keyboard shortcut,
         // make it the active tool in its group and expand the group if needed
-        let toolGroup = ToolGroupConfiguration.getToolGroup(for: tool)
-        
+
         // Update the shared ToolGroupManager to reflect the new tool selection
-        ToolGroupManager.shared.handleKeyboardToolSwitch(tool: tool, toolGroup: toolGroup)
+        ToolGroupManager.shared.handleKeyboardToolSwitch(tool: tool)
         
         Log.info("🛠️ MENU: Switched from \(previousTool.rawValue) to \(tool.rawValue)", category: .general)
     }

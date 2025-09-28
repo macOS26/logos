@@ -121,7 +121,7 @@ class ToolGroupManager: ObservableObject {
     }
 
     // Handle tool switching via keyboard shortcuts (per-group, non-interfering)
-    func handleKeyboardToolSwitch(tool: DrawingTool, toolGroup: [DrawingTool]) {
+    func handleKeyboardToolSwitch(tool: DrawingTool) {
         let groupName = getGroupName(for: tool)
         selectedToolByGroup[groupName] = tool
         // Maintain currentToolInGroup for any legacy code paths
