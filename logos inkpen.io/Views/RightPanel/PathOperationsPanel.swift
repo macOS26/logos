@@ -9,16 +9,16 @@ import SwiftUI
 
 struct PathOperationsPanel: View {
     @ObservedObject var document: VectorDocument
-    
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Header
+        VStack(alignment: .leading, spacing: 0) {
+            // Header (stays fixed at top)
             HStack {
                 Text("Path Operations")
                     .font(.headline)
                     .foregroundColor(.primary)
                 Spacer()
-                
+
                 // Info button
                 Button {
                     // Show pathfinder help
@@ -32,8 +32,12 @@ struct PathOperationsPanel: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 12)
-            
-            // Shape Modes Section (professional standard)
+            .padding(.bottom, 12)
+
+            // Scrollable content
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    // Shape Modes Section (professional standard)
                 VStack(alignment: .leading, spacing: 8) {
                 Text("Shape Modes")
                     .font(.caption)
@@ -279,8 +283,10 @@ struct PathOperationsPanel: View {
                 }
                 .padding(.horizontal, 16)
             }
-            
+
             Spacer()
+                }
+            }
         }
     }
     
