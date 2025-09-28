@@ -8,16 +8,6 @@
 import SwiftUI
 import SwiftUI
 
-// Throttle and batching state for brush preview (file-private to avoid stored properties in extensions)
-fileprivate var lastBrushPreviewTime: CFAbsoluteTime = 0
-fileprivate var lastBrushStyleUpdateTime: CFAbsoluteTime = 0
-fileprivate var lastBrushPreviewPointCount: Int = 0
-fileprivate let brushPreviewMinInterval: CFAbsoluteTime = 1.0 / 60.0 // ~60 FPS max
-fileprivate let brushStyleUpdateInterval: CFAbsoluteTime = 0.2 // batch style updates
-fileprivate let brushPreviewQueue = DispatchQueue(label: "brush.preview.queue", qos: .userInitiated)
-fileprivate var isBrushPreviewComputing: Bool = false
-fileprivate var pendingBrushPreview: Bool = false
-
 extension DrawingCanvas {
     
     // MARK: - Helper Functions
