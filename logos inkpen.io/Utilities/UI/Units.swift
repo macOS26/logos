@@ -53,11 +53,9 @@ enum ZoomMode: Equatable {
 struct ZoomRequest: Equatable {
     let targetZoom: CGFloat
     let mode: ZoomMode
-    let timestamp: Date
-    
+
     init(targetZoom: CGFloat, mode: ZoomMode) {
         self.targetZoom = targetZoom
         self.mode = mode
-        self.timestamp = Date()
     }
 }
