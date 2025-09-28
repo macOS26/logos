@@ -15,7 +15,15 @@ extension PDFCommandParser {
             Log.info("PDF: Cannot create shape - current path is empty", category: .general)
             return
         }
-        
+
+        // Check if we just created a gradient compound path - skip duplicate
+        if justCreatedGradientCompound && filled && !stroked && customFillStyle == nil {
+            Log.info("PDF: 🚫 Skipping duplicate shape creation after gradient compound path (3-param version)", category: .general)
+            // DON'T clear the flag here - keep blocking
+            currentPath.removeAll()
+            return
+        }
+
         Log.info("PDF: Creating shape with \(currentPath.count) path commands, filled: \(filled), stroked: \(stroked)", category: .general)
         
         // Convert to VectorPath elements with coordinate system fix

@@ -47,6 +47,8 @@ class PDFCommandParser {
     var isInCompoundPath = false
     var compoundPathParts: [[PathCommand]] = []
     var moveToCount = 0  // Track multiple MoveTo operations
+    var justCreatedGradientCompound = false  // Track if we just created a gradient compound path
+    var compoundPathColor: CGColor? = nil  // Track color for compound path consistency
     
     // XObject graphics state inheritance
     var xObjectSavedFillOpacity: Double = 1.0
