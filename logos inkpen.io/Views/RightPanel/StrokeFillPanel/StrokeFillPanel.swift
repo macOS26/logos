@@ -370,43 +370,6 @@ struct StrokeFillPanel: View {
     }
 
     // REFACTORED: Update methods - use unified objects system
-    private func updateFillColor(_ color: VectorColor) {
-        // ALWAYS update the default color for new shapes
-        document.defaultFillColor = color
-        //Log.fileOperation("🎨 Set default fill color: \(color)", level: .info)
-
-        // REFACTORED: Use unified objects system for color application
-        var hasChanges = false
-
-        // Apply to selected objects from unified system
-        for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
-                switch unifiedObject.objectType {
-                case .shape(let shape):
-                    if shape.isTextObject {
-                        // MIGRATION: Use unified helper instead of direct assignment
-                        document.updateTextFillColorInUnified(id: shape.id, color: color)
-                        hasChanges = true
-                    } else {
-                        // Find the shape in the layers array and update it
-                        // Use unified helper instead of direct property access
-                        document.updateShapeFillColorInUnified(id: shape.id, color: color)
-                        hasChanges = true
-                    }
-                }
-            }
-        }
-
-        // Save to undo stack if we made changes
-        if hasChanges {
-            document.saveToUndoStack()
-            // The unified helpers already update the unified objects, so no manual refresh needed
-
-            // Force immediate UI update for visual responsiveness
-            document.objectWillChange.send()
-        }
-    }
-
     private func updateFillOpacity(_ opacity: Double) {
         // ALWAYS update the default opacity for new shapes
         document.defaultFillOpacity = opacity
@@ -430,46 +393,6 @@ struct StrokeFillPanel: View {
                            document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
                             // Use unified helper instead of direct property access
                             document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
-                            hasChanges = true
-                        }
-                    }
-                }
-            }
-        }
-
-        // Save to undo stack if we made changes
-        if hasChanges {
-            document.saveToUndoStack()
-            // The unified helpers already update the unified objects, so no manual refresh needed
-
-            // Force immediate UI update for visual responsiveness
-            document.objectWillChange.send()
-        }
-    }
-
-    private func updateStrokeColor(_ color: VectorColor) {
-        // ALWAYS update the default color for new shapes
-        document.defaultStrokeColor = color
-        //Log.fileOperation("🎨 Set default stroke color: \(color)", level: .info)
-
-        // REFACTORED: Use unified objects system for stroke color application
-        var hasChanges = false
-
-        // Apply to selected objects from unified system
-        for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
-                switch unifiedObject.objectType {
-                case .shape(let shape):
-                    if shape.isTextObject {
-                        // MIGRATION: Use unified helper instead of direct assignment
-                        document.updateTextStrokeColorInUnified(id: shape.id, color: color)
-                        hasChanges = true
-                    } else {
-                        // Find the shape in the layers array and update it
-                        if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                           document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
-                            // Use unified helper instead of direct property access
-                            document.updateShapeStrokeColorInUnified(id: shape.id, color: color)
                             hasChanges = true
                         }
                     }
