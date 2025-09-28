@@ -51,9 +51,7 @@ struct RightPanel: View {
 // Old property structures removed - using StrokeFillPanel instead
 
 // Preview
-struct RightPanel_Previews: PreviewProvider {
-    static var previews: some View {
-        RightPanel(document: VectorDocument())
-            .frame(height: 600)
-    }
+#Preview {
+    RightPanel(document: VectorDocument())
+        .frame(height: 600)
 }

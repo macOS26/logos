@@ -514,10 +514,8 @@ struct VerticalToolbarButton: View {
 }
 
 // Preview
-struct VerticalToolbar_Previews: PreviewProvider {
-    static var previews: some View {
-        VerticalToolbar(document: VectorDocument())
-            .frame(height: 600)
-    }
+#Preview {
+    VerticalToolbar(document: VectorDocument())
+        .frame(height: 600)
 }
 
