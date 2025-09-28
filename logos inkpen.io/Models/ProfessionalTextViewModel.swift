@@ -423,7 +423,8 @@ class ProfessionalTextViewModel: ObservableObject {
 
         Log.fileOperation("🎯 CONVERTING TO OUTLINES: Creating compound paths per line", level: .info)
 
-        document.saveToUndoStack()
+        // NOTE: saveToUndoStack is called once in convertSelectedTextToOutlines() for atomic undo
+        // DO NOT call it here to avoid duplicate undo entries
 
         // Call the working Core Text conversion
         convertToCoreTextPath()
@@ -454,8 +455,8 @@ class ProfessionalTextViewModel: ObservableObject {
                 isGroup: false
             )
 
-            // Add to the unified system
-            document.addShape(outlineShape, to: targetLayerIndex)
+            // Add to the unified system WITHOUT saving to undo (atomic operation)
+            document.addShapeWithoutUndo(outlineShape, to: targetLayerIndex)
             createdShapeIDs.append(outlineShape.id)
 
             Log.fileOperation("🎯 ADDED LINE SHAPE: '\(outlineShape.name)' to unified system", level: .info)

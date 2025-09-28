@@ -38,8 +38,16 @@ extension VectorDocument {
     func addShape(_ shape: VectorShape, to layerIndex: Int) {
         guard layerIndex >= 0 && layerIndex < layers.count else { return }
         saveToUndoStack()
-        
+
         // Add only to unified system
+        addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
+    }
+
+    /// Add shape WITHOUT saving to undo stack - for atomic operations like text conversion
+    func addShapeWithoutUndo(_ shape: VectorShape, to layerIndex: Int) {
+        guard layerIndex >= 0 && layerIndex < layers.count else { return }
+
+        // Add only to unified system WITHOUT saving to undo
         addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
     }
     
