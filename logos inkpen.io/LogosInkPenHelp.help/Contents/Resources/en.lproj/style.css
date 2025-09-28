@@ -1,21 +1,55 @@
-/* Apple Help Book Stylesheet for Logos InkPen */
+/* Apple Help Book Stylesheet for Logos InkPen - Dark/Light Mode Support */
+
+/* Default Light Mode */
+:root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f5;
+    --bg-accent: #f9f9f9;
+    --text-primary: #000000;
+    --text-secondary: #333333;
+    --border-color: #e0e0e0;
+    --border-accent: #666666;
+    --step-bg: #f0f0f0;
+    --step-border: #cccccc;
+    --code-bg: #f4f4f4;
+    --tip-bg: #f0f0f0;
+    --tip-border: #cccccc;
+}
+
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-primary: #000000;
+        --bg-secondary: #1a1a1a;
+        --bg-accent: #2a2a2a;
+        --text-primary: #ffffff;
+        --text-secondary: #cccccc;
+        --border-color: #404040;
+        --border-accent: #999999;
+        --step-bg: #2a2a2a;
+        --step-border: #555555;
+        --code-bg: #1a1a1a;
+        --tip-bg: #1a1a1a;
+        --tip-border: #555555;
+    }
+}
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 13px;
     line-height: 1.6;
-    color: #000;
-    background-color: #000;
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
     margin: 0;
     padding: 0;
 }
 
 .banner {
-    background: white;
-    color: #000;
+    background: var(--bg-primary);
+    color: var(--text-primary);
     padding: 30px;
     text-align: center;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .banner h1 {
@@ -23,34 +57,40 @@ body {
     font-size: 28px;
     font-weight: 400;
     letter-spacing: 0.5px;
-    color: #000;
+    color: var(--text-primary);
 }
 
 .content {
     max-width: 800px;
     margin: 20px auto;
     padding: 20px;
-    background: white;
+    background: var(--bg-primary);
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
+@media (prefers-color-scheme: dark) {
+    .content {
+        box-shadow: 0 1px 3px rgba(255,255,255,0.1);
+    }
+}
+
 .intro {
     font-size: 15px;
-    color: #000;
+    color: var(--text-primary);
     margin-bottom: 30px;
     padding: 15px;
-    background: #f9f9f9;
-    border-left: 4px solid #666;
+    background: var(--bg-accent);
+    border-left: 4px solid var(--border-accent);
 }
 
 .topics h2 {
     font-size: 18px;
-    color: #000;
+    color: var(--text-primary);
     margin-top: 25px;
     margin-bottom: 10px;
     padding-bottom: 5px;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .topics ul {
@@ -64,29 +104,29 @@ body {
 }
 
 .topics a {
-    color: #000;
+    color: var(--text-primary);
     text-decoration: none;
     display: inline-block;
     padding: 4px 0;
-    transition: color 0.2s;
+    transition: opacity 0.2s;
 }
 
 .topics a:hover {
-    color: #333;
+    opacity: 0.7;
     text-decoration: underline;
 }
 
 .search-tip {
     margin-top: 30px;
     padding: 15px;
-    background: #f0f0f0;
-    border: 1px solid #ccc;
+    background: var(--tip-bg);
+    border: 1px solid var(--tip-border);
     border-radius: 4px;
 }
 
 .search-tip p {
     margin: 0;
-    color: #000;
+    color: var(--text-primary);
 }
 
 .footer {
@@ -95,60 +135,60 @@ body {
 
 /* Page-specific styles */
 h1, h2, h3, h4, h5, h6 {
-    color: #000;
+    color: var(--text-primary);
 }
 
 h2 {
     font-size: 20px;
-    color: #000;
+    color: var(--text-primary);
     margin-top: 20px;
     margin-bottom: 15px;
 }
 
 h3 {
     font-size: 16px;
-    color: #000;
+    color: var(--text-primary);
     margin-top: 15px;
     margin-bottom: 10px;
 }
 
 p {
     margin: 10px 0;
-    color: #000;
+    color: var(--text-primary);
 }
 
 a {
-    color: #000;
+    color: var(--text-primary);
     text-decoration: underline;
 }
 
 a:hover {
-    color: #333;
+    opacity: 0.7;
 }
 
 code {
     font-family: "SF Mono", Monaco, Courier, monospace;
     font-size: 12px;
-    background: #f4f4f4;
+    background: var(--code-bg);
     padding: 2px 6px;
     border-radius: 3px;
-    color: #000;
+    color: var(--text-primary);
 }
 
 .note {
     padding: 10px;
-    background: #f0f0f0;
-    border-left: 4px solid #666;
+    background: var(--bg-accent);
+    border-left: 4px solid var(--border-accent);
     margin: 15px 0;
-    color: #000;
+    color: var(--text-primary);
 }
 
 .warning {
     padding: 10px;
-    background: #e8e8e8;
-    border-left: 4px solid #999;
+    background: var(--bg-secondary);
+    border-left: 4px solid var(--border-accent);
     margin: 15px 0;
-    color: #000;
+    color: var(--text-primary);
 }
 
 .step-list {
@@ -162,7 +202,7 @@ code {
     margin-bottom: 15px;
     position: relative;
     padding-left: 40px;
-    color: #000;
+    color: var(--text-primary);
 }
 
 .step-list li::before {
@@ -170,12 +210,12 @@ code {
     position: absolute;
     left: 0;
     top: 0;
-    background: #f0f0f0;
-    color: #000;
+    background: var(--step-bg);
+    color: var(--text-primary);
     width: 25px;
     height: 25px;
     border-radius: 50%;
-    border: 1px solid #ccc;
+    border: 1px solid var(--step-border);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -183,7 +223,37 @@ code {
     font-size: 14px;
 }
 
-/* Ensure all text elements are black */
+/* Ensure all text elements follow the color scheme */
 ul, ol, li, td, th, strong, em {
-    color: #000;
+    color: var(--text-primary);
+}
+
+/* Tables */
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+td, th {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+th {
+    background: var(--bg-secondary);
+    font-weight: 600;
+}
+
+/* Lists */
+ul li, ol li {
+    color: var(--text-primary);
+}
+
+/* Blockquotes */
+blockquote {
+    border-left: 4px solid var(--border-accent);
+    padding-left: 15px;
+    margin: 15px 0;
+    color: var(--text-secondary);
 }
