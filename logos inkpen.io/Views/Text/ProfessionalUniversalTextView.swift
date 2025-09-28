@@ -74,7 +74,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.menu = nil
         
         textView.delegate = context.coordinator  // CRITICAL: Set delegate to capture text changes
-        textView.layoutManager?.ensureLayout(for: textView.textContainer!)
+        if let textContainer = textView.textContainer {
+            textView.layoutManager?.ensureLayout(for: textContainer)
+        }
         
         // CRITICAL FIX: Set initial text and appearance directly on NSTextView
         textView.string = viewModel.text
@@ -196,7 +198,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             DispatchQueue.main.async {
                 nsView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
                 // Force immediate layout update for consistent display
-                nsView.layoutManager?.ensureLayout(for: nsView.textContainer!)
+                if let textContainer = nsView.textContainer {
+                    nsView.layoutManager?.ensureLayout(for: textContainer)
+                }
                 nsView.needsDisplay = true
             }
         }
@@ -230,7 +234,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             nsView.minSize = NSSize(width: newWidth, height: 50)
             
             // Force layout refresh for immediate text reflow
-            nsView.layoutManager?.ensureLayout(for: nsView.textContainer!)
+            if let textContainer = nsView.textContainer {
+                nsView.layoutManager?.ensureLayout(for: textContainer)
+            }
             
             Log.info("📏 TEXT REFLOW: Container updated, text should now wrap to new width", category: .general)
         }
@@ -448,7 +454,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                 }
 
                 // Force immediate layout update for smooth preview
-                textView.layoutManager?.ensureLayout(for: textView.textContainer!)
+                if let textContainer = textView.textContainer {
+            textView.layoutManager?.ensureLayout(for: textContainer)
+        }
                 textView.needsDisplay = true
             }
         }

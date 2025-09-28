@@ -66,8 +66,8 @@ class MetalDrawingOptimizer {
     private func douglasPeuckerOptimized(points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
         guard points.count > 2 else { return points }
         
-        let startPoint = points.first!
-        let endPoint = points.last!
+        guard let startPoint = points.first,
+              let endPoint = points.last else { return points }
         
         var maxDistance: CGFloat = 0
         var maxIndex = 0
@@ -138,7 +138,11 @@ class MetalDrawingOptimizer {
             // Keep every other point to maintain shape while reducing memory
             let step = max(2, points.count / (maxPoints / 2))
             let simplified = Swift.stride(from: 0, to: points.count, by: step).map { points[$0] }
-            points = simplified + [points.last!] // Always keep the last point
+            if let lastPoint = points.last {
+                points = simplified + [lastPoint] // Always keep the last point
+            } else {
+                points = simplified
+            }
         }
     }
 }

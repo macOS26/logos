@@ -125,13 +125,13 @@ struct GradientOriginControlView: View {
                 
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("X: \(currentGradient != nil ? formatNumberForDisplay(getOriginX(currentGradient!)) : "0")")
+                        Text("X: \(currentGradient.map { formatNumberForDisplay(getOriginX($0)) } ?? "0")")
                             .font(.caption2)
                             .foregroundColor(Color.ui.secondaryText)
                         
                         HStack(spacing: 8) {
                             Slider(value: Binding(
-                                get: { currentGradient != nil ? getOriginX(currentGradient!) : 0.0 },
+                                get: { currentGradient.map { getOriginX($0) } ?? 0.0 },
                                 set: updateOriginX
                             ), in: 0.0...1.0, onEditingChanged: { editing in
                                 if !editing { 
@@ -144,7 +144,7 @@ struct GradientOriginControlView: View {
                             .controlSize(.regular)
                             
                             TextField("", text: createNaturalNumberBinding(
-                                getValue: { currentGradient != nil ? getOriginX(currentGradient!) : 0.0 },
+                                getValue: { currentGradient.map { getOriginX($0) } ?? 0.0 },
                                 setValue: updateOriginX
                             ))
                             .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -154,13 +154,13 @@ struct GradientOriginControlView: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Y: \(currentGradient != nil ? formatNumberForDisplay(getOriginY(currentGradient!)) : "0")")
+                        Text("Y: \(currentGradient.map { formatNumberForDisplay(getOriginY($0)) } ?? "0")")
                             .font(.caption2)
                             .foregroundColor(Color.ui.secondaryText)
                         
                         HStack(spacing: 8) {
                             Slider(value: Binding(
-                                get: { currentGradient != nil ? getOriginY(currentGradient!) : 0.0 },
+                                get: { currentGradient.map { getOriginY($0) } ?? 0.0 },
                                 set: updateOriginY
                             ), in: 0.0...1.0, onEditingChanged: { editing in
                                 if !editing { 
@@ -173,7 +173,7 @@ struct GradientOriginControlView: View {
                             .controlSize(.regular)
                             
                             TextField("", text: createNaturalNumberBinding(
-                                getValue: { currentGradient != nil ? getOriginY(currentGradient!) : 0.0 },
+                                getValue: { currentGradient.map { getOriginY($0) } ?? 0.0 },
                                 setValue: updateOriginY
                             ))
                             .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -202,13 +202,13 @@ struct GradientScaleControlView: View {
             VStack(alignment: .leading, spacing: 8) {
                 // Uniform Scale Control
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Scale: \(currentGradient != nil ? Int(getScale(currentGradient!) * 100) : 100)%")
+                    Text("Scale: \(currentGradient.map { Int(getScale($0) * 100) } ?? 100)%")
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                     
                     HStack(spacing: 8) {
                         Slider(value: Binding(
-                            get: { currentGradient != nil ? getScale(currentGradient!) : 1.0 },
+                            get: { currentGradient.map { getScale($0) } ?? 1.0 },
                             set: { newScale in
                                 updateScale(newScale)
                             }
@@ -223,7 +223,7 @@ struct GradientScaleControlView: View {
                         .controlSize(.regular)
                         
                         TextField("", text: createNaturalNumberBinding(
-                            getValue: { currentGradient != nil ? getScale(currentGradient!) : 1.0 },
+                            getValue: { currentGradient.map { getScale($0) } ?? 1.0 },
                             setValue: updateScale
                         ))
                         .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -235,13 +235,13 @@ struct GradientScaleControlView: View {
                 // Aspect Ratio Control (X=1, Y=0 to 1) - ONLY for Radial Gradients
                 if case .radial = currentGradient {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Aspect Ratio: \(currentGradient != nil ? formatNumberForDisplay(getAspectRatio(currentGradient!)) : "1")")
+                        Text("Aspect Ratio: \(currentGradient.map { formatNumberForDisplay(getAspectRatio($0)) } ?? "1")")
                             .font(.caption)
                             .foregroundColor(Color.ui.secondaryText)
                         
                         HStack(spacing: 8) {
                             Slider(value: Binding(
-                                get: { currentGradient != nil ? getAspectRatio(currentGradient!) : 1.0 },
+                                get: { currentGradient.map { getAspectRatio($0) } ?? 1.0 },
                                 set: { newAspectRatio in
                                     updateAspectRatio(newAspectRatio)
                                 }
@@ -256,7 +256,7 @@ struct GradientScaleControlView: View {
                             .controlSize(.regular)
                             
                             TextField("", text: createNaturalNumberBinding(
-                                getValue: { currentGradient != nil ? getAspectRatio(currentGradient!) : 1.0 },
+                                getValue: { currentGradient.map { getAspectRatio($0) } ?? 1.0 },
                                 setValue: updateAspectRatio
                             ))
                             .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -267,13 +267,13 @@ struct GradientScaleControlView: View {
                     
                     // Radius Control - ONLY for Radial Gradients
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Radius: \(currentGradient != nil ? formatNumberForDisplay(getRadius(currentGradient!)) : "0.5")")
+                        Text("Radius: \(currentGradient.map { formatNumberForDisplay(getRadius($0)) } ?? "0.5")")
                             .font(.caption)
                             .foregroundColor(Color.ui.secondaryText)
                         
                         HStack(spacing: 8) {
                             Slider(value: Binding(
-                                get: { currentGradient != nil ? getRadius(currentGradient!) : 0.5 },
+                                get: { currentGradient.map { getRadius($0) } ?? 0.5 },
                                 set: { newRadius in
                                     updateRadius(newRadius)
                                 }
@@ -288,7 +288,7 @@ struct GradientScaleControlView: View {
                             .controlSize(.regular)
                             
                             TextField("", text: createNaturalNumberBinding(
-                                getValue: { currentGradient != nil ? getRadius(currentGradient!) : 0.5 },
+                                getValue: { currentGradient.map { getRadius($0) } ?? 0.5 },
                                 setValue: updateRadius
                             ))
                             .textFieldStyle(RoundedBorderTextFieldStyle())

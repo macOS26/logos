@@ -132,7 +132,10 @@ extension VectorDocument {
             }
             
             let excludedPaths = ProfessionalPathOperations.exclude(paths[0], paths[1])
-            let topmostShape = selectedShapes.last! // Last = topmost
+            guard let topmostShape = selectedShapes.last else {
+                Log.error("❌ No topmost shape found", category: .error)
+                return false
+            }
             
             for (index, excludedPath) in excludedPaths.enumerated() {
                 let excludedShape = VectorShape(
