@@ -306,17 +306,16 @@ struct GradientApplyButtonView: View {
     let currentGradient: VectorGradient?
     let onApply: () -> Void
     let onAddSwatch: () -> Void
-    
+
     var body: some View {
-        HStack {
-            Spacer()
+        HStack(spacing: 8) {
             Button {
                 onAddSwatch()
             } label: {
                 Text("Add Swatch")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.primary)
-                    .padding(.horizontal, 20)
+                    .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
                     .frame(minHeight: 36)
                     .background(
@@ -340,7 +339,7 @@ struct GradientApplyButtonView: View {
                 Text("Apply Gradient")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.white)
-                    .padding(.horizontal, 20)
+                    .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
                     .frame(minHeight: 36)
                     .background(
