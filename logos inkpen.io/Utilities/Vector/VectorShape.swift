@@ -905,6 +905,28 @@ extension VectorShape: Codable {
 }
 
 extension VectorShape {
+    // MARK: - Path Type Helpers
+
+    /// Returns true if this is a compound path with even-odd fill rule (creates holes)
+    var isEvenOddCompoundPath: Bool {
+        return isCompoundPath && path.fillRule.cgPathFillRule == .evenOdd
+    }
+
+    /// Returns true if this is a looping path with winding fill rule (no holes, overlaps fill)
+    var isWindingLoopingPath: Bool {
+        return isCompoundPath && path.fillRule.cgPathFillRule == .winding
+    }
+
+    /// Returns true if this is specifically a compound path (not a looping path)
+    var isTrueCompoundPath: Bool {
+        return isEvenOddCompoundPath
+    }
+
+    /// Returns true if this is specifically a looping path (not a compound path)
+    var isTrueLoopingPath: Bool {
+        return isWindingLoopingPath
+    }
+
     // MARK: - Factory methods for common shapes
     static func rectangle(at origin: CGPoint, size: CGSize) -> VectorShape {
         let rect = CGRect(origin: origin, size: size)

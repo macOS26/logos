@@ -290,11 +290,11 @@ extension VectorDocument {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count == 1,
               let selectedShapeID = selectedShapeIDs.first else { return }
-        
+
         let shapes = getShapesForLayer(layerIndex)
         guard let shapeIndex = shapes.firstIndex(where: { $0.id == selectedShapeID }),
               let compoundShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
-              compoundShape.isCompoundPath else { return }
+              compoundShape.isTrueCompoundPath else { return }  // Check for true compound path (even-odd)
         
         saveToUndoStack()
         
@@ -341,11 +341,11 @@ extension VectorDocument {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count == 1,
               let selectedShapeID = selectedShapeIDs.first else { return }
-        
+
         let shapes = getShapesForLayer(layerIndex)
         guard let shapeIndex = shapes.firstIndex(where: { $0.id == selectedShapeID }),
               let loopingShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
-              loopingShape.isCompoundPath else { return }
+              loopingShape.isTrueLoopingPath else { return }  // Check for true looping path (winding)
         
         saveToUndoStack()
         

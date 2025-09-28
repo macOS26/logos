@@ -181,14 +181,16 @@ class DocumentState: ObservableObject {
         canMakeCompoundPath = selectedShapeCount > 1
         canReleaseCompoundPath = selectedShapeCount == 1 && selectedShapes.contains { unifiedObject in
             if case .shape(let shape) = unifiedObject.objectType {
-                return shape.isCompoundPath
+                // Only release if it's a true compound path (even-odd fill rule)
+                return shape.isTrueCompoundPath
             }
             return false
         }
         canMakeLoopingPath = selectedShapeCount > 1
         canReleaseLoopingPath = selectedShapeCount == 1 && selectedShapes.contains { unifiedObject in
             if case .shape(let shape) = unifiedObject.objectType {
-                return shape.isCompoundPath
+                // Only release if it's a true looping path (winding fill rule)
+                return shape.isTrueLoopingPath
             }
             return false
         }
