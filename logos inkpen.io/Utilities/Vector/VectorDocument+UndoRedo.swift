@@ -11,17 +11,23 @@ import Combine
 // MARK: - Undo/Redo
 extension VectorDocument {
     func saveToUndoStack() {
+        // Log current selection state before saving
+        Log.info("📸 SAVING UNDO: Current state has \(selectedTextIDs.count) text IDs, \(selectedShapeIDs.count) shape IDs", category: .general)
+        if !selectedTextIDs.isEmpty {
+            Log.info("📸 SAVING UNDO: Text IDs being saved: \(selectedTextIDs)", category: .general)
+        }
+
         // Create a copy of the current state
         do {
             let data = try JSONEncoder().encode(self)
             let copy = try JSONDecoder().decode(VectorDocument.self, from: data)
             undoStack.append(copy)
-            
+
             // Limit undo stack size
             if undoStack.count > maxUndoStackSize {
                 undoStack.removeFirst()
             }
-            
+
             // Clear redo stack when a new action is performed
             redoStack.removeAll()
         } catch {
@@ -47,6 +53,10 @@ extension VectorDocument {
         
         // Restore previous state
         let previousState = undoStack.removeLast()
+
+        // Log what we're restoring for debugging
+        Log.info("🔧 UNDO: Previous state has \(previousState.selectedTextIDs.count) text IDs, \(previousState.selectedShapeIDs.count) shape IDs", category: .general)
+
         settings = previousState.settings
         layers = previousState.layers
         customRgbSwatches = previousState.customRgbSwatches
@@ -60,10 +70,12 @@ extension VectorDocument {
 
         // Log selection restoration for debugging
         if !selectedTextIDs.isEmpty {
-            Log.info("🔧 UNDO: Restoring text selection with \(selectedTextIDs.count) text IDs", category: .general)
+            Log.info("🔧 UNDO: Restored text selection with \(selectedTextIDs.count) text IDs: \(selectedTextIDs)", category: .general)
+        } else {
+            Log.info("🔧 UNDO: No text selection to restore (selectedTextIDs is empty)", category: .general)
         }
         if !selectedShapeIDs.isEmpty {
-            Log.info("🔧 UNDO: Restoring shape selection with \(selectedShapeIDs.count) shape IDs", category: .general)
+            Log.info("🔧 UNDO: Restored shape selection with \(selectedShapeIDs.count) shape IDs", category: .general)
         }
         // Text is now stored in unified system
         unifiedObjects = previousState.unifiedObjects
