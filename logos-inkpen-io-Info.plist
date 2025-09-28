@@ -41,6 +41,10 @@
 			<string>NSDocument</string>
 		</dict>
 	</array>
+	<key>CFBundleHelpBookFolder</key>
+	<string>LogosInkPenHelp.help</string>
+	<key>CFBundleHelpBookName</key>
+	<string>io.logos.logos-inkpen-io.help</string>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>

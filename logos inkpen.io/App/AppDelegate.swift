@@ -36,54 +36,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Set up a fallback timer to ensure the app doesn't hang
         setupFallbackTimer()
         
-        // Set up custom help menu
-        setupHelpMenu()
-
-    }
-    
-    private func setupHelpMenu() {
-        // First, disable the default help system to prevent Safari from opening
-        UserDefaults.standard.set(true, forKey: "NSHelpManagerIgnoresAppleHelpFiles")
-        
-        // Clear any existing help menu items to rebuild from scratch
-        if let helpMenu = NSApp.mainMenu?.item(withTitle: "Help")?.submenu {
-            helpMenu.removeAllItems()
-            
-            // Add our custom help item
-            let helpItem = NSMenuItem(
-                title: "Logos InkPen Help",
-                action: #selector(showInternalHelp),
-                keyEquivalent: "?"
-            )
-            helpItem.target = self
-            helpMenu.addItem(helpItem)
-            
-            // Add separator
-            helpMenu.addItem(NSMenuItem.separator())
-            
-            // Add search field (disabled for now, but visually present)
-            let searchItem = NSMenuItem(title: "Search", action: nil, keyEquivalent: "")
-            searchItem.isEnabled = false
-            helpMenu.addItem(searchItem)
-        }
-        
-        // Register ourselves as the help delegate to intercept all help requests
+        // Register help book with the system (uses Info.plist configuration)
         NSHelpManager.shared.registerBooks(in: Bundle.main)
-        
-        // Override the default help anchor behavior
-        if let helpMenu = NSApp.helpMenu {
-            // Remove the default help menu item if it exists
-            for item in helpMenu.items {
-                if item.action == #selector(NSApplication.showHelp(_:)) {
-                    item.action = #selector(showInternalHelp)
-                    item.target = self
-                }
-            }
-        }
-    }
-    
-    @objc private func showInternalHelp() {
-        InternalHelpViewer.shared.showHelp()
+
     }
     
     private func setupFallbackTimer() {
