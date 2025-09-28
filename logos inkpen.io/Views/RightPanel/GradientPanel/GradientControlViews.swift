@@ -308,7 +308,7 @@ struct GradientApplyButtonView: View {
     let onAddSwatch: () -> Void
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 4) {
             Button {
                 onAddSwatch()
             } label: {
