@@ -12,13 +12,7 @@ struct AppleSystemColor: Codable, Hashable {
     var name: String
     var lightMode: RGBColor
     var darkMode: RGBColor
-    
-    init(name: String, lightMode: RGBColor, darkMode: RGBColor) {
-        self.name = name
-        self.lightMode = lightMode
-        self.darkMode = darkMode
-    }
-    
+
     var color: Color {
         // Use the system color directly which adapts to light/dark mode
         switch name {
