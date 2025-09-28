@@ -166,50 +166,7 @@ func createOvalPath(rect: CGRect) -> VectorPath {
         ], isClosed: true)
     }
     
-    /// Create a shield path using heraldic shield formula
-    /// A shield has a wide rounded top, straight sides, and pointed bottom
-func createShieldPath(rect: CGRect) -> VectorPath {
-        let center = CGPoint(x: rect.midX, y: rect.midY)
-        let radiusX = rect.width / 2
-        let radiusY = rect.height / 2
-        
-        // SHIELD FORMULA: Wide rounded top, straight sides, pointed bottom
-        // Top side: flatter curve (200% control points)
-        // Bottom side: more curved/narrower (50% control points)
-        let topControlOffsetX = radiusX * 0.552 * 2.0  // 200% - flatter curve
-        let topControlOffsetY = radiusY * 0.552 * 2.0  // 200% - flatter curve
-        let bottomControlOffsetX = radiusX * 0.552 * 0.5  // 50% - more curved
-        let bottomControlOffsetY = radiusY * 0.552 * 0.5  // 50% - more curved
-        
-        return VectorPath(elements: [
-            // Start at rightmost point
-            .move(to: VectorPoint(center.x + radiusX, center.y)),
-            
-            // Curve 1: Right → Bottom (more curved/narrower side)
-            .curve(to: VectorPoint(center.x, center.y + radiusY),
-                   control1: VectorPoint(center.x + radiusX, center.y + bottomControlOffsetY),
-                   control2: VectorPoint(center.x + bottomControlOffsetX, center.y + radiusY)),
-            
-            // Curve 2: Bottom → Left (more curved/narrower side)
-            .curve(to: VectorPoint(center.x - radiusX, center.y),
-                   control1: VectorPoint(center.x - bottomControlOffsetX, center.y + radiusY),
-                   control2: VectorPoint(center.x - radiusX, center.y + bottomControlOffsetY)),
-            
-            // Curve 3: Left → Top (flatter curve side)
-            .curve(to: VectorPoint(center.x, center.y - radiusY),
-                   control1: VectorPoint(center.x - radiusX, center.y - topControlOffsetY),
-                   control2: VectorPoint(center.x - topControlOffsetX, center.y - radiusY)),
-            
-            // Curve 4: Top → Right (flatter curve side)
-            .curve(to: VectorPoint(center.x + radiusX, center.y),
-                   control1: VectorPoint(center.x + topControlOffsetX, center.y - radiusY),
-                   control2: VectorPoint(center.x + radiusX, center.y - topControlOffsetY)),
-            
-            .close
-        ], isClosed: true)
-    }
-    
-    /// Create an egg path INSCRIBED within `rect` (no overshoot),
+/// Create an egg path INSCRIBED within `rect` (no overshoot),
     /// using asymmetric Bézier control constants: tighter top, fuller bottom.
     /// This ensures the egg draws inside the same drag box behavior as the square tool.
 func createEggPath(rect: CGRect) -> VectorPath {

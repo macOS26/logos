@@ -7,7 +7,6 @@ struct SVGToInkPenConverter: View {
     @StateObject private var importer = SVGToInkPenImporter()
     @State private var isFilePickerPresented = false
     @State private var importedDocument: VectorDocument?
-    @State private var currentStep = 1
     @State private var showingInstructions = true
     @Environment(\.dismiss) private var dismiss
     
