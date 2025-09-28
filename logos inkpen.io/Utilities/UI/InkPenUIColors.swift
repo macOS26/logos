@@ -34,16 +34,6 @@ class InkPenUIColors: ObservableObject {
         Color.gray.opacity(0.1)
     }
     
-    /// Very light gray background for subtle containers
-    var veryLightGrayBackground: Color {
-        Color.gray.opacity(0.05)
-    }
-    
-    /// Medium gray background for intermediate elements
-    var mediumGrayBackground: Color {
-        Color.gray.opacity(0.2)
-    }
-    
     /// Semi-transparent control background for overlays
     var semiTransparentControlBackground: Color {
         Color(NSColor.controlBackgroundColor).opacity(0.5)
@@ -81,21 +71,6 @@ class InkPenUIColors: ObservableObject {
         ColorManager.shared.makeColor(r: 0.0, g: 0.478, b: 1.0, a: 1.0, source: ColorManager.shared.displayP3CG)
     }
     
-    /// Accent color that adapts to system settings
-    var accentColor: Color {
-        Color.accentColor
-    }
-    
-    /// Light accent background
-    var lightAccentBackground: Color {
-        Color.accentColor.opacity(0.1)
-    }
-    
-    /// Medium accent background
-    var mediumAccentBackground: Color {
-        Color.accentColor.opacity(0.3)
-    }
-    
     // MARK: - Border and Stroke Colors
     
     /// Standard gray border color
@@ -106,16 +81,6 @@ class InkPenUIColors: ObservableObject {
     /// Light gray border for subtle divisions
     var lightGrayBorder: Color {
         Color.gray.opacity(0.3)
-    }
-    
-    /// Very light gray border
-    var veryLightGrayBorder: Color {
-        Color.gray.opacity(0.2)
-    }
-    
-    /// Separator color that adapts to system
-    var separator: Color {
-        Color(NSColor.separatorColor)
     }
     
     // MARK: - Text Colors
@@ -130,21 +95,6 @@ class InkPenUIColors: ObservableObject {
         Color.secondary
     }
     
-    /// Label color for form labels
-    var labelColor: Color {
-        Color(NSColor.labelColor)
-    }
-    
-    /// Secondary label color
-    var secondaryLabelColor: Color {
-        Color(NSColor.secondaryLabelColor)
-    }
-    
-    /// Tertiary label color for less important text
-    var tertiaryLabelColor: Color {
-        Color(NSColor.tertiaryLabelColor)
-    }
-    
     // MARK: - Overlay and Modal Colors
     
     /// Dark overlay for modals and popovers
@@ -152,36 +102,11 @@ class InkPenUIColors: ObservableObject {
         Color.black.opacity(0.8)
     }
     
-    /// Semi-dark overlay
-    var semiDarkOverlay: Color {
-        Color.black.opacity(0.9)
-    }
-    
-    /// Light modal background
-    var modalBackground: Color {
-        Color.black.opacity(0.3)
-    }
-    
     // MARK: - Status and State Colors
-    
-    /// Success/positive state color
-    var successColor: Color {
-        Color.green
-    }
     
     /// Light success background
     var lightSuccessBackground: Color {
         Color.green.opacity(0.1)
-    }
-    
-    /// Warning/caution color
-    var warningColor: Color {
-        Color.orange
-    }
-    
-    /// Light warning background
-    var lightWarningBackground: Color {
-        Color.orange.opacity(0.1)
     }
     
     /// Error/danger color

@@ -16,3 +16,4 @@
 - be sure to create and run unit tests... buold and run suing xcf and always commit after the tests pass, make baby micro steps!!!! UNDERSTOOD?
 - go through the app and find unused variables: toddbruss@Mac logos % periphery scan --project "logos inkpen.io.xcodeproj" --schemes "logos inkpen.io", remove 1 at a time thne do a 
   build to see if it doesn't breka, if doesn't break commit, per file basis.
+- ☐ Continue removing unused code from Periphery scan
