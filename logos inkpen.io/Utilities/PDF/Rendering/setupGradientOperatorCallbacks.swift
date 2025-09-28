@@ -13,24 +13,28 @@ extension PDFCommandParser {
         
         // Pattern color space operators
         CGPDFOperatorTableSetCallback(operatorTable, "SCN") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
             parser.handlePatternColorStroke(scanner: scanner)
         }
         
         CGPDFOperatorTableSetCallback(operatorTable, "scn") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
             parser.handlePatternColorFill(scanner: scanner)
         }
         
         // Matrix concatenation operator (cm)
         CGPDFOperatorTableSetCallback(operatorTable, "cm") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
             parser.handleConcatMatrix(scanner: scanner)
         }
         
         // Shading operator
         CGPDFOperatorTableSetCallback(operatorTable, "sh") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
             parser.handleShading(scanner: scanner)
         }
     }

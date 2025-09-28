@@ -10,9 +10,9 @@ import XCTest
 
 class BrushStrokeTaperingTests: XCTestCase {
 
-    var canvas: DrawingCanvas!
-    var document: Document!
-    var appState: AppState!
+    var canvas: DrawingCanvas?
+    var document: Document?
+    var appState: AppState?
 
     override func setUp() {
         super.setUp()
@@ -20,13 +20,14 @@ class BrushStrokeTaperingTests: XCTestCase {
         appState = AppState()
 
         // Add a layer for testing
-        document.layers.append(Layer(name: "Test Layer", isVisible: true, isLocked: false, opacity: 1.0))
-        document.selectedLayerIndex = 0
+        guard let doc = document, let state = appState else { return }
+        doc.layers.append(Layer(name: "Test Layer", isVisible: true, isLocked: false, opacity: 1.0))
+        doc.selectedLayerIndex = 0
 
         // Create canvas
         canvas = DrawingCanvas(
-            document: document,
-            appState: appState,
+            document: doc,
+            appState: state,
             selectedObject: .constant(nil),
             selectedVector: .constant(nil)
         )

@@ -11,7 +11,7 @@ import SwiftUI
 
 final class TextLivePreviewTests: XCTestCase {
 
-    var document: VectorDocument!
+    var document: VectorDocument?
 
     override func setUp() {
         super.setUp()
@@ -33,6 +33,7 @@ final class TextLivePreviewTests: XCTestCase {
         )
 
         // Add to unified objects
+        guard let document = document else { return }
         let shape = VectorShape.from(text)
         let unifiedObject = VectorObject(
             shape: shape,
@@ -49,6 +50,10 @@ final class TextLivePreviewTests: XCTestCase {
     }
 
     func testLiveFontSizePreview() {
+        guard let document = document else {
+            XCTFail("Document not initialized")
+            return
+        }
         // Get initial text
         guard let textID = document.selectedTextIDs.first else {
             XCTFail("No text selected")
