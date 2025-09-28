@@ -211,6 +211,7 @@ struct VariableStrokeSection: View {
                         Text("Fill Color").tag(AppState.BrushPreviewStyle.fill)
                     }
                     .pickerStyle(.segmented)
+                    .frame(maxWidth: .infinity)
                     .help("Choose how the brush preview appears while drawing")
                 }
 
