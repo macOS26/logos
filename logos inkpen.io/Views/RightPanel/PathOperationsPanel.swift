@@ -206,17 +206,25 @@ struct PathOperationsPanel: View {
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 12)
                 
-                // Clipping Mask Selection Mode Toggle
+                // Clipping Mask Selection Mode Toggle - Full Width
                 HStack {
-                    Toggle("Allow Content Selection", isOn: Binding(
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Allow Content Selection")
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+                        Text("Enable selection inside clipping masks")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Spacer()
+
+                    Toggle("", isOn: Binding(
                         get: { AppState.shared.enableClippingMaskContentSelection },
                         set: { AppState.shared.enableClippingMaskContentSelection = $0 }
                     ))
-                    .toggleStyle(.switch)
+                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                     .controlSize(.small)
-                    .font(.caption)
-                    
-                    Spacer()
                 }
                 .padding(.horizontal, 12)
                 

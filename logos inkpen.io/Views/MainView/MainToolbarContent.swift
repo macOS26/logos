@@ -138,7 +138,7 @@ struct MainToolbarContent: ToolbarContent {
 
             } label: {
                 Image(systemName: "doc.text")
-                    .offset(y: 2)  // Lower icon by 2px
+                    
             }
             .help("Development Tools")
             #endif
@@ -160,12 +160,9 @@ struct MainToolbarContent: ToolbarContent {
                     .font(.system(size: 20))  // 25% larger (was ~16)
                     .frame(width: 36, height: 36)  // Larger click area
                     .contentShape(Rectangle())  // Entire frame is clickable
-                    .offset(y: 2)  // Lower icon by 2px
                     .onTapGesture {
                         // Luna Display Stylus compatibility
-                        if hasOpenPaths() {
-                            closeOpenPaths()
-                        }
+                        closeOpenPaths()
                     }
             }
             .buttonStyle(BorderlessButtonStyle())
@@ -181,7 +178,6 @@ struct MainToolbarContent: ToolbarContent {
                     .foregroundColor(document.viewMode == .keyline ? InkPenUIColors.shared.toolOrange : .primary)
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
-                    .offset(y: 2)  // Lower icon by 2px
                     .onTapGesture {
                         // Luna Display Stylus compatibility
                         document.viewMode = document.viewMode == .color ? .keyline : .color
@@ -197,7 +193,7 @@ struct MainToolbarContent: ToolbarContent {
                     .font(.system(size: 20))  // 25% larger
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
-                    .offset(y: 2)  // Lower icon by 2px
+                    
                     .onTapGesture {
                         // Luna Display Stylus compatibility
                         document.showRulers.toggle()
@@ -215,7 +211,6 @@ struct MainToolbarContent: ToolbarContent {
                     .font(.system(size: 20))  // 25% larger
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
-                    .offset(y: 2)  // Lower icon by 2px
                     .onTapGesture {
                         // Luna Display Stylus compatibility
                         document.showGrid.toggle()
@@ -233,7 +228,6 @@ struct MainToolbarContent: ToolbarContent {
                     .font(.system(size: 20))  // 25% larger
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
-                    .offset(y: 2)  // Lower icon by 2px
                     .onTapGesture {
                         // Luna Display Stylus compatibility
                         onSnapPageToArtwork()
@@ -249,7 +243,6 @@ struct MainToolbarContent: ToolbarContent {
                     .font(.system(size: 20))  // 25% larger
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
-                    .offset(y: 2)  // Lower icon by 2px
                     .onTapGesture {
                         // Luna Display Stylus compatibility
                         onSnapPageToSelection()
@@ -266,7 +259,6 @@ struct MainToolbarContent: ToolbarContent {
                     .font(.system(size: 20))  // 25% larger
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
-                    .offset(y: 2)  // Lower icon by 2px
                     .onTapGesture {
                         // Luna Display Stylus compatibility
                         showingDocumentSettings = true
