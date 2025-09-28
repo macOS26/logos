@@ -12,7 +12,6 @@ import Combine
 struct PantoneLibraryColor: Codable, Hashable {
     var pantone: String
     var name: String
-    var hex: String
     var rgbEquivalent: RGBColor
     var cmykEquivalent: CMYKColor
     var hsbEquivalent: HSBColorModel
@@ -26,7 +25,6 @@ struct PantoneLibraryColor: Codable, Hashable {
         
         self.pantone = cleanedPantone
         self.name = "Pantone \(cleanedPantone.uppercased())"
-        self.hex = hex
         self.rgbEquivalent = PantoneLibraryColor.hexToRGB(hex)
         self.cmykEquivalent = PantoneLibraryColor.rgbToCMYK(self.rgbEquivalent)
         self.hsbEquivalent = HSBColorModel.fromRGB(self.rgbEquivalent)
