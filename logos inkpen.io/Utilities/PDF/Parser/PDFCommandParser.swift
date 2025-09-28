@@ -192,6 +192,52 @@ class PDFCommandParser {
                 }
             }
         }
+
+        // Also remove duplicate outer paths in compound paths
+        // Find compound paths
+        let compoundPaths = shapes.filter { $0.isCompoundPath || $0.name.contains("Compound") }
+
+        if !compoundPaths.isEmpty {
+            // For compound paths, remove any duplicate outer boundary shapes
+            var indicesToRemove: Set<Int> = []
+
+            for (index, shape) in shapes.enumerated() {
+                // Skip if already marked for removal or is a compound path itself
+                if indicesToRemove.contains(index) || shape.isCompoundPath || shape.name.contains("Compound") {
+                    continue
+                }
+
+                // Check if this shape looks like an outer boundary (single closed path)
+                if shape.path.isClosed && !shape.isClippingPath {
+                    // Check if it matches the outer boundary of any compound path
+                    for compound in compoundPaths {
+                        if shapeMatchesOuterBoundary(shape, of: compound) {
+                            Log.info("PDF: 🗑️ Removing duplicate outer boundary '\(shape.name)'", category: .general)
+                            indicesToRemove.insert(index)
+                            break
+                        }
+                    }
+                }
+            }
+
+            // Remove in reverse order to maintain indices
+            for index in indicesToRemove.sorted(by: >) {
+                shapes.remove(at: index)
+            }
+        }
+    }
+
+    func shapeMatchesOuterBoundary(_ shape: VectorShape, of compound: VectorShape) -> Bool {
+        // Get the bounding box of both shapes
+        let shapeBounds = shape.bounds
+        let compoundBounds = compound.bounds
+
+        // Check if the bounds are very similar (within tolerance)
+        let tolerance: CGFloat = 1.0
+        return abs(shapeBounds.minX - compoundBounds.minX) < tolerance &&
+               abs(shapeBounds.minY - compoundBounds.minY) < tolerance &&
+               abs(shapeBounds.maxX - compoundBounds.maxX) < tolerance &&
+               abs(shapeBounds.maxY - compoundBounds.maxY) < tolerance
     }
 
     func pathsAreEqual(_ path1: VectorPath, _ path2: VectorPath) -> Bool {

@@ -151,8 +151,24 @@ extension PDFCommandParser {
         if !currentPath.isEmpty {
             allParts.append(currentPath)
         }
-        
-        Log.info("PDF: 🔧 Creating compound shape with \(allParts.count) subpaths", category: .general)
+
+        // Remove duplicate paths (likely from clipping paths)
+        var uniqueParts: [[PathCommand]] = []
+        for part in allParts {
+            // Check if this path is a duplicate of any already added
+            let isDuplicate = uniqueParts.contains { existingPart in
+                existingPart.count == part.count && pathCommandsAreEqual(existingPart, part)
+            }
+
+            if !isDuplicate {
+                uniqueParts.append(part)
+            } else {
+                Log.info("PDF: 🗑️ Removing duplicate path in compound shape (likely clipping path)", category: .general)
+            }
+        }
+        allParts = uniqueParts
+
+        Log.info("PDF: 🔧 Creating compound shape with \(allParts.count) subpaths (after removing duplicates)", category: .general)
         
         // Convert all parts to VectorPath elements
         var combinedElements: [PathElement] = []
@@ -163,34 +179,38 @@ extension PDFCommandParser {
             for command in part {
                 switch command {
                 case .moveTo(let point):
-                    let adjustedPoint = CGPoint(x: point.x, y: point.y)
-                    let vectorPoint = VectorPoint(adjustedPoint)
+                    // Apply Y-flip for PDF coordinate system
+                    let flippedY = pageSize.height - point.y
+                    let vectorPoint = VectorPoint(Double(point.x), Double(flippedY))
                     combinedElements.append(.move(to: vectorPoint))
                 case .lineTo(let point):
-                    let adjustedPoint = CGPoint(x: point.x, y: point.y)
-                    let vectorPoint = VectorPoint(adjustedPoint)
+                    // Apply Y-flip for PDF coordinate system
+                    let flippedY = pageSize.height - point.y
+                    let vectorPoint = VectorPoint(Double(point.x), Double(flippedY))
                     combinedElements.append(.line(to: vectorPoint))
                 case .curveTo(let cp1, let cp2, let point):
-                    let adjustedCP1 = CGPoint(x: cp1.x, y: cp1.y)
-                    let adjustedCP2 = CGPoint(x: cp2.x, y: cp2.y)
-                    let adjustedPoint = CGPoint(x: point.x, y: point.y)
-                    let vectorCP1 = VectorPoint(adjustedCP1)
-                    let vectorCP2 = VectorPoint(adjustedCP2)
-                    let vectorPoint = VectorPoint(adjustedPoint)
+                    // Apply Y-flip for PDF coordinate system
+                    let flippedCP1Y = pageSize.height - cp1.y
+                    let flippedCP2Y = pageSize.height - cp2.y
+                    let flippedY = pageSize.height - point.y
+                    let vectorCP1 = VectorPoint(Double(cp1.x), Double(flippedCP1Y))
+                    let vectorCP2 = VectorPoint(Double(cp2.x), Double(flippedCP2Y))
+                    let vectorPoint = VectorPoint(Double(point.x), Double(flippedY))
                     combinedElements.append(.curve(to: vectorPoint, control1: vectorCP1, control2: vectorCP2))
                 case .quadCurveTo(let cp, let point):
-                    let adjustedCP = CGPoint(x: cp.x, y: cp.y)
-                    let adjustedPoint = CGPoint(x: point.x, y: point.y)
-                    let vectorCP = VectorPoint(adjustedCP)
-                    let vectorPoint = VectorPoint(adjustedPoint)
+                    // Apply Y-flip for PDF coordinate system
+                    let flippedCPY = pageSize.height - cp.y
+                    let flippedY = pageSize.height - point.y
+                    let vectorCP = VectorPoint(Double(cp.x), Double(flippedCPY))
+                    let vectorPoint = VectorPoint(Double(point.x), Double(flippedY))
                     combinedElements.append(.quadCurve(to: vectorPoint, control: vectorCP))
                 case .rectangle(let rect):
-                    // Convert rectangle to path elements
-                    let adjustedRect = CGRect(x: rect.origin.x, y: rect.origin.y, width: rect.width, height: rect.height)
-                    combinedElements.append(.move(to: VectorPoint(Double(adjustedRect.minX), Double(adjustedRect.minY))))
-                    combinedElements.append(.line(to: VectorPoint(Double(adjustedRect.maxX), Double(adjustedRect.minY))))
-                    combinedElements.append(.line(to: VectorPoint(Double(adjustedRect.maxX), Double(adjustedRect.maxY))))
-                    combinedElements.append(.line(to: VectorPoint(Double(adjustedRect.minX), Double(adjustedRect.maxY))))
+                    // Convert rectangle with Y-flip for PDF coordinate system
+                    let flippedY = pageSize.height - rect.origin.y - rect.height
+                    combinedElements.append(.move(to: VectorPoint(Double(rect.minX), Double(flippedY))))
+                    combinedElements.append(.line(to: VectorPoint(Double(rect.maxX), Double(flippedY))))
+                    combinedElements.append(.line(to: VectorPoint(Double(rect.maxX), Double(flippedY + rect.height))))
+                    combinedElements.append(.line(to: VectorPoint(Double(rect.minX), Double(flippedY + rect.height))))
                     combinedElements.append(.close)
                 case .closePath:
                     combinedElements.append(.close)
@@ -198,7 +218,8 @@ extension PDFCommandParser {
             }
         }
         
-        let vectorPath = VectorPath(elements: combinedElements, isClosed: combinedElements.contains(.close))
+        // Use even-odd fill rule for compound paths to properly create holes
+        let vectorPath = VectorPath(elements: combinedElements, isClosed: combinedElements.contains(.close), fillRule: .evenOdd)
         
         // Create fill and stroke styles
         var fillStyle: FillStyle? = nil
@@ -244,7 +265,9 @@ extension PDFCommandParser {
             name: activeGradient != nil ? "PDF Compound Shape (Gradient)" : "PDF Compound Shape \(shapes.count + 1)",
             path: vectorPath,
             strokeStyle: strokeStyle,
-            fillStyle: fillStyle
+            fillStyle: fillStyle,
+            transform: .identity,
+            isCompoundPath: true  // Mark as compound path for proper hole rendering
         )
         
         shapes.append(compoundShape)
@@ -433,5 +456,37 @@ extension PDFCommandParser {
         }
         
         currentPath.removeAll()
+    }
+
+    // Helper function to compare path commands
+    private func pathCommandsAreEqual(_ path1: [PathCommand], _ path2: [PathCommand]) -> Bool {
+        guard path1.count == path2.count else { return false }
+
+        let tolerance: CGFloat = 0.01
+
+        for (cmd1, cmd2) in zip(path1, path2) {
+            switch (cmd1, cmd2) {
+            case (.moveTo(let p1), .moveTo(let p2)):
+                if abs(p1.x - p2.x) > tolerance || abs(p1.y - p2.y) > tolerance {
+                    return false
+                }
+            case (.lineTo(let p1), .lineTo(let p2)):
+                if abs(p1.x - p2.x) > tolerance || abs(p1.y - p2.y) > tolerance {
+                    return false
+                }
+            case (.curveTo(let cp1_1, let cp2_1, let to1), .curveTo(let cp1_2, let cp2_2, let to2)):
+                if abs(cp1_1.x - cp1_2.x) > tolerance || abs(cp1_1.y - cp1_2.y) > tolerance ||
+                   abs(cp2_1.x - cp2_2.x) > tolerance || abs(cp2_1.y - cp2_2.y) > tolerance ||
+                   abs(to1.x - to2.x) > tolerance || abs(to1.y - to2.y) > tolerance {
+                    return false
+                }
+            case (.closePath, .closePath):
+                continue
+            default:
+                return false
+            }
+        }
+
+        return true
     }
 }
