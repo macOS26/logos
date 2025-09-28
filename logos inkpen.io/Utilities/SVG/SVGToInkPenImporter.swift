@@ -353,13 +353,6 @@ class SVGToInkPenImporter: ObservableObject {
     
     // MARK: - Advanced SVG Parsing (Future Enhancement)
     
-    /// Parse SVG XML and extract individual elements
-    /// This would be implemented to parse actual SVG elements
-    struct SVGElement {
-        let type: String // rect, circle, path, etc.
-        let attributes: [String: String]
-        let children: [SVGElement]
-    }
 }
 
 // MARK: - SVG Import View
