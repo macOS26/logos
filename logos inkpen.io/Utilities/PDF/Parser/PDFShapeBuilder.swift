@@ -16,14 +16,6 @@ extension PDFCommandParser {
     func handleFill() {
         Log.info("PDF: Fill operation - creating filled shape", category: .general)
 
-        // Check if we just created a gradient compound path - skip duplicate
-        if justCreatedGradientCompound {
-            Log.info("PDF: 🚫 Skipping duplicate shape after gradient compound path creation", category: .general)
-            // DON'T clear the flag here - keep blocking
-            currentPath.removeAll()
-            return
-        }
-
         // Check if this is a black background shape for a transparent image
         if shouldSkipBlackBackground() {
             Log.info("PDF: Skipping black background shape for transparent image", category: .general)
@@ -32,16 +24,6 @@ extension PDFCommandParser {
         }
 
         if isInCompoundPath && !compoundPathParts.isEmpty {
-            // Check if we just created a gradient compound path - skip duplicate
-            if justCreatedGradientCompound {
-                Log.info("PDF: 🚫 Skipping duplicate compound path after gradient compound creation", category: .general)
-                // DON'T clear the flag here - keep blocking
-                compoundPathParts.removeAll()
-                currentPath.removeAll()
-                isInCompoundPath = false
-                return
-            }
-
             Log.info("PDF: 🔍 COMPOUND PATH FILL - Creating compound shape from \(compoundPathParts.count + 1) parts", category: .debug)
             createCompoundShapeFromParts(filled: true, stroked: false)
             // CRITICAL: Return here to prevent creating individual shapes for compound path parts
@@ -170,15 +152,6 @@ extension PDFCommandParser {
     
     func handleFillAndStroke() {
         Log.info("PDF: Fill and stroke operation (B operator) - creating single shape with both", category: .general)
-
-        // Check if we just created a gradient compound path - skip duplicate
-        if justCreatedGradientCompound {
-            Log.info("PDF: 🚫 Skipping duplicate shape after gradient compound path creation (B operator)", category: .general)
-            // DON'T clear the flag here - keep blocking
-            currentPath.removeAll()
-            return
-        }
-
         createShapeFromCurrentPath(filled: true, stroked: true)
     }
     
@@ -191,9 +164,9 @@ extension PDFCommandParser {
             currentPath.removeAll()
             isInCompoundPath = false
             moveToCount = 0
-            compoundPathColor = nil  // Reset color tracking
 
-            // DON'T clear activeGradient here - it's cleared below after setting the flag
+            // Clear the active gradient since it's been applied
+            activeGradient = nil
 
             Log.info("PDF: 🔄 Deferred cleanup of compound path state", category: .debug)
         }
@@ -206,54 +179,33 @@ extension PDFCommandParser {
 
         // Handle gradients vs flat shapes differently
         if activeGradient != nil {
-            // GRADIENT: Paths were accumulated but need to be properly separated into subpaths
-            Log.info("PDF: 🎨 GRADIENT compound shape - processing \(allParts.count) accumulated paths", category: .general)
+            // GRADIENT: Paths were accumulated, use as-is
+            Log.info("PDF: 🎨 GRADIENT compound shape - using accumulated paths", category: .general)
+        } else {
+            // FLAT SHAPES: Paths were accumulated but we need separate parts
+            // Extract the unique portions of each part
+            var separateParts: [[PathCommand]] = []
+            var previousCommands: [PathCommand] = []
 
-            // For gradients, we need to extract proper subpaths from accumulated commands
-            // Each MoveTo should start a new subpath
-            var gradientSubpaths: [[PathCommand]] = []
-            var currentSubpath: [PathCommand] = []
-
-            // Process all parts to extract individual subpaths
             for part in allParts {
+                // Find commands that are NEW in this part
+                var newCommands: [PathCommand] = []
                 for command in part {
-                    switch command {
-                    case .moveTo(_):
-                        // MoveTo starts a new subpath
-                        if !currentSubpath.isEmpty {
-                            gradientSubpaths.append(currentSubpath)
-                            currentSubpath = []
-                        }
-                        currentSubpath.append(command)
-                    default:
-                        currentSubpath.append(command)
+                    if !previousCommands.contains(where: { pathCommandEquals($0, command) }) {
+                        newCommands.append(command)
                     }
+                }
+
+                if !newCommands.isEmpty {
+                    separateParts.append(newCommands)
+                    previousCommands = part // Update to full part for next iteration
+                    Log.info("PDF: 📝 Extracted \(newCommands.count) new commands from part with \(part.count) total", category: .debug)
                 }
             }
 
-            // Add the last subpath if not empty
-            if !currentSubpath.isEmpty {
-                gradientSubpaths.append(currentSubpath)
-            }
-
-            // Use the properly separated subpaths
-            allParts = gradientSubpaths
-            Log.info("PDF: 🎨 Extracted \(gradientSubpaths.count) proper subpaths for gradient compound shape", category: .general)
-
-            // Verify structure for proper compound path with holes
-            for (index, part) in allParts.enumerated() {
-                let isClosed = part.contains(.closePath)
-                Log.info("PDF: 🎨 Gradient subpath \(index + 1): \(part.count) commands, closed: \(isClosed)", category: .debug)
-            }
-        } else {
-            // FLAT SHAPES: Paths are already stored as separate parts
-            Log.info("PDF: 📝 FLAT compound shape - processing \(allParts.count) parts", category: .general)
-
-            // For flat shapes, each part is already a complete subpath
-            // Just verify they're closed
-            for (index, part) in allParts.enumerated() {
-                let isClosed = part.contains(.closePath)
-                Log.info("PDF: 📝 Flat subpath \(index + 1): \(part.count) commands, closed: \(isClosed)", category: .debug)
+            if !separateParts.isEmpty {
+                allParts = separateParts
+                Log.info("PDF: ✂️ Separated accumulated paths into \(separateParts.count) distinct parts", category: .general)
             }
         }
 
@@ -358,36 +310,15 @@ extension PDFCommandParser {
             transform: .identity,
             isCompoundPath: true  // Mark as compound path for proper hole rendering
         )
-
-        // Check if this was a gradient compound BEFORE appending
-        let wasGradientCompound = (activeGradient != nil)
-
+        
         shapes.append(compoundShape)
 
-        // Log details for verification
-        if wasGradientCompound {
-            Log.info("PDF: ✅ GRADIENT compound shape created with \(allParts.count) subpaths, fillRule: evenOdd, isCompoundPath: true", category: .general)
-            // Set flag to prevent duplicate shape creation
-            justCreatedGradientCompound = true
-            // Clear the gradient since we've used it
-            activeGradient = nil
-            Log.info("PDF: 🎨 Set justCreatedGradientCompound=true to prevent duplicates", category: .general)
-        } else {
-            Log.info("PDF: ✅ Compound shape created with \(allParts.count) subpaths", category: .general)
-        }
+        Log.info("PDF: ✅ Compound shape created with \(allParts.count) subpaths", category: .general)
     }
     
     func createShapeFromCurrentPath(filled: Bool, stroked: Bool) {
         guard !currentPath.isEmpty else {
             Log.info("PDF: Cannot create shape - current path is empty", category: .general)
-            return
-        }
-
-        // Check if we just created a gradient compound path - skip duplicate
-        if justCreatedGradientCompound && filled && !stroked {
-            Log.info("PDF: 🚫 Skipping duplicate shape creation after gradient compound path", category: .general)
-            // DON'T clear the flag here - keep blocking
-            currentPath.removeAll()
             return
         }
 

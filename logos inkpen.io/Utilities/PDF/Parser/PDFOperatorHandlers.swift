@@ -13,12 +13,6 @@ extension PDFCommandParser {
     // MARK: - Path Construction Operators
     
     func handleMoveTo(scanner: CGPDFScannerRef) {
-        // Skip path accumulation if we just created a gradient compound path
-        if justCreatedGradientCompound {
-            Log.info("PDF: 🚫 Skipping MoveTo after gradient compound path creation", category: .general)
-            return
-        }
-
         // COMPOUND PATH DETECTION: Multiple MoveTo operations before fill = compound path
         if !currentPath.isEmpty {
             Log.info("PDF: COMPOUND PATH DETECTED - MoveTo with existing path, storing current path as part of compound", category: .general)
@@ -30,8 +24,8 @@ extension PDFCommandParser {
 
             Log.info("PDF: Compound path part #\(compoundPathParts.count) stored (\(currentPath.count) commands)", category: .general)
 
-            // CRITICAL: Clear currentPath after storing it to prevent accumulation
-            currentPath.removeAll()
+            // DON'T clear currentPath here - we can't know yet if it's a gradient
+            // The decision to clear or keep will be made later when we know
         } else {
             // Reset compound path tracking for new path sequence
             moveToCount = 1
@@ -53,20 +47,11 @@ extension PDFCommandParser {
     }
     
     func handleLineTo(scanner: CGPDFScannerRef) {
-        // Skip path accumulation if we just created a gradient compound path
-        if justCreatedGradientCompound {
-            Log.info("PDF: 🚫 Skipping LineTo after gradient compound path creation", category: .general)
-            var x: CGFloat = 0, y: CGFloat = 0
-            CGPDFScannerPopNumber(scanner, &y)
-            CGPDFScannerPopNumber(scanner, &x)
-            return
-        }
-
         var x: CGFloat = 0, y: CGFloat = 0
-
+        
         guard CGPDFScannerPopNumber(scanner, &y),
               CGPDFScannerPopNumber(scanner, &x) else { return }
-
+        
         let point = CGPoint(x: x, y: y)
         currentPath.append(.lineTo(point))
         currentPoint = point
@@ -156,12 +141,6 @@ extension PDFCommandParser {
     }
     
     func handleClosePath() {
-        // Skip path accumulation if we just created a gradient compound path
-        if justCreatedGradientCompound {
-            Log.info("PDF: 🚫 Skipping ClosePath after gradient compound path creation", category: .general)
-            return
-        }
-
         currentPath.append(.closePath)
         currentPoint = pathStartPoint
     }
