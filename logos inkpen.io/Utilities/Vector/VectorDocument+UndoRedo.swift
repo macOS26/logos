@@ -57,6 +57,14 @@ extension VectorDocument {
         selectedShapeIDs = previousState.selectedShapeIDs
         selectedTextIDs = previousState.selectedTextIDs
         selectedObjectIDs = previousState.selectedObjectIDs
+
+        // Log selection restoration for debugging
+        if !selectedTextIDs.isEmpty {
+            Log.info("🔧 UNDO: Restoring text selection with \(selectedTextIDs.count) text IDs", category: .general)
+        }
+        if !selectedShapeIDs.isEmpty {
+            Log.info("🔧 UNDO: Restoring shape selection with \(selectedShapeIDs.count) shape IDs", category: .general)
+        }
         // Text is now stored in unified system
         unifiedObjects = previousState.unifiedObjects
         currentTool = previousState.currentTool
@@ -130,8 +138,18 @@ extension VectorDocument {
                 selectedTextIDs = validTextIDs
             }
 
-            // Log for debugging
-            Log.info("🔧 UNDO: Restored \(validTextIDs.count) text selections", category: .general)
+            // If we restored text selection and we're in Font mode, ensure proper state
+            if !validTextIDs.isEmpty && currentTool == .font {
+                // Force the unified selection to be in sync
+                selectedObjectIDs = Set(validTextIDs)
+
+                // Clear shape selection when text is selected in Font mode
+                selectedShapeIDs.removeAll()
+
+                Log.info("🔧 UNDO: Restored \(validTextIDs.count) text selections in Font mode", category: .general)
+            } else if !validTextIDs.isEmpty {
+                Log.info("🔧 UNDO: Restored \(validTextIDs.count) text selections (tool: \(currentTool))", category: .general)
+            }
         }
 
         objectWillChange.send()
@@ -176,6 +194,14 @@ extension VectorDocument {
         selectedShapeIDs = nextState.selectedShapeIDs
         selectedTextIDs = nextState.selectedTextIDs
         selectedObjectIDs = nextState.selectedObjectIDs
+
+        // Log selection restoration for debugging
+        if !selectedTextIDs.isEmpty {
+            Log.info("🔧 REDO: Restoring text selection with \(selectedTextIDs.count) text IDs", category: .general)
+        }
+        if !selectedShapeIDs.isEmpty {
+            Log.info("🔧 REDO: Restoring shape selection with \(selectedShapeIDs.count) shape IDs", category: .general)
+        }
         // Text is now stored in unified system
         unifiedObjects = nextState.unifiedObjects
         currentTool = nextState.currentTool
@@ -249,8 +275,18 @@ extension VectorDocument {
                 selectedTextIDs = validTextIDs
             }
 
-            // Log for debugging
-            Log.info("🔧 REDO: Restored \(validTextIDs.count) text selections", category: .general)
+            // If we restored text selection and we're in Font mode, ensure proper state
+            if !validTextIDs.isEmpty && currentTool == .font {
+                // Force the unified selection to be in sync
+                selectedObjectIDs = Set(validTextIDs)
+
+                // Clear shape selection when text is selected in Font mode
+                selectedShapeIDs.removeAll()
+
+                Log.info("🔧 REDO: Restored \(validTextIDs.count) text selections in Font mode", category: .general)
+            } else if !validTextIDs.isEmpty {
+                Log.info("🔧 REDO: Restored \(validTextIDs.count) text selections (tool: \(currentTool))", category: .general)
+            }
         }
 
         objectWillChange.send()
