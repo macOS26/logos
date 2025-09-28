@@ -64,7 +64,7 @@ class SVGExporter {
         
         // Add defs section for gradients, patterns, and clipping paths
         svg += "\n<defs>\n"
-        svg += generateGradientDefs(from: document, dpiScale: 1.0) // No scaling in defs
+        svg += generateGradientDefs(from: document) // No scaling in defs
         svg += generateClipPathDefs(from: document) // Add clipping path definitions
         svg += "</defs>\n"
         
@@ -475,7 +475,7 @@ class SVGExporter {
     
     // MARK: - Gradient Definitions
     
-    private func generateGradientDefs(from document: VectorDocument, dpiScale: CGFloat) -> String {
+    private func generateGradientDefs(from document: VectorDocument) -> String {
         var defs = ""
         var processedGradients = Set<Int>()
         
@@ -488,7 +488,7 @@ class SVGExporter {
                     let hash = gradient.hashValue
                     if !processedGradients.contains(hash) {
                         processedGradients.insert(hash)
-                        defs += generateGradientDef(gradient, id: "gradient_\(hash)", dpiScale: dpiScale)
+                        defs += generateGradientDef(gradient, id: "gradient_\(hash)")
                     }
                 }
                 
@@ -498,7 +498,7 @@ class SVGExporter {
                     let hash = gradient.hashValue
                     if !processedGradients.contains(hash) {
                         processedGradients.insert(hash)
-                        defs += generateGradientDef(gradient, id: "gradient_\(hash)", dpiScale: dpiScale)
+                        defs += generateGradientDef(gradient, id: "gradient_\(hash)")
                     }
                 }
             }
@@ -533,7 +533,7 @@ class SVGExporter {
         return defs
     }
     
-    private func generateGradientDef(_ gradient: VectorGradient, id: String, dpiScale: CGFloat) -> String {
+    private func generateGradientDef(_ gradient: VectorGradient, id: String) -> String {
         switch gradient {
         case .linear(let linearGradient):
             return generateLinearGradientDef(linearGradient, id: id)
