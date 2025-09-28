@@ -411,7 +411,7 @@ class PasteboardDiagnostics {
         return test
     }
     
-    // MARK: - Helper Functions
+    
     
     private func simulateHitTest(document: VectorDocument, at location: CGPoint) -> HitTestResult {
         var hitShape: VectorShape?

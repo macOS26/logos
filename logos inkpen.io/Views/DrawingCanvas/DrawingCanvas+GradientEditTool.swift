@@ -54,7 +54,7 @@ extension DrawingCanvas {
         }
     }
     
-    // MARK: - Helper Functions
+    
     
     /// Get the selected shape that has a gradient
     private func getSelectedShapeWithGradient() -> VectorShape? {

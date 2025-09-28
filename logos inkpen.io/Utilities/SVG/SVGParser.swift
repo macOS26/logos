@@ -857,7 +857,7 @@ class SVGParser: NSObject, XMLParserDelegate {
     
     
     
-    // MARK: - Helper Functions
+    
     
     func createShape(name: String, path: VectorPath, attributes: [String: String], geometricType: GeometricShapeType? = nil) -> VectorShape {
         // Merge CSS class styles with inline styles

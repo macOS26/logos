@@ -410,7 +410,7 @@ struct NewDocumentSetupView: View {
         ]
     }
     
-    // MARK: - Helper Functions
+    
     // Removed template application function
     
     private func applyQuickSize(_ size: QuickSize) {

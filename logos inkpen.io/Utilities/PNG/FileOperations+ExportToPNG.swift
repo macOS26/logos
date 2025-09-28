@@ -294,7 +294,6 @@ extension FileOperations {
     }
     
     
-    // MARK: - Helper Functions for Drawing
     
     internal static func drawShapeInPDF(_ shape: VectorShape, context: CGContext) {
         context.saveGState()

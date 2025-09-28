@@ -203,7 +203,7 @@ struct CornerRadiusPanel: View {
         }
     }
     
-    // MARK: - Helper Functions
+    
     
     private func getSelectedRoundedRectangle() -> VectorShape? {
         guard let layerIndex = document.selectedLayerIndex,

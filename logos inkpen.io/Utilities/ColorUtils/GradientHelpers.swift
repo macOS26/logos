@@ -8,7 +8,7 @@
 import SwiftUI
 import AppKit
 
-// MARK: - Helper Functions
+
 // Note: formatNumberForDisplay function is imported from StrokeFillPanel.swift
 
 /// Creates a number input binding that shows exactly what user types

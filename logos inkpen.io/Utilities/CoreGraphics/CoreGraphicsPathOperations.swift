@@ -6,7 +6,7 @@ import SwiftUI
 /// unlike ClipperPath which tessellates curves into line segments.
 class CoreGraphicsPathOperations {
     
-    // MARK: - Helper Functions
+    
     
     /// Check if a CGRect has finite values (no infinity or NaN)
     private static func isFinite(_ rect: CGRect) -> Bool {

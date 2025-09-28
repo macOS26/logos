@@ -192,7 +192,7 @@ extension DrawingCanvas {
         document.objectWillChange.send()
     }
     
-    // MARK: - Helper Functions
+    
     
     /// Finds an anchor point at the given location
     private func findAnchorPointAt(location: CGPoint, tolerance: Double) -> PointID? {

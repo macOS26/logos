@@ -685,7 +685,6 @@ struct RotateHandles: View {
     // NOTE: Shift key monitoring is now handled by the centralized keyEventMonitor in DrawingCanvas
     // to avoid multiple NSEvent monitors and ensure consistent behavior across all transform tools
     
-    // MARK: - Helper Functions for Transform Operations
     
     /// Apply transform to corner radii (local implementation to avoid import issues)
     private func applyTransformToCornerRadiiLocal(shape: inout VectorShape, transform: CGAffineTransform) {

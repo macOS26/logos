@@ -350,7 +350,7 @@ class VectorImportManager {
     
     // MARK: - AI/EPS/PS Import Methods (REMOVED - No longer supported)
     
-    // MARK: - Helper Functions
+    
     
     private func createDefaultMetadata() -> VectorImportMetadata {
         return VectorImportMetadata(

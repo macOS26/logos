@@ -241,7 +241,6 @@ struct ColorPanel: View {
         }
     }
     
-    // MARK: - Helper Functions for Color Application
     
     private func applyFillColorToSelected(_ color: VectorColor) {
         // CRITICAL FIX: Use unified selection system

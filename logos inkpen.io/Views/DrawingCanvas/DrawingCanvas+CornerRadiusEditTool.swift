@@ -74,7 +74,7 @@ extension DrawingCanvas {
         )
     }
     
-    // MARK: - Helper Functions
+    
     
     /// Get the currently selected rectangle-based shape (can have corner radius support)
     internal func getSelectedRectangleShape() -> VectorShape? {

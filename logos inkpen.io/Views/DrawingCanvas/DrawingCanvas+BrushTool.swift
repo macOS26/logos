@@ -751,10 +751,7 @@ extension DrawingCanvas {
         let rightEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: rightEdgePoints.reversed()) // Reverse for proper winding
         
         // Combine into a filled shape with smooth bezier curves
-        guard let firstPoint = centerPoints.first, let lastPoint = centerPoints.last else {
-            return VectorPath(elements: [])
-        }
-        return createSmoothBrushOutline(leftEdgePath: leftEdgePath, rightEdgePath: rightEdgePath, startPoint: firstPoint, endPoint: lastPoint)
+        return createSmoothBrushOutline(leftEdgePath: leftEdgePath, rightEdgePath: rightEdgePath)
     }
     
     // MARK: - Pressure Interpolation
@@ -913,10 +910,7 @@ extension DrawingCanvas {
         let rightEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: rightEdgePoints.reversed()) // Reverse for proper winding
         
         // Combine into a filled shape with smooth bezier curves
-        guard let firstPoint = centerPoints.first, let lastPoint = centerPoints.last else {
-            return VectorPath(elements: [])
-        }
-        return createSmoothBrushOutline(leftEdgePath: leftEdgePath, rightEdgePath: rightEdgePath, startPoint: firstPoint, endPoint: lastPoint)
+        return createSmoothBrushOutline(leftEdgePath: leftEdgePath, rightEdgePath: rightEdgePath)
     }
     
     private func generateOffsetPoints(centerPoints: [(location: CGPoint, thickness: Double)], isLeftSide: Bool) -> [CGPoint] {
@@ -1013,7 +1007,7 @@ extension DrawingCanvas {
     }
     
     /// Combine two smooth bezier edge paths into a closed brush stroke outline
-    private func createSmoothBrushOutline(leftEdgePath: VectorPath, rightEdgePath: VectorPath, startPoint: CGPoint, endPoint: CGPoint) -> VectorPath {
+    private func createSmoothBrushOutline(leftEdgePath: VectorPath, rightEdgePath: VectorPath) -> VectorPath {
         var elements: [PathElement] = []
         
         // Start with the left edge path (this gives us smooth bezier curves!)

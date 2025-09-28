@@ -8,7 +8,7 @@
 import SwiftUI
 import AppKit
 
-// MARK: - Helper Functions
+
 
 /// Formats a number for display, showing decimals only when needed
 func formatNumberForDisplay(_ value: Double, maxDecimals: Int = 2) -> String {

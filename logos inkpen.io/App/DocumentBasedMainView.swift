@@ -315,7 +315,7 @@ struct DocumentBasedMainView: View {
         }
     }
     
-    // MARK: - Helper Functions
+    
 
     private func runPasteboardDiagnostics() {
         Log.info("🔧 DocumentGroup: Running pasteboard diagnostics", category: .general)

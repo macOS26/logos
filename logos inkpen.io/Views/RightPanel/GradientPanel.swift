@@ -467,7 +467,7 @@ struct GradientFillSection: View {
     
 
     
-    // MARK: - Helper Functions
+    
     
     // createSwiftUIGradient function removed - now using NSView-based gradient preview that matches actual rendering
     
