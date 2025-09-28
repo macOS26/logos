@@ -248,7 +248,7 @@ extension DrawingCanvas {
         }
         // All your existing modifiers (unchanged)
         .onAppear {
-            setupCanvas(geometry: geometry)
+            setupCanvas()
             setupKeyEventMonitoring()
             setupToolKeyboardShortcuts()
             previousTool = document.currentTool

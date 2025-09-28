@@ -11,7 +11,7 @@ import SwiftUI
 extension DrawingCanvas {
 
     /// Setup canvas with default settings
-    internal func setupCanvas(geometry: GeometryProxy) {
+    internal func setupCanvas() {
         // SKIP INITIAL POSITIONING: Don't call setupDefaultView to avoid transition
         // The MainView will handle fit-to-page directly without intermediate positioning
         initialZoomLevel = document.zoomLevel // Initialize for zoom gestures

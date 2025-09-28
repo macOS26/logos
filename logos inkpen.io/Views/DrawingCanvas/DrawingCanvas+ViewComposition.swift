@@ -268,7 +268,7 @@ extension DrawingCanvas {
         }
         // CRITICAL FIX: NO CLIPPING to allow pasteboard area gestures
         .onAppear {
-            setupCanvas(geometry: geometry)
+            setupCanvas()
             setupKeyEventMonitoring()
             setupToolKeyboardShortcuts()
             previousTool = document.currentTool
