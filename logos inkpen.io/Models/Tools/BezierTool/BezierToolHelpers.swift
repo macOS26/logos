@@ -409,12 +409,13 @@ extension DrawingCanvas {
     }
     
     private func createNewBezierPath(at location: CGPoint) {
-        bezierPath = VectorPath(elements: [.move(to: VectorPoint(location))])
+        let newPath = VectorPath(elements: [.move(to: VectorPoint(location))])
+        bezierPath = newPath
         bezierPoints = [VectorPoint(location)]
         isBezierDrawing = true
         activeBezierPointIndex = 0
         bezierHandles.removeAll()
-        
+
         let strokeStyle = StrokeStyle(
             color: document.defaultStrokeColor,
             width: document.defaultStrokeWidth,
@@ -426,10 +427,10 @@ extension DrawingCanvas {
             opacity: document.defaultStrokeOpacity
         )
         let fillStyle: FillStyle? = nil
-        
+
         activeBezierShape = VectorShape(
             name: "Bezier Path",
-            path: bezierPath!,
+            path: newPath,
             strokeStyle: strokeStyle,
             fillStyle: fillStyle
         )
@@ -444,13 +445,14 @@ extension DrawingCanvas {
     
     private func continueExistingPath(from pointPosition: VectorPoint) {
         Log.fileOperation("🎯 CONTINUING EXISTING PATH: Starting from selected point at \(pointPosition)", level: .info)
-        
-        bezierPath = VectorPath(elements: [.move(to: pointPosition)])
+
+        let newPath = VectorPath(elements: [.move(to: pointPosition)])
+        bezierPath = newPath
         bezierPoints = [pointPosition]
         isBezierDrawing = true
         activeBezierPointIndex = 0
         bezierHandles.removeAll()
-        
+
         let strokeStyle = StrokeStyle(
             color: document.defaultStrokeColor,
             width: document.defaultStrokeWidth,
@@ -462,10 +464,10 @@ extension DrawingCanvas {
             opacity: document.defaultStrokeOpacity
         )
         let fillStyle: FillStyle? = nil
-        
+
         activeBezierShape = VectorShape(
             name: "Bezier Path (Continued)",
-            path: bezierPath!,
+            path: newPath,
             strokeStyle: strokeStyle,
             fillStyle: fillStyle
         )
@@ -539,27 +541,28 @@ extension DrawingCanvas {
     
     private func createNewPathFromDrag(at location: CGPoint) {
         let firstPoint = VectorPoint(location)
-        bezierPath = VectorPath(elements: [.move(to: firstPoint)])
+        let newPath = VectorPath(elements: [.move(to: firstPoint)])
+        bezierPath = newPath
         bezierPoints = [firstPoint]
         isBezierDrawing = true
         activeBezierPointIndex = 0
         bezierHandles.removeAll()
-        
+
         let strokeStyle = StrokeStyle(
             color: document.defaultStrokeColor,
             width: document.defaultStrokeWidth,
             opacity: document.defaultStrokeOpacity
         )
         let fillStyle: FillStyle? = nil
-        
-        activeBezierShape = VectorShape(
+
+        let newShape = VectorShape(
             name: "Bezier Path",
-            path: bezierPath!,
+            path: newPath,
             strokeStyle: strokeStyle,
             fillStyle: fillStyle
         )
-        
-        document.addShape(activeBezierShape!)
+        activeBezierShape = newShape
+        document.addShape(newShape)
         
         Log.fileOperation("🎯 CREATED FIRST POINT FROM DRAG: Started new path at \(location)", level: .info)
     }

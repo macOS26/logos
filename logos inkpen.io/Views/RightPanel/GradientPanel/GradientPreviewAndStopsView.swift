@@ -161,7 +161,7 @@ struct GradientPreviewAndStopsView: View {
                     }
                     
                     // Memoize gradient stops calculation for performance
-                    let stops = getGradientStops(currentGradient!).sorted { $0.position < $1.position }
+                    let stops = currentGradient.map { getGradientStops($0).sorted { $0.position < $1.position } } ?? []
                     ForEach(stops, id: \.id) { stop in
                         HStack(spacing: 8) {
                             Button(action: {
