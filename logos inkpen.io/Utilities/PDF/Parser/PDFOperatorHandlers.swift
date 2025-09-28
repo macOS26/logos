@@ -2,16 +2,15 @@
 //  PDFOperatorHandlers.swift
 //  logos inkpen.io
 //
-//  Created by Todd Bruss on 9/1/25.
-//  Extracted from PDFContent.swift - Path operation handlers
+//  Created by Todd Bruss on 8/31/25.
 //
 
 import SwiftUI
 
-// MARK: - PDF Operator Handlers Extension
+// MARK: - PDF Path Construction Operators
 extension PDFCommandParser {
     
-    // MARK: - Operator Handlers
+    // MARK: - Path Construction Operators
     
     func handleMoveTo(scanner: CGPDFScannerRef) {
         // COMPOUND PATH DETECTION: Multiple MoveTo operations before fill = compound path
@@ -24,6 +23,9 @@ extension PDFCommandParser {
             moveToCount += 1
             
             Log.info("PDF: Compound path part #\(compoundPathParts.count) stored (\(currentPath.count) commands)", category: .general)
+            
+            // CRITICAL: Clear currentPath after storing it to prevent accumulation
+            currentPath.removeAll()
         } else {
             // Reset compound path tracking for new path sequence
             moveToCount = 1
@@ -51,14 +53,14 @@ extension PDFCommandParser {
               CGPDFScannerPopNumber(scanner, &x) else { return }
         
         let point = CGPoint(x: x, y: y)
-        currentPoint = point
         currentPath.append(.lineTo(point))
+        currentPoint = point
     }
     
     func handleCurveTo(scanner: CGPDFScannerRef) {
-        var x1: CGFloat = 0, y1: CGFloat = 0  // First control point
-        var x2: CGFloat = 0, y2: CGFloat = 0  // Second control point  
-        var x3: CGFloat = 0, y3: CGFloat = 0  // End point
+        var x1: CGFloat = 0, y1: CGFloat = 0
+        var x2: CGFloat = 0, y2: CGFloat = 0
+        var x3: CGFloat = 0, y3: CGFloat = 0
         
         guard CGPDFScannerPopNumber(scanner, &y3),
               CGPDFScannerPopNumber(scanner, &x3),
@@ -69,43 +71,34 @@ extension PDFCommandParser {
         
         let cp1 = CGPoint(x: x1, y: y1)
         let cp2 = CGPoint(x: x2, y: y2)
-        let endPoint = CGPoint(x: x3, y: y3)
+        let to = CGPoint(x: x3, y: y3)
         
-        currentPoint = endPoint
-        
-        // Check if this is actually a quadratic curve (can be converted) using vectoring module
-        if let quadCommand = PDFCurveOptimizer.convertToQuadCurve(from: currentPoint, cp1: cp1, cp2: cp2, to: endPoint) {
-            currentPath.append(quadCommand)
-        } else {
-            currentPath.append(.curveTo(cp1: cp1, cp2: cp2, to: endPoint))
-        }
+        currentPath.append(.curveTo(cp1: cp1, cp2: cp2, to: to))
+        currentPoint = to
     }
     
     func handleCurveToV(scanner: CGPDFScannerRef) {
-        var x2: CGFloat = 0, y2: CGFloat = 0  // Second control point
-        var x3: CGFloat = 0, y3: CGFloat = 0  // End point
+        // v operator - curve with first control point same as current point
+        var x2: CGFloat = 0, y2: CGFloat = 0
+        var x3: CGFloat = 0, y3: CGFloat = 0
         
         guard CGPDFScannerPopNumber(scanner, &y3),
               CGPDFScannerPopNumber(scanner, &x3),
               CGPDFScannerPopNumber(scanner, &y2),
               CGPDFScannerPopNumber(scanner, &x2) else { return }
         
-        let cp1 = currentPoint  // Current point is first control point
+        let cp1 = currentPoint
         let cp2 = CGPoint(x: x2, y: y2)
-        let endPoint = CGPoint(x: x3, y: y3)
+        let to = CGPoint(x: x3, y: y3)
         
-        currentPoint = endPoint
-        
-        if let quadCommand = PDFCurveOptimizer.convertToQuadCurve(from: currentPoint, cp1: cp1, cp2: cp2, to: endPoint) {
-            currentPath.append(quadCommand)
-        } else {
-            currentPath.append(.curveTo(cp1: cp1, cp2: cp2, to: endPoint))
-        }
+        currentPath.append(.curveTo(cp1: cp1, cp2: cp2, to: to))
+        currentPoint = to
     }
     
     func handleCurveToY(scanner: CGPDFScannerRef) {
-        var x1: CGFloat = 0, y1: CGFloat = 0  // First control point
-        var x3: CGFloat = 0, y3: CGFloat = 0  // End point (also second control point)
+        // y operator - curve with second control point same as endpoint
+        var x1: CGFloat = 0, y1: CGFloat = 0
+        var x3: CGFloat = 0, y3: CGFloat = 0
         
         guard CGPDFScannerPopNumber(scanner, &y3),
               CGPDFScannerPopNumber(scanner, &x3),
@@ -113,24 +106,16 @@ extension PDFCommandParser {
               CGPDFScannerPopNumber(scanner, &x1) else { return }
         
         let cp1 = CGPoint(x: x1, y: y1)
-        let endPoint = CGPoint(x: x3, y: y3)
-        let cp2 = endPoint  // End point is also second control point
+        let to = CGPoint(x: x3, y: y3)
+        let cp2 = to
         
-        currentPoint = endPoint
-        
-        if let quadCommand = PDFCurveOptimizer.convertToQuadCurve(from: currentPoint, cp1: cp1, cp2: cp2, to: endPoint) {
-            currentPath.append(quadCommand)
-        } else {
-            currentPath.append(.curveTo(cp1: cp1, cp2: cp2, to: endPoint))
-        }
-    }
-    
-    func handleClosePath() {
-        currentPath.append(.closePath)
+        currentPath.append(.curveTo(cp1: cp1, cp2: cp2, to: to))
+        currentPoint = to
     }
     
     func handleRectangle(scanner: CGPDFScannerRef) {
-        var x: CGFloat = 0, y: CGFloat = 0, width: CGFloat = 0, height: CGFloat = 0
+        var x: CGFloat = 0, y: CGFloat = 0
+        var width: CGFloat = 0, height: CGFloat = 0
         
         guard CGPDFScannerPopNumber(scanner, &height),
               CGPDFScannerPopNumber(scanner, &width),
@@ -139,25 +124,24 @@ extension PDFCommandParser {
         
         let rect = CGRect(x: x, y: y, width: width, height: height)
         
-        // Use geometry module to filter out page boundary rectangles
-        if PDFBoundsCalculator.isPageBoundaryRectangle(rect, pageSize: pageSize) {
-            Log.info("PDF: Skipping page boundary rectangle (\(width) x \(height))", category: .general)
+        // Skip page boundary rectangles
+        if rect.width == pageSize.width && rect.height == pageSize.height {
+            Log.info("PDF: Skipping page boundary rectangle (\(rect.width) x \(rect.height))", category: .general)
             return
         }
         
-        // Add rectangle as move + lines + close
-        let startPoint = CGPoint(x: x, y: y)
-        let topRight = CGPoint(x: x + width, y: y)
-        let bottomRight = CGPoint(x: x + width, y: y + height)
-        let bottomLeft = CGPoint(x: x, y: y + height)
-        
-        currentPath.append(.moveTo(startPoint))
-        currentPath.append(.lineTo(topRight))
-        currentPath.append(.lineTo(bottomRight))
-        currentPath.append(.lineTo(bottomLeft))
+        // Convert rectangle to individual path commands (moves and lines)
+        currentPath.append(.moveTo(CGPoint(x: rect.minX, y: rect.minY)))
+        currentPath.append(.lineTo(CGPoint(x: rect.maxX, y: rect.minY)))
+        currentPath.append(.lineTo(CGPoint(x: rect.maxX, y: rect.maxY)))
+        currentPath.append(.lineTo(CGPoint(x: rect.minX, y: rect.maxY)))
         currentPath.append(.closePath)
         
-        currentPoint = startPoint
-        pathStartPoint = startPoint
+        currentPoint = CGPoint(x: rect.minX, y: rect.minY)
+    }
+    
+    func handleClosePath() {
+        currentPath.append(.closePath)
+        currentPoint = pathStartPoint
     }
 }

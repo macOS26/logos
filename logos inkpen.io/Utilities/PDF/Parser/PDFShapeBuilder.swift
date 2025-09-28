@@ -158,29 +158,31 @@ extension PDFCommandParser {
     // MARK: - Shape Creation Methods
     
     func createCompoundShapeFromParts(filled: Bool, stroked: Bool) {
-        // Add the current path as the final part
+        // Add the current path as the final part if not empty
         var allParts = compoundPathParts
         if !currentPath.isEmpty {
             allParts.append(currentPath)
         }
 
-        // Remove duplicate paths (likely from clipping paths)
+        // Simple duplicate removal - only remove EXACT duplicates
         var uniqueParts: [[PathCommand]] = []
+        
         for part in allParts {
-            // Check if this path is a duplicate of any already added
+            // Check if this exact path already exists
             let isDuplicate = uniqueParts.contains { existingPart in
-                existingPart.count == part.count && pathCommandsAreEqual(existingPart, part)
+                pathCommandsAreEqual(existingPart, part)
             }
-
+            
             if !isDuplicate {
                 uniqueParts.append(part)
             } else {
-                Log.info("PDF: 🗑️ Removing duplicate path in compound shape (likely clipping path)", category: .general)
+                Log.info("PDF: 🗑️ Removing exact duplicate path in compound shape", category: .general)
             }
         }
+        
         allParts = uniqueParts
 
-        Log.info("PDF: 🔧 Creating compound shape with \(allParts.count) subpaths (after removing duplicates)", category: .general)
+        Log.info("PDF: 🔧 Creating compound shape with \(allParts.count) unique subpaths (from \(compoundPathParts.count + (currentPath.isEmpty ? 0 : 1)) total)", category: .general)
         
         // Convert all parts to VectorPath elements
         var combinedElements: [PathElement] = []
@@ -470,7 +472,7 @@ extension PDFCommandParser {
         currentPath.removeAll()
     }
 
-    // Helper function to compare path commands
+    // Helper function to compare path commands for exact equality
     private func pathCommandsAreEqual(_ path1: [PathCommand], _ path2: [PathCommand]) -> Bool {
         guard path1.count == path2.count else { return false }
 
@@ -492,8 +494,20 @@ extension PDFCommandParser {
                    abs(to1.x - to2.x) > tolerance || abs(to1.y - to2.y) > tolerance {
                     return false
                 }
+            case (.quadCurveTo(let cp1, let to1), .quadCurveTo(let cp2, let to2)):
+                if abs(cp1.x - cp2.x) > tolerance || abs(cp1.y - cp2.y) > tolerance ||
+                   abs(to1.x - to2.x) > tolerance || abs(to1.y - to2.y) > tolerance {
+                    return false
+                }
             case (.closePath, .closePath):
                 continue
+            case (.rectangle(let r1), .rectangle(let r2)):
+                if abs(r1.origin.x - r2.origin.x) > tolerance || 
+                   abs(r1.origin.y - r2.origin.y) > tolerance ||
+                   abs(r1.size.width - r2.size.width) > tolerance ||
+                   abs(r1.size.height - r2.size.height) > tolerance {
+                    return false
+                }
             default:
                 return false
             }

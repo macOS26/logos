@@ -39,12 +39,13 @@ struct Log {
     // Font-related patterns that should always be logged
     private static let fontRelatedPatterns = [
         "FONT",
-        "TYPOGRAPHY", 
+        "TYPOGRAPHY",
         "TEXT BOX",
         "🔤",
         "FONT PANEL",
         "FONT SETTINGS",
-        "FONT FAMILY"
+        "FONT FAMILY",
+        "PDF"  // Always allow PDF import/parsing logs
     ]
     
     private static func logger(for category: LogCategory) -> Logger {
@@ -124,7 +125,7 @@ struct Log {
     
     // Main logging methods
     static func info(_ message: String, category: LogCategory = .general) {
-        #if DEBUG
+        //#if DEBUG
         // Check for spam suppression first
         if shouldSuppressMessage(message) {
             return
@@ -132,11 +133,11 @@ struct Log {
 
         let logger = logger(for: category)
         logger.info("\(message, privacy: .public)")
-        #endif
+        //#endif
     }
     
     static func warning(_ message: String, category: LogCategory = .general) {
-        #if DEBUG
+        //#if DEBUG
         // Check for spam suppression first
         if shouldSuppressMessage(message) {
             return
@@ -144,23 +145,23 @@ struct Log {
 
         let logger = logger(for: category)
         logger.warning("\(message, privacy: .public)")
-        #endif
+        //#endif
     }
     
     static func error(_ message: String, category: LogCategory = .error) {
-        #if DEBUG
+        //#if DEBUG
         // Don't suppress errors - they're important
         let logger = logger(for: category)
         logger.error("\(message, privacy: .public)")
-        #endif
+        //#endif
     }
     
     static func fault(_ message: String, category: LogCategory = .error) {
-        #if DEBUG
+        //#if DEBUG
         // Don't suppress faults - they're critical
         let logger = logger(for: category)
         logger.fault("\(message, privacy: .public)")
-        #endif
+        //#endif
     }
     
     // Convenience methods for specific categories
