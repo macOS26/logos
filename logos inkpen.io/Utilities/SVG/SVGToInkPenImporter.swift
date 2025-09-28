@@ -100,7 +100,7 @@ class SVGToInkPenImporter: ObservableObject {
             addResult("SVG Parsed", success: true, message: "Document size: \(Int(svgDoc.size.width)) × \(Int(svgDoc.size.height))")
             
             // Create VectorDocument from SVG with original data
-            let document = createVectorDocumentFromSVG(svgDoc, svgData: data, originalURL: url)
+            let document = createVectorDocumentFromSVG(svgDoc, svgData: data)
             
             addResult("Import Complete", success: true, message: "Created document with \(document.layers.count) layers")
             isImporting = false
@@ -136,7 +136,7 @@ class SVGToInkPenImporter: ObservableObject {
         addResult("SVG Parsed", success: true, message: "Document size: \(Int(svgDoc.size.width)) × \(Int(svgDoc.size.height))")
         
         // Create VectorDocument from SVG with original data
-        let document = createVectorDocumentFromSVG(svgDoc, svgData: data, originalURL: nil, name: name)
+        let document = createVectorDocumentFromSVG(svgDoc, svgData: data, name: name)
         
         addResult("Import Complete", success: true, message: "Created document with \(document.layers.count) layers")
         isImporting = false
@@ -146,7 +146,7 @@ class SVGToInkPenImporter: ObservableObject {
     
     // MARK: - Document Creation
     
-    private func createVectorDocumentFromSVG(_ svgDoc: SVGDocument, svgData: Data, originalURL: URL?, name: String = "Imported SVG") -> VectorDocument {
+    private func createVectorDocumentFromSVG(_ svgDoc: SVGDocument, svgData: Data, name: String = "Imported SVG") -> VectorDocument {
         let svgSize = svgDoc.size
         
         // Create document settings based on SVG size
