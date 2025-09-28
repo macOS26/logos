@@ -26,12 +26,6 @@ final class ColorManager {
 		colorDefaults = ColorDefaults()
 	}
 
-	/// Update color defaults
-	func updateColorDefaults(_ newDefaults: ColorDefaults) {
-		colorDefaults = newDefaults
-		colorDefaults.saveToUserDefaults()
-	}
-
 	/// Preferred working color space for the entire app. Display P3 offers a significantly wider gamut than sRGB.
 	/// We keep this configurable in case we decide to experiment with other wide-gamut spaces in the future.
 	enum WorkingSpace {
