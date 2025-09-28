@@ -307,67 +307,7 @@ struct ColorSwatchGrid: View {
             // HUD handles color selection and swatch additions; no sheet here
         }
     }
-    
-    private func applyFillColorToSelected(_ color: VectorColor) {
-        // CRITICAL FIX: Use unified selection system
-        var hasChanges = false
-        
-        // Apply to selected objects from unified system
-        for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
-                switch unifiedObject.objectType {
-                case .shape(let shape):
-                    // UNIFIED HELPER: Use unified system helper instead of direct manipulation
-                    if !shape.isTextObject {
-                        document.updateShapeFillColorInUnified(id: shape.id, color: color)
-                        hasChanges = true
-                    }
-                    
-                        // MIGRATED: Use unified object system to update text fill color
-                    if document.allTextObjects.contains(where: { $0.id == shape.id }) {
-                        document.updateTextFillColorInUnified(id: shape.id, color: color)
-                        hasChanges = true
-                    }
-                }
-            }
-        }
-        
-        // Save to undo stack and optimize sync if we made changes
-        if hasChanges {
-            document.saveToUndoStack()
-            document.updateUnifiedObjectsOptimized()
-        }
-    }
-    
-    private func applyStrokeColorToSelected(_ color: VectorColor) {
-        // CRITICAL FIX: Use unified selection system
-        var hasChanges = false
-        
-        // Apply to selected objects from unified system
-        for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
-                switch unifiedObject.objectType {
-                case .shape(let shape):
-                    // UNIFIED HELPER: Use unified system helper instead of direct manipulation  
-                    if !shape.isTextObject {
-                        document.updateShapeStrokeColorInUnified(id: shape.id, color: color)
-                        hasChanges = true
-                    }
-                    
-                        // MIGRATION: Use unified helper instead of direct assignment
-                        document.updateTextStrokeColorInUnified(id: shape.id, color: color)
-                        hasChanges = true
-                }
-            }
-        }
-        
-        // Save to undo stack and optimize sync if we made changes
-        if hasChanges {
-            document.saveToUndoStack()
-            document.updateUnifiedObjectsOptimized()
-        }
-    }
-    
+
     private func colorDescription(for color: VectorColor) -> String {
         switch color {
         case .black: return "Black"
