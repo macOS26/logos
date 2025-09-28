@@ -12,18 +12,14 @@ struct ConvertToOutlinesButton: View {
     let selectedText: VectorText?
 
     var body: some View {
-        VStack {
-            Divider()
-
-            Button("Convert to Outlines") {
-                convertSelectedTextToOutlines()
-            }
-            .buttonStyle(ProfessionalSecondaryButtonStyle())
-            .frame(maxWidth: .infinity)
-            .help("Convert text to vector paths (⌘⇧O)")
-            .keyboardShortcut("o", modifiers: [.command, .shift])
-            .disabled(selectedText == nil)  // Disable when no text selected, but always visible
+        Button("Convert to Outlines") {
+            convertSelectedTextToOutlines()
         }
+        .buttonStyle(ProfessionalSecondaryButtonStyle())
+        .frame(maxWidth: .infinity)
+        .help("Convert text to vector paths (⌘⇧O)")
+        .keyboardShortcut("o", modifiers: [.command, .shift])
+        .disabled(selectedText == nil)  // Disable when no text selected, but always visible
     }
     
     private func convertSelectedTextToOutlines() {
