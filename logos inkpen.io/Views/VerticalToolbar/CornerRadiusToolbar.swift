@@ -40,6 +40,7 @@ struct CornerRadiusToolbar: View {
             Image(systemName: shapeIcon)
                 .foregroundColor(Color.ui.secondaryText)
                 .font(.caption)
+                .offset(y: 2)  // Lower icon by 2px
             
             // Corner radius fields based on corner count
             cornerFieldsView
@@ -79,10 +80,12 @@ struct CornerRadiusToolbar: View {
                     Image(systemName: "circle.fill")
                         .font(.system(size: 4))
                         .foregroundColor(Color.ui.primaryBlue)
+                        .offset(y: 2)  // Lower icon by 2px
                 } else {
                     Image(systemName: "square.fill")
                         .font(.system(size: 4))
                         .foregroundColor(Color.ui.standardBorder)
+                        .offset(y: 2)  // Lower icon by 2px
                 }
             }
             

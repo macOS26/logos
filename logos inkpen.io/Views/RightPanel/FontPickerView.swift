@@ -37,7 +37,11 @@ struct FontPickerView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 8) {
+            // Font Family
+            Text("Font")
+                .font(.caption)
+                .foregroundColor(.secondary)
             Picker("", selection: Binding(
                 get: {
                     return selectedTextTypography?.fontFamily ?? document.fontManager.selectedFontFamily
@@ -66,11 +70,14 @@ struct FontPickerView: View {
                 }
             }
             .pickerStyle(.menu)
-            .frame(alignment: .leading)
-            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 4)
             .id(fontFamilyUpdateTrigger)
 
-            // Font Weight Picker
+            // Font Weight
+            Text("Weight")
+                .font(.caption)
+                .foregroundColor(.secondary)
             Picker("", selection: Binding(
                 get: {
                     guard let selectedText = selectedText else {
@@ -98,11 +105,14 @@ struct FontPickerView: View {
                 }
             }
             .pickerStyle(.menu)
-            .frame(alignment: .leading)
-            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 4)
             .id(fontFamilyUpdateTrigger)
 
-            // Font Style Picker
+            // Font Style
+            Text("Style")
+                .font(.caption)
+                .foregroundColor(.secondary)
             Picker("", selection: Binding(
                 get: {
                     guard let selectedText = selectedText else {
@@ -130,10 +140,9 @@ struct FontPickerView: View {
                 }
             }
             .pickerStyle(.menu)
-            .frame(alignment: .leading)
-            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 4)
             .id(fontFamilyUpdateTrigger)
-     
         }
     }
     

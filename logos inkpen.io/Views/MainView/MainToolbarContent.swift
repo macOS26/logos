@@ -138,7 +138,7 @@ struct MainToolbarContent: ToolbarContent {
 
             } label: {
                 Image(systemName: "doc.text")
-                    
+                    .offset(y: 1)  // Lower icon by 2px
             }
             .help("Development Tools")
             #endif
@@ -158,6 +158,7 @@ struct MainToolbarContent: ToolbarContent {
             } label: {
                 Image(systemName: "circle.dashed")
                     .font(.system(size: 20))  // 25% larger (was ~16)
+                    .offset(y: 1)  // Lower icon by 2px
                     .frame(width: 36, height: 36)  // Larger click area
                     .contentShape(Rectangle())  // Entire frame is clickable
                     .onTapGesture {
@@ -176,6 +177,7 @@ struct MainToolbarContent: ToolbarContent {
                 Image(systemName: document.viewMode.iconName)
                     .font(.system(size: 20))  // 25% larger
                     .foregroundColor(document.viewMode == .keyline ? InkPenUIColors.shared.toolOrange : .primary)
+                    .offset(y: 1)  // Lower icon by 2px
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -191,6 +193,7 @@ struct MainToolbarContent: ToolbarContent {
             } label: {
                 Image(systemName: document.showRulers ? "ruler.fill" : "ruler")
                     .font(.system(size: 20))  // 25% larger
+                    .offset(y: 1)  // Lower icon by 2px
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
                     
@@ -209,6 +212,7 @@ struct MainToolbarContent: ToolbarContent {
             } label: {
                 Image(systemName: document.showGrid ? "grid.circle.fill" : "grid.circle")
                     .font(.system(size: 20))  // 25% larger
+                    .offset(y: 1)  // Lower icon by 2px
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -226,6 +230,7 @@ struct MainToolbarContent: ToolbarContent {
             } label: {
                 Image(systemName: "rectangle.3.group")
                     .font(.system(size: 20))  // 25% larger
+                    .offset(y: 1)  // Lower icon by 2px
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -241,6 +246,7 @@ struct MainToolbarContent: ToolbarContent {
             } label: {
                 Image(systemName: "selection.pin.in.out")
                     .font(.system(size: 20))  // 25% larger
+                    .offset(y: 1)  // Lower icon by 2px
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -257,6 +263,7 @@ struct MainToolbarContent: ToolbarContent {
             } label: {
                 Image(systemName: "gear")
                     .font(.system(size: 20))  // 25% larger
+                    .offset(y: 1)  // Lower icon by 2px
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
                     .onTapGesture {

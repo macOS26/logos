@@ -187,6 +187,7 @@ struct TransformationControls: View {
                     Image(systemName: keepProportions ? "lock.fill" : "lock.open.fill")
                         .font(.system(size: 15, weight: .medium))  // 25% larger icon
                         .foregroundColor(.white)
+                        .offset(y: 2)  // Lower icon by 2px
                 }
                 .frame(width: 35, height: 30)  // 25% larger click area
             }
