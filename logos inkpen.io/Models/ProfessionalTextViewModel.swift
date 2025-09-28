@@ -24,7 +24,6 @@ class ProfessionalTextViewModel: ObservableObject {
     @Published var isEditing: Bool = false
     @Published var textBoxFrame: CGRect = CGRect(x: 100, y: 100, width: 200, height: 100) // MANUAL SIZE
     @Published var userInitiatedCursorPosition: Int = 0  // SINGLE SOURCE OF TRUTH for cursor position
-    @Published var userInitiatedSelectionLength: Int = 0  // SINGLE SOURCE OF TRUTH for selection length
 
     // MARK: - References
     @Published var textObject: VectorText  // Reference to document's VectorText
@@ -175,7 +174,6 @@ class ProfessionalTextViewModel: ObservableObject {
         // CURSOR POSITIONING: Sync cursor position from VectorText
         if textObject.isEditing && textObject.cursorPosition != self.userInitiatedCursorPosition {
             self.userInitiatedCursorPosition = textObject.cursorPosition
-            self.userInitiatedSelectionLength = 0
             Log.info("🎯 CURSOR SYNC: Set userInitiatedCursorPosition = \(textObject.cursorPosition)", category: .general)
         }
 

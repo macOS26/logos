@@ -392,7 +392,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
                 self.parent.viewModel.userInitiatedCursorPosition = selectedRange.location
-                self.parent.viewModel.userInitiatedSelectionLength = selectedRange.length
                 Log.info("💾 COORDINATOR SAVED CURSOR: position=\(selectedRange.location) length=\(selectedRange.length)", category: .general)
             }
         }
