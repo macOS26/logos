@@ -21,10 +21,6 @@ class PDFCommandParser {
     var pathStartPoint = CGPoint.zero
     var pageSize = CGSize.zero
     
-    // For compound path handling
-    var accumulatedPaths: [[PathCommand]] = []
-    var pendingFillColor: CGColor?
-    
     // For gradient tracking
     var activeGradient: VectorGradient?
     var gradientShapes: [Int] = []
