@@ -48,7 +48,7 @@ extension FileOperations {
         }
 
         // Render document content with clipping path support
-        try renderDocumentToPDFWithClipping(document: document, context: pdfContext, canvasSize: documentSize)
+        try renderDocumentToPDFWithClipping(document: document, context: pdfContext)
 
         // End PDF document
         pdfContext.endPDFPage()
@@ -59,7 +59,7 @@ extension FileOperations {
     }
 
     /// Render VectorDocument to PDF context with clipping path support
-    static func renderDocumentToPDFWithClipping(document: VectorDocument, context: CGContext, canvasSize: CGSize) throws {
+    static func renderDocumentToPDFWithClipping(document: VectorDocument, context: CGContext) throws {
         Log.fileOperation("🎨 Rendering document to PDF context with clipping support", level: .info)
 
         // Save graphics state
