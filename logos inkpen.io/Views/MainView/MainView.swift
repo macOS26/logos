@@ -98,6 +98,9 @@ struct MainView: View {
             }
         }
         .frame(minHeight: 524) // MINIMUM: Ensure overall height accommodates all elements + status bar (500 + 24)
+        .safeAreaInset(edge: .top, spacing: 0) {
+            Color.clear.frame(height: 1) // 1px offset from top
+        }
         .toolbarBackground(Color(NSColor.controlBackgroundColor), for: .windowToolbar)
         .toolbarBackground(.visible, for: .windowToolbar)
         .toolbar {
