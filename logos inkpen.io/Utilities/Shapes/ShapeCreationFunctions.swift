@@ -263,29 +263,7 @@ func createPolygonPath(center: CGPoint, radius: Double, sides: Int) -> VectorPat
         elements.append(.close)
         return VectorPath(elements: elements, isClosed: true)
     }
-    
-    /// Create a simple circle path for testing purposes
-func createTestCirclePath(center: CGPoint, radius: Double) -> VectorPath {
-        let steps = 32 // Number of segments for circle approximation
-        var elements: [PathElement] = []
-        
-        for i in 0...steps {
-            let angle = Double(i) * 2.0 * .pi / Double(steps)
-            let x = center.x + cos(angle) * radius
-            let y = center.y + sin(angle) * radius
-            
-            if i == 0 {
-                elements.append(.move(to: VectorPoint(x, y)))
-            } else {
-                elements.append(.line(to: VectorPoint(x, y)))
-            }
-        }
-        elements.append(.close)
-        
-        return VectorPath(elements: elements, isClosed: true)
-    }
-    
-            /// Create a rounded rectangle path with individual corner radii (professional style)
+        /// Create a rounded rectangle path with individual corner radii (professional style)
 func createRoundedRectPathWithIndividualCorners(rect: CGRect, cornerRadii: [Double]) -> VectorPath {
         // Ensure we have exactly 4 radii: [topLeft, topRight, bottomRight, bottomLeft]
         guard cornerRadii.count == 4 else {
@@ -387,32 +365,7 @@ func createRoundedRectPath(rect: CGRect, cornerRadius: Double) -> VectorPath {
             .close
         ], isClosed: true)
     }
-    
-    /// Create an equilateral triangle path that fills the full rectangle bounds (like square tool)
-func createEquilateralTrianglePath(rect: CGRect) -> VectorPath {
-        // Normalize rect to handle negative width/height from different drag directions
-        let normalizedRect = CGRect(
-            x: min(rect.minX, rect.maxX),
-            y: min(rect.minY, rect.maxY),
-            width: abs(rect.width),
-            height: abs(rect.height)
-        )
-
-        // FIXED: Fill the entire rectangle bounds (like square tool), don't center it
-        // Create equilateral triangle that fits within the full rectangle
-        let topPoint = VectorPoint(normalizedRect.midX, normalizedRect.minY)
-        let bottomLeft = VectorPoint(normalizedRect.minX, normalizedRect.maxY)
-        let bottomRight = VectorPoint(normalizedRect.maxX, normalizedRect.maxY)
-
-        return VectorPath(elements: [
-            .move(to: topPoint),
-            .line(to: bottomLeft),
-            .line(to: bottomRight),
-            .close
-        ], isClosed: true)
-    }
-
-    /// Create an equilateral triangle path with grid snapping for each vertex
+/// Create an equilateral triangle path with grid snapping for each vertex
 func createEquilateralTrianglePathWithGridSnapping(rect: CGRect, gridSpacing: Double, unit: MeasurementUnit) -> VectorPath {
         // Normalize rect to handle negative width/height from different drag directions
         let normalizedRect = CGRect(
