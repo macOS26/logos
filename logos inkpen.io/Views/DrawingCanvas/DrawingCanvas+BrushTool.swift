@@ -10,7 +10,7 @@ import SwiftUI
 
 extension DrawingCanvas {
     
-    // MARK: - Helper Functions
+    
     
     /// Check if a CGRect has finite values (no infinity or NaN)
     func isPathBoundsFinite(_ rect: CGRect) -> Bool {
@@ -35,7 +35,7 @@ extension DrawingCanvas {
         
         // Initialize brush drawing state
         isBrushDrawing = true
-        brushRawPoints = [BrushPoint(location: location, pressure: 1.0, timestamp: Date())]
+        brushRawPoints = [BrushPoint(location: location, pressure: 1.0)]
         brushSimplifiedPoints = []
         
         // Detect pressure input capability using PressureManager
@@ -82,7 +82,7 @@ extension DrawingCanvas {
         let pressure = PressureManager.shared.getPressure(for: location, sensitivity: document.currentBrushPressureSensitivity)
         
         // Add point to raw path with pressure data
-        let newPoint = BrushPoint(location: location, pressure: pressure, timestamp: Date())
+        let newPoint = BrushPoint(location: location, pressure: pressure)
         brushRawPoints.append(newPoint)
         
         // Update preview with new point
@@ -118,8 +118,7 @@ extension DrawingCanvas {
                 let interpolatedPressure = startPoint.pressure + (endPoint.pressure - startPoint.pressure) * t
                 interpolatedPoints.append(BrushPoint(
                     location: interpolatedLocation,
-                    pressure: interpolatedPressure,
-                    timestamp: Date()
+                    pressure: interpolatedPressure
                 ))
             }
 
@@ -239,8 +238,7 @@ extension DrawingCanvas {
 
                 interpolatedPoints.append(BrushPoint(
                     location: interpolatedLocation,
-                    pressure: interpolatedPressure,
-                    timestamp: Date()
+                    pressure: interpolatedPressure
                 ))
             }
 
@@ -351,8 +349,7 @@ extension DrawingCanvas {
 
                 interpolatedPoints.append(BrushPoint(
                     location: interpolatedLocation,
-                    pressure: interpolatedPressure,
-                    timestamp: Date()
+                    pressure: interpolatedPressure
                 ))
             }
 

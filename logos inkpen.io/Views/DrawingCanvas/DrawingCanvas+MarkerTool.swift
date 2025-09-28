@@ -27,7 +27,7 @@ extension DrawingCanvas {
         
         // Initialize marker drawing state
         isMarkerDrawing = true
-        markerRawPoints = [MarkerPoint(location: location, pressure: 1.0, timestamp: Date())]
+        markerRawPoints = [MarkerPoint(location: location, pressure: 1.0)]
         markerSimplifiedPoints = []
         
         // Reset pressure manager for new drawing
@@ -84,7 +84,7 @@ extension DrawingCanvas {
         let pressure = PressureManager.shared.getPressure(for: location, sensitivity: document.currentMarkerPressureSensitivity)
         
         // Add point to raw path with pressure data
-        let markerPoint = MarkerPoint(location: location, pressure: pressure, timestamp: Date())
+        let markerPoint = MarkerPoint(location: location, pressure: pressure)
         markerRawPoints.append(markerPoint)
         
         // Update real-time preview

@@ -141,12 +141,10 @@ struct HashableCGPoint: Hashable, Equatable {
 struct BrushPoint {
     let location: CGPoint
     let pressure: Double // 0.0 to 1.0
-    let timestamp: Date
-    
-    init(location: CGPoint, pressure: Double = 1.0, timestamp: Date = Date()) {
+
+    init(location: CGPoint, pressure: Double = 1.0) {
         self.location = location
         self.pressure = max(0.0, min(1.0, pressure)) // Clamp between 0 and 1
-        self.timestamp = timestamp
     }
 }
 
@@ -154,12 +152,10 @@ struct BrushPoint {
 struct MarkerPoint {
     let location: CGPoint
     let pressure: Double // 0.0 to 1.0
-    let timestamp: Date
-    
-    init(location: CGPoint, pressure: Double = 1.0, timestamp: Date = Date()) {
+
+    init(location: CGPoint, pressure: Double = 1.0) {
         self.location = location
         self.pressure = max(0.0, min(1.0, pressure)) // Clamp between 0 and 1
-        self.timestamp = timestamp
     }
 }
 

@@ -48,8 +48,8 @@ class BrushStrokeTaperingTests: XCTestCase {
 
         let centerPoints = [startPoint, endPoint]
         let rawPoints = [
-            BrushPoint(location: startPoint, pressure: 1.0, timestamp: Date()),
-            BrushPoint(location: endPoint, pressure: 1.0, timestamp: Date())
+            BrushPoint(location: startPoint, pressure: 1.0),
+            BrushPoint(location: endPoint, pressure: 1.0)
         ]
 
         // Generate path with our tapering algorithm
@@ -96,7 +96,7 @@ class BrushStrokeTaperingTests: XCTestCase {
         ]
 
         let rawPoints = points.map {
-            BrushPoint(location: $0, pressure: 1.0, timestamp: Date())
+            BrushPoint(location: $0, pressure: 1.0)
         }
 
         // Generate path
@@ -133,7 +133,7 @@ class BrushStrokeTaperingTests: XCTestCase {
         interpolatedPoints.append(endPoint)
 
         let rawPoints = interpolatedPoints.map {
-            BrushPoint(location: $0, pressure: 1.0, timestamp: Date())
+            BrushPoint(location: $0, pressure: 1.0)
         }
 
         // Generate path
@@ -164,7 +164,7 @@ class BrushStrokeTaperingTests: XCTestCase {
         ]
 
         let rawPoints = points.map {
-            BrushPoint(location: $0, pressure: 0.8, timestamp: Date())
+            BrushPoint(location: $0, pressure: 0.8)
         }
 
         // Generate preview path
