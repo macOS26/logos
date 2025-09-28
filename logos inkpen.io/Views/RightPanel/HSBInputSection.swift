@@ -476,29 +476,6 @@ struct HSBInputSection: View {
         // User's H=360 stays exactly as H=360, never normalized to 0
     }
     
-    private func updateHSBFromHex() {
-        let cleanHex = hexValue.replacingOccurrences(of: "#", with: "")
-        if cleanHex.count == 6 {
-            let scanner = Scanner(string: cleanHex)
-            var hexNumber: UInt64 = 0
-            
-            if scanner.scanHexInt64(&hexNumber) {
-                let r = Double((hexNumber & 0xff0000) >> 16) / 255.0
-                let g = Double((hexNumber & 0x00ff00) >> 8) / 255.0
-                let b = Double(hexNumber & 0x0000ff) / 255.0
-                
-                let rgbColor = RGBColor(red: r, green: g, blue: b, alpha: 1.0)
-                let hsbColor = HSBColorModel.fromRGB(rgbColor)
-                
-                setHSBValues(
-                    hue: hsbColor.hue,
-                    saturation: hsbColor.saturation * 100,
-                    brightness: hsbColor.brightness * 100
-                )
-            }
-        }
-    }
-    
     private func updateSharedColor() {
         sharedColor = .hsb(currentColor)
         let vectorColor = VectorColor.hsb(currentColor)
@@ -670,25 +647,6 @@ struct HSBInputSection: View {
         
         // Debug: Confirm HSB format is being added
         Log.fileOperation("🎨 HSB: Added color as HSB format - H:\(exactHSBColor.hue)° S:\(Int(exactHSBColor.saturation * 100))% B:\(Int(exactHSBColor.brightness * 100))%", level: .info)
-    }
-    
-    private func addPMSColorToSwatches() {
-        // Add current HSB color as a PMS color using the closest Pantone match name
-        if let pantoneColor = closestPantoneColor {
-            // Create a PMS color based on current HSB values but with Pantone naming
-            let pmsColor = VectorColor.pantone(pantoneColor)
-            document.addColorSwatch(pmsColor)
-            
-            // Debug: Confirm Pantone format is being added
-            Log.fileOperation("🎨 PMS: Added color as Pantone format - \(pantoneColor.pantone) (\(pantoneColor.name))", level: .info)
-        } else {
-            // Fallback: Add as HSB color if no PMS match found
-            let hsbColor = VectorColor.hsb(currentColor)
-            document.addColorSwatch(hsbColor)
-            
-            // Debug: Fallback to HSB when no Pantone match
-            Log.fileOperation("🎨 PMS: No Pantone match found, added as HSB format instead", level: .info)
-        }
     }
     
     // MARK: - Live PMS Search
