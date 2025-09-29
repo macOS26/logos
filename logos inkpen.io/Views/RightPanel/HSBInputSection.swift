@@ -486,8 +486,8 @@ struct HSBInputSection: View {
             return
         }
 
+        // Update the shared color binding for UI synchronization
         sharedColor = .hsb(currentColor)
-        let vectorColor = VectorColor.hsb(currentColor)
 
         // CRITICAL FIX: Don't update gradients during programmatic changes OR when just browsing
         // Only update gradients when user explicitly applies/selects colors
@@ -500,55 +500,17 @@ struct HSBInputSection: View {
         // This updateSharedColor is called during initialization and slider changes,
         // but we only want to update colors when user explicitly selects a swatch
 
-        // 🔥 CRITICAL FIX: Don't automatically update gradient stops when in gradient editing mode
-        // This prevents unwanted gradient modifications when browsing Color Panel during gradient editing
-        if showGradientEditing {
-            // Apply to active shapes (regular or direct selection) - but NOT gradients
-            let activeShapeIDs = document.getActiveShapeIDs()
-            if !activeShapeIDs.isEmpty {
-                for shapeID in activeShapeIDs {
-                    // Find the shape across all layers
-                    for layerIndex in document.layers.indices {
-                        let shapes = document.getShapesForLayer(layerIndex)
-                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
-                           let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                            // Only update non-gradient fills/strokes
-                            switch document.activeColorTarget {
-                            case .fill:
-                                // UNIFIED HELPER: Use unified system helper instead of direct manipulation
-                                if let fillStyle = shape.fillStyle, case .gradient = fillStyle.color {
-                                    // Skip gradient fills - they should only be updated via explicit gradient callbacks
-                                    continue
-                                } else {
-                                    document.updateShapeFillColorInUnified(id: shape.id, color: vectorColor)
-                                }
-                            case .stroke:
-                                // UNIFIED HELPER: Use unified system helper instead of direct manipulation
-                                document.updateShapeStrokeColorInUnified(id: shape.id, color: vectorColor)
-                            }
-                            break // Found the shape, no need to check other layers
-                        }
-                    }
-                }
-            }
-            return
-        }
-        
-        // 🔥 CRITICAL FIX: COMMON CODE NEVER UPDATES GRADIENT STOPS OR FILL/STROKE AUTOMATICALLY
-        // The common RGB/CMYK/HSB input sections are used by BOTH:
-        // 1. INK PANEL (Fill/Stroke mode) - should only update fill/stroke when swatch clicked
-        // 2. GRADIENT SELECT COLOR PANEL (Gradient mode) - should only update via callbacks
-        // 
-        // NO automatic updates - only explicit user actions should update colors!
-        
-        // FIX: Don't update defaults here either - this causes unwanted updates
-        // Only explicit user actions (clicking swatches) should update colors
-        
-        // 🔥 NO AUTOMATIC FILL/STROKE UPDATES - only when swatches are clicked!
-        
-        // 🔥 NO AUTOMATIC TEXT UPDATES - only when swatches are clicked!
-        
-        Log.fileOperation("🎨 HSB INPUT: Updated \(document.activeColorTarget) color: \(vectorColor)", level: .info)
+        // CRITICAL FIX #2: Don't directly modify shapes in updateSharedColor!
+        // This function is called during slider movements and initialization.
+        // Direct shape modification should ONLY happen through proper channels (setActiveColor).
+        // Removing all direct shape modifications to prevent gradient corruption.
+        return
+
+        /* REMOVED: Direct shape modification causing gradient loss
+        // The code below was directly modifying shapes during slider movements,
+        // which was replacing gradients with solid colors without proper undo handling.
+        // This should only happen through explicit user actions (clicking swatches, etc.)
+        */
     }
     
     private func loadFromSharedColor() {

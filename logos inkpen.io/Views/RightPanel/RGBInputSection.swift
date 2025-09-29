@@ -354,9 +354,7 @@ struct RGBInputSection: View {
             return
         }
 
-        let vectorColor = VectorColor.rgb(currentColor)
-        // Removed excessive logging for performance
-
+        // Update the shared color binding for UI synchronization
         sharedColor = .rgb(currentColor)
 
         // CRITICAL FIX: Don't update gradients during programmatic changes OR when just browsing
@@ -366,61 +364,21 @@ struct RGBInputSection: View {
             return
         }
 
-        // FIX: Don't update defaults here - let setActiveColor handle it when needed
-        // This updateSharedColor is called during initialization and slider changes,
-        // but we only want to update colors when user explicitly selects a swatch
+        // CRITICAL FIX #2: Don't directly modify shapes in updateSharedColor!
+        // This function is called during slider movements and initialization.
+        // Direct shape modification should ONLY happen through proper channels (setActiveColor).
+        // Removing all direct shape modifications below to prevent gradient corruption.
 
-        // Apply to active shapes (regular or direct selection)
-        let activeShapeIDs = document.getActiveShapeIDs()
-        if !activeShapeIDs.isEmpty {
-            // REMOVED saveToUndoStack - should NOT save when just viewing the panel!
-            // Only save undo when user explicitly applies a color via button/swatch click
+        // The code below was directly modifying shapes during live updates,
+        // which was replacing gradients with solid colors without proper undo handling.
+        // This should be handled by explicit user actions only.
+        return
 
-            for shapeID in activeShapeIDs {
-                // Find the shape across all layers
-                for layerIndex in document.layers.indices {
-                    let shapes = document.getShapesForLayer(layerIndex)
-                    if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
-                       let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                        switch document.activeColorTarget {
-                        case .fill:
-                            // UNIFIED HELPER: Use unified system helper instead of direct manipulation
-                            document.updateShapeFillColorInUnified(id: shape.id, color: vectorColor)
-                        case .stroke:
-                            // UNIFIED HELPER: Use unified system helper instead of direct manipulation
-                            document.updateShapeStrokeColorInUnified(id: shape.id, color: vectorColor)
-                        }
-                        break // Found the shape, no need to check other layers
-                    }
-                }
-            }
-
-            // OPTIMIZED: Update unified objects directly during live color changes
-            for shapeID in activeShapeIDs {
-                // Update the specific unified object directly for targeted rendering
-                if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
-                    if case .shape(let unifiedShape) = unifiedObj.objectType {
-                        return unifiedShape.id == shapeID
-                    }
-                    return false
-                }) {
-                    // Find updated shape data
-                    for layerIndex in document.layers.indices {
-                        let shapes = document.getShapesForLayer(layerIndex)
-                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
-                           let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                            break
-                        }
-                    }
-                }
-            }
-        }
-
-        // Force immediate UI update for visual responsiveness
-        document.objectWillChange.send()
-        
-        // Log.fileOperation("🎨 RGB INPUT: Updated \(document.activeColorTarget) color: \(vectorColor)", level: .info)
+        /* REMOVED: Direct shape modification causing gradient loss
+        // The code below was directly modifying shapes during slider movements,
+        // which was replacing gradients with solid colors without proper undo handling.
+        // This should only happen through explicit user actions (clicking swatches, etc.)
+        */
     }
     
     private func loadFromSharedColor() {

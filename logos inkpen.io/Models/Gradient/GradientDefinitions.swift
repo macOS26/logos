@@ -11,15 +11,21 @@ import SwiftUI
 
 /// Enhanced gradient stop with more professional features
 struct GradientStop: Codable, Hashable, Identifiable {
-    var id = UUID()
+    var id: UUID
     var position: Double // 0.0 to 1.0 (normalized position along gradient)
     var color: VectorColor
     var opacity: Double // Individual stop opacity (0.0 to 1.0)
-    
-    init(position: Double, color: VectorColor, opacity: Double = 1.0) {
+
+    init(position: Double, color: VectorColor, opacity: Double = 1.0, id: UUID = UUID()) {
+        self.id = id
         self.position = max(0.0, min(1.0, position)) // Clamp to 0-1 range
         self.color = color
         self.opacity = max(0.0, min(1.0, opacity))   // Clamp to 0-1 range
+    }
+
+    // CRITICAL FIX: Explicit CodingKeys to ensure ID is properly encoded/decoded
+    private enum CodingKeys: String, CodingKey {
+        case id, position, color, opacity
     }
 }
 
@@ -38,9 +44,9 @@ enum GradientUnits: String, Codable {
 
 /// Enhanced linear gradient with professional features
 struct LinearGradient: Codable, Hashable, Identifiable {
-    var id = UUID()
+    var id: UUID
     var startPoint: CGPoint     // Start point (in unit coordinates 0-1)
-    var endPoint: CGPoint       // End point (in unit coordinates 0-1)  
+    var endPoint: CGPoint       // End point (in unit coordinates 0-1)
     var stops: [GradientStop]   // Unlimited color stops
     var spreadMethod: GradientSpreadMethod = .pad
     var units: GradientUnits = .objectBoundingBox
@@ -54,18 +60,25 @@ struct LinearGradient: Codable, Hashable, Identifiable {
     // NEW: Store angle as a separate property to avoid recalculation issues
     var storedAngle: Double = 0.0
     
-    init(startPoint: CGPoint, endPoint: CGPoint, stops: [GradientStop], spreadMethod: GradientSpreadMethod = .pad, units: GradientUnits = .objectBoundingBox) {
+    init(startPoint: CGPoint, endPoint: CGPoint, stops: [GradientStop], spreadMethod: GradientSpreadMethod = .pad, units: GradientUnits = .objectBoundingBox, id: UUID = UUID()) {
+        self.id = id
         self.startPoint = startPoint
         self.endPoint = endPoint
         self.stops = stops.sorted { $0.position < $1.position } // Auto-sort stops by position for proper gradient rendering
         self.spreadMethod = spreadMethod
         self.units = units
-        
+
         // Calculate and store the initial angle from the provided coordinates
         let deltaX = endPoint.x - startPoint.x
         let deltaY = endPoint.y - startPoint.y
         let radians = atan2(deltaY, deltaX)
         self.storedAngle = radians * 180.0 / .pi
+    }
+
+    // CRITICAL FIX: Explicit CodingKeys to ensure ID is properly encoded/decoded
+    private enum CodingKeys: String, CodingKey {
+        case id, startPoint, endPoint, stops, spreadMethod, units
+        case originPoint, scaleX, scaleY, storedAngle, scale
     }
     
     /// Professional angle support -180° to +180° range
@@ -123,9 +136,9 @@ struct LinearGradient: Codable, Hashable, Identifiable {
     }
 }
 
-/// Enhanced radial gradient with professional features  
+/// Enhanced radial gradient with professional features
 struct RadialGradient: Codable, Hashable, Identifiable {
-    var id = UUID()
+    var id: UUID
     var centerPoint: CGPoint           // Center of gradient (in unit coordinates 0-1)
     var focalPoint: CGPoint?           // Focal point for elliptical gradients (optional)
     var radius: Double                 // Radius (in unit coordinates 0-1)
@@ -142,12 +155,19 @@ struct RadialGradient: Codable, Hashable, Identifiable {
     // NEW: Transform properties to
     var angle: Double = 0.0             // Rotation angle in degrees (-180 to 180)
     
-    init(centerPoint: CGPoint, radius: Double, stops: [GradientStop], focalPoint: CGPoint? = nil, spreadMethod: GradientSpreadMethod = .pad, units: GradientUnits = .objectBoundingBox) {
+    init(centerPoint: CGPoint, radius: Double, stops: [GradientStop], focalPoint: CGPoint? = nil, spreadMethod: GradientSpreadMethod = .pad, units: GradientUnits = .objectBoundingBox, id: UUID = UUID()) {
+        self.id = id
         self.centerPoint = centerPoint
         self.radius = max(0.0, radius)
         self.stops = stops.sorted { $0.position < $1.position } // Auto-sort stops by position for proper gradient rendering
         self.focalPoint = focalPoint
         self.spreadMethod = spreadMethod
         self.units = units
+    }
+
+    // CRITICAL FIX: Explicit CodingKeys to ensure ID is properly encoded/decoded
+    private enum CodingKeys: String, CodingKey {
+        case id, centerPoint, focalPoint, radius, stops, spreadMethod, units
+        case originPoint, scaleX, scaleY, angle, scale
     }
 }
