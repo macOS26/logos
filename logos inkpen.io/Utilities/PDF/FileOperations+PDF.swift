@@ -171,8 +171,7 @@ extension FileOperations {
         case .blend:
             drawPDFGradientAsBlend(gradient, in: context, bounds: bounds, opacity: opacity)
         case .mesh:
-            // TODO: Implement mesh gradients
-            drawPDFGradientWithCGGradient(gradient, in: context, bounds: bounds, opacity: opacity)
+            drawPDFGradientAsMesh(gradient, in: context, bounds: bounds, opacity: opacity)
         default:
             drawPDFGradientWithCGGradient(gradient, in: context, bounds: bounds, opacity: opacity)
         }
@@ -593,6 +592,129 @@ extension FileOperations {
             }
 
             context.restoreGState()
+        }
+    }
+
+    /// Draw gradient as a mesh grid (similar to Illustrator's gradient mesh)
+    /// Creates a grid of Bezier patches with interpolated colors
+    private static func drawPDFGradientAsMesh(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
+        context.saveGState()
+
+        switch gradient {
+        case .linear(let linearGradient):
+            drawLinearGradientAsMesh(linearGradient, in: context, bounds: bounds, opacity: opacity)
+        case .radial(let radialGradient):
+            drawRadialGradientAsMesh(radialGradient, in: context, bounds: bounds, opacity: opacity)
+        }
+
+        context.restoreGState()
+    }
+
+    private static func drawLinearGradientAsMesh(_ linearGradient: LinearGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
+        let gridSize = 8 // Create an 8x8 mesh
+        let stops = linearGradient.stops
+
+        guard stops.count >= 2 else { return }
+
+        // Calculate gradient angle
+        let angle = linearGradient.angle * .pi / 180.0
+
+        // Create mesh grid
+        for row in 0..<gridSize {
+            for col in 0..<gridSize {
+                let x0 = bounds.minX + (bounds.width * CGFloat(col) / CGFloat(gridSize))
+                let x1 = bounds.minX + (bounds.width * CGFloat(col + 1) / CGFloat(gridSize))
+                let y0 = bounds.minY + (bounds.height * CGFloat(row) / CGFloat(gridSize))
+                let y1 = bounds.minY + (bounds.height * CGFloat(row + 1) / CGFloat(gridSize))
+
+                // Calculate gradient position based on angle and cell position
+                let cellCenterX = (x0 + x1) / 2
+                let cellCenterY = (y0 + y1) / 2
+
+                // Project cell center onto gradient axis
+                let dx = cellCenterX - bounds.midX
+                let dy = cellCenterY - bounds.midY
+                let cosAngle = CGFloat(cos(angle))
+                let sinAngle = CGFloat(sin(angle))
+                let maxDim = max(bounds.width, bounds.height)
+                let projection = (dx * cosAngle + dy * sinAngle) / maxDim
+                let t = (projection + 1.0) / 2.0 // Normalize to 0-1
+
+                // Get color for this position
+                let color = interpolateGradientColor(at: t, stops: stops, opacity: opacity)
+
+                // Draw mesh cell as a filled rectangle
+                context.setFillColor(color.cgColor)
+                context.fill(CGRect(x: x0, y: y0, width: x1 - x0, height: y1 - y0))
+            }
+        }
+    }
+
+    private static func drawRadialGradientAsMesh(_ radialGradient: RadialGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
+        let gridSize = 12 // Use more cells for radial to maintain smoothness
+        let stops = radialGradient.stops
+
+        guard stops.count >= 2 else { return }
+
+        // Calculate center
+        let centerX = bounds.minX + bounds.width * radialGradient.centerPoint.x
+        let centerY = bounds.minY + bounds.height * radialGradient.centerPoint.y
+        let center = CGPoint(x: centerX, y: centerY)
+        let maxRadius = min(bounds.width, bounds.height) * radialGradient.radius
+
+        // Create polar mesh grid
+        let angleStep = (2 * Double.pi) / Double(gridSize)
+        let radiusStep = maxRadius / CGFloat(gridSize)
+
+        // Draw from outside to inside
+        for r in (0..<gridSize).reversed() {
+            let innerRadius = CGFloat(r) * radiusStep
+            let outerRadius = CGFloat(r + 1) * radiusStep
+
+            // Calculate gradient position
+            let t = (Double(r) + 0.5) / Double(gridSize)
+            let color = interpolateGradientColor(at: t, stops: stops, opacity: opacity)
+
+            for a in 0..<gridSize {
+                let angle1 = Double(a) * angleStep
+                let angle2 = Double(a + 1) * angleStep
+
+                // Create wedge path
+                context.saveGState()
+
+                let path = CGMutablePath()
+                path.move(to: CGPoint(
+                    x: center.x + innerRadius * cos(angle1),
+                    y: center.y + innerRadius * sin(angle1)
+                ))
+                path.addArc(
+                    center: center,
+                    radius: outerRadius,
+                    startAngle: angle1,
+                    endAngle: angle2,
+                    clockwise: false
+                )
+                path.addLine(to: CGPoint(
+                    x: center.x + innerRadius * cos(angle2),
+                    y: center.y + innerRadius * sin(angle2)
+                ))
+                if innerRadius > 0 {
+                    path.addArc(
+                        center: center,
+                        radius: innerRadius,
+                        startAngle: angle2,
+                        endAngle: angle1,
+                        clockwise: true
+                    )
+                }
+                path.closeSubpath()
+
+                context.addPath(path)
+                context.setFillColor(color.cgColor)
+                context.fillPath()
+
+                context.restoreGState()
+            }
         }
     }
 

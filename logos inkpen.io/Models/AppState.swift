@@ -108,7 +108,7 @@ class AppState {
             case .cgGradient: return "CGGradient (Smooth)"
             case .cgShading: return "CGShading (Baked)"
             case .blend: return "Blend (Vector Steps)"
-            case .mesh: return "Mesh (Coming Soon)"
+            case .mesh: return "Mesh (Grid)"
             }
         }
     }

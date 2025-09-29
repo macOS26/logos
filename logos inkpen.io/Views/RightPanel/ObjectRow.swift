@@ -194,7 +194,7 @@ struct PreferencesView: View {
                             }
                         }
 
-                        Text("Smooth: Standard gradients. Baked: No transparency. Blend: Vector steps. Mesh: Future.")
+                        Text("Smooth: Standard. Baked: No transparency. Blend: Vector steps. Mesh: Grid patches.")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
