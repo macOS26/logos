@@ -363,9 +363,163 @@ extension DrawingCanvas {
         }
     }
     
-    /// Handles smooth curve behavior for coincident points (first/last in closed paths)
-    /// Uses EXACT coordinate matching (no tolerance) and applies smooth point logic
+    /// Handles smooth curve behavior for ANY coincident points (not just first/last in closed paths)
+    /// This enables tangent line linking for duplicate points with handles
     func handleCoincidentSmoothPoints(elements: inout [PathElement], draggedHandleID: HandleID, newDraggedPosition: CGPoint) -> Bool {
+        
+        // First try the specific first/last closed path case
+        if handleFirstLastCoincidentPoints(elements: &elements, draggedHandleID: draggedHandleID, newDraggedPosition: newDraggedPosition) {
+            return true
+        }
+        
+        // Now handle ANY coincident points in the path
+        // Get the anchor point for the dragged handle
+        let anchorPoint: CGPoint?
+        let draggedPointID: PointID
+        
+        if draggedHandleID.handleType == .control1 {
+            // control1 belongs to the anchor at the END of the PREVIOUS element
+            let prevIndex = draggedHandleID.elementIndex - 1
+            if prevIndex >= 0 {
+                switch elements[prevIndex] {
+                case .curve(let to, _, _), .line(let to), .quadCurve(let to, _), .move(let to):
+                    anchorPoint = CGPoint(x: to.x, y: to.y)
+                    draggedPointID = PointID(shapeID: draggedHandleID.shapeID, pathIndex: 0, elementIndex: prevIndex)
+                default:
+                    return false
+                }
+            } else {
+                return false
+            }
+        } else if draggedHandleID.handleType == .control2 {
+            // control2 belongs to the anchor at the END of the CURRENT element
+            switch elements[draggedHandleID.elementIndex] {
+            case .curve(let to, _, _):
+                anchorPoint = CGPoint(x: to.x, y: to.y)
+                draggedPointID = PointID(shapeID: draggedHandleID.shapeID, pathIndex: 0, elementIndex: draggedHandleID.elementIndex)
+            default:
+                return false
+            }
+        } else {
+            return false
+        }
+        
+        guard let anchor = anchorPoint else { return false }
+        
+        // Find all coincident points at this anchor position
+        let coincidentPoints = findCoincidentPointsInSameShape(
+            shapeID: draggedHandleID.shapeID,
+            anchorPosition: anchor,
+            elements: elements,
+            excludeIndex: draggedPointID.elementIndex
+        )
+        
+        if coincidentPoints.isEmpty {
+            return false
+        }
+        
+        // For each coincident point, update the opposite handle to maintain tangent
+        for coincidentIndex in coincidentPoints {
+            if draggedHandleID.handleType == .control1 {
+                // We're dragging an outgoing handle, update the incoming handle of the coincident point
+                if case .curve(let to, let control1, let control2) = elements[coincidentIndex] {
+                    // Calculate the opposite handle position to maintain tangent
+                    let oppositeHandle = calculateLinkedHandle(
+                        anchorPoint: anchor,
+                        draggedHandle: newDraggedPosition,
+                        originalOppositeHandle: CGPoint(x: control2.x, y: control2.y)
+                    )
+                    
+                    // Update the coincident point's incoming handle
+                    elements[coincidentIndex] = .curve(
+                        to: to,
+                        control1: control1,
+                        control2: VectorPoint(oppositeHandle.x, oppositeHandle.y)
+                    )
+                    
+                    Log.info("🔗 COINCIDENT TANGENT: Updated incoming handle of coincident point at index \(coincidentIndex)", category: .general)
+                }
+            } else if draggedHandleID.handleType == .control2 {
+                // We're dragging an incoming handle, update the outgoing handle of the coincident point
+                // The outgoing handle is control1 of the NEXT element after the coincident point
+                let nextIndex = coincidentIndex + 1
+                if nextIndex < elements.count {
+                    if case .curve(let to, let control1, let control2) = elements[nextIndex] {
+                        // Calculate the opposite handle position to maintain tangent
+                        let oppositeHandle = calculateLinkedHandle(
+                            anchorPoint: anchor,
+                            draggedHandle: newDraggedPosition,
+                            originalOppositeHandle: CGPoint(x: control1.x, y: control1.y)
+                        )
+                        
+                        // Update the next element's outgoing handle
+                        elements[nextIndex] = .curve(
+                            to: to,
+                            control1: VectorPoint(oppositeHandle.x, oppositeHandle.y),
+                            control2: control2
+                        )
+                        
+                        Log.info("🔗 COINCIDENT TANGENT: Updated outgoing handle of coincident point at index \(coincidentIndex)", category: .general)
+                    }
+                }
+            }
+        }
+        
+        // Update the dragged handle itself
+        if draggedHandleID.handleType == .control1 {
+            elements[draggedHandleID.elementIndex] = updateElementControl1(
+                elements[draggedHandleID.elementIndex],
+                newControl1: VectorPoint(newDraggedPosition.x, newDraggedPosition.y)
+            )
+        } else if draggedHandleID.handleType == .control2 {
+            elements[draggedHandleID.elementIndex] = updateElementControl2(
+                elements[draggedHandleID.elementIndex],
+                newControl2: VectorPoint(newDraggedPosition.x, newDraggedPosition.y)
+            )
+        }
+        
+        return !coincidentPoints.isEmpty
+    }
+    
+    /// Helper function to find coincident points within the same shape
+    private func findCoincidentPointsInSameShape(
+        shapeID: UUID,
+        anchorPosition: CGPoint,
+        elements: [PathElement],
+        excludeIndex: Int
+    ) -> [Int] {
+        var coincidentIndices: [Int] = []
+        let tolerance = 1.0 // Same tolerance as main coincident detection
+        
+        for (index, element) in elements.enumerated() {
+            // Skip the excluded index
+            if index == excludeIndex { continue }
+            
+            // Get the point position from this element
+            let elementPoint: CGPoint?
+            switch element {
+            case .move(let to), .line(let to):
+                elementPoint = CGPoint(x: to.x, y: to.y)
+            case .curve(let to, _, _), .quadCurve(let to, _):
+                elementPoint = CGPoint(x: to.x, y: to.y)
+            case .close:
+                elementPoint = nil
+            }
+            
+            // Check if this point is coincident with the anchor
+            if let point = elementPoint {
+                let distance = sqrt(pow(anchorPosition.x - point.x, 2) + pow(anchorPosition.y - point.y, 2))
+                if distance <= tolerance {
+                    coincidentIndices.append(index)
+                }
+            }
+        }
+        
+        return coincidentIndices
+    }
+    
+    /// Handles the specific case of first/last coincident points in closed paths
+    private func handleFirstLastCoincidentPoints(elements: inout [PathElement], draggedHandleID: HandleID, newDraggedPosition: CGPoint) -> Bool {
         guard elements.count >= 2 else { return false }
         
         // Get first and last point positions (exact coordinates)
