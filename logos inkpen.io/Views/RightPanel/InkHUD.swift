@@ -10,16 +10,9 @@ struct StableInkHUDContent: View {
             VStack(spacing: 0) {
                 // Reuse ColorPanel logic exactly like the right panel (no gradient editing)
                 ColorPanel(document: document, onColorSelected: { color in
-                    // Apply to active target (both default AND selected objects, like Right Panel)
-                    if document.activeColorTarget == .stroke {
-                        document.defaultStrokeColor = color
-                        // CRITICAL FIX: Also apply to selected objects like Right Panel does
-                        document.setActiveColor(color)
-                    } else {
-                        document.defaultFillColor = color
-                        // CRITICAL FIX: Also apply to selected objects like Right Panel does
-                        document.setActiveColor(color)
-                    }
+                    // FIX: Batch color changes into a single undo operation
+                    // setActiveColor already sets the default colors internally
+                    document.setActiveColor(color)
                 }, showGradientEditing: false)
                 .frame(maxWidth: 350, maxHeight: 520)
                 .id(colorPanelKey) // Force refresh when key changes
@@ -42,13 +35,10 @@ struct StableInkHUDContent: View {
             // Listen for selection changes to update the Ink Panel color
             .onChange(of: document.selectedObjectIDs) { _, _ in
                 // When selection changes, update the default colors to match selected object
-                if let selectedColor = document.getSelectedObjectColor() {
-                    if document.activeColorTarget == .stroke {
-                        document.defaultStrokeColor = selectedColor
-                    } else {
-                        document.defaultFillColor = selectedColor
-                    }
-                    // Force ColorPanel refresh to show new color
+                if document.getSelectedObjectColor() != nil {
+                    // FIX: Don't set defaultColors here as it creates duplicate undo entries
+                    // The color panel will reflect the selected object's color automatically
+                    // Just refresh the panel to show the new color
                     colorPanelKey = UUID()
                 }
             }

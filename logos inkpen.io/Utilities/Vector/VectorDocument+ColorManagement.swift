@@ -83,16 +83,22 @@ extension VectorDocument {
     }
     
     func setActiveColor(_ color: VectorColor) {
+        // FIX: Save undo state only once at the beginning, not for each object
+        let shouldSaveUndo = !selectedObjectIDs.isEmpty
+        if shouldSaveUndo {
+            saveToUndoStack()
+        }
+
         switch activeColorTarget {
         case .fill:
             defaultFillColor = color
         case .stroke:
             defaultStrokeColor = color
         }
-        
+
         // REFACTORED: Use unified objects system for color application
         var hasChanges = false
-        
+
         // Apply to selected objects from unified system
         for objectID in selectedObjectIDs {
             if let unifiedObject = unifiedObjects.first(where: { $0.id == objectID }) {
@@ -100,7 +106,7 @@ extension VectorDocument {
                 case .shape(let shape):
                     if shape.isTextObject {
                         // MIGRATION: Use unified helpers instead of direct assignment
-                        saveToUndoStack()
+                        // FIX: Removed saveToUndoStack() - already saved once above
                         switch activeColorTarget {
                         case .fill:
                             updateTextFillColorInUnified(id: shape.id, color: color)
@@ -114,7 +120,7 @@ extension VectorDocument {
                             let shapes = getShapesForLayer(layerIndex)
                             if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }),
                                var updatedShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                                saveToUndoStack()
+                                // FIX: Removed saveToUndoStack() - already saved once above
                                 switch activeColorTarget {
                                 case .fill:
                                     if updatedShape.fillStyle == nil {
