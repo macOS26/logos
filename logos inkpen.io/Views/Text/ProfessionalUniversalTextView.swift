@@ -113,6 +113,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             name: Notification.Name("TextPreviewUpdate"),
             object: nil
         )
+        
+        // Store the text view reference in the coordinator for direct access
+        context.coordinator.textView = textView
 
         return textView
     }
@@ -310,6 +313,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         if needsFormatUpdate || abs(currentContainerWidth - newWidth) > 1.0 {
             nsView.needsLayout = true
         }
+        
+        // Update coordinator's text view reference
+        coordinator.textView = nsView
     }
     
     func makeCoordinator() -> Coordinator {
@@ -320,6 +326,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         var parent: ProfessionalUniversalTextView
         var lastUpdateTime: Date = Date() // Performance optimization: track update frequency
         var isRestoringSelection: Bool = false // Prevents saving programmatic selection changes
+        weak var textView: DisabledContextMenuTextView? // Store reference to the actual text view
 
         init(_ parent: ProfessionalUniversalTextView) {
             self.parent = parent
@@ -409,10 +416,8 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                   let typography = userInfo["typography"] as? TypographyProperties,
                   parent.viewModel.textObject.id == textID else { return }
 
-            // Get the text view from the parent's update context
-            guard let window = NSApp.windows.first,
-                  let contentView = window.contentView,
-                  let textView = findTextView(in: contentView, for: textID) else { return }
+            // FIX: Use the stored text view reference directly instead of searching through windows
+            guard let textView = self.textView else { return }
 
             // Apply typography changes directly to NSTextView for smooth preview
             DispatchQueue.main.async {
@@ -440,29 +445,10 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
 
                 // Force immediate layout update for smooth preview
                 if let textContainer = textView.textContainer {
-            textView.layoutManager?.ensureLayout(for: textContainer)
-        }
+                    textView.layoutManager?.ensureLayout(for: textContainer)
+                }
                 textView.needsDisplay = true
             }
-        }
-
-        private func findTextView(in view: NSView, for textID: UUID) -> DisabledContextMenuTextView? {
-            // Check if this view is our text view
-            if let textView = view as? DisabledContextMenuTextView {
-                // We can check if it's the right one by comparing with parent's text ID
-                if parent.viewModel.textObject.id == textID {
-                    return textView
-                }
-            }
-
-            // Recursively search subviews
-            for subview in view.subviews {
-                if let found = findTextView(in: subview, for: textID) {
-                    return found
-                }
-            }
-
-            return nil
         }
     }
 }

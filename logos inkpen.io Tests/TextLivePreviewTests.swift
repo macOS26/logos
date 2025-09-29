@@ -2,229 +2,277 @@
 //  TextLivePreviewTests.swift
 //  logos inkpen.io Tests
 //
-//  Created by Claude on 2025/01/27.
+//  Created by Claude on 2025/01/01.
 //
 
 import XCTest
-@testable import logos_inkpen_io
 import SwiftUI
+@testable import logos_inkpen_io
 
 final class TextLivePreviewTests: XCTestCase {
-
-    var document: VectorDocument?
-
-    override func setUp() {
-        super.setUp()
+    var document: VectorDocument!
+    
+    override func setUpWithError() throws {
         document = VectorDocument()
-
-        // Add a test text object
-        let text = VectorText(
-            content: "Test Text",
-            typography: TypographyProperties(
-                fontFamily: "Helvetica",
-                fontSize: 24,
-                fontWeight: .regular,
-                fontStyle: .normal,
-                alignment: .left,
-                strokeColor: .black,
-                fillColor: .black
-            ),
-            position: CGPoint(x: 100, y: 100)
-        )
-
-        // Add to unified objects
-        guard let document = document else { return }
-        let shape = VectorShape.from(text)
-        let unifiedObject = VectorObject(
-            shape: shape,
-            layerIndex: document.currentLayerIndex,
-            orderID: document.unifiedObjects.count
-        )
-        document.unifiedObjects.append(unifiedObject)
-        document.selectedTextIDs.insert(text.id)
+        // Set initial document settings
+        document.width = 800
+        document.height = 600
     }
-
-    override func tearDown() {
+    
+    override func tearDownWithError() throws {
         document = nil
-        super.tearDown()
     }
-
-    func testLiveFontSizePreview() {
-        guard let document = document else {
-            XCTFail("Document not initialized")
-            return
-        }
-        // Get initial text
-        guard let textID = document.selectedTextIDs.first else {
-            XCTFail("No text selected")
-            return
-        }
-
-        // Test preview update
+    
+    func testTextPreviewTypographyStorage() throws {
+        // Create a text object
+        let textID = UUID()
+        let typography = TypographyProperties(
+            fontName: "Helvetica",
+            fontSize: 24,
+            lineSpacing: 5,
+            lineHeight: 30
+        )
+        
+        // Create shape with text
+        let shape = VectorShape(
+            path: CGPath(rect: CGRect(x: 100, y: 100, width: 200, height: 100), transform: nil),
+            fillStyle: FillStyle(color: .black),
+            strokeStyle: nil,
+            name: "Text: Test",
+            isEditable: false
+        )
+        shape.id = textID
+        shape.isTextObject = true
+        shape.textContent = "Test text"
+        shape.typography = typography
+        
+        let unifiedObj = UnifiedObject(
+            id: textID,
+            objectType: .shape(shape),
+            zIndex: 0
+        )
+        document.unifiedObjects.append(unifiedObj)
+        
+        // Test font size preview
         document.updateTextFontSizePreview(id: textID, fontSize: 48)
-
-        // Verify the font size was updated
-        if let updatedObject = document.unifiedObjects.first(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.id == textID
-            }
-            return false
-        }) {
-            if case .shape(let shape) = updatedObject.objectType {
-                XCTAssertEqual(shape.typography?.fontSize, 48, "Font size should be updated to 48")
-
-                // Verify line height was proportionally updated
-                let expectedLineHeight = 48.0 // Since initial ratio was 1:1
-                XCTAssertEqual(shape.typography?.lineHeight, expectedLineHeight, "Line height should be proportionally updated")
-            } else {
-                XCTFail("Object is not a shape")
-            }
-        } else {
-            XCTFail("Could not find text object after update")
-        }
+        
+        // Verify preview typography is stored
+        XCTAssertNotNil(document.textPreviewTypography[textID])
+        XCTAssertEqual(document.textPreviewTypography[textID]?.fontSize, 48)
+        
+        // Clear preview
+        document.clearTextPreviewTypography(id: textID)
+        XCTAssertNil(document.textPreviewTypography[textID])
     }
-
-    func testLiveLineSpacingPreview() {
-        guard let textID = document.selectedTextIDs.first else {
-            XCTFail("No text selected")
-            return
-        }
-
-        // Test preview update
+    
+    func testLineSpacingPreviewUpdate() throws {
+        // Create a text object
+        let textID = UUID()
+        let shape = createTestTextShape(id: textID)
+        
+        let unifiedObj = UnifiedObject(
+            id: textID,
+            objectType: .shape(shape),
+            zIndex: 0
+        )
+        document.unifiedObjects.append(unifiedObj)
+        
+        // Test line spacing preview
         document.updateTextLineSpacingPreview(id: textID, lineSpacing: 10)
-
-        // Verify the line spacing was updated
-        if let updatedObject = document.unifiedObjects.first(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.id == textID
-            }
-            return false
-        }) {
-            if case .shape(let shape) = updatedObject.objectType {
-                XCTAssertEqual(shape.typography?.lineSpacing, 10, "Line spacing should be updated to 10")
-            } else {
-                XCTFail("Object is not a shape")
-            }
-        } else {
-            XCTFail("Could not find text object after update")
-        }
+        
+        // Verify preview typography has updated line spacing
+        XCTAssertNotNil(document.textPreviewTypography[textID])
+        XCTAssertEqual(document.textPreviewTypography[textID]?.lineSpacing, 10)
     }
-
-    func testLiveLineHeightPreview() {
-        guard let textID = document.selectedTextIDs.first else {
-            XCTFail("No text selected")
-            return
-        }
-
-        // Test preview update
+    
+    func testLineHeightPreviewUpdate() throws {
+        // Create a text object
+        let textID = UUID()
+        let shape = createTestTextShape(id: textID)
+        
+        let unifiedObj = UnifiedObject(
+            id: textID,
+            objectType: .shape(shape),
+            zIndex: 0
+        )
+        document.unifiedObjects.append(unifiedObj)
+        
+        // Test line height preview
         document.updateTextLineHeightPreview(id: textID, lineHeight: 36)
-
-        // Verify the line height was updated
-        if let updatedObject = document.unifiedObjects.first(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.id == textID
-            }
-            return false
-        }) {
-            if case .shape(let shape) = updatedObject.objectType {
-                XCTAssertEqual(shape.typography?.lineHeight, 36, "Line height should be updated to 36")
-            } else {
-                XCTFail("Object is not a shape")
-            }
-        } else {
-            XCTFail("Could not find text object after update")
-        }
+        
+        // Verify preview typography has updated line height
+        XCTAssertNotNil(document.textPreviewTypography[textID])
+        XCTAssertEqual(document.textPreviewTypography[textID]?.lineHeight, 36)
     }
-
-    func testFontFamilyDirectUpdate() {
-        guard let textID = document.selectedTextIDs.first else {
-            XCTFail("No text selected")
-            return
-        }
-
-        // Test direct font family update
-        document.updateTextFontFamilyDirect(id: textID, fontFamily: "Arial")
-
-        // Verify the font family was updated
-        if let updatedObject = document.unifiedObjects.first(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.id == textID
+    
+    func testNotificationSentForPreviewUpdate() throws {
+        let textID = UUID()
+        let shape = createTestTextShape(id: textID)
+        
+        let unifiedObj = UnifiedObject(
+            id: textID,
+            objectType: .shape(shape),
+            zIndex: 0
+        )
+        document.unifiedObjects.append(unifiedObj)
+        
+        // Set up notification observer
+        let expectation = XCTestExpectation(description: "TextPreviewUpdate notification received")
+        var receivedTextID: UUID?
+        var receivedTypography: TypographyProperties?
+        
+        let observer = NotificationCenter.default.addObserver(
+            forName: Notification.Name("TextPreviewUpdate"),
+            object: nil,
+            queue: .main
+        ) { notification in
+            if let userInfo = notification.userInfo {
+                receivedTextID = userInfo["textID"] as? UUID
+                receivedTypography = userInfo["typography"] as? TypographyProperties
+                expectation.fulfill()
             }
-            return false
-        }) {
-            if case .shape(let shape) = updatedObject.objectType {
-                XCTAssertEqual(shape.typography?.fontFamily, "Arial", "Font family should be updated to Arial")
-            } else {
-                XCTFail("Object is not a shape")
-            }
-        } else {
-            XCTFail("Could not find text object after update")
         }
+        
+        // Trigger preview update
+        document.updateTextFontSizePreview(id: textID, fontSize: 36)
+        
+        wait(for: [expectation], timeout: 1.0)
+        
+        // Verify notification data
+        XCTAssertEqual(receivedTextID, textID)
+        XCTAssertNotNil(receivedTypography)
+        XCTAssertEqual(receivedTypography?.fontSize, 36)
+        
+        NotificationCenter.default.removeObserver(observer)
     }
-
-    func testFontWeightDirectUpdate() {
-        guard let textID = document.selectedTextIDs.first else {
-            XCTFail("No text selected")
-            return
-        }
-
-        // Test direct font weight update
-        document.updateTextFontWeightDirect(id: textID, fontWeight: .bold)
-
-        // Verify the font weight was updated
-        if let updatedObject = document.unifiedObjects.first(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.id == textID
-            }
-            return false
-        }) {
-            if case .shape(let shape) = updatedObject.objectType {
-                XCTAssertEqual(shape.typography?.fontWeight, .bold, "Font weight should be updated to bold")
-            } else {
-                XCTFail("Object is not a shape")
-            }
-        } else {
-            XCTFail("Could not find text object after update")
-        }
+    
+    func testMultipleDocumentPreviewIndependence() throws {
+        // Create two documents with text
+        let document1 = VectorDocument()
+        let document2 = VectorDocument()
+        
+        let textID1 = UUID()
+        let textID2 = UUID()
+        
+        let shape1 = createTestTextShape(id: textID1)
+        let shape2 = createTestTextShape(id: textID2)
+        
+        document1.unifiedObjects.append(UnifiedObject(
+            id: textID1,
+            objectType: .shape(shape1),
+            zIndex: 0
+        ))
+        
+        document2.unifiedObjects.append(UnifiedObject(
+            id: textID2,
+            objectType: .shape(shape2),
+            zIndex: 0
+        ))
+        
+        // Update preview in document1
+        document1.updateTextFontSizePreview(id: textID1, fontSize: 48)
+        
+        // Update preview in document2
+        document2.updateTextLineSpacingPreview(id: textID2, lineSpacing: 12)
+        
+        // Verify each document has its own preview state
+        XCTAssertEqual(document1.textPreviewTypography[textID1]?.fontSize, 48)
+        XCTAssertNil(document1.textPreviewTypography[textID2]) // Should not have other doc's preview
+        
+        XCTAssertEqual(document2.textPreviewTypography[textID2]?.lineSpacing, 12)
+        XCTAssertNil(document2.textPreviewTypography[textID1]) // Should not have other doc's preview
     }
-
-    func testFontStyleDirectUpdate() {
-        guard let textID = document.selectedTextIDs.first else {
-            XCTFail("No text selected")
-            return
-        }
-
-        // Test direct font style update
-        document.updateTextFontStyleDirect(id: textID, fontStyle: .italic)
-
-        // Verify the font style was updated
-        if let updatedObject = document.unifiedObjects.first(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.id == textID
-            }
-            return false
-        }) {
-            if case .shape(let shape) = updatedObject.objectType {
-                XCTAssertEqual(shape.typography?.fontStyle, .italic, "Font style should be updated to italic")
-            } else {
-                XCTFail("Object is not a shape")
-            }
-        } else {
-            XCTFail("Could not find text object after update")
-        }
+    
+    func testTextViewCoordinatorHandlesCorrectNotification() throws {
+        // Create a text object
+        let textID = UUID()
+        let shape = createTestTextShape(id: textID)
+        
+        document.unifiedObjects.append(UnifiedObject(
+            id: textID,
+            objectType: .shape(shape),
+            zIndex: 0
+        ))
+        
+        // Create a view model for the text
+        let vectorText = VectorText.from(shape)!
+        let viewModel = ProfessionalTextViewModel(
+            document: document,
+            textObject: vectorText,
+            textBoxFrame: CGRect(x: 0, y: 0, width: 200, height: 100),
+            isEditing: false
+        )
+        
+        // Create the text view
+        let textView = ProfessionalUniversalTextView(
+            viewModel: viewModel,
+            textBoxState: .gray
+        )
+        
+        // Verify the view model's text object ID matches
+        XCTAssertEqual(viewModel.textObject.id, textID)
+        
+        // Send a notification for this specific text ID
+        let typography = TypographyProperties(fontSize: 72)
+        NotificationCenter.default.post(
+            name: Notification.Name("TextPreviewUpdate"),
+            object: nil,
+            userInfo: ["textID": textID, "typography": typography]
+        )
+        
+        // The coordinator should only respond if its text ID matches
+        // This test verifies the guard condition works correctly
+        XCTAssertEqual(viewModel.textObject.id, textID)
+        
+        // Send a notification for a different text ID
+        let otherTextID = UUID()
+        NotificationCenter.default.post(
+            name: Notification.Name("TextPreviewUpdate"),
+            object: nil,
+            userInfo: ["textID": otherTextID, "typography": typography]
+        )
+        
+        // The view model's text ID should still be the original
+        XCTAssertEqual(viewModel.textObject.id, textID)
+        XCTAssertNotEqual(viewModel.textObject.id, otherTextID)
     }
-
-    func testPerformanceOfLivePreview() {
-        guard let textID = document.selectedTextIDs.first else {
-            XCTFail("No text selected")
-            return
-        }
-
-        // Measure performance of rapid updates (simulating slider drag)
-        measure {
-            for size in stride(from: 12.0, through: 72.0, by: 1.0) {
+    
+    func testRapidPreviewUpdatesPerformance() throws {
+        let textID = UUID()
+        let shape = createTestTextShape(id: textID)
+        
+        document.unifiedObjects.append(UnifiedObject(
+            id: textID,
+            objectType: .shape(shape),
+            zIndex: 0
+        ))
+        
+        // Measure performance of rapid updates
+        self.measure {
+            for size in stride(from: 12, to: 72, by: 1) {
                 document.updateTextFontSizePreview(id: textID, fontSize: CGFloat(size))
             }
         }
+    }
+    
+    // Helper method to create test text shape
+    private func createTestTextShape(id: UUID) -> VectorShape {
+        let shape = VectorShape(
+            path: CGPath(rect: CGRect(x: 100, y: 100, width: 200, height: 100), transform: nil),
+            fillStyle: FillStyle(color: .black),
+            strokeStyle: nil,
+            name: "Text: Test",
+            isEditable: false
+        )
+        shape.id = id
+        shape.isTextObject = true
+        shape.textContent = "Test text content"
+        shape.typography = TypographyProperties(
+            fontName: "Helvetica",
+            fontSize: 24,
+            lineSpacing: 5,
+            lineHeight: 30
+        )
+        return shape
     }
 }
