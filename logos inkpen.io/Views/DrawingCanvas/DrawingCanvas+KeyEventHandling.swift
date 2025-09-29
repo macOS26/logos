@@ -76,9 +76,10 @@ extension DrawingCanvas {
                     if self.isTemporaryDirectSelectionViaCommand {
                         self.isTemporaryDirectSelectionViaCommand = false
                         // REMOVED: Repetitive command released logging
-                        // If we temporarily switched to direct selection, restore the default tool
+                        // If we temporarily switched to direct selection, restore the previous tool (selection tool)
                         if self.document.currentTool == .directSelection {
-                            self.document.currentTool = AppState.shared.defaultTool
+                            // Restore to the tool we saved when Command was first pressed (should be .selection)
+                            self.document.currentTool = self.temporaryCommandPreviousTool ?? .selection
                         }
                         // When leaving temp mode, ensure direct selection visuals are cleared
                         if self.document.currentTool == .selection {
