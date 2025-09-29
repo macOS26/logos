@@ -386,7 +386,7 @@ extension DrawingCanvas {
 
     // MARK: - Helper for Coincident Handle Selection
 
-    /// When selecting a handle, also select corresponding handles on any coincident points
+    /// When selecting a handle, also select ALL handles at coincident points to keep them visible
     private func selectCoincidentHandles(for handleID: HandleID, shape: VectorShape) {
         // Get the anchor point for this handle
         let anchorPoint: CGPoint?
@@ -449,38 +449,37 @@ extension DrawingCanvas {
             if let point = elementPoint {
                 let distance = sqrt(pow(anchor.x - point.x, 2) + pow(anchor.y - point.y, 2))
                 if distance <= tolerance {
-                    // This is a coincident point! Add its corresponding handle
-                    if handleID.handleType == .control1 {
-                        // We selected an outgoing handle, so select the incoming handle of the coincident point
-                        if case .curve(_, _, let control2) = element {
-                            let handle2Collapsed = (abs(control2.x - point.x) < 0.1 && abs(control2.y - point.y) < 0.1)
-                            if !handle2Collapsed {
+                    // This is a coincident point! Add BOTH its handles if they exist
+
+                    // Add incoming handle if it exists
+                    if case .curve(_, _, let control2) = element {
+                        let handle2Collapsed = (abs(control2.x - point.x) < 0.1 && abs(control2.y - point.y) < 0.1)
+                        if !handle2Collapsed {
+                            let coincidentHandleID = HandleID(
+                                shapeID: shape.id,
+                                pathIndex: 0,
+                                elementIndex: index,
+                                handleType: .control2
+                            )
+                            selectedHandles.insert(coincidentHandleID)
+                            Log.info("🔗 AUTO-SELECTED coincident incoming handle at element \(index)", category: .general)
+                        }
+                    }
+
+                    // Add outgoing handle if it exists
+                    let nextIndex = index + 1
+                    if nextIndex < shape.path.elements.count {
+                        if case .curve(_, let control1, _) = shape.path.elements[nextIndex] {
+                            let handle1Collapsed = (abs(control1.x - point.x) < 0.1 && abs(control1.y - point.y) < 0.1)
+                            if !handle1Collapsed {
                                 let coincidentHandleID = HandleID(
                                     shapeID: shape.id,
                                     pathIndex: 0,
-                                    elementIndex: index,
-                                    handleType: .control2
+                                    elementIndex: nextIndex,
+                                    handleType: .control1
                                 )
                                 selectedHandles.insert(coincidentHandleID)
-                                Log.info("🔗 AUTO-SELECTED coincident incoming handle at element \(index)", category: .general)
-                            }
-                        }
-                    } else if handleID.handleType == .control2 {
-                        // We selected an incoming handle, so select the outgoing handle of the coincident point
-                        let nextIndex = index + 1
-                        if nextIndex < shape.path.elements.count {
-                            if case .curve(_, let control1, _) = shape.path.elements[nextIndex] {
-                                let handle1Collapsed = (abs(control1.x - point.x) < 0.1 && abs(control1.y - point.y) < 0.1)
-                                if !handle1Collapsed {
-                                    let coincidentHandleID = HandleID(
-                                        shapeID: shape.id,
-                                        pathIndex: 0,
-                                        elementIndex: nextIndex,
-                                        handleType: .control1
-                                    )
-                                    selectedHandles.insert(coincidentHandleID)
-                                    Log.info("🔗 AUTO-SELECTED coincident outgoing handle at element \(nextIndex)", category: .general)
-                                }
+                                Log.info("🔗 AUTO-SELECTED coincident outgoing handle at element \(nextIndex)", category: .general)
                             }
                         }
                     }
