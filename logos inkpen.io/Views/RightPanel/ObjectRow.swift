@@ -176,7 +176,25 @@ struct PreferencesView: View {
                         }
                         .pickerStyle(.segmented)
                         .labelsHidden()
-                        Text("Smooth: Standard gradients. Baked: No transparency layers. Discrete: Vector shapes instead of gradients.")
+
+                        // Show blend steps field when blend mode is selected
+                        if appState.pdfGradientMethod == .blend {
+                            HStack {
+                                Text("Blend Steps:")
+                                    .font(.system(size: 12))
+                                TextField("", value: Binding(
+                                    get: { appState.pdfBlendSteps },
+                                    set: { appState.pdfBlendSteps = $0 }
+                                ), format: .number)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 60)
+                                Text("(10-255)")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+
+                        Text("Smooth: Standard gradients. Baked: No transparency. Blend: Vector steps. Mesh: Future.")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .fixedSize(horizontal: false, vertical: true)

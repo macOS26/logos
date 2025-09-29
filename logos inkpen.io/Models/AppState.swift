@@ -100,13 +100,15 @@ class AppState {
     enum PDFGradientMethod: String, CaseIterable {
         case cgGradient = "cgGradient"  // Smooth gradients, may rasterize in Illustrator
         case cgShading = "cgShading"    // Baked opacity to avoid transparency flattening
-        case discrete = "discrete"      // Discrete color bands instead of smooth gradients
+        case blend = "blend"            // Blend mode with discrete steps (Illustrator-style)
+        case mesh = "mesh"              // Gradient mesh (future implementation)
 
         var displayName: String {
             switch self {
             case .cgGradient: return "CGGradient (Smooth)"
-            case .cgShading: return "CGShading (Baked Opacity)"
-            case .discrete: return "Discrete Bands (Vector Safe)"
+            case .cgShading: return "CGShading (Baked)"
+            case .blend: return "Blend (Vector Steps)"
+            case .mesh: return "Mesh (Coming Soon)"
             }
         }
     }
@@ -115,6 +117,18 @@ class AppState {
         didSet {
             UserDefaults.standard.set(pdfGradientMethod.rawValue, forKey: "pdfGradientMethod")
             Log.info("📄 PDF gradient method changed to: \(pdfGradientMethod.displayName)")
+        }
+    }
+
+    /// Number of steps for blend mode (10-255)
+    var pdfBlendSteps: Int = 20 {
+        didSet {
+            let clampedValue = min(max(pdfBlendSteps, 10), 255)
+            if pdfBlendSteps != clampedValue {
+                pdfBlendSteps = clampedValue
+            }
+            UserDefaults.standard.set(pdfBlendSteps, forKey: "pdfBlendSteps")
+            Log.info("📄 PDF blend steps changed to: \(pdfBlendSteps)")
         }
     }
 
@@ -202,6 +216,10 @@ class AppState {
            let method = PDFGradientMethod(rawValue: methodRaw) {
             self.pdfGradientMethod = method
         }
+
+        // Load PDF blend steps
+        let savedSteps = UserDefaults.standard.object(forKey: "pdfBlendSteps") as? Int
+        self.pdfBlendSteps = savedSteps ?? 20
     }
 
 

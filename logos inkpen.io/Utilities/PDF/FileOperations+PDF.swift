@@ -168,8 +168,11 @@ extension FileOperations {
         switch method {
         case .cgShading:
             drawPDFGradientWithCGShading(gradient, in: context, bounds: bounds, opacity: opacity)
-        case .discrete:
-            drawPDFGradientAsDiscreteBands(gradient, in: context, bounds: bounds, opacity: opacity)
+        case .blend:
+            drawPDFGradientAsBlend(gradient, in: context, bounds: bounds, opacity: opacity)
+        case .mesh:
+            // TODO: Implement mesh gradients
+            drawPDFGradientWithCGGradient(gradient, in: context, bounds: bounds, opacity: opacity)
         default:
             drawPDFGradientWithCGGradient(gradient, in: context, bounds: bounds, opacity: opacity)
         }
@@ -490,23 +493,23 @@ extension FileOperations {
         context.restoreGState()
     }
 
-    /// Draw gradient as discrete color bands (vector shapes) instead of smooth gradient
-    /// This approach creates actual vector shapes that won't be rasterized
-    private static func drawPDFGradientAsDiscreteBands(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
+    /// Draw gradient as blend (vector shapes) with user-defined steps
+    /// This creates an Illustrator-style blend with discrete vector shapes
+    private static func drawPDFGradientAsBlend(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         context.saveGState()
 
         switch gradient {
         case .linear(let linearGradient):
-            drawLinearGradientAsDiscreteBands(linearGradient, in: context, bounds: bounds, opacity: opacity)
+            drawLinearGradientAsBlend(linearGradient, in: context, bounds: bounds, opacity: opacity)
         case .radial(let radialGradient):
-            drawRadialGradientAsDiscreteBands(radialGradient, in: context, bounds: bounds, opacity: opacity)
+            drawRadialGradientAsBlend(radialGradient, in: context, bounds: bounds, opacity: opacity)
         }
 
         context.restoreGState()
     }
 
-    private static func drawLinearGradientAsDiscreteBands(_ linearGradient: LinearGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
-        let bandCount = 10 // Number of discrete bands
+    private static func drawLinearGradientAsBlend(_ linearGradient: LinearGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
+        let bandCount = AppState.shared.pdfBlendSteps // Use user-defined steps
         let stops = linearGradient.stops
 
         guard stops.count >= 2 else { return }
@@ -548,8 +551,8 @@ extension FileOperations {
         }
     }
 
-    private static func drawRadialGradientAsDiscreteBands(_ radialGradient: RadialGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
-        let bandCount = 10 // Number of discrete bands
+    private static func drawRadialGradientAsBlend(_ radialGradient: RadialGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
+        let bandCount = AppState.shared.pdfBlendSteps // Use user-defined steps
         let stops = radialGradient.stops
 
         guard stops.count >= 2 else { return }
