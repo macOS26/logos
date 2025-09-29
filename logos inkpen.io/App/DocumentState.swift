@@ -277,39 +277,34 @@ class DocumentState: ObservableObject {
         panel.isExtensionHidden = false  // Show .svg extension
         panel.message = "Export as SVG (Scalable Vector Graphics)"
 
-        // Create accessory view for options
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 90))
+        // Create accessory view for background option
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 60))
 
         // Background checkbox
         let bgCheckbox = NSButton(checkboxWithTitle: "Include background",
                                    target: nil, action: nil)
-        bgCheckbox.frame = NSRect(x: 20, y: 50, width: 200, height: 20)
+        bgCheckbox.frame = NSRect(x: 20, y: 20, width: 200, height: 20)
         bgCheckbox.state = .off // Default to no background for SVG
         accessoryView.addSubview(bgCheckbox)
-
-        // Convert text to outlines checkbox
-        let textCheckbox = NSButton(checkboxWithTitle: "Convert text to outlines",
-                                     target: nil, action: nil)
-        textCheckbox.frame = NSRect(x: 20, y: 20, width: 200, height: 20)
-        textCheckbox.state = .off // Default to keep text as text
-        accessoryView.addSubview(textCheckbox)
 
         panel.accessoryView = accessoryView
 
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
 
-            // Get options
+            // Get background option
             let includeBackground = bgCheckbox.state == .on
-            let convertTextToOutlines = textCheckbox.state == .on
 
             Task {
                 do {
-                    // Export with text conversion option
-                    try FileOperations.exportToSVG(document, url: url, includeBackground: includeBackground, convertTextToOutlines: convertTextToOutlines)
+                    // Generate SVG content with background option
+                    let svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: includeBackground)
+
+                    // Write to file
+                    try svgContent.write(to: url, atomically: true, encoding: .utf8)
 
                     await MainActor.run {
-                        Log.info("✅ Exported SVG to: \(url.path) (background: \(includeBackground), text to outlines: \(convertTextToOutlines))", category: .fileOperations)
+                        Log.info("✅ Exported SVG to: \(url.path) (background: \(includeBackground))", category: .fileOperations)
                     }
                 } catch {
                     await MainActor.run {
@@ -338,39 +333,31 @@ class DocumentState: ObservableObject {
         panel.isExtensionHidden = false  // Show .pdf extension
         panel.message = "Export as PDF (Portable Document Format)"
 
-        // Create accessory view for options
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 90))
+        // Create accessory view for background option
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 60))
 
         // Background checkbox
         let bgCheckbox = NSButton(checkboxWithTitle: "Include background",
                                    target: nil, action: nil)
-        bgCheckbox.frame = NSRect(x: 20, y: 50, width: 200, height: 20)
+        bgCheckbox.frame = NSRect(x: 20, y: 20, width: 200, height: 20)
         bgCheckbox.state = .off // Default to no background for PDF
         accessoryView.addSubview(bgCheckbox)
-
-        // Convert text to outlines checkbox
-        let textCheckbox = NSButton(checkboxWithTitle: "Convert text to outlines",
-                                     target: nil, action: nil)
-        textCheckbox.frame = NSRect(x: 20, y: 20, width: 200, height: 20)
-        textCheckbox.state = .off // Default to keep text as text
-        accessoryView.addSubview(textCheckbox)
 
         panel.accessoryView = accessoryView
 
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
 
-            // Get options
+            // Get background option
             let includeBackground = bgCheckbox.state == .on
-            let convertTextToOutlines = textCheckbox.state == .on
 
             Task {
                 do {
-                    // Export PDF with text conversion option
-                    try FileOperations.exportToPDF(document, url: url, includeBackground: includeBackground, convertTextToOutlines: convertTextToOutlines)
+                    // Export PDF with background option
+                    try FileOperations.exportToPDF(document, url: url, includeBackground: includeBackground)
 
                     await MainActor.run {
-                        Log.info("✅ Exported PDF to: \(url.path) (background: \(includeBackground), text to outlines: \(convertTextToOutlines))", category: .fileOperations)
+                        Log.info("✅ Exported PDF to: \(url.path) (background: \(includeBackground))", category: .fileOperations)
                     }
                 } catch {
                     await MainActor.run {
