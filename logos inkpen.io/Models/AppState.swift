@@ -104,7 +104,7 @@ class AppState {
         var displayName: String {
             switch self {
             case .cgGradient: return "CGGradient (Faster)"
-            case .cgShading: return "CGShading (Illustrator Compatible)"
+            case .cgShading: return "CGShading (Baked Opacity)"
             }
         }
     }

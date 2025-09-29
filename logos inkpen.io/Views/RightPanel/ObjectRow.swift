@@ -176,7 +176,7 @@ struct PreferencesView: View {
                         }
                         .pickerStyle(.segmented)
                         .labelsHidden()
-                        Text("CGGradient is faster but may rasterize gradients in Adobe Illustrator. CGShading provides better vector compatibility.")
+                        Text("CGGradient uses transparency layers. Baked Opacity embeds opacity directly into colors to avoid rasterization.")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .fixedSize(horizontal: false, vertical: true)

@@ -198,7 +198,7 @@ extension FileOperations {
                 case .white:
                     colors.append(contentsOf: [1.0, 1.0, 1.0, CGFloat(stop.opacity)])
                 case .black:
-                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity) * CGFloat(opacity)])
                 case .clear:
                     colors.append(contentsOf: [0.0, 0.0, 0.0, 0.0])
                 case .cmyk(let cmyk):
@@ -210,7 +210,7 @@ extension FileOperations {
                     let rgb = hsb.rgbColor
                     colors.append(contentsOf: [rgb.red, rgb.green, rgb.blue, rgb.alpha * stop.opacity])
                 default:
-                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity) * CGFloat(opacity)])
                 }
             }
 
@@ -261,7 +261,7 @@ extension FileOperations {
                 case .white:
                     colors.append(contentsOf: [1.0, 1.0, 1.0, CGFloat(stop.opacity)])
                 case .black:
-                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity) * CGFloat(opacity)])
                 case .clear:
                     colors.append(contentsOf: [0.0, 0.0, 0.0, 0.0])
                 case .cmyk(let cmyk):
@@ -273,7 +273,7 @@ extension FileOperations {
                     let rgb = hsb.rgbColor
                     colors.append(contentsOf: [rgb.red, rgb.green, rgb.blue, rgb.alpha * stop.opacity])
                 default:
-                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity) * CGFloat(opacity)])
                 }
             }
 
@@ -316,22 +316,21 @@ extension FileOperations {
     }
 
     /// Draw gradient for PDF using CGShading (better vector compatibility with Illustrator)
-    /// Note: CGShading uses a simpler, two-color gradient approach for better compatibility
+    /// Note: This version bakes opacity into the gradient colors instead of using setAlpha
+    /// to avoid transparency flattening issues in Adobe Illustrator
     private static func drawPDFGradientWithCGShading(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
-        // Apply opacity
-        context.setAlpha(CGFloat(opacity))
+        // DO NOT use setAlpha here - bake opacity into gradient colors instead
+        // This avoids transparency flattening in Adobe Illustrator
 
         switch gradient {
         case .linear(let linearGradient):
-            // Simplify to two-color gradient for CGShading
-            drawSimplifiedLinearGradientWithCGShading(linearGradient, in: context, bounds: bounds)
+            drawSimplifiedLinearGradientWithCGShading(linearGradient, in: context, bounds: bounds, opacity: opacity)
         case .radial(let radialGradient):
-            // Simplify to two-color gradient for CGShading
-            drawSimplifiedRadialGradientWithCGShading(radialGradient, in: context, bounds: bounds)
+            drawSimplifiedRadialGradientWithCGShading(radialGradient, in: context, bounds: bounds, opacity: opacity)
         }
     }
 
-    private static func drawSimplifiedLinearGradientWithCGShading(_ linearGradient: LinearGradient, in context: CGContext, bounds: CGRect) {
+    private static func drawSimplifiedLinearGradientWithCGShading(_ linearGradient: LinearGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         // For now, use the same implementation as CGGradient but with ALL stops preserved
         // Real CGShading would require C-style callbacks which are complex in Swift
         // This ensures we at least preserve all colors and stops correctly
@@ -369,7 +368,7 @@ extension FileOperations {
                         components[0],
                         components[1],
                         components[2],
-                        (components.count > 3 ? components[3] : 1.0) * CGFloat(stop.opacity)
+                        (components.count > 3 ? components[3] : 1.0) * CGFloat(stop.opacity) * CGFloat(opacity)
                     ])
                 } else if components.count == 2 {
                     // Grayscale
@@ -377,11 +376,11 @@ extension FileOperations {
                         components[0],
                         components[0],
                         components[0],
-                        components[1] * CGFloat(stop.opacity)
+                        components[1] * CGFloat(stop.opacity) * CGFloat(opacity)
                     ])
                 } else {
                     // Fallback
-                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity) * CGFloat(opacity)])
                 }
             } else {
                 // Fallback
@@ -408,7 +407,7 @@ extension FileOperations {
         context.restoreGState()
     }
 
-    private static func drawSimplifiedRadialGradientWithCGShading(_ radialGradient: RadialGradient, in context: CGContext, bounds: CGRect) {
+    private static func drawSimplifiedRadialGradientWithCGShading(_ radialGradient: RadialGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         // For now, use the same implementation as CGGradient but with ALL stops preserved
         // Real CGShading would require C-style callbacks which are complex in Swift
 
@@ -447,7 +446,7 @@ extension FileOperations {
                         components[0],
                         components[1],
                         components[2],
-                        (components.count > 3 ? components[3] : 1.0) * CGFloat(stop.opacity)
+                        (components.count > 3 ? components[3] : 1.0) * CGFloat(stop.opacity) * CGFloat(opacity)
                     ])
                 } else if components.count == 2 {
                     // Grayscale
@@ -455,11 +454,11 @@ extension FileOperations {
                         components[0],
                         components[0],
                         components[0],
-                        components[1] * CGFloat(stop.opacity)
+                        components[1] * CGFloat(stop.opacity) * CGFloat(opacity)
                     ])
                 } else {
                     // Fallback
-                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity) * CGFloat(opacity)])
                 }
             } else {
                 // Fallback
