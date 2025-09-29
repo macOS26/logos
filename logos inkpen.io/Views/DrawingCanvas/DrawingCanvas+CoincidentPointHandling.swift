@@ -444,7 +444,7 @@ extension DrawingCanvas {
                         elementIndex: coincidentIndex,
                         handleType: .control2
                     )
-                    selectedHandles.insert(oppositeHandleID)
+                    visibleHandles.insert(oppositeHandleID)
                     
                     Log.info("🔗 COINCIDENT TANGENT: Updated incoming handle of coincident point at index \(coincidentIndex)", category: .general)
                 }
@@ -475,7 +475,7 @@ extension DrawingCanvas {
                             elementIndex: nextIndex,
                             handleType: .control1
                         )
-                        selectedHandles.insert(oppositeHandleID)
+                        visibleHandles.insert(oppositeHandleID)
                         
                         Log.info("🔗 COINCIDENT TANGENT: Updated outgoing handle of coincident point at index \(coincidentIndex)", category: .general)
                     }
