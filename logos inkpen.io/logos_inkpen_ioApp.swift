@@ -500,15 +500,10 @@ struct logos_inken_ioApp: App {
                     
                     Divider()
                     
-                    Button("Color View") {
-                        documentState?.switchToColorView()
+                    Button("Toggle Color/Keyline View") {
+                        documentState?.toggleColorKeylineView()
                     }
                     .keyboardShortcut("y", modifiers: [.command])
-                    
-                    Button("Keyline View") {
-                        documentState?.switchToKeylineView()
-                    }
-                    .keyboardShortcut("y", modifiers: [.command, .shift])
                     
                     Divider()
                     

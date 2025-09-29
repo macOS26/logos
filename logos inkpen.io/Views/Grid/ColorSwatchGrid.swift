@@ -97,7 +97,9 @@ struct ColorSwatchGrid: View {
             ZStack {
                 // Stroke color (background, bottom-right)
                 Button {
+                    // Just switch target, don't apply any color
                     document.activeColorTarget = .stroke
+                    Log.info("Switched to stroke target - no color change", category: .general)
                 } label: {
                     if case .clear = currentStrokeColor {
                         ZStack {
@@ -161,7 +163,9 @@ struct ColorSwatchGrid: View {
                 .offset(x: 6, y: 6)  // Bottom-right offset
                 // Fill color (foreground, top-left)
                 Button {
+                    // Just switch target, don't apply any color
                     document.activeColorTarget = .fill
+                    Log.info("Switched to fill target - no color change", category: .general)
                 } label: {
                     if case .clear = currentFillColor {
                         ZStack {
@@ -232,23 +236,16 @@ struct ColorSwatchGrid: View {
             LazyVGrid(columns: columns, spacing: 1) {
                 ForEach(Array(document.currentSwatches.enumerated()), id: \.offset) { index, color in
                     Button {
-                        // CRITICAL FIX: Apply color to the currently active target using setActiveColor (like working ColorPanel)
+                        // Apply color to the currently active target
+                        // This should only happen when user explicitly clicks a swatch
                         if document.activeColorTarget == .stroke {
                             selectedStrokeColor = color
-                            document.defaultStrokeColor = color  // Set default for new shapes
-                            // CRITICAL FIX: Use setActiveColor to handle text objects properly
                             document.setActiveColor(color)
-                            Log.fileOperation("🎨 TOOLBAR: Set stroke color: \(color) (active target)", level: .debug)
-                            
-                            // INK panel auto-updates from document bindings
+                            Log.fileOperation("🎨 SWATCH CLICK: Set stroke color: \(color)", level: .debug)
                         } else {
                             selectedFillColor = color
-                            document.defaultFillColor = color  // Set default for new shapes
-                            // CRITICAL FIX: Use setActiveColor to handle text objects properly
                             document.setActiveColor(color)
-                            Log.fileOperation("🎨 TOOLBAR: Set fill color: \(color) (active target)", level: .debug)
-                            
-                            // INK panel auto-updates from document bindings
+                            Log.fileOperation("🎨 SWATCH CLICK: Set fill color: \(color)", level: .debug)
                         }
                     } label: {
                         ZStack {

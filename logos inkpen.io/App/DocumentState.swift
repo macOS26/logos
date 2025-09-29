@@ -334,8 +334,15 @@ class DocumentState: ObservableObject {
         panel.isExtensionHidden = false  // Show .pdf extension
         panel.message = "Export as PDF (Portable Document Format)"
 
-        // Create accessory view for background option
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 60))
+        // Create accessory view for background and CMYK options
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 90))
+
+        // CMYK checkbox
+        let cmykCheckbox = NSButton(checkboxWithTitle: "Use CMYK color space",
+                                     target: nil, action: nil)
+        cmykCheckbox.frame = NSRect(x: 20, y: 50, width: 250, height: 20)
+        cmykCheckbox.state = .off // Default to regular gradient
+        accessoryView.addSubview(cmykCheckbox)
 
         // Background checkbox
         let bgCheckbox = NSButton(checkboxWithTitle: "Include background (Canvas layer)",
@@ -349,14 +356,14 @@ class DocumentState: ObservableObject {
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
 
-            // Get background option (currently not used as generatePDFData always includes background)
-            // TODO: Update generatePDFData to support includeBackground parameter
-            _ = bgCheckbox.state // Acknowledge the checkbox state
+            // Get export options
+            let useCMYK = cmykCheckbox.state == .on
+            _ = bgCheckbox.state // TODO: Update generatePDFData to support includeBackground parameter
 
             Task {
                 do {
-                    // FIXED: Use the same PDF generation code as Save As PDF which properly handles gradients
-                    let pdfData = try FileOperations.generatePDFData(from: document)
+                    // Use appropriate PDF generation based on CMYK option
+                    let pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK)
 
                     // Write the PDF data to file
                     try pdfData.write(to: url)
@@ -849,7 +856,18 @@ class DocumentState: ObservableObject {
         document?.viewMode = .keyline
         Log.info("📝 MENU: Switched to Keyline View", category: .general)
     }
-    
+
+    func toggleColorKeylineView() {
+        guard let doc = document else { return }
+        if doc.viewMode == .color {
+            doc.viewMode = .keyline
+            Log.info("📝 MENU: Toggled to Keyline View", category: .general)
+        } else {
+            doc.viewMode = .color
+            Log.info("🎨 MENU: Toggled to Color View", category: .general)
+        }
+    }
+
     func toggleRulers() {
         document?.showRulers.toggle()
         Log.info("📏 MENU: Rulers \(document?.showRulers == true ? "shown" : "hidden")", category: .general)

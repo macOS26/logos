@@ -11,8 +11,9 @@ import SwiftUI
 extension FileOperations {
 
     /// Generate PDF data from VectorDocument with proper clipping path and image support
-    static func generatePDFDataWithClippingSupport(from document: VectorDocument) throws -> Data {
-        Log.fileOperation("📄 Generating PDF data from document with clipping path support", level: .info)
+    static func generatePDFDataWithClippingSupport(from document: VectorDocument, isExport: Bool = false, useCMYK: Bool = false) throws -> Data {
+        let operation = isExport ? "export" : "save"
+        Log.fileOperation("📄 Generating PDF data from document for \(operation) (CMYK: \(useCMYK))", level: .info)
 
         // Get document dimensions - use sizeInPoints which is already in points
         let documentSize = document.settings.sizeInPoints
@@ -71,7 +72,7 @@ extension FileOperations {
         }
 
         // Render document content with clipping path support
-        try renderDocumentToPDFWithClipping(document: document, context: pdfContext)
+        try renderDocumentToPDFWithClipping(document: document, context: pdfContext, isExport: isExport, useCMYK: useCMYK)
 
         // End PDF document
         pdfContext.endPDFPage()
@@ -82,7 +83,7 @@ extension FileOperations {
     }
 
     /// Render VectorDocument to PDF context with clipping path support
-    static func renderDocumentToPDFWithClipping(document: VectorDocument, context: CGContext) throws {
+    static func renderDocumentToPDFWithClipping(document: VectorDocument, context: CGContext, isExport: Bool = false, useCMYK: Bool = false) throws {
         Log.fileOperation("🎨 Rendering document to PDF context with clipping support", level: .info)
 
         // Save graphics state
@@ -140,13 +141,15 @@ extension FileOperations {
                     try renderClippingGroup(
                         clippingMask: shape,
                         clippedShapes: clipped,
-                        context: context
+                        context: context,
+                        isExport: isExport,
+                        useCMYK: useCMYK
                     )
                     renderedShapeIds.insert(shape.id)
                     clipped.forEach { renderedShapeIds.insert($0.id) }
                 } else if !shape.isClippingPath {
                     // Regular shape without clipping
-                    try renderShapeToPDFWithImageSupport(shape: shape, context: context)
+                    try renderShapeToPDFWithImageSupport(shape: shape, context: context, isExport: isExport, useCMYK: useCMYK)
                     renderedShapeIds.insert(shape.id)
                 }
             }
@@ -159,7 +162,7 @@ extension FileOperations {
     }
 
     /// Render a clipping group (mask and clipped shapes)
-    static func renderClippingGroup(clippingMask: VectorShape, clippedShapes: [VectorShape], context: CGContext) throws {
+    static func renderClippingGroup(clippingMask: VectorShape, clippedShapes: [VectorShape], context: CGContext, isExport: Bool = false, useCMYK: Bool = false) throws {
         Log.fileOperation("🎭 Rendering clipping group with mask: \(clippingMask.name)", level: .debug)
 
         // Save graphics state for clipping
@@ -179,7 +182,7 @@ extension FileOperations {
         // Render all clipped shapes
         for shape in clippedShapes {
             Log.fileOperation("   📎 Rendering clipped shape: \(shape.name)", level: .debug)
-            try renderShapeToPDFWithImageSupport(shape: shape, context: context)
+            try renderShapeToPDFWithImageSupport(shape: shape, context: context, isExport: isExport, useCMYK: useCMYK)
         }
 
         // Restore graphics state to remove clipping
@@ -187,7 +190,7 @@ extension FileOperations {
     }
 
     /// Render individual shape to PDF context with image support
-    static func renderShapeToPDFWithImageSupport(shape: VectorShape, context: CGContext) throws {
+    static func renderShapeToPDFWithImageSupport(shape: VectorShape, context: CGContext, isExport: Bool = false, useCMYK: Bool = false) throws {
         // Check if this is a group
         if shape.isGroup && !shape.groupedShapes.isEmpty {
             // Save graphics state for group
@@ -198,7 +201,7 @@ extension FileOperations {
 
             // Render each shape in the group recursively
             for groupedShape in shape.groupedShapes {
-                try renderShapeToPDFWithImageSupport(shape: groupedShape, context: context)
+                try renderShapeToPDFWithImageSupport(shape: groupedShape, context: context, isExport: isExport, useCMYK: useCMYK)
             }
 
             // Restore graphics state
@@ -240,8 +243,12 @@ extension FileOperations {
                 context.saveGState()
                 context.clip()
 
-                // Draw the gradient
-                drawPDFGradient(gradient, in: context, bounds: cgPath.boundingBox, opacity: fillStyle.opacity)
+                // Draw the gradient - use export version if this is an export
+                if isExport {
+                    drawPDFGradientForExport(gradient, in: context, bounds: cgPath.boundingBox, opacity: fillStyle.opacity, useCMYK: useCMYK)
+                } else {
+                    drawPDFGradient(gradient, in: context, bounds: cgPath.boundingBox, opacity: fillStyle.opacity)
+                }
 
                 context.restoreGState()
             } else {

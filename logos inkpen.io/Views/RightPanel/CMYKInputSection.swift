@@ -379,13 +379,9 @@ struct CMYKInputSection: View {
             return
         }
 
-        // Update document defaults based on active color target (like RGB does)
-        switch document.activeColorTarget {
-        case .fill:
-            document.defaultFillColor = vectorColor
-        case .stroke:
-            document.defaultStrokeColor = vectorColor
-        }
+        // FIX: Don't update defaults here - let setActiveColor handle it when needed
+        // This updateSharedColor is called during initialization and slider changes,
+        // but we only want to update colors when user explicitly selects a swatch
 
         // 🔥 CRITICAL FIX: Don't automatically update gradient stops when in gradient editing mode
         // This prevents unwanted gradient modifications when browsing Color Panel during gradient editing
@@ -428,13 +424,8 @@ struct CMYKInputSection: View {
         // 
         // NO automatic updates - only explicit user actions should update colors!
         
-        // Update document defaults only (for preview purposes)
-        switch document.activeColorTarget {
-        case .fill:
-            document.defaultFillColor = vectorColor
-        case .stroke:
-            document.defaultStrokeColor = vectorColor
-        }
+        // FIX: Don't update defaults here either - this causes unwanted updates
+        // Only explicit user actions (clicking swatches) should update colors
         
         // 🔥 NO AUTOMATIC FILL/STROKE UPDATES - only when swatches are clicked!
         

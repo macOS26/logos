@@ -357,18 +357,15 @@ struct RGBInputSection: View {
             return
         }
 
-        // Update document defaults based on active color target
-        switch document.activeColorTarget {
-        case .fill:
-            document.defaultFillColor = vectorColor
-        case .stroke:
-            document.defaultStrokeColor = vectorColor
-        }
+        // FIX: Don't update defaults here - let setActiveColor handle it when needed
+        // This updateSharedColor is called during initialization and slider changes,
+        // but we only want to update colors when user explicitly selects a swatch
 
         // Apply to active shapes (regular or direct selection)
         let activeShapeIDs = document.getActiveShapeIDs()
         if !activeShapeIDs.isEmpty {
-            document.saveToUndoStack()
+            // REMOVED saveToUndoStack - should NOT save when just viewing the panel!
+            // Only save undo when user explicitly applies a color via button/swatch click
 
             for shapeID in activeShapeIDs {
                 // Find the shape across all layers

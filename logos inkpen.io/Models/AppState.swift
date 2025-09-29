@@ -100,16 +100,26 @@ class AppState {
     enum PDFGradientMethod: String, CaseIterable {
         case cgGradient = "cgGradient"  // Smooth gradients, may rasterize in Illustrator
         case cgShading = "cgShading"    // Baked opacity to avoid transparency flattening
+        case cmyk = "cmyk"              // CMYK color space (was deviceN)
         case blend = "blend"            // Blend mode with discrete steps (Illustrator-style)
         case mesh = "mesh"              // Gradient mesh (future implementation)
 
         var displayName: String {
             switch self {
-            case .cgGradient: return "CGGradient (Smooth)"
-            case .cgShading: return "CGShading (Baked)"
-            case .blend: return "Blend (Vector Steps)"
-            case .mesh: return "Mesh (Grid)"
+            case .cgGradient: return "Gradient"
+            case .cgShading: return "Shading"
+            case .cmyk: return "CMYK"
+            case .blend: return "Blend"
+            case .mesh: return "Grid"
             }
+        }
+
+        static var availableCases: [PDFGradientMethod] {
+            #if DEBUG
+            return allCases
+            #else
+            return [.cgGradient, .cgShading]
+            #endif
         }
     }
 
@@ -236,9 +246,12 @@ class AppState {
         self.enablePressureLogging = UserDefaults.standard.object(forKey: "enablePressureLogging") as? Bool ?? false
 
         // Load PDF gradient method preference
-        if let methodRaw = UserDefaults.standard.string(forKey: "pdfGradientMethod"),
-           let method = PDFGradientMethod(rawValue: methodRaw) {
-            self.pdfGradientMethod = method
+        if let methodRaw = UserDefaults.standard.string(forKey: "pdfGradientMethod") {
+            // Handle migration from old "deviceN" to new "cmyk"
+            let actualRaw = (methodRaw == "deviceN") ? "cmyk" : methodRaw
+            if let method = PDFGradientMethod(rawValue: actualRaw) {
+                self.pdfGradientMethod = method
+            }
         }
 
         // Load PDF blend steps

@@ -163,14 +163,15 @@ struct PreferencesView: View {
                 .font(.title2)
                 .fontWeight(.semibold)
             
-            GroupBox(label: Label("PDF Export", systemImage: "doc.richtext").font(.headline)) {
+            #if DEBUG
+            GroupBox(label: Label("PDF Save Options", systemImage: "doc.richtext").font(.headline)) {
                 VStack(alignment: .leading, spacing: 12) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Gradient Rendering Method")
+                        Text("Gradient Rendering Method (Save/Save As)")
                             .font(.system(size: 13))
                             .foregroundColor(.primary)
                         Picker("", selection: Binding(get: { appState.pdfGradientMethod }, set: { appState.pdfGradientMethod = $0 })) {
-                            ForEach(AppState.PDFGradientMethod.allCases, id: \.self) { method in
+                            ForEach(AppState.PDFGradientMethod.availableCases, id: \.self) { method in
                                 Text(method.displayName).tag(method)
                             }
                         }
@@ -218,17 +219,13 @@ struct PreferencesView: View {
                                     .foregroundColor(.secondary)
                             }
                         }
-
-                        Text("Smooth: Standard. Baked: No transparency. Blend: Vector steps. Mesh: Grid patches.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .lineLimit(nil)
                     }
                 }
                 .padding(.vertical, 8)
             }
+            #endif
 
+            #if DEBUG
             GroupBox(label: Label("Performance HUD", systemImage: "gauge.medium").font(.headline)) {
                 VStack(alignment: .leading, spacing: 8) {
                     Toggle(isOn: Binding(get: { appState.enableSystemMetalHUD }, set: { appState.enableSystemMetalHUD = $0 })) {
@@ -239,33 +236,11 @@ struct PreferencesView: View {
                 }
                 .padding(.vertical, 8)
             }
-
-            GroupBox(label: Label("Brush Preview", systemImage: "paintbrush").font(.headline)) {
-                VStack(alignment: .leading, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Preview Style")
-                            .font(.system(size: 13))
-                            .foregroundColor(.primary)
-                        Picker("", selection: Binding(get: { appState.brushPreviewStyle }, set: { appState.brushPreviewStyle = $0 })) {
-                            Text("Blue Outline").tag(AppState.BrushPreviewStyle.outline)
-                            Text("Object Fill Color").tag(AppState.BrushPreviewStyle.fill)
-                        }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                    }
-
-                    Toggle(isOn: Binding(get: { appState.brushPreviewIsFinal }, set: { appState.brushPreviewIsFinal = $0 })) {
-                        Text("Preview is final (don't change on mouse up)")
-                            .font(.system(size: 13))
-                    }
-                    .toggleStyle(.checkbox)
-                }
-                .padding(.vertical, 8)
-            }
+            #endif
 
             Spacer()
         }
         .padding(24)
-        .frame(minWidth: 700, minHeight: 500)
+        .frame(minWidth: 850, minHeight: 500)
     }
 }

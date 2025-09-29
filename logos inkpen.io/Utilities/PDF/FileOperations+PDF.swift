@@ -8,12 +8,20 @@
 import SwiftUI
 
 extension FileOperations {
-    /// Generate PDF data from VectorDocument
+    /// Generate PDF data from VectorDocument for Save/Save As
     static func generatePDFData(from document: VectorDocument) throws -> Data {
         Log.fileOperation("📄 Generating PDF data from document", level: .info)
 
         // Use the new method with clipping path and image support
-        return try generatePDFDataWithClippingSupport(from: document)
+        return try generatePDFDataWithClippingSupport(from: document, isExport: false, useCMYK: false)
+    }
+
+    /// Generate PDF data for Export with CMYK option
+    static func generatePDFDataForExport(from document: VectorDocument, useCMYK: Bool) throws -> Data {
+        Log.fileOperation("📄 Generating PDF data for export (CMYK: \(useCMYK))", level: .info)
+
+        // Use the new method with export flag and CMYK option
+        return try generatePDFDataWithClippingSupport(from: document, isExport: true, useCMYK: useCMYK)
     }
 
     /// Render VectorDocument to PDF context
@@ -160,9 +168,20 @@ extension FileOperations {
         }
     }
 
+    /// Draw gradient for PDF Export with optional CMYK
+    static func drawPDFGradientForExport(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double, useCMYK: Bool) {
+        if useCMYK {
+            drawPDFGradientAsCMYK(gradient, in: context, bounds: bounds, opacity: opacity)
+        } else {
+            drawPDFGradientWithCGGradient(gradient, in: context, bounds: bounds, opacity: opacity)
+        }
+    }
+
     /// Draw gradient for PDF using either CGGradient, CGShading, or discrete bands based on user preference
+    /// This is used for Save/Save As operations
     static func drawPDFGradient(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
-        // Check user preference for gradient method
+        #if DEBUG
+        // In debug mode, use the user's preference
         let method = AppState.shared.pdfGradientMethod
 
         switch method {
@@ -172,9 +191,15 @@ extension FileOperations {
             drawPDFGradientAsBlend(gradient, in: context, bounds: bounds, opacity: opacity)
         case .mesh:
             drawPDFGradientAsMesh(gradient, in: context, bounds: bounds, opacity: opacity)
+        case .cmyk:
+            drawPDFGradientAsCMYK(gradient, in: context, bounds: bounds, opacity: opacity)
         default:
             drawPDFGradientWithCGGradient(gradient, in: context, bounds: bounds, opacity: opacity)
         }
+        #else
+        // In release mode, always use CGGradient for Save/Save As
+        drawPDFGradientWithCGGradient(gradient, in: context, bounds: bounds, opacity: opacity)
+        #endif
     }
 
     /// Draw gradient for PDF using CGGradient (faster but may rasterize in Illustrator)
@@ -320,26 +345,236 @@ extension FileOperations {
         }
     }
 
+    // Thread-safe gradient data holder for CGShading callbacks
+    private final class GradientData {
+        let stops: [(position: CGFloat, r: CGFloat, g: CGFloat, b: CGFloat, a: CGFloat)]
+
+        init(stops: [GradientStop], opacity: Double) {
+            self.stops = stops.map { stop in
+                let cgColor = stop.color.cgColor
+                if let components = cgColor.components, components.count >= 3 {
+                    return (
+                        CGFloat(stop.position),
+                        components[0],
+                        components[1],
+                        components[2],
+                        (components.count > 3 ? components[3] : 1.0) * CGFloat(stop.opacity) * CGFloat(opacity)
+                    )
+                } else if let components = cgColor.components, components.count == 2 {
+                    // Grayscale
+                    return (
+                        CGFloat(stop.position),
+                        components[0],
+                        components[0],
+                        components[0],
+                        components[1] * CGFloat(stop.opacity) * CGFloat(opacity)
+                    )
+                } else {
+                    return (CGFloat(stop.position), 0, 0, 0, CGFloat(stop.opacity) * CGFloat(opacity))
+                }
+            }
+        }
+
+        func interpolateColor(at t: CGFloat) -> (r: CGFloat, g: CGFloat, b: CGFloat, a: CGFloat) {
+            guard !stops.isEmpty else { return (0, 0, 0, 0) }
+
+            // Handle edge cases
+            if t <= stops.first!.position {
+                let s = stops.first!
+                return (s.r, s.g, s.b, s.a)
+            }
+            if t >= stops.last!.position {
+                let s = stops.last!
+                return (s.r, s.g, s.b, s.a)
+            }
+
+            // Find surrounding stops
+            var lower = stops.first!
+            var upper = stops.last!
+
+            for i in 0..<(stops.count - 1) {
+                if t >= stops[i].position && t <= stops[i + 1].position {
+                    lower = stops[i]
+                    upper = stops[i + 1]
+                    break
+                }
+            }
+
+            // Interpolate
+            let range = upper.position - lower.position
+            let factor = range > 0 ? (t - lower.position) / range : 0
+
+            return (
+                lower.r + (upper.r - lower.r) * factor,
+                lower.g + (upper.g - lower.g) * factor,
+                lower.b + (upper.b - lower.b) * factor,
+                lower.a + (upper.a - lower.a) * factor
+            )
+        }
+    }
+
     /// Draw gradient for PDF using CGShading (better vector compatibility with Illustrator)
-    /// Note: This version bakes opacity into the gradient colors instead of using setAlpha
-    /// to avoid transparency flattening issues in Adobe Illustrator
+    /// This implementation uses proper CGShading with CGFunction callbacks for thread-safe gradient interpolation
     private static func drawPDFGradientWithCGShading(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         // DO NOT use setAlpha here - bake opacity into gradient colors instead
         // This avoids transparency flattening in Adobe Illustrator
 
         switch gradient {
         case .linear(let linearGradient):
-            drawSimplifiedLinearGradientWithCGShading(linearGradient, in: context, bounds: bounds, opacity: opacity)
+            drawLinearGradientWithCGShading(linearGradient, in: context, bounds: bounds, opacity: opacity)
         case .radial(let radialGradient):
-            drawSimplifiedRadialGradientWithCGShading(radialGradient, in: context, bounds: bounds, opacity: opacity)
+            drawRadialGradientWithCGShading(radialGradient, in: context, bounds: bounds, opacity: opacity)
         }
     }
 
-    private static func drawSimplifiedLinearGradientWithCGShading(_ linearGradient: LinearGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
-        // For now, use the same implementation as CGGradient but with ALL stops preserved
-        // Real CGShading would require C-style callbacks which are complex in Swift
-        // This ensures we at least preserve all colors and stops correctly
+    private static func drawLinearGradientWithCGShading(_ linearGradient: LinearGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
+        // Create gradient data holder
+        let gradientData = GradientData(stops: linearGradient.stops, opacity: opacity)
+        
+        // Create color space
+        let colorSpace = ColorManager.shared.workingCGColorSpace
+        
+        // Calculate gradient points based on angle
+        let angle = linearGradient.angle * .pi / 180.0
+        let centerX = bounds.midX
+        let centerY = bounds.midY
+        let radius = max(bounds.width, bounds.height) / 2.0
+        
+        let startX = centerX - radius * cos(angle)
+        let startY = centerY - radius * sin(angle)
+        let endX = centerX + radius * cos(angle)
+        let endY = centerY + radius * sin(angle)
+        
+        let startPoint = CGPoint(x: startX, y: startY)
+        let endPoint = CGPoint(x: endX, y: endY)
+        
+        // Create CGFunction callbacks for gradient evaluation
+        var callbacks = CGFunctionCallbacks(
+            version: 0,
+            evaluate: { info, input, output in
+                guard let info = info else { return }
+                let data = Unmanaged<GradientData>.fromOpaque(info).takeUnretainedValue()
+                let t = input[0]
+                let color = data.interpolateColor(at: t)
+                output[0] = color.r
+                output[1] = color.g
+                output[2] = color.b
+                output[3] = color.a
+            },
+            releaseInfo: { info in
+                guard let info = info else { return }
+                _ = Unmanaged<GradientData>.fromOpaque(info).takeRetainedValue()
+            }
+        )
+        
+        // Create CGFunction with proper domain and range
+        let function = CGFunction(
+            info: Unmanaged.passRetained(gradientData).toOpaque(),
+            domainDimension: 1,
+            domain: [0, 1],  // Input range (t parameter)
+            rangeDimension: 4,
+            range: [0, 1, 0, 1, 0, 1, 0, 1],  // RGBA output ranges
+            callbacks: &callbacks
+        )
+        
+        // Create CGShading for linear gradient
+        guard let function = function,
+              let shading = CGShading(axialSpace: colorSpace,
+                                     start: startPoint,
+                                     end: endPoint,
+                                     function: function,
+                                     extendStart: true,
+                                     extendEnd: true) else {
+            // Fallback to CGGradient if CGShading fails
+            Log.fileOperation("⚠️ CGShading creation failed for linear gradient, falling back to CGGradient", level: .warning)
+            drawSimplifiedLinearGradientWithCGGradient(linearGradient, in: context, bounds: bounds, opacity: opacity)
+            return
+        }
+        
+        // Draw the shading
+        context.saveGState()
+        context.clip(to: bounds)
+        context.drawShading(shading)
+        context.restoreGState()
+    }
 
+    private static func drawRadialGradientWithCGShading(_ radialGradient: RadialGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
+        // Create gradient data holder
+        let gradientData = GradientData(stops: radialGradient.stops, opacity: opacity)
+        
+        // Create color space
+        let colorSpace = ColorManager.shared.workingCGColorSpace
+        
+        // Calculate center and radius
+        let centerX = bounds.minX + bounds.width * radialGradient.centerPoint.x
+        let centerY = bounds.minY + bounds.height * radialGradient.centerPoint.y
+        let center = CGPoint(x: centerX, y: centerY)
+        let radius = min(bounds.width, bounds.height) * radialGradient.radius
+        
+        // Handle focal point
+        let focalCenter: CGPoint
+        if let focalPoint = radialGradient.focalPoint {
+            let focalX = bounds.minX + bounds.width * focalPoint.x
+            let focalY = bounds.minY + bounds.height * focalPoint.y
+            focalCenter = CGPoint(x: focalX, y: focalY)
+        } else {
+            focalCenter = center
+        }
+        
+        // Create CGFunction callbacks for gradient evaluation
+        var callbacks = CGFunctionCallbacks(
+            version: 0,
+            evaluate: { info, input, output in
+                guard let info = info else { return }
+                let data = Unmanaged<GradientData>.fromOpaque(info).takeUnretainedValue()
+                let t = input[0]
+                let color = data.interpolateColor(at: t)
+                output[0] = color.r
+                output[1] = color.g
+                output[2] = color.b
+                output[3] = color.a
+            },
+            releaseInfo: { info in
+                guard let info = info else { return }
+                _ = Unmanaged<GradientData>.fromOpaque(info).takeRetainedValue()
+            }
+        )
+        
+        // Create CGFunction with proper domain and range
+        let function = CGFunction(
+            info: Unmanaged.passRetained(gradientData).toOpaque(),
+            domainDimension: 1,
+            domain: [0, 1],  // Input range (t parameter)
+            rangeDimension: 4,
+            range: [0, 1, 0, 1, 0, 1, 0, 1],  // RGBA output ranges
+            callbacks: &callbacks
+        )
+        
+        // Create CGShading for radial gradient
+        guard let function = function,
+              let shading = CGShading(radialSpace: colorSpace,
+                                     start: focalCenter,
+                                     startRadius: 0,
+                                     end: center,
+                                     endRadius: radius,
+                                     function: function,
+                                     extendStart: false,
+                                     extendEnd: true) else {
+            // Fallback to CGGradient if CGShading fails
+            Log.fileOperation("⚠️ CGShading creation failed for radial gradient, falling back to CGGradient", level: .warning)
+            drawSimplifiedRadialGradientWithCGGradient(radialGradient, in: context, bounds: bounds, opacity: opacity)
+            return
+        }
+        
+        // Draw the shading
+        context.saveGState()
+        context.clip(to: bounds)
+        context.drawShading(shading)
+        context.restoreGState()
+    }
+
+    // Fallback implementations using CGGradient (kept as backup)
+    private static func drawSimplifiedLinearGradientWithCGGradient(_ linearGradient: LinearGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         // Create color space
         let colorSpace = ColorManager.shared.workingCGColorSpace
 
@@ -357,7 +592,7 @@ extension FileOperations {
         let startPoint = CGPoint(x: startX, y: startY)
         let endPoint = CGPoint(x: endX, y: endY)
 
-        // Use ALL gradient stops, not just first and last
+        // Use ALL gradient stops
         var colors: [CGFloat] = []
         var locations: [CGFloat] = []
 
@@ -412,10 +647,7 @@ extension FileOperations {
         context.restoreGState()
     }
 
-    private static func drawSimplifiedRadialGradientWithCGShading(_ radialGradient: RadialGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
-        // For now, use the same implementation as CGGradient but with ALL stops preserved
-        // Real CGShading would require C-style callbacks which are complex in Swift
-
+    private static func drawSimplifiedRadialGradientWithCGGradient(_ radialGradient: RadialGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         // Create color space
         let colorSpace = ColorManager.shared.workingCGColorSpace
 
@@ -435,7 +667,7 @@ extension FileOperations {
             focalCenter = center
         }
 
-        // Use ALL gradient stops, not just first and last
+        // Use ALL gradient stops
         var colors: [CGFloat] = []
         var locations: [CGFloat] = []
 
@@ -725,6 +957,127 @@ extension FileOperations {
             }
         }
     }
+
+    /// Draw gradient using CMYK color space for print workflows
+    private static func drawPDFGradientAsCMYK(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
+        // CMYK color space is used for professional printing workflows
+        // This creates smooth gradients in CMYK color space without banding
+
+        let stops = gradient.stops
+        guard !stops.isEmpty else {
+            return
+        }
+
+        context.saveGState()
+        context.clip(to: bounds)
+        context.setAlpha(CGFloat(opacity))
+
+        // Use CGGradient with CMYK color space for smooth gradients
+        switch gradient {
+        case .linear(let linearGradient):
+            drawCMYKLinearGradient(linearGradient, stops: stops, in: context, bounds: bounds)
+        case .radial(let radialGradient):
+            drawCMYKRadialGradient(radialGradient, stops: stops, in: context, bounds: bounds)
+        }
+
+        context.restoreGState()
+    }
+
+    private static func drawCMYKLinearGradient(_ linearGradient: LinearGradient, stops: [GradientStop], in context: CGContext, bounds: CGRect) {
+        // Calculate gradient endpoints
+        let startX = bounds.minX + bounds.width * linearGradient.startPoint.x
+        let startY = bounds.minY + bounds.height * linearGradient.startPoint.y
+        let endX = bounds.minX + bounds.width * linearGradient.endPoint.x
+        let endY = bounds.minY + bounds.height * linearGradient.endPoint.y
+
+        let start = CGPoint(x: startX, y: startY)
+        let end = CGPoint(x: endX, y: endY)
+
+        // Create CMYK color space for print workflows
+        let colorSpace = CGColorSpace(name: CGColorSpace.genericCMYK)!
+
+        // Convert all stops to CMYK components
+        var cmykComponents: [CGFloat] = []
+        var locations: [CGFloat] = []
+
+        for stop in stops {
+            let color = NSColor(cgColor: stop.color.cgColor) ?? NSColor.black
+            let rgb = color.usingColorSpace(.deviceRGB) ?? color
+
+            var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+            rgb.getRed(&r, green: &g, blue: &b, alpha: &a)
+
+            // Convert to CMYK
+            let k = 1.0 - max(r, g, b)
+            let c = k < 1.0 ? (1.0 - r - k) / (1.0 - k) : 0
+            let m = k < 1.0 ? (1.0 - g - k) / (1.0 - k) : 0
+            let y = k < 1.0 ? (1.0 - b - k) / (1.0 - k) : 0
+
+            // Add CMYK + Alpha components
+            cmykComponents.append(contentsOf: [c, m, y, k, CGFloat(stop.opacity)])
+            locations.append(CGFloat(stop.position))
+        }
+
+        // Create gradient with CMYK colors
+        if let gradient = CGGradient(colorSpace: colorSpace,
+                                     colorComponents: cmykComponents,
+                                     locations: locations,
+                                     count: stops.count) {
+            // Draw smooth gradient
+            context.drawLinearGradient(gradient,
+                                      start: start,
+                                      end: end,
+                                      options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+        }
+    }
+
+    private static func drawCMYKRadialGradient(_ radialGradient: RadialGradient, stops: [GradientStop], in context: CGContext, bounds: CGRect) {
+        // Calculate center and radius
+        let centerX = bounds.minX + bounds.width * radialGradient.centerPoint.x
+        let centerY = bounds.minY + bounds.height * radialGradient.centerPoint.y
+        let center = CGPoint(x: centerX, y: centerY)
+        let maxRadius = min(bounds.width, bounds.height) * radialGradient.radius
+
+        // Create CMYK color space for print workflows
+        let colorSpace = CGColorSpace(name: CGColorSpace.genericCMYK)!
+
+        // Convert all stops to CMYK components
+        var cmykComponents: [CGFloat] = []
+        var locations: [CGFloat] = []
+
+        for stop in stops {
+            let color = NSColor(cgColor: stop.color.cgColor) ?? NSColor.black
+            let rgb = color.usingColorSpace(.deviceRGB) ?? color
+
+            var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+            rgb.getRed(&r, green: &g, blue: &b, alpha: &a)
+
+            // Convert to CMYK
+            let k = 1.0 - max(r, g, b)
+            let c = k < 1.0 ? (1.0 - r - k) / (1.0 - k) : 0
+            let m = k < 1.0 ? (1.0 - g - k) / (1.0 - k) : 0
+            let y = k < 1.0 ? (1.0 - b - k) / (1.0 - k) : 0
+
+            // Add CMYK + Alpha components
+            cmykComponents.append(contentsOf: [c, m, y, k, CGFloat(stop.opacity)])
+            locations.append(CGFloat(stop.position))
+        }
+
+        // Create gradient with CMYK colors
+        if let gradient = CGGradient(colorSpace: colorSpace,
+                                     colorComponents: cmykComponents,
+                                     locations: locations,
+                                     count: stops.count) {
+            // Draw smooth gradient
+            context.drawRadialGradient(gradient,
+                                      startCenter: center,
+                                      startRadius: 0,
+                                      endCenter: center,
+                                      endRadius: maxRadius,
+                                      options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+        }
+    }
+
 
     // Helper to interpolate color at position t in gradient stops
     private static func interpolateGradientColor(at t: Double, stops: [GradientStop], opacity: Double) -> NSColor {

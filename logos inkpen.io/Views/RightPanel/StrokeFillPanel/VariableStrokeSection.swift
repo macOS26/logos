@@ -16,7 +16,7 @@ struct VariableStrokeSection: View {
             HStack {
                 Image(systemName: "scribble.variable")
                     .foregroundColor(.accentColor)
-                Text("Variable Stroke")
+                Text("Brush Tool")
                     .font(.headline)
                 Spacer()
             }

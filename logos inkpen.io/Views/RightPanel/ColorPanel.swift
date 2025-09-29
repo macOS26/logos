@@ -196,19 +196,14 @@ struct ColorPanel: View {
             currentPreviewColor = color
             
             // Apply color to the currently active target (fill or stroke)
+            // FIX: Don't set defaults directly - setActiveColor handles this internally
             if document.activeColorTarget == .stroke {
-                // Set default stroke color for new shapes
-                document.defaultStrokeColor = color
-                Log.fileOperation("🎨 COLOR PANEL: Set stroke color: \(color) (active target)", level: .info)
-                
-                // CRITICAL FIX: Use setActiveColor to handle text objects (like working callback)
+                Log.fileOperation("🎨 COLOR PANEL: Setting stroke color: \(color) (active target)", level: .info)
+                // Use setActiveColor which handles both defaults and selected objects
                 document.setActiveColor(color)
             } else {
-                // Set default fill color for new shapes  
-                document.defaultFillColor = color
-                Log.fileOperation("🎨 COLOR PANEL: Set fill color: \(color) (active target)", level: .info)
-                
-                // CRITICAL FIX: Use setActiveColor to handle text objects (like working callback)
+                Log.fileOperation("🎨 COLOR PANEL: Setting fill color: \(color) (active target)", level: .info)
+                // Use setActiveColor which handles both defaults and selected objects
                 document.setActiveColor(color)
             }
         }
