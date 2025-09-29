@@ -194,6 +194,31 @@ struct PreferencesView: View {
                             }
                         }
 
+                        // Show mesh grid fields when mesh mode is selected
+                        if appState.pdfGradientMethod == .mesh {
+                            HStack {
+                                Text("Grid Size:")
+                                    .font(.system(size: 12))
+                                TextField("", value: Binding(
+                                    get: { appState.pdfMeshGridX },
+                                    set: { appState.pdfMeshGridX = $0 }
+                                ), format: .number)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 50)
+                                Text("×")
+                                    .font(.system(size: 12))
+                                TextField("", value: Binding(
+                                    get: { appState.pdfMeshGridY },
+                                    set: { appState.pdfMeshGridY = $0 }
+                                ), format: .number)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 50)
+                                Text("(4-50)")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+
                         Text("Smooth: Standard. Baked: No transparency. Blend: Vector steps. Mesh: Grid patches.")
                             .font(.caption)
                             .foregroundColor(.secondary)

@@ -516,10 +516,14 @@ extension FileOperations {
         // Calculate gradient direction
         let angle = linearGradient.angle * .pi / 180.0
 
-        // Calculate gradient start and end points
-        let centerX = bounds.midX
-        let centerY = bounds.midY
-        let maxDist = max(bounds.width, bounds.height)
+        // Save context and clip to bounds
+        context.saveGState()
+        context.clip(to: bounds)
+
+        // Calculate gradient extent along its axis
+        let halfWidth = bounds.width / 2.0
+        let halfHeight = bounds.height / 2.0
+        let gradientLength = abs(CGFloat(cos(angle))) * halfWidth + abs(CGFloat(sin(angle))) * halfHeight
 
         // Create bands
         for i in 0..<bandCount {
@@ -530,24 +534,27 @@ extension FileOperations {
             // Interpolate color at midpoint
             let color = interpolateGradientColor(at: tMid, stops: stops, opacity: opacity)
 
-            // Create band rectangle
-            let bandStart = -maxDist + (2.0 * maxDist * t0)
-            let bandEnd = -maxDist + (2.0 * maxDist * t1)
+            // Create band position along gradient
+            let bandStart = -gradientLength + (2.0 * gradientLength * CGFloat(t0))
+            let bandEnd = -gradientLength + (2.0 * gradientLength * CGFloat(t1))
 
             // Create path for band
             context.saveGState()
 
             // Translate and rotate to gradient angle
-            context.translateBy(x: centerX, y: centerY)
+            context.translateBy(x: bounds.midX, y: bounds.midY)
             context.rotate(by: -angle)
 
-            // Draw rectangle band
-            let bandRect = CGRect(x: bandStart, y: -maxDist, width: bandEnd - bandStart, height: 2.0 * maxDist)
+            // Draw rectangle band (wide enough to cover rotated bounds)
+            let bandWidth = max(bounds.width, bounds.height) * 2
+            let bandRect = CGRect(x: bandStart, y: -bandWidth/2, width: bandEnd - bandStart, height: bandWidth)
             context.setFillColor(color.cgColor)
             context.fill(bandRect)
 
             context.restoreGState()
         }
+
+        context.restoreGState()
     }
 
     private static func drawRadialGradientAsBlend(_ radialGradient: RadialGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
@@ -611,7 +618,8 @@ extension FileOperations {
     }
 
     private static func drawLinearGradientAsMesh(_ linearGradient: LinearGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
-        let gridSize = 8 // Create an 8x8 mesh
+        let gridSizeX = AppState.shared.pdfMeshGridX
+        let gridSizeY = AppState.shared.pdfMeshGridY
         let stops = linearGradient.stops
 
         guard stops.count >= 2 else { return }
@@ -620,12 +628,12 @@ extension FileOperations {
         let angle = linearGradient.angle * .pi / 180.0
 
         // Create mesh grid
-        for row in 0..<gridSize {
-            for col in 0..<gridSize {
-                let x0 = bounds.minX + (bounds.width * CGFloat(col) / CGFloat(gridSize))
-                let x1 = bounds.minX + (bounds.width * CGFloat(col + 1) / CGFloat(gridSize))
-                let y0 = bounds.minY + (bounds.height * CGFloat(row) / CGFloat(gridSize))
-                let y1 = bounds.minY + (bounds.height * CGFloat(row + 1) / CGFloat(gridSize))
+        for row in 0..<gridSizeY {
+            for col in 0..<gridSizeX {
+                let x0 = bounds.minX + (bounds.width * CGFloat(col) / CGFloat(gridSizeX))
+                let x1 = bounds.minX + (bounds.width * CGFloat(col + 1) / CGFloat(gridSizeX))
+                let y0 = bounds.minY + (bounds.height * CGFloat(row) / CGFloat(gridSizeY))
+                let y1 = bounds.minY + (bounds.height * CGFloat(row + 1) / CGFloat(gridSizeY))
 
                 // Calculate gradient position based on angle and cell position
                 let cellCenterX = (x0 + x1) / 2

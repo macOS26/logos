@@ -132,6 +132,30 @@ class AppState {
         }
     }
 
+    /// Grid size for mesh mode (X dimension, 4-50)
+    var pdfMeshGridX: Int = 8 {
+        didSet {
+            let clampedValue = min(max(pdfMeshGridX, 4), 50)
+            if pdfMeshGridX != clampedValue {
+                pdfMeshGridX = clampedValue
+            }
+            UserDefaults.standard.set(pdfMeshGridX, forKey: "pdfMeshGridX")
+            Log.info("📄 PDF mesh grid X changed to: \(pdfMeshGridX)")
+        }
+    }
+
+    /// Grid size for mesh mode (Y dimension, 4-50)
+    var pdfMeshGridY: Int = 8 {
+        didSet {
+            let clampedValue = min(max(pdfMeshGridY, 4), 50)
+            if pdfMeshGridY != clampedValue {
+                pdfMeshGridY = clampedValue
+            }
+            UserDefaults.standard.set(pdfMeshGridY, forKey: "pdfMeshGridY")
+            Log.info("📄 PDF mesh grid Y changed to: \(pdfMeshGridY)")
+        }
+    }
+
     // MARK: - System Metal Performance HUD Preference
     /// Controls Apple Metal system Performance HUD visibility (live toggle)
     var enableSystemMetalHUD: Bool = false {
@@ -220,6 +244,12 @@ class AppState {
         // Load PDF blend steps
         let savedSteps = UserDefaults.standard.object(forKey: "pdfBlendSteps") as? Int
         self.pdfBlendSteps = savedSteps ?? 20
+
+        // Load PDF mesh grid settings
+        let savedGridX = UserDefaults.standard.object(forKey: "pdfMeshGridX") as? Int
+        self.pdfMeshGridX = savedGridX ?? 8
+        let savedGridY = UserDefaults.standard.object(forKey: "pdfMeshGridY") as? Int
+        self.pdfMeshGridY = savedGridY ?? 8
     }
 
 
