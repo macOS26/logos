@@ -437,6 +437,15 @@ extension DrawingCanvas {
                         control2: VectorPoint(oppositeHandle.x, oppositeHandle.y)
                     )
                     
+                    // CRITICAL: Add the updated handle to selectedHandles so it stays visible
+                    let oppositeHandleID = HandleID(
+                        shapeID: draggedHandleID.shapeID,
+                        pathIndex: 0,
+                        elementIndex: coincidentIndex,
+                        handleType: .control2
+                    )
+                    selectedHandles.insert(oppositeHandleID)
+                    
                     Log.info("🔗 COINCIDENT TANGENT: Updated incoming handle of coincident point at index \(coincidentIndex)", category: .general)
                 }
             } else if draggedHandleID.handleType == .control2 {
@@ -458,6 +467,15 @@ extension DrawingCanvas {
                             control1: VectorPoint(oppositeHandle.x, oppositeHandle.y),
                             control2: control2
                         )
+                        
+                        // CRITICAL: Add the updated handle to selectedHandles so it stays visible
+                        let oppositeHandleID = HandleID(
+                            shapeID: draggedHandleID.shapeID,
+                            pathIndex: 0,
+                            elementIndex: nextIndex,
+                            handleType: .control1
+                        )
+                        selectedHandles.insert(oppositeHandleID)
                         
                         Log.info("🔗 COINCIDENT TANGENT: Updated outgoing handle of coincident point at index \(coincidentIndex)", category: .general)
                     }
@@ -575,6 +593,15 @@ extension DrawingCanvas {
                 elements[draggedHandleID.elementIndex] = updateElementControl1(elements[draggedHandleID.elementIndex], newControl1: VectorPoint(newDraggedPosition.x, newDraggedPosition.y))
                 elements[lastElementIndex] = .curve(to: lastTo, control1: lastControl1, control2: VectorPoint(oppositeHandle.x, oppositeHandle.y))
                 
+                // CRITICAL: Add the updated handle to selectedHandles so it stays visible
+                let oppositeHandleID = HandleID(
+                    shapeID: draggedHandleID.shapeID,
+                    pathIndex: 0,
+                    elementIndex: lastElementIndex,
+                    handleType: .control2
+                )
+                selectedHandles.insert(oppositeHandleID)
+                
                 Log.info("🔗 COINCIDENT SMOOTH: Updated first→last handles", category: .general)
                 return true
             }
@@ -593,6 +620,15 @@ extension DrawingCanvas {
                 // Update both handles
                 elements[draggedHandleID.elementIndex] = updateElementControl2(elements[draggedHandleID.elementIndex], newControl2: VectorPoint(newDraggedPosition.x, newDraggedPosition.y))
                 elements[1] = .curve(to: secondTo, control1: VectorPoint(oppositeHandle.x, oppositeHandle.y), control2: secondControl2)
+                
+                // CRITICAL: Add the updated handle to selectedHandles so it stays visible
+                let oppositeHandleID = HandleID(
+                    shapeID: draggedHandleID.shapeID,
+                    pathIndex: 0,
+                    elementIndex: 1,
+                    handleType: .control1
+                )
+                selectedHandles.insert(oppositeHandleID)
                 
                 Log.info("🔗 COINCIDENT SMOOTH: Updated last→first handles", category: .general)
                 return true

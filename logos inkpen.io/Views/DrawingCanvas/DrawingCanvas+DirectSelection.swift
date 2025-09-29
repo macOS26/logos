@@ -130,6 +130,10 @@ extension DrawingCanvas {
                                 selectedPoints.removeAll()
                             }
                             selectedHandles.insert(handleID)
+
+                            // CRITICAL: Also select corresponding handles on coincident points
+                            selectCoincidentHandles(for: handleID, shape: shape)
+
                             Log.fileOperation("🎯 Selected INCOMING handle", level: .info)
                         }
                         return true
@@ -153,6 +157,10 @@ extension DrawingCanvas {
                                         selectedPoints.removeAll()
                                     }
                                     selectedHandles.insert(handleID)
+
+                                    // CRITICAL: Also select corresponding handles on coincident points
+                                    selectCoincidentHandles(for: handleID, shape: shape)
+
                                     Log.fileOperation("🎯 Selected OUTGOING handle", level: .info)
                                 }
                                 return true
@@ -177,6 +185,10 @@ extension DrawingCanvas {
                                 selectedPoints.removeAll()
                             }
                             selectedHandles.insert(handleID)
+
+                            // CRITICAL: Also select corresponding handles on coincident points
+                            selectCoincidentHandles(for: handleID, shape: shape)
+
                             Log.fileOperation("🎯 Selected quad handle", level: .info)
                         }
                         return true
@@ -201,6 +213,10 @@ extension DrawingCanvas {
                                         selectedPoints.removeAll()
                                     }
                                     selectedHandles.insert(handleID)
+
+                                    // CRITICAL: Also select corresponding handles on coincident points
+                                    selectCoincidentHandles(for: handleID, shape: shape)
+
                                     Log.fileOperation("🎯 Selected OUTGOING handle from line/move", level: .info)
                                 }
                                 return true
@@ -367,4 +383,109 @@ extension DrawingCanvas {
         // Force UI update to show selections
         document.objectWillChange.send()
     }
-} 
+
+    // MARK: - Helper for Coincident Handle Selection
+
+    /// When selecting a handle, also select corresponding handles on any coincident points
+    private func selectCoincidentHandles(for handleID: HandleID, shape: VectorShape) {
+        // Get the anchor point for this handle
+        let anchorPoint: CGPoint?
+        let pointIndex: Int
+
+        if handleID.handleType == .control1 {
+            // control1 belongs to the anchor at the END of the PREVIOUS element
+            pointIndex = handleID.elementIndex - 1
+            if pointIndex >= 0 && pointIndex < shape.path.elements.count {
+                switch shape.path.elements[pointIndex] {
+                case .move(let to), .line(let to):
+                    anchorPoint = CGPoint(x: to.x, y: to.y)
+                case .curve(let to, _, _), .quadCurve(let to, _):
+                    anchorPoint = CGPoint(x: to.x, y: to.y)
+                case .close:
+                    anchorPoint = nil
+                }
+            } else {
+                return
+            }
+        } else if handleID.handleType == .control2 {
+            // control2 belongs to the anchor at the END of the CURRENT element
+            pointIndex = handleID.elementIndex
+            if pointIndex < shape.path.elements.count {
+                switch shape.path.elements[pointIndex] {
+                case .curve(let to, _, _):
+                    anchorPoint = CGPoint(x: to.x, y: to.y)
+                case .quadCurve(let to, _):
+                    anchorPoint = CGPoint(x: to.x, y: to.y)
+                default:
+                    anchorPoint = nil
+                }
+            } else {
+                return
+            }
+        } else {
+            return
+        }
+
+        guard let anchor = anchorPoint else { return }
+
+        // Find coincident points at this anchor position
+        let tolerance = 1.0
+        for (index, element) in shape.path.elements.enumerated() {
+            // Skip the point we're already working with
+            if index == pointIndex { continue }
+
+            // Get the point position from this element
+            let elementPoint: CGPoint?
+            switch element {
+            case .move(let to), .line(let to):
+                elementPoint = CGPoint(x: to.x, y: to.y)
+            case .curve(let to, _, _), .quadCurve(let to, _):
+                elementPoint = CGPoint(x: to.x, y: to.y)
+            case .close:
+                elementPoint = nil
+            }
+
+            // Check if this point is coincident with our anchor
+            if let point = elementPoint {
+                let distance = sqrt(pow(anchor.x - point.x, 2) + pow(anchor.y - point.y, 2))
+                if distance <= tolerance {
+                    // This is a coincident point! Add its corresponding handle
+                    if handleID.handleType == .control1 {
+                        // We selected an outgoing handle, so select the incoming handle of the coincident point
+                        if case .curve(_, _, let control2) = element {
+                            let handle2Collapsed = (abs(control2.x - point.x) < 0.1 && abs(control2.y - point.y) < 0.1)
+                            if !handle2Collapsed {
+                                let coincidentHandleID = HandleID(
+                                    shapeID: shape.id,
+                                    pathIndex: 0,
+                                    elementIndex: index,
+                                    handleType: .control2
+                                )
+                                selectedHandles.insert(coincidentHandleID)
+                                Log.info("🔗 AUTO-SELECTED coincident incoming handle at element \(index)", category: .general)
+                            }
+                        }
+                    } else if handleID.handleType == .control2 {
+                        // We selected an incoming handle, so select the outgoing handle of the coincident point
+                        let nextIndex = index + 1
+                        if nextIndex < shape.path.elements.count {
+                            if case .curve(_, let control1, _) = shape.path.elements[nextIndex] {
+                                let handle1Collapsed = (abs(control1.x - point.x) < 0.1 && abs(control1.y - point.y) < 0.1)
+                                if !handle1Collapsed {
+                                    let coincidentHandleID = HandleID(
+                                        shapeID: shape.id,
+                                        pathIndex: 0,
+                                        elementIndex: nextIndex,
+                                        handleType: .control1
+                                    )
+                                    selectedHandles.insert(coincidentHandleID)
+                                    Log.info("🔗 AUTO-SELECTED coincident outgoing handle at element \(nextIndex)", category: .general)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
