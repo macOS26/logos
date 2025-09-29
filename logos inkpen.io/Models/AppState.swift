@@ -98,13 +98,15 @@ class AppState {
     // MARK: - PDF Export Preferences
     /// Controls whether to use CGGradient or CGShading for PDF gradient rendering
     enum PDFGradientMethod: String, CaseIterable {
-        case cgGradient = "cgGradient"  // Faster, may rasterize in Illustrator
-        case cgShading = "cgShading"    // Better vector compatibility with Illustrator
+        case cgGradient = "cgGradient"  // Smooth gradients, may rasterize in Illustrator
+        case cgShading = "cgShading"    // Baked opacity to avoid transparency flattening
+        case discrete = "discrete"      // Discrete color bands instead of smooth gradients
 
         var displayName: String {
             switch self {
-            case .cgGradient: return "CGGradient (Faster)"
+            case .cgGradient: return "CGGradient (Smooth)"
             case .cgShading: return "CGShading (Baked Opacity)"
+            case .discrete: return "Discrete Bands (Vector Safe)"
             }
         }
     }

@@ -176,7 +176,7 @@ struct PreferencesView: View {
                         }
                         .pickerStyle(.segmented)
                         .labelsHidden()
-                        Text("CGGradient uses transparency layers. Baked Opacity embeds opacity directly into colors to avoid rasterization.")
+                        Text("Smooth: Standard gradients. Baked: No transparency layers. Discrete: Vector shapes instead of gradients.")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .fixedSize(horizontal: false, vertical: true)

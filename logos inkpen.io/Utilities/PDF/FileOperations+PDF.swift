@@ -160,14 +160,17 @@ extension FileOperations {
         }
     }
 
-    /// Draw gradient for PDF using either CGGradient or CGShading based on user preference
+    /// Draw gradient for PDF using either CGGradient, CGShading, or discrete bands based on user preference
     static func drawPDFGradient(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         // Check user preference for gradient method
         let method = AppState.shared.pdfGradientMethod
 
-        if method == .cgShading {
+        switch method {
+        case .cgShading:
             drawPDFGradientWithCGShading(gradient, in: context, bounds: bounds, opacity: opacity)
-        } else {
+        case .discrete:
+            drawPDFGradientAsDiscreteBands(gradient, in: context, bounds: bounds, opacity: opacity)
+        default:
             drawPDFGradientWithCGGradient(gradient, in: context, bounds: bounds, opacity: opacity)
         }
     }
@@ -485,6 +488,149 @@ extension FileOperations {
             options: [.drawsAfterEndLocation]
         )
         context.restoreGState()
+    }
+
+    /// Draw gradient as discrete color bands (vector shapes) instead of smooth gradient
+    /// This approach creates actual vector shapes that won't be rasterized
+    private static func drawPDFGradientAsDiscreteBands(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
+        context.saveGState()
+
+        switch gradient {
+        case .linear(let linearGradient):
+            drawLinearGradientAsDiscreteBands(linearGradient, in: context, bounds: bounds, opacity: opacity)
+        case .radial(let radialGradient):
+            drawRadialGradientAsDiscreteBands(radialGradient, in: context, bounds: bounds, opacity: opacity)
+        }
+
+        context.restoreGState()
+    }
+
+    private static func drawLinearGradientAsDiscreteBands(_ linearGradient: LinearGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
+        let bandCount = 10 // Number of discrete bands
+        let stops = linearGradient.stops
+
+        guard stops.count >= 2 else { return }
+
+        // Calculate gradient direction
+        let angle = linearGradient.angle * .pi / 180.0
+
+        // Calculate gradient start and end points
+        let centerX = bounds.midX
+        let centerY = bounds.midY
+        let maxDist = max(bounds.width, bounds.height)
+
+        // Create bands
+        for i in 0..<bandCount {
+            let t0 = Double(i) / Double(bandCount)
+            let t1 = Double(i + 1) / Double(bandCount)
+            let tMid = (t0 + t1) / 2.0
+
+            // Interpolate color at midpoint
+            let color = interpolateGradientColor(at: tMid, stops: stops, opacity: opacity)
+
+            // Create band rectangle
+            let bandStart = -maxDist + (2.0 * maxDist * t0)
+            let bandEnd = -maxDist + (2.0 * maxDist * t1)
+
+            // Create path for band
+            context.saveGState()
+
+            // Translate and rotate to gradient angle
+            context.translateBy(x: centerX, y: centerY)
+            context.rotate(by: -angle)
+
+            // Draw rectangle band
+            let bandRect = CGRect(x: bandStart, y: -maxDist, width: bandEnd - bandStart, height: 2.0 * maxDist)
+            context.setFillColor(color.cgColor)
+            context.fill(bandRect)
+
+            context.restoreGState()
+        }
+    }
+
+    private static func drawRadialGradientAsDiscreteBands(_ radialGradient: RadialGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
+        let bandCount = 10 // Number of discrete bands
+        let stops = radialGradient.stops
+
+        guard stops.count >= 2 else { return }
+
+        // Calculate center
+        let centerX = bounds.minX + bounds.width * radialGradient.centerPoint.x
+        let centerY = bounds.minY + bounds.height * radialGradient.centerPoint.y
+        let center = CGPoint(x: centerX, y: centerY)
+        let maxRadius = min(bounds.width, bounds.height) * radialGradient.radius
+
+        // Draw bands from outside to inside to ensure proper layering
+        for i in (0..<bandCount).reversed() {
+            let t0 = Double(i) / Double(bandCount)
+            let t1 = Double(i + 1) / Double(bandCount)
+            let tMid = (t0 + t1) / 2.0
+
+            // Interpolate color at midpoint
+            let color = interpolateGradientColor(at: tMid, stops: stops, opacity: opacity)
+
+            // Create circle band
+            let outerRadius = maxRadius * t1
+            let innerRadius = maxRadius * t0
+
+            context.saveGState()
+
+            // Draw outer circle
+            context.setFillColor(color.cgColor)
+            context.addEllipse(in: CGRect(x: center.x - outerRadius, y: center.y - outerRadius,
+                                         width: outerRadius * 2, height: outerRadius * 2))
+
+            // Clip out inner circle if not the center band
+            if i > 0 {
+                context.addEllipse(in: CGRect(x: center.x - innerRadius, y: center.y - innerRadius,
+                                             width: innerRadius * 2, height: innerRadius * 2))
+                context.fillPath(using: .evenOdd)
+            } else {
+                context.fillPath()
+            }
+
+            context.restoreGState()
+        }
+    }
+
+    // Helper to interpolate color at position t in gradient stops
+    private static func interpolateGradientColor(at t: Double, stops: [GradientStop], opacity: Double) -> NSColor {
+        // Find surrounding stops
+        var lowerStop = stops.first!
+        var upperStop = stops.last!
+
+        for i in 0..<(stops.count - 1) {
+            if t >= stops[i].position && t <= stops[i + 1].position {
+                lowerStop = stops[i]
+                upperStop = stops[i + 1]
+                break
+            }
+        }
+
+        // Handle edge cases
+        if t <= stops.first!.position {
+            let cgColor = stops.first!.color.cgColor
+            return NSColor(cgColor: cgColor)!.withAlphaComponent(CGFloat(stops.first!.opacity * opacity))
+        }
+        if t >= stops.last!.position {
+            let cgColor = stops.last!.color.cgColor
+            return NSColor(cgColor: cgColor)!.withAlphaComponent(CGFloat(stops.last!.opacity * opacity))
+        }
+
+        // Interpolate between stops
+        let range = upperStop.position - lowerStop.position
+        let factor = range > 0 ? (t - lowerStop.position) / range : 0
+
+        let color1 = NSColor(cgColor: lowerStop.color.cgColor)!
+        let color2 = NSColor(cgColor: upperStop.color.cgColor)!
+
+        // Blend colors
+        let r = color1.redComponent * (1 - factor) + color2.redComponent * factor
+        let g = color1.greenComponent * (1 - factor) + color2.greenComponent * factor
+        let b = color1.blueComponent * (1 - factor) + color2.blueComponent * factor
+        let a = (lowerStop.opacity * (1 - factor) + upperStop.opacity * factor) * opacity
+
+        return NSColor(red: r, green: g, blue: b, alpha: CGFloat(a))
     }
 
     // Helper function to convert VectorColor to RGBA components
