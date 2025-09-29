@@ -241,6 +241,6 @@ struct PreferencesView: View {
             Spacer()
         }
         .padding(24)
-        .frame(minWidth: 600, minHeight: 500)
+        .frame(minWidth: 700, minHeight: 500)
     }
 }
