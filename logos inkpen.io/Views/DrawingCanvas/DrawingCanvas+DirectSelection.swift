@@ -128,6 +128,7 @@ extension DrawingCanvas {
                             if !isShiftPressed {
                                 selectedHandles.removeAll()
                                 selectedPoints.removeAll()
+                                visibleHandles.removeAll()  // Clear visible handles too
                             }
                             selectedHandles.insert(handleID)
 
@@ -155,6 +156,7 @@ extension DrawingCanvas {
                                     if !isShiftPressed {
                                         selectedHandles.removeAll()
                                         selectedPoints.removeAll()
+                                        visibleHandles.removeAll()  // Clear visible handles too
                                     }
                                     selectedHandles.insert(handleID)
 
@@ -183,6 +185,7 @@ extension DrawingCanvas {
                             if !isShiftPressed {
                                 selectedHandles.removeAll()
                                 selectedPoints.removeAll()
+                                visibleHandles.removeAll()  // Clear visible handles too
                             }
                             selectedHandles.insert(handleID)
 
@@ -211,6 +214,7 @@ extension DrawingCanvas {
                                     if !isShiftPressed {
                                         selectedHandles.removeAll()
                                         selectedPoints.removeAll()
+                                        visibleHandles.removeAll()  // Clear visible handles too
                                     }
                                     selectedHandles.insert(handleID)
 
@@ -371,6 +375,7 @@ extension DrawingCanvas {
             Log.error("❌ Clicked empty space - clearing all direct selections", category: .error)
             selectedPoints.removeAll()
             selectedHandles.removeAll()
+            visibleHandles.removeAll()  // Clear visible handles too
             directSelectedShapeIDs.removeAll()
             syncDirectSelectionWithDocument()
         }
@@ -386,7 +391,7 @@ extension DrawingCanvas {
 
     // MARK: - Helper for Coincident Handle Selection
 
-    /// When selecting a handle, also select ALL handles at coincident points to keep them visible
+    /// When selecting a handle, make handles at coincident points visible (but not selected)
     private func selectCoincidentHandles(for handleID: HandleID, shape: VectorShape) {
         // Get the anchor point for this handle
         let anchorPoint: CGPoint?
@@ -461,8 +466,8 @@ extension DrawingCanvas {
                                 elementIndex: index,
                                 handleType: .control2
                             )
-                            selectedHandles.insert(coincidentHandleID)
-                            Log.info("🔗 AUTO-SELECTED coincident incoming handle at element \(index)", category: .general)
+                            visibleHandles.insert(coincidentHandleID)
+                            Log.info("🔗 Made coincident incoming handle VISIBLE at element \(index)", category: .general)
                         }
                     }
 
@@ -478,8 +483,8 @@ extension DrawingCanvas {
                                     elementIndex: nextIndex,
                                     handleType: .control1
                                 )
-                                selectedHandles.insert(coincidentHandleID)
-                                Log.info("🔗 AUTO-SELECTED coincident outgoing handle at element \(nextIndex)", category: .general)
+                                visibleHandles.insert(coincidentHandleID)
+                                Log.info("🔗 Made coincident outgoing handle VISIBLE at element \(nextIndex)", category: .general)
                             }
                         }
                     }

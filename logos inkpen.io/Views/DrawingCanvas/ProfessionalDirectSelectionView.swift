@@ -11,6 +11,7 @@ struct ProfessionalDirectSelectionView: View {
     let document: VectorDocument
     let selectedPoints: Set<PointID>
     let selectedHandles: Set<HandleID>
+    let visibleHandles: Set<HandleID>  // Handles that are visible but not selected
     let directSelectedShapeIDs: Set<UUID>
     let geometry: GeometryProxy
     
@@ -135,6 +136,7 @@ struct ProfessionalDirectSelectionView: View {
             handleType: .control2
         )
         let isIncomingHandleSelected = selectedHandles.contains(incomingHandleID)
+        let isIncomingHandleVisible = selectedHandles.contains(incomingHandleID) || visibleHandles.contains(incomingHandleID)
 
         // Check if outgoing handle is selected (from next element)
         let outgoingHandleID: HandleID? = {
@@ -149,10 +151,11 @@ struct ProfessionalDirectSelectionView: View {
             return nil
         }()
         let isOutgoingHandleSelected = outgoingHandleID != nil ? selectedHandles.contains(outgoingHandleID!) : false
+        let isOutgoingHandleVisible = outgoingHandleID != nil ? (selectedHandles.contains(outgoingHandleID!) || visibleHandles.contains(outgoingHandleID!)) : false
 
-        // For smooth points: if one handle is selected, show both handles AT THIS POINT ONLY
+        // For smooth points: if one handle is selected or visible, show both handles AT THIS POINT ONLY
         // Incoming handle belongs to THIS point, outgoing handle also belongs to THIS point
-        let shouldShowBothHandlesAtThisPoint = isIncomingHandleSelected || isOutgoingHandleSelected
+        let shouldShowBothHandlesAtThisPoint = isIncomingHandleVisible || isOutgoingHandleVisible
 
         // COINCIDENT POINTS: If this point has coincident points, check if ANY of them are selected
         let coincidentPoints = findCoincidentPoints(to: pointID, in: document, tolerance: 1.0)
@@ -170,8 +173,8 @@ struct ProfessionalDirectSelectionView: View {
                     let lastPointOutgoingHandle: HandleID? = lastPointIndex + 1 < shape.path.elements.count ?
                         HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: lastPointIndex + 1, handleType: .control1) : nil
 
-                    return selectedHandles.contains(lastPointIncomingHandle) ||
-                           (lastPointOutgoingHandle != nil && selectedHandles.contains(lastPointOutgoingHandle!))
+                    return selectedHandles.contains(lastPointIncomingHandle) || visibleHandles.contains(lastPointIncomingHandle) ||
+                           (lastPointOutgoingHandle != nil && (selectedHandles.contains(lastPointOutgoingHandle!) || visibleHandles.contains(lastPointOutgoingHandle!)))
                 } else if elementIndex == lastPointIndex {
                     // We're at the last point, check if ANY handle from the first point is selected
                     // Check both the outgoing handle of first point and incoming handle if it exists
@@ -180,10 +183,10 @@ struct ProfessionalDirectSelectionView: View {
                     var firstPointHasIncomingHandle = false
                     if case .curve = shape.path.elements[0] {
                         let firstPointIncomingHandle = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: 0, handleType: .control2)
-                        firstPointHasIncomingHandle = selectedHandles.contains(firstPointIncomingHandle)
+                        firstPointHasIncomingHandle = selectedHandles.contains(firstPointIncomingHandle) || visibleHandles.contains(firstPointIncomingHandle)
                     }
 
-                    return selectedHandles.contains(firstPointOutgoingHandle) || firstPointHasIncomingHandle
+                    return selectedHandles.contains(firstPointOutgoingHandle) || visibleHandles.contains(firstPointOutgoingHandle) || firstPointHasIncomingHandle
                 }
             }
             return false
@@ -235,22 +238,24 @@ struct ProfessionalDirectSelectionView: View {
         let coincidentPoints = findCoincidentPoints(to: pointID, in: document, tolerance: 1.0)
         let anyCoincidentPointSelected = !coincidentPoints.isEmpty && coincidentPoints.contains { selectedPoints.contains($0) }
 
-        // Check if outgoing handle is selected (from next element)
-        let isOutgoingHandleSelected: Bool = {
+        // Check if outgoing handle is selected or visible (from next element)
+        let outgoingHandleID: HandleID? = {
             if elementIndex + 1 < shape.path.elements.count {
                 let nextElement = shape.path.elements[elementIndex + 1]
                 if case .curve = nextElement {
-                    let outgoingHandleID = HandleID(
+                    return HandleID(
                         shapeID: shape.id,
                         pathIndex: 0,
                         elementIndex: elementIndex + 1,
                         handleType: .control1
                     )
-                    return selectedHandles.contains(outgoingHandleID)
                 }
             }
-            return false
+            return nil
         }()
+
+        let isOutgoingHandleSelected = outgoingHandleID != nil && selectedHandles.contains(outgoingHandleID!)
+        let isOutgoingHandleVisible = outgoingHandleID != nil && (selectedHandles.contains(outgoingHandleID!) || visibleHandles.contains(outgoingHandleID!))
 
         // For line/move points, we only care about the outgoing handle
         // We should NOT show handles just because the next point's incoming handle is selected
@@ -264,7 +269,7 @@ struct ProfessionalDirectSelectionView: View {
                     // Check incoming handle of last point
                     if case .curve = shape.path.elements[lastPointIndex] {
                         let lastPointIncomingHandle = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: lastPointIndex, handleType: .control2)
-                        if selectedHandles.contains(lastPointIncomingHandle) {
+                        if selectedHandles.contains(lastPointIncomingHandle) || visibleHandles.contains(lastPointIncomingHandle) {
                             return true
                         }
                     }
@@ -272,7 +277,7 @@ struct ProfessionalDirectSelectionView: View {
                     if lastPointIndex + 1 < shape.path.elements.count {
                         if case .curve = shape.path.elements[lastPointIndex + 1] {
                             let lastPointOutgoingHandle = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: lastPointIndex + 1, handleType: .control1)
-                            if selectedHandles.contains(lastPointOutgoingHandle) {
+                            if selectedHandles.contains(lastPointOutgoingHandle) || visibleHandles.contains(lastPointOutgoingHandle) {
                                 return true
                             }
                         }
@@ -282,7 +287,7 @@ struct ProfessionalDirectSelectionView: View {
                     // Check if first point has incoming handle
                     if case .curve = shape.path.elements[0] {
                         let firstPointIncomingHandle = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: 0, handleType: .control2)
-                        if selectedHandles.contains(firstPointIncomingHandle) {
+                        if selectedHandles.contains(firstPointIncomingHandle) || visibleHandles.contains(firstPointIncomingHandle) {
                             return true
                         }
                     }
@@ -290,7 +295,7 @@ struct ProfessionalDirectSelectionView: View {
                     if shape.path.elements.count > 1 {
                         if case .curve = shape.path.elements[1] {
                             let firstPointOutgoingHandle = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: 1, handleType: .control1)
-                            if selectedHandles.contains(firstPointOutgoingHandle) {
+                            if selectedHandles.contains(firstPointOutgoingHandle) || visibleHandles.contains(firstPointOutgoingHandle) {
                                 return true
                             }
                         }
@@ -303,9 +308,9 @@ struct ProfessionalDirectSelectionView: View {
         // Show handles if:
         // - The point itself is selected
         // - Any coincident point is selected
-        // - This point's outgoing handle is selected
+        // - This point's outgoing handle is selected or visible
         // - Any handle at the coincident point is selected (for closed paths)
-        let shouldShowHandles = isPointSelected || anyCoincidentPointSelected || isOutgoingHandleSelected || anyCoincidentHandleSelected
+        let shouldShowHandles = isPointSelected || anyCoincidentPointSelected || isOutgoingHandleVisible || anyCoincidentHandleSelected
 
         return Group {
             if shouldShowHandles {

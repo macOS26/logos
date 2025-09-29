@@ -117,6 +117,7 @@ extension DrawingCanvas {
                 document: document,
                 selectedPoints: selectedPoints,
                 selectedHandles: selectedHandles,
+                visibleHandles: visibleHandles,
                 directSelectedShapeIDs: directSelectedShapeIDs,
                 geometry: geometry
             )

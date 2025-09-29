@@ -284,6 +284,7 @@ struct DrawingCanvas: View {
     // Direct selection state
     @State internal var selectedPoints: Set<PointID> = []
     @State internal var selectedHandles: Set<HandleID> = []
+    @State internal var visibleHandles: Set<HandleID> = []  // Handles that are visible but not selected (e.g., coincident handles)
     @State internal var directSelectedShapeIDs: Set<UUID> = [] // Track which shapes have been direct-selected
     @State internal var isCornerRadiusEditMode = false // Control-Click to enter corner radius editing mode
     @State internal var isDraggingPoint = false
