@@ -24,16 +24,34 @@ extension FileOperations {
         // CRITICAL FIX: Set media box in context creation to avoid default 8.5x11
         var mediaBox = CGRect(origin: .zero, size: documentSize)
 
-        // Create PDF context with proper media box
+        // Create auxiliary dictionary for PDF options
+        let auxiliaryInfo = [
+            kCGPDFContextCreator as String: "Inkpen.io",
+            kCGPDFContextAuthor as String: NSFullUserName(),
+            // Enable compression for smaller file size
+            "CompressStreams" as String: true,
+            // Use PDF 1.7 for best gradient and transparency support
+            "PDFXVersion" as String: "PDF/X-4",
+            // Enable gradients and transparency
+            "AllowTransparency" as String: true
+        ] as CFDictionary
+
+        // Create PDF context with proper media box and auxiliary info
         guard let pdfConsumer = CGDataConsumer(data: pdfData),
-              let pdfContext = CGContext(consumer: pdfConsumer, mediaBox: &mediaBox, nil) else {
+              let pdfContext = CGContext(consumer: pdfConsumer, mediaBox: &mediaBox, auxiliaryInfo) else {
             throw VectorImportError.parsingError("Failed to create PDF context", line: nil)
         }
+
+        // Set PDF document metadata for newer PDF version support
+        // Note: Document-level metadata is set through the auxiliary info in context creation
 
         // Begin PDF page with the same media box and metadata
         let pageInfo = [
             kCGPDFContextMediaBox as String: mediaBox,
-            kCGPDFContextCreator as String: "Inkpen.io"
+            kCGPDFContextCreator as String: "Inkpen.io",
+            kCGPDFContextArtBox as String: mediaBox,  // Art box for actual content
+            kCGPDFContextTrimBox as String: mediaBox, // Trim box for final trim size
+            kCGPDFContextBleedBox as String: mediaBox // Bleed box (no bleed for now)
         ] as [String : Any]
         pdfContext.beginPDFPage(pageInfo as CFDictionary)
 

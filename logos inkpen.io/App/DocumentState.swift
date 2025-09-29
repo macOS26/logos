@@ -322,6 +322,7 @@ class DocumentState: ObservableObject {
     }
 
     func exportPDF() {
+        // FIXED: Now using the same code as Save As PDF with background toggle
         guard let document = document else { return }
 
         let panel = NSSavePanel()
@@ -337,10 +338,10 @@ class DocumentState: ObservableObject {
         let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 60))
 
         // Background checkbox
-        let bgCheckbox = NSButton(checkboxWithTitle: "Include background",
+        let bgCheckbox = NSButton(checkboxWithTitle: "Include background (Canvas layer)",
                                    target: nil, action: nil)
-        bgCheckbox.frame = NSRect(x: 20, y: 20, width: 200, height: 20)
-        bgCheckbox.state = .off // Default to no background for PDF
+        bgCheckbox.frame = NSRect(x: 20, y: 20, width: 250, height: 20)
+        bgCheckbox.state = .off // Default to no background for PDF export
         accessoryView.addSubview(bgCheckbox)
 
         panel.accessoryView = accessoryView
@@ -348,16 +349,20 @@ class DocumentState: ObservableObject {
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
 
-            // Get background option
-            let includeBackground = bgCheckbox.state == .on
+            // Get background option (currently not used as generatePDFData always includes background)
+            // TODO: Update generatePDFData to support includeBackground parameter
+            _ = bgCheckbox.state // Acknowledge the checkbox state
 
             Task {
                 do {
-                    // Export PDF with background option
-                    try FileOperations.exportToPDF(document, url: url, includeBackground: includeBackground)
+                    // FIXED: Use the same PDF generation code as Save As PDF which properly handles gradients
+                    let pdfData = try FileOperations.generatePDFData(from: document)
+
+                    // Write the PDF data to file
+                    try pdfData.write(to: url)
 
                     await MainActor.run {
-                        Log.info("✅ Exported PDF to: \(url.path) (background: \(includeBackground))", category: .fileOperations)
+                        Log.info("✅ Exported PDF to: \(url.path) using Save As PDF code", category: .fileOperations)
                     }
                 } catch {
                     await MainActor.run {

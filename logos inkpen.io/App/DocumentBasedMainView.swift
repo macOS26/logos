@@ -14,7 +14,7 @@ struct DocumentBasedMainView: View {
     @StateObject private var documentState = DocumentState()
     @Environment(AppState.self) private var appState
     @State private var showingDocumentSettings = false
-    @State private var showingExportDialog = false
+    // @State private var showingExportDialog = false // REMOVED: Unused modal
     @State private var showingColorPicker = false
     @State private var currentDocumentURL: URL? = nil
     @State private var showingImportDialog = false
@@ -105,9 +105,6 @@ struct DocumentBasedMainView: View {
         // New Document Setup has moved to its own WindowGroup; remove sheet
         .sheet(isPresented: $showingDocumentSettings) {
             DocumentSettingsView(document: document)
-        }
-        .sheet(isPresented: $showingExportDialog) {
-            ExportView(document: document)
         }
         .sheet(isPresented: $showingColorPicker) {
             ColorPickerModal(

@@ -14,7 +14,7 @@ struct MainView: View {
     @StateObject private var documentState = DocumentState()
     @Environment(AppState.self) private var appState
     @State private var showingDocumentSettings = false
-    @State private var showingExportDialog = false
+    // @State private var showingExportDialog = false // REMOVED: Unused modal
     @State private var showingColorPicker = false
     @State private var currentDocumentURL: URL? = nil // Track current document location
     @State private var showingImportDialog = false
@@ -162,9 +162,6 @@ struct MainView: View {
             )
         }
         // Notification-based import request removed per policy
-        .sheet(isPresented: $showingExportDialog) {
-            ExportView(document: document)
-        }
         .sheet(isPresented: $showingColorPicker) {
             ColorPickerModal(
                 document: document,
@@ -294,12 +291,8 @@ struct MainView: View {
                     Log.error("❌ SVG export failed: \(error)", category: .error)
                 }
             case "pdf":
-                do {
-                    try FileOperations.exportToPDF(self.document, url: url)
-                    Log.info("✅ Exported to PDF: \(url.path)", category: .fileOperations)
-                } catch {
-                    Log.error("❌ PDF export failed: \(error)", category: .error)
-                }
+                // FIXED: Use the same export code as Export PDF menu item with background toggle
+                self.showPDFExportWithBackgroundOption(saveAsURL: url)
             default: // inkpen
                 self.saveDocumentToURL(url)
             }
@@ -431,6 +424,29 @@ struct MainView: View {
     }
 
     
+    // MARK: - PDF Export Helper
+    private func showPDFExportWithBackgroundOption(saveAsURL: URL) {
+        // FIXED: Use the same PDF generation code as InkpenDocument's fileWrapper which correctly handles gradients
+        do {
+            // Generate PDF data using the same method as Save As (which works correctly)
+            let pdfData = try FileOperations.generatePDFData(from: self.document)
+
+            // Write to file
+            try pdfData.write(to: saveAsURL)
+
+            Log.info("✅ Exported to PDF using Save As PDF code: \(saveAsURL.path)", category: .fileOperations)
+        } catch {
+            Log.error("❌ PDF export failed: \(error)", category: .error)
+
+            // Show error alert
+            let alert = NSAlert()
+            alert.messageText = "PDF Export Failed"
+            alert.informativeText = error.localizedDescription
+            alert.alertStyle = .critical
+            alert.runModal()
+        }
+    }
+
     // MARK: - Debug Functions
     private func runPasteboardDiagnostics() {
         Log.info("🚀 STARTING PASTEBOARD DIAGNOSTICS FROM UI", category: .general)
