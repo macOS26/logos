@@ -58,7 +58,8 @@ struct ShearHandles: View {
     }
     
     private var calculatedCenter: CGPoint {
-        let bounds = calculatedBounds
+        // Use shape's actual bounds for geometric center, not transformed bounds
+        let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         return CGPoint(x: bounds.midX, y: bounds.midY)
     }
     
@@ -129,13 +130,16 @@ struct ShearHandles: View {
             
             // CENTER POINT: Always available (GREEN if not locked, RED if locked)
             let isCenterLockedPin = (lockedPinPointIndex == nil) // nil represents center as locked pin
+            let shapeCenter = shape.isGroupContainer ?
+                CGPoint(x: shape.groupBounds.midX, y: shape.groupBounds.midY) :
+                CGPoint(x: shape.bounds.midX, y: shape.bounds.midY)
             Circle()
                 .fill(isCenterLockedPin ? Color.red : Color.green)  // RED = locked pin, GREEN = shearable
                 .stroke(Color.white, lineWidth: 1.0)
                 .frame(width: handleSize, height: handleSize)
                 .position(CGPoint(
-                    x: center.x * zoomLevel + canvasOffset.x,
-                    y: center.y * zoomLevel + canvasOffset.y
+                    x: shapeCenter.x * zoomLevel + canvasOffset.x,
+                    y: shapeCenter.y * zoomLevel + canvasOffset.y
                 ))
                 .onTapGesture {
                     if !isShearing {
@@ -147,7 +151,9 @@ struct ShearHandles: View {
                     DragGesture(minimumDistance: 3)
                         .onChanged { value in
                             // DRAG: Shear away from the locked pin point
-                            handleShearingFromPoint(draggedPointIndex: nil, dragValue: value, bounds: bounds, center: center)
+                            let actualBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+                            let actualCenter = CGPoint(x: actualBounds.midX, y: actualBounds.midY)
+                            handleShearingFromPoint(draggedPointIndex: nil, dragValue: value, bounds: actualBounds, center: actualCenter)
                         }
                         .onEnded { _ in
                             finishShear()
@@ -201,10 +207,10 @@ struct ShearHandles: View {
             
         }
         .onAppear {
-            initialBounds = shape.bounds
+            initialBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds  // Use shape bounds for geometric center
             initialTransform = shape.transform
             extractPathPoints()
-            
+
             // Set default locked pin point to center if none is set
             if lockedPinPointIndex == nil && shearAnchorPoint == .zero {
                 setLockedPinPoint(nil) // nil = center point
@@ -337,27 +343,8 @@ struct ShearHandles: View {
         }
         
         // Update center point based on current bounds
-        // CRITICAL FIX: For images with transforms, use the same bounds calculation as transform box handles
-        let bounds: CGRect
-        if ImageContentRegistry.containsImage(shape) && !shape.transform.isIdentity {
-            // For transformed images, calculate bounds the same way as transform box handles
-            let baseBounds = shape.bounds
-            let t = shape.transform
-            let corners = [
-                CGPoint(x: baseBounds.minX, y: baseBounds.minY).applying(t),
-                CGPoint(x: baseBounds.maxX, y: baseBounds.minY).applying(t),
-                CGPoint(x: baseBounds.maxX, y: baseBounds.maxY).applying(t),
-                CGPoint(x: baseBounds.minX, y: baseBounds.maxY).applying(t)
-            ]
-            let minX = corners.map { $0.x }.min() ?? baseBounds.minX
-            let minY = corners.map { $0.y }.min() ?? baseBounds.minY
-            let maxX = corners.map { $0.x }.max() ?? baseBounds.maxX
-            let maxY = corners.map { $0.y }.max() ?? baseBounds.maxY
-            bounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-        } else {
-            // For regular shapes and untransformed images, use existing logic
-            bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-        }
+        // FIX: Use shape's actual bounds for geometric center, not transformed bounds
+        let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
         
         Log.fileOperation("🎯 EXTRACTED \(pathPoints.count) path points + center for shear anchor selection", level: .info)
@@ -388,7 +375,9 @@ struct ShearHandles: View {
                     DragGesture(minimumDistance: 3)
                         .onChanged { value in
                             // DRAG: Shear away from the locked pin point
-                            handleShearingFromPoint(draggedPointIndex: index, dragValue: value, bounds: shape.bounds, center: CGPoint(x: centerPoint.x, y: centerPoint.y))
+                            let actualBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+                            let actualCenter = CGPoint(x: actualBounds.midX, y: actualBounds.midY)
+                            handleShearingFromPoint(draggedPointIndex: index, dragValue: value, bounds: actualBounds, center: actualCenter)
                         }
                         .onEnded { _ in
                             finishShear()
@@ -438,8 +427,8 @@ struct ShearHandles: View {
                 Log.info("🔴 LOCKED PIN: Set to bounds point (fallback to center)", category: .general)
             }
         } else {
-            // Center point
-            shearAnchorPoint = CGPoint(x: centerPoint.x, y: centerPoint.y)
+            // Center point - FIX: Use calculated center that accounts for transforms
+            shearAnchorPoint = calculatedCenter
             // Removed excessive logging during drag operations
         }
     }
