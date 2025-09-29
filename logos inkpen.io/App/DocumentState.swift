@@ -1063,7 +1063,7 @@ class DocumentState: ObservableObject {
     }
 
     // Helper function to convert all text to outlines for export
-    func convertAllTextToOutlinesForExport(_ document: VectorDocument) {
+    private func convertAllTextToOutlinesForExport(_ document: VectorDocument) {
         // Get all text objects
         let allTexts = document.allTextObjects
 
