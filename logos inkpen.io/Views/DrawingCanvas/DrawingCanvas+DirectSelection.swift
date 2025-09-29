@@ -128,7 +128,7 @@ extension DrawingCanvas {
                             if !isShiftPressed {
                                 selectedHandles.removeAll()
                                 selectedPoints.removeAll()
-                                visibleHandles.removeAll()  // Clear visible handles too
+                                visibleHandles.removeAll()
                             }
                             selectedHandles.insert(handleID)
 
@@ -156,7 +156,7 @@ extension DrawingCanvas {
                                     if !isShiftPressed {
                                         selectedHandles.removeAll()
                                         selectedPoints.removeAll()
-                                        visibleHandles.removeAll()  // Clear visible handles too
+                                        visibleHandles.removeAll()
                                     }
                                     selectedHandles.insert(handleID)
 
@@ -185,7 +185,7 @@ extension DrawingCanvas {
                             if !isShiftPressed {
                                 selectedHandles.removeAll()
                                 selectedPoints.removeAll()
-                                visibleHandles.removeAll()  // Clear visible handles too
+                                visibleHandles.removeAll()
                             }
                             selectedHandles.insert(handleID)
 
@@ -214,7 +214,7 @@ extension DrawingCanvas {
                                     if !isShiftPressed {
                                         selectedHandles.removeAll()
                                         selectedPoints.removeAll()
-                                        visibleHandles.removeAll()  // Clear visible handles too
+                                        visibleHandles.removeAll()
                                     }
                                     selectedHandles.insert(handleID)
 
@@ -375,7 +375,7 @@ extension DrawingCanvas {
             Log.error("❌ Clicked empty space - clearing all direct selections", category: .error)
             selectedPoints.removeAll()
             selectedHandles.removeAll()
-            visibleHandles.removeAll()  // Clear visible handles too
+            visibleHandles.removeAll()
             directSelectedShapeIDs.removeAll()
             syncDirectSelectionWithDocument()
         }
@@ -391,7 +391,7 @@ extension DrawingCanvas {
 
     // MARK: - Helper for Coincident Handle Selection
 
-    /// When selecting a handle, make handles at coincident points visible (but not selected)
+    /// When selecting a handle, make OTHER handles at coincident points visible (but not selected)
     private func selectCoincidentHandles(for handleID: HandleID, shape: VectorShape) {
         // Get the anchor point for this handle
         let anchorPoint: CGPoint?
@@ -456,7 +456,7 @@ extension DrawingCanvas {
                 if distance <= tolerance {
                     // This is a coincident point! Add BOTH its handles if they exist
 
-                    // Add incoming handle if it exists
+                    // Add incoming handle if it exists (but NOT if it's the handle we just clicked!)
                     if case .curve(_, _, let control2) = element {
                         let handle2Collapsed = (abs(control2.x - point.x) < 0.1 && abs(control2.y - point.y) < 0.1)
                         if !handle2Collapsed {
@@ -466,12 +466,15 @@ extension DrawingCanvas {
                                 elementIndex: index,
                                 handleType: .control2
                             )
-                            visibleHandles.insert(coincidentHandleID)
-                            Log.info("🔗 Made coincident incoming handle VISIBLE at element \(index)", category: .general)
+                            // DON'T add to visibleHandles if this is the handle we just selected!
+                            if coincidentHandleID != handleID {
+                                visibleHandles.insert(coincidentHandleID)
+                                Log.info("🔗 Made coincident incoming handle VISIBLE (blue, not selected) at element \(index)", category: .general)
+                            }
                         }
                     }
 
-                    // Add outgoing handle if it exists
+                    // Add outgoing handle if it exists (but NOT if it's the handle we just clicked!)
                     let nextIndex = index + 1
                     if nextIndex < shape.path.elements.count {
                         if case .curve(_, let control1, _) = shape.path.elements[nextIndex] {
@@ -483,8 +486,11 @@ extension DrawingCanvas {
                                     elementIndex: nextIndex,
                                     handleType: .control1
                                 )
-                                visibleHandles.insert(coincidentHandleID)
-                                Log.info("🔗 Made coincident outgoing handle VISIBLE at element \(nextIndex)", category: .general)
+                                // DON'T add to visibleHandles if this is the handle we just selected!
+                                if coincidentHandleID != handleID {
+                                    visibleHandles.insert(coincidentHandleID)
+                                    Log.info("🔗 Made coincident outgoing handle VISIBLE (blue, not selected) at element \(nextIndex)", category: .general)
+                                }
                             }
                         }
                     }
