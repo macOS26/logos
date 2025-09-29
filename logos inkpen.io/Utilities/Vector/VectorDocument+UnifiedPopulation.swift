@@ -38,6 +38,10 @@ extension VectorDocument {
     
     /// Sync selection arrays to maintain compatibility with existing code
     func syncSelectionArrays() {
+        // CRITICAL LOGGING: Track when this is called
+        Log.info("⚠️ syncSelectionArrays CALLED - This CLEARS all selections!", category: .general)
+        Log.info("⚠️ BEFORE CLEAR: selectedShapeIDs = \(selectedShapeIDs), selectedTextIDs = \(selectedTextIDs), selectedObjectIDs = \(selectedObjectIDs)", category: .general)
+
         // Update selectedShapeIDs and selectedTextIDs based on selectedObjectIDs
         selectedShapeIDs.removeAll()
         selectedTextIDs.removeAll()

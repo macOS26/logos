@@ -12,7 +12,8 @@ import Combine
 extension VectorDocument {
     func saveToUndoStack() {
         // Log current selection state before saving
-        Log.info("📸 SAVING UNDO: Current state has \(selectedTextIDs.count) text IDs, \(selectedShapeIDs.count) shape IDs", category: .general)
+        Log.info("📸 SAVING UNDO: Current state has \(selectedTextIDs.count) text IDs, \(selectedShapeIDs.count) shape IDs, \(selectedObjectIDs.count) object IDs", category: .general)
+        Log.info("📸 SAVING UNDO: selectedObjectIDs = \(selectedObjectIDs)", category: .general)
         if !selectedTextIDs.isEmpty {
             Log.info("📸 SAVING UNDO: Text IDs being saved: \(selectedTextIDs)", category: .general)
         }
@@ -130,40 +131,13 @@ extension VectorDocument {
         // CRITICAL FIX: Sync legacy arrays to ensure consistency
         syncLegacyArraysAfterUndo()
 
-        // DON'T CALL syncSelectionArrays() HERE! It clears the selections we just restored!
-        // syncSelectionArrays()
+        // CRITICAL FIX: DON'T MESS WITH SELECTIONS - JUST RESTORE WHAT WAS SAVED!
+        // The selection was already restored above (lines 67-69).
+        // All this "validation" and "merging" logic is corrupting the restored selection.
+        // If the selection was saved properly, it should be restored properly. Period.
 
-        // CRITICAL FIX: Force refresh of text selection state after undo
-        // This ensures the Font panel properly recognizes restored text selection
-        if !selectedTextIDs.isEmpty {
-            // Verify text objects still exist and update their selection state
-            let validTextIDs = selectedTextIDs.filter { textID in
-                unifiedObjects.contains { obj in
-                    if case .shape(let shape) = obj.objectType {
-                        return shape.isTextObject && shape.id == textID
-                    }
-                    return false
-                }
-            }
-
-            // Update selection to only valid text IDs
-            if validTextIDs != selectedTextIDs {
-                selectedTextIDs = validTextIDs
-            }
-
-            // If we restored text selection and we're in Font mode, ensure proper state
-            if !validTextIDs.isEmpty && currentTool == .font {
-                // Force the unified selection to be in sync
-                selectedObjectIDs = Set(validTextIDs)
-
-                // Clear shape selection when text is selected in Font mode
-                selectedShapeIDs.removeAll()
-
-                Log.info("🔧 UNDO: Restored \(validTextIDs.count) text selections in Font mode", category: .general)
-            } else if !validTextIDs.isEmpty {
-                Log.info("🔧 UNDO: Restored \(validTextIDs.count) text selections (tool: \(currentTool))", category: .general)
-            }
-        }
+        // LOG FINAL SELECTION STATE AFTER UNDO
+        Log.info("🔧 UNDO FINAL: selectedShapeIDs = \(selectedShapeIDs), selectedTextIDs = \(selectedTextIDs), selectedObjectIDs = \(selectedObjectIDs)", category: .general)
 
         objectWillChange.send()
 

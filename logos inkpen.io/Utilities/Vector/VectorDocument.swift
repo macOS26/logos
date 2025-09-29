@@ -644,7 +644,7 @@ class VectorDocument: ObservableObject, Codable {
     
     // MARK: - Codable Implementation
     enum CodingKeys: CodingKey {
-        case settings, layers, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, currentTool, viewMode, zoomLevel, canvasOffset, unifiedObjects
+        case settings, layers, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, selectedObjectIDs, currentTool, viewMode, zoomLevel, canvasOffset, unifiedObjects
     }
     
     required init(from decoder: Decoder) throws {
@@ -685,7 +685,7 @@ class VectorDocument: ObservableObject, Codable {
         selectedLayerIndex = try? container.decodeIfPresent(Int.self, forKey: .selectedLayerIndex)
         selectedShapeIDs = (try? container.decodeIfPresent(Set<UUID>.self, forKey: .selectedShapeIDs)) ?? []
         selectedTextIDs = (try? container.decodeIfPresent(Set<UUID>.self, forKey: .selectedTextIDs)) ?? []
-        selectedObjectIDs = []
+        selectedObjectIDs = (try? container.decodeIfPresent(Set<UUID>.self, forKey: .selectedObjectIDs)) ?? []
         directSelectedShapeIDs = []
         isHandleScalingActive = false
 
@@ -841,6 +841,7 @@ class VectorDocument: ObservableObject, Codable {
         try container.encode(selectedLayerIndex, forKey: .selectedLayerIndex)
         try container.encode(selectedShapeIDs, forKey: .selectedShapeIDs)
         try container.encode(selectedTextIDs, forKey: .selectedTextIDs)
+        try container.encode(selectedObjectIDs, forKey: .selectedObjectIDs)
     }
     
 
