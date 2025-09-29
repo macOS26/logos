@@ -81,7 +81,7 @@ struct NinePointOriginSelector: View {
 // MARK: - Transformation Controls
 struct TransformationControls: View {
     @ObservedObject var document: VectorDocument
-    @State private var keepProportions: Bool = true
+    @State private var keepProportions: Bool = false
     @State private var xValue: String = ""
     @State private var yValue: String = ""
     @State private var widthValue: String = ""
@@ -187,7 +187,6 @@ struct TransformationControls: View {
                     Image(systemName: keepProportions ? "lock.fill" : "lock.open.fill")
                         .font(.system(size: 15, weight: .medium))  // 25% larger icon
                         .foregroundColor(.white)
-                        .offset(y: 2)  // Lower icon by 2px
                 }
                 .frame(width: 35, height: 30)  // 25% larger click area
             }
