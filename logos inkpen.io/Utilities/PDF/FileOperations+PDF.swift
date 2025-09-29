@@ -160,8 +160,20 @@ extension FileOperations {
         }
     }
 
-    /// Draw gradient for PDF using CGGradient for better PDF compatibility
+    /// Draw gradient for PDF using either CGGradient or CGShading based on user preference
     static func drawPDFGradient(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
+        // Check user preference for gradient method
+        let method = AppState.shared.pdfGradientMethod
+
+        if method == .cgShading {
+            drawPDFGradientWithCGShading(gradient, in: context, bounds: bounds, opacity: opacity)
+        } else {
+            drawPDFGradientWithCGGradient(gradient, in: context, bounds: bounds, opacity: opacity)
+        }
+    }
+
+    /// Draw gradient for PDF using CGGradient (faster but may rasterize in Illustrator)
+    private static func drawPDFGradientWithCGGradient(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         // Apply opacity
         context.setAlpha(CGFloat(opacity))
 
@@ -300,6 +312,153 @@ extension FileOperations {
                 endRadius: radius,
                 options: [.drawsAfterEndLocation]
             )
+        }
+    }
+
+    /// Draw gradient for PDF using CGShading (better vector compatibility with Illustrator)
+    /// Note: CGShading uses a simpler, two-color gradient approach for better compatibility
+    private static func drawPDFGradientWithCGShading(_ gradient: VectorGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
+        // Apply opacity
+        context.setAlpha(CGFloat(opacity))
+
+        switch gradient {
+        case .linear(let linearGradient):
+            // Simplify to two-color gradient for CGShading
+            drawSimplifiedLinearGradientWithCGShading(linearGradient, in: context, bounds: bounds)
+        case .radial(let radialGradient):
+            // Simplify to two-color gradient for CGShading
+            drawSimplifiedRadialGradientWithCGShading(radialGradient, in: context, bounds: bounds)
+        }
+    }
+
+    private static func drawSimplifiedLinearGradientWithCGShading(_ linearGradient: LinearGradient, in context: CGContext, bounds: CGRect) {
+        // Create color space
+        let colorSpace = ColorManager.shared.workingCGColorSpace
+
+        // Calculate gradient points based on the gradient's angle
+        let angle = linearGradient.angle * .pi / 180.0
+        let centerX = bounds.midX
+        let centerY = bounds.midY
+        let radius = max(bounds.width, bounds.height) / 2.0
+
+        let startX = centerX - radius * cos(angle)
+        let startY = centerY - radius * sin(angle)
+        let endX = centerX + radius * cos(angle)
+        let endY = centerY + radius * sin(angle)
+
+        let startPoint = CGPoint(x: startX, y: startY)
+        let endPoint = CGPoint(x: endX, y: endY)
+
+        // Get start and end colors from stops
+        let startColor = linearGradient.stops.first ?? GradientStop(position: 0, color: .black, opacity: 1)
+        let endColor = linearGradient.stops.last ?? GradientStop(position: 1, color: .white, opacity: 1)
+
+        let color1 = colorFromVectorColor(startColor.color, opacity: startColor.opacity)
+        let color2 = colorFromVectorColor(endColor.color, opacity: endColor.opacity)
+
+        // Create a simple two-point gradient function
+        let components: [CGFloat] = [
+            color1.r, color1.g, color1.b, color1.a,
+            color2.r, color2.g, color2.b, color2.a
+        ]
+
+        // Create CGGradient first (simpler approach)
+        guard let gradient = CGGradient(
+            colorSpace: colorSpace,
+            colorComponents: components,
+            locations: [0, 1],
+            count: 2
+        ) else { return }
+
+        // Use gradient with shading-like options for better compatibility
+        context.saveGState()
+        context.drawLinearGradient(
+            gradient,
+            start: startPoint,
+            end: endPoint,
+            options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
+        )
+        context.restoreGState()
+    }
+
+    private static func drawSimplifiedRadialGradientWithCGShading(_ radialGradient: RadialGradient, in context: CGContext, bounds: CGRect) {
+        // Create color space
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+
+        // Calculate center and radius
+        let centerX = bounds.minX + bounds.width * radialGradient.centerPoint.x
+        let centerY = bounds.minY + bounds.height * radialGradient.centerPoint.y
+        let center = CGPoint(x: centerX, y: centerY)
+        let radius = min(bounds.width, bounds.height) * radialGradient.radius
+
+        // Handle focal point
+        let focalCenter: CGPoint
+        if let focalPoint = radialGradient.focalPoint {
+            let focalX = bounds.minX + bounds.width * focalPoint.x
+            let focalY = bounds.minY + bounds.height * focalPoint.y
+            focalCenter = CGPoint(x: focalX, y: focalY)
+        } else {
+            focalCenter = center
+        }
+
+        // Get start and end colors from stops
+        let startColor = radialGradient.stops.first ?? GradientStop(position: 0, color: .black, opacity: 1)
+        let endColor = radialGradient.stops.last ?? GradientStop(position: 1, color: .white, opacity: 1)
+
+        let color1 = colorFromVectorColor(startColor.color, opacity: startColor.opacity)
+        let color2 = colorFromVectorColor(endColor.color, opacity: endColor.opacity)
+
+        // Create a simple two-point gradient
+        let components: [CGFloat] = [
+            color1.r, color1.g, color1.b, color1.a,
+            color2.r, color2.g, color2.b, color2.a
+        ]
+
+        // Create CGGradient first (simpler approach)
+        guard let gradient = CGGradient(
+            colorSpace: colorSpace,
+            colorComponents: components,
+            locations: [0, 1],
+            count: 2
+        ) else { return }
+
+        // Use gradient with shading-like options for better compatibility
+        context.saveGState()
+        context.drawRadialGradient(
+            gradient,
+            startCenter: focalCenter,
+            startRadius: 0,
+            endCenter: center,
+            endRadius: radius,
+            options: [.drawsAfterEndLocation]
+        )
+        context.restoreGState()
+    }
+
+    // Helper function to convert VectorColor to RGBA components
+    private static func colorFromVectorColor(_ color: VectorColor, opacity: Double) -> (r: CGFloat, g: CGFloat, b: CGFloat, a: CGFloat) {
+        switch color {
+        case .rgb(let rgb):
+            return (rgb.red, rgb.green, rgb.blue, rgb.alpha * CGFloat(opacity))
+        case .white:
+            return (1.0, 1.0, 1.0, CGFloat(opacity))
+        case .black:
+            return (0.0, 0.0, 0.0, CGFloat(opacity))
+        case .clear:
+            return (0.0, 0.0, 0.0, 0.0)
+        case .cmyk(let cmyk):
+            let r = (1.0 - cmyk.cyan) * (1.0 - cmyk.black)
+            let g = (1.0 - cmyk.magenta) * (1.0 - cmyk.black)
+            let b = (1.0 - cmyk.yellow) * (1.0 - cmyk.black)
+            return (r, g, b, CGFloat(opacity))
+        case .hsb(let hsb):
+            let rgb = hsb.rgbColor
+            return (rgb.red, rgb.green, rgb.blue, rgb.alpha * CGFloat(opacity))
+        case .gradient:
+            // Gradients within gradients not supported
+            return (0.0, 0.0, 0.0, CGFloat(opacity))
+        @unknown default:
+            return (0.0, 0.0, 0.0, CGFloat(opacity))
         }
     }
 

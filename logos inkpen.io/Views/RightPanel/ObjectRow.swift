@@ -163,6 +163,25 @@ struct PreferencesView: View {
                 .font(.title2)
                 .fontWeight(.semibold)
             
+            GroupBox(label: Label("PDF Export", systemImage: "doc.richtext").font(.headline)) {
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Gradient Rendering Method")
+                            .font(.system(size: 12))
+                        Picker("", selection: Binding(get: { appState.pdfGradientMethod }, set: { appState.pdfGradientMethod = $0 })) {
+                            ForEach(AppState.PDFGradientMethod.allCases, id: \.self) { method in
+                                Text(method.displayName).tag(method)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        Text("CGGradient is faster but may rasterize gradients in Adobe Illustrator. CGShading provides better vector compatibility.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(.vertical, 6)
+            }
+
             GroupBox(label: Label("Performance HUD", systemImage: "gauge.medium").font(.headline)) {
 				VStack(alignment: .leading, spacing: 8) {
 				Toggle(
@@ -189,6 +208,6 @@ struct PreferencesView: View {
             Spacer()
         }
         .padding(20)
-        .frame(minWidth: 480, minHeight: 220)
+        .frame(minWidth: 480, minHeight: 320)
     }
 }

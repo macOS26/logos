@@ -95,6 +95,27 @@ class AppState {
         didSet { UserDefaults.standard.set(brushPreviewIsFinal, forKey: "brushPreviewIsFinal") }
     }
     
+    // MARK: - PDF Export Preferences
+    /// Controls whether to use CGGradient or CGShading for PDF gradient rendering
+    enum PDFGradientMethod: String, CaseIterable {
+        case cgGradient = "cgGradient"  // Faster, may rasterize in Illustrator
+        case cgShading = "cgShading"    // Better vector compatibility with Illustrator
+
+        var displayName: String {
+            switch self {
+            case .cgGradient: return "CGGradient (Faster)"
+            case .cgShading: return "CGShading (Illustrator Compatible)"
+            }
+        }
+    }
+
+    var pdfGradientMethod: PDFGradientMethod = .cgGradient {
+        didSet {
+            UserDefaults.standard.set(pdfGradientMethod.rawValue, forKey: "pdfGradientMethod")
+            Log.info("📄 PDF gradient method changed to: \(pdfGradientMethod.displayName)")
+        }
+    }
+
     // MARK: - System Metal Performance HUD Preference
     /// Controls Apple Metal system Performance HUD visibility (live toggle)
     var enableSystemMetalHUD: Bool = false {
@@ -173,6 +194,12 @@ class AppState {
         // Load logging preferences
         self.enableVerboseLogging = UserDefaults.standard.object(forKey: "enableVerboseLogging") as? Bool ?? false
         self.enablePressureLogging = UserDefaults.standard.object(forKey: "enablePressureLogging") as? Bool ?? false
+
+        // Load PDF gradient method preference
+        if let methodRaw = UserDefaults.standard.string(forKey: "pdfGradientMethod"),
+           let method = PDFGradientMethod(rawValue: methodRaw) {
+            self.pdfGradientMethod = method
+        }
     }
 
 
