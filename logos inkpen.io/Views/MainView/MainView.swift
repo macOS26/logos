@@ -8,6 +8,7 @@
 import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
+import Combine
 
 struct MainView: View {
     @StateObject private var document = TemplateManager.shared.createBlankDocument()
@@ -284,15 +285,11 @@ struct MainView: View {
             let fileExtension = url.pathExtension.lowercased()
             switch fileExtension {
             case "svg":
-                do {
-                    try FileOperations.exportToSVG(self.document, url: url)
-                    Log.info("✅ Exported to SVG: \(url.path)", category: .fileOperations)
-                } catch {
-                    Log.error("❌ SVG export failed: \(error)", category: .error)
-                }
+                // ALWAYS convert text to outlines for Save As SVG
+                self.saveSVGWithTextToOutlines(url: url)
             case "pdf":
-                // FIXED: Use the same export code as Export PDF menu item with background toggle
-                self.showPDFExportWithBackgroundOption(saveAsURL: url)
+                // ALWAYS convert text to outlines for Save As PDF
+                self.savePDFWithTextToOutlines(url: url)
             default: // inkpen
                 self.saveDocumentToURL(url)
             }
@@ -444,6 +441,122 @@ struct MainView: View {
             alert.informativeText = error.localizedDescription
             alert.alertStyle = .critical
             alert.runModal()
+        }
+    }
+
+    // MARK: - Save As Helpers (Always Convert Text to Outlines)
+
+    private func saveSVGWithTextToOutlines(url: URL) {
+        Task {
+            do {
+                var svgContent: String
+
+                // Check if we have text that needs conversion
+                if !document.allTextObjects.isEmpty {
+                    // Save current document state
+                    let savedData = try JSONEncoder().encode(document)
+                    let savedState = try JSONDecoder().decode(VectorDocument.self, from: savedData)
+
+                    // Convert all text to outlines
+                    await MainActor.run {
+                        Log.info("📝 Save As SVG: Converting all text to outlines...", category: .fileOperations)
+                        self.documentState.convertAllTextToOutlinesForExport(document)
+                    }
+
+                    // Generate SVG with outlined text (no background for Save As)
+                    svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: false)
+
+                    // Restore original document state
+                    await MainActor.run {
+                        Log.info("↩️ Restoring original document state after SVG save", category: .fileOperations)
+                        // Copy back the saved state to the original document
+                        document.unifiedObjects = savedState.unifiedObjects
+                        document.layers = savedState.layers
+                        document.selectedObjectIDs = savedState.selectedObjectIDs
+                        document.selectedTextIDs = savedState.selectedTextIDs
+                        document.selectedShapeIDs = savedState.selectedShapeIDs
+                        document.objectWillChange.send()
+                    }
+                } else {
+                    // No text to convert, export normally
+                    svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: false)
+                }
+
+                // Write to file
+                try svgContent.write(to: url, atomically: true, encoding: .utf8)
+
+                await MainActor.run {
+                    Log.info("✅ Saved SVG with text converted to outlines: \(url.path)", category: .fileOperations)
+                }
+            } catch {
+                await MainActor.run {
+                    Log.error("❌ SVG save failed: \(error)", category: .error)
+
+                    // Show error alert
+                    let alert = NSAlert()
+                    alert.messageText = "SVG Save Failed"
+                    alert.informativeText = error.localizedDescription
+                    alert.alertStyle = .critical
+                    alert.runModal()
+                }
+            }
+        }
+    }
+
+    private func savePDFWithTextToOutlines(url: URL) {
+        Task {
+            do {
+                var pdfData: Data
+
+                // Check if we have text that needs conversion
+                if !document.allTextObjects.isEmpty {
+                    // Save current document state
+                    let savedData = try JSONEncoder().encode(document)
+                    let savedState = try JSONDecoder().decode(VectorDocument.self, from: savedData)
+
+                    // Convert all text to outlines
+                    await MainActor.run {
+                        Log.info("📝 Save As PDF: Converting all text to outlines...", category: .fileOperations)
+                        self.documentState.convertAllTextToOutlinesForExport(document)
+                    }
+
+                    // Generate PDF with outlined text (no background, no CMYK for Save As)
+                    pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: false)
+
+                    // Restore original document state
+                    await MainActor.run {
+                        Log.info("↩️ Restoring original document state after PDF save", category: .fileOperations)
+                        // Copy back the saved state to the original document
+                        document.unifiedObjects = savedState.unifiedObjects
+                        document.layers = savedState.layers
+                        document.selectedObjectIDs = savedState.selectedObjectIDs
+                        document.selectedTextIDs = savedState.selectedTextIDs
+                        document.selectedShapeIDs = savedState.selectedShapeIDs
+                        document.objectWillChange.send()
+                    }
+                } else {
+                    // No text to convert, export normally
+                    pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: false)
+                }
+
+                // Write to file
+                try pdfData.write(to: url)
+
+                await MainActor.run {
+                    Log.info("✅ Saved PDF with text converted to outlines: \(url.path)", category: .fileOperations)
+                }
+            } catch {
+                await MainActor.run {
+                    Log.error("❌ PDF save failed: \(error)", category: .error)
+
+                    // Show error alert
+                    let alert = NSAlert()
+                    alert.messageText = "PDF Save Failed"
+                    alert.informativeText = error.localizedDescription
+                    alert.alertStyle = .critical
+                    alert.runModal()
+                }
+            }
         }
     }
 
