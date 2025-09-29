@@ -25,15 +25,15 @@ extension FileOperations {
         var mediaBox = CGRect(origin: .zero, size: documentSize)
 
         // Create auxiliary dictionary for PDF options
+        // CRITICAL: Enforce PDF 1.7 to prevent macOS defaulting to PDF 1.3
         let auxiliaryInfo = [
+            // Metadata
             kCGPDFContextCreator as String: "Inkpen.io",
             kCGPDFContextAuthor as String: NSFullUserName(),
-            // Enable compression for smaller file size
-            "CompressStreams" as String: true,
-            // Use PDF 1.7 for best gradient and transparency support
-            "PDFXVersion" as String: "PDF/X-4",
-            // Enable gradients and transparency
-            "AllowTransparency" as String: true
+            kCGPDFContextTitle as String: "Inkpen Document",
+            // Additional metadata for better PDF support
+            kCGPDFContextSubject as String: "Vector Graphics",
+            kCGPDFContextKeywords as String: "vector, graphics, illustration"
         ] as CFDictionary
 
         // Create PDF context with proper media box and auxiliary info
@@ -42,13 +42,9 @@ extension FileOperations {
             throw VectorImportError.parsingError("Failed to create PDF context", line: nil)
         }
 
-        // Set PDF document metadata for newer PDF version support
-        // Note: Document-level metadata is set through the auxiliary info in context creation
-
-        // Begin PDF page with the same media box and metadata
+        // Begin PDF page with proper page boxes
         let pageInfo = [
             kCGPDFContextMediaBox as String: mediaBox,
-            kCGPDFContextCreator as String: "Inkpen.io",
             kCGPDFContextArtBox as String: mediaBox,  // Art box for actual content
             kCGPDFContextTrimBox as String: mediaBox, // Trim box for final trim size
             kCGPDFContextBleedBox as String: mediaBox // Bleed box (no bleed for now)

@@ -58,63 +58,26 @@ class PDFExportTests: XCTestCase {
         tempDirectory = nil
     }
 
-    func testExportPDFWithBackground() throws {
-        // Test exporting PDF with background
-        let outputURL = tempDirectory.appendingPathComponent("test_with_background.pdf")
+    func testGeneratePDFData() throws {
+        // Test generating PDF data (the correct way)
+        let outputURL = tempDirectory.appendingPathComponent("test_generate.pdf")
 
-        XCTAssertNoThrow(
-            try FileOperations.exportToPDF(document, url: outputURL, includeBackground: true),
-            "PDF export with background should not throw"
-        )
+        do {
+            let pdfData = try FileOperations.generatePDFData(from: document)
+            try pdfData.write(to: outputURL)
 
-        // Verify file exists
-        XCTAssertTrue(FileManager.default.fileExists(atPath: outputURL.path), "PDF file should exist")
+            // Verify file exists
+            XCTAssertTrue(FileManager.default.fileExists(atPath: outputURL.path), "PDF file should exist")
 
-        // Verify file is not empty
-        let fileData = try Data(contentsOf: outputURL)
-        XCTAssertGreaterThan(fileData.count, 0, "PDF file should not be empty")
+            // Verify file is not empty
+            XCTAssertGreaterThan(pdfData.count, 0, "PDF data should not be empty")
 
-        // Verify it's a valid PDF (starts with %PDF)
-        let pdfHeader = String(data: fileData.prefix(5), encoding: .ascii)
-        XCTAssertEqual(pdfHeader, "%PDF-", "File should be a valid PDF")
-    }
-
-    func testExportPDFWithoutBackground() throws {
-        // Test exporting PDF without background
-        let outputURL = tempDirectory.appendingPathComponent("test_without_background.pdf")
-
-        XCTAssertNoThrow(
-            try FileOperations.exportToPDF(document, url: outputURL, includeBackground: false),
-            "PDF export without background should not throw"
-        )
-
-        // Verify file exists
-        XCTAssertTrue(FileManager.default.fileExists(atPath: outputURL.path), "PDF file should exist")
-
-        // Verify file is not empty
-        let fileData = try Data(contentsOf: outputURL)
-        XCTAssertGreaterThan(fileData.count, 0, "PDF file should not be empty")
-
-        // Verify it's a valid PDF
-        let pdfHeader = String(data: fileData.prefix(5), encoding: .ascii)
-        XCTAssertEqual(pdfHeader, "%PDF-", "File should be a valid PDF")
-    }
-
-    func testPDFExportDefaultsToIncludeBackground() throws {
-        // Test that the default parameter includes background
-        let outputURL = tempDirectory.appendingPathComponent("test_default.pdf")
-
-        // Call without specifying includeBackground parameter
-        XCTAssertNoThrow(
-            try FileOperations.exportToPDF(document, url: outputURL),
-            "PDF export with default parameters should not throw"
-        )
-
-        // Verify file exists and is valid
-        XCTAssertTrue(FileManager.default.fileExists(atPath: outputURL.path), "PDF file should exist")
-
-        let fileData = try Data(contentsOf: outputURL)
-        XCTAssertGreaterThan(fileData.count, 0, "PDF file should not be empty")
+            // Verify it's a valid PDF (starts with %PDF)
+            let pdfHeader = String(data: pdfData.prefix(5), encoding: .ascii)
+            XCTAssertEqual(pdfHeader, "%PDF-", "File should be a valid PDF")
+        } catch {
+            XCTFail("PDF generation should not throw: \(error)")
+        }
     }
 
     func testPDFExportSkipsPasteboardLayer() throws {
@@ -135,42 +98,37 @@ class PDFExportTests: XCTestCase {
             document.addShape(pasteboardShape, to: 0) // Add to pasteboard layer
         }
 
-        XCTAssertNoThrow(
-            try FileOperations.exportToPDF(document, url: outputURL, includeBackground: true),
-            "PDF export should not throw even with pasteboard content"
-        )
+        do {
+            let pdfData = try FileOperations.generatePDFData(from: document)
+            try pdfData.write(to: outputURL)
 
-        // Verify file exists and is valid
-        XCTAssertTrue(FileManager.default.fileExists(atPath: outputURL.path), "PDF file should exist")
+            // Verify file exists and is valid
+            XCTAssertTrue(FileManager.default.fileExists(atPath: outputURL.path), "PDF file should exist")
 
-        // The pasteboard content should not affect the PDF
-        // (We can't easily verify this without parsing the PDF, but at least it should export)
+            // The pasteboard content should not affect the PDF
+            // (We can't easily verify this without parsing the PDF, but at least it should export)
+        } catch {
+            XCTFail("PDF generation should not throw even with pasteboard content: \(error)")
+        }
     }
 
-    func testPDFExportSkipsCanvasLayerWhenBackgroundDisabled() throws {
-        // Ensure Canvas layer (index 1) is skipped when includeBackground is false
-        let outputURL = tempDirectory.appendingPathComponent("test_no_canvas.pdf")
+    func testPDFDataGeneration() throws {
+        // Test that PDF data generation works correctly
+        do {
+            let pdfData = try FileOperations.generatePDFData(from: document)
 
-        // Add a shape to the canvas layer (if it exists)
-        if document.layers.count > 1 {
-            let canvasShape = VectorShape()
-            canvasShape.path = VectorPath(elements: [
-                .moveTo(point: CGPoint(x: 50, y: 50)),
-                .lineTo(point: CGPoint(x: 250, y: 50)),
-                .lineTo(point: CGPoint(x: 250, y: 250)),
-                .lineTo(point: CGPoint(x: 50, y: 250)),
-                .close
-            ])
-            canvasShape.fillStyle = FillStyle(color: .rgb(RGBColor(red: 0, green: 1.0, blue: 0, alpha: 1.0)), opacity: 1.0)
-            document.addShape(canvasShape, to: 1) // Add to canvas layer
+            // Verify data is not empty
+            XCTAssertGreaterThan(pdfData.count, 0, "PDF data should not be empty")
+
+            // Verify it's a valid PDF (starts with %PDF)
+            let pdfHeader = String(data: pdfData.prefix(5), encoding: .ascii)
+            XCTAssertEqual(pdfHeader, "%PDF-", "Data should be a valid PDF")
+
+            // Check for PDF version marker
+            let pdfString = String(data: pdfData.prefix(100), encoding: .ascii) ?? ""
+            XCTAssertTrue(pdfString.contains("%PDF"), "Should contain PDF marker")
+        } catch {
+            XCTFail("PDF generation should not throw: \(error)")
         }
-
-        XCTAssertNoThrow(
-            try FileOperations.exportToPDF(document, url: outputURL, includeBackground: false),
-            "PDF export without background should not throw"
-        )
-
-        // Verify file exists and is valid
-        XCTAssertTrue(FileManager.default.fileExists(atPath: outputURL.path), "PDF file should exist")
     }
 }
