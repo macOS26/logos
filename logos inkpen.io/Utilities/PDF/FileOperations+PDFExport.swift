@@ -51,6 +51,15 @@ extension FileOperations {
         ] as [String : Any]
         pdfContext.beginPDFPage(pageInfo as CFDictionary)
 
+        // Set PDF compatibility by using features that require PDF 1.4+
+        // Transparency groups require PDF 1.4
+        pdfContext.setBlendMode(.normal)
+        pdfContext.setShouldAntialias(true)
+        pdfContext.setAllowsAntialiasing(true)
+
+        // Enable interpolation for better gradient rendering
+        pdfContext.interpolationQuality = .high
+
         // Flip Y-axis to match standard coordinate system
         pdfContext.translateBy(x: 0, y: documentSize.height)
         pdfContext.scaleBy(x: 1.0, y: -1.0)
