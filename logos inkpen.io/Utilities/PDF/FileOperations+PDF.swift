@@ -437,27 +437,22 @@ extension FileOperations {
 
     // Helper function to convert VectorColor to RGBA components
     private static func colorFromVectorColor(_ color: VectorColor, opacity: Double) -> (r: CGFloat, g: CGFloat, b: CGFloat, a: CGFloat) {
-        switch color {
-        case .rgb(let rgb):
-            return (rgb.red, rgb.green, rgb.blue, rgb.alpha * CGFloat(opacity))
-        case .white:
-            return (1.0, 1.0, 1.0, CGFloat(opacity))
-        case .black:
-            return (0.0, 0.0, 0.0, CGFloat(opacity))
-        case .clear:
-            return (0.0, 0.0, 0.0, 0.0)
-        case .cmyk(let cmyk):
-            let r = (1.0 - cmyk.cyan) * (1.0 - cmyk.black)
-            let g = (1.0 - cmyk.magenta) * (1.0 - cmyk.black)
-            let b = (1.0 - cmyk.yellow) * (1.0 - cmyk.black)
-            return (r, g, b, CGFloat(opacity))
-        case .hsb(let hsb):
-            let rgb = hsb.rgbColor
-            return (rgb.red, rgb.green, rgb.blue, rgb.alpha * CGFloat(opacity))
-        case .gradient:
-            // Gradients within gradients not supported
-            return (0.0, 0.0, 0.0, CGFloat(opacity))
-        @unknown default:
+        // Use VectorColor's built-in cgColor property which handles all conversions through ColorManager
+        let cgColor = color.cgColor
+
+        // Get components from CGColor
+        if let components = cgColor.components, components.count >= 3 {
+            // RGB or RGBA color space
+            if components.count == 4 {
+                return (components[0], components[1], components[2], components[3] * CGFloat(opacity))
+            } else {
+                return (components[0], components[1], components[2], CGFloat(opacity))
+            }
+        } else if let components = cgColor.components, components.count == 2 {
+            // Grayscale color space
+            return (components[0], components[0], components[0], components[1] * CGFloat(opacity))
+        } else {
+            // Fallback to black
             return (0.0, 0.0, 0.0, CGFloat(opacity))
         }
     }
