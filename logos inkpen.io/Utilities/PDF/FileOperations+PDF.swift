@@ -303,23 +303,8 @@ extension FileOperations {
         }
     }
 
-    static func exportToPDF(_ document: VectorDocument, url: URL, includeBackground: Bool = true, convertTextToOutlines: Bool = false) throws {
+    static func exportToPDF(_ document: VectorDocument, url: URL, includeBackground: Bool = true) throws {
         Log.info("📄 Exporting document to PDF: \(url.path)", category: .general)
-
-        // If converting text to outlines, save state, convert, then restore after export
-        if convertTextToOutlines && !document.allTextObjects.isEmpty {
-            Log.info("📝 Converting text to outlines for PDF export", category: .general)
-
-            // Save current state
-            document.saveToUndoStack()
-
-            // Select all text objects
-            document.selectedTextIDs = Set(document.allTextObjects.map { $0.id })
-            document.selectedObjectIDs = Set(document.allTextObjects.map { $0.id })
-
-            // Convert text to outlines
-            document.convertSelectedTextToOutlines()
-        }
 
         // Create PDF context
         let pageSize = document.settings.sizeInPoints
@@ -370,13 +355,11 @@ extension FileOperations {
             context.restoreGState()
         }
 
-        // Draw text objects (only if not converted to outlines)
-        if !convertTextToOutlines {
-            document.forEachTextInOrder { text in
-                if !text.isVisible { return }
+        // Draw text objects
+        document.forEachTextInOrder { text in
+            if !text.isVisible { return }
 
-                drawTextInPDF(text, context: context)
-            }
+            drawTextInPDF(text, context: context)
         }
 
         // End PDF page
@@ -384,12 +367,6 @@ extension FileOperations {
 
         // Close PDF context
         context.closePDF()
-
-        // If we converted text to outlines, undo to restore original text
-        if convertTextToOutlines && !document.undoStack.isEmpty {
-            document.undo()
-            Log.info("📝 Restored original text after PDF export", category: .general)
-        }
 
         Log.info("✅ Successfully exported PDF document", category: .fileOperations)
     }

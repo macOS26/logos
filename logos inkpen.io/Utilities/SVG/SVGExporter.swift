@@ -15,9 +15,9 @@ class SVGExporter {
     private init() {}
     
     /// Export document to standard SVG (72 DPI)
-    func exportToSVG(_ document: VectorDocument, includeBackground: Bool = true, textConverted: Bool = false) throws -> String {
+    func exportToSVG(_ document: VectorDocument, includeBackground: Bool = true) throws -> String {
         let dpiScale: CGFloat = 1.0  // Standard 72 DPI
-        return try exportSVGWithScale(document, dpiScale: dpiScale, isAutoDesk: false, includeBackground: includeBackground, textConverted: textConverted)
+        return try exportSVGWithScale(document, dpiScale: dpiScale, isAutoDesk: false, includeBackground: includeBackground)
     }
     
     /// Export document to AutoDesk SVG (96 DPI)
@@ -27,7 +27,7 @@ class SVGExporter {
     }
     
     /// Core SVG export function with DPI scaling
-    private func exportSVGWithScale(_ document: VectorDocument, dpiScale: CGFloat, isAutoDesk: Bool, includeBackground: Bool = true, textConverted: Bool = false) throws -> String {
+    private func exportSVGWithScale(_ document: VectorDocument, dpiScale: CGFloat, isAutoDesk: Bool, includeBackground: Bool = true) throws -> String {
         // Get document dimensions in points (72 DPI)
         let originalSize = document.settings.sizeInPoints
         
@@ -91,21 +91,19 @@ class SVGExporter {
             svg += "</g>\n"
         }
         
-        // Export text objects (only if not converted to outlines)
-        if !textConverted {
-            for unifiedObject in document.unifiedObjects {
-                if case .shape(let shape) = unifiedObject.objectType,
-                   shape.isTextObject && shape.isVisible {
-                    // Skip text objects on Pasteboard (always) or Canvas (if not including background)
-                    let layer = document.layers[safe: unifiedObject.layerIndex]
-                    if layer?.name == "Pasteboard" {
-                        continue // ALWAYS skip Pasteboard
-                    }
-                    if !includeBackground && layer?.name == "Canvas" {
-                        continue // Skip Canvas only if not including background
-                    }
-                    svg += exportTextShape(shape, dpiScale: 1.0)
+        // Export text objects
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType,
+               shape.isTextObject && shape.isVisible {
+                // Skip text objects on Pasteboard (always) or Canvas (if not including background)
+                let layer = document.layers[safe: unifiedObject.layerIndex]
+                if layer?.name == "Pasteboard" {
+                    continue // ALWAYS skip Pasteboard
                 }
+                if !includeBackground && layer?.name == "Canvas" {
+                    continue // Skip Canvas only if not including background
+                }
+                svg += exportTextShape(shape, dpiScale: 1.0)
             }
         }
         
