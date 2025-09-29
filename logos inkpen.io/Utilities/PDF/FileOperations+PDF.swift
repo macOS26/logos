@@ -332,6 +332,10 @@ extension FileOperations {
     }
 
     private static func drawSimplifiedLinearGradientWithCGShading(_ linearGradient: LinearGradient, in context: CGContext, bounds: CGRect) {
+        // For now, use the same implementation as CGGradient but with ALL stops preserved
+        // Real CGShading would require C-style callbacks which are complex in Swift
+        // This ensures we at least preserve all colors and stops correctly
+
         // Create color space
         let colorSpace = ColorManager.shared.workingCGColorSpace
 
@@ -349,28 +353,51 @@ extension FileOperations {
         let startPoint = CGPoint(x: startX, y: startY)
         let endPoint = CGPoint(x: endX, y: endY)
 
-        // Get start and end colors from stops
-        let startColor = linearGradient.stops.first ?? GradientStop(position: 0, color: .black, opacity: 1)
-        let endColor = linearGradient.stops.last ?? GradientStop(position: 1, color: .white, opacity: 1)
+        // Use ALL gradient stops, not just first and last
+        var colors: [CGFloat] = []
+        var locations: [CGFloat] = []
 
-        let color1 = colorFromVectorColor(startColor.color, opacity: startColor.opacity)
-        let color2 = colorFromVectorColor(endColor.color, opacity: endColor.opacity)
+        for stop in linearGradient.stops {
+            locations.append(stop.position)
 
-        // Create a simple two-point gradient function
-        let components: [CGFloat] = [
-            color1.r, color1.g, color1.b, color1.a,
-            color2.r, color2.g, color2.b, color2.a
-        ]
+            // Use the cgColor property to get proper color conversion
+            let cgColor = stop.color.cgColor
+            if let components = cgColor.components {
+                if components.count >= 3 {
+                    // RGB or RGBA
+                    colors.append(contentsOf: [
+                        components[0],
+                        components[1],
+                        components[2],
+                        (components.count > 3 ? components[3] : 1.0) * CGFloat(stop.opacity)
+                    ])
+                } else if components.count == 2 {
+                    // Grayscale
+                    colors.append(contentsOf: [
+                        components[0],
+                        components[0],
+                        components[0],
+                        components[1] * CGFloat(stop.opacity)
+                    ])
+                } else {
+                    // Fallback
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+                }
+            } else {
+                // Fallback
+                colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+            }
+        }
 
-        // Create CGGradient first (simpler approach)
+        // Create CGGradient with all stops
         guard let gradient = CGGradient(
             colorSpace: colorSpace,
-            colorComponents: components,
-            locations: [0, 1],
-            count: 2
+            colorComponents: colors,
+            locations: locations,
+            count: locations.count
         ) else { return }
 
-        // Use gradient with shading-like options for better compatibility
+        // Draw with extended options for better PDF compatibility
         context.saveGState()
         context.drawLinearGradient(
             gradient,
@@ -382,8 +409,11 @@ extension FileOperations {
     }
 
     private static func drawSimplifiedRadialGradientWithCGShading(_ radialGradient: RadialGradient, in context: CGContext, bounds: CGRect) {
+        // For now, use the same implementation as CGGradient but with ALL stops preserved
+        // Real CGShading would require C-style callbacks which are complex in Swift
+
         // Create color space
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let colorSpace = ColorManager.shared.workingCGColorSpace
 
         // Calculate center and radius
         let centerX = bounds.minX + bounds.width * radialGradient.centerPoint.x
@@ -401,28 +431,51 @@ extension FileOperations {
             focalCenter = center
         }
 
-        // Get start and end colors from stops
-        let startColor = radialGradient.stops.first ?? GradientStop(position: 0, color: .black, opacity: 1)
-        let endColor = radialGradient.stops.last ?? GradientStop(position: 1, color: .white, opacity: 1)
+        // Use ALL gradient stops, not just first and last
+        var colors: [CGFloat] = []
+        var locations: [CGFloat] = []
 
-        let color1 = colorFromVectorColor(startColor.color, opacity: startColor.opacity)
-        let color2 = colorFromVectorColor(endColor.color, opacity: endColor.opacity)
+        for stop in radialGradient.stops {
+            locations.append(stop.position)
 
-        // Create a simple two-point gradient
-        let components: [CGFloat] = [
-            color1.r, color1.g, color1.b, color1.a,
-            color2.r, color2.g, color2.b, color2.a
-        ]
+            // Use the cgColor property to get proper color conversion
+            let cgColor = stop.color.cgColor
+            if let components = cgColor.components {
+                if components.count >= 3 {
+                    // RGB or RGBA
+                    colors.append(contentsOf: [
+                        components[0],
+                        components[1],
+                        components[2],
+                        (components.count > 3 ? components[3] : 1.0) * CGFloat(stop.opacity)
+                    ])
+                } else if components.count == 2 {
+                    // Grayscale
+                    colors.append(contentsOf: [
+                        components[0],
+                        components[0],
+                        components[0],
+                        components[1] * CGFloat(stop.opacity)
+                    ])
+                } else {
+                    // Fallback
+                    colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+                }
+            } else {
+                // Fallback
+                colors.append(contentsOf: [0.0, 0.0, 0.0, CGFloat(stop.opacity)])
+            }
+        }
 
-        // Create CGGradient first (simpler approach)
+        // Create CGGradient with all stops
         guard let gradient = CGGradient(
             colorSpace: colorSpace,
-            colorComponents: components,
-            locations: [0, 1],
-            count: 2
+            colorComponents: colors,
+            locations: locations,
+            count: locations.count
         ) else { return }
 
-        // Use gradient with shading-like options for better compatibility
+        // Draw with appropriate options for PDF compatibility
         context.saveGState()
         context.drawRadialGradient(
             gradient,
