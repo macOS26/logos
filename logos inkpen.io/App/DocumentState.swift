@@ -277,8 +277,15 @@ class DocumentState: ObservableObject {
         panel.isExtensionHidden = false  // Show .svg extension
         panel.message = "Export as SVG (Scalable Vector Graphics)"
 
-        // Create accessory view for background option
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 60))
+        // Create accessory view for text to outlines and background options
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 90))
+
+        // Convert text to outlines checkbox (at top)
+        let textToOutlinesCheckbox = NSButton(checkboxWithTitle: "Convert text to outlines",
+                                               target: nil, action: nil)
+        textToOutlinesCheckbox.frame = NSRect(x: 20, y: 50, width: 250, height: 20)
+        textToOutlinesCheckbox.state = .on // Default to converting text to outlines
+        accessoryView.addSubview(textToOutlinesCheckbox)
 
         // Background checkbox
         let bgCheckbox = NSButton(checkboxWithTitle: "Include background",
@@ -292,19 +299,50 @@ class DocumentState: ObservableObject {
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
 
-            // Get background option
+            // Get export options
             let includeBackground = bgCheckbox.state == .on
+            let convertTextToOutlines = textToOutlinesCheckbox.state == .on
 
             Task {
                 do {
-                    // Generate SVG content with background option
-                    let svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: includeBackground)
+                    var svgContent: String
+
+                    // If converting text to outlines, create a temporary copy and convert
+                    if convertTextToOutlines && !document.allTextObjects.isEmpty {
+                        // Save current document state
+                        let savedData = try JSONEncoder().encode(document)
+                        let savedState = try JSONDecoder().decode(VectorDocument.self, from: savedData)
+
+                        // Convert all text to outlines
+                        await MainActor.run {
+                            Log.info("📝 Converting all text to outlines for SVG export...", category: .fileOperations)
+                            self.convertAllTextToOutlinesForExport(document)
+                        }
+
+                        // Generate SVG with outlined text
+                        svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: includeBackground)
+
+                        // Restore original document state
+                        await MainActor.run {
+                            Log.info("↩️ Restoring original document state after SVG export", category: .fileOperations)
+                            // Copy back the saved state to the original document
+                            document.unifiedObjects = savedState.unifiedObjects
+                            document.layers = savedState.layers
+                            document.selectedObjectIDs = savedState.selectedObjectIDs
+                            document.selectedTextIDs = savedState.selectedTextIDs
+                            document.selectedShapeIDs = savedState.selectedShapeIDs
+                            document.objectWillChange.send()
+                        }
+                    } else {
+                        // No text conversion needed, export normally
+                        svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: includeBackground)
+                    }
 
                     // Write to file
                     try svgContent.write(to: url, atomically: true, encoding: .utf8)
 
                     await MainActor.run {
-                        Log.info("✅ Exported SVG to: \(url.path) (background: \(includeBackground))", category: .fileOperations)
+                        Log.info("✅ Exported SVG to: \(url.path) (text to outlines: \(convertTextToOutlines))", category: .fileOperations)
                     }
                 } catch {
                     await MainActor.run {
@@ -334,8 +372,15 @@ class DocumentState: ObservableObject {
         panel.isExtensionHidden = false  // Show .pdf extension
         panel.message = "Export as PDF (Portable Document Format)"
 
-        // Create accessory view for background and CMYK options
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 90))
+        // Create accessory view for text to outlines, CMYK, and background options
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 120))
+
+        // Convert text to outlines checkbox (at top)
+        let textToOutlinesCheckbox = NSButton(checkboxWithTitle: "Convert text to outlines",
+                                               target: nil, action: nil)
+        textToOutlinesCheckbox.frame = NSRect(x: 20, y: 80, width: 250, height: 20)
+        textToOutlinesCheckbox.state = .on // Default to converting text to outlines
+        accessoryView.addSubview(textToOutlinesCheckbox)
 
         // CMYK checkbox
         let cmykCheckbox = NSButton(checkboxWithTitle: "Use CMYK color space",
@@ -358,18 +403,49 @@ class DocumentState: ObservableObject {
 
             // Get export options
             let useCMYK = cmykCheckbox.state == .on
+            let convertTextToOutlines = textToOutlinesCheckbox.state == .on
             _ = bgCheckbox.state // TODO: Update generatePDFData to support includeBackground parameter
 
             Task {
                 do {
-                    // Use appropriate PDF generation based on CMYK option
-                    let pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK)
+                    var pdfData: Data
+
+                    // If converting text to outlines, create a temporary copy and convert
+                    if convertTextToOutlines && !document.allTextObjects.isEmpty {
+                        // Save current document state
+                        let savedData = try JSONEncoder().encode(document)
+                        let savedState = try JSONDecoder().decode(VectorDocument.self, from: savedData)
+
+                        // Convert all text to outlines
+                        await MainActor.run {
+                            Log.info("📝 Converting all text to outlines for PDF export...", category: .fileOperations)
+                            self.convertAllTextToOutlinesForExport(document)
+                        }
+
+                        // Generate PDF with outlined text
+                        pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK)
+
+                        // Restore original document state
+                        await MainActor.run {
+                            Log.info("↩️ Restoring original document state after PDF export", category: .fileOperations)
+                            // Copy back the saved state to the original document
+                            document.unifiedObjects = savedState.unifiedObjects
+                            document.layers = savedState.layers
+                            document.selectedObjectIDs = savedState.selectedObjectIDs
+                            document.selectedTextIDs = savedState.selectedTextIDs
+                            document.selectedShapeIDs = savedState.selectedShapeIDs
+                            document.objectWillChange.send()
+                        }
+                    } else {
+                        // No text conversion needed, export normally
+                        pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK)
+                    }
 
                     // Write the PDF data to file
                     try pdfData.write(to: url)
 
                     await MainActor.run {
-                        Log.info("✅ Exported PDF to: \(url.path) using Save As PDF code", category: .fileOperations)
+                        Log.info("✅ Exported PDF to: \(url.path) (text to outlines: \(convertTextToOutlines))", category: .fileOperations)
                     }
                 } catch {
                     await MainActor.run {
@@ -984,5 +1060,35 @@ class DocumentState: ObservableObject {
         ToolGroupManager.shared.handleKeyboardToolSwitch(tool: tool)
         
         Log.info("🛠️ MENU: Switched from \(previousTool.rawValue) to \(tool.rawValue)", category: .general)
+    }
+
+    // Helper function to convert all text to outlines for export
+    private func convertAllTextToOutlinesForExport(_ document: VectorDocument) {
+        // Get all text objects
+        let allTexts = document.allTextObjects
+
+        guard !allTexts.isEmpty else { return }
+
+        // Convert each text object to outlines
+        for textObj in allTexts {
+            // Use ProfessionalTextCanvas convertToPath logic
+            let viewModel = ProfessionalTextViewModel(textObject: textObj, document: document)
+
+            // Call the word-by-word convertToPath method
+            viewModel.convertToPath()
+        }
+
+        // Remove all original text objects from unified system
+        document.unifiedObjects.removeAll { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject
+            }
+            return false
+        }
+
+        // Clear text selection
+        document.selectedTextIDs.removeAll()
+
+        Log.info("✅ Converted \(allTexts.count) text object(s) to outlines for export", category: .fileOperations)
     }
 }
