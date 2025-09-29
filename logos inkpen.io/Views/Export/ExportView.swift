@@ -16,6 +16,7 @@ struct ExportView: View {
     @State private var exportQuality: Double = 0.9  // For JPEG quality (0.1-1.0)
     @State private var includeBackground: Bool = true  // For SVG/PNG background inclusion
     @State private var isIconExport: Bool = false  // For PNG icon set export (disabled when sandboxed)
+    @State private var convertTextToOutlines: Bool = false  // Convert text to paths for PDF/SVG export
 
     enum ExportFormat: String, CaseIterable {
         case svg = "SVG"
@@ -75,6 +76,11 @@ struct ExportView: View {
                     Section(header: Text("Options")) {
                         Toggle("Include Background", isOn: $includeBackground)
                             .help("Include the canvas background layer in the export")
+
+                        if exportFormat == .pdf || exportFormat == .svg {
+                            Toggle("Convert Text to Outlines", isOn: $convertTextToOutlines)
+                                .help("Convert text to vector paths in exported file")
+                        }
                     }
                 }
 
@@ -169,9 +175,9 @@ struct ExportView: View {
                 do {
                     switch exportFormat {
                     case .svg:
-                        try FileOperations.exportToSVG(document, url: url, includeBackground: includeBackground)
+                        try FileOperations.exportToSVG(document, url: url, includeBackground: includeBackground, convertTextToOutlines: convertTextToOutlines)
                     case .pdf:
-                        try FileOperations.exportToPDF(document, url: url, includeBackground: includeBackground)
+                        try FileOperations.exportToPDF(document, url: url, includeBackground: includeBackground, convertTextToOutlines: convertTextToOutlines)
                     case .png:
                         try FileOperations.exportToPNG(document, url: url, scale: CGFloat(exportScale), includeBackground: includeBackground)
                     }
