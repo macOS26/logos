@@ -456,7 +456,4 @@ extension FileOperations {
             return (0.0, 0.0, 0.0, CGFloat(opacity))
         }
     }
-
-    // REMOVED: Old exportToPDF function that didn't handle gradients properly
-    // Use generatePDFData instead which calls generatePDFDataWithClippingSupport
 }

@@ -165,49 +165,64 @@ struct PreferencesView: View {
             
             GroupBox(label: Label("PDF Export", systemImage: "doc.richtext").font(.headline)) {
                 VStack(alignment: .leading, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 8) {
                         Text("Gradient Rendering Method")
-                            .font(.system(size: 12))
+                            .font(.system(size: 13))
+                            .foregroundColor(.primary)
                         Picker("", selection: Binding(get: { appState.pdfGradientMethod }, set: { appState.pdfGradientMethod = $0 })) {
                             ForEach(AppState.PDFGradientMethod.allCases, id: \.self) { method in
                                 Text(method.displayName).tag(method)
                             }
                         }
                         .pickerStyle(.segmented)
+                        .labelsHidden()
                         Text("CGGradient is faster but may rasterize gradients in Adobe Illustrator. CGShading provides better vector compatibility.")
                             .font(.caption)
                             .foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .lineLimit(nil)
                     }
                 }
-                .padding(.vertical, 6)
+                .padding(.vertical, 8)
             }
 
             GroupBox(label: Label("Performance HUD", systemImage: "gauge.medium").font(.headline)) {
-				VStack(alignment: .leading, spacing: 8) {
-				Toggle(
-					"Show Apple Metal Performance HUD",
-					isOn: Binding(get: { appState.enableSystemMetalHUD }, set: { appState.enableSystemMetalHUD = $0 })
-				)
-				}
-                .padding(.vertical, 6)
+                VStack(alignment: .leading, spacing: 8) {
+                    Toggle(isOn: Binding(get: { appState.enableSystemMetalHUD }, set: { appState.enableSystemMetalHUD = $0 })) {
+                        Text("Show Apple Metal Performance HUD")
+                            .font(.system(size: 13))
+                    }
+                    .toggleStyle(.checkbox)
+                }
+                .padding(.vertical, 8)
             }
 
             GroupBox(label: Label("Brush Preview", systemImage: "paintbrush").font(.headline)) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Picker("Preview Style", selection: Binding(get: { appState.brushPreviewStyle }, set: { appState.brushPreviewStyle = $0 })) {
-                        Text("Blue Outline").tag(AppState.BrushPreviewStyle.outline)
-                        Text("Object Fill Color").tag(AppState.BrushPreviewStyle.fill)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Preview Style")
+                            .font(.system(size: 13))
+                            .foregroundColor(.primary)
+                        Picker("", selection: Binding(get: { appState.brushPreviewStyle }, set: { appState.brushPreviewStyle = $0 })) {
+                            Text("Blue Outline").tag(AppState.BrushPreviewStyle.outline)
+                            Text("Object Fill Color").tag(AppState.BrushPreviewStyle.fill)
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
                     }
-                    .pickerStyle(.segmented)
-                    
-                    Toggle("Preview is final (don’t change on mouse up)", isOn: Binding(get: { appState.brushPreviewIsFinal }, set: { appState.brushPreviewIsFinal = $0 }))
+
+                    Toggle(isOn: Binding(get: { appState.brushPreviewIsFinal }, set: { appState.brushPreviewIsFinal = $0 })) {
+                        Text("Preview is final (don't change on mouse up)")
+                            .font(.system(size: 13))
+                    }
+                    .toggleStyle(.checkbox)
                 }
-                .padding(.vertical, 6)
+                .padding(.vertical, 8)
             }
-            
+
             Spacer()
         }
-        .padding(20)
-        .frame(minWidth: 480, minHeight: 320)
+        .padding(24)
+        .frame(minWidth: 520, minHeight: 380)
     }
 }
