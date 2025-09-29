@@ -30,6 +30,8 @@ struct HSBInputSection: View {
     
     // Flag to prevent automatic gradient updates during programmatic changes
     @State private var isProgrammaticallyUpdating: Bool = false
+    // Flag to track if we're displaying a gradient (should not auto-update)
+    @State private var isDisplayingGradient: Bool = false
     
     // State for PMS entry
     @State private var pmsEntryText: String = ""
@@ -477,6 +479,13 @@ struct HSBInputSection: View {
     }
     
     private func updateSharedColor() {
+        // CRITICAL FIX: Don't update shared color when displaying a gradient
+        // This preserves gradients when the Ink panel is opened
+        if isDisplayingGradient {
+            Log.info("🎨 HSB INPUT: Preserving gradient - not updating to solid color", category: .general)
+            return
+        }
+
         sharedColor = .hsb(currentColor)
         let vectorColor = VectorColor.hsb(currentColor)
 
@@ -543,8 +552,11 @@ struct HSBInputSection: View {
     }
     
     private func loadFromSharedColor() {
+        // Reset gradient flag by default (will be set to true if we detect a gradient)
+        isDisplayingGradient = false
+
         var hsbColor: HSBColorModel
-        
+
         switch sharedColor {
         case .hsb(let hsb):
             hsbColor = hsb
@@ -560,6 +572,8 @@ struct HSBInputSection: View {
             hsbColor = HSBColorModel.fromRGB(system.rgbEquivalent)
         case .gradient(let gradient):
             // For gradients, use the first stop color as representative
+            // BUT DON'T UPDATE THE ACTUAL GRADIENT TO A SOLID COLOR
+            isDisplayingGradient = true
             if let firstStop = gradient.stops.first {
                 switch firstStop.color {
                 case .hsb(let hsb):

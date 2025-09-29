@@ -28,6 +28,8 @@ struct RGBInputSection: View {
     
     // Flag to prevent automatic gradient updates during programmatic changes
     @State private var isProgrammaticallyUpdating: Bool = false
+    // Flag to track if we're displaying a gradient (should not auto-update)
+    @State private var isDisplayingGradient: Bool = false
     
     // Computed color from RGB values
     private var currentColor: RGBColor {
@@ -345,6 +347,13 @@ struct RGBInputSection: View {
     }
     
     private func updateSharedColor() {
+        // CRITICAL FIX: Don't update shared color when displaying a gradient
+        // This preserves gradients when the Ink panel is opened
+        if isDisplayingGradient {
+            Log.info("🎨 RGB INPUT: Preserving gradient - not updating to solid color", category: .general)
+            return
+        }
+
         let vectorColor = VectorColor.rgb(currentColor)
         // Removed excessive logging for performance
 
@@ -416,7 +425,10 @@ struct RGBInputSection: View {
     
     private func loadFromSharedColor() {
         // Removed excessive logging for performance
-        
+
+        // Reset gradient flag by default (will be set to true if we detect a gradient)
+        isDisplayingGradient = false
+
         switch sharedColor {
         case .rgb(let rgb):
             setRGBValues(
@@ -460,7 +472,9 @@ struct RGBInputSection: View {
                 blue: Int(rgb.blue * 255)
             )
         case .gradient(let gradient):
-            // For gradients, use the first stop color as representative  
+            // For gradients, use the first stop color as representative
+            // BUT DON'T UPDATE THE ACTUAL GRADIENT TO A SOLID COLOR
+            isDisplayingGradient = true
             if let firstStop = gradient.stops.first {
                 switch firstStop.color {
                 case .rgb(let rgb):
@@ -482,6 +496,7 @@ struct RGBInputSection: View {
             } else {
                 setRGBValues(red: 0, green: 0, blue: 0)
             }
+            // Don't call updateSharedColor() for gradients - preserve them!
         case .clear:
             // For clear colors, we don't update RGB values since they're not applicable
             // The clear color should be handled separately

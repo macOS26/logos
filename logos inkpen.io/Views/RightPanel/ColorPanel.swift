@@ -20,7 +20,10 @@ struct ColorPanel: View {
         self.document = document
         self.onColorSelected = onColorSelected
         self.showGradientEditing = showGradientEditing
-        self._currentPreviewColor = State(initialValue: document.defaultFillColor)
+        // Initialize with the actual selected object's color if available (preserves gradients)
+        // Otherwise fall back to default color for new shapes
+        let initialColor = document.getSelectedObjectColor() ?? document.defaultFillColor
+        self._currentPreviewColor = State(initialValue: initialColor)
     }
     
     var body: some View {

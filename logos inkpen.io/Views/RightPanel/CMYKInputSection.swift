@@ -31,6 +31,8 @@ struct CMYKInputSection: View {
     
     // Flag to prevent automatic gradient updates during programmatic changes
     @State private var isProgrammaticallyUpdating: Bool = false
+    // Flag to track if we're displaying a gradient (should not auto-update)
+    @State private var isDisplayingGradient: Bool = false
     
     // Computed color from CMYK values
     private var currentColor: CMYKColor {
@@ -369,6 +371,13 @@ struct CMYKInputSection: View {
     }
     
     private func updateSharedColor() {
+        // CRITICAL FIX: Don't update shared color when displaying a gradient
+        // This preserves gradients when the Ink panel is opened
+        if isDisplayingGradient {
+            Log.info("🎨 CMYK INPUT: Preserving gradient - not updating to solid color", category: .general)
+            return
+        }
+
         sharedColor = .cmyk(currentColor)
         let vectorColor = VectorColor.cmyk(currentColor)
 
@@ -435,6 +444,9 @@ struct CMYKInputSection: View {
     }
     
     private func loadFromSharedColor() {
+        // Reset gradient flag by default (will be set to true if we detect a gradient)
+        isDisplayingGradient = false
+
         switch sharedColor {
         case .rgb(let rgb):
             let cmyk = ColorManagement.rgbToCMYK(rgb)
@@ -487,6 +499,8 @@ struct CMYKInputSection: View {
             )
         case .gradient(let gradient):
             // For gradients, use the first stop color as representative
+            // BUT DON'T UPDATE THE ACTUAL GRADIENT TO A SOLID COLOR
+            isDisplayingGradient = true
             if let firstStop = gradient.stops.first {
                 switch firstStop.color {
                 case .cmyk(let cmyk):
