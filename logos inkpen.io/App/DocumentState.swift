@@ -404,7 +404,7 @@ class DocumentState: ObservableObject {
             // Get export options
             let useCMYK = cmykCheckbox.state == .on
             let convertTextToOutlines = textToOutlinesCheckbox.state == .on
-            _ = bgCheckbox.state // TODO: Update generatePDFData to support includeBackground parameter
+            // TODO: Update generatePDFData to support includeBackground parameter using bgCheckbox.state
 
             Task {
                 do {

@@ -16,14 +16,7 @@ extension DrawingCanvas {
     /// Detect and log advanced click types (option+click, command+click, double click)
     /// Shows current tool and green text box detection
     internal func detectAdvancedClickTypes(at location: CGPoint, geometry: GeometryProxy, clickType: String) {
-        let canvasLocation = screenToCanvas(location, geometry: geometry)
-        
-        // Check for green text box (text that is selected but not editing)
-        _ = findTextAt(location: canvasLocation) != nil
-        
-        // Get current tool name
-        _ = document.currentTool.rawValue
-        
+        _ = screenToCanvas(location, geometry: geometry)
         // Advanced click detection - reduced logging for performance
     }
     
@@ -282,9 +275,8 @@ extension DrawingCanvas {
     internal func handleUnifiedDragEnded(value: DragGesture.Value, geometry: GeometryProxy) {
         // FIXED: Always handle as completed drag - NO conversion to tap
         // This prevents drags from getting "lost" mid-operation
-        _ = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
         // Removed excessive logging during drag operations
-        
+
         // Handle as completed drag
         switch document.currentTool {
         case .hand:
