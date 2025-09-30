@@ -25,7 +25,7 @@ struct ColorDefaults: Codable {
         self.strokeColor = ColorManager.defaultRed
         self.fillOpacity = 1.0
         self.strokeOpacity = 1.0
-        self.strokeWidth = 1.0
+        self.strokeWidth = 2.0
 
         // Create 40-color palettes
         self.rgbSwatches = Self.createDefaultRGBSwatches()
@@ -225,5 +225,39 @@ struct ColorDefaults: Codable {
         }
 
         return Array(colors.prefix(40)) // Ensure exactly 40
+    }
+
+    // MARK: - Save to UserDefaults
+    func saveToUserDefaults() {
+        var dict: [String: Data] = [:]
+
+        if let fillData = try? JSONEncoder().encode(fillColor) {
+            dict["fill"] = fillData
+        }
+        if let strokeData = try? JSONEncoder().encode(strokeColor) {
+            dict["stroke"] = strokeData
+        }
+        if let fillOpData = try? JSONEncoder().encode(fillOpacity) {
+            dict["fillOp"] = fillOpData
+        }
+        if let strokeOpData = try? JSONEncoder().encode(strokeOpacity) {
+            dict["strokeOp"] = strokeOpData
+        }
+        if let strokeWData = try? JSONEncoder().encode(strokeWidth) {
+            dict["strokeW"] = strokeWData
+        }
+        if let rgbData = try? JSONEncoder().encode(rgbSwatches) {
+            dict["rgb"] = rgbData
+        }
+        if let cmykData = try? JSONEncoder().encode(cmykSwatches) {
+            dict["cmyk"] = cmykData
+        }
+        if let hsbData = try? JSONEncoder().encode(hsbSwatches) {
+            dict["hsb"] = hsbData
+        }
+
+        if let encoded = try? JSONEncoder().encode(dict) {
+            UserDefaults.standard.set(encoded, forKey: Self.userDefaultsKey)
+        }
     }
 }

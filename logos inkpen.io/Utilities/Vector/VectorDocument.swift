@@ -159,7 +159,11 @@ class VectorDocument: ObservableObject, Codable {
     
     
     
-    @Published var currentTool: DrawingTool = .brush
+    @Published var currentTool: DrawingTool = .brush {
+        didSet {
+            UserDefaults.standard.set(currentTool.rawValue, forKey: "lastUsedTool")
+        }
+    }
     @Published var scalingAnchor: ScalingAnchor = .center // NEW: Scaling anchor point selection
     @Published var rotationAnchor: RotationAnchor = .center // NEW: Rotation anchor point selection
     @Published var shearAnchor: ShearAnchor = .center // NEW: Shear anchor point selection
@@ -286,6 +290,7 @@ class VectorDocument: ObservableObject, Codable {
         set {
             objectWillChange.send() // Trigger UI update
             documentColorDefaults.fillColor = newValue
+            documentColorDefaults.saveToUserDefaults()
         }
     }
     var defaultStrokeColor: VectorColor {
@@ -293,24 +298,28 @@ class VectorDocument: ObservableObject, Codable {
         set {
             objectWillChange.send() // Trigger UI update
             documentColorDefaults.strokeColor = newValue
+            documentColorDefaults.saveToUserDefaults()
         }
     }
     var defaultFillOpacity: Double {
         get { documentColorDefaults.fillOpacity }
         set {
             documentColorDefaults.fillOpacity = newValue
+            documentColorDefaults.saveToUserDefaults()
         }
     }
     var defaultStrokeOpacity: Double {
         get { documentColorDefaults.strokeOpacity }
         set {
             documentColorDefaults.strokeOpacity = newValue
+            documentColorDefaults.saveToUserDefaults()
         }
     }
     var defaultStrokeWidth: Double {
         get { documentColorDefaults.strokeWidth }
         set {
             documentColorDefaults.strokeWidth = newValue
+            documentColorDefaults.saveToUserDefaults()
         }
     }
 
@@ -366,7 +375,7 @@ class VectorDocument: ObservableObject, Codable {
         // Initialize encodable backing storage first
         self._encodableSettings = settings
         self._encodableLayers = []
-        self._encodableCurrentTool = .brush
+        self._encodableCurrentTool = .selection
         self._encodableViewMode = .color
         self._encodableZoomLevel = 1.0
         self._encodableCanvasOffset = .zero
@@ -413,7 +422,14 @@ class VectorDocument: ObservableObject, Codable {
         self.selectedShapeIDs = []
         self.selectedTextIDs = [] // PROFESSIONAL TEXT SUPPORT
         // Text is now stored in unified system
-        self.currentTool = .brush
+
+        // Load last used tool from UserDefaults
+        if let lastToolRaw = UserDefaults.standard.string(forKey: "lastUsedTool"),
+           let lastTool = DrawingTool(rawValue: lastToolRaw) {
+            self.currentTool = lastTool
+        } else {
+            self.currentTool = .selection
+        }
         self.scalingAnchor = .center
         self.viewMode = .color
         self.zoomLevel = 1.0
