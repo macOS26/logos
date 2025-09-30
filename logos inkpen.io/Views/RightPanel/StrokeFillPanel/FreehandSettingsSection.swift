@@ -207,21 +207,21 @@ struct FreehandSettingsSection: View {
                     // Adaptive Tension Toggle
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Adaptive Tension")
+                            Text("Preserve Sharp Corners")
                                 .font(.subheadline)
                                 .foregroundColor(Color.ui.primaryText)
-                            Text("Adjust curve tension based on curvature")
+                            Text("Keep intentional sharp angles in strokes")
                                 .font(.caption)
                                 .foregroundColor(Color.ui.secondaryText)
                         }
                         Spacer()
                         Toggle("", isOn: Binding(
-                            get: { document.adaptiveTensionEnabled },
-                            set: { document.adaptiveTensionEnabled = $0 }
+                            get: { document.preserveSharpCorners },
+                            set: { document.preserveSharpCorners = $0 }
                         ))
                         .toggleStyle(SwitchToggleStyle(tint: .purple))
                         .controlSize(.small)
-                        .help("Enable adaptive curve tension based on curvature")
+                        .help("Keep intentional sharp angles during simplification")
                     }
                 }
             }

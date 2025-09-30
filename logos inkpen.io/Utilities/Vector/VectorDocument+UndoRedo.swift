@@ -102,7 +102,7 @@ extension VectorDocument {
         lastColorChangeType = previousState.lastColorChangeType
         currentBrushThickness = previousState.currentBrushThickness
         // currentBrushPressureSensitivity removed - now using global pressure curve
-        currentBrushTaper = previousState.currentBrushTaper
+        // currentBrushTaper removed - tapering is now hardcoded in brush tool
         currentBrushSmoothingTolerance = previousState.currentBrushSmoothingTolerance
         hasPressureInput = previousState.hasPressureInput
         brushApplyNoStroke = previousState.brushApplyNoStroke
@@ -203,7 +203,7 @@ extension VectorDocument {
         lastColorChangeType = nextState.lastColorChangeType
         currentBrushThickness = nextState.currentBrushThickness
         // currentBrushPressureSensitivity removed - now using global pressure curve
-        currentBrushTaper = nextState.currentBrushTaper
+        // currentBrushTaper removed - tapering is now hardcoded in brush tool
         currentBrushSmoothingTolerance = nextState.currentBrushSmoothingTolerance
         hasPressureInput = nextState.hasPressureInput
         brushApplyNoStroke = nextState.brushApplyNoStroke

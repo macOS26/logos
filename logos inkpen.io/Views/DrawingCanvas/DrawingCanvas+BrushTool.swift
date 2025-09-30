@@ -257,8 +257,7 @@ extension DrawingCanvas {
             var previewPath = generatePreviewVariableWidthPath(
                 centerPoints: rawPointLocations,
                 recentRawPoints: pointsToProcess,
-                thickness: document.currentBrushThickness,
-                taper: document.currentBrushTaper
+                thickness: document.currentBrushThickness
             )
 
             // Apply overlap removal to PREVIEW too (fixes white artifacts during drawing)
@@ -361,8 +360,7 @@ extension DrawingCanvas {
             return generatePreviewVariableWidthPath(
                 centerPoints: simplifiedPoints,
                 recentRawPoints: pointsToProcess,
-                thickness: thickness,
-                taper: taper
+                thickness: thickness
             )
         } else {
             return VectorPath(elements: [.move(to: VectorPoint(pointsToProcess[0].location))])
@@ -475,8 +473,7 @@ extension DrawingCanvas {
         let brushStrokePath = generateSmoothVariableWidthPath(
             centerPoints: brushSimplifiedPoints,  // Use the clean simplified points!
             rawPoints: brushRawPoints,  // Pass raw points with pressure data
-            thickness: document.currentBrushThickness,  // Use current tool settings
-            taper: document.currentBrushTaper  // Use current tool settings
+            thickness: document.currentBrushThickness  // Use current tool settings
         )
         
         // Step 3: Create and add the final brush stroke to the document
@@ -621,7 +618,7 @@ extension DrawingCanvas {
     // MARK: - Live Preview Variable Width Path Generation
     
     /// Generate variable width path for live preview with proper pressure mapping
-    private func generatePreviewVariableWidthPath(centerPoints: [CGPoint], recentRawPoints: [BrushPoint], thickness: Double, taper: Double) -> VectorPath {
+    private func generatePreviewVariableWidthPath(centerPoints: [CGPoint], recentRawPoints: [BrushPoint], thickness: Double) -> VectorPath {
         guard centerPoints.count >= 2 else {
             // Fallback for single point
             return VectorPath(elements: [.move(to: VectorPoint(centerPoints[0]))])
@@ -806,7 +803,7 @@ extension DrawingCanvas {
 
     // MARK: - Smooth Variable Width Path Generation (SAME APPROACH AS FREEHAND!)
 
-    private func generateSmoothVariableWidthPath(centerPoints: [CGPoint], rawPoints: [BrushPoint], thickness: Double, taper: Double) -> VectorPath {
+    private func generateSmoothVariableWidthPath(centerPoints: [CGPoint], rawPoints: [BrushPoint], thickness: Double) -> VectorPath {
         guard centerPoints.count >= 2 else {
             // Fallback for single point
             return VectorPath(elements: [.move(to: VectorPoint(rawPoints[0].location))])

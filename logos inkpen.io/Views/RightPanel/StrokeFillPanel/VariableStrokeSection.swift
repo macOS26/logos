@@ -161,12 +161,12 @@ struct VariableStrokeSection: View {
                         }
                         Spacer()
                         Toggle("", isOn: Binding(
-                            get: { document.adaptiveTensionEnabled },
-                            set: { document.adaptiveTensionEnabled = $0 }
+                            get: { document.preserveSharpCorners },
+                            set: { document.preserveSharpCorners = $0 }
                         ))
                         .toggleStyle(SwitchToggleStyle(tint: .purple))
                         .controlSize(.small)
-                        .help("Enable adaptive curve tension based on curvature")
+                        .help("Keep intentional sharp angles during simplification")
                     }
                 }
             }

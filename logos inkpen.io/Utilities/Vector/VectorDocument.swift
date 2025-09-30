@@ -208,9 +208,7 @@ class VectorDocument: ObservableObject, Codable {
         didSet { UserDefaults.standard.set(currentBrushThickness, forKey: "brushThickness") }
     }
     // currentBrushPressureSensitivity REMOVED - now using global pressure curve from AppState
-    @Published var currentBrushTaper: Double = 0.4 {
-        didSet { UserDefaults.standard.set(currentBrushTaper, forKey: "brushTaper") }
-    }
+    // currentBrushTaper REMOVED - tapering is now hardcoded in brush tool (leaf shape)
     @Published var currentBrushSmoothingTolerance: Double = 2.0 {
         didSet { UserDefaults.standard.set(currentBrushSmoothingTolerance, forKey: "brushSmoothingTolerance") }
     }
@@ -231,9 +229,7 @@ class VectorDocument: ObservableObject, Codable {
     @Published var chaikinSmoothingIterations: Int {
         didSet { UserDefaults.standard.set(chaikinSmoothingIterations, forKey: "chaikinSmoothingIterations") }
     }
-    @Published var adaptiveTensionEnabled: Bool {
-        didSet { UserDefaults.standard.set(adaptiveTensionEnabled, forKey: "adaptiveTensionEnabled") }
-    }
+    // adaptiveTensionEnabled REMOVED - was duplicate of preserveSharpCorners (UI bug)
 
     // FREEHAND TOOL SETTINGS (stored in UserDefaults)
     @Published var freehandSmoothingTolerance: Double {
@@ -394,13 +390,13 @@ class VectorDocument: ObservableObject, Codable {
         // Initialize brush settings from UserDefaults
         self.currentBrushThickness = UserDefaults.standard.object(forKey: "brushThickness") as? Double ?? 20.0
         // currentBrushPressureSensitivity removed - now using global pressure curve
-        self.currentBrushTaper = UserDefaults.standard.object(forKey: "brushTaper") as? Double ?? 0.4
+        // currentBrushTaper removed - tapering is now hardcoded in brush tool
         self.currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 2.0
 
         // Initialize advanced smoothing settings from UserDefaults
         self.advancedSmoothingEnabled = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? false
         self.chaikinSmoothingIterations = UserDefaults.standard.object(forKey: "chaikinSmoothingIterations") as? Int ?? 1
-        self.adaptiveTensionEnabled = UserDefaults.standard.object(forKey: "adaptiveTensionEnabled") as? Bool ?? true
+        // adaptiveTensionEnabled removed - was duplicate of preserveSharpCorners
 
         // Initialize freehand tool settings from UserDefaults
         self.freehandSmoothingTolerance = UserDefaults.standard.object(forKey: "freehandSmoothingTolerance") as? Double ?? 2.0
@@ -762,14 +758,14 @@ class VectorDocument: ObservableObject, Codable {
         // Initialize brush settings from UserDefaults (properties with didSet) - MUST be done before accessing settings
         currentBrushThickness = UserDefaults.standard.object(forKey: "brushThickness") as? Double ?? 20.0
         // currentBrushPressureSensitivity removed - now using global pressure curve
-        currentBrushTaper = UserDefaults.standard.object(forKey: "brushTaper") as? Double ?? 0.4
+        // currentBrushTaper removed - tapering is now hardcoded in brush tool
         currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 2.0
         currentBrushLiquid = UserDefaults.standard.object(forKey: "brushLiquid") as? Double ?? 0.0
 
         // Initialize advanced smoothing settings from UserDefaults (properties with didSet)
         advancedSmoothingEnabled = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? false
         chaikinSmoothingIterations = UserDefaults.standard.object(forKey: "chaikinSmoothingIterations") as? Int ?? 1
-        adaptiveTensionEnabled = UserDefaults.standard.object(forKey: "adaptiveTensionEnabled") as? Bool ?? true
+        // adaptiveTensionEnabled removed - was duplicate of preserveSharpCorners
 
         // Initialize freehand tool settings from UserDefaults (properties with didSet)
         freehandSmoothingTolerance = UserDefaults.standard.object(forKey: "freehandSmoothingTolerance") as? Double ?? 2.0
