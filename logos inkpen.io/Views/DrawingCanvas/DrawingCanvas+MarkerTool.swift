@@ -367,29 +367,28 @@ extension DrawingCanvas {
             let isShortStroke = strokeLength < 5  // Reduced threshold from 20 to 5
 
             if isShortStroke {
-                // Very short strokes: Maintain consistent marker width with minimal tapering
-                // Only taper the very tips to avoid harsh cutoffs
-                if progress < 0.2 {
-                    // Very subtle start taper for marker tip entry
-                    finalThickness *= (0.9 + progress * 0.5) // Start at 90% quickly to full
-                } else if progress > 0.8 {
-                    // Very subtle end taper
-                    let endProgress = (1.0 - progress) * 5.0
-                    finalThickness *= (0.9 + endProgress * 0.1) // End at 90% of full
+                // Very short strokes: Taper from thin to thick and back to thin
+                if progress < 0.3 {
+                    // Start thin and gradually increase
+                    finalThickness *= pow(progress / 0.3, 0.5) // Start at 0% and increase to full
+                } else if progress > 0.7 {
+                    // End thin - gradually decrease
+                    let endProgress = (1.0 - progress) / 0.3
+                    finalThickness *= pow(endProgress, 0.5) // Decrease to 0%
                 }
                 // Else maintain full thickness for marker body
             } else {
-                // Longer strokes: Use normal marker tapering
-                let startTaper = document.currentMarkerTaperStart
-                let endTaper = document.currentMarkerTaperEnd
+                // Longer strokes: Use normal marker tapering (thin start and end)
+                let startTaper = max(0.1, document.currentMarkerTaperStart) // Ensure minimum taper
+                let endTaper = max(0.1, document.currentMarkerTaperEnd)
 
                 if progress < startTaper {
-                    // Gentle taper at start for marker tip
-                    finalThickness *= pow(progress / startTaper, 0.3) // Even gentler for consistent appearance
+                    // Start thin and gradually increase to full thickness
+                    finalThickness *= pow(progress / startTaper, 0.5)
                 } else if progress > (1.0 - endTaper) {
-                    // Gentle taper at end
+                    // End thin - gradually decrease to thin tip
                     let endProgress = (1.0 - progress) / endTaper
-                    finalThickness *= pow(endProgress, 0.3) // Even gentler
+                    finalThickness *= pow(endProgress, 0.5)
                 }
             }
 
