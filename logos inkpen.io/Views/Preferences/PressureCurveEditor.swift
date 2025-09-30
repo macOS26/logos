@@ -117,21 +117,15 @@ struct PressureCurveEditor: View {
         .onAppear {
             // Initialize local curve from AppState
             localCurve = AppState.shared.pressureCurve
-            let curveString = localCurve.map { "(\(String(format: "%.2f", $0.x)),\(String(format: "%.2f", $0.y)))" }.joined(separator: " ")
-            Log.info("📊 EDITOR LOADED CURVE: [\(curveString)]", category: .pressure)
         }
         .onChange(of: localCurve) { oldValue, newValue in
-            // Save to BOTH AppState and UserDefaults
-            let curveString = newValue.map { "(\(String(format: "%.2f", $0.x)),\(String(format: "%.2f", $0.y)))" }.joined(separator: " ")
-            Log.info("💾 CURVE CHANGED - SAVING: [\(curveString)]", category: .pressure)
-
-            // Save to AppState
-            AppState.shared.pressureCurve = newValue
-
-            // Save to UserDefaults
+            // Save directly to UserDefaults - AppState will read from there
             let data = newValue.map { ["x": $0.x, "y": $0.y] }
             UserDefaults.standard.set(data, forKey: "pressureCurve")
             UserDefaults.standard.synchronize()
+
+            // Update AppState directly without triggering its setter
+            AppState.shared._pressureCurve = newValue
         }
     }
 }
