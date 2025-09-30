@@ -32,7 +32,10 @@ extension DrawingCanvas {
     internal func handleBrushDragStart(at location: CGPoint) {
         // Start new brush stroke with proper initialization
         guard !isBrushDrawing else { return }
-        
+
+        // Save undo state BEFORE starting drawing
+        document.saveToUndoStack()
+
         // Initialize brush drawing state
         isBrushDrawing = true
         brushRawPoints = [BrushPoint(location: location, pressure: 1.0)]
@@ -565,7 +568,8 @@ extension DrawingCanvas {
             }
         }
         let shape = VectorShape(name: "Brush Stroke", path: finalPath, strokeStyle: strokeStyle, fillStyle: fillStyle)
-        document.addShape(shape)
+        guard let layerIndex = document.selectedLayerIndex else { return }
+        document.addShapeWithoutUndo(shape, to: layerIndex)
     }
     
     // MARK: - Remove Overlap Functionality

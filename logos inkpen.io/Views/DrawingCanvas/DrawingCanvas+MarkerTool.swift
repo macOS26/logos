@@ -34,7 +34,10 @@ extension DrawingCanvas {
     internal func handleMarkerDragStart(at location: CGPoint) {
         // Start new marker stroke with proper initialization
         guard !isMarkerDrawing else { return }
-        
+
+        // Save undo state BEFORE starting drawing
+        document.saveToUndoStack()
+
         // Initialize marker drawing state
         isMarkerDrawing = true
         markerRawPoints = [MarkerPoint(location: location, pressure: 1.0)]
@@ -340,8 +343,9 @@ extension DrawingCanvas {
         }
         
         // VECTOR APP OPTIMIZATION: Add shape only once at the end, not during drawing
-        document.addShapeToFront(finalShape)
-        
+        guard let layerIndex = document.selectedLayerIndex else { return }
+        document.addShapeToFrontOfUnifiedSystem(finalShape, layerIndex: layerIndex)
+
         Log.fileOperation("🖊️ MARKER: Generated smooth felt-tip stroke with \(markerSimplifiedPoints.count) control points", level: .info)
     }
     
