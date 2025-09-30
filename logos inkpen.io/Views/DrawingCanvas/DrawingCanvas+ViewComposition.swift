@@ -397,13 +397,13 @@ extension DrawingCanvas {
         
         // Convert to canvas coordinates
         let canvasLocation = screenToCanvas(location, geometry: geometry)
-        
-        
+
+
         // Update pressure manager with real pressure data
+        // Note: PressureManager will auto-detect if this is real varying pressure (stylus) or constant pressure (mouse/trackpad)
         PressureManager.shared.processRealPressure(pressure, at: canvasLocation, isTabletEvent: isTabletEvent)
-        PressureManager.shared.updatePressureSupport(true)
-        
-        
+
+
         // Route to appropriate tool based on event type and current tool
         switch eventType {
         case .began:

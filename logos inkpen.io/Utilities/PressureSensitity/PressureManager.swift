@@ -87,16 +87,23 @@ class PressureManager: ObservableObject {
             return
         }
 
-        // Mark that we have real pressure input
-        if !hasRealPressureInput {
-            hasRealPressureInput = true
-            Log.info("🎨 PRESSURE MANAGER: ✅ Real pressure input detected and enabled!", category: .pressure)
-        }
-
         // Track pressure variation to detect constant "fake" pressure (like trackpad)
         recentPressureValues.append(pressure)
         if recentPressureValues.count > pressureHistorySize {
             recentPressureValues.removeFirst()
+        }
+
+        // Only mark as real pressure input if values actually vary (not constant like mouse/trackpad)
+        if recentPressureValues.count >= pressureHistorySize && !isPressureConstant() {
+            if !hasRealPressureInput {
+                hasRealPressureInput = true
+                Log.info("🎨 PRESSURE MANAGER: ✅ Real varying pressure detected (stylus/pen)!", category: .pressure)
+            }
+        } else if recentPressureValues.count >= pressureHistorySize && isPressureConstant() {
+            if hasRealPressureInput {
+                hasRealPressureInput = false
+                Log.info("🎨 PRESSURE MANAGER: ⚠️ Constant pressure detected (mouse/trackpad) - using simulation", category: .pressure)
+            }
         }
 
         // Use raw pressure directly - NO CLAMPING - SYNCHRONOUS UPDATE TO AVOID RACE CONDITION
