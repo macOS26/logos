@@ -58,60 +58,9 @@ class PressureSensitiveCanvasView: NSView {
     }
     
     // MARK: - Comprehensive Event Logging
-    
+
     private func logEvent(_ event: NSEvent, context: String) {
-        let eventType = event.type.rawValue
-        let eventSubtype = event.subtype.rawValue
-        let location = event.locationInWindow
-        let timestamp = event.timestamp
-        let modifierFlags = event.modifierFlags.rawValue
-        
-        // Only access pressure for events that support it
-        let pressureValue: Float
-        switch event.type {
-        case .leftMouseDown, .leftMouseUp, .leftMouseDragged,
-             .rightMouseDown, .rightMouseUp, .rightMouseDragged,
-             .otherMouseDown, .otherMouseUp, .otherMouseDragged,
-             .tabletPoint, .tabletProximity:
-            pressureValue = event.pressure
-        default:
-            pressureValue = 0.0 // Not applicable for this event type
-        }
-        
-        Log.fileOperation("🎨 EVENT LOG [\(context)]:", level: .info)
-        Log.info("   Type: \(eventType) (\(event.type))", category: .general)
-        Log.info("   Subtype: \(eventSubtype) (\(event.subtype))", category: .general)
-        Log.info("   Pressure: \(pressureValue)", category: .general)
-        Log.info("   Location: (\(location.x), \(location.y))", category: .general)
-        Log.info("   Timestamp: \(timestamp)", category: .general)
-        Log.info("   ModifierFlags: \(modifierFlags)", category: .general)
-        
-        // Only access clickCount and buttonNumber for mouse events
-        if event.type == .leftMouseDown || event.type == .leftMouseUp || event.type == .leftMouseDragged ||
-           event.type == .rightMouseDown || event.type == .rightMouseUp || event.type == .rightMouseDragged ||
-           event.type == .otherMouseDown || event.type == .otherMouseUp || event.type == .otherMouseDragged {
-            let clickCount = event.clickCount
-            let buttonNumber = event.buttonNumber
-            Log.info("   ClickCount: \(clickCount)", category: .general)
-            Log.info("   ButtonNumber: \(buttonNumber)", category: .general)
-        } else {
-            Log.info("   ClickCount: N/A (not a mouse event)", category: .general)
-            Log.info("   ButtonNumber: N/A (not a mouse event)", category: .general)
-        }
-        
-        // Additional tablet-specific info
-        if event.type == .tabletPoint {
-            Log.info("   🎨 TABLET SPECIFIC:", category: .general)
-            Log.info("      PointingDeviceID: \(event.pointingDeviceID)", category: .general)
-            Log.info("      Rotation: \(event.rotation)", category: .general)
-            Log.info("      TangentialPressure: \(event.tangentialPressure)", category: .general)
-            Log.info("      VendorDefined: \(event.vendorDefined)", category: .general)
-            Log.info("      VendorID: \(event.vendorID)", category: .general)
-            Log.info("      TabletID: \(event.tabletID)", category: .general)
-            Log.info("      CapabilityMask: \(event.capabilityMask)", category: .general)
-        }
-        
-        Log.info("   ---", category: .general)
+        // Logging disabled to prevent excessive console spam during drawing
     }
     
     // MARK: - Mouse/Touch Event Handling
