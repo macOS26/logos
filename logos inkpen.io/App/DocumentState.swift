@@ -33,13 +33,17 @@ class DocumentState: ObservableObject {
     
     private var cancellables = Set<AnyCancellable>()
     private var isTerminating = false
-    
+    private var pasteboardChangeCount: Int = 0
+
     init() {
         Log.info("🎯 DocumentState initialized with automatic menu state updates")
         // Defer observer setup until document is set to prevent blocking during launch
-        
+
         // Register with central registry (no notifications)
         DocumentStateRegistry.shared.register(self)
+
+        // Monitor pasteboard changes for canPaste state
+        startPasteboardMonitoring()
     }
     
     deinit {
@@ -98,12 +102,24 @@ class DocumentState: ObservableObject {
         Log.info("🎯 DocumentState force cleanup completed")
     }
     
+    private func startPasteboardMonitoring() {
+        // Monitor pasteboard changes every 0.5 seconds to update canPaste
+        Timer.publish(every: 0.5, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                guard let self = self, !self.isTerminating else { return }
+                let currentChangeCount = NSPasteboard.general.changeCount
+                if currentChangeCount != self.pasteboardChangeCount {
+                    self.pasteboardChangeCount = currentChangeCount
+                    self.canPaste = ClipboardManager.shared.canPaste()
+                }
+            }
+            .store(in: &cancellables)
+    }
+
     private func setupDocumentObserversAsync() async {
         guard let document = document else { return }
-        
-        // Clear previous observations
-        cancellables.removeAll()
-        
+
         // Monitor document changes that affect menu states
         document.objectWillChange.sink { [weak self] _ in
             guard let self = self else { return }
@@ -112,7 +128,7 @@ class DocumentState: ObservableObject {
             }
         }
         .store(in: &cancellables)
-        
+
         Log.startup("✅ Document observers set up asynchronously")
     }
     
