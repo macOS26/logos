@@ -525,8 +525,7 @@ struct ShearHandles: View {
         }
         
         // SHEAR START: Minimal logging for performance
-        
-        _ = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+
         // Removed excessive logging during drag operations
     }
     

@@ -432,8 +432,7 @@ struct ScaleHandles: View {
         let shapes = document.getShapesForLayer(layerIndex)
         if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }),
            var updatedShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-            
-            _ = updatedShape.bounds
+
             // Removed excessive logging during drag operations
             
             // CRITICAL FIX: Reset to initial transform first to prevent drift accumulation
@@ -509,12 +508,6 @@ struct ScaleHandles: View {
         }
         
         // Update center point based on current bounds
-        // CRITICAL FIX: For ALL images, use the same bounds calculation as ShapeView rendering
-        if ImageContentRegistry.containsImage(shape) {
-            // For ALL images, calculate bounds the same way as ShapeView renders them
-            // This matches the actual image positioning: pathBounds.applying(shape.transform)
-            let pathBounds = shape.path.cgPath.boundingBoxOfPath
-        } 
         centerPoint = VectorPoint(shape.calculateCentroid())
         
         Log.fileOperation("🎯 EXTRACTED \(pathPoints.count) path points + center for scale anchor selection", level: .info)
@@ -671,8 +664,7 @@ struct ScaleHandles: View {
         }
         
         // SCALING START: Minimal logging for performance
-        
-        _ = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+
         // Removed excessive logging during drag operations
     }
     

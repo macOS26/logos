@@ -212,22 +212,6 @@ struct RotateHandles: View {
         }
         
         // Update center point based on current bounds
-        // CRITICAL FIX: For images with transforms, use the same bounds calculation as transform box handles
-        if ImageContentRegistry.containsImage(shape) && !shape.transform.isIdentity {
-            // For transformed images, calculate bounds the same way as transform box handles
-            let baseBounds = shape.bounds
-            let t = shape.transform
-            let corners = [
-                CGPoint(x: baseBounds.minX, y: baseBounds.minY).applying(t),
-                CGPoint(x: baseBounds.maxX, y: baseBounds.minY).applying(t),
-                CGPoint(x: baseBounds.maxX, y: baseBounds.maxY).applying(t),
-                CGPoint(x: baseBounds.minX, y: baseBounds.maxY).applying(t)
-            ]
-            let minX = corners.map { $0.x }.min() ?? baseBounds.minX
-            let minY = corners.map { $0.y }.min() ?? baseBounds.minY
-            let maxX = corners.map { $0.x }.max() ?? baseBounds.maxX
-            let maxY = corners.map { $0.y }.max() ?? baseBounds.maxY
-        } 
         centerPoint = VectorPoint(shape.calculateCentroid())
         
         Log.fileOperation("🎯 EXTRACTED \(pathPoints.count) path points + center for rotation anchor selection", level: .info)
@@ -550,12 +534,8 @@ struct RotateHandles: View {
         let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
         let shapes = document.getShapesForLayer(layerIndex)
         if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
-            
-            if let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                _ = currentShape.bounds
-            }
             // Removed excessive logging during drag operations
-            
+
             // CRITICAL FIX: Reset to initial transform first to prevent drift accumulation
             if let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
                 var updatedShape = currentShape
@@ -566,11 +546,8 @@ struct RotateHandles: View {
             // Apply the final transform to coordinates and reset transform to identity
             applyRotationTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
             
-            if let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                _ = currentShape.bounds
-            }
             // Removed excessive logging during drag operations
-            
+
             // Reset preview transform
             previewTransform = .identity
             
