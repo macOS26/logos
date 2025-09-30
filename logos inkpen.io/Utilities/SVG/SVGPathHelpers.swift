@@ -149,16 +149,24 @@ extension SVGParser {
         
         while i < tokens.count {
             let token = tokens[i]
-            
+
             // Check if this is a command or a parameter
             if token.rangeOfCharacter(from: .letters) != nil {
                 // It's a command
                 currentCommand = token
                 Log.fileOperation("🔧 COMMAND: \(currentCommand)", level: .info)
                 i += 1
+
+                // Handle commands that don't take parameters immediately
+                if currentCommand == "Z" || currentCommand == "z" {
+                    Log.info("   Close path", category: .general)
+                    elements.append(.close)
+                    currentPoint = subpathStart
+                    lastControlPoint = nil
+                }
                 continue
             }
-            
+
             // It's a parameter - process based on current command
             switch currentCommand {
             case "M": // Move to (absolute)
@@ -424,12 +432,12 @@ extension SVGParser {
                     let dy1 = Double(tokens[i + 1]) ?? 0
                     let dx = Double(tokens[i + 2]) ?? 0
                     let dy = Double(tokens[i + 3]) ?? 0
-                    
+
                     let x1 = currentPoint.x + dx1
                     let y1 = currentPoint.y + dy1
                     currentPoint = CGPoint(x: currentPoint.x + dx, y: currentPoint.y + dy)
                     lastControlPoint = CGPoint(x: x1, y: y1)
-                    
+
                     elements.append(.quadCurve(
                         to: VectorPoint(currentPoint),
                         control: VectorPoint(x1, y1)
@@ -438,14 +446,7 @@ extension SVGParser {
                 } else {
                     i += 1
                 }
-                
-            case "Z", "z": // Close path
-                Log.info("   Close path", category: .general)
-                elements.append(.close)
-                currentPoint = subpathStart
-                lastControlPoint = nil
-                i += 1
-                
+
             default:
                 // Skip unknown commands
                 i += 1

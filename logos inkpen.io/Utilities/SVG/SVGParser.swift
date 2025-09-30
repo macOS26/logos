@@ -529,6 +529,8 @@ class SVGParser: NSObject, XMLParserDelegate {
         let vectorPath = VectorPath(elements: pathData, isClosed: hasCloseElement)
 
         Log.fileOperation("📐 Created path with \(pathData.count) elements, isClosed: \(hasCloseElement)", level: .info)
+        Log.fileOperation("🔍 DEBUG: Path d attribute: \(d.prefix(100))...", level: .info)
+        Log.fileOperation("🔍 DEBUG: hasCloseElement = \(hasCloseElement), vectorPath.isClosed = \(vectorPath.isClosed)", level: .info)
         
         // Check if this path should be clipped
         let (shouldClip, clipPathId) = checkForClipPath(attributes)
