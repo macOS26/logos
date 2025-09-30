@@ -8,11 +8,12 @@
 import SwiftUI
 
 struct PressureCurveEditor: View {
+    @Binding var curve: [CGPoint]
     @State private var selectedControlPoint: Int?
-    @State private var localCurve: [CGPoint] = []
     let size: CGFloat
 
-    init(size: CGFloat = 280) {
+    init(curve: Binding<[CGPoint]>, size: CGFloat = 280) {
+        self._curve = curve
         self.size = size
     }
 
@@ -32,8 +33,8 @@ struct PressureCurveEditor: View {
                     Text("Control Points")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    ForEach(0..<localCurve.count, id: \.self) { index in
-                        let point = localCurve[index]
+                    ForEach(0..<curve.count, id: \.self) { index in
+                        let point = curve[index]
                         Text("[\(index + 1)] In: \(String(format: "%.2f", point.x)) → Out: \(String(format: "%.2f", point.y))")
                             .font(.caption2)
                             .foregroundColor(selectedControlPoint == index ? .blue : .secondary)
@@ -68,21 +69,21 @@ struct PressureCurveEditor: View {
 
                 // Curve path
                 Path { path in
-                    guard localCurve.count >= 2 else { return }
+                    guard curve.count >= 2 else { return }
 
-                    let firstPoint = localCurve[0]
+                    let firstPoint = curve[0]
                     path.move(to: CGPoint(x: firstPoint.x * size, y: size - firstPoint.y * size))
 
-                    for i in 1..<localCurve.count {
-                        let point = localCurve[i]
+                    for i in 1..<curve.count {
+                        let point = curve[i]
                         path.addLine(to: CGPoint(x: point.x * size, y: size - point.y * size))
                     }
                 }
                 .stroke(Color.blue, lineWidth: 2)
 
                 // Control points
-                ForEach(localCurve.indices, id: \.self) { index in
-                    let point = localCurve[index]
+                ForEach(curve.indices, id: \.self) { index in
+                    let point = curve[index]
                     let isSelected = selectedControlPoint == index
 
                     Circle()
@@ -96,10 +97,10 @@ struct PressureCurveEditor: View {
                                     let newX = max(0, min(1, value.location.x / size))
                                     let newY = max(0, min(1, (size - value.location.y) / size))
 
-                                    // Create NEW array to trigger @State observation
-                                    var newCurve = localCurve
+                                    // Create NEW array to trigger Binding update
+                                    var newCurve = curve
                                     newCurve[index] = CGPoint(x: newX, y: newY)
-                                    localCurve = newCurve
+                                    curve = newCurve
 
                                     selectedControlPoint = index
                                 }
@@ -113,19 +114,6 @@ struct PressureCurveEditor: View {
                 }
             }
             .frame(width: size, height: size)
-        }
-        .onAppear {
-            // Initialize local curve from AppState
-            localCurve = AppState.shared.pressureCurve
-        }
-        .onChange(of: localCurve) { oldValue, newValue in
-            // Save directly to UserDefaults - AppState will read from there
-            let data = newValue.map { ["x": $0.x, "y": $0.y] }
-            UserDefaults.standard.set(data, forKey: "pressureCurve")
-            UserDefaults.standard.synchronize()
-
-            // Update AppState directly without triggering its setter
-            AppState.shared._pressureCurve = newValue
         }
     }
 }
@@ -161,6 +149,14 @@ func getThicknessFromPressureCurve(pressure: Double, curve: [CGPoint]) -> Double
 }
 
 #Preview {
-    PressureCurveEditor(size: 280)
+    @Previewable @State var previewCurve: [CGPoint] = [
+        CGPoint(x: 0.0, y: 0.0),
+        CGPoint(x: 0.25, y: 0.25),
+        CGPoint(x: 0.5, y: 0.5),
+        CGPoint(x: 0.75, y: 0.75),
+        CGPoint(x: 1.0, y: 1.0)
+    ]
+
+    return PressureCurveEditor(curve: $previewCurve, size: 280)
         .padding()
 }

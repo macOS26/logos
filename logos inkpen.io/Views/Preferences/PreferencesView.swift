@@ -9,8 +9,7 @@ import SwiftUI
 
 struct AppPreferencesView: View {
     @Environment(\.presentationMode) var presentationMode
-    @AppStorage("globalPressureCurve") private var pressureCurveData: Data = defaultPressureCurveData()
-    @State private var pressureCurve: [CGPoint] = defaultPressureCurve()
+    @Environment(AppState.self) private var appState
     @State private var selectedTab: PreferenceTab = .pressure
 
     enum PreferenceTab: String, CaseIterable {
@@ -36,7 +35,7 @@ struct AppPreferencesView: View {
                 Spacer()
 
                 Button("Done") {
-                    savePressureCurve()
+                    // Curve changes auto-save via AppState
                     presentationMode.wrappedValue.dismiss()
                 }
                 .buttonStyle(ProfessionalPrimaryButtonStyle())
@@ -85,9 +84,6 @@ struct AppPreferencesView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(width: 700, height: 600)
-        .onAppear {
-            loadPressureCurve()
-        }
     }
 
     // MARK: - Pressure Preferences
@@ -105,9 +101,15 @@ struct AppPreferencesView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             // Pressure curve editor
-            PressureCurveEditor(pressureCurve: $pressureCurve, size: 400)
-                .padding()
-                .background(Color(NSColor.controlBackgroundColor))
+            PressureCurveEditor(
+                curve: Binding(
+                    get: { appState.pressureCurve },
+                    set: { appState.pressureCurve = $0 }
+                ),
+                size: 400
+            )
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
                 .cornerRadius(12)
 
             // Preset buttons
@@ -118,7 +120,8 @@ struct AppPreferencesView: View {
 
                 HStack(spacing: 12) {
                     Button("Linear") {
-                        pressureCurve = [
+                        Log.info("🔘 LINEAR BUTTON PRESSED", category: .pressure)
+                        AppState.shared.pressureCurve = [
                             CGPoint(x: 0.0, y: 0.0),
                             CGPoint(x: 0.25, y: 0.25),
                             CGPoint(x: 0.5, y: 0.5),
@@ -129,7 +132,7 @@ struct AppPreferencesView: View {
                     .buttonStyle(.bordered)
 
                     Button("Soft") {
-                        pressureCurve = [
+                        appState.pressureCurve = [
                             CGPoint(x: 0.0, y: 0.0),
                             CGPoint(x: 0.25, y: 0.4),
                             CGPoint(x: 0.5, y: 0.65),
@@ -140,7 +143,7 @@ struct AppPreferencesView: View {
                     .buttonStyle(.bordered)
 
                     Button("Hard") {
-                        pressureCurve = [
+                        appState.pressureCurve = [
                             CGPoint(x: 0.0, y: 0.0),
                             CGPoint(x: 0.25, y: 0.1),
                             CGPoint(x: 0.5, y: 0.35),
@@ -151,7 +154,7 @@ struct AppPreferencesView: View {
                     .buttonStyle(.bordered)
 
                     Button("Reset") {
-                        pressureCurve = AppPreferencesView.defaultPressureCurve()
+                        appState.pressureCurve = AppPreferencesView.defaultPressureCurve()
                     }
                     .buttonStyle(.bordered)
 
@@ -176,22 +179,6 @@ struct AppPreferencesView: View {
             Spacer()
         }
         .padding()
-    }
-
-    // MARK: - Persistence
-
-    private func loadPressureCurve() {
-        if let decoded = try? JSONDecoder().decode([CGPoint].self, from: pressureCurveData) {
-            pressureCurve = decoded
-        } else {
-            pressureCurve = AppPreferencesView.defaultPressureCurve()
-        }
-    }
-
-    private func savePressureCurve() {
-        if let encoded = try? JSONEncoder().encode(pressureCurve) {
-            pressureCurveData = encoded
-        }
     }
 
     // MARK: - Defaults

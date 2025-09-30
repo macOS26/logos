@@ -101,7 +101,7 @@ extension VectorDocument {
         colorChangeNotification = previousState.colorChangeNotification
         lastColorChangeType = previousState.lastColorChangeType
         currentBrushThickness = previousState.currentBrushThickness
-        currentBrushPressureSensitivity = previousState.currentBrushPressureSensitivity
+        // currentBrushPressureSensitivity removed - now using global pressure curve
         currentBrushTaper = previousState.currentBrushTaper
         currentBrushSmoothingTolerance = previousState.currentBrushSmoothingTolerance
         hasPressureInput = previousState.hasPressureInput
@@ -202,7 +202,7 @@ extension VectorDocument {
         colorChangeNotification = nextState.colorChangeNotification
         lastColorChangeType = nextState.lastColorChangeType
         currentBrushThickness = nextState.currentBrushThickness
-        currentBrushPressureSensitivity = nextState.currentBrushPressureSensitivity
+        // currentBrushPressureSensitivity removed - now using global pressure curve
         currentBrushTaper = nextState.currentBrushTaper
         currentBrushSmoothingTolerance = nextState.currentBrushSmoothingTolerance
         hasPressureInput = nextState.hasPressureInput

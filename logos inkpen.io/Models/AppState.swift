@@ -32,6 +32,54 @@ class AppState {
             Log.info("🎨 PRESSURE: Sensitivity toggled to: \(pressureSensitivityEnabled)", category: .pressure)
         }
     }
+
+    // MARK: - Global Pressure Curve
+    /// Maps input pressure (0-1) to output thickness (0-1) using interpolation
+    internal var _pressureCurve: [CGPoint] = [
+        CGPoint(x: 0.0, y: 0.0),
+        CGPoint(x: 0.25, y: 0.25),
+        CGPoint(x: 0.5, y: 0.5),
+        CGPoint(x: 0.75, y: 0.75),
+        CGPoint(x: 1.0, y: 1.0)
+    ]
+
+    var pressureCurve: [CGPoint] {
+        get { _pressureCurve }
+        set {
+            let curveString = newValue.map { "(\(String(format: "%.2f", $0.x)),\(String(format: "%.2f", $0.y)))" }.joined(separator: " ")
+            Log.info("🎨 PRESSURE CURVE SETTER: [\(curveString)]", category: .pressure)
+            _pressureCurve = newValue
+            savePressureCurve()
+        }
+    }
+
+    private func savePressureCurve() {
+        let data = pressureCurve.map { ["x": $0.x, "y": $0.y] }
+        UserDefaults.standard.set(data, forKey: "pressureCurve")
+        UserDefaults.standard.synchronize()
+        let curveString = pressureCurve.map { "(\(String(format: "%.2f", $0.x)),\(String(format: "%.2f", $0.y)))" }.joined(separator: " ")
+        Log.info("💾 SAVED PRESSURE CURVE: [\(curveString)]", category: .pressure)
+    }
+
+    private func loadPressureCurve() {
+        if let data = UserDefaults.standard.array(forKey: "pressureCurve") as? [[String: Double]] {
+            Log.info("📂 LOADING PRESSURE CURVE: Found \(data.count) points in UserDefaults", category: .pressure)
+            let loadedCurve = data.compactMap { dict -> CGPoint? in
+                guard let x = dict["x"], let y = dict["y"] else { return nil }
+                return CGPoint(x: x, y: y)
+            }
+            if loadedCurve.count < 2 {
+                // Keep default if invalid
+                Log.info("📂 INVALID CURVE: Keeping default linear curve", category: .pressure)
+            } else {
+                _pressureCurve = loadedCurve  // Set backing storage directly to avoid triggering save
+                let curveString = _pressureCurve.map { "(\(String(format: "%.2f", $0.x)),\(String(format: "%.2f", $0.y)))" }.joined(separator: " ")
+                Log.info("📂 LOADED PRESSURE CURVE: [\(curveString)]", category: .pressure)
+            }
+        } else {
+            Log.info("📂 NO SAVED CURVE: Using default linear curve", category: .pressure)
+        }
+    }
     
     // MARK: - Clipping Mask Selection Mode
     /// When true, allows selection of individual shapes within clipping masks
@@ -222,6 +270,9 @@ class AppState {
         // Load saved pressure sensitivity setting
         self.pressureSensitivityEnabled = UserDefaults.standard.object(forKey: "pressureSensitivityEnabled") as? Bool ?? true
         Log.info("🎨 PRESSURE: Loaded sensitivity setting: \(pressureSensitivityEnabled)", category: .pressure)
+
+        // Load saved pressure curve
+        loadPressureCurve()
         
         // Load brush preview preferences
         if let styleRaw = UserDefaults.standard.string(forKey: "brushPreviewStyle"),

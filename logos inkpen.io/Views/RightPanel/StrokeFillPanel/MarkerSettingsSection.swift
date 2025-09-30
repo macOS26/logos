@@ -101,38 +101,7 @@ struct MarkerSettingsSection: View {
                 .help("Enable or disable pressure sensitivity for marker tool")
             }
 
-            // Pressure Sensitivity Slider (only show when enabled)
-            if appState.pressureSensitivityEnabled {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Sensitivity")
-                            .font(.subheadline)
-                            .foregroundColor(Color.ui.secondaryText)
-                        Spacer()
-                        Text("\(Int(document.currentMarkerPressureSensitivity * 100))%")
-                            .font(.subheadline)
-                            .foregroundColor(Color.ui.primaryText)
-                            .monospacedDigit()
-                    }
-
-                Slider(value: Binding(
-                    get: { document.currentMarkerPressureSensitivity },
-                    set: { document.currentMarkerPressureSensitivity = $0 }
-                ), in: 0...1) {
-                    Text("Pressure Sensitivity")
-                } minimumValueLabel: {
-                    Text("0%")
-                        .font(.caption)
-                        .foregroundColor(Color.ui.secondaryText)
-                } maximumValueLabel: {
-                    Text("100%")
-                        .font(.caption)
-                        .foregroundColor(Color.ui.secondaryText)
-                }
-                .controlSize(.regular)
-                .help("How much pressure affects marker thickness (simulated if no pressure input)")
-            }
-            }
+            // Pressure Sensitivity Slider REMOVED - raw pressure applied directly
 
             // Smoothing Tolerance
             VStack(alignment: .leading, spacing: 8) {

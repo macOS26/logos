@@ -78,8 +78,8 @@ extension DrawingCanvas {
     internal func handleBrushDragUpdate(at location: CGPoint) {
         guard isBrushDrawing else { return }
         
-        // Get pressure using smart detection (real or simulated)
-        let pressure = PressureManager.shared.getPressure(for: location, sensitivity: document.currentBrushPressureSensitivity)
+        // Get pressure using smart detection (real or simulated) - sensitivity now handled by global curve
+        let pressure = PressureManager.shared.getPressure(for: location, sensitivity: 0.5)
         
         // Add point to raw path with pressure data
         let newPoint = BrushPoint(location: location, pressure: pressure)
@@ -168,8 +168,8 @@ extension DrawingCanvas {
         let normalizedSpeed = min(distance / maxSpeed, 1.0)
         let basePressure = 1.0 - (normalizedSpeed * 0.5) // Reduce pressure with speed
         
-        // Apply current brush sensitivity setting
-        let sensitivity = document.currentBrushPressureSensitivity
+        // Apply fixed sensitivity for simulated pressure (curve mapping happens later)
+        let sensitivity = 0.5
         let pressureVariation = (basePressure - 0.5) * sensitivity
         
         let finalPressure = max(0.1, min(1.0, 0.5 + pressureVariation))
@@ -292,7 +292,6 @@ extension DrawingCanvas {
                 centerPoints: simplifiedPoints,
                 recentRawPoints: pointsToProcess,
                 thickness: document.currentBrushThickness,
-                pressureSensitivity: document.currentBrushPressureSensitivity,
                 taper: document.currentBrushTaper
             )
         } else {
@@ -382,7 +381,6 @@ extension DrawingCanvas {
                 centerPoints: simplifiedPoints,
                 recentRawPoints: pointsToProcess,
                 thickness: thickness,
-                pressureSensitivity: pressureSensitivity,
                 taper: taper
             )
         } else {
@@ -497,7 +495,6 @@ extension DrawingCanvas {
             centerPoints: brushSimplifiedPoints,  // Use the clean simplified points!
             rawPoints: brushRawPoints,  // Pass raw points with pressure data
             thickness: document.currentBrushThickness,  // Use current tool settings
-            pressureSensitivity: document.currentBrushPressureSensitivity,  // Use current tool settings
             taper: document.currentBrushTaper  // Use current tool settings
         )
         
@@ -642,7 +639,7 @@ extension DrawingCanvas {
     // MARK: - Live Preview Variable Width Path Generation
     
     /// Generate variable width path for live preview with proper pressure mapping
-    private func generatePreviewVariableWidthPath(centerPoints: [CGPoint], recentRawPoints: [BrushPoint], thickness: Double, pressureSensitivity: Double, taper: Double) -> VectorPath {
+    private func generatePreviewVariableWidthPath(centerPoints: [CGPoint], recentRawPoints: [BrushPoint], thickness: Double, taper: Double) -> VectorPath {
         guard centerPoints.count >= 2 else {
             // Fallback for single point
             return VectorPath(elements: [.move(to: VectorPoint(centerPoints[0]))])
@@ -727,7 +724,7 @@ extension DrawingCanvas {
             if !recentRawPoints.isEmpty {
                 var closestDistance = Double.infinity
                 var closestPressure = 1.0
-                
+
                 for rawPoint in recentRawPoints {
                     let distance = sqrt(pow(point.x - rawPoint.location.x, 2) + pow(point.y - rawPoint.location.y, 2))
                     if distance < closestDistance {
@@ -735,8 +732,10 @@ extension DrawingCanvas {
                         closestPressure = rawPoint.pressure
                     }
                 }
-                
-                finalThickness *= closestPressure
+
+                // Apply pressure curve mapping
+                let mappedPressure = getThicknessFromPressureCurve(pressure: closestPressure, curve: appState.pressureCurve)
+                finalThickness *= mappedPressure
             }
             
             thicknessPoints.append((location: point, thickness: finalThickness))
@@ -825,7 +824,7 @@ extension DrawingCanvas {
 
     // MARK: - Smooth Variable Width Path Generation (SAME APPROACH AS FREEHAND!)
 
-    private func generateSmoothVariableWidthPath(centerPoints: [CGPoint], rawPoints: [BrushPoint], thickness: Double, pressureSensitivity: Double, taper: Double) -> VectorPath {
+    private func generateSmoothVariableWidthPath(centerPoints: [CGPoint], rawPoints: [BrushPoint], thickness: Double, taper: Double) -> VectorPath {
         guard centerPoints.count >= 2 else {
             // Fallback for single point
             return VectorPath(elements: [.move(to: VectorPoint(rawPoints[0].location))])
@@ -893,10 +892,10 @@ extension DrawingCanvas {
             
             // Interpolate pressure from raw points to simplified points
             let interpolatedPressure = interpolatePressureForPoint(point, from: rawPoints)
-            
-            // Apply pressure variation with sensitivity control
-            let pressureMultiplier = 1.0 + (interpolatedPressure - 1.0) * pressureSensitivity
-            finalThickness *= pressureMultiplier
+
+            // Apply pressure curve mapping - convert raw pressure through global curve
+            let mappedPressure = getThicknessFromPressureCurve(pressure: interpolatedPressure, curve: appState.pressureCurve)
+            finalThickness *= mappedPressure
             
             thicknessPoints.append((location: point, thickness: finalThickness))
         }

@@ -152,11 +152,11 @@ extension DrawingCanvas {
         let maxSpeed: Double = 100.0 // Maximum pixels per measurement
         let normalizedSpeed = min(distance / maxSpeed, 1.0)
         let basePressure = 1.0 - (normalizedSpeed * 0.5) // Reduce pressure with speed
-        
-        // Apply current marker sensitivity setting (dedicated marker settings)
-        let sensitivity = document.currentMarkerPressureSensitivity
+
+        // Apply fixed sensitivity for simulated pressure
+        let sensitivity = 0.5 // Fixed sensitivity when simulating
         let pressureVariation = (basePressure - 0.5) * sensitivity
-        
+
         let finalPressure = max(0.1, min(1.0, 0.5 + pressureVariation))
         
         // Reduced logging frequency for performance
@@ -424,10 +424,43 @@ extension DrawingCanvas {
                 finalThickness *= (1.0 - feathering * 0.2)
             }
 
-            // Apply RAW pressure LAST - after tapering and feathering
+            // Apply pressure curve mapping - READ DIRECTLY FROM USERDEFAULTS
             if appState.pressureSensitivityEnabled {
-                finalThickness *= pressure
-                Log.info("🖊️ MARKER THICKNESS: After tapering/feathering, applied pressure=\(pressure), finalThickness=\(finalThickness)", category: .pressure)
+                // Read curve from UserDefaults EVERY TIME
+                var curve: [CGPoint] = []
+                if let data = UserDefaults.standard.array(forKey: "pressureCurve") {
+                    curve = data.compactMap { item -> CGPoint? in
+                        if let dict = item as? [String: Any],
+                           let x = dict["x"] as? Double,
+                           let y = dict["y"] as? Double {
+                            return CGPoint(x: x, y: y)
+                        } else if let dict = item as? [String: Double],
+                                  let x = dict["x"],
+                                  let y = dict["y"] {
+                            return CGPoint(x: x, y: y)
+                        }
+                        return nil
+                    }
+                }
+
+                // Fallback to linear if no curve
+                if curve.count < 2 {
+                    curve = [
+                        CGPoint(x: 0.0, y: 0.0),
+                        CGPoint(x: 0.25, y: 0.25),
+                        CGPoint(x: 0.5, y: 0.5),
+                        CGPoint(x: 0.75, y: 0.75),
+                        CGPoint(x: 1.0, y: 1.0)
+                    ]
+                }
+
+                let mappedPressure = getThicknessFromPressureCurve(pressure: pressure, curve: curve)
+                finalThickness *= mappedPressure
+
+                // Detailed debug logging
+                let curveString = curve.map { "(\(String(format: "%.2f", $0.x)),\(String(format: "%.2f", $0.y)))" }.joined(separator: " ")
+                Log.info("🖊️ CURVE FROM USERDEFAULTS: [\(curveString)]", category: .pressure)
+                Log.info("🖊️ MARKER THICKNESS: Raw=\(String(format: "%.4f", pressure)), Mapped=\(String(format: "%.4f", mappedPressure)), Final=\(String(format: "%.2f", finalThickness))", category: .pressure)
             }
 
             thicknessPoints.append((location: point, thickness: finalThickness))

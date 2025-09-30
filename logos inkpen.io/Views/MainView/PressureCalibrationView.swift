@@ -10,30 +10,24 @@ import SwiftUI
 struct PressureCalibrationView: View {
     @ObservedObject private var pressureManager = PressureManager.shared
     @Environment(\.presentationMode) var presentationMode
-    
+    private let appState = AppState.shared
+
     // Visual feedback state
     @State private var currentPressureBarWidth: CGFloat = 0
     @State private var minPressureBarWidth: CGFloat = 0
     @State private var maxPressureBarWidth: CGFloat = 0
     @State private var tabletOnlyMode: Bool = true // Focus on Apple Pencil/stylus only
-    
+
     // Event logging for debugging
     @State private var eventLog: [String] = []
     private let maxEventLogEntries = 20
-    
+
     // Drawing state
     @State private var isDrawing = false
     @State private var currentPath: VariableStrokePath?
     @State private var drawingPaths: [VariableStrokePath] = []
-    
-    // Pressure curve editor state
-    @State private var pressureCurve: [CGPoint] = [
-        CGPoint(x: 0.0, y: 0.0),   // 0.0 pressure = 0.0 thickness
-        CGPoint(x: 0.25, y: 0.25), // 0.25 pressure = 0.25 thickness
-        CGPoint(x: 0.5, y: 0.5),   // 0.5 pressure = 0.5 thickness
-        CGPoint(x: 0.75, y: 0.75), // 0.75 pressure = 0.75 thickness
-        CGPoint(x: 1.0, y: 1.0)    // 1.0 pressure = 1.0 thickness
-    ]
+
+    // Pressure curve editor state - bind to AppState's global curve
     @State private var selectedControlPoint: Int?
     
     // Constants
@@ -151,21 +145,21 @@ struct PressureCalibrationView: View {
                 
                 // Curve path
                 Path { path in
-                    guard pressureCurve.count >= 2 else { return }
-                    
-                    let firstPoint = pressureCurve[0]
+                    guard appState.pressureCurve.count >= 2 else { return }
+
+                    let firstPoint = appState.pressureCurve[0]
                     path.move(to: CGPoint(x: firstPoint.x * 280, y: 280 - firstPoint.y * 280))
-                    
-                    for i in 1..<pressureCurve.count {
-                        let point = pressureCurve[i]
+
+                    for i in 1..<appState.pressureCurve.count {
+                        let point = appState.pressureCurve[i]
                         path.addLine(to: CGPoint(x: point.x * 280, y: 280 - point.y * 280))
                     }
                 }
                 .stroke(Color.blue, lineWidth: 2)
-                
+
                 // Control points
-                ForEach(0..<pressureCurve.count, id: \.self) { index in
-                    let point = pressureCurve[index]
+                ForEach(0..<appState.pressureCurve.count, id: \.self) { index in
+                    let point = appState.pressureCurve[index]
                     Circle()
                         .fill(selectedControlPoint == index ? Color.red : Color.blue)
                         .frame(width: 12, height: 12)
@@ -179,14 +173,14 @@ struct PressureCalibrationView: View {
                                     if selectedControlPoint == index {
                                         let newX = max(0, min(1, value.location.x / 280))
                                         let newY = max(0, min(1, (280 - value.location.y) / 280))
-                                        pressureCurve[index] = CGPoint(x: newX, y: newY)
-                                        
+                                        appState.pressureCurve[index] = CGPoint(x: newX, y: newY)
+
                                         // Sort points by x value to maintain order
-                                        pressureCurve.sort { $0.x < $1.x }
-                                        
+                                        appState.pressureCurve.sort { $0.x < $1.x }
+
                                         // Update selected index after sorting
                                         if selectedControlPoint != nil {
-                                            selectedControlPoint = pressureCurve.firstIndex { abs($0.x - newX) < 0.01 && abs($0.y - newY) < 0.01 }
+                                            selectedControlPoint = appState.pressureCurve.firstIndex { abs($0.x - newX) < 0.01 && abs($0.y - newY) < 0.01 }
                                         }
                                     }
                                 }
@@ -218,29 +212,7 @@ struct PressureCalibrationView: View {
 
     @discardableResult
     private func getThicknessFromCurve(pressure: Double) -> Double {
-        guard pressureCurve.count >= 2 else { return pressure }
-        
-        // Find the two control points that bracket the input pressure
-        var lowerIndex = 0
-        for i in 0..<pressureCurve.count {
-            if pressureCurve[i].x <= pressure {
-                lowerIndex = i
-            } else {
-                break
-            }
-        }
-        
-        let upperIndex = min(lowerIndex + 1, pressureCurve.count - 1)
-        let lowerPoint = pressureCurve[lowerIndex]
-        let upperPoint = pressureCurve[upperIndex]
-        
-        // Linear interpolation between the two points
-        if upperPoint.x == lowerPoint.x {
-            return lowerPoint.y
-        }
-        
-        let t = (pressure - lowerPoint.x) / (upperPoint.x - lowerPoint.x)
-        return lowerPoint.y + t * (upperPoint.y - lowerPoint.y)
+        return getThicknessFromPressureCurve(pressure: pressure, curve: appState.pressureCurve)
     }
     
     // MARK: - Pressure Test Canvas

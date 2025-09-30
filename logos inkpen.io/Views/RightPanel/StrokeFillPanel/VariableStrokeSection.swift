@@ -59,28 +59,7 @@ struct VariableStrokeSection: View {
                 .help("Enable or disable pressure sensitivity for variable stroke")
             }
 
-            // Pressure Sensitivity Slider (only show when enabled)
-            if appState.pressureSensitivityEnabled {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Sensitivity")
-                            .font(.subheadline)
-                            .foregroundColor(Color.ui.secondaryText)
-                        Spacer()
-                        Text("\(Int(document.currentBrushPressureSensitivity * 100))%")
-                            .font(.subheadline)
-                            .foregroundColor(Color.ui.primaryText)
-                            .monospacedDigit()
-                    }
-
-                Slider(value: Binding(
-                    get: { document.currentBrushPressureSensitivity },
-                    set: { document.currentBrushPressureSensitivity = $0 }
-                ), in: 0...1)
-                .controlSize(.regular)
-                .help("How much pressure affects thickness (simulated if no pressure input)")
-            }
-            }
+            // Pressure Sensitivity Slider REMOVED - now using global pressure curve from Preferences
 
             // REMOVED: Taper is no longer used - natural pressure creates tapering
 

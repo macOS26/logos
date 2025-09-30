@@ -248,7 +248,7 @@ struct PreferencesView: View {
                         .foregroundColor(.secondary)
 
                     // Pressure curve editor
-                    PressureCurveEditor(pressureCurve: $pressureCurve, size: 300)
+                    PressureCurveEditor(curve: $pressureCurve, size: 300)
                         .padding(.vertical, 8)
 
                     // Preset buttons

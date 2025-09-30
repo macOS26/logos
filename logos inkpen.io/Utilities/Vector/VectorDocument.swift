@@ -203,9 +203,7 @@ class VectorDocument: ObservableObject, Codable {
     @Published var currentBrushThickness: Double = 20.0 {
         didSet { UserDefaults.standard.set(currentBrushThickness, forKey: "brushThickness") }
     }
-    @Published var currentBrushPressureSensitivity: Double = 0.5 {
-        didSet { UserDefaults.standard.set(currentBrushPressureSensitivity, forKey: "brushPressureSensitivity") }
-    }
+    // currentBrushPressureSensitivity REMOVED - now using global pressure curve from AppState
     @Published var currentBrushTaper: Double = 0.4 {
         didSet { UserDefaults.standard.set(currentBrushTaper, forKey: "brushTaper") }
     }
@@ -340,10 +338,9 @@ class VectorDocument: ObservableObject, Codable {
     internal let maxUndoStackSize = 50
     
     // MARKER SETTINGS (Felt-tip marker specific)
-    @Published var currentMarkerPressureSensitivity: Double = 0.6 // Marker pressure sensitivity (0.0-1.0)
     @Published var currentMarkerSmoothingTolerance: Double = 2.0 // Marker smoothing tolerance (0.0-10.0)
-    @Published var currentMarkerTipSize: Double = 8.0 // Marker tip size in points (1.0-50.0)
-    @Published var currentMarkerOpacity: Double = 0.9 // Marker ink opacity (0.0-1.0)
+    @Published var currentMarkerTipSize: Double = 31.0 // Marker tip size in points (1.0-50.0)
+    @Published var currentMarkerOpacity: Double = 1.0 // Marker ink opacity (0.0-1.0)
     @Published var currentMarkerFeathering: Double = 0.3 // Marker edge feathering (0.0-1.0)
     @Published var currentMarkerTaperStart: Double = 0.1 // Marker start taper (0.0-0.5)
     @Published var currentMarkerTaperEnd: Double = 0.1 // Marker end taper (0.0-0.5)
@@ -387,7 +384,7 @@ class VectorDocument: ObservableObject, Codable {
 
         // Initialize brush settings from UserDefaults
         self.currentBrushThickness = UserDefaults.standard.object(forKey: "brushThickness") as? Double ?? 20.0
-        self.currentBrushPressureSensitivity = UserDefaults.standard.object(forKey: "brushPressureSensitivity") as? Double ?? 0.5
+        // currentBrushPressureSensitivity removed - now using global pressure curve
         self.currentBrushTaper = UserDefaults.standard.object(forKey: "brushTaper") as? Double ?? 0.4
         self.currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 2.0
 
@@ -733,10 +730,9 @@ class VectorDocument: ObservableObject, Codable {
         lastColorChangeType = .fillOpacity
 
         // Initialize marker settings (not persisted)
-        currentMarkerPressureSensitivity = 0.6
         currentMarkerSmoothingTolerance = 2.0
-        currentMarkerTipSize = 8.0
-        currentMarkerOpacity = 0.9
+        currentMarkerTipSize = 31.0
+        currentMarkerOpacity = 1.0
         currentMarkerFeathering = 0.3
         currentMarkerTaperStart = 0.1
         currentMarkerTaperEnd = 0.1
@@ -749,7 +745,7 @@ class VectorDocument: ObservableObject, Codable {
 
         // Initialize brush settings from UserDefaults (properties with didSet) - MUST be done before accessing settings
         currentBrushThickness = UserDefaults.standard.object(forKey: "brushThickness") as? Double ?? 20.0
-        currentBrushPressureSensitivity = UserDefaults.standard.object(forKey: "brushPressureSensitivity") as? Double ?? 0.5
+        // currentBrushPressureSensitivity removed - now using global pressure curve
         currentBrushTaper = UserDefaults.standard.object(forKey: "brushTaper") as? Double ?? 0.4
         currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 2.0
         currentBrushLiquid = UserDefaults.standard.object(forKey: "brushLiquid") as? Double ?? 0.0
