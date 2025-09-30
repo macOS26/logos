@@ -30,9 +30,6 @@ extension DrawingCanvas {
             }
         }
         
-        // CRITICAL FIX: Save to undo stack BEFORE making any changes
-        document.saveToUndoStack()
-        
         // PROFESSIONAL OBJECT DRAGGING: Save initial positions AND transforms
         // This matches the precision approach used by the hand tool
         initialObjectPositions.removeAll()
@@ -188,8 +185,11 @@ extension DrawingCanvas {
             // Removed excessive logging during drag operations
             return
         }
-        
+
         if !initialObjectPositions.isEmpty && currentDragDelta != .zero {
+            // Save to undo stack ONCE at the end, not at the start
+            document.saveToUndoStack()
+
             // BLAZING FAST FINISH: Apply accumulated drag delta to actual coordinates at the end
             // This ensures smooth 60fps preview during drag, then commits changes once
             guard let _ = document.selectedLayerIndex else { return }
