@@ -96,14 +96,14 @@ extension DrawingCanvas {
         // Use pressure passed directly from event, or fall back to PressureManager
         let actualPressure = pressure ?? PressureManager.shared.currentPressure
 
-        Log.info("🖊️ MARKER UPDATE: Raw pressure RECEIVED: \(actualPressure) at location: (\(location.x), \(location.y))", category: .pressure)
+        // Logging disabled in hot path to reduce CPU overhead
 
         // Add point to raw path with RAW pressure data (0.0-1.0)
         let markerPoint = MarkerPoint(location: location, pressure: actualPressure)
-        Log.info("🖊️ MARKER UPDATE: MarkerPoint CREATED with pressure: \(markerPoint.pressure)", category: .pressure)
+        // Logging disabled in hot path to reduce CPU overhead
 
         markerRawPoints.append(markerPoint)
-        Log.info("🖊️ MARKER UPDATE: markerRawPoints count: \(markerRawPoints.count), last 3 pressures: \(markerRawPoints.suffix(3).map { $0.pressure })", category: .pressure)
+        // Logging disabled in hot path to reduce CPU overhead
 
         // Update real-time preview
         updateMarkerPreview()
@@ -461,10 +461,7 @@ extension DrawingCanvas {
                 let mappedPressure = getThicknessFromPressureCurve(pressure: pressure, curve: curve)
                 finalThickness *= mappedPressure
 
-                // Detailed debug logging
-                let curveString = curve.map { "(\(String(format: "%.2f", $0.x)),\(String(format: "%.2f", $0.y)))" }.joined(separator: " ")
-                Log.info("🖊️ CURVE FROM USERDEFAULTS: [\(curveString)]", category: .pressure)
-                Log.info("🖊️ MARKER THICKNESS: Raw=\(String(format: "%.4f", pressure)), Mapped=\(String(format: "%.4f", mappedPressure)), Final=\(String(format: "%.2f", finalThickness))", category: .pressure)
+                // Logging disabled in hot path to reduce CPU overhead
             }
 
             thicknessPoints.append((location: point, thickness: finalThickness))
@@ -481,7 +478,7 @@ extension DrawingCanvas {
     /// Get pressure at a specific point by interpolating from raw points
     private func getPressureAtPoint(_ point: CGPoint, rawPoints: [MarkerPoint]) -> Double {
         guard rawPoints.count > 0 else {
-            Log.info("🖊️ GET PRESSURE: No raw points, returning 1.0", category: .pressure)
+            // Logging disabled in hot path to reduce CPU overhead
             return 1.0
         }
 
@@ -490,8 +487,6 @@ extension DrawingCanvas {
         var closestDistance2 = Double.infinity
         var closestPressure1: Double = 1.0
         var closestPressure2: Double = 1.0
-        var closestLocation1: CGPoint?
-        var closestLocation2: CGPoint?
 
         for rawPoint in rawPoints {
             let distance = sqrt(pow(point.x - rawPoint.location.x, 2) + pow(point.y - rawPoint.location.y, 2))
@@ -500,15 +495,12 @@ extension DrawingCanvas {
                 // New closest point
                 closestDistance2 = closestDistance1
                 closestPressure2 = closestPressure1
-                closestLocation2 = closestLocation1
                 closestDistance1 = distance
                 closestPressure1 = rawPoint.pressure
-                closestLocation1 = rawPoint.location
             } else if distance < closestDistance2 {
                 // New second closest
                 closestDistance2 = distance
                 closestPressure2 = rawPoint.pressure
-                closestLocation2 = rawPoint.location
             }
         }
 
@@ -520,12 +512,12 @@ extension DrawingCanvas {
                 let weight1 = closestDistance2 / totalDistance
                 let weight2 = closestDistance1 / totalDistance
                 let interpolatedPressure = closestPressure1 * weight1 + closestPressure2 * weight2
-                Log.info("🖊️ GET PRESSURE: Interpolated \(interpolatedPressure) from p1=\(closestPressure1) at \(closestLocation1!) (d=\(closestDistance1)) and p2=\(closestPressure2) at \(closestLocation2!) (d=\(closestDistance2)) for point \(point)", category: .pressure)
+                // Logging disabled in hot path to reduce CPU overhead
                 return interpolatedPressure
             }
         }
 
-        Log.info("🖊️ GET PRESSURE: Using closest pressure \(closestPressure1) at \(closestLocation1!) for point \(point)", category: .pressure)
+        // Logging disabled in hot path to reduce CPU overhead
         return closestPressure1
     }
     
