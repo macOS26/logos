@@ -178,6 +178,7 @@ final class ColorExportManager {
 extension ColorExportManager {
 
     /// Export from context (for direct rendering exports)
+    @discardableResult
     func exportFromContext(
         _ context: CGContext,
         format: ExportFormat,

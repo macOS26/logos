@@ -215,7 +215,8 @@ struct PressureCalibrationView: View {
     }
     
     // MARK: - Pressure Curve Functions
-    
+
+    @discardableResult
     private func getThicknessFromCurve(pressure: Double) -> Double {
         guard pressureCurve.count >= 2 else { return pressure }
         
@@ -386,7 +387,7 @@ struct PressureCalibrationView: View {
     private func startDrawing(at location: CGPoint, pressure: Double) {
         isDrawing = true
         // Use pressure curve to get thickness: 0.0 pressure = 0.0 thickness, 1.0 pressure = 10.0 thickness
-        _ = getThicknessFromCurve(pressure: pressure)
+        getThicknessFromCurve(pressure: pressure)
         currentPath = VariableStrokePath(points: [PressurePoint(location: location, pressure: pressure)])
         
         // Start calibration if not already started
@@ -399,7 +400,7 @@ struct PressureCalibrationView: View {
         guard isDrawing, var path = currentPath else { return }
         
         // Use pressure curve to get thickness: 0.0 pressure = 0.0 thickness, 1.0 pressure = 10.0 thickness
-        _ = getThicknessFromCurve(pressure: pressure)
+        getThicknessFromCurve(pressure: pressure)
         path.points.append(PressurePoint(location: location, pressure: pressure))
         currentPath = path
         

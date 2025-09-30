@@ -76,7 +76,7 @@ extension FileOperations {
         }
 
         // Export the icon
-        _ = try ColorExportManager.shared.exportFromContext(
+        try ColorExportManager.shared.exportFromContext(
             context,
             format: .png,
             colorSpace: .displayP3,
@@ -160,7 +160,7 @@ extension FileOperations {
             }
 
             // Export the icon
-            _ = try ColorExportManager.shared.exportFromContext(
+            try ColorExportManager.shared.exportFromContext(
                 context,
                 format: .png,
                 colorSpace: .displayP3,
@@ -283,7 +283,7 @@ extension FileOperations {
         }
 
         // Use ColorExportManager for proper P3 export with ICC profile embedding
-        _ = try ColorExportManager.shared.exportFromContext(
+        try ColorExportManager.shared.exportFromContext(
             context,
             format: .png,
             colorSpace: .displayP3,

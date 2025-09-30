@@ -14,6 +14,7 @@ extension DrawingCanvas {
     /// PERFECT COORDINATE SYSTEM: Match exactly with .scaleEffect(zoomLevel, anchor: .topLeading).offset(canvasOffset)
     /// Mathematical inverse: (screen - canvasOffset) / zoomLevel = canvas
     /// 🚀 GPU-ACCELERATED: Uses Metal compute shaders for batch operations
+    @discardableResult
     internal func screenToCanvas(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
         return screenToCanvas([point], geometry: geometry)[0]
     }

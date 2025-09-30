@@ -69,7 +69,7 @@ extension FileOperations {
             // Use unified objects to hydrate all shapes
             for unifiedObject in document.unifiedObjects {
                 if case .shape(let shape) = unifiedObject.objectType {
-                    _ = ImageContentRegistry.hydrateImageIfAvailable(for: shape)
+                    ImageContentRegistry.hydrateImageIfAvailable(for: shape)
                 }
             }
             // Don't trigger UI updates from background thread - let the caller handle it
@@ -96,7 +96,7 @@ extension FileOperations {
             // Use unified objects to hydrate all shapes
             for unifiedObject in document.unifiedObjects {
                 if case .shape(let shape) = unifiedObject.objectType {
-                    _ = ImageContentRegistry.hydrateImageIfAvailable(for: shape)
+                    ImageContentRegistry.hydrateImageIfAvailable(for: shape)
                 }
             }
             // Don't trigger UI updates from background thread - let the caller handle it

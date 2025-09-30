@@ -387,7 +387,7 @@ class PasteboardDiagnostics {
         let startTime = CFAbsoluteTimeGetCurrent()
         
         for _ in 0..<1000 {
-            _ = simulateHitTest(document: document, at: testPoint)
+            simulateHitTest(document: document, at: testPoint)
         }
         
         let endTime = CFAbsoluteTimeGetCurrent()
@@ -411,8 +411,8 @@ class PasteboardDiagnostics {
         return test
     }
     
-    
-    
+
+    @discardableResult
     private func simulateHitTest(document: VectorDocument, at location: CGPoint) -> HitTestResult {
         var hitShape: VectorShape?
         var hitLayerIndex: Int?

@@ -128,7 +128,7 @@ struct DocumentBasedMainView: View {
                 ImageContentRegistry.setBaseDirectory(url.deletingLastPathComponent())
                 for unifiedObject in document.unifiedObjects {
                     if case .shape(let shape) = unifiedObject.objectType {
-                        _ = ImageContentRegistry.hydrateImageIfAvailable(for: shape)
+                        ImageContentRegistry.hydrateImageIfAvailable(for: shape)
                     }
                 }
             }

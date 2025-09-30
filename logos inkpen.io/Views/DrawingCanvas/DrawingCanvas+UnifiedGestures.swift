@@ -16,7 +16,7 @@ extension DrawingCanvas {
     /// Detect and log advanced click types (option+click, command+click, double click)
     /// Shows current tool and green text box detection
     internal func detectAdvancedClickTypes(at location: CGPoint, geometry: GeometryProxy, clickType: String) {
-        _ = screenToCanvas(location, geometry: geometry)
+        screenToCanvas(location, geometry: geometry)
         // Advanced click detection - reduced logging for performance
     }
     
