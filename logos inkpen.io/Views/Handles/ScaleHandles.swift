@@ -49,8 +49,8 @@ struct ScaleHandles: View {
     }
     
     private var calculatedCenter: CGPoint {
-        let bounds = calculatedBounds
-        return CGPoint(x: bounds.midX, y: bounds.midY)
+        // Use true geometric centroid from common helper
+        return shape.calculateCentroid()
     }
     
     var body: some View {
@@ -475,7 +475,7 @@ struct ScaleHandles: View {
             // For regular shapes, use existing logic
             bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         }
-        centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
+        centerPoint = VectorPoint(shape.calculateCentroid())
         
         Log.fileOperation("🎯 EXTRACTED \(pathPoints.count) path points + center for scale anchor selection", level: .info)
     }
@@ -547,7 +547,7 @@ struct ScaleHandles: View {
             }
         } else {
             // Center point
-            scalingAnchorPoint = CGPoint(x: centerPoint.x, y: centerPoint.y)
+            scalingAnchorPoint = shape.calculateCentroid()
             Log.info("🔴 LOCKED PIN: Set to center point at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))", category: .general)
         }
     }
@@ -669,10 +669,8 @@ struct ScaleHandles: View {
             }
         }
         
-        // Update center point based on NEW bounds after scaling
-        // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
-        let newBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-        centerPoint = VectorPoint(CGPoint(x: newBounds.midX, y: newBounds.midY))
+        // Update center point based on NEW centroid after scaling
+        centerPoint = VectorPoint(shape.calculateCentroid())
         
         // FORCE VIEW REFRESH: Trigger state change to rebuild UI with new points
         pointsRefreshTrigger += 1

@@ -60,8 +60,8 @@ struct RotateHandles: View {
     }
     
     private var calculatedCenter: CGPoint {
-        let bounds = calculatedBounds
-        return CGPoint(x: bounds.midX, y: bounds.midY)
+        // Use true geometric centroid from common helper
+        return shape.calculateCentroid()
     }
     
     var body: some View {
@@ -210,7 +210,7 @@ struct RotateHandles: View {
             // For regular shapes and untransformed images, use existing logic
             bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         }
-        centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
+        centerPoint = VectorPoint(shape.calculateCentroid())
         
         Log.fileOperation("🎯 EXTRACTED \(pathPoints.count) path points + center for rotation anchor selection", level: .info)
     }
@@ -299,7 +299,7 @@ struct RotateHandles: View {
             rotationAnchorPoint = CGPoint(x: point.x, y: point.y)
             // Removed excessive logging during drag operations
         } else {
-            rotationAnchorPoint = CGPoint(x: centerPoint.x, y: centerPoint.y)
+            rotationAnchorPoint = shape.calculateCentroid()
             // Removed excessive logging during drag operations
         }
         
@@ -322,9 +322,8 @@ struct RotateHandles: View {
             }
         }
         
-        // Update center point based on NEW bounds after rotation
-        let newBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-        centerPoint = VectorPoint(CGPoint(x: newBounds.midX, y: newBounds.midY))
+        // Update center point based on NEW centroid after rotation
+        centerPoint = VectorPoint(shape.calculateCentroid())
         
         // FORCE VIEW REFRESH: Trigger state change to rebuild UI with new points
         pointsRefreshTrigger += 1
