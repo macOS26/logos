@@ -97,8 +97,8 @@ class PressureManager: ObservableObject {
             Log.info("🎨 PRESSURE MANAGER: ✅ Real pressure input detected and enabled!", category: .pressure)
         }
         
-        // Real pressure is already in good range, just clamp it
-        let clampedPressure = max(0.0, min(2.0, pressure))
+        // Real pressure should be normalized to 0.0-1.0 range
+        let clampedPressure = max(0.0, min(1.0, pressure))
         
         DispatchQueue.main.async {
             self.currentPressure = clampedPressure
@@ -171,8 +171,8 @@ class PressureManager: ObservableObject {
         
         // Smooth the pressure transition
         let smoothedPressure = (currentPressure * (1.0 - speedSmoothingFactor)) + (finalPressure * speedSmoothingFactor)
-        
-        return max(0.0, min(2.0, smoothedPressure))
+
+        return max(0.0, min(1.0, smoothedPressure))
     }
     
     // MARK: - Reset Methods

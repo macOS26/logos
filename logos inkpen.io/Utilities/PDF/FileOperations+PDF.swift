@@ -462,7 +462,7 @@ extension FileOperations {
                 output[3] = color.a
             },
             releaseInfo: { info in
-                guard let info = info else { return }
+                guard info != nil else { return }
                 //_ = Unmanaged<GradientData>.fromOpaque(info).takeRetainedValue()
             }
         )
@@ -535,7 +535,7 @@ extension FileOperations {
                 output[3] = color.a
             },
             releaseInfo: { info in
-                guard let info = info else { return }
+                guard info != nil else { return }
                 //_ = Unmanaged<GradientData>.fromOpaque(info).takeRetainedValue()
             }
         )

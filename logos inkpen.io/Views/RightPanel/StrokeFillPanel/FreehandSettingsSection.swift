@@ -161,7 +161,7 @@ struct FreehandSettingsSection: View {
                 .help("Preserve sharp corners when simplifying paths")
             }
 
-            // Advanced Smoothing Section (shared with brush/marker)
+            // Advanced Smoothing Section (shared with brush)
             Divider()
                 .padding(.vertical, 8)
 

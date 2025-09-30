@@ -252,7 +252,7 @@ extension DrawingCanvas {
                 handleBrushDragStart(at: startLocation)
             }
             handleBrushDragUpdate(at: currentLocation)
-            
+
         case .marker:
             let currentLocation = screenToCanvas(value.location, geometry: geometry)
             if !isMarkerDrawing {
@@ -260,7 +260,7 @@ extension DrawingCanvas {
                 handleMarkerDragStart(at: startLocation)
             }
             handleMarkerDragUpdate(at: currentLocation)
-            
+
         case .scale, .rotate, .shear, .warp:
             // Transform tools don't use drag gestures - handled by their own handles
             break
@@ -314,10 +314,10 @@ extension DrawingCanvas {
             
         case .brush:
             handleBrushDragEnd()
-            
+
         case .marker:
             handleMarkerDragEnd()
-            
+
         default:
             break
         }

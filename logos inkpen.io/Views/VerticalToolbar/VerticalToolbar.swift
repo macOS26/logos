@@ -351,7 +351,7 @@ struct VerticalToolbar: View {
         case .brush:
             return "Brush Tool (B) - Draw variable width brush strokes"
         case .marker:
-            return "Marker Tool (M) - Draw with circular felt-tip marker strokes"
+            return "Marker Tool (M) - Draw with pressure-sensitive marker strokes"
         case .font:
             return "Font Tool (T) - Add and edit text"
         case .line:

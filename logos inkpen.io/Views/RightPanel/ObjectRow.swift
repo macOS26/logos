@@ -156,7 +156,9 @@ struct ObjectRow: View {
 struct PreferencesView: View {
     @Environment(AppState.self) private var appState
     @Environment(\._openURL) private var openURL
-    
+    @AppStorage("globalPressureCurve") private var pressureCurveData: Data = PreferencesView.defaultPressureCurveData()
+    @State private var pressureCurve: [CGPoint] = PreferencesView.defaultPressureCurve()
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Preferences")
@@ -238,9 +240,89 @@ struct PreferencesView: View {
             }
             #endif
 
+            // Pressure Sensitivity Section
+            GroupBox(label: Label("Pressure Sensitivity", systemImage: "hand.draw").font(.headline)) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Configure how pressure from your stylus or tablet is mapped to stroke thickness.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    // Pressure curve editor
+                    PressureCurveEditor(pressureCurve: $pressureCurve, size: 300)
+                        .padding(.vertical, 8)
+
+                    // Preset buttons
+                    HStack(spacing: 8) {
+                        Button("Linear") {
+                            pressureCurve = PreferencesView.defaultPressureCurve()
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("Soft") {
+                            pressureCurve = [
+                                CGPoint(x: 0.0, y: 0.0),
+                                CGPoint(x: 0.25, y: 0.4),
+                                CGPoint(x: 0.5, y: 0.65),
+                                CGPoint(x: 0.75, y: 0.85),
+                                CGPoint(x: 1.0, y: 1.0)
+                            ]
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("Hard") {
+                            pressureCurve = [
+                                CGPoint(x: 0.0, y: 0.0),
+                                CGPoint(x: 0.25, y: 0.1),
+                                CGPoint(x: 0.5, y: 0.35),
+                                CGPoint(x: 0.75, y: 0.6),
+                                CGPoint(x: 1.0, y: 1.0)
+                            ]
+                        }
+                        .buttonStyle(.bordered)
+
+                        Spacer()
+                    }
+                }
+                .padding(.vertical, 8)
+            }
+
             Spacer()
         }
         .padding(24)
         .frame(minWidth: 850, minHeight: 500)
+        .onAppear {
+            loadPressureCurve()
+        }
+        .onDisappear {
+            savePressureCurve()
+        }
+    }
+
+    private func loadPressureCurve() {
+        if let decoded = try? JSONDecoder().decode([CGPoint].self, from: pressureCurveData) {
+            pressureCurve = decoded
+        }
+    }
+
+    private func savePressureCurve() {
+        if let encoded = try? JSONEncoder().encode(pressureCurve) {
+            pressureCurveData = encoded
+        }
+    }
+
+    // Helper functions
+    static func defaultPressureCurve() -> [CGPoint] {
+        return [
+            CGPoint(x: 0.0, y: 0.0),
+            CGPoint(x: 0.25, y: 0.25),
+            CGPoint(x: 0.5, y: 0.5),
+            CGPoint(x: 0.75, y: 0.75),
+            CGPoint(x: 1.0, y: 1.0)
+        ]
+    }
+
+    static func defaultPressureCurveData() -> Data {
+        let defaultCurve = defaultPressureCurve()
+        return (try? JSONEncoder().encode(defaultCurve)) ?? Data()
     }
 }

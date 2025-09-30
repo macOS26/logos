@@ -126,6 +126,13 @@ struct logos_inken_ioApp: App {
                 
                 // Application Menu commands (appears under the app name)
                 CommandGroup(replacing: .appSettings) {
+                    Button("Preferences...") {
+                        openWindow(id: "preferences")
+                    }
+                    .keyboardShortcut(",", modifiers: .command)
+
+                    Divider()
+
                     Menu("Default Tool") {
                         Button(AppState.shared.defaultTool == .selection ? "✓ Selection Tool (Arrow)" : "Selection Tool (Arrow)") {
                             AppState.shared.defaultTool = .selection
@@ -153,12 +160,7 @@ struct logos_inken_ioApp: App {
                             AppState.shared.defaultTool = .brush
                         }
                         .help("Set brush tool as default for new documents")
-                        
-                        Button(AppState.shared.defaultTool == .marker ? "✓ Marker Tool" : "Marker Tool") {
-                            AppState.shared.defaultTool = .marker
-                        }
-                        .help("Set marker tool as default for new documents")
-                        
+
                         Divider()
                         
                         Button(AppState.shared.defaultTool == .line ? "✓ Line Tool" : "Line Tool") {
@@ -620,13 +622,13 @@ struct logos_inken_ioApp: App {
                     }
                     .keyboardShortcut("b", modifiers: [])
                     .help("Switch to brush tool")
-                    
+
                     Button("Marker Tool") {
                         documentState?.switchToTool(.marker)
                     }
                     .keyboardShortcut("m", modifiers: [])
                     .help("Switch to marker tool")
-                    
+
                     Button("Font Tool") {
                         documentState?.switchToTool(.font)
                     }
@@ -872,7 +874,28 @@ struct logos_inken_ioApp: App {
         .windowStyle(.hiddenTitleBar)
         .defaultPosition(.center)
         .handlesExternalEvents(matching: Set<String>()) // DISABLE scene restoration for this window
-        
+
+        // Settings/Preferences Window
+        Window("Preferences", id: "preferences") {
+            PreferencesView()
+                .environment(appState)
+                .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { notification in
+                    if let window = notification.object as? NSWindow,
+                       window.title == "Preferences" {
+                        doNotRestoreThis(window)
+                    }
+                }
+                .background(WindowAccessor { window in
+                    if let window {
+                        doNotRestoreThis(window)
+                    }
+                })
+        }
+        .defaultSize(width: 850, height: 700)
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
+        .handlesExternalEvents(matching: Set<String>())
+
         // 🔥 GRADIENT HUD WINDOW - Real floating window that can go outside main window
         Window("Select Gradient Color", id: "gradient-hud") {
             StableGradientHUDContent(hudManager: appState.persistentGradientHUD)

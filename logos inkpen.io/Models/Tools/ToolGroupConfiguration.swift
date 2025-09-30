@@ -11,7 +11,7 @@ import SwiftUI
  - Keep basic shapes together: [.rectangle, .square, .circle, .ellipse, .egg]
  - Separate polygons: [.polygon, .pentagon, .hexagon, .heptagon, .octagon]
  - Group drawing tools: [.line, .bezierPen]
- - Group paint tools: [.brush, .marker, .freehand]
+ - Group paint tools: [.brush, .freehand]
  - Group transformation tools: [.scale, .rotate, .shear, .warp]
  - Group triangle shapes: [.equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .cone]
  

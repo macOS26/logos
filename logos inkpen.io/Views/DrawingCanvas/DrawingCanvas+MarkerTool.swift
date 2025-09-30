@@ -7,7 +7,17 @@
 //
 
 import SwiftUI
-import SwiftUI
+
+// MARK: - Marker Point Data Structure
+struct MarkerPoint {
+    let location: CGPoint
+    let pressure: Double // 0.0 to 1.0
+
+    init(location: CGPoint, pressure: Double = 1.0) {
+        self.location = location
+        self.pressure = max(0.0, min(1.0, pressure))
+    }
+}
 
 extension DrawingCanvas {
     
@@ -293,17 +303,45 @@ extension DrawingCanvas {
             fillStyle: fillStyle
         )
         
-        // Apply self-union operation if remove overlap is enabled
+        // Apply expand stroke and union if remove overlap is enabled
         if document.markerRemoveOverlap {
-            let cg = finalShape.path.cgPath
-            var cleaned: CGPath? = nil
-            cleaned = CoreGraphicsPathOperations.normalized(cg, using: .winding)
-            if cleaned == nil { cleaned = CoreGraphicsPathOperations.normalized(cg, using: .evenOdd) }
-            if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .winding) }
-            if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .evenOdd) }
-            if let cleanedPath = cleaned, !cleanedPath.isEmpty, isPathBoundsFinite(cleanedPath.boundingBox) {
-                finalShape.path = VectorPath(cgPath: cleanedPath)
-                Log.info("🖊️ MARKER: Removed self-overlap", category: .general)
+            let originalPath = finalShape.path.cgPath
+
+            // Step 1: Expand the stroke outline if stroke exists
+            if let stroke = finalShape.strokeStyle, stroke.width > 0 {
+                if let expandedStroke = PathOperations.outlineStroke(path: originalPath, strokeStyle: stroke) {
+                    // Step 2: Union the expanded stroke with itself to remove internal overlaps
+                    var unionedStroke: CGPath? = nil
+                    unionedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .winding)
+                    if unionedStroke == nil {
+                        unionedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .evenOdd)
+                    }
+
+                    // Step 3: Union the expanded stroke with the original fill path
+                    let strokeToMerge = unionedStroke ?? expandedStroke
+                    var merged: CGPath? = nil
+                    merged = CoreGraphicsPathOperations.union(originalPath, strokeToMerge, using: .winding)
+                    if merged == nil {
+                        merged = CoreGraphicsPathOperations.union(originalPath, strokeToMerge, using: .evenOdd)
+                    }
+
+                    if let mergedPath = merged, !mergedPath.isEmpty, isPathBoundsFinite(mergedPath.boundingBox) {
+                        finalShape.path = VectorPath(cgPath: mergedPath)
+                        finalShape.strokeStyle = nil // Convert to fill-only shape
+                        Log.info("🖊️ MARKER: Expanded stroke and unioned with fill", category: .general)
+                    }
+                }
+            } else {
+                // No stroke, just normalize the fill path
+                var cleaned: CGPath? = nil
+                cleaned = CoreGraphicsPathOperations.normalized(originalPath, using: .winding)
+                if cleaned == nil { cleaned = CoreGraphicsPathOperations.normalized(originalPath, using: .evenOdd) }
+                if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(originalPath, originalPath, using: .winding) }
+                if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(originalPath, originalPath, using: .evenOdd) }
+                if let cleanedPath = cleaned, !cleanedPath.isEmpty, isPathBoundsFinite(cleanedPath.boundingBox) {
+                    finalShape.path = VectorPath(cgPath: cleanedPath)
+                    Log.info("🖊️ MARKER: Removed self-overlap", category: .general)
+                }
             }
         }
         
@@ -366,14 +404,30 @@ extension DrawingCanvas {
             let strokeLength = Double(centerPoints.count)
             let isShortStroke = strokeLength < 5  // Reduced threshold from 20 to 5
 
-            // AGGRESSIVE TAPERING like brush tool to avoid rounded ends
-            if progress < 0.08 {
-                // Start: Very aggressive taper from sharp point (like brush)
-                finalThickness *= pow(progress / 0.08, 2.0)
-            } else if progress > 0.92 {
-                // End: Very aggressive taper to sharp point (like brush)
-                let endProgress = (1.0 - progress) / 0.08
-                finalThickness *= pow(endProgress, 2.0)
+            if isShortStroke {
+                // Very short strokes: Sharp taper from thin point to thick and back to thin point
+                if progress < 0.3 {
+                    // Start thin and gradually increase - more aggressive taper
+                    finalThickness *= pow(progress / 0.3, 1.5) // Start at 0% and increase sharply
+                } else if progress > 0.7 {
+                    // End thin - gradually decrease to sharp point
+                    let endProgress = (1.0 - progress) / 0.3
+                    finalThickness *= pow(endProgress, 1.5) // Decrease sharply to 0%
+                }
+                // Else maintain full thickness for marker body
+            } else {
+                // Longer strokes: Sharp marker tapering (thin points at start and end)
+                let startTaper = max(0.15, document.currentMarkerTaperStart) // Ensure visible taper
+                let endTaper = max(0.15, document.currentMarkerTaperEnd)
+
+                if progress < startTaper {
+                    // Start thin and gradually increase to full thickness - sharper taper
+                    finalThickness *= pow(progress / startTaper, 1.5)
+                } else if progress > (1.0 - endTaper) {
+                    // End thin - gradually decrease to sharp point
+                    let endProgress = (1.0 - progress) / endTaper
+                    finalThickness *= pow(endProgress, 1.5)
+                }
             }
 
             // Apply pressure variation (marker characteristic)

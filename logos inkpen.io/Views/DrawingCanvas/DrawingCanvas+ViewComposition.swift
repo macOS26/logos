@@ -64,16 +64,6 @@ extension DrawingCanvas {
             .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
         }
         
-        // Marker live preview (SwiftUI overlay; avoids document mutations during drag)
-        if let preview = markerPreviewPath {
-            Path { path in
-                addPathElements(preview.elements, to: &path)
-            }
-            .modifier(MarkerPreviewStyleModifier(appState: appState, document: document, preview: preview))
-            .scaleEffect(document.zoomLevel, anchor: .topLeading)
-            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-        }
-        
         // Freehand live preview (SwiftUI overlay; avoids document mutations during drag)
         if let preview = freehandPreviewPath {
             Path { path in
@@ -82,6 +72,48 @@ extension DrawingCanvas {
             .modifier(FreehandPreviewStyleModifier(appState: appState, document: document, preview: preview))
             .scaleEffect(document.zoomLevel, anchor: .topLeading)
             .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+        }
+
+        // Marker live preview (SwiftUI overlay; avoids document mutations during drag)
+        if let preview = markerPreviewPath {
+            let markerFillColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
+            let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
+            let showStroke = !document.markerApplyNoStroke
+
+            if showStroke {
+                // Match final stroke settings exactly
+                let strokeWidth = getCurrentStrokeWidth() * 2.0 // placement: .outside doubles width
+                let lineCap: CGLineCap = document.defaultStrokeLineCap == .round ? .round : (document.defaultStrokeLineCap == .square ? .square : .butt)
+                let lineJoin: CGLineJoin = document.defaultStrokeLineJoin == .round ? .round : (document.defaultStrokeLineJoin == .bevel ? .bevel : .miter)
+
+                Path { path in
+                    addPathElements(preview.elements, to: &path)
+                }
+                .fill(markerFillColor.color)
+                .opacity(document.currentMarkerOpacity)
+                .overlay(
+                    Path { path in
+                        addPathElements(preview.elements, to: &path)
+                    }
+                    .stroke(markerStrokeColor.color, style: SwiftUI.StrokeStyle(
+                        lineWidth: strokeWidth,
+                        lineCap: lineCap,
+                        lineJoin: lineJoin,
+                        miterLimit: document.defaultStrokeMiterLimit
+                    ))
+                    .opacity(document.currentMarkerOpacity)
+                )
+                .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+            } else {
+                Path { path in
+                    addPathElements(preview.elements, to: &path)
+                }
+                .fill(markerFillColor.color)
+                .opacity(document.currentMarkerOpacity)
+                .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+            }
         }
 
         bezierAnchorPoints()
@@ -341,7 +373,7 @@ extension DrawingCanvas {
     @ViewBuilder
     internal func pressureSensitiveOverlay(geometry: GeometryProxy) -> some View {
         // Only show pressure overlay for drawing tools that use pressure
-        if document.currentTool == .brush || document.currentTool == .marker || document.currentTool == .freehand {
+        if document.currentTool == .brush || document.currentTool == .freehand || document.currentTool == .marker {
             PressureSensitiveCanvasRepresentable(
                                             onPressureEvent: { location, pressure, eventType, isTabletEvent in
                                 handlePressureEvent(location: location, pressure: pressure, eventType: eventType, isTabletEvent: isTabletEvent, geometry: geometry)
@@ -398,8 +430,7 @@ extension DrawingCanvas {
     private func handlePressureDrawingStart(at location: CGPoint) {
         Log.info("🎨 PRESSURE DRAWING START: Called for tool: \(document.currentTool)", category: .pressure)
         Log.info("🎨 PRESSURE DRAWING START: Is brush drawing: \(isBrushDrawing)", category: .pressure)
-        Log.info("🎨 PRESSURE DRAWING START: Is marker drawing: \(isMarkerDrawing)", category: .pressure)
-        
+
         switch document.currentTool {
         case .brush:
             if !isBrushDrawing {
@@ -408,19 +439,19 @@ extension DrawingCanvas {
             } else {
                 Log.info("🎨 PRESSURE DRAWING START: Brush already drawing, skipping start", category: .pressure)
             }
-        case .marker:
-            if !isMarkerDrawing {
-                Log.info("🎨 PRESSURE DRAWING START: Starting marker drawing", category: .pressure)
-                handleMarkerDragStart(at: location)
-            } else {
-                Log.info("🎨 PRESSURE DRAWING START: Marker already drawing, skipping start", category: .pressure)
-            }
         case .freehand:
             if !isFreehandDrawing {
                 Log.info("🎨 PRESSURE DRAWING START: Starting freehand drawing", category: .pressure)
                 handleFreehandDragStart(at: location)
             } else {
                 Log.info("🎨 PRESSURE DRAWING START: Freehand already drawing, skipping start", category: .pressure)
+            }
+        case .marker:
+            if !isMarkerDrawing {
+                Log.info("🎨 PRESSURE DRAWING START: Starting marker drawing", category: .pressure)
+                handleMarkerDragStart(at: location)
+            } else {
+                Log.info("🎨 PRESSURE DRAWING START: Marker already drawing, skipping start", category: .pressure)
             }
         default:
             Log.info("🎨 PRESSURE DRAWING START: Unknown tool, skipping", category: .pressure)
@@ -431,8 +462,7 @@ extension DrawingCanvas {
     private func handlePressureDrawingUpdate(at location: CGPoint) {
         Log.info("🎨 PRESSURE DRAWING UPDATE: Called for tool: \(document.currentTool)", category: .pressure)
         Log.info("🎨 PRESSURE DRAWING UPDATE: Is brush drawing: \(isBrushDrawing)", category: .pressure)
-        Log.info("🎨 PRESSURE DRAWING UPDATE: Is marker drawing: \(isMarkerDrawing)", category: .pressure)
-        
+
         switch document.currentTool {
         case .brush:
             if isBrushDrawing {
@@ -441,19 +471,19 @@ extension DrawingCanvas {
             } else {
                 Log.info("🎨 PRESSURE DRAWING UPDATE: Brush not drawing, skipping update", category: .pressure)
             }
-        case .marker:
-            if isMarkerDrawing {
-                // Marker drag update - logging removed for performance
-                handleMarkerDragUpdate(at: location)
-            } else {
-                Log.info("🎨 PRESSURE DRAWING UPDATE: Marker not drawing, skipping update", category: .pressure)
-            }
         case .freehand:
             if isFreehandDrawing {
                 // Freehand drag update - logging removed for performance
                 handleFreehandDragUpdate(at: location)
             } else {
                 Log.info("🎨 PRESSURE DRAWING UPDATE: Freehand not drawing, skipping update", category: .pressure)
+            }
+        case .marker:
+            if isMarkerDrawing {
+                // Marker drag update - logging removed for performance
+                handleMarkerDragUpdate(at: location)
+            } else {
+                Log.info("🎨 PRESSURE DRAWING UPDATE: Marker not drawing, skipping update", category: .pressure)
             }
         default:
             Log.info("🎨 PRESSURE DRAWING UPDATE: Unknown tool, skipping", category: .pressure)
@@ -467,13 +497,13 @@ extension DrawingCanvas {
             if isBrushDrawing {
                 handleBrushDragEnd()
             }
-        case .marker:
-            if isMarkerDrawing {
-                handleMarkerDragEnd()
-            }
         case .freehand:
             if isFreehandDrawing {
                 handleFreehandDragEnd()
+            }
+        case .marker:
+            if isMarkerDrawing {
+                handleMarkerDragEnd()
             }
         default:
             break
@@ -598,31 +628,6 @@ private struct BrushPreviewStyleModifier: ViewModifier {
             }
         })
         return offsetShape
-    }
-}
-
-// MARK: - Marker Preview Style Modifier
-
-private struct MarkerPreviewStyleModifier: ViewModifier {
-    @Environment(AppState.self) var appState
-    let appStateRef: AppState?
-    let document: VectorDocument
-    let preview: VectorPath
-    
-    init(appState: AppState, document: VectorDocument, preview: VectorPath) {
-        self.document = document
-        self.preview = preview
-        self.appStateRef = appState
-    }
-    
-    func body(content: Content) -> some View {
-        // Marker tool always uses fill preview with current marker colors and opacity
-        let markerFillColor = document.markerUseFillAsStroke ? document.defaultFillColor.color : document.defaultStrokeColor.color
-        let markerOpacity = document.currentMarkerOpacity
-        
-        Path { p in addPathElements(preview.elements, to: &p) }
-            .fill(markerFillColor)
-            .opacity(markerOpacity)
     }
 }
 

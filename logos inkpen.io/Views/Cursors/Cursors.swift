@@ -148,17 +148,6 @@ struct BrushPoint {
     }
 }
 
-// Marker Point Data Structure (used in MarkerTool extension)
-struct MarkerPoint {
-    let location: CGPoint
-    let pressure: Double // 0.0 to 1.0
-
-    init(location: CGPoint, pressure: Double = 1.0) {
-        self.location = location
-        self.pressure = max(0.0, min(1.0, pressure)) // Clamp between 0 and 1
-    }
-}
-
 struct DrawingCanvas: View {
     @ObservedObject var document: VectorDocument
     @Environment(AppState.self) internal var appState
@@ -241,16 +230,16 @@ struct DrawingCanvas: View {
     @State internal var activeBrushShape: VectorShape? = nil // Real-time brush shape preview
     @State internal var brushPreviewPath: VectorPath? = nil // Preview path drawn by Metal overlay (not in document)
 
-    // MARKER DRAWING STATE (Felt-tip marker with circular strokes)
+    // MARKER DRAWING STATE (Felt-tip marker tool)
     @State internal var markerPath: VectorPath?
     @State internal var markerRawPoints: [MarkerPoint] = [] // Raw mouse tracking points with pressure
-    @State internal var markerSimplifiedPoints: [CGPoint] = [] // Douglas-Peucker simplified points  
+    @State internal var markerSimplifiedPoints: [CGPoint] = [] // Douglas-Peucker simplified points
     @State internal var isMarkerDrawing = false
     @State internal var activeMarkerShape: VectorShape? = nil // Real-time marker shape preview
     @State internal var markerPreviewPath: VectorPath? = nil // Preview path drawn by overlay (not in document)
 
     // Note: freehandSmoothingTolerance now comes from document.settings.freehandSmoothingTolerance
-    
+
     // Track previous tool to detect changes
     @State internal var previousTool: DrawingTool = .selection
     
@@ -338,15 +327,15 @@ struct DrawingCanvas: View {
     @State internal var sharedNewElements: [PathElement] = []
     @State internal var sharedValidElements: [PathElement] = []
     
-    // Shared Douglas-Peucker algorithm variables (used in Brush, Marker, Freehand tools)
+    // Shared Douglas-Peucker algorithm variables (used in Brush and Freehand tools)
     @State internal var sharedMaxDistance: Double = 0
     @State internal var sharedMaxIndex: Int = 0
     
-    // Shared pressure/closest point variables (used in Brush and Marker tools)
+    // Shared pressure/closest point variables (used in Brush tool)
     @State internal var sharedClosestDistance: Double = Double.infinity
     @State internal var sharedClosestPressure: Double = 1.0
     
-    // Shared thickness calculation variables (used in Brush and Marker tools)
+    // Shared thickness calculation variables (used in Brush tool)
     @State internal var sharedThicknessPoints: [(location: CGPoint, thickness: Double)] = []
     
     // Shared handle analysis variables (used in multiple extensions)
