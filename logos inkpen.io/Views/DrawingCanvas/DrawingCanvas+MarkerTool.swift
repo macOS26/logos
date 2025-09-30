@@ -366,30 +366,14 @@ extension DrawingCanvas {
             let strokeLength = Double(centerPoints.count)
             let isShortStroke = strokeLength < 5  // Reduced threshold from 20 to 5
 
-            if isShortStroke {
-                // Very short strokes: Sharp taper from thin point to thick and back to thin point
-                if progress < 0.3 {
-                    // Start thin and gradually increase - more aggressive taper
-                    finalThickness *= pow(progress / 0.3, 1.5) // Start at 0% and increase sharply
-                } else if progress > 0.7 {
-                    // End thin - gradually decrease to sharp point
-                    let endProgress = (1.0 - progress) / 0.3
-                    finalThickness *= pow(endProgress, 1.5) // Decrease sharply to 0%
-                }
-                // Else maintain full thickness for marker body
-            } else {
-                // Longer strokes: Sharp marker tapering (thin points at start and end)
-                let startTaper = max(0.15, document.currentMarkerTaperStart) // Ensure visible taper
-                let endTaper = max(0.15, document.currentMarkerTaperEnd)
-
-                if progress < startTaper {
-                    // Start thin and gradually increase to full thickness - sharper taper
-                    finalThickness *= pow(progress / startTaper, 1.5)
-                } else if progress > (1.0 - endTaper) {
-                    // End thin - gradually decrease to sharp point
-                    let endProgress = (1.0 - progress) / endTaper
-                    finalThickness *= pow(endProgress, 1.5)
-                }
+            // AGGRESSIVE TAPERING like brush tool to avoid rounded ends
+            if progress < 0.08 {
+                // Start: Very aggressive taper from sharp point (like brush)
+                finalThickness *= pow(progress / 0.08, 2.0)
+            } else if progress > 0.92 {
+                // End: Very aggressive taper to sharp point (like brush)
+                let endProgress = (1.0 - progress) / 0.08
+                finalThickness *= pow(endProgress, 2.0)
             }
 
             // Apply pressure variation (marker characteristic)
