@@ -97,12 +97,10 @@ class PressureManager: ObservableObject {
             Log.info("🎨 PRESSURE MANAGER: ✅ Real pressure input detected and enabled!", category: .pressure)
         }
         
-        // Real pressure should be normalized to 0.0-1.0 range
-        let clampedPressure = max(0.0, min(1.0, pressure))
-        
+        // Use raw pressure directly - no clamping
         DispatchQueue.main.async {
-            self.currentPressure = clampedPressure
-            Log.info("🎨 PRESSURE MANAGER: Updated currentPressure to: \(clampedPressure)", category: .pressure)
+            self.currentPressure = pressure
+            Log.info("🎨 PRESSURE MANAGER: Updated currentPressure to: \(pressure)", category: .pressure)
         }
         
         // Update tracking for hybrid scenarios
@@ -111,7 +109,7 @@ class PressureManager: ObservableObject {
         
         // Update calibration if active
         if isCalibrating {
-            updateCalibrationData(pressure: clampedPressure, isTabletEvent: isTabletEvent)
+            updateCalibrationData(pressure: pressure, isTabletEvent: isTabletEvent)
         }
         
         // Debug output for pressure changes (only log significant changes to avoid spam)
@@ -172,7 +170,7 @@ class PressureManager: ObservableObject {
         // Smooth the pressure transition
         let smoothedPressure = (currentPressure * (1.0 - speedSmoothingFactor)) + (finalPressure * speedSmoothingFactor)
 
-        return max(0.0, min(1.0, smoothedPressure))
+        return smoothedPressure
     }
     
     // MARK: - Reset Methods
