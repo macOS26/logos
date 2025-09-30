@@ -117,11 +117,16 @@ extension DrawingCanvas {
     
     internal func handleMarkerDragEnd() {
         guard isMarkerDrawing else { return }
-        
+
         Log.fileOperation("🖊️ MARKER: Finishing drawing with \(markerRawPoints.count) raw points", level: .info)
-        
-        // Process marker stroke to create smooth felt-tip stroke
-        processMarkerStroke()
+
+        // Use the EXACT preview path as final - no recomputation
+        if let preview = markerPreviewPath {
+            finalizeMarkerFromPreview(preview)
+        } else {
+            // Fallback: generate if no preview exists
+            processMarkerStroke()
+        }
 
         // Clean up state including clearing preview path for overlay system
         markerPreviewPath = nil
@@ -348,8 +353,55 @@ extension DrawingCanvas {
 
         Log.fileOperation("🖊️ MARKER: Generated smooth felt-tip stroke with \(markerSimplifiedPoints.count) control points", level: .info)
     }
-    
-    
+
+    /// Finalize marker stroke from preview path (no recomputation)
+    private func finalizeMarkerFromPreview(_ preview: VectorPath) {
+        guard document.selectedLayerIndex != nil else { return }
+
+        // Use current marker settings
+        let strokeColor = document.markerApplyNoStroke ? nil : getCurrentStrokeColor()
+        let strokeWidth = getCurrentStrokeWidth()
+
+        let markerFillColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
+        let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
+        let markerOpacity = document.currentMarkerOpacity
+
+        let strokeStyle = strokeColor != nil ? StrokeStyle(
+            color: markerStrokeColor,
+            width: strokeWidth,
+            placement: .outside,
+            lineCap: .round,
+            lineJoin: .round,
+            opacity: markerOpacity
+        ) : nil
+
+        let fillStyle = FillStyle(
+            color: markerFillColor,
+            opacity: markerOpacity
+        )
+
+        var finalPath = preview
+
+        // Apply remove overlap if enabled
+        if document.markerRemoveOverlap {
+            let cg = preview.cgPath
+            var cleaned: CGPath? = nil
+            cleaned = CoreGraphicsPathOperations.normalized(cg, using: .winding)
+            if cleaned == nil { cleaned = CoreGraphicsPathOperations.normalized(cg, using: .evenOdd) }
+            if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .winding) }
+            if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .evenOdd) }
+            if let cleanedPath = cleaned, !cleanedPath.isEmpty, isPathBoundsFinite(cleanedPath.boundingBox) {
+                finalPath = VectorPath(cgPath: cleanedPath)
+                Log.info("🖊️ MARKER: Removed self-overlap for preview bake", category: .general)
+            }
+        }
+
+        let shape = VectorShape(name: "Marker Stroke", path: finalPath, strokeStyle: strokeStyle, fillStyle: fillStyle)
+        guard let layerIndex = document.selectedLayerIndex else { return }
+        document.addShapeToFrontOfUnifiedSystem(shape, layerIndex: layerIndex)
+    }
+
+
     // MARK: - Marker Stroke Generation
     
     /// Generate smooth felt-tip marker stroke with variable width
