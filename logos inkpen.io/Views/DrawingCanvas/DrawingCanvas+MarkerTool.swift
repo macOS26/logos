@@ -430,12 +430,10 @@ extension DrawingCanvas {
                 }
             }
 
-            // Apply pressure variation (marker characteristic)
-            // For short strokes, reduce pressure variation to maintain consistency
-            if isShortStroke {
-                finalThickness *= (0.85 + pressure * 0.15) // Minimal pressure variation for short strokes
-            } else {
-                finalThickness *= (0.7 + pressure * 0.3) // Normal pressure variation for longer strokes
+            // Apply pressure variation directly when pressure sensitivity is enabled
+            if appState.pressureSensitivityEnabled {
+                // Use full pressure range (0.0-1.0) to affect thickness
+                finalThickness *= pressure
             }
 
             // Apply feathering effect for felt-tip appearance
