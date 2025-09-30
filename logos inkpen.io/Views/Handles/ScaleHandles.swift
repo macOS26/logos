@@ -172,17 +172,48 @@ struct ScaleHandles: View {
                     x: center.x * zoomLevel + canvasOffset.x,
                     y: center.y * zoomLevel + canvasOffset.y
                 ))
+                .zIndex(100) // Ensure center point is on top
                 .onTapGesture {
                     if !isScaling {
                         // SINGLE CLICK: Set center as the locked pin point (RED)
                         setLockedPinPoint(nil) // nil = center
                     }
                 }
-                .highPriorityGesture(
+                .gesture(
                     DragGesture(minimumDistance: 3)
                         .onChanged { value in
-                            // DRAG: Scale away from the locked pin point
-                            handleScalingFromPoint(draggedPointIndex: nil, dragValue: value, bounds: bounds, center: center)
+                            // When dragging center point, calculate scale based on drag distance
+                            if !scalingStarted {
+                                scalingStarted = true
+                                isScaling = true
+                                document.isHandleScalingActive = true
+                                initialBounds = bounds
+                                initialTransform = shape.transform
+                                startLocation = value.startLocation
+                                scalingAnchorPoint = center
+                                document.saveToUndoStack()
+                            }
+
+                            let translation = CGSize(
+                                width: value.location.x - value.startLocation.x,
+                                height: value.location.y - value.startLocation.y
+                            )
+
+                            // Calculate scale based on drag distance
+                            let sensitivity: CGFloat = 0.005 / zoomLevel
+                            var scaleX = 1.0 + (translation.width * sensitivity)
+                            var scaleY = 1.0 + (translation.height * sensitivity)
+
+                            scaleX = min(max(scaleX, 0.1), 10.0)
+                            scaleY = min(max(scaleY, 0.1), 10.0)
+
+                            if isShiftPressed {
+                                let avgScale = (scaleX + scaleY) / 2.0
+                                scaleX = avgScale
+                                scaleY = avgScale
+                            }
+
+                            calculatePreviewTransform(scaleX: scaleX, scaleY: scaleY, anchor: center)
                         }
                         .onEnded { _ in
                             finishScaling()
@@ -636,6 +667,7 @@ struct ScaleHandles: View {
         // Removed excessive logging during drag operations
     }
     
+
     private func updatePathPointsAfterScaling() {
         // FORCE REFRESH: Clear current points and re-extract from transformed object
         pathPoints.removeAll()
