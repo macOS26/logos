@@ -1249,6 +1249,7 @@ func openLogosInkPenHelp() {
 }
 
 class DisplayMonitor: NSObject {
+    
     static let shared = DisplayMonitor()
     
     private override init() {

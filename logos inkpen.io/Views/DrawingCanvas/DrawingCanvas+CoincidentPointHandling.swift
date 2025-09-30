@@ -120,7 +120,6 @@ extension DrawingCanvas {
         
         // Find the shape containing this point
         for layerIndex in document.layers.indices {
-            let _ = document.layers[layerIndex]
             let shapes = document.getShapesForLayer(layerIndex)
             if let shape = shapes.first(where: { $0.id == pointID.shapeID }) {
                 

@@ -43,14 +43,7 @@ private struct CanvasCursorOverlayRepresentable: NSViewRepresentable {
         nsView.isHovering = isHovering
         nsView.currentTool = currentTool
         nsView.isPanActive = isPanActive
-        if needsInvalidate {
-            nsView.window?.invalidateCursorRects(for: nsView)
-        } else {
-            // Also invalidate on layout-affecting changes to beat arrow resets
-            _ = zoomLevel
-            _ = canvasOffset
-            nsView.window?.invalidateCursorRects(for: nsView)
-        }
+        nsView.window?.invalidateCursorRects(for: nsView)
 
         // Activate a short cursor lock to defeat late Arrow flips after zoom/offset/layout changes
         if isHovering {

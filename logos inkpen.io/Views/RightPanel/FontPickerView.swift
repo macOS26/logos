@@ -64,9 +64,6 @@ struct FontPickerView: View {
                     Text(fontFamily)
                         .font(.custom(fontFamily, size: 12))
                         .tag(fontFamily)
-                        .onAppear {
-                            _ = NSFont(name: fontFamily, size: 12)
-                        }
                 }
             }
             .pickerStyle(.menu)

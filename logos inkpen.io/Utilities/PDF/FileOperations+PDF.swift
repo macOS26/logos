@@ -463,7 +463,7 @@ extension FileOperations {
             },
             releaseInfo: { info in
                 guard let info = info else { return }
-                _ = Unmanaged<GradientData>.fromOpaque(info).takeRetainedValue()
+                //_ = Unmanaged<GradientData>.fromOpaque(info).takeRetainedValue()
             }
         )
         
@@ -536,7 +536,7 @@ extension FileOperations {
             },
             releaseInfo: { info in
                 guard let info = info else { return }
-                _ = Unmanaged<GradientData>.fromOpaque(info).takeRetainedValue()
+                //_ = Unmanaged<GradientData>.fromOpaque(info).takeRetainedValue()
             }
         )
         
