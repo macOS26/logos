@@ -66,8 +66,6 @@ struct ShearHandles: View {
         // SHEAR TOOL: Show all path points + center point with correct colors (same as scale tool)
         // CRITICAL FIX: For images with transforms, use the same bounds calculation as transform box handles
         // This ensures the shear tool aligns properly with transformed images
-        let bounds = calculatedBounds
-        let center = calculatedCenter
         
         ZStack {
             // ACTUAL OBJECT OUTLINE: Show the real shape paths
