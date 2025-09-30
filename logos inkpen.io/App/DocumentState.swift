@@ -489,8 +489,15 @@ class DocumentState: ObservableObject {
         panel.showsTagField = false
         panel.message = "Export as PNG (Portable Network Graphics)"
 
-        // Create accessory view for options
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 350, height: 140))
+        // Create accessory view for options (increased height for text to outlines checkbox)
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 350, height: 170))
+
+        // Convert text to outlines checkbox (at top)
+        let textToOutlinesCheckbox = NSButton(checkboxWithTitle: "Convert text to outlines",
+                                               target: nil, action: nil)
+        textToOutlinesCheckbox.frame = NSRect(x: 20, y: 130, width: 250, height: 20)
+        textToOutlinesCheckbox.state = .on // Default to converting text to outlines
+        accessoryView.addSubview(textToOutlinesCheckbox)
 
         // Icon set checkbox
         let iconCheckbox = NSButton(checkboxWithTitle: "Export as Icon Set",
@@ -554,13 +561,15 @@ class DocumentState: ObservableObject {
             let bgCheckbox: NSButton
             let iconSizesLabel: NSTextField
             let iconCheckbox: NSButton
+            let textToOutlinesCheckbox: NSButton
 
-            init(scaleLabel: NSTextField, scalePopup: NSPopUpButton, bgCheckbox: NSButton, iconSizesLabel: NSTextField, iconCheckbox: NSButton) {
+            init(scaleLabel: NSTextField, scalePopup: NSPopUpButton, bgCheckbox: NSButton, iconSizesLabel: NSTextField, iconCheckbox: NSButton, textToOutlinesCheckbox: NSButton) {
                 self.scaleLabel = scaleLabel
                 self.scalePopup = scalePopup
                 self.bgCheckbox = bgCheckbox
                 self.iconSizesLabel = iconSizesLabel
                 self.iconCheckbox = iconCheckbox
+                self.textToOutlinesCheckbox = textToOutlinesCheckbox
             }
 
             @objc func toggleIconMode(_ sender: NSButton) {
@@ -569,6 +578,7 @@ class DocumentState: ObservableObject {
                 scalePopup.isHidden = isIconMode
                 bgCheckbox.isHidden = isIconMode
                 iconSizesLabel.isHidden = !isIconMode
+                textToOutlinesCheckbox.isHidden = isIconMode
 
                 if isIconMode {
                     bgCheckbox.state = .off // Icons never have background
@@ -585,17 +595,19 @@ class DocumentState: ObservableObject {
                     bgCheckbox.isHidden = true
                     bgCheckbox.state = .off
                     iconSizesLabel.isHidden = selectedItem.contains("×") // Hide for individual sizes
+                    textToOutlinesCheckbox.isHidden = true
                 } else {
                     iconCheckbox.state = .off
                     bgCheckbox.isHidden = false
                     iconSizesLabel.isHidden = true
+                    textToOutlinesCheckbox.isHidden = false
                 }
             }
         }
 
         let handler = IconCheckboxHandler(scaleLabel: scaleLabel, scalePopup: scalePopup,
                                          bgCheckbox: bgCheckbox, iconSizesLabel: iconSizesLabel,
-                                         iconCheckbox: iconCheckbox)
+                                         iconCheckbox: iconCheckbox, textToOutlinesCheckbox: textToOutlinesCheckbox)
         iconCheckbox.target = handler
         iconCheckbox.action = #selector(IconCheckboxHandler.toggleIconMode(_:))
         scalePopup.target = handler
@@ -612,6 +624,7 @@ class DocumentState: ObservableObject {
             // Check if icon set mode is enabled (either via checkbox or dropdown)
             let selectedScale = scalePopup.titleOfSelectedItem ?? "2x"
             let isIconMode = iconCheckbox.state == .on || selectedScale == "Icon Set"
+            let convertTextToOutlines = textToOutlinesCheckbox.state == .on
 
             if isIconMode {
                 // For icon set, we need a folder not a file
@@ -619,6 +632,7 @@ class DocumentState: ObservableObject {
 
                 Task {
                     do {
+                        // Icon set export doesn't use text to outlines (icons typically don't have text)
                         try FileOperations.exportIconSet(document, folderURL: folderURL)
 
                         await MainActor.run {
@@ -675,11 +689,40 @@ class DocumentState: ObservableObject {
 
                     Task {
                         do {
-                            try FileOperations.exportToPNG(document, url: url, scale: scale,
-                                                            includeBackground: includeBackground)
+                            // If converting text to outlines, create a temporary copy and convert
+                            if convertTextToOutlines && !document.allTextObjects.isEmpty {
+                                // Save current document state
+                                let savedData = try JSONEncoder().encode(document)
+                                let savedState = try JSONDecoder().decode(VectorDocument.self, from: savedData)
+
+                                // Convert all text to outlines
+                                await MainActor.run {
+                                    Log.info("📝 Converting all text to outlines for PNG export...", category: .fileOperations)
+                                    self.convertAllTextToOutlinesForExport(document)
+                                }
+
+                                // Export PNG with outlined text
+                                try FileOperations.exportToPNG(document, url: url, scale: scale,
+                                                                includeBackground: includeBackground)
+
+                                // Restore original document state
+                                await MainActor.run {
+                                    Log.info("↩️ Restoring original document state after PNG export", category: .fileOperations)
+                                    document.unifiedObjects = savedState.unifiedObjects
+                                    document.layers = savedState.layers
+                                    document.selectedObjectIDs = savedState.selectedObjectIDs
+                                    document.selectedTextIDs = savedState.selectedTextIDs
+                                    document.selectedShapeIDs = savedState.selectedShapeIDs
+                                    document.objectWillChange.send()
+                                }
+                            } else {
+                                // No text conversion needed, export normally
+                                try FileOperations.exportToPNG(document, url: url, scale: scale,
+                                                                includeBackground: includeBackground)
+                            }
 
                             await MainActor.run {
-                                Log.info("✅ Exported PNG to: \(url.path) (scale: \(scale)x, background: \(includeBackground))",
+                                Log.info("✅ Exported PNG to: \(url.path) (scale: \(scale)x, background: \(includeBackground), text to outlines: \(convertTextToOutlines))",
                                         category: .fileOperations)
                             }
                         } catch {
@@ -711,8 +754,15 @@ class DocumentState: ObservableObject {
         panel.isExtensionHidden = false  // Show .svg extension
         panel.message = "Export SVG at 96 DPI for AutoDesk applications"
 
-        // Create accessory view for background option
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 60))
+        // Create accessory view for text to outlines and background options
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 90))
+
+        // Convert text to outlines checkbox (at top)
+        let textToOutlinesCheckbox = NSButton(checkboxWithTitle: "Convert text to outlines",
+                                               target: nil, action: nil)
+        textToOutlinesCheckbox.frame = NSRect(x: 20, y: 50, width: 250, height: 20)
+        textToOutlinesCheckbox.state = .on // Default to converting text to outlines
+        accessoryView.addSubview(textToOutlinesCheckbox)
 
         // Background checkbox
         let bgCheckbox = NSButton(checkboxWithTitle: "Include background",
@@ -726,24 +776,54 @@ class DocumentState: ObservableObject {
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
 
-            // Get background option
+            // Get export options
             let includeBackground = bgCheckbox.state == .on
+            let convertTextToOutlines = textToOutlinesCheckbox.state == .on
 
             Task {
                 do {
-                    // Generate SVG content with 96 DPI scaling using proper exporter
-                    let svgContent = try SVGExporter.shared.exportToAutoDeskSVG(document, includeBackground: includeBackground)
+                    var svgContent: String
+
+                    // If converting text to outlines, create a temporary copy and convert
+                    if convertTextToOutlines && !document.allTextObjects.isEmpty {
+                        // Save current document state
+                        let savedData = try JSONEncoder().encode(document)
+                        let savedState = try JSONDecoder().decode(VectorDocument.self, from: savedData)
+
+                        // Convert all text to outlines
+                        await MainActor.run {
+                            Log.info("📝 Converting all text to outlines for AutoDesk SVG export...", category: .fileOperations)
+                            self.convertAllTextToOutlinesForExport(document)
+                        }
+
+                        // Generate SVG with outlined text
+                        svgContent = try SVGExporter.shared.exportToAutoDeskSVG(document, includeBackground: includeBackground)
+
+                        // Restore original document state
+                        await MainActor.run {
+                            Log.info("↩️ Restoring original document state after AutoDesk SVG export", category: .fileOperations)
+                            document.unifiedObjects = savedState.unifiedObjects
+                            document.layers = savedState.layers
+                            document.selectedObjectIDs = savedState.selectedObjectIDs
+                            document.selectedTextIDs = savedState.selectedTextIDs
+                            document.selectedShapeIDs = savedState.selectedShapeIDs
+                            document.objectWillChange.send()
+                        }
+                    } else {
+                        // No text conversion needed, export normally
+                        svgContent = try SVGExporter.shared.exportToAutoDeskSVG(document, includeBackground: includeBackground)
+                    }
 
                     // Write to file
                     try svgContent.write(to: url, atomically: true, encoding: .utf8)
 
                     await MainActor.run {
-                        Log.info("✅ Exported AutoDesk SVG to: \(url.path) (background: \(includeBackground))", category: .fileOperations)
+                        Log.info("✅ Exported AutoDesk SVG to: \(url.path) (background: \(includeBackground), text to outlines: \(convertTextToOutlines))", category: .fileOperations)
                     }
                 } catch {
                     await MainActor.run {
                         Log.error("❌ Failed to export AutoDesk SVG: \(error)", category: .error)
-                        
+
                         let alert = NSAlert()
                         alert.messageText = "Export Failed"
                         alert.informativeText = error.localizedDescription

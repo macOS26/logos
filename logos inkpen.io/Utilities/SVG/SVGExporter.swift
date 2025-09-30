@@ -76,8 +76,12 @@ class SVGExporter {
             // ALWAYS skip Pasteboard - it's never exported
             if layer.name == "Pasteboard" { continue }
             // Skip Canvas layer if not including background
-            if !includeBackground && layer.name == "Canvas" { continue }
-            
+            if !includeBackground && layer.name == "Canvas" {
+                Log.info("📋 SVG EXPORT: Skipping Canvas layer (includeBackground=false)", category: .fileOperations)
+                continue
+            }
+
+            Log.info("📋 SVG EXPORT: Including layer '\(layer.name)' (includeBackground=\(includeBackground))", category: .fileOperations)
             svg += "<!-- Layer: \(layer.name) -->\n"
             svg += "<g id=\"layer_\(layerIndex)\" opacity=\"\(layer.opacity)\">\n"
             
