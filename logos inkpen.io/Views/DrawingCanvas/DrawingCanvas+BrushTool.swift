@@ -249,50 +249,13 @@ extension DrawingCanvas {
             pointsToProcess = interpolatedPoints
         }
 
+        // LIVE PREVIEW: Use raw points directly - NO SIMPLIFICATION during drawing
+        // Simplification will happen ONCE at the end in handleBrushDragEnd
         let rawPointLocations = pointsToProcess.map { $0.location }
 
-        // Liquid setting: 0% = moderate smoothing, 50% = no smoothing (all points), 100% = maximum smoothing
-        let liquidValue = document.currentBrushLiquid
-
-        let simplifiedPoints: [CGPoint]
-        if abs(liquidValue - 50.0) < 0.01 {
-            // Liquid = 50%: Keep ALL points for maximum detail (may be choppy)
-            simplifiedPoints = rawPointLocations
-        } else if liquidValue < 50.0 {
-            // Liquid 0-49%: Increasing smoothing as we go from 50 to 0
-            // At 0% we want moderate smoothing (like old 50%)
-            let smoothFactor = (50.0 - liquidValue) / 50.0  // 0 to 1 as liquid goes from 50 to 0
-            let tolerance = 0.5 + (2.0 * smoothFactor)  // Range: 0.5 to 2.5 for moderate smoothing
-            simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
-                points: rawPointLocations,
-                tolerance: tolerance
-            )
-        } else {
-            // Liquid 51-100%: Maximum smoothing
-            let smoothFactor = (liquidValue - 50.0) / 50.0  // 0 to 1 as liquid goes from 50 to 100
-            let tolerance = 2.5 + (7.5 * smoothFactor)  // Range: 2.5 to 10.0 for heavy smoothing
-            simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
-                points: rawPointLocations,
-                tolerance: tolerance
-            )
-        }
-
-        // Ensure minimum points for smooth curves based on liquid setting
-        // At liquid=50% we want all points, at 0% or 100% we want fewer points
-        let distanceFromCenter = abs(liquidValue - 50.0) / 50.0  // 0 to 1
-        let minPointsNeeded = Int(50.0 * (1.0 - distanceFromCenter * 0.8))  // 50 points at center, 10 at extremes
-
-        if simplifiedPoints.count < minPointsNeeded && rawPointLocations.count > 2 {
-            // If we don't have enough points after simplification, interpolate to add smoothness
-            // This helps create fluid curves even with high liquid values
-            Log.info("🖌️ LIQUID: Adding interpolated points for smoothness", category: .general)
-        }
-
-        // Logging disabled in hot path to reduce CPU overhead
-
-        if simplifiedPoints.count >= 2 {
+        if rawPointLocations.count >= 2 {
             return generatePreviewVariableWidthPath(
-                centerPoints: simplifiedPoints,
+                centerPoints: rawPointLocations,
                 recentRawPoints: pointsToProcess,
                 thickness: document.currentBrushThickness,
                 taper: document.currentBrushTaper
