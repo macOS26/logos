@@ -247,16 +247,17 @@ extension DrawingCanvas {
 
         Log.info("Douglas-Peucker: Simplified to \(markerSimplifiedPoints.count) points", category: .general)
 
-        // CRITICAL: Ensure we have enough points for proper leaf shape generation
-        // If simplification was too aggressive, re-interpolate points (SAME AS BRUSH TOOL!)
-        if markerSimplifiedPoints.count < 8 && processedPoints.count > 2 {
+        // CRITICAL: Ensure we have enough points for smooth tapers
+        // Need MORE points when pressure sensitivity is off since taper is the only variation
+        let minPoints = appState.pressureSensitivityEnabled ? 8 : 20
+        if markerSimplifiedPoints.count < minPoints && processedPoints.count > 2 {
             // Try again with much less tolerance
-            let minTolerance = smoothingTolerance * 0.1
+            let minTolerance = smoothingTolerance * 0.05
             markerSimplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: minTolerance)
 
             // If still too few, sample from processed points
-            if markerSimplifiedPoints.count < 8 {
-                let stepSize = max(1, processedPoints.count / 10)
+            if markerSimplifiedPoints.count < minPoints {
+                let stepSize = max(1, processedPoints.count / (minPoints + 10))
                 markerSimplifiedPoints = []
                 for i in Swift.stride(from: 0, to: processedPoints.count, by: stepSize) {
                     markerSimplifiedPoints.append(processedPoints[i])

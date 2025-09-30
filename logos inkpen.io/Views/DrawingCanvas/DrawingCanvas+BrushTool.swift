@@ -446,16 +446,18 @@ extension DrawingCanvas {
                 DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
         }
         
-        // CRITICAL: Keep many points for high-fidelity smooth curves
-        // If simplification was too aggressive, re-interpolate points
-        if brushSimplifiedPoints.count < 50 && processedPoints.count > 2 {
+        // CRITICAL: Keep many points for smooth taper transitions
+        // Need MORE points when pressure sensitivity is off since taper is the only variation
+        let minPoints = appState.pressureSensitivityEnabled ? 50 : 80
+        if brushSimplifiedPoints.count < minPoints && processedPoints.count > 2 {
             // Try again with minimal tolerance
-            let minTolerance = smoothingTolerance * 0.001
+            let minTolerance = smoothingTolerance * 0.0005
             brushSimplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: minTolerance)
 
             // If still too few, sample densely from processed points
-            if brushSimplifiedPoints.count < 50 {
-                let stepSize = max(1, processedPoints.count / 100)  // Keep up to 100 points
+            if brushSimplifiedPoints.count < minPoints {
+                let targetPoints = appState.pressureSensitivityEnabled ? 100 : 150
+                let stepSize = max(1, processedPoints.count / targetPoints)
                 brushSimplifiedPoints = []
                 for i in Swift.stride(from: 0, to: processedPoints.count, by: stepSize) {
                     brushSimplifiedPoints.append(processedPoints[i])
@@ -719,19 +721,26 @@ extension DrawingCanvas {
             
             thicknessPoints.append((location: point, thickness: finalThickness))
         }
-        
+
         // Generate left and right edge points with variable thickness
-        let leftEdgePoints = generateOffsetPoints(centerPoints: thicknessPoints, isLeftSide: true)
-        let rightEdgePoints = generateOffsetPoints(centerPoints: thicknessPoints, isLeftSide: false)
-        
+        var leftEdgePoints = generateOffsetPoints(centerPoints: thicknessPoints, isLeftSide: true)
+        var rightEdgePoints = generateOffsetPoints(centerPoints: thicknessPoints, isLeftSide: false)
+
+        // Apply light smoothing to edge points in taper regions to remove jaggedness
+        // This is especially important when pressure sensitivity is off
+        if !appState.pressureSensitivityEnabled && leftEdgePoints.count > 4 {
+            leftEdgePoints = CurveSmoothing.chaikinSmooth(points: leftEdgePoints, iterations: 1, ratio: 0.25)
+            rightEdgePoints = CurveSmoothing.chaikinSmooth(points: rightEdgePoints, iterations: 1, ratio: 0.25)
+        }
+
         // Create smooth bezier curves for BOTH edges (like freehand tool!)
         let leftEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: leftEdgePoints)
         let rightEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: rightEdgePoints.reversed()) // Reverse for proper winding
-        
+
         // Combine into a filled shape with smooth bezier curves
         return createSmoothBrushOutline(leftEdgePath: leftEdgePath, rightEdgePath: rightEdgePath)
     }
-    
+
     // MARK: - Pressure Interpolation
     
     /// Interpolates pressure value for a simplified point based on nearby raw points
@@ -878,15 +887,22 @@ extension DrawingCanvas {
             
             thicknessPoints.append((location: point, thickness: finalThickness))
         }
-        
+
         // Generate left and right edge points with variable thickness
-        let leftEdgePoints = generateOffsetPoints(centerPoints: thicknessPoints, isLeftSide: true)
-        let rightEdgePoints = generateOffsetPoints(centerPoints: thicknessPoints, isLeftSide: false)
-        
+        var leftEdgePoints = generateOffsetPoints(centerPoints: thicknessPoints, isLeftSide: true)
+        var rightEdgePoints = generateOffsetPoints(centerPoints: thicknessPoints, isLeftSide: false)
+
+        // Apply light smoothing to edge points in taper regions to remove jaggedness
+        // This is especially important when pressure sensitivity is off
+        if !appState.pressureSensitivityEnabled && leftEdgePoints.count > 4 {
+            leftEdgePoints = CurveSmoothing.chaikinSmooth(points: leftEdgePoints, iterations: 1, ratio: 0.25)
+            rightEdgePoints = CurveSmoothing.chaikinSmooth(points: rightEdgePoints, iterations: 1, ratio: 0.25)
+        }
+
         // Create smooth bezier curves for BOTH edges (like freehand tool!)
         let leftEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: leftEdgePoints)
         let rightEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: rightEdgePoints.reversed()) // Reverse for proper winding
-        
+
         // Combine into a filled shape with smooth bezier curves
         return createSmoothBrushOutline(leftEdgePath: leftEdgePath, rightEdgePath: rightEdgePath)
     }
