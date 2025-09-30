@@ -35,14 +35,19 @@ class PressureManager: ObservableObject {
     @Published var tabletOnlyCalibration: Bool = true
     
     // MARK: - Private Properties
-    
+
     /// Tracks points for simulation fallback
     private var lastLocation: CGPoint?
     private var lastTimestamp: Date?
-    
+
     /// Debug tracking for pressure changes
     private var lastRecordedPressure: Double?
-    
+
+    /// Track recent pressure values to detect if "real pressure" is actually constant
+    private var recentPressureValues: [Double] = []
+    private let pressureHistorySize = 10
+    private let pressureVariationThreshold = 0.01
+
     /// Speed-based pressure simulation parameters
     private let maxSpeed: Double = 100.0
     private let speedSmoothingFactor: Double = 0.3
@@ -74,25 +79,26 @@ class PressureManager: ObservableObject {
     
     /// Processes pressure from real input events
     func processRealPressure(_ pressure: Double, at location: CGPoint, timestamp: Date = Date(), isTabletEvent: Bool = false) {
-        
-        guard AppState.shared.pressureSensitivityEnabled else {
-            currentPressure = 1.0
-            return
-        }
-        
-        
+        // Always process real pressure - the pressure curve will handle whether to apply it
+
         // If in tablet-only calibration mode, ignore non-tablet events during calibration
         if isCalibrating && tabletOnlyCalibration && !isTabletEvent {
             Log.info("🎨 CALIBRATION: Ignoring non-tablet event (tablet-only mode)", category: .pressure)
             return
         }
-        
+
         // Mark that we have real pressure input
         if !hasRealPressureInput {
             hasRealPressureInput = true
             Log.info("🎨 PRESSURE MANAGER: ✅ Real pressure input detected and enabled!", category: .pressure)
         }
-        
+
+        // Track pressure variation to detect constant "fake" pressure (like trackpad)
+        recentPressureValues.append(pressure)
+        if recentPressureValues.count > pressureHistorySize {
+            recentPressureValues.removeFirst()
+        }
+
         // Use raw pressure directly - NO CLAMPING - SYNCHRONOUS UPDATE TO AVOID RACE CONDITION
         if Thread.isMainThread {
             self.currentPressure = pressure // Raw 0.0-1.0 pressure
@@ -101,16 +107,16 @@ class PressureManager: ObservableObject {
                 self.currentPressure = pressure // Raw 0.0-1.0 pressure
             }
         }
-        
+
         // Update tracking for hybrid scenarios
         lastLocation = location
         lastTimestamp = timestamp
-        
+
         // Update calibration if active
         if isCalibrating {
             updateCalibrationData(pressure: pressure, isTabletEvent: isTabletEvent)
         }
-        
+
         // Debug output for pressure changes (only log significant changes to avoid spam)
         if let lastPressure = lastRecordedPressure, abs(pressure - lastPressure) > 0.1 {
             let eventType = isTabletEvent ? "TABLET" : "TRACKPAD"
@@ -125,11 +131,8 @@ class PressureManager: ObservableObject {
     
     /// Simulates pressure based on drawing speed when real pressure unavailable
     func processSimulatedPressure(at location: CGPoint, sensitivity: Double = 0.5, timestamp: Date = Date()) -> Double {
-        guard AppState.shared.pressureSensitivityEnabled else {
-            return 1.0
-        }
-        
-        // Calculate speed-based pressure simulation
+        // Always calculate speed-based pressure simulation
+        // The pressure curve will handle whether to apply sensitivity or flatten to 1.0
         let simulatedPressure = calculateSimulatedPressure(at: location, timestamp: timestamp, sensitivity: sensitivity)
         
         DispatchQueue.main.async {
@@ -172,22 +175,44 @@ class PressureManager: ObservableObject {
         return smoothedPressure
     }
     
+    // MARK: - Pressure Variation Detection
+
+    /// Checks if recent pressure values are constant (like trackpad 1.0)
+    private func isPressureConstant() -> Bool {
+        guard recentPressureValues.count >= pressureHistorySize else {
+            return false // Not enough data yet
+        }
+
+        let minPressure = recentPressureValues.min() ?? 0
+        let maxPressure = recentPressureValues.max() ?? 0
+        let variation = maxPressure - minPressure
+
+        return variation < pressureVariationThreshold
+    }
+
     // MARK: - Reset Methods
-    
+
     /// Resets pressure state for new drawing
     func resetForNewDrawing() {
         lastLocation = nil
         lastTimestamp = nil
         lastRecordedPressure = nil
         currentPressure = 1.0
+        recentPressureValues.removeAll()
         Log.info("🎨 PRESSURE MANAGER: Reset for new stroke", category: .pressure)
     }
-    
+
     /// Gets pressure for a specific point in a drawing operation
     func getPressure(for location: CGPoint, sensitivity: Double = 0.5) -> Double {
         if hasRealPressureInput {
-            // When real pressure is available, currentPressure is updated by real events
-            return currentPressure
+            // Check if "real pressure" is actually constant (like trackpad sending 1.0)
+            if isPressureConstant() {
+                // Constant pressure detected - use simulated pressure for variation
+                return processSimulatedPressure(at: location, sensitivity: sensitivity)
+            } else {
+                // Real varying pressure - use it directly
+                return currentPressure
+            }
         } else {
             // Fall back to simulation
             return processSimulatedPressure(at: location, sensitivity: sensitivity)

@@ -78,35 +78,35 @@ enum DrawingCanvasPathHelpers {
     
     static func fitBezierCurves(through points: [CGPoint]) -> [PathElement] {
         var elements: [PathElement] = []
-        
+
         for i in 1..<points.count {
             let p0 = points[i - 1]
             let p1 = points[i]
-            
+
             let isFirstSegment = (i == 1)
             let isLastSegment = (i == points.count - 1)
-            
+
             if isFirstSegment || isLastSegment {
                 elements.append(.line(to: VectorPoint(p1)))
             } else {
                 let tension: Double = 0.25
                 let distance = sqrt(pow(p1.x - p0.x, 2) + pow(p1.y - p0.y, 2))
-                
+
                 let prevTangent = i > 1 ? calculateTangent(p0: points[i - 2], p1: p0, p2: p1) : CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
                 let nextTangent = i < points.count - 1 ? calculateTangent(p0: p0, p1: p1, p2: points[i + 1]) : CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
-                
+
                 let controlLength = distance * tension
-                
+
                 let control1 = CGPoint(
                     x: p0.x + prevTangent.x * controlLength,
                     y: p0.y + prevTangent.y * controlLength
                 )
-                
+
                 let control2 = CGPoint(
                     x: p1.x - nextTangent.x * controlLength,
                     y: p1.y - nextTangent.y * controlLength
                 )
-                
+
                 elements.append(.curve(
                     to: VectorPoint(p1),
                     control1: VectorPoint(control1),
@@ -114,7 +114,7 @@ enum DrawingCanvasPathHelpers {
                 ))
             }
         }
-        
+
         return elements
     }
     
