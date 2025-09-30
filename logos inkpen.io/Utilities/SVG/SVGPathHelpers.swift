@@ -52,8 +52,7 @@ extension SVGParser {
             if char.isNumber || char == "." || (char == "-" || char == "+") {
                 var numberStr = ""
                 var hasDecimal = false
-                let _ = i  // Track starting index for potential debugging
-                
+
                 // Handle sign only if it's at the start of a number
                 if char == "-" || char == "+" {
                     // Look ahead to see if this is actually a number

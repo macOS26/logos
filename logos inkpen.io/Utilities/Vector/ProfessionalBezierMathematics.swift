@@ -264,20 +264,14 @@ case independent = "Independent"  // Handles move independently (professional co
     /// Returns (left_curve_points, right_curve_points)
     static func splitCubicBezier(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> ([VectorPoint], [VectorPoint]) {
         // De Casteljau subdivision
-        let q0 = p0
         let q1 = VectorPoint.lerp(p0, p1, t)
         let q2 = VectorPoint.lerp(p1, p2, t)
-        let q3 = p3
-        
-        let r0 = q0
+
         let r1 = VectorPoint.lerp(q1, q2, t)
         let r2 = VectorPoint.lerp(p2, p3, t)
-        let r3 = q3
-        
-        let _ = r0 // s0 unused - required for De Casteljau subdivision
+
         let s1 = VectorPoint.lerp(r1, r2, t)
-        let _ = r3 // s2 unused - required for De Casteljau subdivision
-        
+
         let pointOnCurve = VectorPoint.lerp(s1, s1, t) // This is the point on the original curve at parameter t
         
         // Left curve: p0, q1, r1, pointOnCurve
@@ -385,9 +379,9 @@ case independent = "Independent"  // Handles move independently (professional co
     static func analyzeContinuity(curve1: [VectorPoint], curve2: [VectorPoint], tolerance: Double = 1e-10) -> ContinuityType {
         guard curve1.count == 4 && curve2.count == 4 else { return .none }
         
-        let _ = curve1[0], _ = curve1[1], p2 = curve1[2], p3 = curve1[3]
-        let q0 = curve2[0], q1 = curve2[1], _ = curve2[2], _ = curve2[3]
-        
+        let p2 = curve1[2], p3 = curve1[3]
+        let q0 = curve2[0], q1 = curve2[1]
+
         // Check C0 continuity (position)
         let positionDiff = sqrt((p3.x - q0.x) * (p3.x - q0.x) + (p3.y - q0.y) * (p3.y - q0.y))
         guard positionDiff < tolerance else { return .none }
@@ -565,8 +559,6 @@ struct ProfessionalBezierFactory {
             /// Create professional-style smooth curve
     static func createSmoothCurve(from startPoint: VectorPoint, to endPoint: VectorPoint, tension: Double = 0.33) -> [VectorPoint] {
         let direction = VectorPoint(endPoint.x - startPoint.x, endPoint.y - startPoint.y)
-        let _ = startPoint.distance(to: endPoint) // distance unused - professional calculation reference
-        
         let control1 = VectorPoint(
             startPoint.x + direction.x * tension,
             startPoint.y + direction.y * tension
@@ -594,10 +586,9 @@ struct ProfessionalBezierFactory {
             center.x + radius * cos(endAngle),
             center.y + radius * sin(endAngle)
         )
-        
-        let _ = (startAngle + endAngle) / 2.0 // midAngle unused - professional calculation reference
+
         let handleLength = radius * kappa
-        
+
         let control1 = VectorPoint(
             startPoint.x + handleLength * cos(startAngle + .pi / 2),
             startPoint.y + handleLength * sin(startAngle + .pi / 2)

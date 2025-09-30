@@ -89,7 +89,6 @@ class PerformanceMonitor: ObservableObject {
     
     /// Call this when Metal command buffer completes
     func metalCommandDidEnd() {
-        let _ = (CACurrentMediaTime() - commandBufferStartTime) * 1000.0
         DispatchQueue.main.async {
             // You can track specific Metal timing here if needed
         }

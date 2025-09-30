@@ -142,7 +142,6 @@ class ProfessionalPathOperations {
     // Based on Vatti clipping algorithm and Clipper library standards
     
     private static func pathToPolygon(_ path: CGPath) -> [[CGPoint]]? {
-        let _ = [CGPoint]()  // points placeholder - not implemented yet
         var subpaths: [[CGPoint]] = []
         var currentSubpath: [CGPoint] = []
         

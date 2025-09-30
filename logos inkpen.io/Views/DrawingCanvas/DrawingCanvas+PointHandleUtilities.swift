@@ -120,7 +120,6 @@ extension DrawingCanvas {
                     elements[pointID.elementIndex] = .line(to: newPoint)
                 case .curve(let oldTo, let control1, let control2):
                     // Check if handles are collapsed to the anchor point
-                    let _ = (abs(control1.x - oldTo.x) < 0.1 && abs(control1.y - oldTo.y) < 0.1) // control1Collapsed - unused
                     let control2Collapsed = (abs(control2.x - oldTo.x) < 0.1 && abs(control2.y - oldTo.y) < 0.1)
                     
                     // ADOBE ILLUSTRATOR BEHAVIOR: 
