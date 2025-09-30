@@ -523,11 +523,12 @@ class SVGParser: NSObject, XMLParserDelegate {
         guard let d = attributes["d"] else { return }
         
         Log.info("🔍 Parsing SVG path: \(d)", category: .general)
-        
+
         let pathData = parsePathData(d)
-        let vectorPath = VectorPath(elements: pathData)
-        
-        Log.fileOperation("📐 Created path with \(pathData.count) elements", level: .info)
+        let hasCloseElement = pathData.contains { if case .close = $0 { return true }; return false }
+        let vectorPath = VectorPath(elements: pathData, isClosed: hasCloseElement)
+
+        Log.fileOperation("📐 Created path with \(pathData.count) elements, isClosed: \(hasCloseElement)", level: .info)
         
         // Check if this path should be clipped
         let (shouldClip, clipPathId) = checkForClipPath(attributes)
