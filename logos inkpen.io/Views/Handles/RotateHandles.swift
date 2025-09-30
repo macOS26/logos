@@ -73,26 +73,49 @@ struct RotateHandles: View {
         
         ZStack {
             // ACTUAL OBJECT OUTLINE: Show the real shape path, not bounding box
-            Path { path in
-                for element in shape.path.elements {
-                    switch element {
-                    case .move(let to):
-                        path.move(to: to.cgPoint)
-                    case .line(let to):
-                        path.addLine(to: to.cgPoint)
-                    case .curve(let to, let control1, let control2):
-                        path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
-                    case .quadCurve(let to, let control):
-                        path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
-                    case .close:
-                        path.closeSubpath()
+            ZStack {
+                Path { path in
+                    for element in shape.path.elements {
+                        switch element {
+                        case .move(let to):
+                            path.move(to: to.cgPoint)
+                        case .line(let to):
+                            path.addLine(to: to.cgPoint)
+                        case .curve(let to, let control1, let control2):
+                            path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                        case .quadCurve(let to, let control):
+                            path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                        case .close:
+                            path.closeSubpath()
+                        }
                     }
                 }
+                .stroke(Color.white, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0], dashPhase: 2.0))
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(shape.transform)
+
+                Path { path in
+                    for element in shape.path.elements {
+                        switch element {
+                        case .move(let to):
+                            path.move(to: to.cgPoint)
+                        case .line(let to):
+                            path.addLine(to: to.cgPoint)
+                        case .curve(let to, let control1, let control2):
+                            path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                        case .quadCurve(let to, let control):
+                            path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                        case .close:
+                            path.closeSubpath()
+                        }
+                    }
+                }
+                .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0]))
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(shape.transform)
             }
-            .stroke(Color.orange, lineWidth: 2.0 / zoomLevel) // Orange outline for rotate tool selection
-            .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
-            .transformEffect(shape.transform)
             
             // MARQUEE PREVIEW: Show ACTUAL ROTATED SHAPE OUTLINE (EXACTLY like the final object will be)
             if isRotating && !previewTransform.isIdentity {
@@ -136,7 +159,7 @@ struct RotateHandles: View {
             // CENTER POINT: Always available as rotation anchor
             let isCenterSelected = selectedAnchorPointIndex == nil
             Circle()
-                .fill(isCenterSelected ? Color.green : Color.orange)
+                .fill(isCenterSelected ? Color.red : Color.green)
                 .stroke(Color.white, lineWidth: 1.0)
                 .frame(width: handleSize, height: handleSize)
                 .position(CGPoint(
@@ -190,7 +213,6 @@ struct RotateHandles: View {
         
         // Update center point based on current bounds
         // CRITICAL FIX: For images with transforms, use the same bounds calculation as transform box handles
-        let bounds: CGRect
         if ImageContentRegistry.containsImage(shape) && !shape.transform.isIdentity {
             // For transformed images, calculate bounds the same way as transform box handles
             let baseBounds = shape.bounds
@@ -205,11 +227,7 @@ struct RotateHandles: View {
             let minY = corners.map { $0.y }.min() ?? baseBounds.minY
             let maxX = corners.map { $0.x }.max() ?? baseBounds.maxX
             let maxY = corners.map { $0.y }.max() ?? baseBounds.maxY
-            bounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-        } else {
-            // For regular shapes and untransformed images, use existing logic
-            bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-        }
+        } 
         centerPoint = VectorPoint(shape.calculateCentroid())
         
         Log.fileOperation("🎯 EXTRACTED \(pathPoints.count) path points + center for rotation anchor selection", level: .info)
@@ -224,7 +242,7 @@ struct RotateHandles: View {
             
             let transformedPoint = CGPoint(x: point.x, y: point.y).applying(shape.transform)
             Circle()
-                .fill(isSelected ? Color.green : Color.orange)
+                .fill(isSelected ? Color.red : Color.green)
                 .stroke(Color.white, lineWidth: 1.0)
                 .frame(width: handleSize, height: handleSize)
                 .position(CGPoint(

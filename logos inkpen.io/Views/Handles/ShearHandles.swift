@@ -90,11 +90,18 @@ struct ShearHandles: View {
                             }
                         }
                     }
-                    cachedPath
-                        .stroke(Color.purple, lineWidth: 2.0 / zoomLevel)
-                        .scaleEffect(zoomLevel, anchor: .topLeading)
-                        .offset(x: canvasOffset.x, y: canvasOffset.y)
-                        .transformEffect(groupedShape.transform)
+                    ZStack {
+                        cachedPath
+                            .stroke(Color.white, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0], dashPhase: 2.0))
+                            .scaleEffect(zoomLevel, anchor: .topLeading)
+                            .offset(x: canvasOffset.x, y: canvasOffset.y)
+                            .transformEffect(groupedShape.transform)
+                        cachedPath
+                            .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0]))
+                            .scaleEffect(zoomLevel, anchor: .topLeading)
+                            .offset(x: canvasOffset.x, y: canvasOffset.y)
+                            .transformEffect(groupedShape.transform)
+                    }
                 }
             } else {
                 // REGULAR SHAPE: Show single path outline with cached path
@@ -115,11 +122,18 @@ struct ShearHandles: View {
                         }
                     }
                 }
-                cachedPath
-                    .stroke(Color.purple, lineWidth: 2.0 / zoomLevel)
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    .transformEffect(shape.transform)
+                ZStack {
+                    cachedPath
+                        .stroke(Color.white, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0], dashPhase: 2.0))
+                        .scaleEffect(zoomLevel, anchor: .topLeading)
+                        .offset(x: canvasOffset.x, y: canvasOffset.y)
+                        .transformEffect(shape.transform)
+                    cachedPath
+                        .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0]))
+                        .scaleEffect(zoomLevel, anchor: .topLeading)
+                        .offset(x: canvasOffset.x, y: canvasOffset.y)
+                        .transformEffect(shape.transform)
+                }
             }
             
             // SHOW ALL PATH POINTS + CENTER POINT with correct colors

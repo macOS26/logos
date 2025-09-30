@@ -83,11 +83,18 @@ struct ScaleHandles: View {
                             }
                         }
                     }
-                    cachedPath
-                        .stroke(Color.red, lineWidth: 2.0 / zoomLevel)
-                        .scaleEffect(zoomLevel, anchor: .topLeading)
-                        .offset(x: canvasOffset.x, y: canvasOffset.y)
-                        .transformEffect(groupedShape.transform)
+                    ZStack {
+                        cachedPath
+                            .stroke(Color.white, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0], dashPhase: 2.0))
+                            .scaleEffect(zoomLevel, anchor: .topLeading)
+                            .offset(x: canvasOffset.x, y: canvasOffset.y)
+                            .transformEffect(groupedShape.transform)
+                        cachedPath
+                            .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0]))
+                            .scaleEffect(zoomLevel, anchor: .topLeading)
+                            .offset(x: canvasOffset.x, y: canvasOffset.y)
+                            .transformEffect(groupedShape.transform)
+                    }
                 }
             } else {
                 // REGULAR SHAPE: Show single path outline with cached path
@@ -108,11 +115,18 @@ struct ScaleHandles: View {
                         }
                     }
                 }
-                cachedPath
-                    .stroke(Color.red, lineWidth: 2.0 / zoomLevel)
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    .transformEffect(shape.transform)
+                ZStack {
+                    cachedPath
+                        .stroke(Color.white, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0], dashPhase: 2.0))
+                        .scaleEffect(zoomLevel, anchor: .topLeading)
+                        .offset(x: canvasOffset.x, y: canvasOffset.y)
+                        .transformEffect(shape.transform)
+                    cachedPath
+                        .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0]))
+                        .scaleEffect(zoomLevel, anchor: .topLeading)
+                        .offset(x: canvasOffset.x, y: canvasOffset.y)
+                        .transformEffect(shape.transform)
+                }
             }
             
             // SHOW ALL PATH POINTS + CENTER POINT with correct colors
@@ -496,16 +510,11 @@ struct ScaleHandles: View {
         
         // Update center point based on current bounds
         // CRITICAL FIX: For ALL images, use the same bounds calculation as ShapeView rendering
-        let bounds: CGRect
         if ImageContentRegistry.containsImage(shape) {
             // For ALL images, calculate bounds the same way as ShapeView renders them
             // This matches the actual image positioning: pathBounds.applying(shape.transform)
             let pathBounds = shape.path.cgPath.boundingBoxOfPath
-            bounds = pathBounds.applying(shape.transform)
-        } else {
-            // For regular shapes, use existing logic
-            bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-        }
+        } 
         centerPoint = VectorPoint(shape.calculateCentroid())
         
         Log.fileOperation("🎯 EXTRACTED \(pathPoints.count) path points + center for scale anchor selection", level: .info)
