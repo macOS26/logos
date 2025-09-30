@@ -254,12 +254,27 @@ extension DrawingCanvas {
         let rawPointLocations = pointsToProcess.map { $0.location }
 
         if rawPointLocations.count >= 2 {
-            return generatePreviewVariableWidthPath(
+            var previewPath = generatePreviewVariableWidthPath(
                 centerPoints: rawPointLocations,
                 recentRawPoints: pointsToProcess,
                 thickness: document.currentBrushThickness,
                 taper: document.currentBrushTaper
             )
+
+            // Apply overlap removal to PREVIEW too (fixes white artifacts during drawing)
+            if document.brushRemoveOverlap {
+                let cg = previewPath.cgPath
+                var cleaned: CGPath? = nil
+                cleaned = CoreGraphicsPathOperations.normalized(cg, using: .winding)
+                if cleaned == nil { cleaned = CoreGraphicsPathOperations.normalized(cg, using: .evenOdd) }
+                if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .winding) }
+                if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .evenOdd) }
+                if let cleanedPath = cleaned, !cleanedPath.isEmpty, isPathBoundsFinite(cleanedPath.boundingBox) {
+                    previewPath = VectorPath(cgPath: cleanedPath)
+                }
+            }
+
+            return previewPath
         } else {
             return VectorPath(elements: [.move(to: VectorPoint(pointsToProcess[0].location))])
         }
