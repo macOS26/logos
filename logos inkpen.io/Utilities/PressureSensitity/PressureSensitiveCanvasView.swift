@@ -341,8 +341,8 @@ class PressureSensitiveCanvasView: NSView {
             Log.fileOperation("🎨 PRESSURE: Pressure support detected and enabled!", level: .debug)
         }
         
-        // Clamp pressure to valid range
-        return max(0.1, min(2.0, pressure))
+        // Return raw pressure without clamping
+        return pressure
     }
     
     private func convertToCanvasCoordinates(_ point: CGPoint) -> CGPoint {

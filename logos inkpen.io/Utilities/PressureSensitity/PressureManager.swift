@@ -97,10 +97,10 @@ class PressureManager: ObservableObject {
             Log.info("🎨 PRESSURE MANAGER: ✅ Real pressure input detected and enabled!", category: .pressure)
         }
         
-        // Use raw pressure directly - no clamping
+        // Use raw pressure directly - NO CLAMPING
         DispatchQueue.main.async {
-            self.currentPressure = pressure
-            Log.info("🎨 PRESSURE MANAGER: Updated currentPressure to: \(pressure)", category: .pressure)
+            self.currentPressure = pressure // Raw 0.0-1.0 pressure
+            Log.info("🎨 PRESSURE MANAGER: Updated currentPressure to RAW: \(pressure)", category: .pressure)
         }
         
         // Update tracking for hybrid scenarios

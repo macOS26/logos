@@ -89,11 +89,13 @@ extension DrawingCanvas {
     
     internal func handleMarkerDragUpdate(at location: CGPoint) {
         guard isMarkerDrawing else { return }
-        
-        // Get pressure using smart detection (real or simulated)
+
+        // Get RAW pressure using smart detection (real or simulated) - NO CLAMPING
         let pressure = PressureManager.shared.getPressure(for: location, sensitivity: document.currentMarkerPressureSensitivity)
-        
-        // Add point to raw path with pressure data
+
+        Log.info("🖊️ MARKER UPDATE: Raw pressure: \(pressure) at location: (\(location.x), \(location.y))", category: .pressure)
+
+        // Add point to raw path with RAW pressure data (0.0-1.0)
         let markerPoint = MarkerPoint(location: location, pressure: pressure)
         markerRawPoints.append(markerPoint)
         
@@ -430,10 +432,11 @@ extension DrawingCanvas {
                 }
             }
 
-            // Apply pressure variation directly when pressure sensitivity is enabled
+            // Apply RAW pressure variation directly when pressure sensitivity is enabled
             if appState.pressureSensitivityEnabled {
-                // Use full pressure range (0.0-1.0) to affect thickness
+                // Use full RAW pressure range (0.0-1.0) to affect thickness - NO CLAMPING
                 finalThickness *= pressure
+                Log.info("🖊️ MARKER THICKNESS: Applied raw pressure \(pressure), finalThickness: \(finalThickness)", category: .pressure)
             }
 
             // Apply feathering effect for felt-tip appearance
