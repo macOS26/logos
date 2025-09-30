@@ -8,22 +8,39 @@
 import SwiftUI
 
 struct PressureCurveEditor: View {
-    @Binding var pressureCurve: [CGPoint]
     @State private var selectedControlPoint: Int?
-    @State private var isDragging = false
-
+    @State private var localCurve: [CGPoint] = []
     let size: CGFloat
 
-    init(pressureCurve: Binding<[CGPoint]>, size: CGFloat = 280) {
-        self._pressureCurve = pressureCurve
+    init(size: CGFloat = 280) {
         self.size = size
     }
 
     var body: some View {
         VStack(spacing: 8) {
-            Text("Pressure Curve")
-                .font(.headline)
-                .foregroundColor(.primary)
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Pressure Curve")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    Text("Input: 0.0-1.0 → Output: 0.0-1.0")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Control Points")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    ForEach(0..<localCurve.count, id: \.self) { index in
+                        let point = localCurve[index]
+                        Text("[\(index + 1)] In: \(String(format: "%.2f", point.x)) → Out: \(String(format: "%.2f", point.y))")
+                            .font(.caption2)
+                            .foregroundColor(selectedControlPoint == index ? .blue : .secondary)
+                            .monospaced()
+                    }
+                }
+            }
 
             ZStack {
                 // Background grid
@@ -51,21 +68,21 @@ struct PressureCurveEditor: View {
 
                 // Curve path
                 Path { path in
-                    guard pressureCurve.count >= 2 else { return }
+                    guard localCurve.count >= 2 else { return }
 
-                    let firstPoint = pressureCurve[0]
+                    let firstPoint = localCurve[0]
                     path.move(to: CGPoint(x: firstPoint.x * size, y: size - firstPoint.y * size))
 
-                    for i in 1..<pressureCurve.count {
-                        let point = pressureCurve[i]
+                    for i in 1..<localCurve.count {
+                        let point = localCurve[i]
                         path.addLine(to: CGPoint(x: point.x * size, y: size - point.y * size))
                     }
                 }
                 .stroke(Color.blue, lineWidth: 2)
 
-                // Control points - FIXED: Use overlay with proper gesture handling
-                ForEach(0..<pressureCurve.count, id: \.self) { index in
-                    let point = pressureCurve[index]
+                // Control points
+                ForEach(localCurve.indices, id: \.self) { index in
+                    let point = localCurve[index]
                     let isSelected = selectedControlPoint == index
 
                     Circle()
@@ -75,27 +92,19 @@ struct PressureCurveEditor: View {
                         .gesture(
                             DragGesture(minimumDistance: 0)
                                 .onChanged { value in
-                                    // Select this point on drag start
-                                    if !isDragging {
-                                        selectedControlPoint = index
-                                        isDragging = true
-                                    }
-
                                     // Update position
                                     let newX = max(0, min(1, value.location.x / size))
                                     let newY = max(0, min(1, (size - value.location.y) / size))
-                                    pressureCurve[index] = CGPoint(x: newX, y: newY)
 
-                                    // Sort points by x value to maintain order
-                                    pressureCurve.sort { $0.x < $1.x }
+                                    // Create NEW array to trigger @State observation
+                                    var newCurve = localCurve
+                                    newCurve[index] = CGPoint(x: newX, y: newY)
+                                    localCurve = newCurve
 
-                                    // Update selected index after sorting
-                                    selectedControlPoint = pressureCurve.firstIndex {
-                                        abs($0.x - newX) < 0.01 && abs($0.y - newY) < 0.01
-                                    }
+                                    selectedControlPoint = index
                                 }
                                 .onEnded { _ in
-                                    isDragging = false
+                                    selectedControlPoint = nil
                                 }
                         )
                         .onTapGesture {
@@ -104,35 +113,25 @@ struct PressureCurveEditor: View {
                 }
             }
             .frame(width: size, height: size)
+        }
+        .onAppear {
+            // Initialize local curve from AppState
+            localCurve = AppState.shared.pressureCurve
+            let curveString = localCurve.map { "(\(String(format: "%.2f", $0.x)),\(String(format: "%.2f", $0.y)))" }.joined(separator: " ")
+            Log.info("📊 EDITOR LOADED CURVE: [\(curveString)]", category: .pressure)
+        }
+        .onChange(of: localCurve) { oldValue, newValue in
+            // Save to BOTH AppState and UserDefaults
+            let curveString = newValue.map { "(\(String(format: "%.2f", $0.x)),\(String(format: "%.2f", $0.y)))" }.joined(separator: " ")
+            Log.info("💾 CURVE CHANGED - SAVING: [\(curveString)]", category: .pressure)
 
-            // Curve info
-            HStack {
-                Text("Input: 0.0-1.0")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            // Save to AppState
+            AppState.shared.pressureCurve = newValue
 
-                Spacer()
-
-                Text("Output: 0.0-1.0")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            .frame(width: size)
-
-            // Control point info
-            if let selected = selectedControlPoint, selected < pressureCurve.count {
-                let point = pressureCurve[selected]
-                HStack {
-                    Text("Point \(selected + 1):")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text(String(format: "In: %.2f, Out: %.2f", point.x, point.y))
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                        .monospaced()
-                }
-                .frame(width: size)
-            }
+            // Save to UserDefaults
+            let data = newValue.map { ["x": $0.x, "y": $0.y] }
+            UserDefaults.standard.set(data, forKey: "pressureCurve")
+            UserDefaults.standard.synchronize()
         }
     }
 }
@@ -168,15 +167,6 @@ func getThicknessFromPressureCurve(pressure: Double, curve: [CGPoint]) -> Double
 }
 
 #Preview {
-    PressureCurveEditor(
-        pressureCurve: .constant([
-            CGPoint(x: 0.0, y: 0.0),
-            CGPoint(x: 0.25, y: 0.25),
-            CGPoint(x: 0.5, y: 0.5),
-            CGPoint(x: 0.75, y: 0.75),
-            CGPoint(x: 1.0, y: 1.0)
-        ]),
-        size: 280
-    )
-    .padding()
+    PressureCurveEditor(size: 280)
+        .padding()
 }
