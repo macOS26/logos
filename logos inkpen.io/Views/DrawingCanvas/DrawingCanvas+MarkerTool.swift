@@ -175,11 +175,11 @@ extension DrawingCanvas {
         // Show the COMPLETE stroke, not just recent points
         let rawPointLocations = markerRawPoints.map { $0.location }
         
-        // PERFORMANCE OPTIMIZATION: Use a slightly higher tolerance for live preview
-        let previewSmoothingTolerance = document.currentMarkerSmoothingTolerance * 1.25
+        // Use the SAME smoothing tolerance as final to match preview exactly
+        let smoothingTolerance = document.currentMarkerSmoothingTolerance * 0.3
         let simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
             points: rawPointLocations,
-            tolerance: previewSmoothingTolerance
+            tolerance: smoothingTolerance
         )
         
         // Generate smooth felt-tip marker stroke

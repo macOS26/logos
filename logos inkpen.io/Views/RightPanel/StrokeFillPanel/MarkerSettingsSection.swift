@@ -39,7 +39,7 @@ struct MarkerSettingsSection: View {
                     get: { document.currentMarkerTipSize },
                     set: { document.currentMarkerTipSize = $0 }
                 ), in: 1...50) {
-                    Text("Marker Tip Size")
+                    Text("Tip Size")
                 } minimumValueLabel: {
                     Text("1")
                         .font(.caption)
@@ -70,7 +70,7 @@ struct MarkerSettingsSection: View {
                     get: { document.currentMarkerOpacity },
                     set: { document.currentMarkerOpacity = $0 }
                 ), in: 0...1) {
-                    Text("Marker Opacity")
+                    Text("Opacity")
                 } minimumValueLabel: {
                     Text("0%")
                         .font(.caption)
@@ -119,7 +119,7 @@ struct MarkerSettingsSection: View {
                     get: { document.currentMarkerPressureSensitivity },
                     set: { document.currentMarkerPressureSensitivity = $0 }
                 ), in: 0...1) {
-                    Text("Marker Pressure Sensitivity")
+                    Text("Pressure Sensitivity")
                 } minimumValueLabel: {
                     Text("0%")
                         .font(.caption)
@@ -151,7 +151,7 @@ struct MarkerSettingsSection: View {
                     get: { document.currentMarkerSmoothingTolerance },
                     set: { document.currentMarkerSmoothingTolerance = $0 }
                 ), in: 0.5...10) {
-                    Text("Marker Smoothing")
+                    Text("Smoothing")
                 } minimumValueLabel: {
                     Text("0.5")
                         .font(.caption)
@@ -182,7 +182,7 @@ struct MarkerSettingsSection: View {
                     get: { document.currentMarkerFeathering },
                     set: { document.currentMarkerFeathering = $0 }
                 ), in: 0...1) {
-                    Text("Marker Feathering")
+                    Text("Feathering")
                 } minimumValueLabel: {
                     Text("0%")
                         .font(.caption)
@@ -213,7 +213,7 @@ struct MarkerSettingsSection: View {
                     get: { document.currentMarkerTaperStart },
                     set: { document.currentMarkerTaperStart = $0 }
                 ), in: 0...0.5) {
-                    Text("Marker Start Taper")
+                    Text("Start Taper")
                 } minimumValueLabel: {
                     Text("0%")
                         .font(.caption)
@@ -244,7 +244,7 @@ struct MarkerSettingsSection: View {
                     get: { document.currentMarkerTaperEnd },
                     set: { document.currentMarkerTaperEnd = $0 }
                 ), in: 0...0.5) {
-                    Text("Marker End Taper")
+                    Text("End Taper")
                 } minimumValueLabel: {
                     Text("0%")
                         .font(.caption)
