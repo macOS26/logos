@@ -89,10 +89,12 @@ extension DrawingCanvas {
     
     internal func handleMarkerDragUpdate(at location: CGPoint) {
         guard isMarkerDrawing else { return }
-        
+
         // Get pressure using smart detection (real or simulated)
         let pressure = PressureManager.shared.getPressure(for: location, sensitivity: document.currentMarkerPressureSensitivity)
-        
+
+        Log.info("🖊️ MARKER UPDATE: Pressure from PressureManager: \(pressure), sensitivity enabled: \(appState.pressureSensitivityEnabled)", category: .general)
+
         // Add point to raw path with pressure data
         let markerPoint = MarkerPoint(location: location, pressure: pressure)
         markerRawPoints.append(markerPoint)
@@ -388,62 +390,20 @@ extension DrawingCanvas {
         var thicknessPoints: [(location: CGPoint, thickness: Double)] = []
         
         for (index, point) in centerPoints.enumerated() {
-            let progress = Double(index) / Double(centerPoints.count - 1)
-
             // Get pressure at this point
             let pressure = getPressureAtPoint(point, rawPoints: rawPoints)
+
+            if index % 10 == 0 {
+                Log.info("🖊️ MARKER STROKE: Point \(index) pressure: \(pressure)", category: .general)
+            }
 
             // Base thickness from marker settings
             var finalThickness = document.currentMarkerTipSize
 
-            // MARKER-SPECIFIC THICKNESS PROFILE (consistent felt-tip appearance)
-            // Markers maintain consistent width with only subtle tip effects
-            // SHORT STROKES: Must still look like marker, not brush leaves!
+            // Apply pressure FIRST - this is the primary control
+            finalThickness *= pressure
 
-            // For very short strokes, use minimal tapering to maintain marker appearance
-            let strokeLength = Double(centerPoints.count)
-            let isShortStroke = strokeLength < 5  // Reduced threshold from 20 to 5
-
-            if isShortStroke {
-                // Very short strokes: Sharp taper from thin point to thick and back to thin point
-                if progress < 0.3 {
-                    // Start thin and gradually increase - more aggressive taper
-                    finalThickness *= pow(progress / 0.3, 1.5) // Start at 0% and increase sharply
-                } else if progress > 0.7 {
-                    // End thin - gradually decrease to sharp point
-                    let endProgress = (1.0 - progress) / 0.3
-                    finalThickness *= pow(endProgress, 1.5) // Decrease sharply to 0%
-                }
-                // Else maintain full thickness for marker body
-            } else {
-                // Longer strokes: Sharp marker tapering (thin points at start and end)
-                let startTaper = max(0.15, document.currentMarkerTaperStart) // Ensure visible taper
-                let endTaper = max(0.15, document.currentMarkerTaperEnd)
-
-                if progress < startTaper {
-                    // Start thin and gradually increase to full thickness - sharper taper
-                    finalThickness *= pow(progress / startTaper, 1.5)
-                } else if progress > (1.0 - endTaper) {
-                    // End thin - gradually decrease to sharp point
-                    let endProgress = (1.0 - progress) / endTaper
-                    finalThickness *= pow(endProgress, 1.5)
-                }
-            }
-
-            // Apply pressure variation directly when pressure sensitivity is enabled
-            if appState.pressureSensitivityEnabled {
-                // Use full pressure range (0.0-1.0) to affect thickness
-                finalThickness *= pressure
-            }
-
-            // Apply feathering effect for felt-tip appearance
-            // Apply feathering consistently regardless of stroke length
-            let feathering = document.currentMarkerFeathering
-            if isShortStroke {
-                finalThickness *= (1.0 - feathering * 0.15) // Moderate feathering for short strokes (was 0.05)
-            } else {
-                finalThickness *= (1.0 - feathering * 0.2) // Normal feathering for longer strokes
-            }
+            Log.info("🖊️ MARKER: Point \(index) - pressure: \(pressure), thickness after pressure: \(finalThickness)", category: .general)
 
             thicknessPoints.append((location: point, thickness: finalThickness))
         }
@@ -458,12 +418,15 @@ extension DrawingCanvas {
     
     /// Get pressure at a specific point by interpolating from raw points
     private func getPressureAtPoint(_ point: CGPoint, rawPoints: [MarkerPoint]) -> Double {
-        guard rawPoints.count > 0 else { return 1.0 }
-        
+        guard rawPoints.count > 0 else {
+            Log.info("🖊️ MARKER PRESSURE: No raw points, returning 1.0", category: .general)
+            return 1.0
+        }
+
         // Find the closest raw point
         var closestDistance = Double.infinity
         var closestPressure: Double = 1.0
-        
+
         for rawPoint in rawPoints {
             let distance = sqrt(pow(point.x - rawPoint.location.x, 2) + pow(point.y - rawPoint.location.y, 2))
             if distance < closestDistance {
@@ -471,7 +434,8 @@ extension DrawingCanvas {
                 closestPressure = rawPoint.pressure
             }
         }
-        
+
+        Log.info("🖊️ MARKER PRESSURE: Found pressure \(closestPressure) at point", category: .general)
         return closestPressure
     }
     
