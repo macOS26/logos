@@ -11,11 +11,11 @@ import SwiftUI
 // MARK: - Marker Point Data Structure
 struct MarkerPoint {
     let location: CGPoint
-    let pressure: Double // 0.0 to 1.0
+    let pressure: Double // RAW 0.0 to 1.0 - NO CLAMPING
 
     init(location: CGPoint, pressure: Double = 1.0) {
         self.location = location
-        self.pressure = max(0.0, min(1.0, pressure))
+        self.pressure = pressure // Use raw pressure value directly
     }
 }
 
@@ -87,21 +87,24 @@ extension DrawingCanvas {
         Log.fileOperation("🖊️ MARKER: Started drawing at \(location)", level: .info)
     }
     
-    internal func handleMarkerDragUpdate(at location: CGPoint) {
+    internal func handleMarkerDragUpdate(at location: CGPoint, pressure: Double? = nil) {
         guard isMarkerDrawing else { return }
 
-        // Get RAW pressure using smart detection (real or simulated) - NO CLAMPING
-        let pressure = PressureManager.shared.getPressure(for: location, sensitivity: document.currentMarkerPressureSensitivity)
+        // Use pressure passed directly from event, or fall back to PressureManager
+        let actualPressure = pressure ?? PressureManager.shared.currentPressure
 
-        Log.info("🖊️ MARKER UPDATE: Raw pressure: \(pressure) at location: (\(location.x), \(location.y))", category: .pressure)
+        Log.info("🖊️ MARKER UPDATE: Raw pressure RECEIVED: \(actualPressure) at location: (\(location.x), \(location.y))", category: .pressure)
 
         // Add point to raw path with RAW pressure data (0.0-1.0)
-        let markerPoint = MarkerPoint(location: location, pressure: pressure)
+        let markerPoint = MarkerPoint(location: location, pressure: actualPressure)
+        Log.info("🖊️ MARKER UPDATE: MarkerPoint CREATED with pressure: \(markerPoint.pressure)", category: .pressure)
+
         markerRawPoints.append(markerPoint)
-        
+        Log.info("🖊️ MARKER UPDATE: markerRawPoints count: \(markerRawPoints.count), last 3 pressures: \(markerRawPoints.suffix(3).map { $0.pressure })", category: .pressure)
+
         // Update real-time preview
         updateMarkerPreview()
-        
+
         // Limit raw points array to prevent memory issues
         if markerRawPoints.count > 1000 {
             // Keep last 800 points
@@ -183,27 +186,16 @@ extension DrawingCanvas {
             // Fallback for insufficient points
             return VectorPath(elements: [.move(to: VectorPoint(markerRawPoints[0].location))])
         }
-        
-        // Show the COMPLETE stroke, not just recent points
+
+        // LIVE PREVIEW: Use raw points directly with their captured pressure - NO SIMPLIFICATION
+        // This ensures real-time pressure response during drawing
         let rawPointLocations = markerRawPoints.map { $0.location }
-        
-        // Use the SAME smoothing tolerance as final to match preview exactly
-        let smoothingTolerance = document.currentMarkerSmoothingTolerance * 0.3
-        let simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
-            points: rawPointLocations,
-            tolerance: smoothingTolerance
+
+        // Generate smooth felt-tip marker stroke with real-time pressure
+        return createSmoothMarkerStroke(
+            centerPoints: rawPointLocations,
+            recentRawPoints: markerRawPoints
         )
-        
-        // Generate smooth felt-tip marker stroke
-        if simplifiedPoints.count >= 2 {
-            return createSmoothMarkerStroke(
-                centerPoints: simplifiedPoints,
-                recentRawPoints: markerRawPoints
-            )
-        } else {
-            // Fallback for single point - create a small dot
-            return createMarkerDot(at: markerRawPoints[0].location)
-        }
     }
     
     // MARK: - Marker Stroke Processing
@@ -399,53 +391,43 @@ extension DrawingCanvas {
             var finalThickness = document.currentMarkerTipSize
 
             // MARKER-SPECIFIC THICKNESS PROFILE (consistent felt-tip appearance)
-            // Markers maintain consistent width with only subtle tip effects
-            // SHORT STROKES: Must still look like marker, not brush leaves!
-
             // For very short strokes, use minimal tapering to maintain marker appearance
             let strokeLength = Double(centerPoints.count)
-            let isShortStroke = strokeLength < 5  // Reduced threshold from 20 to 5
+            let isShortStroke = strokeLength < 5
 
             if isShortStroke {
                 // Very short strokes: Sharp taper from thin point to thick and back to thin point
                 if progress < 0.3 {
-                    // Start thin and gradually increase - more aggressive taper
-                    finalThickness *= pow(progress / 0.3, 1.5) // Start at 0% and increase sharply
+                    finalThickness *= pow(progress / 0.3, 1.5)
                 } else if progress > 0.7 {
-                    // End thin - gradually decrease to sharp point
                     let endProgress = (1.0 - progress) / 0.3
-                    finalThickness *= pow(endProgress, 1.5) // Decrease sharply to 0%
+                    finalThickness *= pow(endProgress, 1.5)
                 }
-                // Else maintain full thickness for marker body
             } else {
                 // Longer strokes: Sharp marker tapering (thin points at start and end)
-                let startTaper = max(0.15, document.currentMarkerTaperStart) // Ensure visible taper
+                let startTaper = max(0.15, document.currentMarkerTaperStart)
                 let endTaper = max(0.15, document.currentMarkerTaperEnd)
 
                 if progress < startTaper {
-                    // Start thin and gradually increase to full thickness - sharper taper
                     finalThickness *= pow(progress / startTaper, 1.5)
                 } else if progress > (1.0 - endTaper) {
-                    // End thin - gradually decrease to sharp point
                     let endProgress = (1.0 - progress) / endTaper
                     finalThickness *= pow(endProgress, 1.5)
                 }
             }
 
-            // Apply RAW pressure variation directly when pressure sensitivity is enabled
-            if appState.pressureSensitivityEnabled {
-                // Use full RAW pressure range (0.0-1.0) to affect thickness - NO CLAMPING
-                finalThickness *= pressure
-                Log.info("🖊️ MARKER THICKNESS: Applied raw pressure \(pressure), finalThickness: \(finalThickness)", category: .pressure)
-            }
-
             // Apply feathering effect for felt-tip appearance
-            // Apply feathering consistently regardless of stroke length
             let feathering = document.currentMarkerFeathering
             if isShortStroke {
-                finalThickness *= (1.0 - feathering * 0.15) // Moderate feathering for short strokes (was 0.05)
+                finalThickness *= (1.0 - feathering * 0.15)
             } else {
-                finalThickness *= (1.0 - feathering * 0.2) // Normal feathering for longer strokes
+                finalThickness *= (1.0 - feathering * 0.2)
+            }
+
+            // Apply RAW pressure LAST - after tapering and feathering
+            if appState.pressureSensitivityEnabled {
+                finalThickness *= pressure
+                Log.info("🖊️ MARKER THICKNESS: After tapering/feathering, applied pressure=\(pressure), finalThickness=\(finalThickness)", category: .pressure)
             }
 
             thicknessPoints.append((location: point, thickness: finalThickness))
@@ -461,21 +443,53 @@ extension DrawingCanvas {
     
     /// Get pressure at a specific point by interpolating from raw points
     private func getPressureAtPoint(_ point: CGPoint, rawPoints: [MarkerPoint]) -> Double {
-        guard rawPoints.count > 0 else { return 1.0 }
-        
-        // Find the closest raw point
-        var closestDistance = Double.infinity
-        var closestPressure: Double = 1.0
-        
+        guard rawPoints.count > 0 else {
+            Log.info("🖊️ GET PRESSURE: No raw points, returning 1.0", category: .pressure)
+            return 1.0
+        }
+
+        // Find the TWO closest raw points and interpolate between them
+        var closestDistance1 = Double.infinity
+        var closestDistance2 = Double.infinity
+        var closestPressure1: Double = 1.0
+        var closestPressure2: Double = 1.0
+        var closestLocation1: CGPoint?
+        var closestLocation2: CGPoint?
+
         for rawPoint in rawPoints {
             let distance = sqrt(pow(point.x - rawPoint.location.x, 2) + pow(point.y - rawPoint.location.y, 2))
-            if distance < closestDistance {
-                closestDistance = distance
-                closestPressure = rawPoint.pressure
+
+            if distance < closestDistance1 {
+                // New closest point
+                closestDistance2 = closestDistance1
+                closestPressure2 = closestPressure1
+                closestLocation2 = closestLocation1
+                closestDistance1 = distance
+                closestPressure1 = rawPoint.pressure
+                closestLocation1 = rawPoint.location
+            } else if distance < closestDistance2 {
+                // New second closest
+                closestDistance2 = distance
+                closestPressure2 = rawPoint.pressure
+                closestLocation2 = rawPoint.location
             }
         }
-        
-        return closestPressure
+
+        // If we found two points, interpolate between them
+        if closestDistance1 < Double.infinity && closestDistance2 < Double.infinity {
+            let totalDistance = closestDistance1 + closestDistance2
+            if totalDistance > 0 {
+                // Weight by inverse distance
+                let weight1 = closestDistance2 / totalDistance
+                let weight2 = closestDistance1 / totalDistance
+                let interpolatedPressure = closestPressure1 * weight1 + closestPressure2 * weight2
+                Log.info("🖊️ GET PRESSURE: Interpolated \(interpolatedPressure) from p1=\(closestPressure1) at \(closestLocation1!) (d=\(closestDistance1)) and p2=\(closestPressure2) at \(closestLocation2!) (d=\(closestDistance2)) for point \(point)", category: .pressure)
+                return interpolatedPressure
+            }
+        }
+
+        Log.info("🖊️ GET PRESSURE: Using closest pressure \(closestPressure1) at \(closestLocation1!) for point \(point)", category: .pressure)
+        return closestPressure1
     }
     
     /// Generate offset points for marker edges with variable thickness

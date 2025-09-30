@@ -199,13 +199,13 @@ extension DrawingCanvas {
     }
     
     /// UNIFIED DRAG CHANGED HANDLER - Works consistently for all areas
-    /// Uses Drawing Canvas logic as the ideal template  
+    /// Uses Drawing Canvas logic as the ideal template
     internal func handleUnifiedDragChanged(value: DragGesture.Value, geometry: GeometryProxy) {
         // Route to appropriate tool handler based on current tool
         switch document.currentTool {
         case .hand:
             handlePanGesture(value: value, geometry: geometry)
-        
+
         case .zoom:
             // Scrubby zoom from the drag start point. Up = zoom in, Down = zoom out (or invert with Option).
             if zoomToolDragStartPoint == .zero {
@@ -221,22 +221,22 @@ extension DrawingCanvas {
             // Keep drag zoom continuous (no snapping)
             let continuousZoom = max(0.1, min(16.0, zoomToolInitialZoomLevel * scaleChange))
             handleZoomAtPoint(newZoomLevel: continuousZoom, focalPoint: value.startLocation, geometry: geometry)
-            
+
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             handleShapeDrawing(value: value, geometry: geometry)
-            
+
         case .font:
             handleTextBoxDrawing(value: value, geometry: geometry)
-            
+
         case .selection:
             handleUnifiedSelectionDrag(value: value, geometry: geometry)
-            
+
         case .directSelection:
             handleDirectSelectionDrag(value: value, geometry: geometry)
-            
+
         case .bezierPen:
             handleBezierPenDrag(value: value, geometry: geometry)
-            
+
         case .freehand:
             let currentLocation = screenToCanvas(value.location, geometry: geometry)
             if !isFreehandDrawing {
@@ -244,7 +244,7 @@ extension DrawingCanvas {
                 handleFreehandDragStart(at: startLocation)
             }
             handleFreehandDragUpdate(at: currentLocation)
-            
+
         case .brush:
             let currentLocation = screenToCanvas(value.location, geometry: geometry)
             if !isBrushDrawing {
@@ -254,17 +254,14 @@ extension DrawingCanvas {
             handleBrushDragUpdate(at: currentLocation)
 
         case .marker:
-            let currentLocation = screenToCanvas(value.location, geometry: geometry)
-            if !isMarkerDrawing {
-                let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
-                handleMarkerDragStart(at: startLocation)
-            }
-            handleMarkerDragUpdate(at: currentLocation)
+            // MARKER USES PRESSURE EVENTS ONLY - DragGesture disabled to prevent timing conflicts
+            // Pressure events handle all drawing (began/changed/ended) via PressureSensitiveCanvasView
+            break
 
         case .scale, .rotate, .shear, .warp:
             // Transform tools don't use drag gestures - handled by their own handles
             break
-            
+
         default:
             break
         }
@@ -281,20 +278,20 @@ extension DrawingCanvas {
         switch document.currentTool {
         case .hand:
             finishPanGesture()
-        
+
         case .zoom:
             // Reset zoom tool state
             zoomToolDragStartPoint = .zero
             zoomToolInitialZoomLevel = document.zoomLevel
-            
+
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             finishShapeDrawing(value: value, geometry: geometry)
             resetShapeDrawingState()
-            
+
         case .font:
             finishTextBoxDrawing(value: value, geometry: geometry)
             resetTextBoxDrawingState()
-            
+
         case .selection:
             finishSelectionDrag()
             isDrawing = false
@@ -302,21 +299,23 @@ extension DrawingCanvas {
             if document.isHandleScalingActive {
                 document.isHandleScalingActive = false
             }
-            
+
         case .directSelection:
             finishDirectSelectionDrag()
-            
+
         case .bezierPen:
             finishBezierPenDrag()
-            
+
         case .freehand:
             handleFreehandDragEnd()
-            
+
         case .brush:
             handleBrushDragEnd()
 
         case .marker:
-            handleMarkerDragEnd()
+            // MARKER USES PRESSURE EVENTS ONLY - DragGesture disabled to prevent timing conflicts
+            // Pressure event .ended handles drawing completion via PressureSensitiveCanvasView
+            break
 
         default:
             break

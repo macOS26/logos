@@ -463,6 +463,9 @@ extension DrawingCanvas {
         Log.info("🎨 PRESSURE DRAWING UPDATE: Called for tool: \(document.currentTool)", category: .pressure)
         Log.info("🎨 PRESSURE DRAWING UPDATE: Is brush drawing: \(isBrushDrawing)", category: .pressure)
 
+        // Get the current pressure that was just updated by the pressure event
+        let currentPressure = PressureManager.shared.currentPressure
+
         switch document.currentTool {
         case .brush:
             if isBrushDrawing {
@@ -480,8 +483,8 @@ extension DrawingCanvas {
             }
         case .marker:
             if isMarkerDrawing {
-                // Marker drag update - logging removed for performance
-                handleMarkerDragUpdate(at: location)
+                // Marker drag update - pass pressure directly to avoid delay
+                handleMarkerDragUpdate(at: location, pressure: currentPressure)
             } else {
                 Log.info("🎨 PRESSURE DRAWING UPDATE: Marker not drawing, skipping update", category: .pressure)
             }
