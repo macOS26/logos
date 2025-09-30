@@ -394,35 +394,23 @@ extension DrawingCanvas {
         isTabletEvent: Bool,
         geometry: GeometryProxy
     ) {
-        Log.info("🎨 PRESSURE EVENT: Received event type: \(eventType)", category: .pressure)
-        Log.info("🎨 PRESSURE EVENT: Pressure: \(pressure)", category: .pressure)
-        Log.info("🎨 PRESSURE EVENT: Is tablet event: \(isTabletEvent)", category: .pressure)
-        Log.info("🎨 PRESSURE EVENT: Current tool: \(document.currentTool)", category: .pressure)
         
         // Convert to canvas coordinates
         let canvasLocation = screenToCanvas(location, geometry: geometry)
         
-        Log.info("🎨 PRESSURE EVENT: Screen location: (\(location.x), \(location.y))", category: .pressure)
-        Log.info("🎨 PRESSURE EVENT: Canvas location: (\(canvasLocation.x), \(canvasLocation.y))", category: .pressure)
         
         // Update pressure manager with real pressure data
         PressureManager.shared.processRealPressure(pressure, at: canvasLocation, isTabletEvent: isTabletEvent)
         PressureManager.shared.updatePressureSupport(true)
         
-        Log.info("🎨 PRESSURE EVENT: Updated PressureManager", category: .pressure)
-        Log.info("🎨 PRESSURE EVENT: Has real pressure input: \(PressureManager.shared.hasRealPressureInput)", category: .pressure)
-        Log.info("🎨 PRESSURE EVENT: Current pressure: \(PressureManager.shared.currentPressure)", category: .pressure)
         
         // Route to appropriate tool based on event type and current tool
         switch eventType {
         case .began:
-            Log.info("🎨 PRESSURE EVENT: Routing to handlePressureDrawingStart", category: .pressure)
             handlePressureDrawingStart(at: canvasLocation)
         case .changed:
-            Log.info("🎨 PRESSURE EVENT: Routing to handlePressureDrawingUpdate", category: .pressure)
             handlePressureDrawingUpdate(at: canvasLocation)
         case .ended:
-            Log.info("🎨 PRESSURE EVENT: Routing to handlePressureDrawingEnd", category: .pressure)
             handlePressureDrawingEnd(at: canvasLocation)
         }
     }

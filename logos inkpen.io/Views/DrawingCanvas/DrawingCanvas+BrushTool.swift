@@ -288,7 +288,7 @@ extension DrawingCanvas {
             Log.info("🖌️ LIQUID: Adding interpolated points for smoothness", category: .general)
         }
 
-        Log.info("🖌️ PREVIEW: Simplified from \(pointsToProcess.count) to \(simplifiedPoints.count) points", category: .general)
+        // Logging disabled in hot path to reduce CPU overhead
 
         if simplifiedPoints.count >= 2 {
             return generatePreviewVariableWidthPath(

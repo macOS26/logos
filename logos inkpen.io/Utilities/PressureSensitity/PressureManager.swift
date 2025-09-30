@@ -74,16 +74,12 @@ class PressureManager: ObservableObject {
     
     /// Processes pressure from real input events
     func processRealPressure(_ pressure: Double, at location: CGPoint, timestamp: Date = Date(), isTabletEvent: Bool = false) {
-        Log.info("🎨 PRESSURE MANAGER: processRealPressure called with pressure: \(pressure)", category: .pressure)
-        Log.info("🎨 PRESSURE MANAGER: AppState pressure sensitivity enabled: \(AppState.shared.pressureSensitivityEnabled)", category: .pressure)
         
         guard AppState.shared.pressureSensitivityEnabled else {
-            Log.info("🎨 PRESSURE MANAGER: Pressure sensitivity disabled, setting to 1.0", category: .pressure)
             currentPressure = 1.0
             return
         }
         
-        Log.info("🎨 PRESSURE MANAGER: Pressure sensitivity enabled, processing pressure", category: .pressure)
         
         // If in tablet-only calibration mode, ignore non-tablet events during calibration
         if isCalibrating && tabletOnlyCalibration && !isTabletEvent {
@@ -100,11 +96,9 @@ class PressureManager: ObservableObject {
         // Use raw pressure directly - NO CLAMPING - SYNCHRONOUS UPDATE TO AVOID RACE CONDITION
         if Thread.isMainThread {
             self.currentPressure = pressure // Raw 0.0-1.0 pressure
-            Log.info("🎨 PRESSURE MANAGER: Updated currentPressure to RAW: \(pressure) [SYNC]", category: .pressure)
         } else {
             DispatchQueue.main.sync {
                 self.currentPressure = pressure // Raw 0.0-1.0 pressure
-                Log.info("🎨 PRESSURE MANAGER: Updated currentPressure to RAW: \(pressure) [ASYNC]", category: .pressure)
             }
         }
         
