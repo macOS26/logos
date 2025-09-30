@@ -181,7 +181,7 @@ struct ScaleHandles: View {
                 .highPriorityGesture(
                     DragGesture(minimumDistance: 3)
                         .onChanged { value in
-                            // DRAG: Scale away from the locked pin point
+                            // DRAG FROM CENTER: Uniform scaling outward from centroid
                             handleScalingFromPoint(draggedPointIndex: nil, dragValue: value, bounds: bounds, center: center)
                         }
                         .onEnded { _ in
@@ -590,22 +590,39 @@ struct ScaleHandles: View {
         let minDistance: CGFloat = 10.0 // Minimum distance to prevent extreme scaling
         let maxScale: CGFloat = 10.0
         let minScale: CGFloat = 0.1
-        
-        var scaleX = abs(startDistance.x) > minDistance ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
-        var scaleY = abs(startDistance.y) > minDistance ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
-        
-        // Clamp scale factors
-        scaleX = min(max(scaleX, minScale), maxScale)
-        scaleY = min(max(scaleY, minScale), maxScale)
-        
-        // PROPORTIONAL SCALING: When shift is held, use uniform scaling
-        if isShiftPressed {
-            let uniformScale = max(scaleX, scaleY) // Use the larger scale factor
-            scaleX = uniformScale
-            scaleY = uniformScale
-            // Removed excessive logging during drag operations
+
+        var scaleX: CGFloat
+        var scaleY: CGFloat
+
+        // SPECIAL CASE: When scaling from CENTER, always use uniform scaling
+        if lockedPinPointIndex == nil {
+            // Center is locked - calculate uniform scale based on distance from center
+            let startDist = sqrt(startDistance.x * startDistance.x + startDistance.y * startDistance.y)
+            let currentDist = sqrt(currentDistance.x * currentDistance.x + currentDistance.y * currentDistance.y)
+
+            if startDist > minDistance {
+                let uniformScale = currentDist / startDist
+                scaleX = min(max(uniformScale, minScale), maxScale)
+                scaleY = scaleX // Always uniform when scaling from center
+            } else {
+                scaleX = 1.0
+                scaleY = 1.0
+            }
         } else {
-            // Removed excessive logging during drag operations
+            // Non-center scaling - calculate separate X and Y scales
+            scaleX = abs(startDistance.x) > minDistance ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
+            scaleY = abs(startDistance.y) > minDistance ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
+
+            // Clamp scale factors
+            scaleX = min(max(scaleX, minScale), maxScale)
+            scaleY = min(max(scaleY, minScale), maxScale)
+
+            // PROPORTIONAL SCALING: When shift is held, use uniform scaling
+            if isShiftPressed {
+                let uniformScale = max(scaleX, scaleY) // Use the larger scale factor
+                scaleX = uniformScale
+                scaleY = uniformScale
+            }
         }
         
         // Apply preview scaling with the LOCKED PIN POINT as anchor (it stays stationary)
