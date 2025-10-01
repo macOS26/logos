@@ -342,6 +342,7 @@ extension FileOperations {
 
         // Create the EXACT same NSLayoutManager setup as text-to-outlines (ProfessionalTextViewModel:387-418)
         let nsFont = vectorText.typography.nsFont
+        let ctFont = nsFont as CTFont
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = vectorText.typography.alignment.nsTextAlignment
         paragraphStyle.lineSpacing = max(0, vectorText.typography.lineSpacing)
@@ -392,11 +393,14 @@ extension FileOperations {
         context.setTextDrawingMode(.fill)
 
         // Create CGFont for glyph drawing (SAME AS TEXT-TO-OUTLINES:429-434)
-        let cgFont = CTFontCopyGraphicsFont(nsFont as CTFont, nil)
+        let cgFont = CTFontCopyGraphicsFont(ctFont, nil)
 
         // Set font on context for glyph drawing
         context.setFont(cgFont)
         context.setFontSize(nsFont.pointSize)
+
+        // Track skipped glyphs for logging
+        var skippedGlyphCount = 0
 
         // Enumerate line fragments (SAME AS TEXT-TO-OUTLINES:442)
         let glyphRange = layoutManager.glyphRange(for: textContainer)
@@ -407,6 +411,23 @@ extension FileOperations {
             for glyphIndex in lineRange.location..<NSMaxRange(lineRange) {
                 let glyph = layoutManager.cgGlyph(at: glyphIndex)
                 let glyphLocation = layoutManager.location(forGlyphAt: glyphIndex)
+
+                // CRITICAL FIX: Check if this is a rectangular placeholder glyph (missing character)
+                // Same detection as ProfessionalTextViewModel:514-524
+                if let glyphPath = CTFontCreatePathForGlyph(ctFont, CGGlyph(glyph), nil) {
+                    if isRectangleGlyph(glyphPath) {
+                        // Skip this glyph - it's a missing character placeholder
+                        skippedGlyphCount += 1
+
+                        // Get the character for logging
+                        let charIndex = layoutManager.characterIndexForGlyph(at: glyphIndex)
+                        if charIndex < vectorText.content.count {
+                            let char = (vectorText.content as NSString).substring(with: NSRange(location: charIndex, length: 1))
+                            Log.info("⚠️ SKIPPING RECTANGLE GLYPH in PDF: Character '\(char)' at index \(charIndex) - missing from font", category: .general)
+                        }
+                        continue
+                    }
+                }
 
                 // Get line fragment rects for this glyph (SAME AS TEXT-TO-OUTLINES:451-455)
                 var actualLineRect = CGRect.zero
@@ -432,6 +453,11 @@ extension FileOperations {
                 // Draw glyph at position using CoreGraphics (creates actual PDF text)
                 context.saveGState()
 
+                // CRITICAL FIX: Apply text matrix to flip Y-axis for correct PDF orientation
+                // PDF coordinate system has Y=0 at bottom, increasing upward
+                // We need to flip the text to render correctly
+                context.textMatrix = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: 0)
+
                 // Set text position and draw glyph
                 context.textPosition = CGPoint(x: glyphX, y: glyphY)
                 context.showGlyphs([glyph], at: [CGPoint.zero])
@@ -442,6 +468,133 @@ extension FileOperations {
 
         context.restoreGState()
 
+        // Report skipped glyphs if any
+        if skippedGlyphCount > 0 {
+            Log.info("✅ PDF RECTANGLE DETECTION: Skipped \(skippedGlyphCount) missing character placeholder(s)", category: .fileOperations)
+        }
+
         Log.fileOperation("   ✅ PDF text rendered at: \(vectorText.position)", level: .debug)
+    }
+
+    /// Helper method to detect if a glyph path is a rectangle (missing character placeholder)
+    /// Same logic as ProfessionalTextViewModel:270-345
+    private static func isRectangleGlyph(_ path: CGPath) -> Bool {
+        // Analyze the path structure
+        var subpaths: [[CGPoint]] = []
+        var currentPath: [CGPoint] = []
+        var hasCurves = false
+
+        path.applyWithBlock { elementPointer in
+            let element = elementPointer.pointee
+            switch element.type {
+            case .moveToPoint:
+                // Start a new subpath
+                if !currentPath.isEmpty {
+                    subpaths.append(currentPath)
+                }
+                currentPath = [element.points[0]]
+
+            case .addLineToPoint:
+                // Add line point
+                currentPath.append(element.points[0])
+
+            case .addQuadCurveToPoint, .addCurveToPoint:
+                // If we have curves, it's not a rectangle
+                hasCurves = true
+
+            case .closeSubpath:
+                // Close current subpath
+                if !currentPath.isEmpty {
+                    subpaths.append(currentPath)
+                    currentPath = []
+                }
+
+            @unknown default:
+                break
+            }
+        }
+
+        // Add any remaining path
+        if !currentPath.isEmpty {
+            subpaths.append(currentPath)
+        }
+
+        // Rectangles have no curves
+        if hasCurves {
+            return false
+        }
+
+        // Missing glyph rectangles typically have exactly 2 subpaths (outer and inner)
+        if subpaths.count != 2 {
+            return false
+        }
+
+        // Check if both subpaths are rectangles (4 or 5 points including close)
+        for subpath in subpaths {
+            if subpath.count < 4 || subpath.count > 5 {
+                return false
+            }
+
+            // Check if points form a rectangle (all angles are 90 degrees)
+            if !isRectangularPath(subpath) {
+                return false
+            }
+        }
+
+        // Check if one rectangle is inside the other (counter pattern)
+        let bounds1 = boundingBox(of: subpaths[0])
+        let bounds2 = boundingBox(of: subpaths[1])
+
+        let isNested = (bounds1.contains(bounds2) || bounds2.contains(bounds1))
+
+        if isNested {
+            Log.info("⚠️ DETECTED RECTANGLE GLYPH in PDF: Missing character placeholder with rectangular counter", category: .general)
+            return true
+        }
+
+        return false
+    }
+
+    /// Helper to check if points form a rectangle
+    private static func isRectangularPath(_ points: [CGPoint]) -> Bool {
+        guard points.count >= 4 else { return false }
+
+        // Check that we have mostly horizontal and vertical lines
+        for i in 0..<points.count - 1 {
+            let p1 = points[i]
+            let p2 = points[i + 1]
+
+            let dx = abs(p2.x - p1.x)
+            let dy = abs(p2.y - p1.y)
+
+            // Line should be mostly horizontal or vertical
+            let isHorizontal = dy < 0.1 && dx > 0.1
+            let isVertical = dx < 0.1 && dy > 0.1
+
+            if !isHorizontal && !isVertical {
+                return false
+            }
+        }
+
+        return true
+    }
+
+    /// Helper to calculate bounding box of points
+    private static func boundingBox(of points: [CGPoint]) -> CGRect {
+        guard !points.isEmpty else { return .zero }
+
+        var minX = points[0].x
+        var minY = points[0].y
+        var maxX = points[0].x
+        var maxY = points[0].y
+
+        for point in points {
+            minX = min(minX, point.x)
+            minY = min(minY, point.y)
+            maxX = max(maxX, point.x)
+            maxY = max(maxY, point.y)
+        }
+
+        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
 }
