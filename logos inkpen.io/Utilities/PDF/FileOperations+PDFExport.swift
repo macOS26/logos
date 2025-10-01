@@ -11,9 +11,9 @@ import SwiftUI
 extension FileOperations {
 
     /// Generate PDF data from VectorDocument with proper clipping path and image support
-    static func generatePDFDataWithClippingSupport(from document: VectorDocument, isExport: Bool = false, useCMYK: Bool = false) throws -> Data {
+    static func generatePDFDataWithClippingSupport(from document: VectorDocument, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs) throws -> Data {
         let operation = isExport ? "export" : "save"
-        Log.fileOperation("📄 Generating PDF data from document for \(operation) (CMYK: \(useCMYK))", level: .info)
+        Log.fileOperation("📄 Generating PDF data from document for \(operation) (CMYK: \(useCMYK), Text: \(textRenderingMode.displayName))", level: .info)
 
         // Get document dimensions - use sizeInPoints which is already in points
         let documentSize = document.settings.sizeInPoints
@@ -72,7 +72,7 @@ extension FileOperations {
         }
 
         // Render document content with clipping path support
-        try renderDocumentToPDFWithClipping(document: document, context: pdfContext, isExport: isExport, useCMYK: useCMYK)
+        try renderDocumentToPDFWithClipping(document: document, context: pdfContext, isExport: isExport, useCMYK: useCMYK, textRenderingMode: textRenderingMode)
 
         // End PDF document
         pdfContext.endPDFPage()
@@ -83,7 +83,7 @@ extension FileOperations {
     }
 
     /// Render VectorDocument to PDF context with clipping path support
-    static func renderDocumentToPDFWithClipping(document: VectorDocument, context: CGContext, isExport: Bool = false, useCMYK: Bool = false) throws {
+    static func renderDocumentToPDFWithClipping(document: VectorDocument, context: CGContext, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs) throws {
         Log.fileOperation("🎨 Rendering document to PDF context with clipping support", level: .info)
 
         // Save graphics state
@@ -143,13 +143,14 @@ extension FileOperations {
                         clippedShapes: clipped,
                         context: context,
                         isExport: isExport,
-                        useCMYK: useCMYK
+                        useCMYK: useCMYK,
+                        textRenderingMode: textRenderingMode
                     )
                     renderedShapeIds.insert(shape.id)
                     clipped.forEach { renderedShapeIds.insert($0.id) }
                 } else if !shape.isClippingPath {
                     // Regular shape without clipping
-                    try renderShapeToPDFWithImageSupport(shape: shape, context: context, isExport: isExport, useCMYK: useCMYK)
+                    try renderShapeToPDFWithImageSupport(shape: shape, context: context, isExport: isExport, useCMYK: useCMYK, textRenderingMode: textRenderingMode)
                     renderedShapeIds.insert(shape.id)
                 }
             }
@@ -162,7 +163,7 @@ extension FileOperations {
     }
 
     /// Render a clipping group (mask and clipped shapes)
-    static func renderClippingGroup(clippingMask: VectorShape, clippedShapes: [VectorShape], context: CGContext, isExport: Bool = false, useCMYK: Bool = false) throws {
+    static func renderClippingGroup(clippingMask: VectorShape, clippedShapes: [VectorShape], context: CGContext, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs) throws {
         Log.fileOperation("🎭 Rendering clipping group with mask: \(clippingMask.name)", level: .debug)
 
         // Save graphics state for clipping
@@ -182,7 +183,7 @@ extension FileOperations {
         // Render all clipped shapes
         for shape in clippedShapes {
             Log.fileOperation("   📎 Rendering clipped shape: \(shape.name)", level: .debug)
-            try renderShapeToPDFWithImageSupport(shape: shape, context: context, isExport: isExport, useCMYK: useCMYK)
+            try renderShapeToPDFWithImageSupport(shape: shape, context: context, isExport: isExport, useCMYK: useCMYK, textRenderingMode: textRenderingMode)
         }
 
         // Restore graphics state to remove clipping
@@ -190,10 +191,10 @@ extension FileOperations {
     }
 
     /// Render individual shape to PDF context with image support
-    static func renderShapeToPDFWithImageSupport(shape: VectorShape, context: CGContext, isExport: Bool = false, useCMYK: Bool = false) throws {
+    static func renderShapeToPDFWithImageSupport(shape: VectorShape, context: CGContext, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs) throws {
         // Check if this is a text object - render as PDF text instead of paths
         if shape.isTextObject, let vectorText = VectorText.from(shape) {
-            try renderTextToPDF(vectorText: vectorText, context: context)
+            try renderTextToPDF(vectorText: vectorText, context: context, renderingMode: textRenderingMode)
             return
         }
 
@@ -335,8 +336,24 @@ extension FileOperations {
 
     /// Render text to PDF context using actual PDF text (searchable/selectable)
     /// Uses the SAME NSLayoutManager logic as text-to-outlines for precise positioning
-    static func renderTextToPDF(vectorText: VectorText, context: CGContext) throws {
-        Log.fileOperation("📝 Rendering PDF text: '\(vectorText.content)'", level: .debug)
+    static func renderTextToPDF(vectorText: VectorText, context: CGContext, renderingMode: AppState.PDFTextRenderingMode = .glyphs) throws {
+        Log.fileOperation("📝 Rendering PDF text (\(renderingMode.displayName)): '\(vectorText.content)'", level: .debug)
+
+        guard !vectorText.content.isEmpty else { return }
+
+        // Dispatch to appropriate rendering method based on mode
+        switch renderingMode {
+        case .glyphs:
+            try renderTextToPDF_Glyphs(vectorText: vectorText, context: context)
+        case .lines:
+            try renderTextToPDF_Lines(vectorText: vectorText, context: context)
+        }
+    }
+
+    /// Render text by individual glyphs (most accurate)
+    /// Uses the SAME NSLayoutManager logic as text-to-outlines for precise positioning
+    private static func renderTextToPDF_Glyphs(vectorText: VectorText, context: CGContext) throws {
+        Log.fileOperation("   📝 Rendering as individual glyphs", level: .debug)
 
         guard !vectorText.content.isEmpty else { return }
 
@@ -596,5 +613,102 @@ extension FileOperations {
         }
 
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+    }
+
+    /// Render text by lines using CTLine (better performance, maintains placement accuracy)
+    private static func renderTextToPDF_Lines(vectorText: VectorText, context: CGContext) throws {
+        Log.fileOperation("   📝 Rendering as text lines (CTLine)", level: .debug)
+
+        guard !vectorText.content.isEmpty else { return }
+
+        // Create the EXACT same NSLayoutManager setup
+        let nsFont = vectorText.typography.nsFont
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = vectorText.typography.alignment.nsTextAlignment
+        paragraphStyle.lineSpacing = max(0, vectorText.typography.lineSpacing)
+        paragraphStyle.minimumLineHeight = vectorText.typography.lineHeight
+        paragraphStyle.maximumLineHeight = vectorText.typography.lineHeight
+
+        // Attributes for layout manager (no foregroundColor for layout)
+        let layoutAttributes: [NSAttributedString.Key: Any] = [
+            .font: nsFont,
+            .paragraphStyle: paragraphStyle,
+            .kern: vectorText.typography.letterSpacing
+        ]
+
+        let attributedString = NSAttributedString(string: vectorText.content, attributes: layoutAttributes)
+
+        // Create text storage and layout manager (SAME AS TEXT-TO-OUTLINES)
+        let textStorage = NSTextStorage(attributedString: attributedString)
+        let layoutManager = NSLayoutManager()
+        textStorage.addLayoutManager(layoutManager)
+
+        // SAME container setup as convertUsingNSLayoutManager:411
+        let textBoxWidth = vectorText.areaSize?.width ?? vectorText.bounds.width
+        let textContainer = NSTextContainer(size: CGSize(width: textBoxWidth, height: CGFloat.greatestFiniteMagnitude))
+        textContainer.lineFragmentPadding = 0
+        textContainer.lineBreakMode = .byWordWrapping
+        layoutManager.addTextContainer(textContainer)
+
+        // Force complete layout
+        layoutManager.ensureGlyphs(forGlyphRange: NSRange(location: 0, length: vectorText.content.count))
+        layoutManager.ensureLayout(for: textContainer)
+
+        // Save graphics state
+        context.saveGState()
+
+        // Apply opacity
+        context.setAlpha(CGFloat(vectorText.typography.fillOpacity))
+
+        // Attributes for CTLine rendering (WITH foregroundColor - this is what CTLineDraw uses!)
+        let renderingAttributes: [NSAttributedString.Key: Any] = [
+            .font: nsFont,
+            .paragraphStyle: paragraphStyle,
+            .kern: vectorText.typography.letterSpacing,
+            .foregroundColor: NSColor(cgColor: vectorText.typography.fillColor.cgColor) ?? NSColor.black
+        ]
+
+        // Enumerate line fragments
+        let glyphRange = layoutManager.glyphRange(for: textContainer)
+
+        layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { (lineRect, lineUsedRect, container, lineRange, stop) in
+            // Create CTLine from the range of text in this line with proper color
+            let lineRange = NSRange(location: lineRange.location, length: lineRange.length)
+            let lineString = (vectorText.content as NSString).substring(with: lineRange)
+            let lineAttribString = NSAttributedString(string: lineString, attributes: renderingAttributes)
+            let line = CTLineCreateWithAttributedString(lineAttribString)
+
+            // Calculate line position based on alignment
+            let lineX: CGFloat
+            switch vectorText.typography.alignment.nsTextAlignment {
+            case .left, .justified:
+                lineX = vectorText.position.x + lineUsedRect.origin.x
+            case .center, .right:
+                lineX = vectorText.position.x + lineRect.origin.x
+            default:
+                lineX = vectorText.position.x + lineUsedRect.origin.x
+            }
+
+            // Get baseline offset from first glyph in line (SAME AS GLYPH METHOD)
+            let firstGlyphIndex = lineRange.location
+            let glyphLocation = layoutManager.location(forGlyphAt: firstGlyphIndex)
+            let lineY = vectorText.position.y + lineRect.origin.y + glyphLocation.y
+
+            // Draw the line
+            context.saveGState()
+
+            // CRITICAL FIX: Apply text matrix to flip Y-axis for correct PDF orientation
+            context.textMatrix = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: 0)
+
+            // Set text position and draw line
+            context.textPosition = CGPoint(x: lineX, y: lineY)
+            CTLineDraw(line, context)
+
+            context.restoreGState()
+        }
+
+        context.restoreGState()
+
+        Log.fileOperation("   ✅ PDF text rendered by lines at: \(vectorText.position)", level: .debug)
     }
 }

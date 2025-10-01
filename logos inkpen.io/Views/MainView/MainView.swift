@@ -8,6 +8,7 @@
 import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
+import Combine
 
 struct MainView: View {
     @StateObject private var document = TemplateManager.shared.createBlankDocument()
@@ -426,24 +427,169 @@ struct MainView: View {
     
     // MARK: - PDF Export Helper
     private func showPDFExportWithBackgroundOption(saveAsURL: URL) {
-        // FIXED: Use the same PDF generation code as InkpenDocument's fileWrapper which correctly handles gradients
-        do {
-            // Generate PDF data using the same method as Save As (which works correctly)
-            let pdfData = try FileOperations.generatePDFData(from: self.document)
+        // Show options dialog before saving (same options as Export PDF menu)
+        let alert = NSAlert()
+        alert.messageText = "PDF Export Options"
+        alert.informativeText = "Choose export options for the PDF file"
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "Export")
+        alert.addButton(withTitle: "Cancel")
 
-            // Write to file
-            try pdfData.write(to: saveAsURL)
+        // Create accessory view for text to outlines, text rendering mode, CMYK, and background options
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 220))
 
-            Log.info("✅ Exported to PDF using Save As PDF code: \(saveAsURL.path)", category: .fileOperations)
-        } catch {
-            Log.error("❌ PDF export failed: \(error)", category: .error)
+        // Convert text to outlines checkbox (at top)
+        let textToOutlinesCheckbox = NSButton(checkboxWithTitle: "Convert text to outlines",
+                                               target: nil, action: nil)
+        textToOutlinesCheckbox.frame = NSRect(x: 20, y: 180, width: 250, height: 20)
+        textToOutlinesCheckbox.state = .off // Default to keeping text as PDF text
+        accessoryView.addSubview(textToOutlinesCheckbox)
 
-            // Show error alert
-            let alert = NSAlert()
-            alert.messageText = "PDF Export Failed"
-            alert.informativeText = error.localizedDescription
-            alert.alertStyle = .critical
-            alert.runModal()
+        // Text rendering mode label and radio buttons (only shown when NOT converting to outlines)
+        let textModeLabel = NSTextField(labelWithString: "PDF Text Rendering Mode:")
+        textModeLabel.frame = NSRect(x: 40, y: 135, width: 300, height: 20)
+        textModeLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        accessoryView.addSubview(textModeLabel)
+
+        // Radio buttons for text rendering modes
+        let glyphsRadio = NSButton(radioButtonWithTitle: "Individual Glyphs (most accurate)", target: nil, action: nil)
+        glyphsRadio.frame = NSRect(x: 60, y: 110, width: 300, height: 18)
+        glyphsRadio.state = AppState.shared.pdfTextRenderingMode == .glyphs ? .on : .off
+        accessoryView.addSubview(glyphsRadio)
+
+        let linesRadio = NSButton(radioButtonWithTitle: "By Lines (faster)", target: nil, action: nil)
+        linesRadio.frame = NSRect(x: 60, y: 90, width: 300, height: 18)
+        linesRadio.state = AppState.shared.pdfTextRenderingMode == .lines ? .on : .off
+        accessoryView.addSubview(linesRadio)
+
+        // CMYK checkbox
+        let cmykCheckbox = NSButton(checkboxWithTitle: "Use CMYK color space",
+                                     target: nil, action: nil)
+        cmykCheckbox.frame = NSRect(x: 20, y: 50, width: 250, height: 20)
+        cmykCheckbox.state = .off
+        accessoryView.addSubview(cmykCheckbox)
+
+        // Background checkbox
+        let bgCheckbox = NSButton(checkboxWithTitle: "Include background (Canvas layer)",
+                                   target: nil, action: nil)
+        bgCheckbox.frame = NSRect(x: 20, y: 20, width: 250, height: 20)
+        bgCheckbox.state = .off
+        accessoryView.addSubview(bgCheckbox)
+
+        // Handler to show/hide text rendering options based on "Convert text to outlines" checkbox
+        class TextOptionsHandler: NSObject {
+            let textToOutlinesCheckbox: NSButton
+            let textModeLabel: NSTextField
+            let glyphsRadio: NSButton
+            let linesRadio: NSButton
+
+            init(textToOutlinesCheckbox: NSButton, textModeLabel: NSTextField,
+                 glyphsRadio: NSButton, linesRadio: NSButton) {
+                self.textToOutlinesCheckbox = textToOutlinesCheckbox
+                self.textModeLabel = textModeLabel
+                self.glyphsRadio = glyphsRadio
+                self.linesRadio = linesRadio
+            }
+
+            @objc func toggleTextOptions(_ sender: NSButton) {
+                let shouldHide = sender.state == .on
+                textModeLabel.isHidden = shouldHide
+                glyphsRadio.isHidden = shouldHide
+                linesRadio.isHidden = shouldHide
+            }
+
+            @objc func selectGlyphs(_ sender: NSButton) {
+                glyphsRadio.state = .on
+                linesRadio.state = .off
+            }
+
+            @objc func selectLines(_ sender: NSButton) {
+                glyphsRadio.state = .off
+                linesRadio.state = .on
+            }
+        }
+
+        let handler = TextOptionsHandler(textToOutlinesCheckbox: textToOutlinesCheckbox,
+                                         textModeLabel: textModeLabel,
+                                         glyphsRadio: glyphsRadio,
+                                         linesRadio: linesRadio)
+
+        textToOutlinesCheckbox.target = handler
+        textToOutlinesCheckbox.action = #selector(TextOptionsHandler.toggleTextOptions(_:))
+        glyphsRadio.target = handler
+        glyphsRadio.action = #selector(TextOptionsHandler.selectGlyphs(_:))
+        linesRadio.target = handler
+        linesRadio.action = #selector(TextOptionsHandler.selectLines(_:))
+
+        // Keep handler alive
+        objc_setAssociatedObject(accessoryView, "textOptionsHandler", handler, .OBJC_ASSOCIATION_RETAIN)
+
+        alert.accessoryView = accessoryView
+
+        let response = alert.runModal()
+        guard response == .alertFirstButtonReturn else { return }
+
+        // Get export options
+        let useCMYK = cmykCheckbox.state == .on
+        let convertTextToOutlines = textToOutlinesCheckbox.state == .on
+
+        // Determine text rendering mode (default to glyphs if neither is selected)
+        let textRenderingMode: AppState.PDFTextRenderingMode = linesRadio.state == .on ? .lines : .glyphs
+
+        // Save preference for next time
+        AppState.shared.pdfTextRenderingMode = textRenderingMode
+
+        Task {
+            do {
+                var pdfData: Data
+
+                // If converting text to outlines, create a temporary copy and convert
+                if convertTextToOutlines && !document.allTextObjects.isEmpty {
+                    // Save current document state
+                    let savedData = try JSONEncoder().encode(document)
+                    let savedState = try JSONDecoder().decode(VectorDocument.self, from: savedData)
+
+                    // Convert all text to outlines
+                    await MainActor.run {
+                        Log.info("📝 Converting all text to outlines for Save As PDF...", category: .fileOperations)
+                        DocumentState.convertAllTextToOutlinesForExport(document)
+                    }
+
+                    // Generate PDF with outlined text
+                    pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode)
+
+                    // Restore original document state
+                    await MainActor.run {
+                        Log.info("↩️ Restoring original document state after Save As PDF", category: .fileOperations)
+                        document.unifiedObjects = savedState.unifiedObjects
+                        document.layers = savedState.layers
+                        document.selectedObjectIDs = savedState.selectedObjectIDs
+                        document.selectedTextIDs = savedState.selectedTextIDs
+                        document.selectedShapeIDs = savedState.selectedShapeIDs
+                        document.objectWillChange.send()
+                    }
+                } else {
+                    // No text conversion needed, export normally
+                    pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode)
+                }
+
+                // Write to file
+                try pdfData.write(to: saveAsURL)
+
+                await MainActor.run {
+                    Log.info("✅ Saved As PDF: \(saveAsURL.path) (text to outlines: \(convertTextToOutlines), mode: \(textRenderingMode.displayName))", category: .fileOperations)
+                }
+            } catch {
+                await MainActor.run {
+                    Log.error("❌ Save As PDF failed: \(error)", category: .error)
+
+                    let alert = NSAlert()
+                    alert.messageText = "PDF Export Failed"
+                    alert.informativeText = error.localizedDescription
+                    alert.alertStyle = .critical
+                    alert.runModal()
+                }
+            }
         }
     }
 

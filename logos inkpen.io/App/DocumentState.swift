@@ -332,7 +332,7 @@ class DocumentState: ObservableObject {
                         // Convert all text to outlines
                         await MainActor.run {
                             Log.info("📝 Converting all text to outlines for SVG export...", category: .fileOperations)
-                            self.convertAllTextToOutlinesForExport(document)
+                            DocumentState.convertAllTextToOutlinesForExport(document)
                         }
 
                         // Generate SVG with outlined text
@@ -388,15 +388,32 @@ class DocumentState: ObservableObject {
         panel.isExtensionHidden = false  // Show .pdf extension
         panel.message = "Export as PDF (Portable Document Format)"
 
-        // Create accessory view for text to outlines, CMYK, and background options
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 120))
+        // Create accessory view for text to outlines, text rendering mode, CMYK, and background options
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 220))
 
         // Convert text to outlines checkbox (at top)
         let textToOutlinesCheckbox = NSButton(checkboxWithTitle: "Convert text to outlines",
                                                target: nil, action: nil)
-        textToOutlinesCheckbox.frame = NSRect(x: 20, y: 80, width: 250, height: 20)
-        textToOutlinesCheckbox.state = .on // Default to converting text to outlines
+        textToOutlinesCheckbox.frame = NSRect(x: 20, y: 180, width: 250, height: 20)
+        textToOutlinesCheckbox.state = .off // Default to keeping text as PDF text
         accessoryView.addSubview(textToOutlinesCheckbox)
+
+        // Text rendering mode label and radio buttons (only shown when NOT converting to outlines)
+        let textModeLabel = NSTextField(labelWithString: "PDF Text Rendering Mode:")
+        textModeLabel.frame = NSRect(x: 40, y: 135, width: 300, height: 20)
+        textModeLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        accessoryView.addSubview(textModeLabel)
+
+        // Radio buttons for text rendering modes
+        let glyphsRadio = NSButton(radioButtonWithTitle: "Individual Glyphs (most accurate)", target: nil, action: nil)
+        glyphsRadio.frame = NSRect(x: 60, y: 110, width: 300, height: 18)
+        glyphsRadio.state = AppState.shared.pdfTextRenderingMode == .glyphs ? .on : .off
+        accessoryView.addSubview(glyphsRadio)
+
+        let linesRadio = NSButton(radioButtonWithTitle: "By Lines (faster)", target: nil, action: nil)
+        linesRadio.frame = NSRect(x: 60, y: 90, width: 300, height: 18)
+        linesRadio.state = AppState.shared.pdfTextRenderingMode == .lines ? .on : .off
+        accessoryView.addSubview(linesRadio)
 
         // CMYK checkbox
         let cmykCheckbox = NSButton(checkboxWithTitle: "Use CMYK color space",
@@ -412,6 +429,54 @@ class DocumentState: ObservableObject {
         bgCheckbox.state = .off // Default to no background for PDF export
         accessoryView.addSubview(bgCheckbox)
 
+        // Handler to show/hide text rendering options based on "Convert text to outlines" checkbox
+        class TextOptionsHandler: NSObject {
+            let textToOutlinesCheckbox: NSButton
+            let textModeLabel: NSTextField
+            let glyphsRadio: NSButton
+            let linesRadio: NSButton
+
+            init(textToOutlinesCheckbox: NSButton, textModeLabel: NSTextField,
+                 glyphsRadio: NSButton, linesRadio: NSButton) {
+                self.textToOutlinesCheckbox = textToOutlinesCheckbox
+                self.textModeLabel = textModeLabel
+                self.glyphsRadio = glyphsRadio
+                self.linesRadio = linesRadio
+            }
+
+            @objc func toggleTextOptions(_ sender: NSButton) {
+                let shouldHide = sender.state == .on
+                textModeLabel.isHidden = shouldHide
+                glyphsRadio.isHidden = shouldHide
+                linesRadio.isHidden = shouldHide
+            }
+
+            @objc func selectGlyphs(_ sender: NSButton) {
+                glyphsRadio.state = .on
+                linesRadio.state = .off
+            }
+
+            @objc func selectLines(_ sender: NSButton) {
+                glyphsRadio.state = .off
+                linesRadio.state = .on
+            }
+        }
+
+        let handler = TextOptionsHandler(textToOutlinesCheckbox: textToOutlinesCheckbox,
+                                         textModeLabel: textModeLabel,
+                                         glyphsRadio: glyphsRadio,
+                                         linesRadio: linesRadio)
+
+        textToOutlinesCheckbox.target = handler
+        textToOutlinesCheckbox.action = #selector(TextOptionsHandler.toggleTextOptions(_:))
+        glyphsRadio.target = handler
+        glyphsRadio.action = #selector(TextOptionsHandler.selectGlyphs(_:))
+        linesRadio.target = handler
+        linesRadio.action = #selector(TextOptionsHandler.selectLines(_:))
+
+        // Keep handler alive
+        objc_setAssociatedObject(accessoryView, "textOptionsHandler", handler, .OBJC_ASSOCIATION_RETAIN)
+
         panel.accessoryView = accessoryView
 
         panel.begin { response in
@@ -420,6 +485,12 @@ class DocumentState: ObservableObject {
             // Get export options
             let useCMYK = cmykCheckbox.state == .on
             let convertTextToOutlines = textToOutlinesCheckbox.state == .on
+
+            // Determine text rendering mode (default to glyphs if neither is selected)
+            let textRenderingMode: AppState.PDFTextRenderingMode = linesRadio.state == .on ? .lines : .glyphs
+
+            // Save preference for next time
+            AppState.shared.pdfTextRenderingMode = textRenderingMode
             // TODO: Update generatePDFData to support includeBackground parameter using bgCheckbox.state
 
             Task {
@@ -435,11 +506,11 @@ class DocumentState: ObservableObject {
                         // Convert all text to outlines
                         await MainActor.run {
                             Log.info("📝 Converting all text to outlines for PDF export...", category: .fileOperations)
-                            self.convertAllTextToOutlinesForExport(document)
+                            DocumentState.convertAllTextToOutlinesForExport(document)
                         }
 
-                        // Generate PDF with outlined text
-                        pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK)
+                        // Generate PDF with outlined text (text rendering mode doesn't matter for outlines)
+                        pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode)
 
                         // Restore original document state
                         await MainActor.run {
@@ -453,8 +524,8 @@ class DocumentState: ObservableObject {
                             document.objectWillChange.send()
                         }
                     } else {
-                        // No text conversion needed, export normally
-                        pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK)
+                        // No text conversion needed, export normally with selected text rendering mode
+                        pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode)
                     }
 
                     // Write the PDF data to file
@@ -698,7 +769,7 @@ class DocumentState: ObservableObject {
                                 // Convert all text to outlines
                                 await MainActor.run {
                                     Log.info("📝 Converting all text to outlines for PNG export...", category: .fileOperations)
-                                    self.convertAllTextToOutlinesForExport(document)
+                                    DocumentState.convertAllTextToOutlinesForExport(document)
                                 }
 
                                 // Export PNG with outlined text
@@ -793,7 +864,7 @@ class DocumentState: ObservableObject {
                         // Convert all text to outlines
                         await MainActor.run {
                             Log.info("📝 Converting all text to outlines for AutoDesk SVG export...", category: .fileOperations)
-                            self.convertAllTextToOutlinesForExport(document)
+                            DocumentState.convertAllTextToOutlinesForExport(document)
                         }
 
                         // Generate SVG with outlined text
@@ -1159,7 +1230,7 @@ class DocumentState: ObservableObject {
     }
 
     // Helper function to convert all text to outlines for export
-    private func convertAllTextToOutlinesForExport(_ document: VectorDocument) {
+    static func convertAllTextToOutlinesForExport(_ document: VectorDocument) {
         // Get all text objects
         let allTexts = document.allTextObjects
 

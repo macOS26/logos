@@ -16,12 +16,12 @@ extension FileOperations {
         return try generatePDFDataWithClippingSupport(from: document, isExport: false, useCMYK: false)
     }
 
-    /// Generate PDF data for Export with CMYK option
-    static func generatePDFDataForExport(from document: VectorDocument, useCMYK: Bool) throws -> Data {
-        Log.fileOperation("📄 Generating PDF data for export (CMYK: \(useCMYK))", level: .info)
+    /// Generate PDF data for Export with CMYK option and text rendering mode
+    static func generatePDFDataForExport(from document: VectorDocument, useCMYK: Bool, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs) throws -> Data {
+        Log.fileOperation("📄 Generating PDF data for export (CMYK: \(useCMYK), Text Mode: \(textRenderingMode.displayName))", level: .info)
 
-        // Use the new method with export flag and CMYK option
-        return try generatePDFDataWithClippingSupport(from: document, isExport: true, useCMYK: useCMYK)
+        // Use the new method with export flag, CMYK option, and text rendering mode
+        return try generatePDFDataWithClippingSupport(from: document, isExport: true, useCMYK: useCMYK, textRenderingMode: textRenderingMode)
     }
 
     /// Render VectorDocument to PDF context

@@ -178,6 +178,33 @@ class AppState {
         }
     }
 
+    /// Controls how text is rendered in PDF exports
+    enum PDFTextRenderingMode: String, CaseIterable {
+        case glyphs = "glyphs"      // Individual glyphs (most accurate)
+        case lines = "lines"         // By lines (CTLine)
+
+        var displayName: String {
+            switch self {
+            case .glyphs: return "Individual Glyphs (most accurate)"
+            case .lines: return "By Lines (faster)"
+            }
+        }
+
+        var description: String {
+            switch self {
+            case .glyphs: return "Render each glyph individually for maximum precision"
+            case .lines: return "Render text line-by-line for better performance"
+            }
+        }
+    }
+
+    var pdfTextRenderingMode: PDFTextRenderingMode = .glyphs {
+        didSet {
+            UserDefaults.standard.set(pdfTextRenderingMode.rawValue, forKey: "pdfTextRenderingMode")
+            Log.info("📄 PDF text rendering mode changed to: \(pdfTextRenderingMode.displayName)")
+        }
+    }
+
     /// Number of steps for blend mode (10-255)
     var pdfBlendSteps: Int = 20 {
         didSet {
@@ -314,6 +341,12 @@ class AppState {
         self.pdfMeshGridX = savedGridX ?? 8
         let savedGridY = UserDefaults.standard.object(forKey: "pdfMeshGridY") as? Int
         self.pdfMeshGridY = savedGridY ?? 8
+
+        // Load PDF text rendering mode
+        if let modeRaw = UserDefaults.standard.string(forKey: "pdfTextRenderingMode"),
+           let mode = PDFTextRenderingMode(rawValue: modeRaw) {
+            self.pdfTextRenderingMode = mode
+        }
     }
 
 

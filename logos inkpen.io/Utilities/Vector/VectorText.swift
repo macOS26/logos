@@ -453,13 +453,6 @@ class FontManager: ObservableObject {
         // Prioritize professional fonts
         var orderedFonts: [String] = []
         
-        // Add professional fonts first if available
-        // for professionalFont in FontManager.professionalFonts {
-        //     if systemFonts.contains(professionalFont) {
-        //         orderedFonts.append(professionalFont)
-        //     }
-        // }
-        
         // Add remaining system fonts
         for font in systemFonts {
             if !orderedFonts.contains(font) {
