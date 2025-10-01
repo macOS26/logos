@@ -156,22 +156,13 @@ struct ObjectRow: View {
 struct PreferencesView: View {
     @Environment(AppState.self) private var appState
     @Environment(\._openURL) private var openURL
-    @AppStorage("globalPressureCurve") private var pressureCurveData: Data = PreferencesView.defaultPressureCurveData()
     @State private var pressureCurve: [CGPoint] = PreferencesView.defaultPressureCurve()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Preferences")
-                .font(.title2)
-                .fontWeight(.semibold)
-            
-
             // Pressure Sensitivity Section
             GroupBox(label: Label("Pressure Sensitivity", systemImage: "hand.draw").font(.headline)) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Configure how pressure from your stylus or tablet is mapped to stroke thickness.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
 
                     // Pressure curve editor
                     PressureCurveEditor(curve: $pressureCurve, size: 300)
@@ -215,25 +206,38 @@ struct PreferencesView: View {
             Spacer()
         }
         .padding(24)
-        .frame(minWidth: 850, minHeight: 500)
+        .frame(minWidth: 400, minHeight: 550)
         .onAppear {
             loadPressureCurve()
         }
-        .onDisappear {
+        .onChange(of: pressureCurve) { oldValue, newValue in
             savePressureCurve()
         }
     }
 
     private func loadPressureCurve() {
-        if let decoded = try? JSONDecoder().decode([CGPoint].self, from: pressureCurveData) {
-            pressureCurve = decoded
+        // Load from UserDefaults using the SAME key as AppState
+        if let data = UserDefaults.standard.array(forKey: "pressureCurve") as? [[String: Double]] {
+            let loadedCurve = data.compactMap { dict -> CGPoint? in
+                guard let x = dict["x"], let y = dict["y"] else { return nil }
+                return CGPoint(x: x, y: y)
+            }
+            if loadedCurve.count >= 2 {
+                pressureCurve = loadedCurve
+            }
         }
     }
 
     private func savePressureCurve() {
-        if let encoded = try? JSONEncoder().encode(pressureCurve) {
-            pressureCurveData = encoded
-        }
+        // Save to UserDefaults using the SAME key as AppState
+        let data = pressureCurve.map { ["x": $0.x, "y": $0.y] }
+        UserDefaults.standard.set(data, forKey: "pressureCurve")
+        UserDefaults.standard.synchronize()
+
+        // ALSO update AppState directly so tools get the change immediately
+        appState.pressureCurve = pressureCurve
+
+        Log.info("💾 SAVED PRESSURE CURVE TO USERDEFAULTS AND APPSTATE", category: .pressure)
     }
 
     // Helper functions

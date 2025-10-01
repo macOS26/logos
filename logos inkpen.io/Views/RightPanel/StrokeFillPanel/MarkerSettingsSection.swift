@@ -295,9 +295,9 @@ struct MarkerSettingsSection: View {
 
             // Marker Info
             HStack {
-                Image(systemName: "info.circle")
-                    .foregroundColor(Color.ui.primaryBlue)
-                Text("Felt-tip marker with variable width based on drawing speed")
+                Image(systemName: PressureManager.shared.hasRealPressureInput ? "hand.point.up.braille" : "hand.tap")
+                    .foregroundColor(PressureManager.shared.hasRealPressureInput ? .green : .orange)
+                Text(PressureManager.shared.hasRealPressureInput ? "Pressure input detected" : "Using simulated pressure")
                     .font(.caption)
                     .foregroundColor(Color.ui.secondaryText)
                 Spacer()

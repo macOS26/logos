@@ -24,7 +24,11 @@ struct PressureCurveEditor: View {
                     Text("Pressure Curve")
                         .font(.headline)
                         .foregroundColor(.primary)
-                    Text("Input: 0.0-1.0 → Output: 0.0-1.0")
+                    Text(String(format: "Input: %.2f-%.2f → Output: %.2f-%.2f",
+                                curve.map(\.x).min() ?? 0.0,
+                                curve.map(\.x).max() ?? 1.0,
+                                curve.map(\.y).min() ?? 0.0,
+                                curve.map(\.y).max() ?? 1.0))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -143,7 +147,16 @@ func getThicknessFromPressureCurve(pressure: Double, curve: [CGPoint]) -> Double
     }
 
     let t = (clampedPressure - lowerPoint.x) / (upperPoint.x - lowerPoint.x)
-    return lowerPoint.y + t * (upperPoint.y - lowerPoint.y)
+    let curveOutput = lowerPoint.y + t * (upperPoint.y - lowerPoint.y)
+
+    // Convert curve output to thickness multiplier
+    // Linear curve (input=output) → multiplier = 1.0 (no thickness change)
+    // Soft curve (output>input) → multiplier > 1.0 (thicker)
+    // Hard curve (output<input) → multiplier < 1.0 (thinner)
+    if clampedPressure == 0 {
+        return curveOutput == 0 ? 1.0 : 0.0
+    }
+    return curveOutput / clampedPressure
 }
 
 #Preview {

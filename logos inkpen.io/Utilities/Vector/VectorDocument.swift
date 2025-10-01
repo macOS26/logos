@@ -343,15 +343,33 @@ class VectorDocument: ObservableObject, Codable {
     internal let maxUndoStackSize = 50
     
     // MARKER SETTINGS (Felt-tip marker specific)
-    @Published var currentMarkerSmoothingTolerance: Double = 2.0 // Marker smoothing tolerance (0.0-10.0)
-    @Published var currentMarkerTipSize: Double = 31.0 // Marker tip size in points (1.0-50.0)
-    @Published var currentMarkerOpacity: Double = 1.0 // Marker ink opacity (0.0-1.0)
-    @Published var currentMarkerFeathering: Double = 0.3 // Marker edge feathering (0.0-1.0)
-    @Published var currentMarkerTaperStart: Double = 0.1 // Marker start taper (0.0-0.5)
-    @Published var currentMarkerTaperEnd: Double = 0.1 // Marker end taper (0.0-0.5)
-    @Published var markerUseFillAsStroke: Bool = true // Default ON: use fill color for both fill and stroke for marker
-    @Published var markerApplyNoStroke: Bool = false // When enabled, applies no stroke regardless of current stroke settings
-    @Published var markerRemoveOverlap: Bool = true // Default ON: union overlapping parts of same marker shape
+    @Published var currentMarkerSmoothingTolerance: Double = 2.0 {
+        didSet { UserDefaults.standard.set(currentMarkerSmoothingTolerance, forKey: "markerSmoothingTolerance") }
+    }
+    @Published var currentMarkerTipSize: Double = 31.0 {
+        didSet { UserDefaults.standard.set(currentMarkerTipSize, forKey: "markerTipSize") }
+    }
+    @Published var currentMarkerOpacity: Double = 1.0 {
+        didSet { UserDefaults.standard.set(currentMarkerOpacity, forKey: "markerOpacity") }
+    }
+    @Published var currentMarkerFeathering: Double = 0.3 {
+        didSet { UserDefaults.standard.set(currentMarkerFeathering, forKey: "markerFeathering") }
+    }
+    @Published var currentMarkerTaperStart: Double = 0.1 {
+        didSet { UserDefaults.standard.set(currentMarkerTaperStart, forKey: "markerTaperStart") }
+    }
+    @Published var currentMarkerTaperEnd: Double = 0.1 {
+        didSet { UserDefaults.standard.set(currentMarkerTaperEnd, forKey: "markerTaperEnd") }
+    }
+    @Published var markerUseFillAsStroke: Bool = true {
+        didSet { UserDefaults.standard.set(markerUseFillAsStroke, forKey: "markerUseFillAsStroke") }
+    }
+    @Published var markerApplyNoStroke: Bool = false {
+        didSet { UserDefaults.standard.set(markerApplyNoStroke, forKey: "markerApplyNoStroke") }
+    }
+    @Published var markerRemoveOverlap: Bool = true {
+        didSet { UserDefaults.standard.set(markerRemoveOverlap, forKey: "markerRemoveOverlap") }
+    }
     
     // CONVERT ANCHOR POINT TOOL: Store original handle positions for restoration
     @Published var originalHandlePositions: [String: VectorPoint] = [:] // Key: "layerIndex_shapeIndex_elementIndex_handleType", Value: original position
@@ -741,16 +759,16 @@ class VectorDocument: ObservableObject, Codable {
         colorChangeNotification = UUID()
         lastColorChangeType = .fillOpacity
 
-        // Initialize marker settings (not persisted)
-        currentMarkerSmoothingTolerance = 2.0
-        currentMarkerTipSize = 31.0
-        currentMarkerOpacity = 1.0
-        currentMarkerFeathering = 0.3
-        currentMarkerTaperStart = 0.1
-        currentMarkerTaperEnd = 0.1
-        markerUseFillAsStroke = true
-        markerApplyNoStroke = false
-        markerRemoveOverlap = true
+        // Load marker settings from UserDefaults
+        currentMarkerSmoothingTolerance = UserDefaults.standard.object(forKey: "markerSmoothingTolerance") as? Double ?? 2.0
+        currentMarkerTipSize = UserDefaults.standard.object(forKey: "markerTipSize") as? Double ?? 31.0
+        currentMarkerOpacity = UserDefaults.standard.object(forKey: "markerOpacity") as? Double ?? 1.0
+        currentMarkerFeathering = UserDefaults.standard.object(forKey: "markerFeathering") as? Double ?? 0.3
+        currentMarkerTaperStart = UserDefaults.standard.object(forKey: "markerTaperStart") as? Double ?? 0.1
+        currentMarkerTaperEnd = UserDefaults.standard.object(forKey: "markerTaperEnd") as? Double ?? 0.1
+        markerUseFillAsStroke = UserDefaults.standard.object(forKey: "markerUseFillAsStroke") as? Bool ?? true
+        markerApplyNoStroke = UserDefaults.standard.object(forKey: "markerApplyNoStroke") as? Bool ?? false
+        markerRemoveOverlap = UserDefaults.standard.object(forKey: "markerRemoveOverlap") as? Bool ?? true
 
         // Initialize other properties
         originalHandlePositions = [:]

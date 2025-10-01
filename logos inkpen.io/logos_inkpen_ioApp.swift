@@ -970,8 +970,7 @@ struct logos_inken_ioApp: App {
                     window?.tabbingMode = .disallowed
                 })
         }
-        .defaultSize(width: 520, height: 320)
-        .windowResizability(.contentSize)
+        .windowResizability(.contentMinSize)
     }
 }
 

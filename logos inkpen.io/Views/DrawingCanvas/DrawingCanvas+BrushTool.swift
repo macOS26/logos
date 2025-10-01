@@ -691,6 +691,9 @@ extension DrawingCanvas {
                 }
             } else {
                 // Normal curved strokes - CLIP OFF NARROW TAILS
+                // ONLY apply tapering/bulges when NOT using pressure sensitivity
+                let usingPressure = appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput
+
                 if progress < 0.03 {
                     // START: Cut off very thin tails at beginning
                     finalThickness = 0  // Completely remove narrow tail
@@ -698,10 +701,10 @@ extension DrawingCanvas {
                     // Quick taper from zero
                     let startTaper = pow((progress - 0.03) / 0.05, 2.0)
                     finalThickness *= startTaper
-                } else if progress > 0.15 && progress <= 0.3 {
+                } else if !usingPressure && progress > 0.15 && progress <= 0.3 {
                     let bulgeAmount = sin((progress - 0.15) / 0.15 * .pi)
                     finalThickness *= (1.0 + bulgeAmount * 0.15)
-                } else if progress > 0.8 && progress <= 0.88 {
+                } else if !usingPressure && progress > 0.8 && progress <= 0.88 {
                     let endBulgeAmount = sin((progress - 0.8) / 0.08 * .pi)
                     finalThickness *= (1.0 + endBulgeAmount * 0.3)
                 } else if progress > 0.88 && progress < 0.97 {
@@ -734,7 +737,21 @@ extension DrawingCanvas {
                 }
 
                 // Apply pressure curve mapping like marker tool
-                let mappedPressure = getThicknessFromPressureCurve(pressure: closestPressure, curve: appState.pressureCurve)
+                let curve = appState.pressureCurve
+
+                // LOG CURVE DATA
+                if index == 0 {
+                    let curveStr = curve.map { "(\(String(format: "%.2f", $0.x)),\(String(format: "%.2f", $0.y)))" }.joined(separator: " ")
+                    Log.info("📊 BRUSH CURVE: [\(curveStr)]", category: .pressure)
+                }
+
+                let mappedPressure = getThicknessFromPressureCurve(pressure: closestPressure, curve: curve)
+
+                // LOG PRESSURE VALUES
+                if index % 5 == 0 {  // Log every 5th point to reduce spam
+                    Log.info("📊 BRUSH PRESSURE: raw=\(String(format: "%.3f", closestPressure)) → mapped=\(String(format: "%.3f", mappedPressure)) | thickness before=\(String(format: "%.2f", finalThickness)) after=\(String(format: "%.2f", finalThickness * mappedPressure))", category: .pressure)
+                }
+
                 finalThickness *= mappedPressure
             }
             
@@ -861,6 +878,9 @@ extension DrawingCanvas {
                 }
             } else {
                 // CLIP OFF NARROW TAILS for curved strokes
+                // ONLY apply tapering/bulges when NOT using pressure sensitivity
+                let usingPressure = appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput
+
                 if progress < 0.03 {
                     // START: Cut off very thin tails at beginning
                     finalThickness = 0  // Completely remove narrow tail
@@ -868,10 +888,10 @@ extension DrawingCanvas {
                     // Quick taper from zero
                     let startTaper = pow((progress - 0.03) / 0.05, 2.0)
                     finalThickness *= startTaper
-                } else if progress > 0.15 && progress <= 0.3 {
+                } else if !usingPressure && progress > 0.15 && progress <= 0.3 {
                     let bulgeAmount = sin((progress - 0.15) / 0.15 * .pi)
                     finalThickness *= (1.0 + bulgeAmount * 0.15)
-                } else if progress > 0.8 && progress <= 0.88 {
+                } else if !usingPressure && progress > 0.8 && progress <= 0.88 {
                     let endBulgeAmount = sin((progress - 0.8) / 0.08 * .pi)
                     finalThickness *= (1.0 + endBulgeAmount * 0.3)
                 } else if progress > 0.88 && progress < 0.97 {
@@ -894,7 +914,21 @@ extension DrawingCanvas {
             let interpolatedPressure = interpolatePressureForPoint(point, from: rawPoints)
 
             // Apply pressure curve mapping like marker tool
-            let mappedPressure = getThicknessFromPressureCurve(pressure: interpolatedPressure, curve: appState.pressureCurve)
+            let curve = appState.pressureCurve
+
+            // LOG CURVE DATA
+            if index == 0 {
+                let curveStr = curve.map { "(\(String(format: "%.2f", $0.x)),\(String(format: "%.2f", $0.y)))" }.joined(separator: " ")
+                Log.info("📊 BRUSH SMOOTH CURVE: [\(curveStr)]", category: .pressure)
+            }
+
+            let mappedPressure = getThicknessFromPressureCurve(pressure: interpolatedPressure, curve: curve)
+
+            // LOG PRESSURE VALUES
+            if index % 5 == 0 {  // Log every 5th point to reduce spam
+                Log.info("📊 BRUSH SMOOTH PRESSURE: raw=\(String(format: "%.3f", interpolatedPressure)) → mapped=\(String(format: "%.3f", mappedPressure)) | thickness before=\(String(format: "%.2f", finalThickness)) after=\(String(format: "%.2f", finalThickness * mappedPressure))", category: .pressure)
+            }
+
             finalThickness *= mappedPressure
             
             thicknessPoints.append((location: point, thickness: finalThickness))

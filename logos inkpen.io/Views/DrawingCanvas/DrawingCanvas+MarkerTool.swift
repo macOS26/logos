@@ -511,10 +511,20 @@ extension DrawingCanvas {
                     ]
                 }
 
-                let mappedPressure = getThicknessFromPressureCurve(pressure: pressure, curve: curve)
-                finalThickness *= mappedPressure
+                // LOG CURVE DATA
+                if index == 0 {
+                    let curveStr = curve.map { "(\(String(format: "%.2f", $0.x)),\(String(format: "%.2f", $0.y)))" }.joined(separator: " ")
+                    Log.info("📊 MARKER CURVE: [\(curveStr)]", category: .pressure)
+                }
 
-                // Logging disabled in hot path to reduce CPU overhead
+                let mappedPressure = getThicknessFromPressureCurve(pressure: pressure, curve: curve)
+
+                // LOG PRESSURE VALUES
+                if index % 5 == 0 {  // Log every 5th point to reduce spam
+                    Log.info("📊 MARKER PRESSURE: raw=\(String(format: "%.3f", pressure)) → mapped=\(String(format: "%.3f", mappedPressure)) | thickness before=\(String(format: "%.2f", finalThickness)) after=\(String(format: "%.2f", finalThickness * mappedPressure))", category: .pressure)
+                }
+
+                finalThickness *= mappedPressure
             }
 
             thicknessPoints.append((location: point, thickness: finalThickness))
