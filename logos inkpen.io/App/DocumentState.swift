@@ -293,39 +293,46 @@ class DocumentState: ObservableObject {
         panel.isExtensionHidden = false  // Show .svg extension
         panel.message = "Export as SVG (Scalable Vector Graphics)"
 
-        // Create accessory view for text to outlines, text rendering mode, and background options
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 180))
+        // Create accessory view for text to outlines, text rendering mode, background, and inkpen embed options
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 210))
 
         // Convert text to outlines checkbox (at top)
         let textToOutlinesCheckbox = NSButton(checkboxWithTitle: "Convert text to outlines",
                                                target: nil, action: nil)
-        textToOutlinesCheckbox.frame = NSRect(x: 20, y: 140, width: 250, height: 20)
+        textToOutlinesCheckbox.frame = NSRect(x: 20, y: 170, width: 250, height: 20)
         textToOutlinesCheckbox.state = .off // Default to keeping text as SVG text
         accessoryView.addSubview(textToOutlinesCheckbox)
 
         // Text rendering mode label and radio buttons (only shown when NOT converting to outlines)
         let textModeLabel = NSTextField(labelWithString: "SVG Text Rendering Mode:")
-        textModeLabel.frame = NSRect(x: 40, y: 95, width: 300, height: 20)
+        textModeLabel.frame = NSRect(x: 40, y: 125, width: 300, height: 20)
         textModeLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
         accessoryView.addSubview(textModeLabel)
 
         // Radio buttons for text rendering modes
         let glyphsRadio = NSButton(radioButtonWithTitle: "Individual Glyphs (most accurate)", target: nil, action: nil)
-        glyphsRadio.frame = NSRect(x: 60, y: 70, width: 300, height: 18)
+        glyphsRadio.frame = NSRect(x: 60, y: 100, width: 300, height: 18)
         glyphsRadio.state = AppState.shared.svgTextRenderingMode == .glyphs ? .on : .off
         accessoryView.addSubview(glyphsRadio)
 
         let linesRadio = NSButton(radioButtonWithTitle: "By Lines (faster)", target: nil, action: nil)
-        linesRadio.frame = NSRect(x: 60, y: 50, width: 300, height: 18)
+        linesRadio.frame = NSRect(x: 60, y: 80, width: 300, height: 18)
         linesRadio.state = AppState.shared.svgTextRenderingMode == .lines ? .on : .off
         accessoryView.addSubview(linesRadio)
 
         // Background checkbox
         let bgCheckbox = NSButton(checkboxWithTitle: "Include background",
                                    target: nil, action: nil)
-        bgCheckbox.frame = NSRect(x: 20, y: 20, width: 200, height: 20)
+        bgCheckbox.frame = NSRect(x: 20, y: 50, width: 200, height: 20)
         bgCheckbox.state = .off // Default to no background for SVG
         accessoryView.addSubview(bgCheckbox)
+
+        // Include native .inkpen document checkbox
+        let includeInkpenCheckbox = NSButton(checkboxWithTitle: "Include native .inkpen document",
+                                              target: nil, action: nil)
+        includeInkpenCheckbox.frame = NSRect(x: 20, y: 20, width: 250, height: 20)
+        includeInkpenCheckbox.state = .off // Default to not including inkpen data
+        accessoryView.addSubview(includeInkpenCheckbox)
 
         // Handler to show/hide text rendering options based on "Convert text to outlines" checkbox
         class SVGTextOptionsHandler: NSObject {
@@ -390,6 +397,7 @@ class DocumentState: ObservableObject {
             // Get export options
             let includeBackground = bgCheckbox.state == .on
             let convertTextToOutlines = textToOutlinesCheckbox.state == .on
+            let includeInkpenData = includeInkpenCheckbox.state == .on
 
             // Read and save text rendering mode selection
             let textRenderingMode: AppState.SVGTextRenderingMode = glyphsRadio.state == .on ? .glyphs : .lines
@@ -412,7 +420,7 @@ class DocumentState: ObservableObject {
                         }
 
                         // Generate SVG with outlined text
-                        svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: includeBackground, textRenderingMode: AppState.shared.svgTextRenderingMode)
+                        svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: includeBackground, textRenderingMode: AppState.shared.svgTextRenderingMode, includeInkpenData: includeInkpenData)
 
                         // Restore original document state
                         await MainActor.run {
@@ -427,7 +435,7 @@ class DocumentState: ObservableObject {
                         }
                     } else {
                         // No text conversion needed, export normally with text rendering mode from settings
-                        svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: includeBackground, textRenderingMode: AppState.shared.svgTextRenderingMode)
+                        svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: includeBackground, textRenderingMode: AppState.shared.svgTextRenderingMode, includeInkpenData: includeInkpenData)
                     }
 
                     // Write to file
@@ -464,46 +472,53 @@ class DocumentState: ObservableObject {
         panel.isExtensionHidden = false  // Show .pdf extension
         panel.message = "Export as PDF (Portable Document Format)"
 
-        // Create accessory view for text to outlines, text rendering mode, CMYK, and background options
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 220))
+        // Create accessory view for text to outlines, text rendering mode, CMYK, background, and inkpen embed options
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 250))
 
         // Convert text to outlines checkbox (at top)
         let textToOutlinesCheckbox = NSButton(checkboxWithTitle: "Convert text to outlines",
                                                target: nil, action: nil)
-        textToOutlinesCheckbox.frame = NSRect(x: 20, y: 180, width: 250, height: 20)
+        textToOutlinesCheckbox.frame = NSRect(x: 20, y: 210, width: 250, height: 20)
         textToOutlinesCheckbox.state = .off // Default to keeping text as PDF text
         accessoryView.addSubview(textToOutlinesCheckbox)
 
         // Text rendering mode label and radio buttons (only shown when NOT converting to outlines)
         let textModeLabel = NSTextField(labelWithString: "PDF Text Rendering Mode:")
-        textModeLabel.frame = NSRect(x: 40, y: 135, width: 300, height: 20)
+        textModeLabel.frame = NSRect(x: 40, y: 165, width: 300, height: 20)
         textModeLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
         accessoryView.addSubview(textModeLabel)
 
         // Radio buttons for text rendering modes
         let glyphsRadio = NSButton(radioButtonWithTitle: "Individual Glyphs (most accurate)", target: nil, action: nil)
-        glyphsRadio.frame = NSRect(x: 60, y: 110, width: 300, height: 18)
+        glyphsRadio.frame = NSRect(x: 60, y: 140, width: 300, height: 18)
         glyphsRadio.state = AppState.shared.pdfTextRenderingMode == .glyphs ? .on : .off
         accessoryView.addSubview(glyphsRadio)
 
         let linesRadio = NSButton(radioButtonWithTitle: "By Lines (faster)", target: nil, action: nil)
-        linesRadio.frame = NSRect(x: 60, y: 90, width: 300, height: 18)
+        linesRadio.frame = NSRect(x: 60, y: 120, width: 300, height: 18)
         linesRadio.state = AppState.shared.pdfTextRenderingMode == .lines ? .on : .off
         accessoryView.addSubview(linesRadio)
 
         // CMYK checkbox
         let cmykCheckbox = NSButton(checkboxWithTitle: "Use CMYK color space",
                                      target: nil, action: nil)
-        cmykCheckbox.frame = NSRect(x: 20, y: 50, width: 250, height: 20)
+        cmykCheckbox.frame = NSRect(x: 20, y: 80, width: 250, height: 20)
         cmykCheckbox.state = .off // Default to regular gradient
         accessoryView.addSubview(cmykCheckbox)
 
         // Background checkbox
         let bgCheckbox = NSButton(checkboxWithTitle: "Include background (Canvas layer)",
                                    target: nil, action: nil)
-        bgCheckbox.frame = NSRect(x: 20, y: 20, width: 250, height: 20)
+        bgCheckbox.frame = NSRect(x: 20, y: 50, width: 250, height: 20)
         bgCheckbox.state = .off // Default to no background for PDF export
         accessoryView.addSubview(bgCheckbox)
+
+        // Include native .inkpen document checkbox
+        let includeInkpenCheckbox = NSButton(checkboxWithTitle: "Include native .inkpen document",
+                                              target: nil, action: nil)
+        includeInkpenCheckbox.frame = NSRect(x: 20, y: 20, width: 250, height: 20)
+        includeInkpenCheckbox.state = .off // Default to not including inkpen data
+        accessoryView.addSubview(includeInkpenCheckbox)
 
         // Handler to show/hide text rendering options based on "Convert text to outlines" checkbox
         class TextOptionsHandler: NSObject {
@@ -561,6 +576,7 @@ class DocumentState: ObservableObject {
             // Get export options
             let useCMYK = cmykCheckbox.state == .on
             let convertTextToOutlines = textToOutlinesCheckbox.state == .on
+            let includeInkpenData = includeInkpenCheckbox.state == .on
 
             // Determine text rendering mode (default to glyphs if neither is selected)
             let textRenderingMode: AppState.PDFTextRenderingMode = linesRadio.state == .on ? .lines : .glyphs
@@ -586,7 +602,7 @@ class DocumentState: ObservableObject {
                         }
 
                         // Generate PDF with outlined text (text rendering mode doesn't matter for outlines)
-                        pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode)
+                        pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData)
 
                         // Restore original document state
                         await MainActor.run {
@@ -601,7 +617,7 @@ class DocumentState: ObservableObject {
                         }
                     } else {
                         // No text conversion needed, export normally with selected text rendering mode
-                        pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode)
+                        pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData)
                     }
 
                     // Write the PDF data to file

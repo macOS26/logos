@@ -11,7 +11,7 @@ import SwiftUI
 extension FileOperations {
 
     /// Generate PDF data from VectorDocument with proper clipping path and image support
-    static func generatePDFDataWithClippingSupport(from document: VectorDocument, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs) throws -> Data {
+    static func generatePDFDataWithClippingSupport(from document: VectorDocument, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, includeInkpenData: Bool = false) throws -> Data {
         let operation = isExport ? "export" : "save"
         Log.fileOperation("📄 Generating PDF data from document for \(operation) (CMYK: \(useCMYK), Text: \(textRenderingMode.displayName))", level: .info)
 
@@ -27,7 +27,7 @@ extension FileOperations {
 
         // Create auxiliary dictionary for PDF options
         // CRITICAL: Enforce PDF 1.7 to prevent macOS defaulting to PDF 1.3
-        let auxiliaryInfo = [
+        var auxiliaryDict: [String: Any] = [
             // Metadata
             kCGPDFContextCreator as String: "Inkpen.io",
             kCGPDFContextAuthor as String: NSFullUserName(),
@@ -35,7 +35,25 @@ extension FileOperations {
             // Additional metadata for better PDF support
             kCGPDFContextSubject as String: "Vector Graphics",
             kCGPDFContextKeywords as String: "vector, graphics, illustration"
-        ] as CFDictionary
+        ]
+
+        // Add inkpen document data if requested
+        if includeInkpenData {
+            do {
+                // Export document to JSON data
+                let inkpenData = try exportToJSONData(document)
+                // Convert to base64
+                let base64String = inkpenData.base64EncodedString()
+                // Add to metadata with "inkpen" tag
+                auxiliaryDict["inkpen"] = base64String
+                Log.info("📦 Embedded inkpen document in PDF metadata (\(base64String.count) chars)", category: .fileOperations)
+            } catch {
+                Log.error("⚠️ Failed to embed inkpen data: \(error)", category: .error)
+                // Continue without embedding
+            }
+        }
+
+        let auxiliaryInfo = auxiliaryDict as CFDictionary
 
         // Create PDF context with proper media box and auxiliary info
         guard let pdfConsumer = CGDataConsumer(data: pdfData),

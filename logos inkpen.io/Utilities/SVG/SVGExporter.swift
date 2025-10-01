@@ -15,9 +15,9 @@ class SVGExporter {
     private init() {}
     
     /// Export document to standard SVG (72 DPI)
-    func exportToSVG(_ document: VectorDocument, includeBackground: Bool = true, textRenderingMode: AppState.SVGTextRenderingMode = .glyphs) throws -> String {
+    func exportToSVG(_ document: VectorDocument, includeBackground: Bool = true, textRenderingMode: AppState.SVGTextRenderingMode = .glyphs, includeInkpenData: Bool = false) throws -> String {
         let dpiScale: CGFloat = 1.0  // Standard 72 DPI
-        return try exportSVGWithScale(document, dpiScale: dpiScale, isAutoDesk: false, includeBackground: includeBackground, textRenderingMode: textRenderingMode)
+        return try exportSVGWithScale(document, dpiScale: dpiScale, isAutoDesk: false, includeBackground: includeBackground, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData)
     }
 
     /// Export document to AutoDesk SVG (96 DPI)
@@ -27,7 +27,7 @@ class SVGExporter {
     }
     
     /// Core SVG export function with DPI scaling
-    private func exportSVGWithScale(_ document: VectorDocument, dpiScale: CGFloat, isAutoDesk: Bool, includeBackground: Bool = true, textRenderingMode: AppState.SVGTextRenderingMode = .glyphs) throws -> String {
+    private func exportSVGWithScale(_ document: VectorDocument, dpiScale: CGFloat, isAutoDesk: Bool, includeBackground: Bool = true, textRenderingMode: AppState.SVGTextRenderingMode = .glyphs, includeInkpenData: Bool = false) throws -> String {
         // Get document dimensions in points (72 DPI)
         let originalSize = document.settings.sizeInPoints
         
@@ -67,7 +67,27 @@ class SVGExporter {
         svg += generateGradientDefs(from: document) // No scaling in defs
         svg += generateClipPathDefs(from: document) // Add clipping path definitions
         svg += "</defs>\n"
-        
+
+        // Add inkpen metadata if requested
+        if includeInkpenData {
+            do {
+                // Export document to JSON data
+                let inkpenData = try FileOperations.exportToJSONData(document)
+                // Convert to base64
+                let base64String = inkpenData.base64EncodedString()
+                // Add metadata element with inkpen namespace
+                svg += "<metadata>\n"
+                svg += "  <inkpen:document xmlns:inkpen=\"https://inkpen.io/ns\">\n"
+                svg += "    \(base64String)\n"
+                svg += "  </inkpen:document>\n"
+                svg += "</metadata>\n"
+                Log.info("📦 Embedded inkpen document in SVG metadata (\(base64String.count) chars)", category: .fileOperations)
+            } catch {
+                Log.error("⚠️ Failed to embed inkpen data: \(error)", category: .error)
+                // Continue without embedding
+            }
+        }
+
         // No transform needed - viewBox and width/height handle the scaling
         
         // Export layers
