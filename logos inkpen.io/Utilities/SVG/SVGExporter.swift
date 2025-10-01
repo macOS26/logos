@@ -15,19 +15,19 @@ class SVGExporter {
     private init() {}
     
     /// Export document to standard SVG (72 DPI)
-    func exportToSVG(_ document: VectorDocument, includeBackground: Bool = true) throws -> String {
+    func exportToSVG(_ document: VectorDocument, includeBackground: Bool = true, textRenderingMode: AppState.SVGTextRenderingMode = .glyphs) throws -> String {
         let dpiScale: CGFloat = 1.0  // Standard 72 DPI
-        return try exportSVGWithScale(document, dpiScale: dpiScale, isAutoDesk: false, includeBackground: includeBackground)
+        return try exportSVGWithScale(document, dpiScale: dpiScale, isAutoDesk: false, includeBackground: includeBackground, textRenderingMode: textRenderingMode)
     }
-    
+
     /// Export document to AutoDesk SVG (96 DPI)
-    func exportToAutoDeskSVG(_ document: VectorDocument, includeBackground: Bool = true) throws -> String {
+    func exportToAutoDeskSVG(_ document: VectorDocument, includeBackground: Bool = true, textRenderingMode: AppState.SVGTextRenderingMode = .glyphs) throws -> String {
         let dpiScale: CGFloat = 96.0 / 72.0  // Convert to 96 DPI for AutoDesk
-        return try exportSVGWithScale(document, dpiScale: dpiScale, isAutoDesk: true, includeBackground: includeBackground)
+        return try exportSVGWithScale(document, dpiScale: dpiScale, isAutoDesk: true, includeBackground: includeBackground, textRenderingMode: textRenderingMode)
     }
     
     /// Core SVG export function with DPI scaling
-    private func exportSVGWithScale(_ document: VectorDocument, dpiScale: CGFloat, isAutoDesk: Bool, includeBackground: Bool = true) throws -> String {
+    private func exportSVGWithScale(_ document: VectorDocument, dpiScale: CGFloat, isAutoDesk: Bool, includeBackground: Bool = true, textRenderingMode: AppState.SVGTextRenderingMode = .glyphs) throws -> String {
         // Get document dimensions in points (72 DPI)
         let originalSize = document.settings.sizeInPoints
         
@@ -107,7 +107,7 @@ class SVGExporter {
                 if !includeBackground && layer?.name == "Canvas" {
                     continue // Skip Canvas only if not including background
                 }
-                svg += exportTextShape(shape, dpiScale: 1.0)
+                svg += exportTextShape(shape, dpiScale: 1.0, renderingMode: textRenderingMode)
             }
         }
         
@@ -189,8 +189,282 @@ class SVGExporter {
     }
     
     // MARK: - Text Export
-    
-    private func exportTextShape(_ shape: VectorShape, dpiScale: CGFloat) -> String {
+
+    private func exportTextShape(_ shape: VectorShape, dpiScale: CGFloat, renderingMode: AppState.SVGTextRenderingMode) -> String {
+        // Check if this is a text object - use accurate rendering
+        guard let vectorText = VectorText.from(shape) else { return "" }
+
+        // Dispatch to appropriate rendering method based on mode
+        switch renderingMode {
+        case .glyphs:
+            return exportTextAsGlyphs(vectorText: vectorText, dpiScale: dpiScale)
+        case .lines:
+            return exportTextAsLines(vectorText: vectorText, dpiScale: dpiScale)
+        }
+    }
+
+    /// Export text by individual glyphs (most accurate)
+    /// Uses the SAME NSLayoutManager logic as PDF export for precise positioning
+    private func exportTextAsGlyphs(vectorText: VectorText, dpiScale: CGFloat) -> String {
+        guard !vectorText.content.isEmpty else { return "" }
+
+        // Create the EXACT same NSLayoutManager setup as PDF export
+        let nsFont = vectorText.typography.nsFont
+        let ctFont = nsFont as CTFont
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = vectorText.typography.alignment.nsTextAlignment
+        paragraphStyle.lineSpacing = max(0, vectorText.typography.lineSpacing)
+        paragraphStyle.minimumLineHeight = vectorText.typography.lineHeight
+        paragraphStyle.maximumLineHeight = vectorText.typography.lineHeight
+
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: nsFont,
+            .paragraphStyle: paragraphStyle,
+            .kern: vectorText.typography.letterSpacing
+        ]
+
+        let attributedString = NSAttributedString(string: vectorText.content, attributes: attributes)
+
+        // Create text storage and layout manager (SAME AS PDF)
+        let textStorage = NSTextStorage(attributedString: attributedString)
+        let layoutManager = NSLayoutManager()
+        textStorage.addLayoutManager(layoutManager)
+
+        // SAME container setup as PDF export
+        let textBoxWidth = vectorText.areaSize?.width ?? vectorText.bounds.width
+        let textContainer = NSTextContainer(size: CGSize(width: textBoxWidth, height: CGFloat.greatestFiniteMagnitude))
+        textContainer.lineFragmentPadding = 0
+        textContainer.lineBreakMode = .byWordWrapping
+        layoutManager.addTextContainer(textContainer)
+
+        // Force complete layout
+        layoutManager.ensureGlyphs(forGlyphRange: NSRange(location: 0, length: vectorText.content.count))
+        layoutManager.ensureLayout(for: textContainer)
+
+        var svg = ""
+        var skippedGlyphCount = 0
+
+        // Common text attributes for SVG
+        let fillColor = vectorText.typography.fillColor.svgColor
+        let fillOpacity = vectorText.typography.fillOpacity
+
+        // Enumerate line fragments (SAME AS PDF)
+        let glyphRange = layoutManager.glyphRange(for: textContainer)
+
+        layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { (lineRect, lineUsedRect, container, lineRange, stop) in
+
+            // Draw each glyph individually with precise positioning (SAME AS PDF but SVG output)
+            for glyphIndex in lineRange.location..<NSMaxRange(lineRange) {
+                let glyph = layoutManager.cgGlyph(at: glyphIndex)
+                let glyphLocation = layoutManager.location(forGlyphAt: glyphIndex)
+
+                // CRITICAL FIX: Check if this is a rectangular placeholder glyph (missing character)
+                // Same detection as PDF export
+                if let glyphPath = CTFontCreatePathForGlyph(ctFont, CGGlyph(glyph), nil) {
+                    if self.isRectangleGlyph(glyphPath) {
+                        // Skip this glyph - it's a missing character placeholder
+                        skippedGlyphCount += 1
+                        continue
+                    }
+                }
+
+                // Get line fragment rects for this glyph (SAME AS PDF)
+                var actualLineRect = CGRect.zero
+                var actualUsedRect = CGRect.zero
+                var effectiveRange = NSRange()
+                actualLineRect = layoutManager.lineFragmentRect(forGlyphAt: glyphIndex, effectiveRange: &effectiveRange, withoutAdditionalLayout: true)
+                actualUsedRect = layoutManager.lineFragmentUsedRect(forGlyphAt: glyphIndex, effectiveRange: &effectiveRange, withoutAdditionalLayout: true)
+
+                // Calculate glyph X position (SAME AS PDF)
+                let glyphX: CGFloat
+                switch vectorText.typography.alignment.nsTextAlignment {
+                case .left, .justified:
+                    glyphX = vectorText.position.x + actualUsedRect.origin.x + glyphLocation.x
+                case .center, .right:
+                    glyphX = vectorText.position.x + lineRect.origin.x + glyphLocation.x
+                default:
+                    glyphX = vectorText.position.x + actualUsedRect.origin.x + glyphLocation.x
+                }
+
+                // Calculate glyph Y position (SAME AS PDF)
+                let glyphY = vectorText.position.y + actualLineRect.origin.y + glyphLocation.y
+
+                // Get the character for this glyph
+                let charIndex = layoutManager.characterIndexForGlyph(at: glyphIndex)
+                if charIndex < vectorText.content.count {
+                    let char = (vectorText.content as NSString).substring(with: NSRange(location: charIndex, length: 1))
+                    let escapedChar = self.escapeXML(char)
+
+                    // Apply DPI scaling
+                    let x = glyphX * dpiScale
+                    let y = glyphY * dpiScale
+                    let fontSize = vectorText.typography.fontSize * dpiScale
+
+                    // Export as individual text element with precise positioning
+                    svg += "<text x=\"\(x)\" y=\"\(y)\""
+                    svg += " font-family=\"\(vectorText.typography.fontFamily)\""
+                    svg += " font-size=\"\(fontSize)\""
+
+                    // Add font weight if not regular
+                    if vectorText.typography.fontWeight != .regular {
+                        let svgWeight = self.getSVGFontWeight(vectorText.typography.fontWeight)
+                        svg += " font-weight=\"\(svgWeight)\""
+                    }
+
+                    // Add font style if italic
+                    if vectorText.typography.fontStyle == .italic {
+                        svg += " font-style=\"italic\""
+                    }
+
+                    svg += " fill=\"\(fillColor)\""
+                    if fillOpacity != 1.0 {
+                        svg += " fill-opacity=\"\(fillOpacity)\""
+                    }
+
+                    // Add stroke if present
+                    if vectorText.typography.hasStroke && vectorText.typography.strokeWidth > 0 {
+                        svg += " stroke=\"\(vectorText.typography.strokeColor.svgColor)\""
+                        svg += " stroke-width=\"\(vectorText.typography.strokeWidth * dpiScale)\""
+                        if vectorText.typography.strokeOpacity != 1.0 {
+                            svg += " stroke-opacity=\"\(vectorText.typography.strokeOpacity)\""
+                        }
+                    }
+
+                    // Add letter spacing if not zero
+                    if vectorText.typography.letterSpacing != 0 {
+                        svg += " letter-spacing=\"\(vectorText.typography.letterSpacing * dpiScale)\""
+                    }
+
+                    svg += ">\(escapedChar)</text>\n"
+                }
+            }
+        }
+
+        if skippedGlyphCount > 0 {
+            Log.info("✅ SVG RECTANGLE DETECTION: Skipped \(skippedGlyphCount) missing character placeholder(s)", category: .fileOperations)
+        }
+
+        return svg
+    }
+
+    /// Export text by lines using CTLine (better performance)
+    private func exportTextAsLines(vectorText: VectorText, dpiScale: CGFloat) -> String {
+        guard !vectorText.content.isEmpty else { return "" }
+
+        // Create the EXACT same NSLayoutManager setup as PDF export
+        let nsFont = vectorText.typography.nsFont
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = vectorText.typography.alignment.nsTextAlignment
+        paragraphStyle.lineSpacing = max(0, vectorText.typography.lineSpacing)
+        paragraphStyle.minimumLineHeight = vectorText.typography.lineHeight
+        paragraphStyle.maximumLineHeight = vectorText.typography.lineHeight
+
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: nsFont,
+            .paragraphStyle: paragraphStyle,
+            .kern: vectorText.typography.letterSpacing
+        ]
+
+        let attributedString = NSAttributedString(string: vectorText.content, attributes: attributes)
+
+        // Create text storage and layout manager
+        let textStorage = NSTextStorage(attributedString: attributedString)
+        let layoutManager = NSLayoutManager()
+        textStorage.addLayoutManager(layoutManager)
+
+        // SAME container setup
+        let textBoxWidth = vectorText.areaSize?.width ?? vectorText.bounds.width
+        let textContainer = NSTextContainer(size: CGSize(width: textBoxWidth, height: CGFloat.greatestFiniteMagnitude))
+        textContainer.lineFragmentPadding = 0
+        textContainer.lineBreakMode = .byWordWrapping
+        layoutManager.addTextContainer(textContainer)
+
+        // Force complete layout
+        layoutManager.ensureGlyphs(forGlyphRange: NSRange(location: 0, length: vectorText.content.count))
+        layoutManager.ensureLayout(for: textContainer)
+
+        var svg = ""
+
+        // Common text attributes for SVG
+        let fillColor = vectorText.typography.fillColor.svgColor
+        let fillOpacity = vectorText.typography.fillOpacity
+
+        // Enumerate line fragments
+        let glyphRange = layoutManager.glyphRange(for: textContainer)
+
+        layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { (lineRect, lineUsedRect, container, lineRange, stop) in
+            // Get text for this line
+            let lineString = (vectorText.content as NSString).substring(with: lineRange)
+            let escapedLine = self.escapeXML(lineString)
+
+            // Calculate line position based on alignment
+            let lineX: CGFloat
+            switch vectorText.typography.alignment.nsTextAlignment {
+            case .left, .justified:
+                lineX = vectorText.position.x + lineUsedRect.origin.x
+            case .center, .right:
+                lineX = vectorText.position.x + lineRect.origin.x
+            default:
+                lineX = vectorText.position.x + lineUsedRect.origin.x
+            }
+
+            // Get baseline offset from first glyph in line (SAME AS PDF)
+            let firstGlyphIndex = lineRange.location
+            let glyphLocation = layoutManager.location(forGlyphAt: firstGlyphIndex)
+            let lineY = vectorText.position.y + lineRect.origin.y + glyphLocation.y
+
+            // Apply DPI scaling
+            let x = lineX * dpiScale
+            let y = lineY * dpiScale
+            let fontSize = vectorText.typography.fontSize * dpiScale
+
+            // Export as text element for this line
+            svg += "<text x=\"\(x)\" y=\"\(y)\""
+            svg += " font-family=\"\(vectorText.typography.fontFamily)\""
+            svg += " font-size=\"\(fontSize)\""
+
+            // Add font weight if not regular
+            if vectorText.typography.fontWeight != .regular {
+                let svgWeight = self.getSVGFontWeight(vectorText.typography.fontWeight)
+                svg += " font-weight=\"\(svgWeight)\""
+            }
+
+            // Add font style if italic
+            if vectorText.typography.fontStyle == .italic {
+                svg += " font-style=\"italic\""
+            }
+
+            // Add text alignment
+            let textAnchor = self.getSVGTextAnchor(vectorText.typography.alignment)
+            svg += " text-anchor=\"\(textAnchor)\""
+
+            svg += " fill=\"\(fillColor)\""
+            if fillOpacity != 1.0 {
+                svg += " fill-opacity=\"\(fillOpacity)\""
+            }
+
+            // Add stroke if present
+            if vectorText.typography.hasStroke && vectorText.typography.strokeWidth > 0 {
+                svg += " stroke=\"\(vectorText.typography.strokeColor.svgColor)\""
+                svg += " stroke-width=\"\(vectorText.typography.strokeWidth * dpiScale)\""
+                if vectorText.typography.strokeOpacity != 1.0 {
+                    svg += " stroke-opacity=\"\(vectorText.typography.strokeOpacity)\""
+                }
+            }
+
+            // Add letter spacing if not zero
+            if vectorText.typography.letterSpacing != 0 {
+                svg += " letter-spacing=\"\(vectorText.typography.letterSpacing * dpiScale)\""
+            }
+
+            svg += ">\(escapedLine)</text>\n"
+        }
+
+        return svg
+    }
+
+    /// OLD IMPLEMENTATION - REPLACED BY ACCURATE RENDERING ABOVE
+    private func exportTextShape_OLD(_ shape: VectorShape, dpiScale: CGFloat) -> String {
         guard let textContent = shape.textContent,
               let typography = shape.typography else { return "" }
 
@@ -363,7 +637,124 @@ class SVGExporter {
     }
     
     // MARK: - Helper Methods for Text Export
-    
+
+    /// Helper method to detect if a glyph path is a rectangle (missing character placeholder)
+    /// Same logic as PDF export
+    private func isRectangleGlyph(_ path: CGPath) -> Bool {
+        // Analyze the path structure
+        var subpaths: [[CGPoint]] = []
+        var currentPath: [CGPoint] = []
+        var hasCurves = false
+
+        path.applyWithBlock { elementPointer in
+            let element = elementPointer.pointee
+            switch element.type {
+            case .moveToPoint:
+                // Start a new subpath
+                if !currentPath.isEmpty {
+                    subpaths.append(currentPath)
+                }
+                currentPath = [element.points[0]]
+
+            case .addLineToPoint:
+                // Add line point
+                currentPath.append(element.points[0])
+
+            case .addQuadCurveToPoint, .addCurveToPoint:
+                // If we have curves, it's not a rectangle
+                hasCurves = true
+
+            case .closeSubpath:
+                // Close current subpath
+                if !currentPath.isEmpty {
+                    subpaths.append(currentPath)
+                    currentPath = []
+                }
+
+            @unknown default:
+                break
+            }
+        }
+
+        // Add any remaining path
+        if !currentPath.isEmpty {
+            subpaths.append(currentPath)
+        }
+
+        // Rectangles have no curves
+        if hasCurves {
+            return false
+        }
+
+        // Missing glyph rectangles typically have exactly 2 subpaths (outer and inner)
+        if subpaths.count != 2 {
+            return false
+        }
+
+        // Check if both subpaths are rectangles (4 or 5 points including close)
+        for subpath in subpaths {
+            if subpath.count < 4 || subpath.count > 5 {
+                return false
+            }
+
+            // Check if points form a rectangle (all angles are 90 degrees)
+            if !isRectangularPath(subpath) {
+                return false
+            }
+        }
+
+        // Check if one rectangle is inside the other (counter pattern)
+        let bounds1 = boundingBox(of: subpaths[0])
+        let bounds2 = boundingBox(of: subpaths[1])
+
+        let isNested = (bounds1.contains(bounds2) || bounds2.contains(bounds1))
+
+        return isNested
+    }
+
+    /// Helper to check if points form a rectangle
+    private func isRectangularPath(_ points: [CGPoint]) -> Bool {
+        guard points.count >= 4 else { return false }
+
+        // Check that we have mostly horizontal and vertical lines
+        for i in 0..<points.count - 1 {
+            let p1 = points[i]
+            let p2 = points[i + 1]
+
+            let dx = abs(p2.x - p1.x)
+            let dy = abs(p2.y - p1.y)
+
+            // Line should be mostly horizontal or vertical
+            let isHorizontal = dy < 0.1 && dx > 0.1
+            let isVertical = dx < 0.1 && dy > 0.1
+
+            if !isHorizontal && !isVertical {
+                return false
+            }
+        }
+
+        return true
+    }
+
+    /// Helper to calculate bounding box of points
+    private func boundingBox(of points: [CGPoint]) -> CGRect {
+        guard !points.isEmpty else { return .zero }
+
+        var minX = points[0].x
+        var minY = points[0].y
+        var maxX = points[0].x
+        var maxY = points[0].y
+
+        for point in points {
+            minX = min(minX, point.x)
+            minY = min(minY, point.y)
+            maxX = max(maxX, point.x)
+            maxY = max(maxY, point.y)
+        }
+
+        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+    }
+
     private func getSVGFontWeight(_ weight: FontWeight) -> String {
         switch weight {
         case .thin: return "100"

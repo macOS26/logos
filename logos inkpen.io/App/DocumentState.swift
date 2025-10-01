@@ -336,7 +336,7 @@ class DocumentState: ObservableObject {
                         }
 
                         // Generate SVG with outlined text
-                        svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: includeBackground)
+                        svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: includeBackground, textRenderingMode: AppState.shared.svgTextRenderingMode)
 
                         // Restore original document state
                         await MainActor.run {
@@ -350,8 +350,8 @@ class DocumentState: ObservableObject {
                             document.objectWillChange.send()
                         }
                     } else {
-                        // No text conversion needed, export normally
-                        svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: includeBackground)
+                        // No text conversion needed, export normally with text rendering mode from settings
+                        svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: includeBackground, textRenderingMode: AppState.shared.svgTextRenderingMode)
                     }
 
                     // Write to file
@@ -868,7 +868,7 @@ class DocumentState: ObservableObject {
                         }
 
                         // Generate SVG with outlined text
-                        svgContent = try SVGExporter.shared.exportToAutoDeskSVG(document, includeBackground: includeBackground)
+                        svgContent = try SVGExporter.shared.exportToAutoDeskSVG(document, includeBackground: includeBackground, textRenderingMode: AppState.shared.svgTextRenderingMode)
 
                         // Restore original document state
                         await MainActor.run {
@@ -881,8 +881,8 @@ class DocumentState: ObservableObject {
                             document.objectWillChange.send()
                         }
                     } else {
-                        // No text conversion needed, export normally
-                        svgContent = try SVGExporter.shared.exportToAutoDeskSVG(document, includeBackground: includeBackground)
+                        // No text conversion needed, export normally with text rendering mode from settings
+                        svgContent = try SVGExporter.shared.exportToAutoDeskSVG(document, includeBackground: includeBackground, textRenderingMode: AppState.shared.svgTextRenderingMode)
                     }
 
                     // Write to file

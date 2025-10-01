@@ -9,12 +9,12 @@ import SwiftUI
 
 extension FileOperations {
     /// Export VectorDocument to SVG format
-    static func exportToSVG(_ document: VectorDocument, url: URL, includeBackground: Bool = true) throws {
-        Log.fileOperation("🎨 Exporting document to SVG: \(url.path)", level: .info)
+    static func exportToSVG(_ document: VectorDocument, url: URL, includeBackground: Bool = true, textRenderingMode: AppState.SVGTextRenderingMode = .glyphs) throws {
+        Log.fileOperation("🎨 Exporting document to SVG: \(url.path) (Text: \(textRenderingMode.displayName))", level: .info)
 
         do {
-            // Use the proper SVG exporter
-            let svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: includeBackground)
+            // Use the proper SVG exporter with text rendering mode
+            let svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: includeBackground, textRenderingMode: textRenderingMode)
             try svgContent.write(to: url, atomically: true, encoding: .utf8)
             Log.info("✅ Successfully exported SVG document", category: .fileOperations)
         } catch {

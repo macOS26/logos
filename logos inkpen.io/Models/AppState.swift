@@ -205,6 +205,16 @@ class AppState {
         }
     }
 
+    /// Controls how text is rendered in SVG exports (reuse same enum as PDF)
+    typealias SVGTextRenderingMode = PDFTextRenderingMode
+
+    var svgTextRenderingMode: SVGTextRenderingMode = .glyphs {
+        didSet {
+            UserDefaults.standard.set(svgTextRenderingMode.rawValue, forKey: "svgTextRenderingMode")
+            Log.info("📄 SVG text rendering mode changed to: \(svgTextRenderingMode.displayName)")
+        }
+    }
+
     /// Number of steps for blend mode (10-255)
     var pdfBlendSteps: Int = 20 {
         didSet {
