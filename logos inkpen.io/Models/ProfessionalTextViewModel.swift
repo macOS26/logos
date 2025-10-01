@@ -207,6 +207,11 @@ class ProfessionalTextViewModel: ObservableObject {
 
     private var lastTypingTime: TimeInterval = 0
 
+    // MARK: - Update Last Typing Time
+    func updateLastTypingTime() {
+        lastTypingTime = Date().timeIntervalSince1970
+    }
+
     // MARK: - Manual Resize Support Only
 
     var isAutoResizing = false  // Used to prevent sync loops during manual resize

@@ -358,6 +358,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                 guard let self = self else { return }
                 self.parent.viewModel.text = newText
 
+                // Update lastTypingTime to prevent sync during active typing
+                self.parent.viewModel.updateLastTypingTime()
+
                 // SAVE TO DOCUMENT IMMEDIATELY to prevent losing text content
                 self.parent.viewModel.document.updateTextContent(
                     self.parent.viewModel.textObject.id,
