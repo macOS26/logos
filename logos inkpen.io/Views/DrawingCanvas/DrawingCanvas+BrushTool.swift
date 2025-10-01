@@ -32,10 +32,7 @@ extension DrawingCanvas {
     internal func handleBrushDragStart(at location: CGPoint) {
         // Start new brush stroke with proper initialization
         guard !isBrushDrawing else { return }
-
-        // Save undo state BEFORE starting drawing
-        document.saveToUndoStack()
-
+        
         // Initialize brush drawing state
         isBrushDrawing = true
         brushRawPoints = [BrushPoint(location: location, pressure: 1.0)]
@@ -81,13 +78,8 @@ extension DrawingCanvas {
     internal func handleBrushDragUpdate(at location: CGPoint) {
         guard isBrushDrawing else { return }
 
-        // Get pressure using smart detection (real or simulated) - sensitivity now handled by global curve
+        // Get pressure using smart detection (real or simulated)
         let pressure = PressureManager.shared.getPressure(for: location, sensitivity: 0.5)
-
-        // DEBUG: Log pressure values
-        if brushRawPoints.count % 10 == 0 {
-            Log.info("🎨 BRUSH PRESSURE: \(String(format: "%.3f", pressure)) (sensitivity: \(appState.pressureSensitivityEnabled))", category: .pressure)
-        }
 
         // Add point to raw path with pressure data
         let newPoint = BrushPoint(location: location, pressure: pressure)
@@ -159,8 +151,11 @@ extension DrawingCanvas {
     // MARK: - Pressure Simulation
     
     private func calculateSimulatedPressure(at location: CGPoint) -> Double {
-        // Always calculate simulated pressure based on speed
-        // The pressure curve will handle whether to apply sensitivity or flatten to 1.0
+        // If pressure sensitivity is disabled, return constant pressure
+        if !appState.pressureSensitivityEnabled {
+            return 1.0
+        }
+        
         guard brushRawPoints.count > 1,
               let lastPointData = brushRawPoints.last else { return 1.0 }
 
@@ -173,7 +168,7 @@ extension DrawingCanvas {
         let normalizedSpeed = min(distance / maxSpeed, 1.0)
         let basePressure = 1.0 - (normalizedSpeed * 0.5) // Reduce pressure with speed
         
-        // Apply fixed sensitivity for simulated pressure (curve mapping happens later)
+        // Apply fixed sensitivity for old code
         let sensitivity = 0.5
         let pressureVariation = (basePressure - 0.5) * sensitivity
         
@@ -251,31 +246,55 @@ extension DrawingCanvas {
             pointsToProcess = interpolatedPoints
         }
 
-        // LIVE PREVIEW: Use raw points directly - NO SIMPLIFICATION during drawing
-        // Simplification will happen ONCE at the end in handleBrushDragEnd
         let rawPointLocations = pointsToProcess.map { $0.location }
 
-        if rawPointLocations.count >= 2 {
-            var previewPath = generatePreviewVariableWidthPath(
-                centerPoints: rawPointLocations,
-                recentRawPoints: pointsToProcess,
-                thickness: document.currentBrushThickness
+        // Liquid setting: 0% = moderate smoothing, 50% = no smoothing (all points), 100% = maximum smoothing
+        let liquidValue = document.currentBrushLiquid
+
+        let simplifiedPoints: [CGPoint]
+        if abs(liquidValue - 50.0) < 0.01 {
+            // Liquid = 50%: Keep ALL points for maximum detail (may be choppy)
+            simplifiedPoints = rawPointLocations
+        } else if liquidValue < 50.0 {
+            // Liquid 0-49%: Increasing smoothing as we go from 50 to 0
+            // At 0% we want moderate smoothing (like old 50%)
+            let smoothFactor = (50.0 - liquidValue) / 50.0  // 0 to 1 as liquid goes from 50 to 0
+            let tolerance = 0.5 + (2.0 * smoothFactor)  // Range: 0.5 to 2.5 for moderate smoothing
+            simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
+                points: rawPointLocations,
+                tolerance: tolerance
             )
+        } else {
+            // Liquid 51-100%: Maximum smoothing
+            let smoothFactor = (liquidValue - 50.0) / 50.0  // 0 to 1 as liquid goes from 50 to 100
+            let tolerance = 2.5 + (7.5 * smoothFactor)  // Range: 2.5 to 10.0 for heavy smoothing
+            simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
+                points: rawPointLocations,
+                tolerance: tolerance
+            )
+        }
 
-            // Apply overlap removal to PREVIEW too (fixes white artifacts during drawing)
-            if document.brushRemoveOverlap {
-                let cg = previewPath.cgPath
-                var cleaned: CGPath? = nil
-                cleaned = CoreGraphicsPathOperations.normalized(cg, using: .winding)
-                if cleaned == nil { cleaned = CoreGraphicsPathOperations.normalized(cg, using: .evenOdd) }
-                if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .winding) }
-                if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .evenOdd) }
-                if let cleanedPath = cleaned, !cleanedPath.isEmpty, isPathBoundsFinite(cleanedPath.boundingBox) {
-                    previewPath = VectorPath(cgPath: cleanedPath)
-                }
-            }
+        // Ensure minimum points for smooth curves based on liquid setting
+        // At liquid=50% we want all points, at 0% or 100% we want fewer points
+        let distanceFromCenter = abs(liquidValue - 50.0) / 50.0  // 0 to 1
+        let minPointsNeeded = Int(50.0 * (1.0 - distanceFromCenter * 0.8))  // 50 points at center, 10 at extremes
 
-            return previewPath
+        if simplifiedPoints.count < minPointsNeeded && rawPointLocations.count > 2 {
+            // If we don't have enough points after simplification, interpolate to add smoothness
+            // This helps create fluid curves even with high liquid values
+            Log.info("🖌️ LIQUID: Adding interpolated points for smoothness", category: .general)
+        }
+
+        Log.info("🖌️ PREVIEW: Simplified from \(pointsToProcess.count) to \(simplifiedPoints.count) points", category: .general)
+
+        if simplifiedPoints.count >= 2 {
+            return generatePreviewVariableWidthPath(
+                centerPoints: simplifiedPoints,
+                recentRawPoints: pointsToProcess,
+                thickness: document.currentBrushThickness,
+                pressureSensitivity: 0.5,
+                taper: 0.5
+            )
         } else {
             return VectorPath(elements: [.move(to: VectorPoint(pointsToProcess[0].location))])
         }
@@ -362,7 +381,9 @@ extension DrawingCanvas {
             return generatePreviewVariableWidthPath(
                 centerPoints: simplifiedPoints,
                 recentRawPoints: pointsToProcess,
-                thickness: thickness
+                thickness: thickness,
+                pressureSensitivity: pressureSensitivity,
+                taper: taper
             )
         } else {
             return VectorPath(elements: [.move(to: VectorPoint(pointsToProcess[0].location))])
@@ -475,7 +496,9 @@ extension DrawingCanvas {
         let brushStrokePath = generateSmoothVariableWidthPath(
             centerPoints: brushSimplifiedPoints,  // Use the clean simplified points!
             rawPoints: brushRawPoints,  // Pass raw points with pressure data
-            thickness: document.currentBrushThickness  // Use current tool settings
+            thickness: document.currentBrushThickness,  // Use current tool settings
+            pressureSensitivity: 0.5,  // Fixed sensitivity
+            taper: 0.5  // Fixed taper
         )
         
         // Step 3: Create and add the final brush stroke to the document
@@ -545,8 +568,7 @@ extension DrawingCanvas {
             }
         }
         let shape = VectorShape(name: "Brush Stroke", path: finalPath, strokeStyle: strokeStyle, fillStyle: fillStyle)
-        guard let layerIndex = document.selectedLayerIndex else { return }
-        document.addShapeWithoutUndo(shape, to: layerIndex)
+        document.addShape(shape)
     }
     
     // MARK: - Remove Overlap Functionality
@@ -620,7 +642,7 @@ extension DrawingCanvas {
     // MARK: - Live Preview Variable Width Path Generation
     
     /// Generate variable width path for live preview with proper pressure mapping
-    private func generatePreviewVariableWidthPath(centerPoints: [CGPoint], recentRawPoints: [BrushPoint], thickness: Double) -> VectorPath {
+    private func generatePreviewVariableWidthPath(centerPoints: [CGPoint], recentRawPoints: [BrushPoint], thickness: Double, pressureSensitivity: Double, taper: Double) -> VectorPath {
         guard centerPoints.count >= 2 else {
             // Fallback for single point
             return VectorPath(elements: [.move(to: VectorPoint(centerPoints[0]))])
@@ -705,7 +727,7 @@ extension DrawingCanvas {
             if !recentRawPoints.isEmpty {
                 var closestDistance = Double.infinity
                 var closestPressure = 1.0
-
+                
                 for rawPoint in recentRawPoints {
                     let distance = sqrt(pow(point.x - rawPoint.location.x, 2) + pow(point.y - rawPoint.location.y, 2))
                     if distance < closestDistance {
@@ -713,27 +735,25 @@ extension DrawingCanvas {
                         closestPressure = rawPoint.pressure
                     }
                 }
-
-                // Apply pressure curve mapping
-                let mappedPressure = getThicknessFromPressureCurve(pressure: closestPressure, curve: appState.pressureCurve)
-                finalThickness *= mappedPressure
+                
+                finalThickness *= closestPressure
             }
             
             thicknessPoints.append((location: point, thickness: finalThickness))
         }
-
+        
         // Generate left and right edge points with variable thickness
         let leftEdgePoints = generateOffsetPoints(centerPoints: thicknessPoints, isLeftSide: true)
         let rightEdgePoints = generateOffsetPoints(centerPoints: thicknessPoints, isLeftSide: false)
-
+        
         // Create smooth bezier curves for BOTH edges (like freehand tool!)
         let leftEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: leftEdgePoints)
         let rightEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: rightEdgePoints.reversed()) // Reverse for proper winding
-
+        
         // Combine into a filled shape with smooth bezier curves
         return createSmoothBrushOutline(leftEdgePath: leftEdgePath, rightEdgePath: rightEdgePath)
     }
-
+    
     // MARK: - Pressure Interpolation
     
     /// Interpolates pressure value for a simplified point based on nearby raw points
@@ -805,7 +825,7 @@ extension DrawingCanvas {
 
     // MARK: - Smooth Variable Width Path Generation (SAME APPROACH AS FREEHAND!)
 
-    private func generateSmoothVariableWidthPath(centerPoints: [CGPoint], rawPoints: [BrushPoint], thickness: Double) -> VectorPath {
+    private func generateSmoothVariableWidthPath(centerPoints: [CGPoint], rawPoints: [BrushPoint], thickness: Double, pressureSensitivity: Double, taper: Double) -> VectorPath {
         guard centerPoints.count >= 2 else {
             // Fallback for single point
             return VectorPath(elements: [.move(to: VectorPoint(rawPoints[0].location))])
@@ -873,22 +893,22 @@ extension DrawingCanvas {
             
             // Interpolate pressure from raw points to simplified points
             let interpolatedPressure = interpolatePressureForPoint(point, from: rawPoints)
-
-            // Apply pressure curve mapping - convert raw pressure through global curve
-            let mappedPressure = getThicknessFromPressureCurve(pressure: interpolatedPressure, curve: appState.pressureCurve)
-            finalThickness *= mappedPressure
+            
+            // Apply pressure variation with sensitivity control
+            let pressureMultiplier = 1.0 + (interpolatedPressure - 1.0) * pressureSensitivity
+            finalThickness *= pressureMultiplier
             
             thicknessPoints.append((location: point, thickness: finalThickness))
         }
-
+        
         // Generate left and right edge points with variable thickness
         let leftEdgePoints = generateOffsetPoints(centerPoints: thicknessPoints, isLeftSide: true)
         let rightEdgePoints = generateOffsetPoints(centerPoints: thicknessPoints, isLeftSide: false)
-
+        
         // Create smooth bezier curves for BOTH edges (like freehand tool!)
         let leftEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: leftEdgePoints)
         let rightEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: rightEdgePoints.reversed()) // Reverse for proper winding
-
+        
         // Combine into a filled shape with smooth bezier curves
         return createSmoothBrushOutline(leftEdgePath: leftEdgePath, rightEdgePath: rightEdgePath)
     }
