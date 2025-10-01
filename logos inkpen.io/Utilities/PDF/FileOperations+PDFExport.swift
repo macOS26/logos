@@ -191,6 +191,12 @@ extension FileOperations {
 
     /// Render individual shape to PDF context with image support
     static func renderShapeToPDFWithImageSupport(shape: VectorShape, context: CGContext, isExport: Bool = false, useCMYK: Bool = false) throws {
+        // Check if this is a text object - render as PDF text instead of paths
+        if shape.isTextObject, let vectorText = VectorText.from(shape) {
+            try renderTextToPDF(vectorText: vectorText, context: context)
+            return
+        }
+
         // Check if this is a group
         if shape.isGroup && !shape.groupedShapes.isEmpty {
             // Save graphics state for group
@@ -325,5 +331,117 @@ extension FileOperations {
         context.restoreGState()
 
         Log.fileOperation("   ✅ Image rendered at: \(bounds.origin) size: \(bounds.size)", level: .debug)
+    }
+
+    /// Render text to PDF context using actual PDF text (searchable/selectable)
+    /// Uses the SAME NSLayoutManager logic as text-to-outlines for precise positioning
+    static func renderTextToPDF(vectorText: VectorText, context: CGContext) throws {
+        Log.fileOperation("📝 Rendering PDF text: '\(vectorText.content)'", level: .debug)
+
+        guard !vectorText.content.isEmpty else { return }
+
+        // Create the EXACT same NSLayoutManager setup as text-to-outlines (ProfessionalTextViewModel:387-418)
+        let nsFont = vectorText.typography.nsFont
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = vectorText.typography.alignment.nsTextAlignment
+        paragraphStyle.lineSpacing = max(0, vectorText.typography.lineSpacing)
+        paragraphStyle.minimumLineHeight = vectorText.typography.lineHeight
+        paragraphStyle.maximumLineHeight = vectorText.typography.lineHeight
+
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: nsFont,
+            .paragraphStyle: paragraphStyle,
+            .kern: vectorText.typography.letterSpacing
+        ]
+
+        let attributedString = NSAttributedString(string: vectorText.content, attributes: attributes)
+
+        // Create text storage and layout manager (SAME AS TEXT-TO-OUTLINES)
+        let textStorage = NSTextStorage(attributedString: attributedString)
+        let layoutManager = NSLayoutManager()
+        textStorage.addLayoutManager(layoutManager)
+
+        // SAME container setup as convertUsingNSLayoutManager:411
+        let textBoxWidth = vectorText.areaSize?.width ?? vectorText.bounds.width
+        let textContainer = NSTextContainer(size: CGSize(width: textBoxWidth, height: CGFloat.greatestFiniteMagnitude))
+        textContainer.lineFragmentPadding = 0
+        textContainer.lineBreakMode = .byWordWrapping
+        layoutManager.addTextContainer(textContainer)
+
+        // Force complete layout
+        layoutManager.ensureGlyphs(forGlyphRange: NSRange(location: 0, length: vectorText.content.count))
+        layoutManager.ensureLayout(for: textContainer)
+
+        // Save graphics state
+        context.saveGState()
+
+        // Apply opacity and set fill color (SAME AS OTHER PDF RENDERING)
+        context.setAlpha(CGFloat(vectorText.typography.fillOpacity))
+
+        // Use setFillColor with cgColor (same pattern as setFillStyle in FileOperations+PDF.swift:99-125)
+        let cgColor = vectorText.typography.fillColor.cgColor
+        if let components = cgColor.components, components.count >= 3 {
+            context.setFillColor(red: components[0], green: components[1], blue: components[2], alpha: vectorText.typography.fillOpacity)
+        } else if let components = cgColor.components, components.count == 2 {
+            context.setFillColor(gray: components[0], alpha: vectorText.typography.fillOpacity)
+        } else {
+            context.setFillColor(cgColor)
+        }
+
+        // Set text drawing mode (fill only, no stroke for now)
+        context.setTextDrawingMode(.fill)
+
+        // Create CGFont for glyph drawing (SAME AS TEXT-TO-OUTLINES:429-434)
+        let cgFont = CTFontCopyGraphicsFont(nsFont as CTFont, nil)
+
+        // Set font on context for glyph drawing
+        context.setFont(cgFont)
+        context.setFontSize(nsFont.pointSize)
+
+        // Enumerate line fragments (SAME AS TEXT-TO-OUTLINES:442)
+        let glyphRange = layoutManager.glyphRange(for: textContainer)
+
+        layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { (lineRect, lineUsedRect, container, lineRange, stop) in
+
+            // Draw each glyph individually with precise positioning (SAME AS TEXT-TO-OUTLINES but draw instead of path)
+            for glyphIndex in lineRange.location..<NSMaxRange(lineRange) {
+                let glyph = layoutManager.cgGlyph(at: glyphIndex)
+                let glyphLocation = layoutManager.location(forGlyphAt: glyphIndex)
+
+                // Get line fragment rects for this glyph (SAME AS TEXT-TO-OUTLINES:451-455)
+                var actualLineRect = CGRect.zero
+                var actualUsedRect = CGRect.zero
+                var effectiveRange = NSRange()
+                actualLineRect = layoutManager.lineFragmentRect(forGlyphAt: glyphIndex, effectiveRange: &effectiveRange, withoutAdditionalLayout: true)
+                actualUsedRect = layoutManager.lineFragmentUsedRect(forGlyphAt: glyphIndex, effectiveRange: &effectiveRange, withoutAdditionalLayout: true)
+
+                // Calculate glyph X position (SAME AS TEXT-TO-OUTLINES:464-478)
+                let glyphX: CGFloat
+                switch vectorText.typography.alignment.nsTextAlignment {
+                case .left, .justified:
+                    glyphX = vectorText.position.x + actualUsedRect.origin.x + glyphLocation.x
+                case .center, .right:
+                    glyphX = vectorText.position.x + lineRect.origin.x + glyphLocation.x
+                default:
+                    glyphX = vectorText.position.x + actualUsedRect.origin.x + glyphLocation.x
+                }
+
+                // Calculate glyph Y position (SAME AS TEXT-TO-OUTLINES:483)
+                let glyphY = vectorText.position.y + actualLineRect.origin.y + glyphLocation.y
+
+                // Draw glyph at position using CoreGraphics (creates actual PDF text)
+                context.saveGState()
+
+                // Set text position and draw glyph
+                context.textPosition = CGPoint(x: glyphX, y: glyphY)
+                context.showGlyphs([glyph], at: [CGPoint.zero])
+
+                context.restoreGState()
+            }
+        }
+
+        context.restoreGState()
+
+        Log.fileOperation("   ✅ PDF text rendered at: \(vectorText.position)", level: .debug)
     }
 }
