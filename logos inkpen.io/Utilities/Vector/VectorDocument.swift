@@ -216,11 +216,12 @@ class VectorDocument: ObservableObject, Codable {
         didSet { UserDefaults.standard.set(currentBrushLiquid, forKey: "brushLiquid") }
     }
     @Published var hasPressureInput: Bool = false // Whether pressure-sensitive input is detected
-    @Published var brushApplyNoStroke: Bool = true // When enabled, applies no stroke regardless of current stroke settings
-    
-
-    
-    @Published var brushRemoveOverlap: Bool = true // When enabled, applies union operation to merge overlapping parts
+    @Published var brushApplyNoStroke: Bool = true {
+        didSet { UserDefaults.standard.set(brushApplyNoStroke, forKey: "brushApplyNoStroke") }
+    }
+    @Published var brushRemoveOverlap: Bool = true {
+        didSet { UserDefaults.standard.set(brushRemoveOverlap, forKey: "brushRemoveOverlap") }
+    }
 
     // ADVANCED SMOOTHING SETTINGS (stored in UserDefaults for all drawing tools)
     @Published var advancedSmoothingEnabled: Bool {
@@ -750,10 +751,10 @@ class VectorDocument: ObservableObject, Codable {
         defaultStrokeLineCap = .butt
         defaultStrokeMiterLimit = 10.0
 
-        // Initialize other published properties that aren't persisted
+        // Initialize other published properties
         hasPressureInput = false
-        brushApplyNoStroke = true
-        brushRemoveOverlap = true
+        brushApplyNoStroke = UserDefaults.standard.object(forKey: "brushApplyNoStroke") as? Bool ?? true
+        brushRemoveOverlap = UserDefaults.standard.object(forKey: "brushRemoveOverlap") as? Bool ?? true
 
         activeColorTarget = .fill
         colorChangeNotification = UUID()

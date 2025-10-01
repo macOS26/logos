@@ -92,6 +92,4 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .cornerRadius: return "rectangle.roundedtop"
         }
     }
-    
-    // Removed NSCursor mapping; cursor management is disabled on macOS for now
 }
