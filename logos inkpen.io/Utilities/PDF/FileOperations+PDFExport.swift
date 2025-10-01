@@ -44,9 +44,10 @@ extension FileOperations {
                 let inkpenData = try exportToJSONData(document)
                 // Convert to base64
                 let base64String = inkpenData.base64EncodedString()
-                // Add to metadata with "inkpen" tag
-                auxiliaryDict["inkpen"] = base64String
-                Log.info("📦 Embedded inkpen document in PDF metadata (\(base64String.count) chars)", category: .fileOperations)
+                // Use Producer field with special prefix to embed inkpen data
+                // This is a standard PDF field that should be preserved
+                auxiliaryDict["Producer"] = "INKPEN_DATA:" + base64String
+                Log.info("📦 Embedded inkpen document in PDF Producer metadata (\(base64String.count) chars)", category: .fileOperations)
             } catch {
                 Log.error("⚠️ Failed to embed inkpen data: \(error)", category: .error)
                 // Continue without embedding

@@ -11,4 +11,5 @@ struct PDFContent {
     let textCount: Int
     let creator: String?
     let version: String?
+    let producer: String?  // May contain embedded inkpen data
 }

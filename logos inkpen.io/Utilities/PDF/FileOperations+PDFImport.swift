@@ -71,12 +71,32 @@ extension FileOperations {
         Log.fileOperation("🎨 Importing document from PDF: \(url.path)", level: .info)
         
         let result = await VectorImportManager.shared.importVectorFile(from: url)
-        
+
         if !result.success {
             let errorMessage = result.errors.first?.localizedDescription ?? "Unknown PDF import error"
             throw VectorImportError.parsingError("Failed to import PDF: \(errorMessage)", line: nil)
         }
-        
+
+        // Check if PDF contains embedded inkpen metadata
+        if let inkpenMetadata = result.metadata.inkpenMetadata {
+            Log.info("📦 Found embedded inkpen document in PDF, using native data", category: .fileOperations)
+
+            // Decode base64 and parse as JSON
+            guard let inkpenData = Data(base64Encoded: inkpenMetadata) else {
+                Log.error("❌ Failed to decode inkpen metadata from base64", category: .error)
+                throw VectorImportError.parsingError("Invalid inkpen metadata encoding", line: nil)
+            }
+
+            // Parse as inkpen document
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let inkpenDocument = try decoder.decode(VectorDocument.self, from: inkpenData)
+
+            // Return the original inkpen document
+            Log.info("✅ Successfully restored inkpen document from PDF metadata", category: .fileOperations)
+            return inkpenDocument
+        }
+
         // Create a new VectorDocument from the imported shapes
         let document = VectorDocument()
         

@@ -77,12 +77,32 @@ extension FileOperations {
         // Import SVG with extreme value handling for radial gradients that cannot be reproduced
         // Use this for SVGs with extreme coordinate values that cause rendering issues
         let result = await VectorImportManager.shared.importSVGWithExtremeValueHandling(from: url)
-        
+
         if !result.success {
             let errorMessage = result.errors.first?.localizedDescription ?? "Unknown SVG import error"
             throw VectorImportError.parsingError("Failed to import SVG: \(errorMessage)", line: nil)
         }
-        
+
+        // Check if SVG contains embedded inkpen metadata
+        if let inkpenMetadata = result.metadata.inkpenMetadata {
+            Log.info("📦 Found embedded inkpen document in SVG, using native data", category: .fileOperations)
+
+            // Decode base64 and parse as JSON
+            guard let inkpenData = Data(base64Encoded: inkpenMetadata) else {
+                Log.error("❌ Failed to decode inkpen metadata from base64", category: .error)
+                throw VectorImportError.parsingError("Invalid inkpen metadata encoding", line: nil)
+            }
+
+            // Parse as inkpen document
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let inkpenDocument = try decoder.decode(VectorDocument.self, from: inkpenData)
+
+            // Return the original inkpen document
+            Log.info("✅ Successfully restored inkpen document from SVG metadata", category: .fileOperations)
+            return inkpenDocument
+        }
+
         Log.fileOperation("📊 Imported \(result.shapes.count) shapes from SVG", level: .info)
         
         // Update document settings based on imported metadata

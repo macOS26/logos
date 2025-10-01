@@ -182,7 +182,8 @@ class VectorImportManager {
                 textObjectCount: 0, // Text is now stored as shapes
                 importDate: Date(),
                 sourceApplication: svgContent.creator,
-                documentVersion: svgContent.version
+                documentVersion: svgContent.version,
+                inkpenMetadata: svgContent.inkpenMetadata
             )
             
             Log.fileOperation("✅ SVG import successful: \(shapes.count) shapes", level: .info)
@@ -265,7 +266,8 @@ class VectorImportManager {
             textObjectCount: 0,
             importDate: Date(),
             sourceApplication: nil,
-            documentVersion: nil
+            documentVersion: nil,
+            inkpenMetadata: nil
         )
         return VectorImportResult(success: true, shapes: [rectShape], metadata: meta, errors: [], warnings: [])
     }
@@ -309,6 +311,15 @@ class VectorImportManager {
             
             let mediaBox = page.getBoxRect(.mediaBox)
             
+            // Check if Producer field contains inkpen metadata
+            var inkpenMetadata: String? = nil
+            if let producer = pdfContent.producer,
+               producer.hasPrefix("INKPEN_DATA:") {
+                // Extract the base64 data after the prefix
+                inkpenMetadata = String(producer.dropFirst("INKPEN_DATA:".count))
+                Log.info("📦 Extracted inkpen metadata from PDF Producer field", category: .fileOperations)
+            }
+
             let metadata = VectorImportMetadata(
                 originalFormat: .pdf,
                 documentSize: mediaBox.size,
@@ -321,7 +332,8 @@ class VectorImportManager {
                 textObjectCount: pdfContent.textCount,
                 importDate: Date(),
                 sourceApplication: pdfContent.creator,
-                documentVersion: pdfContent.version
+                documentVersion: pdfContent.version,
+                inkpenMetadata: inkpenMetadata
             )
             
             Log.fileOperation("✅ PDF import successful: \(shapes.count) vector shapes", level: .info)
@@ -365,7 +377,8 @@ class VectorImportManager {
             textObjectCount: 0,
             importDate: Date(),
             sourceApplication: nil,
-            documentVersion: nil
+            documentVersion: nil,
+            inkpenMetadata: nil
         )
     }
 }

@@ -50,7 +50,13 @@ class SVGParser: NSObject, XMLParserDelegate {
     internal var isParsingClipPath = false
     internal var pendingClipPathId: String? // For elements with clip-path attribute
     internal var clipPathStack: [String?] = [] // Stack to handle nested groups with clip paths
-    
+
+    // MARK: - Inkpen Metadata Support
+    var inkpenMetadata: String? = nil // Base64 encoded inkpen document
+    private var isInMetadata = false
+    private var isInInkpenDocument = false
+    private var currentMetadataContent = ""
+
     // MARK: - Helper Computed Properties and Functions
     
     /// Computed property for viewBox scale calculations
@@ -182,7 +188,19 @@ class SVGParser: NSObject, XMLParserDelegate {
         case "style":
             // Start of CSS style section
             currentStyleContent = ""
-            
+
+        case "metadata":
+            // Start of metadata section
+            isInMetadata = true
+            currentMetadataContent = ""
+
+        case "inkpen:document":
+            // Start of inkpen document section
+            if isInMetadata {
+                isInInkpenDocument = true
+                currentMetadataContent = ""
+            }
+
         case "g":
             parseGroup(attributes: attributeDict)
             
@@ -257,6 +275,22 @@ class SVGParser: NSObject, XMLParserDelegate {
     
     func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
         switch elementName {
+        case "metadata":
+            // End of metadata section
+            isInMetadata = false
+
+        case "inkpen:document":
+            // End of inkpen document section
+            if isInInkpenDocument {
+                // Trim and store the base64 content
+                inkpenMetadata = currentMetadataContent.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !inkpenMetadata!.isEmpty {
+                    Log.info("📦 Found embedded inkpen document in SVG metadata (\(inkpenMetadata!.count) chars)", category: .fileOperations)
+                }
+                isInInkpenDocument = false
+                currentMetadataContent = ""
+            }
+
         case "svg":
             // Reset transform when exiting SVG root
             if hasViewBox {
@@ -321,6 +355,9 @@ class SVGParser: NSObject, XMLParserDelegate {
     func parser(_ parser: XMLParser, foundCharacters string: String) {
         if currentElementName == "style" {
             currentStyleContent += string
+        } else if isInInkpenDocument {
+            // Accumulate inkpen metadata content
+            currentMetadataContent += string
         } else if currentElementName == "text" {
             currentTextContent += string
         } else if currentElementName == "tspan" {

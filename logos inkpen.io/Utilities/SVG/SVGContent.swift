@@ -19,6 +19,7 @@ struct SVGContent {
     let missingFonts: [String]
     let creator: String?
     let version: String?
+    let inkpenMetadata: String?  // Base64 encoded inkpen document
 }
 
 func parseSVGContent(_ data: Data, useExtremeValueHandling: Bool = false) throws -> SVGContent {
@@ -37,7 +38,7 @@ func parseSVGContent(_ data: Data, useExtremeValueHandling: Bool = false) throws
     }
     
     let result = try parser.parse(xmlString)
-    
+
     return SVGContent(
         shapes: result.shapes,
         documentSize: result.documentSize,
@@ -47,6 +48,7 @@ func parseSVGContent(_ data: Data, useExtremeValueHandling: Bool = false) throws
         dpi: 72.0,
         missingFonts: [],
         creator: result.creator,
-        version: result.version
+        version: result.version,
+        inkpenMetadata: parser.inkpenMetadata
     )
 }

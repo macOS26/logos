@@ -31,6 +31,7 @@ struct VectorImportMetadata {
     let importDate: Date
     let sourceApplication: String?
     let documentVersion: String?
+    let inkpenMetadata: String?  // Base64 encoded inkpen document
 }
 
 /// Professional vector graphics units
