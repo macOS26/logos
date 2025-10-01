@@ -382,12 +382,8 @@ class DocumentState: ObservableObject {
 
         panel.accessoryView = accessoryView
 
-        // Keep handler alive for the duration of the panel
-        var handlerRef: SVGTextOptionsHandler? = svgHandler
-
         panel.begin { response in
             guard response == .OK, let url = panel.url else {
-                handlerRef = nil
                 return
             }
 
@@ -994,12 +990,8 @@ class DocumentState: ObservableObject {
 
         panel.accessoryView = accessoryView
 
-        // Keep handler alive for the duration of the panel
-        var autodeskHandlerRef: AutoDeskSVGTextOptionsHandler? = autodeskHandler
-
         panel.begin { response in
             guard response == .OK, let url = panel.url else {
-                autodeskHandlerRef = nil
                 return
             }
 
