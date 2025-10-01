@@ -131,8 +131,9 @@ struct InkpenDocument: FileDocument {
             configuration.contentType.conforms(to: .svg) ||
            configuration.contentType.identifier.contains("svg") {
             // Export as SVG using proper SVG exporter
+            // Default to .lines for Save As operations
             do {
-                let svgContent = try SVGExporter.shared.exportToSVG(document)
+                let svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: true, textRenderingMode: .lines)
                 let data = svgContent.data(using: .utf8) ?? Data()
                 Log.info("✅ Successfully exported SVG document data", category: .fileOperations)
                 return FileWrapper(regularFileWithContents: data)

@@ -13,7 +13,8 @@ extension FileOperations {
         Log.fileOperation("📄 Generating PDF data from document", level: .info)
 
         // Use the new method with clipping path and image support
-        return try generatePDFDataWithClippingSupport(from: document, isExport: false, useCMYK: false)
+        // Default to .lines for Save As operations
+        return try generatePDFDataWithClippingSupport(from: document, isExport: false, useCMYK: false, textRenderingMode: .lines)
     }
 
     /// Generate PDF data for Export with CMYK option and text rendering mode
