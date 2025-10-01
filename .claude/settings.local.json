@@ -80,7 +80,8 @@
       "Bash(then)",
       "Bash(hiutil:*)",
       "Bash(cat:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(defaults read:*)"
     ],
     "deny": [],
     "ask": []

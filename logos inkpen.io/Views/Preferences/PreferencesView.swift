@@ -14,12 +14,12 @@ struct AppPreferencesView: View {
 
     enum PreferenceTab: String, CaseIterable {
         case pressure = "Pressure"
-        case general = "General"
+//        case general = "General"
 
         var icon: String {
             switch self {
             case .pressure: return "hand.draw"
-            case .general: return "gear"
+//            case .general: return "gear"
             }
         }
     }
@@ -74,98 +74,93 @@ struct AppPreferencesView: View {
 
             // Content
             ScrollView {
-                switch selectedTab {
-                case .pressure:
-                    pressurePreferencesView
-                case .general:
-                    generalPreferencesView
-                }
+                pressurePreferencesView
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(width: 700, height: 600)
+        .frame(width: 450, height: 560)
     }
 
     // MARK: - Pressure Preferences
 
     private var pressurePreferencesView: some View {
-        VStack(spacing: 20) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Pressure Sensitivity")
-                    .font(.headline)
+        HStack(alignment: .top, spacing: 0) {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Pressure Sensitivity")
+                        .font(.headline)
 
-                Text("Configure how pressure from your stylus or tablet is mapped to stroke thickness. Drag the control points to adjust the curve.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+                    Text("Configure how pressure from your stylus or tablet is mapped to stroke thickness.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
 
-            // Pressure curve editor
-            PressureCurveEditor(
-                curve: Binding(
-                    get: { appState.pressureCurve },
-                    set: { appState.pressureCurve = $0 }
-                ),
-                size: 400
-            )
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
+                // Pressure curve editor
+                PressureCurveEditor(
+                    curve: Binding(
+                        get: { appState.pressureCurve },
+                        set: { appState.pressureCurve = $0 }
+                    ),
+                    size: 400
+                )
+                .padding()
+                .background(Color(NSColor.controlBackgroundColor))
                 .cornerRadius(12)
 
-            // Preset buttons
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Presets")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+                // Preset buttons
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Presets")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
 
-                HStack(spacing: 12) {
-                    Button("Linear") {
-                        Log.info("🔘 LINEAR BUTTON PRESSED", category: .pressure)
-                        AppState.shared.pressureCurve = [
-                            CGPoint(x: 0.0, y: 0.0),
-                            CGPoint(x: 0.25, y: 0.25),
-                            CGPoint(x: 0.5, y: 0.5),
-                            CGPoint(x: 0.75, y: 0.75),
-                            CGPoint(x: 1.0, y: 1.0)
-                        ]
+                    HStack(spacing: 12) {
+                        Button("Linear") {
+                            Log.info("🔘 LINEAR BUTTON PRESSED", category: .pressure)
+                            AppState.shared.pressureCurve = [
+                                CGPoint(x: 0.0, y: 0.0),
+                                CGPoint(x: 0.25, y: 0.25),
+                                CGPoint(x: 0.5, y: 0.5),
+                                CGPoint(x: 0.75, y: 0.75),
+                                CGPoint(x: 1.0, y: 1.0)
+                            ]
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("Soft") {
+                            appState.pressureCurve = [
+                                CGPoint(x: 0.0, y: 0.0),
+                                CGPoint(x: 0.25, y: 0.4),
+                                CGPoint(x: 0.5, y: 0.65),
+                                CGPoint(x: 0.75, y: 0.85),
+                                CGPoint(x: 1.0, y: 1.0)
+                            ]
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("Hard") {
+                            appState.pressureCurve = [
+                                CGPoint(x: 0.0, y: 0.0),
+                                CGPoint(x: 0.25, y: 0.1),
+                                CGPoint(x: 0.5, y: 0.35),
+                                CGPoint(x: 0.75, y: 0.6),
+                                CGPoint(x: 1.0, y: 1.0)
+                            ]
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("Reset") {
+                            appState.pressureCurve = AppPreferencesView.defaultPressureCurve()
+                        }
+                        .buttonStyle(.bordered)
                     }
-                    .buttonStyle(.bordered)
-
-                    Button("Soft") {
-                        appState.pressureCurve = [
-                            CGPoint(x: 0.0, y: 0.0),
-                            CGPoint(x: 0.25, y: 0.4),
-                            CGPoint(x: 0.5, y: 0.65),
-                            CGPoint(x: 0.75, y: 0.85),
-                            CGPoint(x: 1.0, y: 1.0)
-                        ]
-                    }
-                    .buttonStyle(.bordered)
-
-                    Button("Hard") {
-                        appState.pressureCurve = [
-                            CGPoint(x: 0.0, y: 0.0),
-                            CGPoint(x: 0.25, y: 0.1),
-                            CGPoint(x: 0.5, y: 0.35),
-                            CGPoint(x: 0.75, y: 0.6),
-                            CGPoint(x: 1.0, y: 1.0)
-                        ]
-                    }
-                    .buttonStyle(.bordered)
-
-                    Button("Reset") {
-                        appState.pressureCurve = AppPreferencesView.defaultPressureCurve()
-                    }
-                    .buttonStyle(.bordered)
-
-                    Spacer()
                 }
+
+                Spacer()
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
 
             Spacer()
         }
-        .padding()
     }
 
     // MARK: - General Preferences

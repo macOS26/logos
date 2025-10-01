@@ -126,13 +126,6 @@ struct logos_inken_ioApp: App {
                 
                 // Application Menu commands (appears under the app name)
                 CommandGroup(replacing: .appSettings) {
-                    Button("Preferences...") {
-                        openWindow(id: "preferences")
-                    }
-                    .keyboardShortcut(",", modifiers: .command)
-
-                    Divider()
-
                     Menu("Default Tool") {
                         Button(AppState.shared.defaultTool == .selection ? "✓ Selection Tool (Arrow)" : "Selection Tool (Arrow)") {
                             AppState.shared.defaultTool = .selection

@@ -26,7 +26,7 @@ class AppState {
     }
     
     // MARK: - Pressure Sensitivity Toggle
-    var pressureSensitivityEnabled: Bool = true {
+    var pressureSensitivityEnabled: Bool = false {
         didSet {
             UserDefaults.standard.set(pressureSensitivityEnabled, forKey: "pressureSensitivityEnabled")
             Log.info("🎨 PRESSURE: Sensitivity toggled to: \(pressureSensitivityEnabled)", category: .pressure)
@@ -267,8 +267,8 @@ class AppState {
             Log.info("🛠️ Using default tool: brush")
         }
         
-        // Load saved pressure sensitivity setting
-        self.pressureSensitivityEnabled = UserDefaults.standard.object(forKey: "pressureSensitivityEnabled") as? Bool ?? true
+        // Load saved pressure sensitivity setting - default to false (OFF) for mouse/trackpad
+        self.pressureSensitivityEnabled = UserDefaults.standard.object(forKey: "pressureSensitivityEnabled") as? Bool ?? false
         Log.info("🎨 PRESSURE: Loaded sensitivity setting: \(pressureSensitivityEnabled)", category: .pressure)
 
         // Load saved pressure curve

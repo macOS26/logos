@@ -78,8 +78,13 @@ extension DrawingCanvas {
     internal func handleBrushDragUpdate(at location: CGPoint) {
         guard isBrushDrawing else { return }
 
-        // Get pressure using smart detection (real or simulated)
-        let pressure = PressureManager.shared.getPressure(for: location, sensitivity: 0.5)
+        // Only use pressure when BOTH enabled AND real pressure device detected
+        let pressure: Double
+        if appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput {
+            pressure = PressureManager.shared.getPressure(for: location, sensitivity: 0.5)
+        } else {
+            pressure = 1.0  // Constant pressure for mouse/trackpad
+        }
 
         // Add point to raw path with pressure data
         let newPoint = BrushPoint(location: location, pressure: pressure)
@@ -248,48 +253,40 @@ extension DrawingCanvas {
 
         let rawPointLocations = pointsToProcess.map { $0.location }
 
-        // Liquid setting: 0% = moderate smoothing, 50% = no smoothing (all points), 100% = maximum smoothing
-        let liquidValue = document.currentBrushLiquid
-
         let simplifiedPoints: [CGPoint]
-        if abs(liquidValue - 50.0) < 0.01 {
-            // Liquid = 50%: Keep ALL points for maximum detail (may be choppy)
+
+        // Only simplify if NOT using pressure device
+        if appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput {
+            // PRESSURE DEVICE: Use all raw points, no simplification
             simplifiedPoints = rawPointLocations
-        } else if liquidValue < 50.0 {
-            // Liquid 0-49%: Increasing smoothing as we go from 50 to 0
-            // At 0% we want moderate smoothing (like old 50%)
-            let smoothFactor = (50.0 - liquidValue) / 50.0  // 0 to 1 as liquid goes from 50 to 0
-            let tolerance = 0.5 + (2.0 * smoothFactor)  // Range: 0.5 to 2.5 for moderate smoothing
-            simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
-                points: rawPointLocations,
-                tolerance: tolerance
-            )
         } else {
-            // Liquid 51-100%: Maximum smoothing
-            let smoothFactor = (liquidValue - 50.0) / 50.0  // 0 to 1 as liquid goes from 50 to 100
-            let tolerance = 2.5 + (7.5 * smoothFactor)  // Range: 2.5 to 10.0 for heavy smoothing
-            simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
-                points: rawPointLocations,
-                tolerance: tolerance
-            )
+            // MOUSE/TRACKPAD: Apply liquid smoothing
+            let liquidValue = document.currentBrushLiquid
+
+            if abs(liquidValue - 50.0) < 0.01 {
+                simplifiedPoints = rawPointLocations
+            } else if liquidValue < 50.0 {
+                let smoothFactor = (50.0 - liquidValue) / 50.0
+                let tolerance = 0.5 + (2.0 * smoothFactor)
+                simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
+                    points: rawPointLocations,
+                    tolerance: tolerance
+                )
+            } else {
+                let smoothFactor = (liquidValue - 50.0) / 50.0
+                let tolerance = 2.5 + (7.5 * smoothFactor)
+                simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
+                    points: rawPointLocations,
+                    tolerance: tolerance
+                )
+            }
+
+            Log.info("🖌️ PREVIEW: Simplified from \(pointsToProcess.count) to \(simplifiedPoints.count) points", category: .general)
         }
-
-        // Ensure minimum points for smooth curves based on liquid setting
-        // At liquid=50% we want all points, at 0% or 100% we want fewer points
-        let distanceFromCenter = abs(liquidValue - 50.0) / 50.0  // 0 to 1
-        let minPointsNeeded = Int(50.0 * (1.0 - distanceFromCenter * 0.8))  // 50 points at center, 10 at extremes
-
-        if simplifiedPoints.count < minPointsNeeded && rawPointLocations.count > 2 {
-            // If we don't have enough points after simplification, interpolate to add smoothness
-            // This helps create fluid curves even with high liquid values
-            Log.info("🖌️ LIQUID: Adding interpolated points for smoothness", category: .general)
-        }
-
-        Log.info("🖌️ PREVIEW: Simplified from \(pointsToProcess.count) to \(simplifiedPoints.count) points", category: .general)
 
         if simplifiedPoints.count >= 2 {
             return generatePreviewVariableWidthPath(
-                centerPoints: simplifiedPoints,
+                centerPoints: (appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput) ? rawPointLocations : simplifiedPoints,
                 recentRawPoints: pointsToProcess,
                 thickness: document.currentBrushThickness,
                 pressureSensitivity: 0.5,
@@ -727,7 +724,7 @@ extension DrawingCanvas {
             if !recentRawPoints.isEmpty {
                 var closestDistance = Double.infinity
                 var closestPressure = 1.0
-                
+
                 for rawPoint in recentRawPoints {
                     let distance = sqrt(pow(point.x - rawPoint.location.x, 2) + pow(point.y - rawPoint.location.y, 2))
                     if distance < closestDistance {
@@ -735,8 +732,10 @@ extension DrawingCanvas {
                         closestPressure = rawPoint.pressure
                     }
                 }
-                
-                finalThickness *= closestPressure
+
+                // Apply pressure curve mapping like marker tool
+                let mappedPressure = getThicknessFromPressureCurve(pressure: closestPressure, curve: appState.pressureCurve)
+                finalThickness *= mappedPressure
             }
             
             thicknessPoints.append((location: point, thickness: finalThickness))
@@ -893,10 +892,10 @@ extension DrawingCanvas {
             
             // Interpolate pressure from raw points to simplified points
             let interpolatedPressure = interpolatePressureForPoint(point, from: rawPoints)
-            
-            // Apply pressure variation with sensitivity control
-            let pressureMultiplier = 1.0 + (interpolatedPressure - 1.0) * pressureSensitivity
-            finalThickness *= pressureMultiplier
+
+            // Apply pressure curve mapping like marker tool
+            let mappedPressure = getThicknessFromPressureCurve(pressure: interpolatedPressure, curve: appState.pressureCurve)
+            finalThickness *= mappedPressure
             
             thicknessPoints.append((location: point, thickness: finalThickness))
         }

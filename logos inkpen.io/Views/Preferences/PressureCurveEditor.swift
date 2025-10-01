@@ -18,27 +18,25 @@ struct PressureCurveEditor: View {
     }
 
     var body: some View {
-        VStack(spacing: 8) {
-            HStack {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 20) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Pressure Curve")
                         .font(.headline)
                         .foregroundColor(.primary)
                     Text("Input: 0.0-1.0 → Output: 0.0-1.0")
-                        .font(.caption2)
+                        .font(.caption)
                         .foregroundColor(.secondary)
                 }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 2) {
+
+                VStack(alignment: .leading, spacing: 2) {
                     Text("Control Points")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     ForEach(0..<curve.count, id: \.self) { index in
-                        let point = curve[index]
-                        Text("[\(index + 1)] In: \(String(format: "%.2f", point.x)) → Out: \(String(format: "%.2f", point.y))")
-                            .font(.caption2)
-                            .foregroundColor(selectedControlPoint == index ? .blue : .secondary)
-                            .monospaced()
+                        Text(String(format: "(%.2f, %.2f)", curve[index].x, curve[index].y))
+                            .font(.system(.caption2, design: .monospaced))
+                            .foregroundColor(selectedControlPoint == index ? .red : .secondary)
                     }
                 }
             }
