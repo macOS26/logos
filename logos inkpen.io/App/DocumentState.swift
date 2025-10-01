@@ -293,15 +293,32 @@ class DocumentState: ObservableObject {
         panel.isExtensionHidden = false  // Show .svg extension
         panel.message = "Export as SVG (Scalable Vector Graphics)"
 
-        // Create accessory view for text to outlines and background options
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 90))
+        // Create accessory view for text to outlines, text rendering mode, and background options
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 180))
 
         // Convert text to outlines checkbox (at top)
         let textToOutlinesCheckbox = NSButton(checkboxWithTitle: "Convert text to outlines",
                                                target: nil, action: nil)
-        textToOutlinesCheckbox.frame = NSRect(x: 20, y: 50, width: 250, height: 20)
-        textToOutlinesCheckbox.state = .on // Default to converting text to outlines
+        textToOutlinesCheckbox.frame = NSRect(x: 20, y: 140, width: 250, height: 20)
+        textToOutlinesCheckbox.state = .off // Default to keeping text as SVG text
         accessoryView.addSubview(textToOutlinesCheckbox)
+
+        // Text rendering mode label and radio buttons (only shown when NOT converting to outlines)
+        let textModeLabel = NSTextField(labelWithString: "SVG Text Rendering Mode:")
+        textModeLabel.frame = NSRect(x: 40, y: 95, width: 300, height: 20)
+        textModeLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        accessoryView.addSubview(textModeLabel)
+
+        // Radio buttons for text rendering modes
+        let glyphsRadio = NSButton(radioButtonWithTitle: "Individual Glyphs (most accurate)", target: nil, action: nil)
+        glyphsRadio.frame = NSRect(x: 60, y: 70, width: 300, height: 18)
+        glyphsRadio.state = AppState.shared.svgTextRenderingMode == .glyphs ? .on : .off
+        accessoryView.addSubview(glyphsRadio)
+
+        let linesRadio = NSButton(radioButtonWithTitle: "By Lines (faster)", target: nil, action: nil)
+        linesRadio.frame = NSRect(x: 60, y: 50, width: 300, height: 18)
+        linesRadio.state = AppState.shared.svgTextRenderingMode == .lines ? .on : .off
+        accessoryView.addSubview(linesRadio)
 
         // Background checkbox
         let bgCheckbox = NSButton(checkboxWithTitle: "Include background",
@@ -310,14 +327,77 @@ class DocumentState: ObservableObject {
         bgCheckbox.state = .off // Default to no background for SVG
         accessoryView.addSubview(bgCheckbox)
 
+        // Handler to show/hide text rendering options based on "Convert text to outlines" checkbox
+        class SVGTextOptionsHandler: NSObject {
+            let textToOutlinesCheckbox: NSButton
+            let textModeLabel: NSTextField
+            let glyphsRadio: NSButton
+            let linesRadio: NSButton
+
+            init(textToOutlinesCheckbox: NSButton, textModeLabel: NSTextField,
+                 glyphsRadio: NSButton, linesRadio: NSButton) {
+                self.textToOutlinesCheckbox = textToOutlinesCheckbox
+                self.textModeLabel = textModeLabel
+                self.glyphsRadio = glyphsRadio
+                self.linesRadio = linesRadio
+            }
+
+            @objc func toggleTextOptions(_ sender: NSButton) {
+                let shouldHide = sender.state == .on
+                textModeLabel.isHidden = shouldHide
+                glyphsRadio.isHidden = shouldHide
+                linesRadio.isHidden = shouldHide
+            }
+
+            @objc func selectGlyphs(_ sender: NSButton) {
+                glyphsRadio.state = .on
+                linesRadio.state = .off
+            }
+
+            @objc func selectLines(_ sender: NSButton) {
+                glyphsRadio.state = .off
+                linesRadio.state = .on
+            }
+        }
+
+        let svgHandler = SVGTextOptionsHandler(textToOutlinesCheckbox: textToOutlinesCheckbox,
+                                            textModeLabel: textModeLabel,
+                                            glyphsRadio: glyphsRadio,
+                                            linesRadio: linesRadio)
+
+        textToOutlinesCheckbox.target = svgHandler
+        textToOutlinesCheckbox.action = #selector(SVGTextOptionsHandler.toggleTextOptions(_:))
+
+        glyphsRadio.target = svgHandler
+        glyphsRadio.action = #selector(SVGTextOptionsHandler.selectGlyphs(_:))
+
+        linesRadio.target = svgHandler
+        linesRadio.action = #selector(SVGTextOptionsHandler.selectLines(_:))
+
+        // Set initial visibility
+        let shouldHideTextOptions = textToOutlinesCheckbox.state == .on
+        textModeLabel.isHidden = shouldHideTextOptions
+        glyphsRadio.isHidden = shouldHideTextOptions
+        linesRadio.isHidden = shouldHideTextOptions
+
         panel.accessoryView = accessoryView
 
+        // Keep handler alive for the duration of the panel
+        var handlerRef: SVGTextOptionsHandler? = svgHandler
+
         panel.begin { response in
-            guard response == .OK, let url = panel.url else { return }
+            guard response == .OK, let url = panel.url else {
+                handlerRef = nil
+                return
+            }
 
             // Get export options
             let includeBackground = bgCheckbox.state == .on
             let convertTextToOutlines = textToOutlinesCheckbox.state == .on
+
+            // Read and save text rendering mode selection
+            let textRenderingMode: AppState.SVGTextRenderingMode = glyphsRadio.state == .on ? .glyphs : .lines
+            AppState.shared.svgTextRenderingMode = textRenderingMode
 
             Task {
                 do {
@@ -825,15 +905,32 @@ class DocumentState: ObservableObject {
         panel.isExtensionHidden = false  // Show .svg extension
         panel.message = "Export SVG at 96 DPI for AutoDesk applications"
 
-        // Create accessory view for text to outlines and background options
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 90))
+        // Create accessory view for text to outlines, text rendering mode, and background options
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 180))
 
         // Convert text to outlines checkbox (at top)
         let textToOutlinesCheckbox = NSButton(checkboxWithTitle: "Convert text to outlines",
                                                target: nil, action: nil)
-        textToOutlinesCheckbox.frame = NSRect(x: 20, y: 50, width: 250, height: 20)
-        textToOutlinesCheckbox.state = .on // Default to converting text to outlines
+        textToOutlinesCheckbox.frame = NSRect(x: 20, y: 140, width: 250, height: 20)
+        textToOutlinesCheckbox.state = .off // Default to keeping text as SVG text
         accessoryView.addSubview(textToOutlinesCheckbox)
+
+        // Text rendering mode label and radio buttons (only shown when NOT converting to outlines)
+        let textModeLabel = NSTextField(labelWithString: "SVG Text Rendering Mode:")
+        textModeLabel.frame = NSRect(x: 40, y: 95, width: 300, height: 20)
+        textModeLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        accessoryView.addSubview(textModeLabel)
+
+        // Radio buttons for text rendering modes
+        let glyphsRadio = NSButton(radioButtonWithTitle: "Individual Glyphs (most accurate)", target: nil, action: nil)
+        glyphsRadio.frame = NSRect(x: 60, y: 70, width: 300, height: 18)
+        glyphsRadio.state = AppState.shared.svgTextRenderingMode == .glyphs ? .on : .off
+        accessoryView.addSubview(glyphsRadio)
+
+        let linesRadio = NSButton(radioButtonWithTitle: "By Lines (faster)", target: nil, action: nil)
+        linesRadio.frame = NSRect(x: 60, y: 50, width: 300, height: 18)
+        linesRadio.state = AppState.shared.svgTextRenderingMode == .lines ? .on : .off
+        accessoryView.addSubview(linesRadio)
 
         // Background checkbox
         let bgCheckbox = NSButton(checkboxWithTitle: "Include background",
@@ -842,14 +939,77 @@ class DocumentState: ObservableObject {
         bgCheckbox.state = .off // Default to no background for SVG
         accessoryView.addSubview(bgCheckbox)
 
+        // Handler to show/hide text rendering options based on "Convert text to outlines" checkbox
+        class AutoDeskSVGTextOptionsHandler: NSObject {
+            let textToOutlinesCheckbox: NSButton
+            let textModeLabel: NSTextField
+            let glyphsRadio: NSButton
+            let linesRadio: NSButton
+
+            init(textToOutlinesCheckbox: NSButton, textModeLabel: NSTextField,
+                 glyphsRadio: NSButton, linesRadio: NSButton) {
+                self.textToOutlinesCheckbox = textToOutlinesCheckbox
+                self.textModeLabel = textModeLabel
+                self.glyphsRadio = glyphsRadio
+                self.linesRadio = linesRadio
+            }
+
+            @objc func toggleTextOptions(_ sender: NSButton) {
+                let shouldHide = sender.state == .on
+                textModeLabel.isHidden = shouldHide
+                glyphsRadio.isHidden = shouldHide
+                linesRadio.isHidden = shouldHide
+            }
+
+            @objc func selectGlyphs(_ sender: NSButton) {
+                glyphsRadio.state = .on
+                linesRadio.state = .off
+            }
+
+            @objc func selectLines(_ sender: NSButton) {
+                glyphsRadio.state = .off
+                linesRadio.state = .on
+            }
+        }
+
+        let autodeskHandler = AutoDeskSVGTextOptionsHandler(textToOutlinesCheckbox: textToOutlinesCheckbox,
+                                                         textModeLabel: textModeLabel,
+                                                         glyphsRadio: glyphsRadio,
+                                                         linesRadio: linesRadio)
+
+        textToOutlinesCheckbox.target = autodeskHandler
+        textToOutlinesCheckbox.action = #selector(AutoDeskSVGTextOptionsHandler.toggleTextOptions(_:))
+
+        glyphsRadio.target = autodeskHandler
+        glyphsRadio.action = #selector(AutoDeskSVGTextOptionsHandler.selectGlyphs(_:))
+
+        linesRadio.target = autodeskHandler
+        linesRadio.action = #selector(AutoDeskSVGTextOptionsHandler.selectLines(_:))
+
+        // Set initial visibility
+        let shouldHideTextOptions = textToOutlinesCheckbox.state == .on
+        textModeLabel.isHidden = shouldHideTextOptions
+        glyphsRadio.isHidden = shouldHideTextOptions
+        linesRadio.isHidden = shouldHideTextOptions
+
         panel.accessoryView = accessoryView
 
+        // Keep handler alive for the duration of the panel
+        var autodeskHandlerRef: AutoDeskSVGTextOptionsHandler? = autodeskHandler
+
         panel.begin { response in
-            guard response == .OK, let url = panel.url else { return }
+            guard response == .OK, let url = panel.url else {
+                autodeskHandlerRef = nil
+                return
+            }
 
             // Get export options
             let includeBackground = bgCheckbox.state == .on
             let convertTextToOutlines = textToOutlinesCheckbox.state == .on
+
+            // Read and save text rendering mode selection
+            let textRenderingMode: AppState.SVGTextRenderingMode = glyphsRadio.state == .on ? .glyphs : .lines
+            AppState.shared.svgTextRenderingMode = textRenderingMode
 
             Task {
                 do {
