@@ -23,7 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             "Logging Error: Failed to receive",
             "CALocalDisplayUpdateBlock returned NO",
             "AFIsDeviceGreymatterEligible",
-            "CoreGraphics PDF has logged an error",
+            // "CoreGraphics PDF has logged an error", // KEEP PDF ERRORS VISIBLE
             "precondition failure: unable to load binary archive",
             "Missing Copy Link Service",
             "Connection invalidated",
