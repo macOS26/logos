@@ -412,12 +412,15 @@ extension PDFCommandParser {
         guard !currentTextContent.isEmpty else { return }
 
         // Calculate actual position from matrices
+        // PDF uses bottom-left origin, we need to flip Y
         let ctm = currentTransformMatrix
         let tm = currentTextMatrix
-        let combined = ctm.concatenating(tm)
+        let combined = tm.concatenating(ctm)  // Apply text matrix first, then CTM
 
-        // Get position from combined transform
-        let position = CGPoint(x: combined.tx, y: combined.ty)
+        // Get position from combined transform and flip Y coordinate
+        let position = CGPoint(x: combined.tx, y: pageSize.height - combined.ty)
+
+        Log.info("📝 Creating text at position: \(position) from matrices - TM: \(tm), CTM: \(ctm)", category: .general)
 
         // Determine font attributes
         let fontFamily = currentFontName ?? "Helvetica"
