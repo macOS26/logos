@@ -10,11 +10,11 @@ import SwiftUI
 extension FileOperations {
     /// Generate PDF data from VectorDocument for Save/Save As
     static func generatePDFData(from document: VectorDocument) throws -> Data {
-        Log.fileOperation("📄 Generating PDF data from document", level: .info)
+        Log.fileOperation("📄 Generating PDF data from document (with embedded inkpen data)", level: .info)
 
         // Use the new method with clipping path and image support
-        // Default to .lines for Save As operations
-        return try generatePDFDataWithClippingSupport(from: document, isExport: false, useCMYK: false, textRenderingMode: .lines)
+        // Default to .lines for Save As operations and always include inkpen data
+        return try generatePDFDataWithClippingSupport(from: document, isExport: false, useCMYK: false, textRenderingMode: .lines, includeInkpenData: true)
     }
 
     /// Generate PDF data for Export with CMYK option and text rendering mode

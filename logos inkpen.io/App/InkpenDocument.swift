@@ -133,9 +133,9 @@ struct InkpenDocument: FileDocument {
             // Export as SVG using proper SVG exporter
             // Default to .lines for Save As operations
             do {
-                let svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: true, textRenderingMode: .lines)
+                let svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: true, textRenderingMode: .lines, includeInkpenData: true)
                 let data = svgContent.data(using: .utf8) ?? Data()
-                Log.info("✅ Successfully exported SVG document data", category: .fileOperations)
+                Log.info("✅ Successfully exported SVG document data (with embedded inkpen data)", category: .fileOperations)
                 return FileWrapper(regularFileWithContents: data)
             } catch {
                 Log.error("❌ Failed to save SVG document: \(error)", category: .error)
