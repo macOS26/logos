@@ -33,7 +33,8 @@ func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
                            let endRange = xmpString.range(of: "</inkpen:document>") {
                             let startIndex = range.upperBound
                             let endIndex = endRange.lowerBound
-                            let base64Data = String(xmpString[startIndex..<endIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
+                            // Don't trim - preserve exact base64 content
+                            let base64Data = String(xmpString[startIndex..<endIndex])
                             inkpenMetadata = base64Data
                             Log.info("✅ Extracted inkpen document from XMP metadata (\(base64Data.count) base64 chars)", category: .fileOperations)
                         }

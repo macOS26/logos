@@ -57,9 +57,9 @@ extension FileOperations {
                 // Create XMP metadata with inkpen namespace
                 let base64String = jsonData.base64EncodedString()
 
-                // Create XMP metadata format
+                // Create XMP metadata format (no BOM character to avoid encoding issues)
                 let xmpMetadata = """
-                <?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>
+                <?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
                 <x:xmpmeta xmlns:x="adobe:ns:meta/">
                     <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
                         <rdf:Description rdf:about=""
