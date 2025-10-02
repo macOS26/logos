@@ -72,6 +72,24 @@ class PDFCommandParser {
     var hasClipOperatorPending: Bool = false  // Track if we just saw a W operator
     var clipOperatorPath: [PathCommand] = []  // Store the path from W operator
 
+    // MARK: - Text State Properties
+    var isInTextObject: Bool = false  // Track if we're between BT and ET
+    var currentTextMatrix: CGAffineTransform = .identity  // Text matrix (Tm)
+    var currentLineMatrix: CGAffineTransform = .identity  // Line matrix
+    var currentFontName: String? = nil  // Current font name from resources
+    var currentFontSize: Double = 12.0  // Font size in points
+    var textCharacterSpacing: Double = 0.0  // Character spacing (Tc)
+    var textWordSpacing: Double = 0.0  // Word spacing (Tw)
+    var textHorizontalScaling: Double = 100.0  // Horizontal scaling percentage (Tz)
+    var textLeading: Double = 0.0  // Text leading (TL)
+    var textRise: Double = 0.0  // Text rise (Ts)
+    var textRenderingMode: Int = 0  // 0=fill, 1=stroke, 2=fill+stroke, 3=invisible, etc.
+
+    // Text accumulation
+    var currentTextContent: String = ""  // Accumulated text in current text object
+    var currentTextStartPosition: CGPoint = .zero  // Starting position of text object
+    var pendingTextShapes: [VectorShape] = []  // Text shapes waiting to be added
+
     func parseDocument(at url: URL) -> [VectorShape] {
         commands.removeAll()
         shapes.removeAll()

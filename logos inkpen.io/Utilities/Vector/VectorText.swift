@@ -389,13 +389,46 @@ struct VectorText: Identifiable, Codable, Hashable {
     // MIGRATION: Convert VectorShape back to VectorText for unified access
     static func from(_ vectorShape: VectorShape) -> VectorText? {
         guard vectorShape.isTextObject else { return nil }
-        
-        // CRITICAL FIX: Use the shape's typography if available, otherwise create from stroke/fill
-        let typography = vectorShape.typography ?? TypographyProperties(
-            strokeColor: vectorShape.strokeStyle?.color ?? .black,
-            fillColor: vectorShape.fillStyle?.color ?? .black
-        )
-        
+
+        // Check if this shape has PDF import metadata - reconstruct typography from it
+        let typography: TypographyProperties
+        if !vectorShape.metadata.isEmpty,
+           let fontFamily = vectorShape.metadata["fontFamily"],
+           let fontSizeStr = vectorShape.metadata["fontSize"],
+           let fontSize = Double(fontSizeStr) {
+
+            // Reconstruct typography from PDF import metadata
+            let letterSpacing = Double(vectorShape.metadata["letterSpacing"] ?? "0") ?? 0
+            let lineSpacing = Double(vectorShape.metadata["lineSpacing"] ?? "0") ?? 0
+            // Note: wordSpacing is stored but not used in TypographyProperties init
+
+            typography = TypographyProperties(
+                fontFamily: fontFamily,
+                fontWeight: .regular,
+                fontStyle: .normal,
+                fontSize: fontSize,
+                lineHeight: fontSize * 1.2,
+                lineSpacing: lineSpacing,
+                letterSpacing: letterSpacing,
+                alignment: .left,
+                hasStroke: vectorShape.strokeStyle != nil,
+                strokeColor: vectorShape.strokeStyle?.color ?? .black,
+                strokeWidth: vectorShape.strokeStyle?.width ?? 1.0,
+                strokeOpacity: vectorShape.strokeStyle?.opacity ?? 1.0,
+                fillColor: vectorShape.fillStyle?.color ?? .black,
+                fillOpacity: vectorShape.fillStyle?.opacity ?? 1.0
+            )
+        } else if let existingTypography = vectorShape.typography {
+            // Use existing typography if available
+            typography = existingTypography
+        } else {
+            // Fallback: create from stroke/fill
+            typography = TypographyProperties(
+                strokeColor: vectorShape.strokeStyle?.color ?? .black,
+                fillColor: vectorShape.fillStyle?.color ?? .black
+            )
+        }
+
         // Extract VectorText data from VectorShape
         // This is a reverse conversion from VectorShape.from(_:VectorText)
         // Use textPosition if available (preserved from original text), otherwise use transform
@@ -406,20 +439,20 @@ struct VectorText: Identifiable, Codable, Hashable {
             position: position,
             areaSize: vectorShape.areaSize
         )
-        
+
         // CRITICAL FIX: Preserve the original VectorShape ID so object lookups work
         vectorText.id = vectorShape.id
-        
+
         // CRITICAL FIX: Preserve lock and visibility states from the shape
         vectorText.isLocked = vectorShape.isLocked
         vectorText.isVisible = vectorShape.isVisible
-        
+
         // CRITICAL FIX: Preserve editing state from the shape
         vectorText.isEditing = vectorShape.isEditing ?? false
-        
+
         // CRITICAL FIX: Preserve cursor position from the shape
         vectorText.cursorPosition = vectorShape.cursorPosition ?? 0
-        
+
         return vectorText
     }
 }

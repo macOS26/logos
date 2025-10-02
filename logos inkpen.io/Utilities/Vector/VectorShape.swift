@@ -432,8 +432,11 @@ struct VectorShape: Hashable, Identifiable {
     var isEditing: Bool? = nil // For inline text editing
     var textPosition: CGPoint? = nil // Original text position (preserved for undo/redo)
     // Removed isPointText - only area text is used
+
+    // Metadata dictionary for storing additional properties (e.g., from PDF import)
+    var metadata: [String: String] = [:]
     
-    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isCompoundPath: Bool = false, isClippingPath: Bool = false, clippedByShapeID: UUID? = nil, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], warpedBounds: CGRect? = nil, isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = [], isTextObject: Bool = false, textContent: String? = nil, typography: TypographyProperties? = nil, cursorPosition: Int? = nil, areaSize: CGSize? = nil, isEditing: Bool? = nil, textPosition: CGPoint? = nil) {
+    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isCompoundPath: Bool = false, isClippingPath: Bool = false, clippedByShapeID: UUID? = nil, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], warpedBounds: CGRect? = nil, isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = [], isTextObject: Bool = false, textContent: String? = nil, typography: TypographyProperties? = nil, cursorPosition: Int? = nil, areaSize: CGSize? = nil, isEditing: Bool? = nil, textPosition: CGPoint? = nil, metadata: [String: String] = [:]) {
         self.id = UUID()
         self.name = name
         self.path = path
@@ -467,6 +470,7 @@ struct VectorShape: Hashable, Identifiable {
         self.areaSize = areaSize
         self.isEditing = isEditing
         self.textPosition = textPosition
+        self.metadata = metadata
     }
     
     var transformedPath: CGPath {
