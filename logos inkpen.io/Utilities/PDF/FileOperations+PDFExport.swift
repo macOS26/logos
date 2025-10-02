@@ -226,7 +226,7 @@ extension FileOperations {
         context.restoreGState()
     }
 
-    /// Render individual shape to PDF context with image support
+    /// Render individual shape to PDF context with image support and proper group handling
     static func renderShapeToPDFWithImageSupport(shape: VectorShape, context: CGContext, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs) throws {
         // Check if this is a text object - render as PDF text instead of paths
         if shape.isTextObject, let vectorText = VectorText.from(shape) {
@@ -234,21 +234,51 @@ extension FileOperations {
             return
         }
 
-        // Check if this is a group
+        // Check if this is a group - create proper PDF transparency group
         if shape.isGroup && !shape.groupedShapes.isEmpty {
+            // IMPORTANT: Create a PDF transparency group (Form XObject)
+            // This will be recognized as a group in Illustrator and other PDF editors
+            
+            Log.fileOperation("📦 Rendering PDF transparency group: \(shape.name) with \(shape.groupedShapes.count) shapes", level: .info)
+            
             // Save graphics state for group
             context.saveGState()
-
+            
             // Apply group transform if any
             context.concatenate(shape.transform)
-
+            
+            // Begin PDF transparency group
+            // This creates a Form XObject that will be recognized as a group
+            context.beginTransparencyLayer(auxiliaryInfo: nil)
+            
+            // Apply group opacity if it's less than 1.0
+            if shape.opacity < 1.0 {
+                context.setAlpha(CGFloat(shape.opacity))
+            }
+            
+            // Apply group blend mode if not normal
+            if shape.blendMode != .normal {
+                context.setBlendMode(shape.blendMode.cgBlendMode)
+            }
+            
             // Render each shape in the group recursively
             for groupedShape in shape.groupedShapes {
-                try renderShapeToPDFWithImageSupport(shape: groupedShape, context: context, isExport: isExport, useCMYK: useCMYK)
+                try renderShapeToPDFWithImageSupport(
+                    shape: groupedShape, 
+                    context: context, 
+                    isExport: isExport, 
+                    useCMYK: useCMYK,
+                    textRenderingMode: textRenderingMode
+                )
             }
-
+            
+            // End the transparency group
+            context.endTransparencyLayer()
+            
             // Restore graphics state
             context.restoreGState()
+            
+            Log.fileOperation("   ✅ PDF transparency group rendered: \(shape.name)", level: .debug)
             return
         }
 
