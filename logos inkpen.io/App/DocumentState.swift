@@ -331,7 +331,7 @@ class DocumentState: ObservableObject {
         let includeInkpenCheckbox = NSButton(checkboxWithTitle: "Include native .inkpen document",
                                               target: nil, action: nil)
         includeInkpenCheckbox.frame = NSRect(x: 20, y: 20, width: 250, height: 20)
-        includeInkpenCheckbox.state = .off // Default to not including inkpen data
+        includeInkpenCheckbox.state = .on // Default to including inkpen data for round-trip editing
         accessoryView.addSubview(includeInkpenCheckbox)
 
         // Handler to show/hide text rendering options based on "Convert text to outlines" checkbox
@@ -517,7 +517,7 @@ class DocumentState: ObservableObject {
         let includeInkpenCheckbox = NSButton(checkboxWithTitle: "Include native .inkpen document",
                                               target: nil, action: nil)
         includeInkpenCheckbox.frame = NSRect(x: 20, y: 20, width: 250, height: 20)
-        includeInkpenCheckbox.state = .off // Default to not including inkpen data
+        includeInkpenCheckbox.state = .on // Default to including inkpen data for round-trip editing
         accessoryView.addSubview(includeInkpenCheckbox)
 
         // Handler to show/hide text rendering options based on "Convert text to outlines" checkbox
