@@ -13,10 +13,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Install stderr filter to suppress noisy system-level SQLite warning lines
         StderrFilter.shared.installFilter(suppressing: [
             "/private/var/db/DetachedSignatures",
-            "os_unix.c:49448",
-            "cannot open file at line 49448",
+            "os_unix.c:",
+            "cannot open file at line", // Catches any line number
             "invalid display identifier",
-            "display identifier"
+            "display identifier",
+            "Invalid display 0x",
+            "Unable to obtain a task name port right",
+            "networkd_settings_read_from_file Sandbox",
+            "Logging Error: Failed to receive",
+            "CALocalDisplayUpdateBlock returned NO",
+            "AFIsDeviceGreymatterEligible",
+            "CoreGraphics PDF has logged an error",
+            "precondition failure: unable to load binary archive",
+            "Missing Copy Link Service",
+            "Connection invalidated",
+            "ViewBridge to RemoteViewService Terminated",
+            "VCVoiceShortcutClient",
+            "Interrupted 0x",
+            "Unable to create bundle at URL"
         ])
 
         // Apply Apple Metal Performance HUD environment if enabled in preferences
@@ -28,7 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // 🔥 NEW: Initialize display monitor to handle display changes
-        //_ = DisplayMonitor.shared
+        _ = DisplayMonitor.shared
 
         // SETUP: Global error handling for system-level issues
         setupGlobalErrorHandling()
