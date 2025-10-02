@@ -311,13 +311,12 @@ class VectorImportManager {
             
             let mediaBox = page.getBoxRect(.mediaBox)
             
-            // Check if Producer field contains inkpen metadata
+            // Check if Producer field contains inkpen metadata (from XMP extraction)
             var inkpenMetadata: String? = nil
-            if let producer = pdfContent.producer,
-               producer.hasPrefix("INKPEN_DATA:") {
-                // Extract the base64 data after the prefix
-                inkpenMetadata = String(producer.dropFirst("INKPEN_DATA:".count))
-                Log.info("📦 Extracted inkpen metadata from PDF Producer field", category: .fileOperations)
+            if let producer = pdfContent.producer {
+                // Producer now contains the raw base64 data from XMP extraction
+                inkpenMetadata = producer
+                Log.info("📦 Extracted inkpen metadata from PDF (via XMP)", category: .fileOperations)
             }
 
             let metadata = VectorImportMetadata(

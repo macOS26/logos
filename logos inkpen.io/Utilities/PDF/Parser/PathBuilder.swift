@@ -31,9 +31,9 @@ func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
                         // Parse XMP to extract inkpen:document element
                         if let range = xmpString.range(of: "<inkpen:document>"),
                            let endRange = xmpString.range(of: "</inkpen:document>") {
-                            let start = xmpString.index(after: range.upperBound)
-                            let end = endRange.lowerBound
-                            let base64Data = String(xmpString[start..<end]).trimmingCharacters(in: .whitespacesAndNewlines)
+                            let startIndex = range.upperBound
+                            let endIndex = endRange.lowerBound
+                            let base64Data = String(xmpString[startIndex..<endIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
                             inkpenMetadata = base64Data
                             Log.info("✅ Extracted inkpen document from XMP metadata (\(base64Data.count) base64 chars)", category: .fileOperations)
                         }
@@ -71,7 +71,7 @@ func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
         textCount: 0,
         creator: "PDF Vector Parser",
         version: "Individual Shapes",
-        producer: inkpenMetadata != nil ? "INKPEN_DATA:" + inkpenMetadata! : nil
+        producer: inkpenMetadata  // Pass the XMP metadata directly without prefix
     )
 }
 
