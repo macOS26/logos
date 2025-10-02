@@ -15,6 +15,16 @@ struct ProfessionalDirectSelectionView: View {
     let directSelectedShapeIDs: Set<UUID>
     let geometry: GeometryProxy
     
+    // DRAG OFFSET FIX: Apply drag offset to points during shape dragging
+    private var dragOffset: CGPoint {
+        // When dragging direct-selected shapes (not individual points), apply the drag offset
+        // This ensures points move with the shape preview during drag
+        if document.currentDragOffset != .zero && !directSelectedShapeIDs.isEmpty && selectedPoints.isEmpty && selectedHandles.isEmpty {
+            return document.currentDragOffset
+        }
+        return .zero
+    }
+    
     var body: some View {
         ZStack {
             // PROFESSIONAL BEZIER DISPLAY: Show ALL anchor points and handles for direct-selected shapes
@@ -333,10 +343,14 @@ struct ProfessionalDirectSelectionView: View {
 
     @ViewBuilder
     private func bezierHandleLineAndCircle(from: CGPoint, to: CGPoint, shape: VectorShape, isSelected: Bool = false) -> some View {
+        // DRAG OFFSET FIX: Apply drag offset when dragging whole shapes
+        let offsetFrom = CGPoint(x: from.x + dragOffset.x, y: from.y + dragOffset.y)
+        let offsetTo = CGPoint(x: to.x + dragOffset.x, y: to.y + dragOffset.y)
+        
         // HANDLE LINE
         Path { path in
-            path.move(to: from)
-            path.addLine(to: to)
+            path.move(to: offsetFrom)
+            path.addLine(to: offsetTo)
         }
         .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel)
         // Apply transforms in correct order: shape transform (canvas space) → zoom → offset
@@ -346,7 +360,7 @@ struct ProfessionalDirectSelectionView: View {
         
         // HANDLE CIRCLE: use transformed position so the marker remains device-size and correctly aligned
         // Orange if this specific handle is selected, blue otherwise
-        let transformedTo = CGPoint(x: to.x, y: to.y).applying(shape.transform)
+        let transformedTo = CGPoint(x: offsetTo.x, y: offsetTo.y).applying(shape.transform)
         Circle()
             .fill(isSelected ? Color.orange : Color.blue)
             .stroke(Color.white, lineWidth: 0.5)
@@ -360,7 +374,8 @@ struct ProfessionalDirectSelectionView: View {
     @ViewBuilder
     private func bezierAnchorPointView(shape: VectorShape, elementIndex: Int, element: PathElement) -> some View {
         if let point = extractPointFromElement(element) {
-            let rawPointLocation = CGPoint(x: point.x, y: point.y)
+            // DRAG OFFSET FIX: Apply drag offset when dragging whole shapes
+            let rawPointLocation = CGPoint(x: point.x + dragOffset.x, y: point.y + dragOffset.y)
             let transformedPointLocation = rawPointLocation.applying(shape.transform)
             
             let pointID = PointID(
@@ -489,12 +504,14 @@ struct ProfessionalDirectSelectionView: View {
                         let prevElement = shape.path.elements[handleID.elementIndex - 1]
                         switch prevElement {
                         case .move(let prevTo), .line(let prevTo):
-                            let pointLocation = CGPoint(x: prevTo.x, y: prevTo.y)
-                            let handleLocation = CGPoint(x: control1.x, y: control1.y)
+                            // DRAG OFFSET FIX: Apply drag offset to handle info
+                            let pointLocation = CGPoint(x: prevTo.x + dragOffset.x, y: prevTo.y + dragOffset.y)
+                            let handleLocation = CGPoint(x: control1.x + dragOffset.x, y: control1.y + dragOffset.y)
                             return (pointLocation, handleLocation)
                         case .curve(let prevTo, _, _):
-                            let pointLocation = CGPoint(x: prevTo.x, y: prevTo.y)
-                            let handleLocation = CGPoint(x: control1.x, y: control1.y)
+                            // DRAG OFFSET FIX: Apply drag offset to handle info
+                            let pointLocation = CGPoint(x: prevTo.x + dragOffset.x, y: prevTo.y + dragOffset.y)
+                            let handleLocation = CGPoint(x: control1.x + dragOffset.x, y: control1.y + dragOffset.y)
                             return (pointLocation, handleLocation)
                         default:
                             return nil
@@ -502,8 +519,9 @@ struct ProfessionalDirectSelectionView: View {
                     }
                 } else {
                     // INCOMING HANDLE: control2 of current element belongs to current anchor point
-                    let pointLocation = CGPoint(x: to.x, y: to.y)
-                    let handleLocation = CGPoint(x: control2.x, y: control2.y)
+                    // DRAG OFFSET FIX: Apply drag offset to handle info
+                    let pointLocation = CGPoint(x: to.x + dragOffset.x, y: to.y + dragOffset.y)
+                    let handleLocation = CGPoint(x: control2.x + dragOffset.x, y: control2.y + dragOffset.y)
                     return (pointLocation, handleLocation)
                 }
             case .quadCurve(let to, let control):
@@ -513,8 +531,9 @@ struct ProfessionalDirectSelectionView: View {
                         let prevElement = shape.path.elements[handleID.elementIndex - 1]
                         switch prevElement {
                         case .move(let prevTo), .line(let prevTo), .curve(let prevTo, _, _):
-                            let pointLocation = CGPoint(x: prevTo.x, y: prevTo.y)
-                            let handleLocation = CGPoint(x: control.x, y: control.y)
+                            // DRAG OFFSET FIX: Apply drag offset to handle info
+                            let pointLocation = CGPoint(x: prevTo.x + dragOffset.x, y: prevTo.y + dragOffset.y)
+                            let handleLocation = CGPoint(x: control.x + dragOffset.x, y: control.y + dragOffset.y)
                             return (pointLocation, handleLocation)
                         default:
                             return nil
@@ -522,8 +541,9 @@ struct ProfessionalDirectSelectionView: View {
                     }
                 } else {
                     // Standard quad curve control handle
-                    let pointLocation = CGPoint(x: to.x, y: to.y)
-                    let handleLocation = CGPoint(x: control.x, y: control.y)
+                    // DRAG OFFSET FIX: Apply drag offset to handle info
+                    let pointLocation = CGPoint(x: to.x + dragOffset.x, y: to.y + dragOffset.y)
+                    let handleLocation = CGPoint(x: control.x + dragOffset.x, y: control.y + dragOffset.y)
                     return (pointLocation, handleLocation)
                 }
             default:
