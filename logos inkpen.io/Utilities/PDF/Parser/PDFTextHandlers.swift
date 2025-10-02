@@ -13,7 +13,7 @@ extension PDFCommandParser {
 
     /// Begin text object (BT)
     func handleBeginText() {
-        Log.info("PDF Text: Begin text object (BT)", category: .general)
+        Log.info("📝 PDF Text: Begin text object (BT)", category: .general)
 
         isInTextObject = true
         // Reset text matrices
@@ -32,7 +32,7 @@ extension PDFCommandParser {
 
     /// End text object (ET)
     func handleEndText() {
-        Log.info("PDF Text: End text object (ET) - Content: '\(currentTextContent)'", category: .general)
+        Log.info("📝 PDF Text: End text object (ET) - Content: '\(currentTextContent)'", category: .general)
 
         guard isInTextObject else { return }
         isInTextObject = false
@@ -218,7 +218,7 @@ extension PDFCommandParser {
             let text = extractTextFromPDFString(stringRef)
             currentTextContent += text
 
-            Log.info("PDF Text: Show text '\(text)' (Tj)", category: .general)
+            Log.info("📝 PDF Text: Show text '\(text)' (Tj) - Total: '\(currentTextContent)'", category: .general)
 
             // Advance text position based on text width
             advanceTextPosition(for: text)
