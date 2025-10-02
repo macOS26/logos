@@ -520,12 +520,14 @@ extension VectorText {
             opacity: typography.strokeOpacity
         ) : nil
 
+        // For text objects, position is handled separately from transform
+        // Use identity transform to avoid double transformation
         var shape = VectorShape(
             name: "Text: \(content.prefix(20))",
             path: VectorPath(elements: []), // Empty path for text objects
             strokeStyle: strokeStyle,
             fillStyle: fillStyle,
-            transform: transform
+            transform: .identity  // Text position is in textPosition, not transform
         )
 
         // Mark as text object
