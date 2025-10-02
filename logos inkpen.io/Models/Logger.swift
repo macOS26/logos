@@ -25,6 +25,7 @@ enum LogLevel: String, CaseIterable {
 }
 
 struct Log {
+    #if DEBUG
     private static let subsystem = Bundle.main.bundleIdentifier ?? "com.logos.inkpen"
     
     // Create loggers for each category
@@ -122,8 +123,9 @@ struct Log {
         
         return simplified
     }
+    #endif
     
-    // Main logging methods
+    // Main logging methods - COMPLETE NO-OP IN RELEASE
     static func info(_ message: String, category: LogCategory = .general) {
         #if DEBUG
         // Check for spam suppression first
@@ -134,6 +136,7 @@ struct Log {
         let logger = logger(for: category)
         logger.info("\(message, privacy: .public)")
         #endif
+        // In Release: immediate return, no work done at all
     }
     
     static func warning(_ message: String, category: LogCategory = .general) {
@@ -146,6 +149,7 @@ struct Log {
         let logger = logger(for: category)
         logger.warning("\(message, privacy: .public)")
         #endif
+        // In Release: immediate return, no work done at all
     }
     
     static func error(_ message: String, category: LogCategory = .error) {
@@ -154,6 +158,7 @@ struct Log {
         let logger = logger(for: category)
         logger.error("\(message, privacy: .public)")
         #endif
+        // In Release: immediate return, no work done at all
     }
     
     static func fault(_ message: String, category: LogCategory = .error) {
@@ -162,10 +167,12 @@ struct Log {
         let logger = logger(for: category)
         logger.fault("\(message, privacy: .public)")
         #endif
+        // In Release: immediate return, no work done at all
     }
     
-    // Convenience methods for specific categories
+    // Convenience methods for specific categories - COMPLETE NO-OP IN RELEASE
     static func metal(_ message: String, level: LogLevel = .info) {
+        #if DEBUG
         switch level {
         case .debug: info(message, category: .metal)
         case .info: info(message, category: .metal)
@@ -173,9 +180,12 @@ struct Log {
         case .error: error(message, category: .metal)
         case .fault: fault(message, category: .metal)
         }
+        #endif
+        // In Release: immediate return, no work done at all
     }
     
     static func startup(_ message: String, level: LogLevel = .info) {
+        #if DEBUG
         switch level {
         case .debug: info(message, category: .startup)
         case .info: info(message, category: .startup)
@@ -183,9 +193,12 @@ struct Log {
         case .error: error(message, category: .error)
         case .fault: fault(message, category: .error)
         }
+        #endif
+        // In Release: immediate return, no work done at all
     }
     
     static func fileOperation(_ message: String, level: LogLevel = .info) {
+        #if DEBUG
         switch level {
         case .debug: info(message, category: .fileOperations)
         case .info: info(message, category: .fileOperations)
@@ -193,7 +206,8 @@ struct Log {
         case .error: error(message, category: .error)
         case .fault: fault(message, category: .error)
         }
+        #endif
+        // In Release: immediate return, no work done at all
     }
 }
-
 
