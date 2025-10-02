@@ -16,11 +16,11 @@ extension PDFCommandParser {
         Log.info("📝 PDF Text: Begin text object (BT)", category: .general)
 
         isInTextObject = true
-        // Reset text matrices
+        // Reset text matrices - text starts at origin
         currentTextMatrix = .identity
         currentLineMatrix = .identity
 
-        // Store start position
+        // Store start position from current transform matrix
         currentTextStartPosition = CGPoint(
             x: currentTransformMatrix.tx,
             y: currentTransformMatrix.ty
@@ -28,6 +28,10 @@ extension PDFCommandParser {
 
         // Clear accumulated text
         currentTextContent = ""
+
+        // Text state should persist between text objects within a page
+        // But reset position-related state
+        Log.info("   Starting new text object - Font: \(currentFontName ?? "none") Size: \(currentFontSize)", category: .general)
     }
 
     /// End text object (ET)
@@ -412,15 +416,27 @@ extension PDFCommandParser {
         guard !currentTextContent.isEmpty else { return }
 
         // Calculate actual position from matrices
-        // PDF uses bottom-left origin, we need to flip Y
-        let ctm = currentTransformMatrix
+        // The text matrix contains the position, CTM is for general transforms
         let tm = currentTextMatrix
-        let combined = tm.concatenating(ctm)  // Apply text matrix first, then CTM
+        let ctm = currentTransformMatrix
 
-        // Get position from combined transform and flip Y coordinate
-        let position = CGPoint(x: combined.tx, y: pageSize.height - combined.ty)
+        // For text, position comes primarily from text matrix
+        // PDF coordinates are bottom-left, we need top-left
+        var position = CGPoint(x: tm.tx, y: tm.ty)
 
-        Log.info("📝 Creating text at position: \(position) from matrices - TM: \(tm), CTM: \(ctm)", category: .general)
+        // Apply CTM if it's not identity
+        if ctm != .identity {
+            position = position.applying(ctm)
+        }
+
+        // Flip Y coordinate: PDF uses bottom-left origin, we use top-left
+        // Also account for font baseline
+        let flippedY = pageSize.height - position.y - currentFontSize
+        position.y = flippedY
+
+        Log.info("📝 Creating text at position: \(position) | Original Y: \(tm.ty) | Font size: \(currentFontSize)", category: .general)
+        Log.info("   Text Matrix: \(tm)", category: .general)
+        Log.info("   CTM: \(ctm)", category: .general)
 
         // Determine font attributes
         let fontFamily = currentFontName ?? "Helvetica"
@@ -465,11 +481,18 @@ extension PDFCommandParser {
             fillOpacity: hasFill ? currentFillOpacity : 1.0
         )
 
-        // Create VectorText
+        // Calculate proper bounds for text
+        let lines = currentTextContent.components(separatedBy: .newlines)
+        let maxLineLength = lines.map { $0.count }.max() ?? 0
+        let estimatedWidth = Double(maxLineLength) * fontSize * 0.6  // Better width estimation
+        let estimatedHeight = Double(lines.count) * fontSize * 1.2   // Line height estimation
+
+        // Create VectorText with proper areaSize for display
         let vectorText = VectorText(
             content: currentTextContent,
             typography: typography,
-            position: position
+            position: position,
+            areaSize: CGSize(width: max(100, estimatedWidth), height: max(fontSize, estimatedHeight))  // Ensure minimum size
         )
 
         // Convert to VectorShape
@@ -509,6 +532,10 @@ extension VectorText {
         shape.isTextObject = true
         shape.textContent = content
         shape.textPosition = position
+        shape.typography = typography  // CRITICAL: Store typography for text rendering
+        shape.areaSize = areaSize      // CRITICAL: Store area size for text display
+        shape.bounds = bounds           // CRITICAL: Set proper bounds for rendering
+        shape.cursorPosition = 0        // Initialize cursor position
 
         // Store font info in metadata for PDF import reconstruction
         shape.metadata["fontFamily"] = typography.fontFamily
