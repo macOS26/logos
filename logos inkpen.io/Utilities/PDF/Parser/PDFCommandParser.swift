@@ -161,10 +161,15 @@ class PDFCommandParser {
     
     func parsePage(document: CGPDFDocument, pageNumber: Int) {
         guard let page = document.page(at: pageNumber) else { return }
-        
+
         // Store current page for resource access
         currentPage = page
-        
+
+        // Get page resources dictionary for font resolution
+        if let pageDict = page.dictionary {
+            CGPDFDictionaryGetDictionary(pageDict, "Resources", &pageResourcesDict)
+        }
+
         // Create operator table
         guard let operatorTable = CGPDFOperatorTableCreate() else { return }
         

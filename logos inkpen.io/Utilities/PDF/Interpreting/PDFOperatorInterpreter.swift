@@ -294,10 +294,143 @@ class PDFOperatorInterpreter {
             Log.info("PDF: Color space operator 'CS' (stroking)", category: .general)
         }
         
+        // Setup text operators for text extraction
+        setupTextOperators(operatorTable)
+
         // Setup gradient operators - from existing setupGradientOperatorCallbacks
         setupGradientOperators(operatorTable)
     }
-    
+
+    /// Setup text-specific operator callbacks
+    private static func setupTextOperators(_ operatorTable: CGPDFOperatorTableRef) {
+        // MARK: - Text Object Operators
+
+        // Begin text object
+        CGPDFOperatorTableSetCallback(operatorTable, "BT") { (scanner, info) in
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            parser.handleBeginText()
+        }
+
+        // End text object
+        CGPDFOperatorTableSetCallback(operatorTable, "ET") { (scanner, info) in
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            parser.handleEndText()
+        }
+
+        // MARK: - Text State Operators
+
+        // Set font and size
+        CGPDFOperatorTableSetCallback(operatorTable, "Tf") { (scanner, info) in
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            parser.handleSetFont(scanner: scanner)
+        }
+
+        // Set character spacing
+        CGPDFOperatorTableSetCallback(operatorTable, "Tc") { (scanner, info) in
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            parser.handleSetCharacterSpacing(scanner: scanner)
+        }
+
+        // Set word spacing
+        CGPDFOperatorTableSetCallback(operatorTable, "Tw") { (scanner, info) in
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            parser.handleSetWordSpacing(scanner: scanner)
+        }
+
+        // Set horizontal scaling
+        CGPDFOperatorTableSetCallback(operatorTable, "Tz") { (scanner, info) in
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            parser.handleSetHorizontalScaling(scanner: scanner)
+        }
+
+        // Set text leading
+        CGPDFOperatorTableSetCallback(operatorTable, "TL") { (scanner, info) in
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            parser.handleSetTextLeading(scanner: scanner)
+        }
+
+        // Set text rendering mode
+        CGPDFOperatorTableSetCallback(operatorTable, "Tr") { (scanner, info) in
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            parser.handleSetTextRenderingMode(scanner: scanner)
+        }
+
+        // Set text rise
+        CGPDFOperatorTableSetCallback(operatorTable, "Ts") { (scanner, info) in
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            parser.handleSetTextRise(scanner: scanner)
+        }
+
+        // MARK: - Text Positioning Operators
+
+        // Move text position
+        CGPDFOperatorTableSetCallback(operatorTable, "Td") { (scanner, info) in
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            parser.handleTextMove(scanner: scanner)
+        }
+
+        // Move text position and set leading
+        CGPDFOperatorTableSetCallback(operatorTable, "TD") { (scanner, info) in
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            parser.handleTextMoveWithLeading(scanner: scanner)
+        }
+
+        // Set text matrix and line matrix
+        CGPDFOperatorTableSetCallback(operatorTable, "Tm") { (scanner, info) in
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            parser.handleSetTextMatrix(scanner: scanner)
+        }
+
+        // Move to start of next line
+        CGPDFOperatorTableSetCallback(operatorTable, "T*") { (scanner, info) in
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            parser.handleTextNewLine()
+        }
+
+        // MARK: - Text Showing Operators
+
+        // Show text string
+        CGPDFOperatorTableSetCallback(operatorTable, "Tj") { (scanner, info) in
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            parser.handleShowText(scanner: scanner)
+        }
+
+        // Show text with individual glyph positioning
+        CGPDFOperatorTableSetCallback(operatorTable, "TJ") { (scanner, info) in
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            parser.handleShowTextWithPositioning(scanner: scanner)
+        }
+
+        // Move to next line and show text
+        CGPDFOperatorTableSetCallback(operatorTable, "'") { (scanner, info) in
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            parser.handleMoveAndShowText(scanner: scanner)
+        }
+
+        // Set word and char spacing, move to next line, show text
+        CGPDFOperatorTableSetCallback(operatorTable, "\"") { (scanner, info) in
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            parser.handleSpacingMoveAndShowText(scanner: scanner)
+        }
+    }
+
     /// Setup gradient-specific operator callbacks
     private static func setupGradientOperators(_ operatorTable: CGPDFOperatorTableRef) {
         // Pattern color space operators
