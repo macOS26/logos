@@ -283,6 +283,23 @@ struct DrawingCanvas: View {
     // Sync direct selection state with document
     internal func syncDirectSelectionWithDocument() {
         document.directSelectedShapeIDs = directSelectedShapeIDs
+
+        // CRITICAL FIX: Also update selectedObjectIDs so layers palette highlights selected items
+        // When using direct select tool, shapes should appear selected in the layers palette
+        if !directSelectedShapeIDs.isEmpty {
+            // Convert direct selected shape IDs to object IDs
+            document.selectedObjectIDs = Set(directSelectedShapeIDs)
+            document.selectedShapeIDs = directSelectedShapeIDs
+            document.syncSelectionArrays()
+        } else if document.currentTool == .directSelection ||
+                  document.currentTool == .convertAnchorPoint ||
+                  document.currentTool == .penPlusMinus {
+            // If direct selection is cleared while in direct select mode,
+            // also clear the regular selection to keep layers palette in sync
+            document.selectedObjectIDs.removeAll()
+            document.selectedShapeIDs.removeAll()
+            document.syncSelectionArrays()
+        }
     }
     @State internal var originalPointPositions: [PointID: VectorPoint] = [:]
     @State internal var originalHandlePositions: [HandleID: VectorPoint] = [:]
