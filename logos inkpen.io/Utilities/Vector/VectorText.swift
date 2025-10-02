@@ -440,6 +440,9 @@ struct VectorText: Identifiable, Codable, Hashable {
             areaSize: vectorShape.areaSize
         )
 
+        // CRITICAL: Restore bounds from shape
+        vectorText.bounds = vectorShape.bounds
+
         // CRITICAL FIX: Preserve the original VectorShape ID so object lookups work
         vectorText.id = vectorShape.id
 

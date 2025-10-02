@@ -488,11 +488,19 @@ extension PDFCommandParser {
         let estimatedHeight = Double(lines.count) * fontSize * 1.2   // Line height estimation
 
         // Create VectorText with proper areaSize for display
-        let vectorText = VectorText(
+        var vectorText = VectorText(
             content: currentTextContent,
             typography: typography,
             position: position,
             areaSize: CGSize(width: max(100, estimatedWidth), height: max(fontSize, estimatedHeight))  // Ensure minimum size
+        )
+
+        // Set bounds explicitly for visibility
+        vectorText.bounds = CGRect(
+            x: position.x,
+            y: position.y,
+            width: max(100, estimatedWidth),
+            height: max(fontSize, estimatedHeight)
         )
 
         // Convert to VectorShape

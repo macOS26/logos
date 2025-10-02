@@ -98,7 +98,10 @@ class VectorDocument: ObservableObject, Codable {
                 // Convert VectorShape back to VectorText
                 if var vectorText = VectorText.from(shape) {
                     vectorText.layerIndex = unifiedObject.layerIndex
+                    Log.info("📝 allTextObjects: Found text '\(vectorText.content.prefix(20))' at position \(vectorText.position)", category: .general)
                     return vectorText
+                } else {
+                    Log.error("⚠️ allTextObjects: Failed to convert text shape to VectorText for shape: \(shape.name)", category: .error)
                 }
             }
             return nil
