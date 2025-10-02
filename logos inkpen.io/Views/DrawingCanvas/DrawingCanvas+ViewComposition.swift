@@ -121,11 +121,10 @@ extension DrawingCanvas {
         bezierClosePathHint()
         bezierContinuePathHint()
         
-        // Selection handles for selected shapes (EXCEPT during pen tool drawing or selection dragging)
-        // PROFESSIONAL UX: Hide selection dots during movement (professional standard)
+        // Selection handles for selected shapes
+        // PROFESSIONAL UX: Show transform box during drag (like Illustrator, Figma, Sketch, etc.)
         // CORNER TOOL FIX: Hide bounding box and selection handles when in corner radius edit mode
         if !(document.currentTool == .bezierPen && isBezierDrawing) && 
-           !(document.currentTool == .selection && isDrawing) &&
            !isCornerRadiusEditMode {
             SelectionHandlesView(
                 document: document,
