@@ -334,52 +334,20 @@ class DocumentState: ObservableObject {
         includeInkpenCheckbox.state = .on // Default to including inkpen data for round-trip editing
         accessoryView.addSubview(includeInkpenCheckbox)
 
-        // Handler to show/hide text rendering options based on "Convert text to outlines" checkbox
-        class SVGTextOptionsHandler: NSObject {
-            let textToOutlinesCheckbox: NSButton
-            let textModeLabel: NSTextField
-            let glyphsRadio: NSButton
-            let linesRadio: NSButton
-
-            init(textToOutlinesCheckbox: NSButton, textModeLabel: NSTextField,
-                 glyphsRadio: NSButton, linesRadio: NSButton) {
-                self.textToOutlinesCheckbox = textToOutlinesCheckbox
-                self.textModeLabel = textModeLabel
-                self.glyphsRadio = glyphsRadio
-                self.linesRadio = linesRadio
-            }
-
-            @objc func toggleTextOptions(_ sender: NSButton) {
-                let shouldHide = sender.state == .on
-                textModeLabel.isHidden = shouldHide
-                glyphsRadio.isHidden = shouldHide
-                linesRadio.isHidden = shouldHide
-            }
-
-            @objc func selectGlyphs(_ sender: NSButton) {
-                glyphsRadio.state = .on
-                linesRadio.state = .off
-            }
-
-            @objc func selectLines(_ sender: NSButton) {
-                glyphsRadio.state = .off
-                linesRadio.state = .on
-            }
-        }
-
-        let svgHandler = SVGTextOptionsHandler(textToOutlinesCheckbox: textToOutlinesCheckbox,
+        // Use shared handler to eliminate duplication
+        let svgHandler = ExportTextOptionsHandler(textToOutlinesCheckbox: textToOutlinesCheckbox,
                                             textModeLabel: textModeLabel,
                                             glyphsRadio: glyphsRadio,
                                             linesRadio: linesRadio)
 
         textToOutlinesCheckbox.target = svgHandler
-        textToOutlinesCheckbox.action = #selector(SVGTextOptionsHandler.toggleTextOptions(_:))
+        textToOutlinesCheckbox.action = #selector(ExportTextOptionsHandler.toggleTextOptions(_:))
 
         glyphsRadio.target = svgHandler
-        glyphsRadio.action = #selector(SVGTextOptionsHandler.selectGlyphs(_:))
+        glyphsRadio.action = #selector(ExportTextOptionsHandler.selectGlyphs(_:))
 
         linesRadio.target = svgHandler
-        linesRadio.action = #selector(SVGTextOptionsHandler.selectLines(_:))
+        linesRadio.action = #selector(ExportTextOptionsHandler.selectLines(_:))
 
         // Set initial visibility
         let shouldHideTextOptions = textToOutlinesCheckbox.state == .on
@@ -407,32 +375,15 @@ class DocumentState: ObservableObject {
                 do {
                     var svgContent: String
 
-                    // If converting text to outlines, create a temporary copy and convert
+                    // Use shared helper for text to outlines conversion
                     if convertTextToOutlines && !document.allTextObjects.isEmpty {
-                        // Save current document state
-                        let savedData = try JSONEncoder().encode(document)
-                        let savedState = try JSONDecoder().decode(VectorDocument.self, from: savedData)
-
-                        // Convert all text to outlines
-                        await MainActor.run {
-                            Log.info("📝 Converting all text to outlines for SVG export...", category: .fileOperations)
-                            DocumentState.convertAllTextToOutlinesForExport(document)
-                        }
-
-                        // Generate SVG with outlined text
-                        svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: includeBackground, textRenderingMode: AppState.shared.svgTextRenderingMode, includeInkpenData: includeInkpenData)
-
-                        // Restore original document state
-                        await MainActor.run {
-                            Log.info("↩️ Restoring original document state after SVG export", category: .fileOperations)
-                            // Copy back the saved state to the original document
-                            document.unifiedObjects = savedState.unifiedObjects
-                            document.layers = savedState.layers
-                            document.selectedObjectIDs = savedState.selectedObjectIDs
-                            document.selectedTextIDs = savedState.selectedTextIDs
-                            document.selectedShapeIDs = savedState.selectedShapeIDs
-                            document.objectWillChange.send()
-                        }
+                        svgContent = try await DocumentState.exportSVGWithTextToOutlines(
+                            document,
+                            includeBackground: includeBackground,
+                            textRenderingMode: AppState.shared.svgTextRenderingMode,
+                            includeInkpenData: includeInkpenData,
+                            isAutoDesk: false
+                        )
                     } else {
                         // No text conversion needed, export normally with text rendering mode from settings
                         svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: includeBackground, textRenderingMode: AppState.shared.svgTextRenderingMode, includeInkpenData: includeInkpenData)
@@ -507,7 +458,7 @@ class DocumentState: ObservableObject {
         accessoryView.addSubview(cmykCheckbox)
 
         // Background checkbox
-        let bgCheckbox = NSButton(checkboxWithTitle: "Include background (Canvas layer)",
+        let bgCheckbox = NSButton(checkboxWithTitle: "Include background",
                                    target: nil, action: nil)
         bgCheckbox.frame = NSRect(x: 20, y: 50, width: 250, height: 20)
         bgCheckbox.state = .off // Default to no background for PDF export
@@ -520,50 +471,18 @@ class DocumentState: ObservableObject {
         includeInkpenCheckbox.state = .on // Default to including inkpen data for round-trip editing
         accessoryView.addSubview(includeInkpenCheckbox)
 
-        // Handler to show/hide text rendering options based on "Convert text to outlines" checkbox
-        class TextOptionsHandler: NSObject {
-            let textToOutlinesCheckbox: NSButton
-            let textModeLabel: NSTextField
-            let glyphsRadio: NSButton
-            let linesRadio: NSButton
-
-            init(textToOutlinesCheckbox: NSButton, textModeLabel: NSTextField,
-                 glyphsRadio: NSButton, linesRadio: NSButton) {
-                self.textToOutlinesCheckbox = textToOutlinesCheckbox
-                self.textModeLabel = textModeLabel
-                self.glyphsRadio = glyphsRadio
-                self.linesRadio = linesRadio
-            }
-
-            @objc func toggleTextOptions(_ sender: NSButton) {
-                let shouldHide = sender.state == .on
-                textModeLabel.isHidden = shouldHide
-                glyphsRadio.isHidden = shouldHide
-                linesRadio.isHidden = shouldHide
-            }
-
-            @objc func selectGlyphs(_ sender: NSButton) {
-                glyphsRadio.state = .on
-                linesRadio.state = .off
-            }
-
-            @objc func selectLines(_ sender: NSButton) {
-                glyphsRadio.state = .off
-                linesRadio.state = .on
-            }
-        }
-
-        let handler = TextOptionsHandler(textToOutlinesCheckbox: textToOutlinesCheckbox,
+        // Use shared handler to eliminate duplication
+        let handler = ExportTextOptionsHandler(textToOutlinesCheckbox: textToOutlinesCheckbox,
                                          textModeLabel: textModeLabel,
                                          glyphsRadio: glyphsRadio,
                                          linesRadio: linesRadio)
 
         textToOutlinesCheckbox.target = handler
-        textToOutlinesCheckbox.action = #selector(TextOptionsHandler.toggleTextOptions(_:))
+        textToOutlinesCheckbox.action = #selector(ExportTextOptionsHandler.toggleTextOptions(_:))
         glyphsRadio.target = handler
-        glyphsRadio.action = #selector(TextOptionsHandler.selectGlyphs(_:))
+        glyphsRadio.action = #selector(ExportTextOptionsHandler.selectGlyphs(_:))
         linesRadio.target = handler
-        linesRadio.action = #selector(TextOptionsHandler.selectLines(_:))
+        linesRadio.action = #selector(ExportTextOptionsHandler.selectLines(_:))
 
         // Keep handler alive
         objc_setAssociatedObject(accessoryView, "textOptionsHandler", handler, .OBJC_ASSOCIATION_RETAIN)
@@ -589,31 +508,10 @@ class DocumentState: ObservableObject {
                 do {
                     var pdfData: Data
 
-                    // If converting text to outlines, create a temporary copy and convert
+                    // Use shared helper for text to outlines conversion
                     if convertTextToOutlines && !document.allTextObjects.isEmpty {
-                        // Save current document state
-                        let savedData = try JSONEncoder().encode(document)
-                        let savedState = try JSONDecoder().decode(VectorDocument.self, from: savedData)
-
-                        // Convert all text to outlines
-                        await MainActor.run {
-                            Log.info("📝 Converting all text to outlines for PDF export...", category: .fileOperations)
-                            DocumentState.convertAllTextToOutlinesForExport(document)
-                        }
-
-                        // Generate PDF with outlined text (text rendering mode doesn't matter for outlines)
-                        pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData, includeBackground: includeBackground)
-
-                        // Restore original document state
-                        await MainActor.run {
-                            Log.info("↩️ Restoring original document state after PDF export", category: .fileOperations)
-                            // Copy back the saved state to the original document
-                            document.unifiedObjects = savedState.unifiedObjects
-                            document.layers = savedState.layers
-                            document.selectedObjectIDs = savedState.selectedObjectIDs
-                            document.selectedTextIDs = savedState.selectedTextIDs
-                            document.selectedShapeIDs = savedState.selectedShapeIDs
-                            document.objectWillChange.send()
+                        pdfData = try await DocumentState.exportWithTextToOutlines(document) {
+                            try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData, includeBackground: includeBackground)
                         }
                     } else {
                         // No text conversion needed, export normally with selected text rendering mode
@@ -852,31 +750,12 @@ class DocumentState: ObservableObject {
 
                     Task {
                         do {
-                            // If converting text to outlines, create a temporary copy and convert
+                            // Use shared helper for text to outlines conversion
                             if convertTextToOutlines && !document.allTextObjects.isEmpty {
-                                // Save current document state
-                                let savedData = try JSONEncoder().encode(document)
-                                let savedState = try JSONDecoder().decode(VectorDocument.self, from: savedData)
-
-                                // Convert all text to outlines
-                                await MainActor.run {
-                                    Log.info("📝 Converting all text to outlines for PNG export...", category: .fileOperations)
-                                    DocumentState.convertAllTextToOutlinesForExport(document)
-                                }
-
-                                // Export PNG with outlined text
-                                try FileOperations.exportToPNG(document, url: url, scale: scale,
-                                                                includeBackground: includeBackground)
-
-                                // Restore original document state
-                                await MainActor.run {
-                                    Log.info("↩️ Restoring original document state after PNG export", category: .fileOperations)
-                                    document.unifiedObjects = savedState.unifiedObjects
-                                    document.layers = savedState.layers
-                                    document.selectedObjectIDs = savedState.selectedObjectIDs
-                                    document.selectedTextIDs = savedState.selectedTextIDs
-                                    document.selectedShapeIDs = savedState.selectedShapeIDs
-                                    document.objectWillChange.send()
+                                _ = try await DocumentState.exportWithTextToOutlines(document) {
+                                    try FileOperations.exportToPNG(document, url: url, scale: scale,
+                                                                   includeBackground: includeBackground)
+                                    return Data() // PNG export doesn't return data
                                 }
                             } else {
                                 // No text conversion needed, export normally
@@ -951,52 +830,20 @@ class DocumentState: ObservableObject {
         bgCheckbox.state = .off // Default to no background for SVG
         accessoryView.addSubview(bgCheckbox)
 
-        // Handler to show/hide text rendering options based on "Convert text to outlines" checkbox
-        class AutoDeskSVGTextOptionsHandler: NSObject {
-            let textToOutlinesCheckbox: NSButton
-            let textModeLabel: NSTextField
-            let glyphsRadio: NSButton
-            let linesRadio: NSButton
-
-            init(textToOutlinesCheckbox: NSButton, textModeLabel: NSTextField,
-                 glyphsRadio: NSButton, linesRadio: NSButton) {
-                self.textToOutlinesCheckbox = textToOutlinesCheckbox
-                self.textModeLabel = textModeLabel
-                self.glyphsRadio = glyphsRadio
-                self.linesRadio = linesRadio
-            }
-
-            @objc func toggleTextOptions(_ sender: NSButton) {
-                let shouldHide = sender.state == .on
-                textModeLabel.isHidden = shouldHide
-                glyphsRadio.isHidden = shouldHide
-                linesRadio.isHidden = shouldHide
-            }
-
-            @objc func selectGlyphs(_ sender: NSButton) {
-                glyphsRadio.state = .on
-                linesRadio.state = .off
-            }
-
-            @objc func selectLines(_ sender: NSButton) {
-                glyphsRadio.state = .off
-                linesRadio.state = .on
-            }
-        }
-
-        let autodeskHandler = AutoDeskSVGTextOptionsHandler(textToOutlinesCheckbox: textToOutlinesCheckbox,
+        // Use shared handler to eliminate duplication
+        let autodeskHandler = ExportTextOptionsHandler(textToOutlinesCheckbox: textToOutlinesCheckbox,
                                                          textModeLabel: textModeLabel,
                                                          glyphsRadio: glyphsRadio,
                                                          linesRadio: linesRadio)
 
         textToOutlinesCheckbox.target = autodeskHandler
-        textToOutlinesCheckbox.action = #selector(AutoDeskSVGTextOptionsHandler.toggleTextOptions(_:))
+        textToOutlinesCheckbox.action = #selector(ExportTextOptionsHandler.toggleTextOptions(_:))
 
         glyphsRadio.target = autodeskHandler
-        glyphsRadio.action = #selector(AutoDeskSVGTextOptionsHandler.selectGlyphs(_:))
+        glyphsRadio.action = #selector(ExportTextOptionsHandler.selectGlyphs(_:))
 
         linesRadio.target = autodeskHandler
-        linesRadio.action = #selector(AutoDeskSVGTextOptionsHandler.selectLines(_:))
+        linesRadio.action = #selector(ExportTextOptionsHandler.selectLines(_:))
 
         // Set initial visibility
         let shouldHideTextOptions = textToOutlinesCheckbox.state == .on
@@ -1023,31 +870,15 @@ class DocumentState: ObservableObject {
                 do {
                     var svgContent: String
 
-                    // If converting text to outlines, create a temporary copy and convert
+                    // Use shared helper for text to outlines conversion
                     if convertTextToOutlines && !document.allTextObjects.isEmpty {
-                        // Save current document state
-                        let savedData = try JSONEncoder().encode(document)
-                        let savedState = try JSONDecoder().decode(VectorDocument.self, from: savedData)
-
-                        // Convert all text to outlines
-                        await MainActor.run {
-                            Log.info("📝 Converting all text to outlines for AutoDesk SVG export...", category: .fileOperations)
-                            DocumentState.convertAllTextToOutlinesForExport(document)
-                        }
-
-                        // Generate SVG with outlined text
-                        svgContent = try SVGExporter.shared.exportToAutoDeskSVG(document, includeBackground: includeBackground, textRenderingMode: AppState.shared.svgTextRenderingMode)
-
-                        // Restore original document state
-                        await MainActor.run {
-                            Log.info("↩️ Restoring original document state after AutoDesk SVG export", category: .fileOperations)
-                            document.unifiedObjects = savedState.unifiedObjects
-                            document.layers = savedState.layers
-                            document.selectedObjectIDs = savedState.selectedObjectIDs
-                            document.selectedTextIDs = savedState.selectedTextIDs
-                            document.selectedShapeIDs = savedState.selectedShapeIDs
-                            document.objectWillChange.send()
-                        }
+                        svgContent = try await DocumentState.exportSVGWithTextToOutlines(
+                            document,
+                            includeBackground: includeBackground,
+                            textRenderingMode: AppState.shared.svgTextRenderingMode,
+                            includeInkpenData: false,
+                            isAutoDesk: true
+                        )
                     } else {
                         // No text conversion needed, export normally with text rendering mode from settings
                         svgContent = try SVGExporter.shared.exportToAutoDeskSVG(document, includeBackground: includeBackground, textRenderingMode: AppState.shared.svgTextRenderingMode)

@@ -425,7 +425,7 @@ struct MainView: View {
     private func showSVGExportWithBackgroundOption(saveAsURL: URL) {
         // Show options dialog before saving (similar to Export SVG menu)
         let alert = NSAlert()
-        alert.messageText = "SVG Export Options"
+        alert.messageText = "SVG Export Options!"
         alert.informativeText = "Choose export options for the SVG file"
         alert.alertStyle = .informational
         alert.addButton(withTitle: "Export")
@@ -435,7 +435,7 @@ struct MainView: View {
         let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 60))
 
         // Background checkbox
-        let bgCheckbox = NSButton(checkboxWithTitle: "Include background (Canvas layer)",
+        let bgCheckbox = NSButton(checkboxWithTitle: "Include background",
                                    target: nil, action: nil)
         bgCheckbox.frame = NSRect(x: 20, y: 20, width: 250, height: 20)
         bgCheckbox.state = .off // Default to no background for Save As
@@ -522,56 +522,24 @@ struct MainView: View {
         accessoryView.addSubview(cmykCheckbox)
 
         // Background checkbox
-        let bgCheckbox = NSButton(checkboxWithTitle: "Include background (Canvas layer)",
+        let bgCheckbox = NSButton(checkboxWithTitle: "Include background",
                                    target: nil, action: nil)
         bgCheckbox.frame = NSRect(x: 20, y: 20, width: 250, height: 20)
         bgCheckbox.state = .off
         accessoryView.addSubview(bgCheckbox)
 
-        // Handler to show/hide text rendering options based on "Convert text to outlines" checkbox
-        class TextOptionsHandler: NSObject {
-            let textToOutlinesCheckbox: NSButton
-            let textModeLabel: NSTextField
-            let glyphsRadio: NSButton
-            let linesRadio: NSButton
-
-            init(textToOutlinesCheckbox: NSButton, textModeLabel: NSTextField,
-                 glyphsRadio: NSButton, linesRadio: NSButton) {
-                self.textToOutlinesCheckbox = textToOutlinesCheckbox
-                self.textModeLabel = textModeLabel
-                self.glyphsRadio = glyphsRadio
-                self.linesRadio = linesRadio
-            }
-
-            @objc func toggleTextOptions(_ sender: NSButton) {
-                let shouldHide = sender.state == .on
-                textModeLabel.isHidden = shouldHide
-                glyphsRadio.isHidden = shouldHide
-                linesRadio.isHidden = shouldHide
-            }
-
-            @objc func selectGlyphs(_ sender: NSButton) {
-                glyphsRadio.state = .on
-                linesRadio.state = .off
-            }
-
-            @objc func selectLines(_ sender: NSButton) {
-                glyphsRadio.state = .off
-                linesRadio.state = .on
-            }
-        }
-
-        let handler = TextOptionsHandler(textToOutlinesCheckbox: textToOutlinesCheckbox,
+        // Use shared handler to eliminate duplication
+        let handler = ExportTextOptionsHandler(textToOutlinesCheckbox: textToOutlinesCheckbox,
                                          textModeLabel: textModeLabel,
                                          glyphsRadio: glyphsRadio,
                                          linesRadio: linesRadio)
 
         textToOutlinesCheckbox.target = handler
-        textToOutlinesCheckbox.action = #selector(TextOptionsHandler.toggleTextOptions(_:))
+        textToOutlinesCheckbox.action = #selector(ExportTextOptionsHandler.toggleTextOptions(_:))
         glyphsRadio.target = handler
-        glyphsRadio.action = #selector(TextOptionsHandler.selectGlyphs(_:))
+        glyphsRadio.action = #selector(ExportTextOptionsHandler.selectGlyphs(_:))
         linesRadio.target = handler
-        linesRadio.action = #selector(TextOptionsHandler.selectLines(_:))
+        linesRadio.action = #selector(ExportTextOptionsHandler.selectLines(_:))
 
         // Keep handler alive
         objc_setAssociatedObject(accessoryView, "textOptionsHandler", handler, .OBJC_ASSOCIATION_RETAIN)
