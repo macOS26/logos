@@ -285,12 +285,8 @@ struct MainView: View {
             let fileExtension = url.pathExtension.lowercased()
             switch fileExtension {
             case "svg":
-                do {
-                    try FileOperations.exportToSVG(self.document, url: url)
-                    Log.info("✅ Exported to SVG: \(url.path)", category: .fileOperations)
-                } catch {
-                    Log.error("❌ SVG export failed: \(error)", category: .error)
-                }
+                // Show SVG export options dialog similar to PDF
+                self.showSVGExportWithBackgroundOption(saveAsURL: url)
             case "pdf":
                 // FIXED: Use the same export code as Export PDF menu item with background toggle
                 self.showPDFExportWithBackgroundOption(saveAsURL: url)
@@ -425,6 +421,62 @@ struct MainView: View {
     }
 
     
+    // MARK: - SVG Export Helper
+    private func showSVGExportWithBackgroundOption(saveAsURL: URL) {
+        // Show options dialog before saving (similar to Export SVG menu)
+        let alert = NSAlert()
+        alert.messageText = "SVG Export Options"
+        alert.informativeText = "Choose export options for the SVG file"
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "Export")
+        alert.addButton(withTitle: "Cancel")
+
+        // Create accessory view for background option
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 60))
+
+        // Background checkbox
+        let bgCheckbox = NSButton(checkboxWithTitle: "Include background (Canvas layer)",
+                                   target: nil, action: nil)
+        bgCheckbox.frame = NSRect(x: 20, y: 20, width: 250, height: 20)
+        bgCheckbox.state = .off // Default to no background for Save As
+        accessoryView.addSubview(bgCheckbox)
+
+        alert.accessoryView = accessoryView
+
+        let response = alert.runModal()
+        guard response == .alertFirstButtonReturn else { return }
+
+        // Get export options
+        let includeBackground = bgCheckbox.state == .on
+
+        Task {
+            do {
+                // Export SVG with background option
+                let svgContent = try SVGExporter.shared.exportToSVG(document,
+                                                                     includeBackground: includeBackground,
+                                                                     textRenderingMode: AppState.shared.svgTextRenderingMode,
+                                                                     includeInkpenData: false)
+
+                // Write to file
+                try svgContent.write(to: saveAsURL, atomically: true, encoding: .utf8)
+
+                await MainActor.run {
+                    Log.info("✅ Saved As SVG: \(saveAsURL.path) (background: \(includeBackground))", category: .fileOperations)
+                }
+            } catch {
+                await MainActor.run {
+                    Log.error("❌ Save As SVG failed: \(error)", category: .error)
+
+                    let alert = NSAlert()
+                    alert.messageText = "SVG Export Failed"
+                    alert.informativeText = error.localizedDescription
+                    alert.alertStyle = .critical
+                    alert.runModal()
+                }
+            }
+        }
+    }
+
     // MARK: - PDF Export Helper
     private func showPDFExportWithBackgroundOption(saveAsURL: URL) {
         // Show options dialog before saving (same options as Export PDF menu)
