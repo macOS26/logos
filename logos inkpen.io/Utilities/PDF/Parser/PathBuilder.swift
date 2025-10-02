@@ -11,17 +11,35 @@ import SwiftUI
 func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
     Log.fileOperation("🔧 Extracting PDF vector content using working parser...", level: .info)
 
-    // Extract inkpen metadata from PDF info dictionary
+    // Extract inkpen metadata from PDF XMP metadata stream
     var inkpenMetadata: String? = nil
 
-    if let pdfDoc = page.document,
-       let info = pdfDoc.info {
-        // Try to get XInfo field which contains our inkpen data
-        var pdfString: CGPDFStringRef?
-        if CGPDFDictionaryGetString(info, "XInfo", &pdfString),
-           let xInfoString = CGPDFStringCopyTextString(pdfString!) as String? {
-            inkpenMetadata = xInfoString
-            Log.info("📦 Found inkpen metadata in PDF XInfo field (\(xInfoString.count) chars)", category: .fileOperations)
+    if let pdfDoc = page.document {
+        // Try to get XMP metadata from the catalog
+        if let catalog = pdfDoc.catalog {
+            var metadataRef: CGPDFStreamRef?
+
+            // Try to get the Metadata stream from the catalog
+            if CGPDFDictionaryGetStream(catalog, "Metadata", &metadataRef),
+               let metadataStream = metadataRef {
+
+                var format: CGPDFDataFormat = .raw
+                if let data = CGPDFStreamCopyData(metadataStream, &format) {
+                    if let xmpString = String(data: data as Data, encoding: .utf8) {
+                        Log.info("📦 Found XMP metadata in PDF (\(xmpString.count) chars)", category: .fileOperations)
+
+                        // Parse XMP to extract inkpen:document element
+                        if let range = xmpString.range(of: "<inkpen:document>"),
+                           let endRange = xmpString.range(of: "</inkpen:document>") {
+                            let start = xmpString.index(after: range.upperBound)
+                            let end = endRange.lowerBound
+                            let base64Data = String(xmpString[start..<end]).trimmingCharacters(in: .whitespacesAndNewlines)
+                            inkpenMetadata = base64Data
+                            Log.info("✅ Extracted inkpen document from XMP metadata (\(base64Data.count) base64 chars)", category: .fileOperations)
+                        }
+                    }
+                }
+            }
         }
     }
 

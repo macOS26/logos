@@ -27,7 +27,7 @@ extension FileOperations {
 
         // Create auxiliary dictionary for PDF options
         // CRITICAL: Enforce PDF 1.7 to prevent macOS defaulting to PDF 1.3
-        var auxiliaryDict: [String: Any] = [
+        let auxiliaryDict: [String: Any] = [
             // Metadata
             kCGPDFContextCreator as String: "Inkpen.io",
             kCGPDFContextAuthor as String: NSFullUserName(),
@@ -37,27 +37,46 @@ extension FileOperations {
             kCGPDFContextKeywords as String: "vector, graphics, illustration"
         ]
 
-        // Add inkpen data to info dictionary if requested
-        if includeInkpenData {
-            do {
-                // Export document to JSON data
-                let inkpenData = try exportToJSONData(document)
-                // Convert to base64
-                let base64String = inkpenData.base64EncodedString()
-                // Use kCGPDFXInfo for extended PDF information - this won't be overwritten
-                auxiliaryDict[kCGPDFXInfo as String] = base64String
-                Log.info("📦 Embedded inkpen document in PDF XInfo metadata (\(base64String.count) chars)", category: .fileOperations)
-            } catch {
-                Log.error("⚠️ Failed to embed inkpen data: \(error)", category: .error)
-            }
-        }
-
         let auxiliaryInfo = auxiliaryDict as CFDictionary
 
         // Create PDF context with proper media box and auxiliary info
         guard let pdfConsumer = CGDataConsumer(data: pdfData),
               let pdfContext = CGContext(consumer: pdfConsumer, mediaBox: &mediaBox, auxiliaryInfo) else {
             throw VectorImportError.parsingError("Failed to create PDF context", line: nil)
+        }
+
+        // Embed inkpen document metadata if requested
+        if includeInkpenData {
+            Log.info("📦 Embedding inkpen document in PDF metadata", category: .fileOperations)
+
+            // Serialize document to JSON
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+
+            if let jsonData = try? encoder.encode(document) {
+                // Create XMP metadata with inkpen namespace
+                let base64String = jsonData.base64EncodedString()
+
+                // Create XMP metadata format
+                let xmpMetadata = """
+                <?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>
+                <x:xmpmeta xmlns:x="adobe:ns:meta/">
+                    <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+                        <rdf:Description rdf:about=""
+                            xmlns:inkpen="https://inkpen.io/ns/1.0/">
+                            <inkpen:document>\(base64String)</inkpen:document>
+                        </rdf:Description>
+                    </rdf:RDF>
+                </x:xmpmeta>
+                <?xpacket end="w"?>
+                """
+
+                // Convert to CFData and add to PDF context
+                if let xmpData = xmpMetadata.data(using: .utf8) {
+                    pdfContext.addDocumentMetadata(xmpData as CFData)
+                    Log.info("✅ Successfully embedded inkpen metadata in PDF (\(jsonData.count) bytes → \(base64String.count) base64 chars)", category: .fileOperations)
+                }
+            }
         }
 
         // Begin PDF page with proper page boxes
