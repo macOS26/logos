@@ -135,9 +135,9 @@ extension DrawingCanvas {
             if !document.selectedObjectIDs.isEmpty {
                 Log.info("🎯 Converting regular selection to direct selection", category: .selection)
                 directSelectedShapeIDs = document.selectedObjectIDs
-                // Clear regular selection
-                document.selectedObjectIDs.removeAll()
+                // Don't clear regular selection yet - syncDirectSelectionWithDocument will handle it
                 // Don't select individual points/handles yet - let user click to refine
+                syncDirectSelectionWithDocument() // This will keep selection visible in layers palette
             }
             // CRITICAL FIX: Reset point/handle selections when switching from convert point tool
             // This ensures coincident point detection gets reset properly
@@ -156,8 +156,8 @@ extension DrawingCanvas {
             if !document.selectedObjectIDs.isEmpty {
                 Log.info("🎯 Converting regular selection to direct selection for convert point tool", category: .selection)
                 directSelectedShapeIDs = document.selectedObjectIDs
-                // Clear regular selection
-                document.selectedObjectIDs.removeAll()
+                // Don't clear regular selection yet - syncDirectSelectionWithDocument will handle it
+                syncDirectSelectionWithDocument() // This will keep selection visible in layers palette
             }
             // Keep existing direct selection if switching from direct selection tool
             else if oldTool == .directSelection {
