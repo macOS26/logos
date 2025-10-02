@@ -532,6 +532,7 @@ struct MainView: View {
         // Get export options
         let useCMYK = cmykCheckbox.state == .on
         let convertTextToOutlines = textToOutlinesCheckbox.state == .on
+        let includeBackground = bgCheckbox.state == .on
 
         // Determine text rendering mode (default to glyphs if neither is selected)
         let textRenderingMode: AppState.PDFTextRenderingMode = linesRadio.state == .on ? .lines : .glyphs
@@ -556,7 +557,7 @@ struct MainView: View {
                     }
 
                     // Generate PDF with outlined text
-                    pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode)
+                    pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: false, includeBackground: includeBackground)
 
                     // Restore original document state
                     await MainActor.run {
@@ -570,7 +571,7 @@ struct MainView: View {
                     }
                 } else {
                     // No text conversion needed, export normally
-                    pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode)
+                    pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: false, includeBackground: includeBackground)
                 }
 
                 // Write to file

@@ -11,7 +11,7 @@ import SwiftUI
 extension FileOperations {
 
     /// Generate PDF data from VectorDocument with proper clipping path and image support
-    static func generatePDFDataWithClippingSupport(from document: VectorDocument, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, includeInkpenData: Bool = false) throws -> Data {
+    static func generatePDFDataWithClippingSupport(from document: VectorDocument, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, includeInkpenData: Bool = false, includeBackground: Bool = true) throws -> Data {
         let operation = isExport ? "export" : "save"
         Log.fileOperation("📄 Generating PDF data from document for \(operation) (CMYK: \(useCMYK), Text: \(textRenderingMode.displayName))", level: .info)
 
@@ -101,14 +101,14 @@ extension FileOperations {
         pdfContext.translateBy(x: 0, y: documentSize.height)
         pdfContext.scaleBy(x: 1.0, y: -1.0)
 
-        // Set background color from document settings
-        if document.settings.backgroundColor != .clear {
+        // Set background color from document settings only if includeBackground is true
+        if includeBackground && document.settings.backgroundColor != .clear {
             pdfContext.setFillColor(document.settings.backgroundColor.cgColor)
             pdfContext.fill(mediaBox)
         }
 
         // Render document content with clipping path support
-        try renderDocumentToPDFWithClipping(document: document, context: pdfContext, isExport: isExport, useCMYK: useCMYK, textRenderingMode: textRenderingMode)
+        try renderDocumentToPDFWithClipping(document: document, context: pdfContext, isExport: isExport, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeBackground: includeBackground)
 
         // End PDF document
         pdfContext.endPDFPage()
@@ -119,7 +119,7 @@ extension FileOperations {
     }
 
     /// Render VectorDocument to PDF context with clipping path support
-    static func renderDocumentToPDFWithClipping(document: VectorDocument, context: CGContext, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs) throws {
+    static func renderDocumentToPDFWithClipping(document: VectorDocument, context: CGContext, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, includeBackground: Bool = true) throws {
         Log.fileOperation("🎨 Rendering document to PDF context with clipping support", level: .info)
 
         // Save graphics state
@@ -163,6 +163,12 @@ extension FileOperations {
             // Render shapes in layer using unified objects
             let shapesInLayer = document.getShapesForLayer(index)
             for shape in shapesInLayer where shape.isVisible {
+                // Skip Canvas Background if not including background
+                if !includeBackground && shape.name == "Canvas Background" {
+                    Log.fileOperation("📋 PDF EXPORT: Skipping Canvas Background (includeBackground=false)", level: .debug)
+                    continue
+                }
+
                 // Skip if already rendered as part of a clipping group
                 guard !renderedShapeIds.contains(shape.id) else { continue }
 

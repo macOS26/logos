@@ -577,13 +577,13 @@ class DocumentState: ObservableObject {
             let useCMYK = cmykCheckbox.state == .on
             let convertTextToOutlines = textToOutlinesCheckbox.state == .on
             let includeInkpenData = includeInkpenCheckbox.state == .on
+            let includeBackground = bgCheckbox.state == .on
 
             // Determine text rendering mode (default to glyphs if neither is selected)
             let textRenderingMode: AppState.PDFTextRenderingMode = linesRadio.state == .on ? .lines : .glyphs
 
             // Save preference for next time
             AppState.shared.pdfTextRenderingMode = textRenderingMode
-            // TODO: Update generatePDFData to support includeBackground parameter using bgCheckbox.state
 
             Task {
                 do {
@@ -602,7 +602,7 @@ class DocumentState: ObservableObject {
                         }
 
                         // Generate PDF with outlined text (text rendering mode doesn't matter for outlines)
-                        pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData)
+                        pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData, includeBackground: includeBackground)
 
                         // Restore original document state
                         await MainActor.run {
@@ -617,7 +617,7 @@ class DocumentState: ObservableObject {
                         }
                     } else {
                         // No text conversion needed, export normally with selected text rendering mode
-                        pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData)
+                        pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData, includeBackground: includeBackground)
                     }
 
                     // Write the PDF data to file
