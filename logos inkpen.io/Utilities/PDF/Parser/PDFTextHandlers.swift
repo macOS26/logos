@@ -500,6 +500,8 @@ extension PDFCommandParser {
         shapes.append(shape)
 
         Log.info("✅ PDF Text: Created text object with '\(currentTextContent.prefix(50))...' at \(position)", category: .general)
+        Log.info("   Text bounds: \(shape.bounds), areaSize: \(shape.areaSize ?? .zero)", category: .general)
+        Log.info("   Shape ID: \(shape.id), isTextObject: \(shape.isTextObject)", category: .general)
     }
 }
 

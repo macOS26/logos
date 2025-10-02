@@ -144,6 +144,12 @@ extension FileOperations {
             }
 
             // Add shape to unified system (layer index 2 for working layer)
+            if importedShape.isTextObject {
+                Log.info("📝 PDF Import: Adding text shape '\(importedShape.name)' to layer 2", category: .general)
+                Log.info("   Text content: '\((importedShape.textContent ?? "").prefix(30))'", category: .general)
+                Log.info("   Position: \(importedShape.textPosition ?? .zero)", category: .general)
+                Log.info("   Bounds: \(importedShape.bounds), Area: \(importedShape.areaSize ?? .zero)", category: .general)
+            }
             document.addShapeToUnifiedSystem(importedShape, layerIndex: 2)
         }
 
