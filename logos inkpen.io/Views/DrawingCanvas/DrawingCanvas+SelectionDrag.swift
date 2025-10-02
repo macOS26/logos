@@ -30,6 +30,21 @@ extension DrawingCanvas {
             }
         }
         
+        // PERFORMANCE: Cache selection bounds at start of drag to avoid recalculation
+        var combinedBounds: CGRect?
+        for unifiedObject in selectedObjects {
+            switch unifiedObject.objectType {
+            case .shape(let shape):
+                let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+                if let existing = combinedBounds {
+                    combinedBounds = existing.union(bounds)
+                } else {
+                    combinedBounds = bounds
+                }
+            }
+        }
+        document.cachedSelectionBounds = combinedBounds
+        
         // PROFESSIONAL OBJECT DRAGGING: Save initial positions AND transforms
         // This matches the precision approach used by the hand tool
         initialObjectPositions.removeAll()
@@ -182,6 +197,7 @@ extension DrawingCanvas {
             initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
             currentDragDelta = .zero
+            document.cachedSelectionBounds = nil // Clear cached bounds
             // Removed excessive logging during drag operations
             return
         }
@@ -251,8 +267,12 @@ extension DrawingCanvas {
             currentDragDelta = .zero
             document.currentDragOffset = .zero
             document.dragPreviewCoordinates = .zero
+            document.cachedSelectionBounds = nil // Clear cached bounds
             
             // Selection drag completed - reduced logging for performance
+        } else {
+            // Even if drag was cancelled, clear cached bounds
+            document.cachedSelectionBounds = nil
         }
     }
     

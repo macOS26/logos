@@ -266,7 +266,10 @@ struct TransformationControls: View {
 
     // PERFORMANCE OPTIMIZATION: New function to update only X,Y positions during drag
     private func updatePositionOnly() {
-        guard let bounds = getSelectionBounds() else {
+        // PERFORMANCE: Use cached bounds if available during drag
+        let bounds = document.cachedSelectionBounds ?? getSelectionBounds()
+        
+        guard let bounds = bounds else {
             xValue = ""
             yValue = ""
             return

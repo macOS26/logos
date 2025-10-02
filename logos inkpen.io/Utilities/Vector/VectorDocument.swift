@@ -170,6 +170,7 @@ class VectorDocument: ObservableObject, Codable {
     @Published var transformOrigin: TransformOrigin = .center // 9-point transform origin for ALL transforms
     @Published var objectPositionUpdateTrigger: Bool = false // Triggers transform panel updates after object movement
     @Published var currentDragOffset: CGPoint = .zero // Current drag delta for transform panel to show live updates
+    @Published var cachedSelectionBounds: CGRect? = nil // PERFORMANCE: Cache selection bounds during drag to avoid recalculation
     @Published var dragPreviewCoordinates: CGPoint = .zero // Live preview coordinates for two-way binding
     @Published var scalePreviewDimensions: CGSize = .zero // Live preview W/H for scaling operations
     @Published var warpEnvelopeCorners: [UUID: [CGPoint]] = [:] // Store warp envelope corners per shape
@@ -724,6 +725,7 @@ class VectorDocument: ObservableObject, Codable {
         transformOrigin = .center
         objectPositionUpdateTrigger = false
         currentDragOffset = .zero
+        cachedSelectionBounds = nil
         dragPreviewCoordinates = .zero
         scalePreviewDimensions = .zero
         warpEnvelopeCorners = [:]

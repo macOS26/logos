@@ -77,9 +77,8 @@ extension VectorObject: Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        // Debug: Print all keys available
-        Log.info("🔍 DECODE DEBUG: Available keys in VectorObject container: \(container.allKeys.map { $0.stringValue })", category: .debug)
-
+        // Removed noisy debug logs that were triggered during normal undo/redo operations
+        
         id = try container.decode(UUID.self, forKey: .id)
         orderID = try container.decode(Int.self, forKey: .orderID)
         layerIndex = try container.decode(Int.self, forKey: .layerIndex)
@@ -87,16 +86,14 @@ extension VectorObject: Codable {
         // Decode objectType with detailed error handling
         do {
             let objectContainer = try container.nestedContainer(keyedBy: ObjectTypeCodingKeys.self, forKey: .objectType)
-            Log.info("🔍 DECODE DEBUG: Available keys in objectType container: \(objectContainer.allKeys.map { $0.stringValue })", category: .debug)
-
+            
             // Try to decode shape with more detailed error catching
             do {
                 let shape = try objectContainer.decode(VectorShape.self, forKey: .shape)
                 objectType = .shape(shape)
-                Log.info("✅ DECODE DEBUG: Successfully decoded VectorShape", category: .debug)
             } catch let shapeError {
-                Log.error("❌ DECODE DEBUG: Failed to decode VectorShape - Error: \(shapeError)", category: .error)
-                Log.error("❌ DECODE DEBUG: Error type: \(type(of: shapeError))", category: .error)
+                // Only log actual errors, not normal decode operations
+                Log.error("❌ Failed to decode VectorShape - Error: \(shapeError)", category: .error)
                 if let decodingError = shapeError as? DecodingError {
                     switch decodingError {
                     case .typeMismatch(let type, let context):
@@ -114,7 +111,7 @@ extension VectorObject: Codable {
                 throw shapeError
             }
         } catch {
-            Log.error("❌ DECODE DEBUG: Failed to get nested container for objectType - Error: \(error)", category: .error)
+            Log.error("❌ Failed to get nested container for objectType - Error: \(error)", category: .error)
             throw DecodingError.dataCorrupted(DecodingError.Context(
                 codingPath: decoder.codingPath,
                 debugDescription: "Unable to decode VectorObject.objectType - \(error.localizedDescription)"
