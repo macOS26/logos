@@ -27,7 +27,7 @@ extension FileOperations {
 
         // Create auxiliary dictionary for PDF options
         // CRITICAL: Enforce PDF 1.7 to prevent macOS defaulting to PDF 1.3
-        let auxiliaryDict: [String: Any] = [
+        var auxiliaryDict: [String: Any] = [
             // Metadata
             kCGPDFContextCreator as String: "Inkpen.io",
             kCGPDFContextAuthor as String: NSFullUserName(),
@@ -37,7 +37,20 @@ extension FileOperations {
             kCGPDFContextKeywords as String: "vector, graphics, illustration"
         ]
 
-        // We'll embed inkpen data directly in the PDF content instead of metadata
+        // Add inkpen data to info dictionary if requested
+        if includeInkpenData {
+            do {
+                // Export document to JSON data
+                let inkpenData = try exportToJSONData(document)
+                // Convert to base64
+                let base64String = inkpenData.base64EncodedString()
+                // Use kCGPDFXInfo for extended PDF information - this won't be overwritten
+                auxiliaryDict[kCGPDFXInfo as String] = base64String
+                Log.info("📦 Embedded inkpen document in PDF XInfo metadata (\(base64String.count) chars)", category: .fileOperations)
+            } catch {
+                Log.error("⚠️ Failed to embed inkpen data: \(error)", category: .error)
+            }
+        }
 
         let auxiliaryInfo = auxiliaryDict as CFDictionary
 
@@ -77,50 +90,6 @@ extension FileOperations {
 
         // Render document content with clipping path support
         try renderDocumentToPDFWithClipping(document: document, context: pdfContext, isExport: isExport, useCMYK: useCMYK, textRenderingMode: textRenderingMode)
-
-        // Embed inkpen document data if requested (similar to SVG metadata approach)
-        if includeInkpenData {
-            do {
-                // Export document to JSON data
-                let inkpenData = try exportToJSONData(document)
-                // Convert to base64
-                let base64String = inkpenData.base64EncodedString()
-
-                // Add inkpen data as invisible text annotation
-                // Place it outside the visible area with zero opacity
-                pdfContext.saveGState()
-
-                // Move to a position outside the page bounds
-                pdfContext.translateBy(x: 0, y: -100)
-
-                // Set text rendering mode to invisible (3 = neither fill nor stroke)
-                pdfContext.setTextDrawingMode(.invisible)
-
-                // Add marker and data as text
-                let inkpenMarker = "INKPEN_METADATA_START"
-                let inkpenEnd = "INKPEN_METADATA_END"
-                let fullData = "\(inkpenMarker)\n\(base64String)\n\(inkpenEnd)"
-
-                // Draw the text (it will be invisible)
-                let attributes: [NSAttributedString.Key: Any] = [
-                    .font: NSFont.systemFont(ofSize: 1),
-                    .foregroundColor: NSColor.clear
-                ]
-
-                let attrString = NSAttributedString(string: fullData, attributes: attributes)
-                let line = CTLineCreateWithAttributedString(attrString)
-
-                pdfContext.textPosition = CGPoint(x: 0, y: 0)
-                CTLineDraw(line, pdfContext)
-
-                pdfContext.restoreGState()
-
-                Log.info("📦 Embedded inkpen document in PDF content (\(base64String.count) chars)", category: .fileOperations)
-            } catch {
-                Log.error("⚠️ Failed to embed inkpen data: \(error)", category: .error)
-                // Continue without embedding
-            }
-        }
 
         // End PDF document
         pdfContext.endPDFPage()
