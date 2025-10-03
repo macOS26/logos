@@ -69,9 +69,14 @@ extension PDFCommandParser {
 
             Log.info("PDF Text: Set font '\(fontName)' size \(fontSize) (Tf)", category: .general)
 
-            // Try to resolve actual font from resources
-            if let resolvedFont = resolveFontFromResources(fontName) {
+            // Try to resolve actual font from resources and get font dictionary
+            if let (resolvedFont, fontDict) = resolveFontFromResourcesWithDict(fontName) {
                 currentFontName = resolvedFont
+                currentFontDict = fontDict
+                Log.info("   Resolved to: '\(resolvedFont)'", category: .general)
+            } else if let resolvedFont = resolveFontFromResources(fontName) {
+                currentFontName = resolvedFont
+                currentFontDict = nil
                 Log.info("   Resolved to: '\(resolvedFont)'", category: .general)
             }
         } else {
@@ -352,8 +357,27 @@ extension PDFCommandParser {
 
     /// Extract text from PDF string
     private func extractTextFromPDFString(_ pdfString: CGPDFStringRef) -> String {
+        // PRIORITY: Try manual ToUnicode CMap first if font dictionary is available
+        // This handles cases where CGPDFStringCopyTextString doesn't properly decode ligatures
+        if let fontDict = currentFontDict {
+            if let decodedText = decodeTextUsingToUnicode(pdfString, fontDict: fontDict) {
+                Log.info("   Decoded using ToUnicode CMap: '\(decodedText)'", category: .general)
+                return decodedText
+            }
+        }
+
+        // Fallback: try using CGPDFStringCopyTextString which should handle ToUnicode CMap
+        // This is usually reliable but may not handle all custom encodings
         if let cfString = CGPDFStringCopyTextString(pdfString) {
-            return cfString as String
+            let result = cfString as String
+
+            // Log if we found any ligatures or special characters
+            if result.contains("\u{FB00}") || result.contains("\u{FB01}") ||
+               result.contains("\u{FB02}") || result.contains("\u{FB03}") || result.contains("\u{FB04}") {
+                Log.info("   Found ligature in text: '\(result)'", category: .general)
+            }
+
+            return result
         }
 
         // Fallback to raw bytes - get pointer to bytes
@@ -372,9 +396,150 @@ extension PDFCommandParser {
                     return text
                 }
             }
+
+            // Last resort: log the raw bytes for debugging
+            Log.warning("   Could not decode text, raw bytes: \(data.map { String(format: "%02X", $0) }.joined(separator: " "))", category: .general)
         }
 
         return ""
+    }
+
+    /// Decode text using ToUnicode CMap from font dictionary
+    private func decodeTextUsingToUnicode(_ pdfString: CGPDFStringRef, fontDict: CGPDFDictionaryRef) -> String? {
+        // Get ToUnicode CMap stream
+        var toUnicodeStream: CGPDFStreamRef?
+        guard CGPDFDictionaryGetStream(fontDict, "ToUnicode", &toUnicodeStream),
+              let toUnicodeStream = toUnicodeStream else {
+            return nil
+        }
+
+        // Get the stream format and data
+        var format = CGPDFDataFormat.raw
+        guard let streamData = CGPDFStreamCopyData(toUnicodeStream, &format) as Data? else {
+            return nil
+        }
+
+        // Parse the CMap to build character code to Unicode mapping
+        // CMaps are PostScript-like text files
+        guard let cmapString = String(data: streamData, encoding: .utf8) ??
+                               String(data: streamData, encoding: .ascii) else {
+            return nil
+        }
+
+        // Build a mapping from character codes to Unicode strings
+        let codeToUnicode = parseCMap(cmapString)
+
+        // Now decode the PDF string using this mapping
+        let length = CGPDFStringGetLength(pdfString)
+        guard length > 0, let bytes = CGPDFStringGetBytePtr(pdfString) else {
+            return nil
+        }
+
+        var result = ""
+        for i in 0..<length {
+            let charCode = UInt16(bytes[i])
+            if let unicodeString = codeToUnicode[charCode] {
+                result += unicodeString
+            } else {
+                // Fallback: use the character code as-is
+                result += String(UnicodeScalar(UInt8(charCode)))
+            }
+        }
+
+        return result.isEmpty ? nil : result
+    }
+
+    /// Parse a CMap string to extract character code to Unicode mappings
+    private func parseCMap(_ cmapString: String) -> [UInt16: String] {
+        var mapping: [UInt16: String] = [:]
+
+        // Look for bfchar mappings: <charcode> <unicode>
+        // Example: <21> <FB00>  maps code 0x21 to Unicode ligature ff (U+FB00)
+        let bfcharPattern = "<([0-9A-Fa-f]+)>\\s*<([0-9A-Fa-f]+)>"
+        if let regex = try? NSRegularExpression(pattern: bfcharPattern, options: []) {
+            let range = NSRange(cmapString.startIndex..., in: cmapString)
+            regex.enumerateMatches(in: cmapString, options: [], range: range) { match, _, _ in
+                guard let match = match,
+                      match.numberOfRanges == 3,
+                      let charCodeRange = Range(match.range(at: 1), in: cmapString),
+                      let unicodeRange = Range(match.range(at: 2), in: cmapString) else {
+                    return
+                }
+
+                let charCodeHex = String(cmapString[charCodeRange])
+                let unicodeHex = String(cmapString[unicodeRange])
+
+                if let charCode = UInt16(charCodeHex, radix: 16) {
+                    // Convert Unicode hex to string
+                    // Handle multi-character Unicode sequences (like "006600 66" for "ff")
+                    var unicodeString = ""
+                    let hexChars = Array(unicodeHex)
+                    for i in stride(from: 0, to: hexChars.count, by: 4) {
+                        if i + 4 <= hexChars.count {
+                            let hexValue = String(hexChars[i..<min(i+4, hexChars.count)])
+                            if let scalar = UInt32(hexValue, radix: 16),
+                               let unicodeScalar = UnicodeScalar(scalar) {
+                                unicodeString.append(Character(unicodeScalar))
+                            }
+                        }
+                    }
+
+                    if !unicodeString.isEmpty {
+                        mapping[charCode] = unicodeString
+                    }
+                }
+            }
+        }
+
+        // Look for bfrange mappings: <start> <end> <unicode>
+        // Example: <21><21><FB00>  maps code 0x21 to Unicode ligature ff (U+FB00)
+        let bfrangePattern = "<([0-9A-Fa-f]+)>\\s*<([0-9A-Fa-f]+)>\\s*<([0-9A-Fa-f]+)>"
+        if let regex = try? NSRegularExpression(pattern: bfrangePattern, options: []) {
+            let range = NSRange(cmapString.startIndex..., in: cmapString)
+            regex.enumerateMatches(in: cmapString, options: [], range: range) { match, _, _ in
+                guard let match = match,
+                      match.numberOfRanges == 4,
+                      let startCodeRange = Range(match.range(at: 1), in: cmapString),
+                      let endCodeRange = Range(match.range(at: 2), in: cmapString),
+                      let unicodeRange = Range(match.range(at: 3), in: cmapString) else {
+                    return
+                }
+
+                let startCodeHex = String(cmapString[startCodeRange])
+                let endCodeHex = String(cmapString[endCodeRange])
+                let unicodeHex = String(cmapString[unicodeRange])
+
+                if let startCode = UInt16(startCodeHex, radix: 16),
+                   let endCode = UInt16(endCodeHex, radix: 16),
+                   let baseUnicode = UInt32(unicodeHex, radix: 16) {
+
+                    // Map each character code in the range
+                    for charCode in startCode...endCode {
+                        let unicodeValue = baseUnicode + UInt32(charCode - startCode)
+
+                        // Convert Unicode value to string
+                        var unicodeString = ""
+                        let hexChars = String(format: "%04X", unicodeValue)
+                        for i in stride(from: 0, to: hexChars.count, by: 4) {
+                            let startIdx = hexChars.index(hexChars.startIndex, offsetBy: i)
+                            let endIdx = hexChars.index(startIdx, offsetBy: min(4, hexChars.count - i))
+                            let hexValue = String(hexChars[startIdx..<endIdx])
+                            if let scalar = UInt32(hexValue, radix: 16),
+                               let unicodeScalar = UnicodeScalar(scalar) {
+                                unicodeString.append(Character(unicodeScalar))
+                            }
+                        }
+
+                        if !unicodeString.isEmpty {
+                            mapping[charCode] = unicodeString
+                            Log.info("   CMap: Code 0x\(String(charCode, radix: 16)) → '\(unicodeString)' (U+\(String(unicodeValue, radix: 16).uppercased()))", category: .general)
+                        }
+                    }
+                }
+            }
+        }
+
+        return mapping
     }
 
     /// Resolve font name from PDF resources
@@ -401,6 +566,39 @@ extension PDFCommandParser {
                         return mapPDFFontToSystem(cleanName)
                     }
                     return mapPDFFontToSystem(fontName)
+                }
+            }
+        }
+
+        return nil
+    }
+
+    /// Resolve font name and dictionary from PDF resources
+    private func resolveFontFromResourcesWithDict(_ resourceName: String) -> (String, CGPDFDictionaryRef)? {
+        guard let resources = pageResourcesDict else { return nil }
+
+        var fontDict: CGPDFDictionaryRef?
+        if CGPDFDictionaryGetDictionary(resources, "Font", &fontDict),
+           let fontDict = fontDict {
+
+            var fontRef: CGPDFDictionaryRef?
+            if CGPDFDictionaryGetDictionary(fontDict, resourceName, &fontRef),
+               let fontRef = fontRef {
+
+                // Try to get BaseFont name
+                var baseFontName: UnsafePointer<CChar>?
+                if CGPDFDictionaryGetName(fontRef, "BaseFont", &baseFontName),
+                   let baseFontName = baseFontName {
+                    let fontName = String(cString: baseFontName)
+
+                    // Clean up font name (remove subset prefix like "ABCDEF+")
+                    let cleanName: String
+                    if let plusIndex = fontName.firstIndex(of: "+") {
+                        cleanName = String(fontName[fontName.index(after: plusIndex)...])
+                    } else {
+                        cleanName = fontName
+                    }
+                    return (mapPDFFontToSystem(cleanName), fontRef)
                 }
             }
         }

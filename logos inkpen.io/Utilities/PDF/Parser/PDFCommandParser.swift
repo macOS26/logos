@@ -90,6 +90,9 @@ class PDFCommandParser {
     var currentTextStartPosition: CGPoint = .zero  // Starting position of text object
     var pendingTextShapes: [VectorShape] = []  // Text shapes waiting to be added
 
+    // Font encoding support for ligatures and custom encodings
+    var currentFontDict: CGPDFDictionaryRef? = nil  // Current font dictionary for ToUnicode CMap
+
     func parseDocument(at url: URL) -> [VectorShape] {
         commands.removeAll()
         shapes.removeAll()
