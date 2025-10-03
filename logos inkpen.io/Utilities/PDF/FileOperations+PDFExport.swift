@@ -753,7 +753,16 @@ extension FileOperations {
             let lineRange = NSRange(location: lineRange.location, length: lineRange.length)
             let lineString = (vectorText.content as NSString).substring(with: lineRange)
             let lineAttribString = NSAttributedString(string: lineString, attributes: renderingAttributes)
-            let line = CTLineCreateWithAttributedString(lineAttribString)
+            var line = CTLineCreateWithAttributedString(lineAttribString)
+
+            // CRITICAL FIX: Create justified line if needed
+            if vectorText.typography.alignment.nsTextAlignment == .justified {
+                // CTLine needs explicit justification using CTLineCreateJustifiedLine
+                // Use lineUsedRect.width as the target width for justification
+                if let justifiedLine = CTLineCreateJustifiedLine(line, 1.0, lineUsedRect.width) {
+                    line = justifiedLine
+                }
+            }
 
             // Get baseline offset from first glyph in line (needed for Y position AND X offset)
             let firstGlyphIndex = lineRange.location
