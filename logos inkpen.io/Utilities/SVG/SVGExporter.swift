@@ -418,12 +418,37 @@ class SVGExporter {
                 // Get text for this line
                 let lineString = (vectorText.content as NSString).substring(with: lineRange)
 
-                // Split into words (keeping whitespace info)
+                // Split into words WITH special characters
+                // We need to capture everything between whitespace, not just alphanumeric words
                 var words: [(word: String, range: NSRange)] = []
-                lineString.enumerateSubstrings(in: lineString.startIndex..<lineString.endIndex, options: .byWords) { (substring, substringRange, _, _) in
-                    guard let word = substring else { return }
-                    let nsRange = NSRange(substringRange, in: lineString)
-                    let absoluteRange = NSRange(location: lineRange.location + nsRange.location, length: nsRange.length)
+                var currentWordStart = 0
+                var inWord = false
+
+                for i in 0..<lineString.count {
+                    let char = (lineString as NSString).character(at: i)
+                    let isWhitespace = CharacterSet.whitespaces.contains(UnicodeScalar(char)!)
+
+                    if !isWhitespace && !inWord {
+                        // Start of a new word
+                        currentWordStart = i
+                        inWord = true
+                    } else if isWhitespace && inWord {
+                        // End of current word
+                        let wordLength = i - currentWordStart
+                        let wordRange = NSRange(location: currentWordStart, length: wordLength)
+                        let word = (lineString as NSString).substring(with: wordRange)
+                        let absoluteRange = NSRange(location: lineRange.location + wordRange.location, length: wordRange.length)
+                        words.append((word: word, range: absoluteRange))
+                        inWord = false
+                    }
+                }
+
+                // Handle last word if line doesn't end with whitespace
+                if inWord {
+                    let wordLength = lineString.count - currentWordStart
+                    let wordRange = NSRange(location: currentWordStart, length: wordLength)
+                    let word = (lineString as NSString).substring(with: wordRange)
+                    let absoluteRange = NSRange(location: lineRange.location + wordRange.location, length: wordRange.length)
                     words.append((word: word, range: absoluteRange))
                 }
 
