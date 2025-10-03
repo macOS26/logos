@@ -350,6 +350,9 @@ class DocumentState: ObservableObject {
         linesRadio.target = svgHandler
         linesRadio.action = #selector(ExportTextOptionsHandler.selectLines(_:))
 
+        // Keep handler alive
+        objc_setAssociatedObject(accessoryView, "textOptionsHandler", svgHandler, .OBJC_ASSOCIATION_RETAIN)
+
         // Set initial visibility
         let shouldHideTextOptions = textToOutlinesCheckbox.state == .on
         textModeLabel.isHidden = shouldHideTextOptions
@@ -847,6 +850,9 @@ class DocumentState: ObservableObject {
 
         linesRadio.target = autodeskHandler
         linesRadio.action = #selector(ExportTextOptionsHandler.selectLines(_:))
+
+        // Keep handler alive
+        objc_setAssociatedObject(accessoryView, "textOptionsHandler", autodeskHandler, .OBJC_ASSOCIATION_RETAIN)
 
         // Set initial visibility
         let shouldHideTextOptions = textToOutlinesCheckbox.state == .on
