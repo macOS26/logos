@@ -135,10 +135,8 @@ struct DocumentBasedMainView: View {
         }
         .onChange(of: fileURL) { oldURL, newURL in
             // When DocumentGroup completes Save As, the fileURL updates.
-            // Generate the custom icon and SVG sidecar preview at that path.
             guard let url = newURL else { return }
             currentDocumentURL = url
-            DocumentIconGenerator.shared.setCustomIcon(for: url, document: document)
         }
         .fileImporter(
             isPresented: $showingImportDialog,
