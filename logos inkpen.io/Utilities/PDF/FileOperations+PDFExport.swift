@@ -753,27 +753,25 @@ extension FileOperations {
             let lineAttribString = NSAttributedString(string: lineString, attributes: renderingAttributes)
             let line = CTLineCreateWithAttributedString(lineAttribString)
 
-            // CRITICAL FIX: Use lineRect for ALL alignments since NSLayoutManager already calculated alignment
-            // NSLayoutManager positions lineRect based on the alignment setting in paragraphStyle
-            // For left: lineRect.origin.x = 0
-            // For center: lineRect.origin.x = (container.width - line.width) / 2
-            // For right: lineRect.origin.x = container.width - line.width
+            // Get baseline offset from first glyph in line (needed for Y position AND X offset)
+            let firstGlyphIndex = lineRange.location
+            let glyphLocation = layoutManager.location(forGlyphAt: firstGlyphIndex)
+
+            // CRITICAL FIX: NSLayoutManager stores alignment offset in glyphLocation.x, NOT lineRect.origin.x
+            // This is the EXACT same logic as the glyph method (lines 530-540)
             let lineX: CGFloat
             switch vectorText.typography.alignment.nsTextAlignment {
             case .left, .justified:
                 // For left and justified: use lineUsedRect for precise start position
-                lineX = vectorText.position.x + lineUsedRect.origin.x
+                lineX = vectorText.position.x + lineUsedRect.origin.x + glyphLocation.x
             case .center, .right:
-                // CRITICAL FIX: For center and right, use lineRect since it contains the alignment offset
-                lineX = vectorText.position.x + lineRect.origin.x
+                // CRITICAL FIX: Use lineRect + glyphLocation (same as glyph method!)
+                // glyphLocation.x contains the alignment offset for center/right
+                lineX = vectorText.position.x + lineRect.origin.x + glyphLocation.x
             default:
                 // Fallback to left alignment behavior
-                lineX = vectorText.position.x + lineUsedRect.origin.x
+                lineX = vectorText.position.x + lineUsedRect.origin.x + glyphLocation.x
             }
-
-            // Get baseline offset from first glyph in line (SAME AS GLYPH METHOD)
-            let firstGlyphIndex = lineRange.location
-            let glyphLocation = layoutManager.location(forGlyphAt: firstGlyphIndex)
             let lineY = vectorText.position.y + lineRect.origin.y + glyphLocation.y
 
             // Draw the line
