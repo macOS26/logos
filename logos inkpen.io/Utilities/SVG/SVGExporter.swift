@@ -417,20 +417,21 @@ class SVGExporter {
             let lineString = (vectorText.content as NSString).substring(with: lineRange)
             let escapedLine = self.escapeXML(lineString)
 
-            // Calculate line position based on alignment
+            // Get baseline offset from first glyph in line (needed for Y position AND X offset)
+            let firstGlyphIndex = lineRange.location
+            let glyphLocation = layoutManager.location(forGlyphAt: firstGlyphIndex)
+
+            // CRITICAL FIX: NSLayoutManager stores alignment offset in glyphLocation.x (SAME AS PDF)
             let lineX: CGFloat
             switch vectorText.typography.alignment.nsTextAlignment {
             case .left, .justified:
-                lineX = vectorText.position.x + lineUsedRect.origin.x
+                lineX = vectorText.position.x + lineUsedRect.origin.x + glyphLocation.x
             case .center, .right:
-                lineX = vectorText.position.x + lineRect.origin.x
+                lineX = vectorText.position.x + lineRect.origin.x + glyphLocation.x
             default:
-                lineX = vectorText.position.x + lineUsedRect.origin.x
+                lineX = vectorText.position.x + lineUsedRect.origin.x + glyphLocation.x
             }
 
-            // Get baseline offset from first glyph in line (SAME AS PDF)
-            let firstGlyphIndex = lineRange.location
-            let glyphLocation = layoutManager.location(forGlyphAt: firstGlyphIndex)
             let lineY = vectorText.position.y + lineRect.origin.y + glyphLocation.y
 
             // Apply DPI scaling
