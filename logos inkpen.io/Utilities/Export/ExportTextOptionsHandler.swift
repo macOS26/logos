@@ -154,8 +154,7 @@ struct ExportTextRenderingUI {
     ) -> NSButton {
         let radio = NSButton(radioButtonWithTitle: "Individual Glyphs (most accurate)", target: nil, action: nil)
         radio.frame = NSRect(x: 60, y: y, width: 300, height: 18)
-        radio.setButtonType(.radio)  // Explicitly set button type
-        radio.allowsMixedState = false  // Prevent mixed state
+        // NOTE: Don't call setButtonType(.radio) - radioButtonWithTitle already sets it
 
         // Check the current mode
         if let svgMode = mode as? AppState.SVGTextRenderingMode {
@@ -173,8 +172,7 @@ struct ExportTextRenderingUI {
     ) -> NSButton {
         let radio = NSButton(radioButtonWithTitle: "By Lines (faster)", target: nil, action: nil)
         radio.frame = NSRect(x: 60, y: y, width: 300, height: 18)
-        radio.setButtonType(.radio)  // Explicitly set button type
-        radio.allowsMixedState = false  // Prevent mixed state
+        // NOTE: Don't call setButtonType(.radio) - radioButtonWithTitle already sets it
 
         // Check the current mode
         if let svgMode = mode as? AppState.SVGTextRenderingMode {
