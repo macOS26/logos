@@ -312,11 +312,15 @@ class DocumentState: ObservableObject {
         // Radio buttons for text rendering modes
         let glyphsRadio = NSButton(radioButtonWithTitle: "Individual Glyphs (most accurate)", target: nil, action: nil)
         glyphsRadio.frame = NSRect(x: 60, y: 100, width: 300, height: 18)
+        glyphsRadio.setButtonType(.radio)  // Explicitly set button type
+        glyphsRadio.allowsMixedState = false  // Prevent mixed state
         glyphsRadio.state = AppState.shared.svgTextRenderingMode == .glyphs ? .on : .off
         accessoryView.addSubview(glyphsRadio)
 
         let linesRadio = NSButton(radioButtonWithTitle: "By Lines (faster)", target: nil, action: nil)
         linesRadio.frame = NSRect(x: 60, y: 80, width: 300, height: 18)
+        linesRadio.setButtonType(.radio)  // Explicitly set button type
+        linesRadio.allowsMixedState = false  // Prevent mixed state
         linesRadio.state = AppState.shared.svgTextRenderingMode == .lines ? .on : .off
         accessoryView.addSubview(linesRadio)
 
@@ -442,11 +446,15 @@ class DocumentState: ObservableObject {
         // Radio buttons for text rendering modes
         let glyphsRadio = NSButton(radioButtonWithTitle: "Individual Glyphs (most accurate)", target: nil, action: nil)
         glyphsRadio.frame = NSRect(x: 60, y: 140, width: 300, height: 18)
+        glyphsRadio.setButtonType(.radio)  // Explicitly set button type
+        glyphsRadio.allowsMixedState = false  // Prevent mixed state
         glyphsRadio.state = AppState.shared.pdfTextRenderingMode == .glyphs ? .on : .off
         accessoryView.addSubview(glyphsRadio)
 
         let linesRadio = NSButton(radioButtonWithTitle: "By Lines (faster)", target: nil, action: nil)
         linesRadio.frame = NSRect(x: 60, y: 120, width: 300, height: 18)
+        linesRadio.setButtonType(.radio)  // Explicitly set button type
+        linesRadio.allowsMixedState = false  // Prevent mixed state
         linesRadio.state = AppState.shared.pdfTextRenderingMode == .lines ? .on : .off
         accessoryView.addSubview(linesRadio)
 
@@ -815,11 +823,15 @@ class DocumentState: ObservableObject {
         // Radio buttons for text rendering modes
         let glyphsRadio = NSButton(radioButtonWithTitle: "Individual Glyphs (most accurate)", target: nil, action: nil)
         glyphsRadio.frame = NSRect(x: 60, y: 70, width: 300, height: 18)
+        glyphsRadio.setButtonType(.radio)  // Explicitly set button type
+        glyphsRadio.allowsMixedState = false  // Prevent mixed state
         glyphsRadio.state = AppState.shared.svgTextRenderingMode == .glyphs ? .on : .off
         accessoryView.addSubview(glyphsRadio)
 
         let linesRadio = NSButton(radioButtonWithTitle: "By Lines (faster)", target: nil, action: nil)
         linesRadio.frame = NSRect(x: 60, y: 50, width: 300, height: 18)
+        linesRadio.setButtonType(.radio)  // Explicitly set button type
+        linesRadio.allowsMixedState = false  // Prevent mixed state
         linesRadio.state = AppState.shared.svgTextRenderingMode == .lines ? .on : .off
         accessoryView.addSubview(linesRadio)
 
