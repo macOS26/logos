@@ -423,8 +423,18 @@ class SVGExporter {
                 let textBoxWidth = vectorText.areaSize?.width ?? vectorText.bounds.width
                 let isActuallyJustified = abs(lineUsedRect.width - textBoxWidth) < 1.0
 
-                // If line is not actually justified, use glyph-by-glyph rendering for accuracy
-                if !isActuallyJustified {
+                // Check if this is a single-word line
+                let wordCount = lineString.components(separatedBy: .whitespaces).filter { !$0.isEmpty }.count
+                let isSingleWord = wordCount == 1
+
+                // Check if this is the last line (to distinguish from single-word mid-paragraph lines)
+                let isLastLine = NSMaxRange(lineRange) >= vectorText.content.count ||
+                                 lineRange.location + lineRange.length >= vectorText.content.count
+
+                // Use glyph-by-glyph rendering for:
+                // 1. Lines that are not fully justified (like last lines)
+                // 2. Single-word lines that are NOT the last line (newspaper-style justified text)
+                if !isActuallyJustified || (isSingleWord && !isLastLine) {
                     // Render glyphs individually for this non-justified line
                     for glyphIndex in lineRange.location..<NSMaxRange(lineRange) {
                         let glyphLocation = layoutManager.location(forGlyphAt: glyphIndex)
