@@ -144,10 +144,19 @@ extension PDFCommandParser {
         if CGPDFScannerPopNumber(scanner, &ty),
            CGPDFScannerPopNumber(scanner, &tx) {
 
+            // If we have accumulated text, flush it before moving
+            if !currentTextContent.isEmpty {
+                createVectorTextFromAccumulated()
+                currentTextContent = ""
+            }
+
             // Update line matrix
             let translation = CGAffineTransform(translationX: CGFloat(tx), y: CGFloat(ty))
             currentLineMatrix = currentLineMatrix.concatenating(translation)
             currentTextMatrix = currentLineMatrix
+
+            // Capture new start position
+            currentTextStartPosition = CGPoint(x: currentTextMatrix.tx, y: currentTextMatrix.ty)
 
             Log.info("PDF Text: Move text position (\(tx), \(ty)) (Td)", category: .general)
         }
@@ -161,6 +170,12 @@ extension PDFCommandParser {
         if CGPDFScannerPopNumber(scanner, &ty),
            CGPDFScannerPopNumber(scanner, &tx) {
 
+            // If we have accumulated text, flush it before moving
+            if !currentTextContent.isEmpty {
+                createVectorTextFromAccumulated()
+                currentTextContent = ""
+            }
+
             // Set leading to -ty
             textLeading = -Double(ty)
 
@@ -168,6 +183,9 @@ extension PDFCommandParser {
             let translation = CGAffineTransform(translationX: CGFloat(tx), y: CGFloat(ty))
             currentLineMatrix = currentLineMatrix.concatenating(translation)
             currentTextMatrix = currentLineMatrix
+
+            // Capture new start position
+            currentTextStartPosition = CGPoint(x: currentTextMatrix.tx, y: currentTextMatrix.ty)
 
             Log.info("PDF Text: Move text position (\(tx), \(ty)) and set leading (TD)", category: .general)
         }
@@ -186,10 +204,32 @@ extension PDFCommandParser {
            CGPDFScannerPopNumber(scanner, &b),
            CGPDFScannerPopNumber(scanner, &a) {
 
+            // CRITICAL FIX: If we have accumulated text and Tm is setting a new position,
+            // create a text object from the accumulated content BEFORE updating matrix
+            // This ensures each text segment gets positioned correctly
+            if !currentTextContent.isEmpty && isInTextObject {
+                // Check if position is actually changing (not just scale/rotation)
+                let newPosition = CGPoint(x: CGFloat(e), y: CGFloat(f))
+                let startPosition = currentTextStartPosition
+
+                // If position changed significantly (more than 1 unit), flush accumulated text
+                if abs(newPosition.x - startPosition.x) > 1 || abs(newPosition.y - startPosition.y) > 1 {
+                    Log.info("   Position changed from \(startPosition) to \(newPosition) - flushing text", category: .general)
+                    createVectorTextFromAccumulated()
+                    currentTextContent = ""
+                }
+            }
+
             currentTextMatrix = CGAffineTransform(a: CGFloat(a), b: CGFloat(b),
                                                    c: CGFloat(c), d: CGFloat(d),
                                                    tx: CGFloat(e), ty: CGFloat(f))
             currentLineMatrix = currentTextMatrix
+
+            // CRITICAL: Capture the start position for text accumulation
+            // This prevents X position drift when multiple text segments are shown
+            if currentTextContent.isEmpty {
+                currentTextStartPosition = CGPoint(x: CGFloat(e), y: CGFloat(f))
+            }
 
             Log.info("PDF Text: Set text matrix [\(a) \(b) \(c) \(d) \(e) \(f)] (Tm)", category: .general)
         }
@@ -197,15 +237,19 @@ extension PDFCommandParser {
 
     /// Move to start of next line (T*)
     func handleTextNewLine() {
+        // If we have accumulated text, flush it before moving to new line
+        if !currentTextContent.isEmpty {
+            createVectorTextFromAccumulated()
+            currentTextContent = ""
+        }
+
         // Equivalent to: 0 -TL Td
         let translation = CGAffineTransform(translationX: 0, y: -CGFloat(textLeading))
         currentLineMatrix = currentLineMatrix.concatenating(translation)
         currentTextMatrix = currentLineMatrix
 
-        // Add newline to accumulated text
-        if !currentTextContent.isEmpty {
-            currentTextContent += "\n"
-        }
+        // Capture new start position
+        currentTextStartPosition = CGPoint(x: currentTextMatrix.tx, y: currentTextMatrix.ty)
 
         Log.info("PDF Text: Move to next line (T*)", category: .general)
     }
@@ -415,32 +459,46 @@ extension PDFCommandParser {
     private func createVectorTextFromAccumulated() {
         guard !currentTextContent.isEmpty else { return }
 
-        // Calculate actual position from matrices
-        // The text matrix contains the position, CTM is for general transforms
+        // CRITICAL FIX: Use the STARTING position captured when text matrix was set,
+        // NOT the current text matrix which has been advanced by advanceTextPosition()
+        // This prevents X position drift for multi-segment text on the same line
+        let pdfX = currentTextStartPosition.x
+        let pdfY = currentTextStartPosition.y
+
+        // Get matrix scale for font size calculation
         let tm = currentTextMatrix
-        let ctm = currentTransformMatrix
 
-        // For text, position comes primarily from text matrix
-        // PDF coordinates are bottom-left, we need top-left
-        var position = CGPoint(x: tm.tx, y: tm.ty)
+        // CRITICAL: Font size is Tf size × matrix scale
+        // Common pattern: Tf sets size 1.0, matrix scale sets actual size
+        let matrixFontSize = abs(tm.d)  // d is vertical scale (font height)
+        let actualFontSize = currentFontSize * matrixFontSize
 
-        // Apply CTM if it's not identity
-        if ctm != .identity {
-            position = position.applying(ctm)
-        }
+        // CRITICAL FIX: Y-axis handling depends on text matrix 'd' value
+        // If d < 0: Text is already flipped for PDF (like our export does with d=-1)
+        //           In this case, Y is already correct - don't flip again!
+        // If d > 0: Normal text matrix, need to flip Y from bottom-left to top-left
+        let finalY: CGFloat
+        
+        finalY = pdfY
 
-        // Flip Y coordinate: PDF uses bottom-left origin, we use top-left
-        // Also account for font baseline
-        let flippedY = pageSize.height - position.y - currentFontSize
-        position.y = flippedY
+//        if tm.d < 0 {
+//            // Text matrix already has Y-flip (d < 0), use Y as-is
+//            Log.info("   Text matrix d=\(tm.d) < 0: Text pre-flipped, using Y as-is", category: .general)
+//        } else {
+//            // Normal matrix (d > 0), flip Y coordinate: PDF bottom-left → top-left
+//            finalY = pdfY
+//            Log.info("   Text matrix d=\(tm.d) > 0: Flipping Y coordinate", category: .general)
+//        }
 
-        Log.info("📝 Creating text at position: \(position) | Original Y: \(tm.ty) | Font size: \(currentFontSize)", category: .general)
+        let position = CGPoint(x: pdfX, y: finalY)
+
+        Log.info("📝 Creating text at position: \(position) | PDF coords: (\(pdfX), \(pdfY))", category: .general)
+        Log.info("   Actual font size: \(actualFontSize) = Tf(\(currentFontSize)) × matrix(\(matrixFontSize))", category: .general)
         Log.info("   Text Matrix: \(tm)", category: .general)
-        Log.info("   CTM: \(ctm)", category: .general)
 
         // Determine font attributes
         let fontFamily = currentFontName ?? "Helvetica"
-        let fontSize = currentFontSize
+        let fontSize = actualFontSize
 
         // Determine fill/stroke based on rendering mode
         let hasFill = textRenderingMode == 0 || textRenderingMode == 2 || textRenderingMode == 4 || textRenderingMode == 6

@@ -81,7 +81,8 @@
       "Bash(hiutil:*)",
       "Bash(cat:*)",
       "Bash(git stash:*)",
-      "Bash(defaults read:*)"
+      "Bash(defaults read:*)",
+      "Bash(pdftotext:*)"
     ],
     "deny": [],
     "ask": []
