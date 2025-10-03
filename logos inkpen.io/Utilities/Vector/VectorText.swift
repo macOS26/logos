@@ -390,14 +390,17 @@ struct VectorText: Identifiable, Codable, Hashable {
     static func from(_ vectorShape: VectorShape) -> VectorText? {
         guard vectorShape.isTextObject else { return nil }
 
-        // Check if this shape has PDF import metadata - reconstruct typography from it
+        // CRITICAL FIX: Check for existing typography FIRST to preserve alignment and all properties
         let typography: TypographyProperties
-        if !vectorShape.metadata.isEmpty,
+        if let existingTypography = vectorShape.typography {
+            // Use existing typography if available (preserves alignment!)
+            typography = existingTypography
+        } else if !vectorShape.metadata.isEmpty,
            let fontFamily = vectorShape.metadata["fontFamily"],
            let fontSizeStr = vectorShape.metadata["fontSize"],
            let fontSize = Double(fontSizeStr) {
 
-            // Reconstruct typography from PDF import metadata
+            // Reconstruct typography from PDF import metadata (legacy fallback)
             let letterSpacing = Double(vectorShape.metadata["letterSpacing"] ?? "0") ?? 0
             let lineSpacing = Double(vectorShape.metadata["lineSpacing"] ?? "0") ?? 0
             // Note: wordSpacing is stored but not used in TypographyProperties init
@@ -418,9 +421,6 @@ struct VectorText: Identifiable, Codable, Hashable {
                 fillColor: vectorShape.fillStyle?.color ?? .black,
                 fillOpacity: vectorShape.fillStyle?.opacity ?? 1.0
             )
-        } else if let existingTypography = vectorShape.typography {
-            // Use existing typography if available
-            typography = existingTypography
         } else {
             // Fallback: create from stroke/fill
             typography = TypographyProperties(
