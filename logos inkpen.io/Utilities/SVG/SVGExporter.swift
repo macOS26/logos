@@ -413,72 +413,143 @@ class SVGExporter {
         let glyphRange = layoutManager.glyphRange(for: textContainer)
 
         layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { (lineRect, lineUsedRect, container, lineRange, stop) in
-            // Get text for this line
-            let lineString = (vectorText.content as NSString).substring(with: lineRange)
-            let escapedLine = self.escapeXML(lineString)
+            // CRITICAL: For justified text, export word-by-word to get accurate spacing (SVG doesn't support justification)
+            if vectorText.typography.alignment.nsTextAlignment == .justified {
+                // Get text for this line
+                let lineString = (vectorText.content as NSString).substring(with: lineRange)
 
-            // Get baseline offset from first glyph in line (needed for Y position AND X offset)
-            let firstGlyphIndex = lineRange.location
-            let glyphLocation = layoutManager.location(forGlyphAt: firstGlyphIndex)
-
-            // CRITICAL FIX: NSLayoutManager stores alignment offset in glyphLocation.x (SAME AS PDF)
-            let lineX: CGFloat
-            switch vectorText.typography.alignment.nsTextAlignment {
-            case .left, .justified:
-                lineX = vectorText.position.x + lineUsedRect.origin.x + glyphLocation.x
-            case .center, .right:
-                lineX = vectorText.position.x + lineRect.origin.x + glyphLocation.x
-            default:
-                lineX = vectorText.position.x + lineUsedRect.origin.x + glyphLocation.x
-            }
-
-            let lineY = vectorText.position.y + lineRect.origin.y + glyphLocation.y
-
-            // Apply DPI scaling
-            let x = lineX * dpiScale
-            let y = lineY * dpiScale
-            let fontSize = vectorText.typography.fontSize * dpiScale
-
-            // Export as text element for this line
-            svg += "<text x=\"\(x)\" y=\"\(y)\""
-            svg += " font-family=\"\(vectorText.typography.fontFamily)\""
-            svg += " font-size=\"\(fontSize)\""
-
-            // Add font weight if not regular
-            if vectorText.typography.fontWeight != .regular {
-                let svgWeight = self.getSVGFontWeight(vectorText.typography.fontWeight)
-                svg += " font-weight=\"\(svgWeight)\""
-            }
-
-            // Add font style if italic
-            if vectorText.typography.fontStyle == .italic {
-                svg += " font-style=\"italic\""
-            }
-
-            // CRITICAL FIX: Always use "start" because we're calculating position with glyphLocation.x
-            // glyphLocation.x already contains the alignment offset, so text-anchor would double-apply it
-            svg += " text-anchor=\"start\""
-
-            svg += " fill=\"\(fillColor)\""
-            if fillOpacity != 1.0 {
-                svg += " fill-opacity=\"\(fillOpacity)\""
-            }
-
-            // Add stroke if present
-            if vectorText.typography.hasStroke && vectorText.typography.strokeWidth > 0 {
-                svg += " stroke=\"\(vectorText.typography.strokeColor.svgColor)\""
-                svg += " stroke-width=\"\(vectorText.typography.strokeWidth * dpiScale)\""
-                if vectorText.typography.strokeOpacity != 1.0 {
-                    svg += " stroke-opacity=\"\(vectorText.typography.strokeOpacity)\""
+                // Split into words (keeping whitespace info)
+                var words: [(word: String, range: NSRange)] = []
+                lineString.enumerateSubstrings(in: lineString.startIndex..<lineString.endIndex, options: .byWords) { (substring, substringRange, _, _) in
+                    guard let word = substring else { return }
+                    let nsRange = NSRange(substringRange, in: lineString)
+                    let absoluteRange = NSRange(location: lineRange.location + nsRange.location, length: nsRange.length)
+                    words.append((word: word, range: absoluteRange))
                 }
-            }
 
-            // Add letter spacing if not zero
-            if vectorText.typography.letterSpacing != 0 {
-                svg += " letter-spacing=\"\(vectorText.typography.letterSpacing * dpiScale)\""
-            }
+                // Export each word with its precise position
+                for wordInfo in words {
+                    let escapedWord = self.escapeXML(wordInfo.word)
 
-            svg += ">\(escapedLine)</text>\n"
+                    // Get the glyph index for this character range
+                    let glyphRange = layoutManager.glyphRange(forCharacterRange: wordInfo.range, actualCharacterRange: nil)
+                    guard glyphRange.length > 0 else { continue }
+
+                    let firstGlyphIndex = glyphRange.location
+                    let glyphLocation = layoutManager.location(forGlyphAt: firstGlyphIndex)
+
+                    // Calculate word position (justified text uses lineUsedRect)
+                    let wordX = vectorText.position.x + lineUsedRect.origin.x + glyphLocation.x
+                    let wordY = vectorText.position.y + lineRect.origin.y + glyphLocation.y
+
+                    // Apply DPI scaling
+                    let x = wordX * dpiScale
+                    let y = wordY * dpiScale
+                    let fontSize = vectorText.typography.fontSize * dpiScale
+
+                    // Export word as text element
+                    svg += "<text x=\"\(x)\" y=\"\(y)\""
+                    svg += " font-family=\"\(vectorText.typography.fontFamily)\""
+                    svg += " font-size=\"\(fontSize)\""
+
+                    if vectorText.typography.fontWeight != .regular {
+                        let svgWeight = self.getSVGFontWeight(vectorText.typography.fontWeight)
+                        svg += " font-weight=\"\(svgWeight)\""
+                    }
+
+                    if vectorText.typography.fontStyle == .italic {
+                        svg += " font-style=\"italic\""
+                    }
+
+                    svg += " text-anchor=\"start\""
+                    svg += " fill=\"\(fillColor)\""
+
+                    if fillOpacity != 1.0 {
+                        svg += " fill-opacity=\"\(fillOpacity)\""
+                    }
+
+                    if vectorText.typography.hasStroke && vectorText.typography.strokeWidth > 0 {
+                        svg += " stroke=\"\(vectorText.typography.strokeColor.svgColor)\""
+                        svg += " stroke-width=\"\(vectorText.typography.strokeWidth * dpiScale)\""
+                        if vectorText.typography.strokeOpacity != 1.0 {
+                            svg += " stroke-opacity=\"\(vectorText.typography.strokeOpacity)\""
+                        }
+                    }
+
+                    if vectorText.typography.letterSpacing != 0 {
+                        svg += " letter-spacing=\"\(vectorText.typography.letterSpacing * dpiScale)\""
+                    }
+
+                    svg += ">\(escapedWord)</text>\n"
+                }
+            } else {
+                // Non-justified: export as single line (current behavior)
+                let lineString = (vectorText.content as NSString).substring(with: lineRange)
+                let escapedLine = self.escapeXML(lineString)
+
+                // Get baseline offset from first glyph in line (needed for Y position AND X offset)
+                let firstGlyphIndex = lineRange.location
+                let glyphLocation = layoutManager.location(forGlyphAt: firstGlyphIndex)
+
+                // CRITICAL FIX: NSLayoutManager stores alignment offset in glyphLocation.x (SAME AS PDF)
+                let lineX: CGFloat
+                switch vectorText.typography.alignment.nsTextAlignment {
+                case .left:
+                    lineX = vectorText.position.x + lineUsedRect.origin.x + glyphLocation.x
+                case .center, .right:
+                    lineX = vectorText.position.x + lineRect.origin.x + glyphLocation.x
+                default:
+                    lineX = vectorText.position.x + lineUsedRect.origin.x + glyphLocation.x
+                }
+
+                let lineY = vectorText.position.y + lineRect.origin.y + glyphLocation.y
+
+                // Apply DPI scaling
+                let x = lineX * dpiScale
+                let y = lineY * dpiScale
+                let fontSize = vectorText.typography.fontSize * dpiScale
+
+                // Export as text element for this line
+                svg += "<text x=\"\(x)\" y=\"\(y)\""
+                svg += " font-family=\"\(vectorText.typography.fontFamily)\""
+                svg += " font-size=\"\(fontSize)\""
+
+                // Add font weight if not regular
+                if vectorText.typography.fontWeight != .regular {
+                    let svgWeight = self.getSVGFontWeight(vectorText.typography.fontWeight)
+                    svg += " font-weight=\"\(svgWeight)\""
+                }
+
+                // Add font style if italic
+                if vectorText.typography.fontStyle == .italic {
+                    svg += " font-style=\"italic\""
+                }
+
+                // CRITICAL FIX: Always use "start" because we're calculating position with glyphLocation.x
+                // glyphLocation.x already contains the alignment offset, so text-anchor would double-apply it
+                svg += " text-anchor=\"start\""
+
+                svg += " fill=\"\(fillColor)\""
+                if fillOpacity != 1.0 {
+                    svg += " fill-opacity=\"\(fillOpacity)\""
+                }
+
+                // Add stroke if present
+                if vectorText.typography.hasStroke && vectorText.typography.strokeWidth > 0 {
+                    svg += " stroke=\"\(vectorText.typography.strokeColor.svgColor)\""
+                    svg += " stroke-width=\"\(vectorText.typography.strokeWidth * dpiScale)\""
+                    if vectorText.typography.strokeOpacity != 1.0 {
+                        svg += " stroke-opacity=\"\(vectorText.typography.strokeOpacity)\""
+                    }
+                }
+
+                // Add letter spacing if not zero
+                if vectorText.typography.letterSpacing != 0 {
+                    svg += " letter-spacing=\"\(vectorText.typography.letterSpacing * dpiScale)\""
+                }
+
+                svg += ">\(escapedLine)</text>\n"
+            }
         }
 
         return svg
