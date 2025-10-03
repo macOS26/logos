@@ -1093,7 +1093,15 @@ extension UTType {
     static var inkpen: UTType {
         UTType(exportedAs: "io.logos.logos-inkpen-io.document")
     }
-    
+
+    static var inkpenSVG: UTType {
+        UTType(exportedAs: "io.logos.logos-inkpen-io.svg")
+    }
+
+    static var inkpenPDF: UTType {
+        UTType(exportedAs: "io.logos.logos-inkpen-io.pdf")
+    }
+
     static var draggableVectorObject: UTType {
         UTType(exportedAs: "io.logos.logos-inkpen-io.draggableVectorObject")
     }
