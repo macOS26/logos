@@ -455,9 +455,9 @@ class SVGExporter {
                 svg += " font-style=\"italic\""
             }
 
-            // Add text alignment
-            let textAnchor = self.getSVGTextAnchor(vectorText.typography.alignment)
-            svg += " text-anchor=\"\(textAnchor)\""
+            // CRITICAL FIX: Always use "start" because we're calculating position with glyphLocation.x
+            // glyphLocation.x already contains the alignment offset, so text-anchor would double-apply it
+            svg += " text-anchor=\"start\""
 
             svg += " fill=\"\(fillColor)\""
             if fillOpacity != 1.0 {
