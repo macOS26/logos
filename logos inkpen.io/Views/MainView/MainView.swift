@@ -299,6 +299,8 @@ struct MainView: View {
     private func saveDocumentToURL(_ url: URL) {
         do {
             try FileOperations.exportToJSON(document, url: url)
+            // Generate and set custom document icon only for inkpen files
+            DocumentIconGenerator.shared.setCustomIcon(for: url, document: document)
             Log.info("✅ Successfully saved document to: \(url.path)", category: .fileOperations)
             
         } catch {
