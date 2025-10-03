@@ -1,0 +1,232 @@
+//
+//  VectorDocument+LayerManagement.swift
+//  logos inkpen.io
+//
+//  Created by Todd Bruss on 8/22/25.
+//
+
+import SwiftUI
+
+// MARK: - Layer Management
+extension VectorDocument {
+    /// Rename a layer at the specified index
+    func renameLayer(at index: Int, to newName: String) {
+        guard index >= 0 && index < layers.count else {
+            Log.error("❌ Invalid layer index for rename: \(index)", category: .error)
+            return
+        }
+        
+        // Don't allow renaming Canvas layer
+        if index == 0 && layers[index].name == "Canvas" {
+            Log.info("🚫 Cannot rename Canvas layer", category: .general)
+            return
+        }
+        
+        let oldName = layers[index].name
+        layers[index].name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Update settings if this is the selected layer
+        if settings.selectedLayerId == layers[index].id {
+            settings.selectedLayerName = layers[index].name
+            onSettingsChanged()
+        }
+
+        saveToUndoStack()
+        Log.info("✏️ Renamed layer '\(oldName)' to '\(layers[index].name)'", category: .general)
+    }
+    
+    /// Duplicate a layer at the specified index
+    func duplicateLayer(at index: Int) {
+        guard index >= 0 && index < layers.count else {
+            Log.error("❌ Invalid layer index for duplicate: \(index)", category: .error)
+            return
+        }
+        
+        // Don't allow duplicating Canvas layer
+        if index == 0 && layers[index].name == "Canvas" {
+            Log.info("🚫 Cannot duplicate Canvas layer", category: .general)
+            return
+        }
+        
+        saveToUndoStack()
+        
+        let originalLayer = layers[index]
+        var duplicatedLayer = VectorLayer(name: "\(originalLayer.name) Copy")
+        
+        // Copy all properties
+        duplicatedLayer.isVisible = originalLayer.isVisible
+        duplicatedLayer.isLocked = originalLayer.isLocked
+        duplicatedLayer.opacity = originalLayer.opacity
+        
+        // Insert the duplicated layer right after the original
+        layers.insert(duplicatedLayer, at: index + 1)
+        
+        // Deep copy all shapes with new IDs from unified objects
+        let originalShapes = getShapesForLayer(index)
+        for shape in originalShapes {
+            var duplicatedShape = shape
+            duplicatedShape.id = UUID() // New unique ID
+            // If this shape carries raster content, duplicate the image registry entry to the new ID
+            if ImageContentRegistry.containsImage(shape),
+               let image = ImageContentRegistry.image(for: shape.id) {
+                ImageContentRegistry.register(image: image, for: duplicatedShape.id)
+            }
+            // Add shape to the new layer through unified objects
+            addShape(duplicatedShape, to: index + 1)
+        }
+        
+        // Update unified objects after adding shapes
+        updateUnifiedObjectsOptimized()
+        
+        // Select the new layer
+        selectedLayerIndex = index + 1
+        settings.selectedLayerId = duplicatedLayer.id
+        settings.selectedLayerName = duplicatedLayer.name
+        onSettingsChanged()
+        
+        Log.fileOperation("📋 Duplicated layer '\(originalLayer.name)' to '\(duplicatedLayer.name)'", level: .info)
+    }
+    
+    /// Move a layer from one index to another
+    func moveLayer(from sourceIndex: Int, to targetIndex: Int) {
+        guard sourceIndex >= 0 && sourceIndex < layers.count,
+              targetIndex >= 0 && targetIndex <= layers.count,  // Allow targetIndex == layers.count for "move to top"
+              sourceIndex != targetIndex else {
+            Log.error("❌ Invalid layer indices for move: source=\(sourceIndex), target=\(targetIndex)", category: .error)
+            return
+        }
+        
+        // PROTECT PASTEBOARD LAYER: Never allow Pasteboard layer to be moved
+        if sourceIndex == 0 && layers[sourceIndex].name == "Pasteboard" {
+            Log.info("🚫 Cannot move Pasteboard layer - it must remain at the bottom", category: .general)
+            return
+        }
+        
+        // PROTECT CANVAS LAYER: Never allow Canvas layer to be moved
+        if sourceIndex == 1 && layers[sourceIndex].name == "Canvas" {
+            Log.info("🚫 Cannot move Canvas layer - it must remain above pasteboard", category: .general)
+            return
+        }
+        
+        // PROTECT PASTEBOARD LAYER: Never allow moving to Pasteboard position
+        if targetIndex == 0 {
+            Log.info("🚫 Cannot move layers to Pasteboard position (index 0)", category: .general)
+            return
+        }
+        
+        // PROTECT CANVAS LAYER: Never allow moving to Canvas position
+        if targetIndex == 1 && targetIndex < layers.count && layers[targetIndex].name == "Canvas" {
+            Log.info("🚫 Cannot move layers to Canvas position (index 1)", category: .general)
+            return
+        }
+        
+        saveToUndoStack()
+        
+        let movingLayer = layers.remove(at: sourceIndex)
+        
+        // Handle insertion logic
+        let adjustedTargetIndex: Int
+        if targetIndex == layers.count {
+            // Special case: move to top (append to end after removal)
+            adjustedTargetIndex = layers.count
+            Log.info("🔝 Moving to top position (will be index \(adjustedTargetIndex))", category: .general)
+        } else if sourceIndex < targetIndex {
+            // Moving forward in the array - adjust for removal
+            adjustedTargetIndex = targetIndex - 1
+        } else {
+            // Moving backward in the array - no adjustment needed
+            adjustedTargetIndex = targetIndex
+        }
+        
+        layers.insert(movingLayer, at: adjustedTargetIndex)
+        
+        // Update selected layer index to follow the moved layer
+        if selectedLayerIndex == sourceIndex {
+            selectedLayerIndex = adjustedTargetIndex
+        } else if let selectedIndex = selectedLayerIndex {
+            // Adjust selection if it was affected by the move
+            if sourceIndex < selectedIndex && adjustedTargetIndex >= selectedIndex {
+                selectedLayerIndex = selectedIndex - 1
+            } else if sourceIndex > selectedIndex && adjustedTargetIndex <= selectedIndex {
+                selectedLayerIndex = selectedIndex + 1
+            }
+        }
+        
+        Log.fileOperation("🔄 Moved layer '\(movingLayer.name)' from index \(sourceIndex) to \(adjustedTargetIndex)", level: .info)
+    }
+    
+    func addLayer(name: String = "New Layer") {
+        let newLayer = VectorLayer(name: name)
+        layers.append(newLayer)
+        selectedLayerIndex = layers.count - 1
+
+        // Update selected layer in settings
+        settings.selectedLayerId = newLayer.id
+        settings.selectedLayerName = newLayer.name
+        onSettingsChanged()
+    }
+    
+    func removeLayer(at index: Int) {
+        // Allow deletion of any layer, just prevent deleting the last layer
+        guard index >= 0 && index < layers.count && layers.count > 1 else {
+            Log.fileOperation("⚠️ Cannot remove last remaining layer", level: .info)
+            return
+        }
+
+        let removingSelectedLayer = settings.selectedLayerId == layers[index].id
+
+        layers.remove(at: index)
+        if selectedLayerIndex == index {
+            selectedLayerIndex = min(index, layers.count - 1)
+        } else if let selected = selectedLayerIndex, selected > index {
+            selectedLayerIndex = selected - 1
+        }
+
+        // Update selected layer if we removed it
+        if removingSelectedLayer || settings.selectedLayerId == nil {
+            validateSelectedLayer()
+        }
+    }
+
+    /// Ensures a layer is always selected, defaulting to Layer 1 or first available layer
+    func validateSelectedLayer() {
+        // First try to find the layer with the saved ID
+        if let savedId = settings.selectedLayerId,
+           layers.first(where: { $0.id == savedId }) != nil {
+            // Layer still exists, update index to match
+            if let index = layers.firstIndex(where: { $0.id == savedId }) {
+                selectedLayerIndex = index
+                layerIndex = index
+            }
+            return
+        }
+
+        // Try to find "Layer 1" as fallback
+        if let layer1Index = layers.firstIndex(where: { $0.name == "Layer 1" }) {
+            let layer1 = layers[layer1Index]
+            settings.selectedLayerId = layer1.id
+            settings.selectedLayerName = layer1.name
+            selectedLayerIndex = layer1Index
+            layerIndex = layer1Index
+            onSettingsChanged()
+            return
+        }
+
+        // Find first non-Canvas, non-Pasteboard layer as last resort
+        for (index, layer) in layers.enumerated() {
+            if layer.name != "Canvas" && layer.name != "Pasteboard" && !layer.isLocked {
+                settings.selectedLayerId = layer.id
+                settings.selectedLayerName = layer.name
+                selectedLayerIndex = index
+                layerIndex = index
+                onSettingsChanged()
+                return
+            }
+        }
+
+        // Absolute fallback: create Layer 1 if nothing exists
+        if layers.count <= 2 { // Only Canvas and Pasteboard
+            addLayer(name: "Layer 1")
+        }
+    }
+}

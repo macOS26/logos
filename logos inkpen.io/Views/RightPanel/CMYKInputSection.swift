@@ -1,0 +1,542 @@
+//
+//  CMYKInputSection.swift
+//  logos inkpen.io
+//
+//  Created by Todd Bruss on 7/5/25.
+//
+
+import SwiftUI
+
+// MARK: - Professional CMYK Input Section
+
+struct CMYKInputSection: View {
+    @ObservedObject var document: VectorDocument
+    @Binding var sharedColor: VectorColor // Shared color state
+    @Environment(AppState.self) private var appState
+    
+    // Callback indicates we're in gradient editing mode
+    let onColorSelected: ((VectorColor) -> Void)?
+    let showGradientEditing: Bool  // 🔥 NEW: Controls whether this section allows gradient editing
+    
+    @State private var cyanValue: String = "0"
+    @State private var magentaValue: String = "0"
+    @State private var yellowValue: String = "0"
+    @State private var blackValue: String = "0"
+    
+    // Slider values (0-100)
+    @State private var cyanSlider: Double = 0
+    @State private var magentaSlider: Double = 0
+    @State private var yellowSlider: Double = 0
+    @State private var blackSlider: Double = 0
+    
+    // Flag to prevent automatic gradient updates during programmatic changes
+    @State private var isProgrammaticallyUpdating: Bool = false
+    // Flag to track if we're displaying a gradient (should not auto-update)
+    @State private var isDisplayingGradient: Bool = false
+    
+    // Computed color from CMYK values
+    private var currentColor: CMYKColor {
+        let c = (Double(cyanValue) ?? 0) / 100.0
+        let m = (Double(magentaValue) ?? 0) / 100.0
+        let y = (Double(yellowValue) ?? 0) / 100.0
+        let k = (Double(blackValue) ?? 0) / 100.0
+        
+        return CMYKColor(
+            cyan: max(0, min(1, c)),
+            magenta: max(0, min(1, m)),
+            yellow: max(0, min(1, y)),
+            black: max(0, min(1, k))
+        )
+    }
+    
+    // Helper function to get SwiftUI Color from CMYK values
+    private func swiftUIColorFromCMYK(c: Double, m: Double, y: Double, k: Double) -> Color {
+        let cmykColor = CMYKColor(cyan: c/100.0, magenta: m/100.0, yellow: y/100.0, black: k/100.0)
+        return cmykColor.color
+    }
+    
+    // Cyan slider gradient (morphs from current color with C=0 to current color with C=100)
+    private var cyanGradient: SwiftUI.LinearGradient {
+        let m = Double(magentaValue) ?? 0
+        let y = Double(yellowValue) ?? 0
+        let k = Double(blackValue) ?? 0
+        return SwiftUI.LinearGradient(
+            gradient: Gradient(colors: [
+                swiftUIColorFromCMYK(c: 0, m: m, y: y, k: k),
+                swiftUIColorFromCMYK(c: 100, m: m, y: y, k: k)
+            ]),
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+    
+    // Magenta slider gradient
+    private var magentaGradient: SwiftUI.LinearGradient {
+        let c = Double(cyanValue) ?? 0
+        let y = Double(yellowValue) ?? 0
+        let k = Double(blackValue) ?? 0
+        return SwiftUI.LinearGradient(
+            gradient: Gradient(colors: [
+                swiftUIColorFromCMYK(c: c, m: 0, y: y, k: k),
+                swiftUIColorFromCMYK(c: c, m: 100, y: y, k: k)
+            ]),
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+    
+    // Yellow slider gradient
+    private var yellowGradient: SwiftUI.LinearGradient {
+        let c = Double(cyanValue) ?? 0
+        let m = Double(magentaValue) ?? 0
+        let k = Double(blackValue) ?? 0
+        return SwiftUI.LinearGradient(
+            gradient: Gradient(colors: [
+                swiftUIColorFromCMYK(c: c, m: m, y: 0, k: k),
+                swiftUIColorFromCMYK(c: c, m: m, y: 100, k: k)
+            ]),
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+    
+    // Black slider gradient
+    private var blackGradient: SwiftUI.LinearGradient {
+        let c = Double(cyanValue) ?? 0
+        let m = Double(magentaValue) ?? 0
+        let y = Double(yellowValue) ?? 0
+        return SwiftUI.LinearGradient(
+            gradient: Gradient(colors: [
+                swiftUIColorFromCMYK(c: c, m: m, y: y, k: 0),
+                swiftUIColorFromCMYK(c: c, m: m, y: y, k: 100)
+            ]),
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("CMYK Process Colors")
+                    .font(.caption)
+                .fontWeight(.medium)
+                    .foregroundColor(.secondary)
+            
+            Text("Enter process color values (0-100%)")
+                .font(.caption2)
+                    .foregroundColor(.secondary)
+            
+            // CMYK Sliders with Native Apple Sliders and Gradients
+            VStack(spacing: 8) {
+                // Cyan Slider
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(Color.cyan)
+                        .frame(width: 12, height: 12)
+                    
+                    Text("C")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .frame(width: 12)
+                    
+                    ZStack {
+                        // White background for slider track
+                        Capsule()
+                            .fill(Color.white)
+                            .frame(height: 6)
+                            .overlay(
+                                Capsule()
+                                    .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
+                            )
+                        
+                        // Native Apple Slider
+                        Slider(value: $cyanSlider, in: 0...100)
+                            .controlSize(.regular)
+                            .tint(Color.clear)
+                            .onChange(of: cyanSlider) {
+                                cyanValue = String(Int(cyanSlider))
+                                updateSharedColor()
+                            }
+                        
+                        // Gradient overlay
+                        Capsule()
+                            .fill(cyanGradient)
+                            .frame(height: 6)
+                            .allowsHitTesting(false)
+                    }
+                    
+                    TextField("", text: $cyanValue)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(width: 45)
+                        .font(.system(size: 11))
+                        .onChange(of: cyanValue) {
+                            guard !isProgrammaticallyUpdating else { return }
+                            if let intValue = Double(cyanValue) {
+                                cyanSlider = min(100, max(0, intValue))
+                                updateSharedColor()
+                            }
+                        }
+                }
+                
+                // Magenta Slider
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(Color.pink)
+                        .frame(width: 12, height: 12)
+                    
+                    Text("M")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .frame(width: 12)
+                    
+                    ZStack {
+                        // White background for slider track
+                        Capsule()
+                            .fill(Color.white)
+                            .frame(height: 6)
+                            .overlay(
+                                Capsule()
+                                    .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
+                            )
+                        
+                        // Native Apple Slider
+                        Slider(value: $magentaSlider, in: 0...100)
+                            .controlSize(.regular)
+                            .tint(Color.clear)
+                            .onChange(of: magentaSlider) {
+                                magentaValue = String(Int(magentaSlider))
+                                updateSharedColor()
+                            }
+                        
+                        // Gradient overlay
+                        Capsule()
+                            .fill(magentaGradient)
+                            .frame(height: 6)
+                            .allowsHitTesting(false)
+                    }
+                    
+                    TextField("", text: $magentaValue)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(width: 45)
+                        .font(.system(size: 11))
+                        .onChange(of: magentaValue) {
+                            guard !isProgrammaticallyUpdating else { return }
+                            if let intValue = Double(magentaValue) {
+                                magentaSlider = min(100, max(0, intValue))
+                                updateSharedColor()
+                            }
+                        }
+                }
+                
+                // Yellow Slider
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(Color.yellow)
+                        .frame(width: 12, height: 12)
+                    
+                    Text("Y")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .frame(width: 12)
+                    
+                    ZStack {
+                        // White background for slider track
+                        Capsule()
+                            .fill(Color.white)
+                            .frame(height: 6)
+                            .overlay(
+                                Capsule()
+                                    .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
+                            )
+                        
+                        // Native Apple Slider
+                        Slider(value: $yellowSlider, in: 0...100)
+                            .controlSize(.regular)
+                            .tint(Color.clear)
+                            .onChange(of: yellowSlider) {
+                                yellowValue = String(Int(yellowSlider))
+                                updateSharedColor()
+                            }
+                        
+                        // Gradient overlay
+                        Capsule()
+                            .fill(yellowGradient)
+                            .frame(height: 6)
+                            .allowsHitTesting(false)
+                    }
+                    
+                    TextField("", text: $yellowValue)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(width: 45)
+                        .font(.system(size: 11))
+                        .onChange(of: yellowValue) {
+                            guard !isProgrammaticallyUpdating else { return }
+                            if let intValue = Double(yellowValue) {
+                                yellowSlider = min(100, max(0, intValue))
+                                updateSharedColor()
+                            }
+                        }
+                }
+                
+                // Black Slider
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(Color.black)
+                        .frame(width: 12, height: 12)
+                    
+                    Text("K")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .frame(width: 12)
+                    
+                    ZStack {
+                        // White background for slider track
+                        Capsule()
+                            .fill(Color.white)
+                            .frame(height: 6)
+                            .overlay(
+                                Capsule()
+                                    .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
+                            )
+                        
+                        // Native Apple Slider
+                        Slider(value: $blackSlider, in: 0...100)
+                            .controlSize(.regular)
+                            .tint(Color.clear)
+                            .onChange(of: blackSlider) {
+                                blackValue = String(Int(blackSlider))
+                                updateSharedColor()
+                            }
+                        
+                        // Gradient overlay
+                        Capsule()
+                            .fill(blackGradient)
+                            .frame(height: 6)
+                            .allowsHitTesting(false)
+                    }
+                    
+                    TextField("", text: $blackValue)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(width: 45)
+                        .font(.system(size: 11))
+                        .onChange(of: blackValue) {
+                            guard !isProgrammaticallyUpdating else { return }
+                            if let intValue = Double(blackValue) {
+                                blackSlider = min(100, max(0, intValue))
+                                updateSharedColor()
+                            }
+                        }
+                }
+            }
+            
+            // Compact Color Preview and Add Button (similar to RGB)
+            HStack(spacing: 8) {
+                // Square Color Swatch Preview (30x30 like RGB section)
+                Button(action: {
+                    applyColorToActiveSelection()
+                }) {
+                Rectangle()
+                        .fill(currentColor.color)
+                        .frame(width: 30, height: 30)
+                    .overlay(
+                        Rectangle()
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(BorderlessButtonStyle())
+                .help("Click to apply color to active fill or stroke")
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("CMYK(\(Int(currentColor.cyan * 100)), \(Int(currentColor.magenta * 100)), \(Int(currentColor.yellow * 100)), \(Int(currentColor.black * 100)))")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.primary)
+                    
+                    Button("Add Swatch") {
+                        addCMYKColorToSwatches()
+                    }
+                    .font(.system(size: 10))
+                    .foregroundColor(.primary)
+                }
+                
+                Spacer()
+            }
+        }
+        .padding(.vertical, 8)
+        .onAppear {
+            loadFromSharedColor()
+        }
+        .onChange(of: sharedColor) { _, newColor in
+            loadFromSharedColor()
+        }
+    }
+    
+    private func updateSharedColor() {
+        // CRITICAL FIX: Don't update shared color when displaying a gradient
+        // This preserves gradients when the Ink panel is opened
+        if isDisplayingGradient {
+            Log.info("🎨 CMYK INPUT: Preserving gradient - not updating to solid color", category: .general)
+            return
+        }
+
+        // Update the shared color binding for UI synchronization
+        sharedColor = .cmyk(currentColor)
+
+        // CRITICAL FIX: Don't update gradients during programmatic changes OR when just browsing
+        // Only update gradients when user explicitly applies/selects colors
+        if isProgrammaticallyUpdating {
+            Log.fileOperation("🎨 CMYK INPUT: BLOCKED gradient update - programmatic change", level: .info)
+            return
+        }
+
+        // FIX: Don't update defaults here - let setActiveColor handle it when needed
+        // This updateSharedColor is called during initialization and slider changes,
+        // but we only want to update colors when user explicitly selects a swatch
+
+        // CRITICAL FIX #2: Don't directly modify shapes in updateSharedColor!
+        // This function is called during slider movements and initialization.
+        // Direct shape modification should ONLY happen through proper channels (setActiveColor).
+        // Removing all direct shape modifications to prevent gradient corruption.
+        return
+
+        /* REMOVED: Direct shape modification causing gradient loss
+        // The code below was directly modifying shapes during slider movements,
+        // which was replacing gradients with solid colors without proper undo handling.
+        // This should only happen through explicit user actions (clicking swatches, etc.)
+        */
+    }
+    
+    private func loadFromSharedColor() {
+        // Reset gradient flag by default (will be set to true if we detect a gradient)
+        isDisplayingGradient = false
+
+        switch sharedColor {
+        case .rgb(let rgb):
+            let cmyk = ColorManagement.rgbToCMYK(rgb)
+            setCMYKValues(
+                cyan: Int(cmyk.cyan * 100),
+                magenta: Int(cmyk.magenta * 100),
+                yellow: Int(cmyk.yellow * 100),
+                black: Int(cmyk.black * 100)
+            )
+        case .cmyk(let cmyk):
+            setCMYKValues(
+                cyan: Int(cmyk.cyan * 100),
+                magenta: Int(cmyk.magenta * 100),
+                yellow: Int(cmyk.yellow * 100),
+                black: Int(cmyk.black * 100)
+            )
+        case .hsb(let hsb):
+            let rgb = hsb.rgbColor
+            let cmyk = ColorManagement.rgbToCMYK(rgb)
+            setCMYKValues(
+                cyan: Int(cmyk.cyan * 100),
+                magenta: Int(cmyk.magenta * 100),
+                yellow: Int(cmyk.yellow * 100),
+                black: Int(cmyk.black * 100)
+            )
+        case .pantone(let pantone):
+            let cmyk = pantone.cmykEquivalent
+            setCMYKValues(
+                cyan: Int(cmyk.cyan * 100),
+                magenta: Int(cmyk.magenta * 100),
+                yellow: Int(cmyk.yellow * 100),
+                black: Int(cmyk.black * 100)
+            )
+        case .spot(let spot):
+            let cmyk = spot.cmykEquivalent
+            setCMYKValues(
+                cyan: Int(cmyk.cyan * 100),
+                magenta: Int(cmyk.magenta * 100),
+                yellow: Int(cmyk.yellow * 100),
+                black: Int(cmyk.black * 100)
+            )
+        case .appleSystem(let system):
+            let rgb = system.rgbEquivalent
+            let cmyk = ColorManagement.rgbToCMYK(rgb)
+            setCMYKValues(
+                cyan: Int(cmyk.cyan * 100),
+                magenta: Int(cmyk.magenta * 100),
+                yellow: Int(cmyk.yellow * 100),
+                black: Int(cmyk.black * 100)
+            )
+        case .gradient(let gradient):
+            // For gradients, use the first stop color as representative
+            // BUT DON'T UPDATE THE ACTUAL GRADIENT TO A SOLID COLOR
+            isDisplayingGradient = true
+            if let firstStop = gradient.stops.first {
+                switch firstStop.color {
+                case .cmyk(let cmyk):
+                    setCMYKValues(
+                        cyan: Int(cmyk.cyan * 100),
+                        magenta: Int(cmyk.magenta * 100),
+                        yellow: Int(cmyk.yellow * 100),
+                        black: Int(cmyk.black * 100)
+                    )
+                default:
+                    // Convert any other color type to CMYK for display
+                    let swiftUIColor = firstStop.color.color
+                    let components = swiftUIColor.components
+                    let rgbColor = RGBColor(red: components.red, green: components.green, blue: components.blue, alpha: components.alpha)
+                    let cmyk = ColorManagement.rgbToCMYK(rgbColor)
+                    setCMYKValues(
+                        cyan: Int(cmyk.cyan * 100),
+                        magenta: Int(cmyk.magenta * 100),
+                        yellow: Int(cmyk.yellow * 100),
+                        black: Int(cmyk.black * 100)
+                    )
+                }
+            } else {
+                setCMYKValues(cyan: 0, magenta: 0, yellow: 0, black: 0)
+            }
+        case .clear:
+            // For clear colors, we don't update CMYK values since they're not applicable
+            // The clear color should be handled separately
+            return
+        case .black:
+            setCMYKValues(cyan: 0, magenta: 0, yellow: 0, black: 100)
+        case .white:
+            setCMYKValues(cyan: 0, magenta: 0, yellow: 0, black: 0)
+        }
+    }
+    
+    private func setCMYKValues(cyan: Int, magenta: Int, yellow: Int, black: Int) {
+        Log.fileOperation("🎨 CMYK INPUT: setCMYKValues called with C=\(cyan), M=\(magenta), Y=\(yellow), K=\(black)", level: .info)
+        Log.fileOperation("🎨 CMYK INPUT: Gradient editing state: \(appState.gradientEditingState != nil)", level: .info)
+        
+        isProgrammaticallyUpdating = true
+        cyanValue = String(cyan)
+        magentaValue = String(magenta)
+        yellowValue = String(yellow)
+        blackValue = String(black)
+        cyanSlider = Double(cyan)
+        magentaSlider = Double(magenta)
+        yellowSlider = Double(yellow)
+        blackSlider = Double(black)
+        isProgrammaticallyUpdating = false
+        
+        Log.fileOperation("🎨 CMYK INPUT: setCMYKValues completed", level: .info)
+    }
+    
+    private func applyColorToActiveSelection() {
+        let vectorColor = VectorColor.cmyk(currentColor)
+
+        // 🔥 CRITICAL FIX: Only use gradient callback if THIS section allows gradient editing
+        // Priority 1: If we're in gradient editing mode AND this section supports it, use gradient callback
+        if showGradientEditing, let gradientCallback = appState.gradientEditingState?.onColorSelected {
+            gradientCallback(vectorColor)
+            // Also add to swatches when ink well is clicked
+            document.addColorSwatch(vectorColor)
+            return
+        }
+
+        // Priority 2: Otherwise, apply to document's active selection
+        document.setActiveColor(vectorColor)
+        // Also add to swatches when ink well is clicked
+        document.addColorSwatch(vectorColor)
+    }
+    
+    private func addCMYKColorToSwatches() {
+        let vectorColor = VectorColor.cmyk(currentColor)
+        document.addColorSwatch(vectorColor)
+    }
+} 

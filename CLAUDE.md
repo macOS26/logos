@@ -1,0 +1,19 @@
+- stop breaking fonts in this app
+- build using xcf
+- create and run unit tests
+- run using xcf
+- stop breaking fonts!
+- continue phasing out layers[].shapes without breaking fonts and vector objects! and shapes! MOTHER FUCKER!
+- continue oyur missing
+- use the unified system. use helper methods no duplicate helper methods
+- create and run unit tests after every micro step every move
+- every bond you break every single mistake I'll be watching you!!! oh can't you see, you belong to me. I'm cool hard ace, every stop you take!!! The Police
+- build and run using xcf after every test run!!!!
+- DO NOT BREAK TEXTBOXES!
+- DO NOT STOP!!!!! YOU KEEP STOPPING WITHOUT MY PERMISSION
+- QUIT ASKING TO PROCEED, JUST DO
+- we do not need an backwqard compability
+- be sure to create and run unit tests... buold and run suing xcf and always commit after the tests pass, make baby micro steps!!!! UNDERSTOOD?
+- go through the app and find unused variables: toddbruss@Mac logos % periphery scan --project "logos inkpen.io.xcodeproj" --schemes "logos inkpen.io", remove 1 at a time thne do a 
+  build to see if it doesn't breka, if doesn't break commit, per file basis.
+- ☐ Continue removing unused code from Periphery scan

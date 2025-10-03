@@ -1,0 +1,95 @@
+//
+//  DrawingTool.swift
+//  logos inkpen.io
+//
+//  Created by Todd Bruss on 8/22/25.
+//
+
+import SwiftUI
+
+// MARK: - Drawing Tools
+enum DrawingTool: String, CaseIterable, Codable {
+    case selection = "Selection"
+    case directSelection = "Direct Selection"
+    case bezierPen = "Bezier Pen"
+    case freehand = "Freehand"
+    case brush = "Brush"
+    case marker = "Marker"
+    case convertAnchorPoint = "Convert Anchor Point"
+    case penPlusMinus = "Pen Plus Minus"
+    case scale = "Scale"
+    case rotate = "Rotate"
+    case shear = "Shear"
+    case warp = "Warp"
+    case font = "Font"
+    case line = "Line"
+    case rectangle = "Rectangle"
+    case square = "Square"
+    case roundedRectangle = "Rounded Rectangle"
+    case pill = "Pill"
+    case circle = "Circle"
+    case ellipse = "Ellipse"
+    case oval = "Oval"
+    case egg = "Egg"
+    case cone = "Cone"
+    case equilateralTriangle = "Equilateral Triangle"
+    case isoscelesTriangle = "Isosceles Triangle"
+    case rightTriangle = "Right Triangle"
+    case acuteTriangle = "Acute Triangle"
+    case star = "Star"
+    case polygon = "Polygon"
+    case pentagon = "Pentagon"
+    case hexagon = "Hexagon"
+    case heptagon = "Heptagon"
+    case octagon = "Octagon"
+    case nonagon = "Nonagon"
+    case eyedropper = "Eyedropper"
+    case hand = "Hand"
+    case zoom = "Zoom"
+    case gradient = "Gradient"
+    case cornerRadius = "Corner Radius"
+    
+    var iconName: String {
+        switch self {
+        case .selection: return "arrow.up.left"
+        case .scale: return "arrow.up.left.and.down.right.and.arrow.up.right.and.down.left"
+        case .rotate: return "arrow.clockwise"
+        case .shear: return "rectangle.slash"
+        case .warp: return "skew"
+        case .directSelection: return "cursorarrow.and.square.on.square.dashed"
+        case .convertAnchorPoint: return "chevron.up"
+        case .penPlusMinus: return "plus.circle"
+        case .bezierPen: return "beziercurve"
+        case .freehand: return "scribble"
+        case .brush: return "scribble.variable"
+        case .marker: return "pencil.tip"
+        case .font: return "textformat"
+        case .line: return "line.diagonal"
+        case .rectangle: return "rectangle"
+        case .square: return "square"
+        case .roundedRectangle: return "rectangle.fill"
+        case .pill: return "capsule"
+        case .circle: return "circle"
+        case .ellipse: return "oval"
+        case .oval: return "oval.fill"
+        case .egg: return "oval.fill"
+        case .cone: return "triangle"
+        case .equilateralTriangle: return "triangle"
+        case .isoscelesTriangle: return "triangle.fill"
+        case .rightTriangle: return "triangle.righthalf.filled"
+        case .acuteTriangle: return "triangle.lefthalf.filled"
+        case .star: return "star"
+        case .polygon: return "hexagon"
+        case .pentagon: return "pentagon"
+        case .hexagon: return "hexagon"
+        case .heptagon: return "heptagon"
+        case .octagon: return "octagon"
+        case .nonagon: return "octagon" // no SF symbol for nonagon; custom icon provided elsewhere
+        case .eyedropper: return "eyedropper"
+        case .hand: return "hand.raised"
+        case .zoom: return "magnifyingglass"
+        case .gradient: return "circle.lefthalf.striped.horizontal"
+        case .cornerRadius: return "rectangle.roundedtop"
+        }
+    }
+}
