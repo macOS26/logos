@@ -671,23 +671,10 @@ extension PDFCommandParser {
         let matrixFontSize = abs(tm.d)  // d is vertical scale (font height)
         let actualFontSize = currentFontSize * matrixFontSize
 
-        // CRITICAL FIX: Y-axis handling depends on text matrix 'd' value
-        // If d < 0: Text is already flipped for PDF (like our export does with d=-1)
-        //           In this case, Y is already correct - don't flip again!
-        // If d > 0: Normal text matrix, need to flip Y from bottom-left to top-left
-        let finalY: CGFloat
-        
-        finalY = pdfY
-
-//        if tm.d < 0 {
-//            // Text matrix already has Y-flip (d < 0), use Y as-is
-//            Log.info("   Text matrix d=\(tm.d) < 0: Text pre-flipped, using Y as-is", category: .general)
-//        } else {
-//            // Normal matrix (d > 0), flip Y coordinate: PDF bottom-left → top-left
-//            finalY = pdfY
-//            Log.info("   Text matrix d=\(tm.d) > 0: Flipping Y coordinate", category: .general)
-//        }
-
+        // CRITICAL FIX: PDF Y position is at text BASELINE
+        // We need Y at TOP of text box, so subtract text size (ascent)
+        // PDF baseline → Top of text box: subtract font size
+        let finalY = pdfY - actualFontSize
         let position = CGPoint(x: pdfX, y: finalY)
 
         Log.info("📝 Creating text at position: \(position) | PDF coords: (\(pdfX), \(pdfY))", category: .general)
