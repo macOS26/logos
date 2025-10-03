@@ -418,6 +418,69 @@ class SVGExporter {
                 // Get text for this line
                 let lineString = (vectorText.content as NSString).substring(with: lineRange)
 
+                // Check if this line is actually justified (extends to full width)
+                // If lineUsedRect.width is significantly less than textBoxWidth, it's not justified (likely last line)
+                let textBoxWidth = vectorText.areaSize?.width ?? vectorText.bounds.width
+                let isActuallyJustified = abs(lineUsedRect.width - textBoxWidth) < 1.0
+
+                // If line is not actually justified, use glyph-by-glyph rendering for accuracy
+                if !isActuallyJustified {
+                    // Render glyphs individually for this non-justified line
+                    for glyphIndex in lineRange.location..<NSMaxRange(lineRange) {
+                        let glyphLocation = layoutManager.location(forGlyphAt: glyphIndex)
+
+                        // Calculate glyph position (use lineUsedRect for justified alignment)
+                        let glyphX = vectorText.position.x + lineUsedRect.origin.x + glyphLocation.x
+                        let glyphY = vectorText.position.y + lineRect.origin.y + glyphLocation.y
+
+                        // Get the character for this glyph
+                        let charIndex = layoutManager.characterIndexForGlyph(at: glyphIndex)
+                        if charIndex < vectorText.content.count {
+                            let char = (vectorText.content as NSString).substring(with: NSRange(location: charIndex, length: 1))
+                            let escapedChar = self.escapeXML(char)
+
+                            // Apply DPI scaling
+                            let x = glyphX * dpiScale
+                            let y = glyphY * dpiScale
+                            let fontSize = vectorText.typography.fontSize * dpiScale
+
+                            // Export as individual text element with precise positioning
+                            svg += "<text x=\"\(x)\" y=\"\(y)\""
+                            svg += " font-family=\"\(vectorText.typography.fontFamily)\""
+                            svg += " font-size=\"\(fontSize)\""
+
+                            if vectorText.typography.fontWeight != .regular {
+                                let svgWeight = self.getSVGFontWeight(vectorText.typography.fontWeight)
+                                svg += " font-weight=\"\(svgWeight)\""
+                            }
+
+                            if vectorText.typography.fontStyle == .italic {
+                                svg += " font-style=\"italic\""
+                            }
+
+                            svg += " fill=\"\(fillColor)\""
+                            if fillOpacity != 1.0 {
+                                svg += " fill-opacity=\"\(fillOpacity)\""
+                            }
+
+                            if vectorText.typography.hasStroke && vectorText.typography.strokeWidth > 0 {
+                                svg += " stroke=\"\(vectorText.typography.strokeColor.svgColor)\""
+                                svg += " stroke-width=\"\(vectorText.typography.strokeWidth * dpiScale)\""
+                                if vectorText.typography.strokeOpacity != 1.0 {
+                                    svg += " stroke-opacity=\"\(vectorText.typography.strokeOpacity)\""
+                                }
+                            }
+
+                            if vectorText.typography.letterSpacing != 0 {
+                                svg += " letter-spacing=\"\(vectorText.typography.letterSpacing * dpiScale)\""
+                            }
+
+                            svg += ">\(escapedChar)</text>\n"
+                        }
+                    }
+                    return // Skip word-by-word rendering below
+                }
+
                 // Split into words WITH special characters
                 // We need to capture everything between whitespace, not just alphanumeric words
                 var words: [(word: String, range: NSRange)] = []
