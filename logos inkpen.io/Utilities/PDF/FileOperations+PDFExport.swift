@@ -525,14 +525,17 @@ extension FileOperations {
                 actualLineRect = layoutManager.lineFragmentRect(forGlyphAt: glyphIndex, effectiveRange: &effectiveRange, withoutAdditionalLayout: true)
                 actualUsedRect = layoutManager.lineFragmentUsedRect(forGlyphAt: glyphIndex, effectiveRange: &effectiveRange, withoutAdditionalLayout: true)
 
-                // Calculate glyph X position (SAME AS TEXT-TO-OUTLINES:464-478)
+                // Calculate glyph X position (MATCH TEXT-TO-OUTLINES:469-483)
                 let glyphX: CGFloat
                 switch vectorText.typography.alignment.nsTextAlignment {
                 case .left, .justified:
+                    // For left and justified: use actualUsedRect for precise start position
                     glyphX = vectorText.position.x + actualUsedRect.origin.x + glyphLocation.x
                 case .center, .right:
+                    // For center and right: use lineRect since glyphLocation.x already includes the alignment offset
                     glyphX = vectorText.position.x + lineRect.origin.x + glyphLocation.x
                 default:
+                    // Fallback to left alignment behavior
                     glyphX = vectorText.position.x + actualUsedRect.origin.x + glyphLocation.x
                 }
 
@@ -732,10 +735,10 @@ extension FileOperations {
         // Apply opacity
         context.setAlpha(CGFloat(vectorText.typography.fillOpacity))
 
-        // Attributes for CTLine rendering (WITH foregroundColor - this is what CTLineDraw uses!)
+        // Attributes for CTLine rendering (NO paragraphStyle - alignment is handled by positioning)
+        // CTLine doesn't use paragraph alignment, so we handle it via lineRect/lineUsedRect positioning
         let renderingAttributes: [NSAttributedString.Key: Any] = [
             .font: nsFont,
-            .paragraphStyle: paragraphStyle,
             .kern: vectorText.typography.letterSpacing,
             .foregroundColor: NSColor(cgColor: vectorText.typography.fillColor.cgColor) ?? NSColor.black
         ]
@@ -750,14 +753,21 @@ extension FileOperations {
             let lineAttribString = NSAttributedString(string: lineString, attributes: renderingAttributes)
             let line = CTLineCreateWithAttributedString(lineAttribString)
 
-            // Calculate line position based on alignment
+            // CRITICAL FIX: Use lineRect for ALL alignments since NSLayoutManager already calculated alignment
+            // NSLayoutManager positions lineRect based on the alignment setting in paragraphStyle
+            // For left: lineRect.origin.x = 0
+            // For center: lineRect.origin.x = (container.width - line.width) / 2
+            // For right: lineRect.origin.x = container.width - line.width
             let lineX: CGFloat
             switch vectorText.typography.alignment.nsTextAlignment {
             case .left, .justified:
+                // For left and justified: use lineUsedRect for precise start position
                 lineX = vectorText.position.x + lineUsedRect.origin.x
             case .center, .right:
+                // CRITICAL FIX: For center and right, use lineRect since it contains the alignment offset
                 lineX = vectorText.position.x + lineRect.origin.x
             default:
+                // Fallback to left alignment behavior
                 lineX = vectorText.position.x + lineUsedRect.origin.x
             }
 
