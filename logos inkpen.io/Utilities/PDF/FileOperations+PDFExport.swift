@@ -735,10 +735,12 @@ extension FileOperations {
         // Apply opacity
         context.setAlpha(CGFloat(vectorText.typography.fillOpacity))
 
-        // Attributes for CTLine rendering (NO paragraphStyle - alignment is handled by positioning)
-        // CTLine doesn't use paragraph alignment, so we handle it via lineRect/lineUsedRect positioning
+        // Attributes for CTLine rendering (WITH paragraphStyle for justification spacing)
+        // NOTE: CTLine ignores alignment from paragraphStyle (we handle via glyphLocation.x),
+        // but it DOES use justification to add word spacing
         let renderingAttributes: [NSAttributedString.Key: Any] = [
             .font: nsFont,
+            .paragraphStyle: paragraphStyle,  // Required for justification spacing
             .kern: vectorText.typography.letterSpacing,
             .foregroundColor: NSColor(cgColor: vectorText.typography.fillColor.cgColor) ?? NSColor.black
         ]
