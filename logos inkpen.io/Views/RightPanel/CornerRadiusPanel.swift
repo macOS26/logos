@@ -206,16 +206,15 @@ struct CornerRadiusPanel: View {
     
     
     private func getSelectedRoundedRectangle() -> VectorShape? {
-        guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first else {
+        guard let firstSelectedID = document.selectedShapeIDs.first else {
             return nil
         }
-        
-        let shapes = document.getShapesForLayer(layerIndex)
-        guard let shape = shapes.first(where: { $0.id == firstSelectedID }) else {
+
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        guard let shape = document.findShape(by: firstSelectedID) else {
             return nil
         }
-        
+
         // Only show panel for shapes with corner radii
         return shape.cornerRadii.count > 0 ? shape : nil
     }
