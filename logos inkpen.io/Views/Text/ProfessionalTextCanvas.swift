@@ -82,11 +82,6 @@ struct ProfessionalTextCanvas: View {
             viewModel.isEditing = isEditing
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
         }
-        // CRITICAL FIX: Monitor document text objects for editing state changes
-        .onChange(of: document.allTextObjects.map { $0.isEditing }) { _, _ in
-            Log.fileOperation("🔧 ANY TEXT EDITING STATE CHANGED - refreshing state", level: .info)
-            updateTextBoxState(selectedIDs: document.selectedTextIDs)
-        }
         .onAppear {
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
 
@@ -157,8 +152,8 @@ struct ProfessionalTextCanvas: View {
     private func updateTextBoxState(selectedIDs: Set<UUID>) {
         let oldState = textBoxState
 
-        // CRITICAL FIX: Always use current document text object, not potentially stale view model reference
-        guard let currentTextObject = document.allTextObjects.first(where: { $0.id == textObjectID }) else {
+        // PERFORMANCE: Use UUID lookup instead of looping
+        guard let currentTextObject = document.findText(by: textObjectID) else {
             textBoxState = .gray
             Log.info("  → GRAY (text object not found in document)", category: .general)
             return
