@@ -676,12 +676,8 @@ struct EnvelopeHandles: View {
     
     private func updateShapeWithCurrentWarp() {
         // CRITICAL FIX: Find the unified object that contains this specific shape
-        guard let unifiedObject = document.unifiedObjects.first(where: { unifiedObject in
-            if case .shape(let targetShape) = unifiedObject.objectType {
-                return targetShape.id == shape.id
-            }
-            return false
-        }),
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        guard let unifiedObject = document.findObject(by: shape.id),
         let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil else { return }
         let shapes = document.getShapesForLayer(layerIndex)
         guard let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) else { return }
