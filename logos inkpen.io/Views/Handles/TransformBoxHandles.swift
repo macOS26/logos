@@ -355,12 +355,8 @@ struct TransformBoxHandles: View {
         document.scalePreviewDimensions = .zero // Reset preview dimensions
         
         // CRITICAL FIX: Find the unified object that contains this specific shape
-        if let unifiedObject = document.unifiedObjects.first(where: { unifiedObject in
-            if case .shape(let targetShape) = unifiedObject.objectType {
-                return targetShape.id == shape.id
-            }
-            return false
-        }),
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        if let unifiedObject = document.findObject(by: shape.id),
         let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
         
         let shapes = document.getShapesForLayer(layerIndex)
