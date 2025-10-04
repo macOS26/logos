@@ -147,12 +147,14 @@ extension PDFCommandParser {
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
             Log.fileOperation("\(parser.detectedPDFVersion): XObject 'q' (save graphics state)")
+            parser.saveGraphicsState()
         }
-        
+
         CGPDFOperatorTableSetCallback(operatorTable, "Q") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
             Log.info("\(parser.detectedPDFVersion): XObject 'Q' (restore graphics state)", category: .general)
+            parser.restoreGraphicsState()
         }
         
         CGPDFOperatorTableSetCallback(operatorTable, "gs") { (scanner, info) in

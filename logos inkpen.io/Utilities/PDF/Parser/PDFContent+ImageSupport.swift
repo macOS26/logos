@@ -561,4 +561,49 @@ extension PDFCommandParser {
             currentClippingPathId = nil
         }
     }
+
+    /// Save current graphics state including clipping mask state
+    func saveGraphicsState() {
+        let state = GraphicsState(
+            clippingPathId: currentClippingPathId,
+            isInsideClippingPath: isInsideClippingPath,
+            pendingClippingPath: pendingClippingPath,
+            fillOpacity: currentFillOpacity,
+            strokeOpacity: currentStrokeOpacity,
+            transformMatrix: currentTransformMatrix
+        )
+        graphicsStateStack.append(state)
+        Log.info("PDF: 💾 Saved graphics state (stack depth: \(graphicsStateStack.count))", category: .general)
+        Log.info("PDF:    - Clipping path ID: \(currentClippingPathId?.uuidString ?? "none")", category: .general)
+        Log.info("PDF:    - Inside clipping path: \(isInsideClippingPath)", category: .general)
+        Log.info("PDF:    - Has pending clip: \(pendingClippingPath != nil)", category: .general)
+    }
+
+    /// Restore previous graphics state including clipping mask state
+    func restoreGraphicsState() {
+        guard !graphicsStateStack.isEmpty else {
+            Log.info("PDF: ⚠️ Cannot restore graphics state - stack is empty", category: .general)
+            resetClippingState()  // Fallback to old behavior
+            return
+        }
+
+        // If we have a pending clipping path in current state, add it before restoring
+        if let pendingClip = pendingClippingPath {
+            shapes.append(pendingClip)
+            Log.info("PDF: Added pending clipping path before state restore", category: .general)
+        }
+
+        let state = graphicsStateStack.removeLast()
+        currentClippingPathId = state.clippingPathId
+        isInsideClippingPath = state.isInsideClippingPath
+        pendingClippingPath = state.pendingClippingPath
+        currentFillOpacity = state.fillOpacity
+        currentStrokeOpacity = state.strokeOpacity
+        currentTransformMatrix = state.transformMatrix
+
+        Log.info("PDF: 🔄 Restored graphics state (stack depth: \(graphicsStateStack.count))", category: .general)
+        Log.info("PDF:    - Clipping path ID: \(currentClippingPathId?.uuidString ?? "none")", category: .general)
+        Log.info("PDF:    - Inside clipping path: \(isInsideClippingPath)", category: .general)
+        Log.info("PDF:    - Has pending clip: \(pendingClippingPath != nil)", category: .general)
+    }
 }
