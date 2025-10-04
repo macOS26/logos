@@ -70,11 +70,20 @@ class VectorDocument: ObservableObject, Codable {
     // Text is now stored as VectorShape with isTextObject=true in the unified system
     
     // NEW: Unified objects array for proper layer ordering
-    @Published var unifiedObjects: [VectorObject] = [] // All objects (shapes + text) with proper ordering
-    
+    @Published var unifiedObjects: [VectorObject] = [] {
+        didSet {
+            // PERFORMANCE: Auto-rebuild lookup cache when unifiedObjects changes
+            rebuildLookupCache()
+        }
+    }
+
     // PERFORMANCE: O(1) object lookup cache to replace O(n) searches
     private var unifiedObjectLookupCache: [UUID: VectorObject] = [:]
-    private var lookupCacheValid: Bool = false
+
+    // PERFORMANCE: Rebuild cache when unifiedObjects changes
+    private func rebuildLookupCache() {
+        unifiedObjectLookupCache = Dictionary(uniqueKeysWithValues: unifiedObjects.map { ($0.id, $0) })
+    }
 
     // PREVIEW: Temporary typography storage for smooth live preview during drag
     // This avoids updating unified objects which causes choppy updates
@@ -95,25 +104,25 @@ class VectorDocument: ObservableObject, Codable {
     }
     
     // MIGRATION: Helper methods for common unified operations
+    // PERFORMANCE: O(1) lookup using cache instead of O(n) loop
     func findObject(by id: UUID) -> VectorObject? {
-        return unifiedObjects.first { $0.id == id }
+        return unifiedObjectLookupCache[id]
     }
-    
+
     func findShape(by id: UUID) -> VectorShape? {
-        return allShapes.first { $0.id == id }
+        guard let object = unifiedObjectLookupCache[id],
+              case .shape(let shape) = object.objectType,
+              !shape.isTextObject else { return nil }
+        return shape
     }
     
     func findText(by id: UUID) -> VectorText? {
-        for unifiedObject in unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType, 
-               shape.isTextObject,
-               shape.id == id,
-               var vectorText = VectorText.from(shape) {
-                vectorText.layerIndex = unifiedObject.layerIndex
-                return vectorText
-            }
-        }
-        return nil
+        guard let object = unifiedObjectLookupCache[id],
+              case .shape(let shape) = object.objectType,
+              shape.isTextObject,
+              var vectorText = VectorText.from(shape) else { return nil }
+        vectorText.layerIndex = object.layerIndex
+        return vectorText
     }
     
     func getObjectsInLayer(_ layerIndex: Int) -> [VectorObject] {
