@@ -45,9 +45,10 @@ extension VectorDocument {
         // Update selectedShapeIDs and selectedTextIDs based on selectedObjectIDs
         selectedShapeIDs.removeAll()
         selectedTextIDs.removeAll()
-        
+
         for objectID in selectedObjectIDs {
-            if let unifiedObject = unifiedObjects.first(where: { $0.id == objectID }) {
+            // PERFORMANCE: Use O(1) UUID lookup cache instead of O(N) loop
+            if let unifiedObject = findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     if shape.isTextObject {
@@ -63,27 +64,21 @@ extension VectorDocument {
     /// Sync unified selection from legacy selection arrays
     func syncUnifiedSelectionFromLegacy() {
         selectedObjectIDs.removeAll()
-        
+
         // Add selected shapes
         for shapeID in selectedShapeIDs {
-            if let unifiedObject = unifiedObjects.first(where: { 
-                if case .shape(let shape) = $0.objectType {
-                    return shape.id == shapeID
-                }
-                return false
-            }) {
+            // PERFORMANCE: Use O(1) UUID lookup via findShape instead of O(N) loop
+            if let _ = findShape(by: shapeID),
+               let unifiedObject = findObject(by: shapeID) {
                 selectedObjectIDs.insert(unifiedObject.id)
             }
         }
-        
+
         // Add selected text objects (now represented as VectorShape with isTextObject = true)
         for textID in selectedTextIDs {
-            if let unifiedObject = unifiedObjects.first(where: { 
-                if case .shape(let shape) = $0.objectType {
-                    return shape.isTextObject && shape.id == textID
-                }
-                return false
-            }) {
+            // PERFORMANCE: Use O(1) UUID lookup via findText instead of O(N) loop
+            if let _ = findText(by: textID),
+               let unifiedObject = findObject(by: textID) {
                 selectedObjectIDs.insert(unifiedObject.id)
             }
         }
