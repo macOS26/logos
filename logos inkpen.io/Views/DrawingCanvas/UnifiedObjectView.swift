@@ -79,7 +79,7 @@ struct UnifiedObjectContentView: View {
                         dragPreviewDelta: dragPreviewDelta,
                         dragPreviewTrigger: dragPreviewTrigger
                     )
-                    .id(shape.id)  // PERFORMANCE: Only use shape ID - don't recreate view on position change
+                    .id("\(shape.id)-\(position.x)-\(position.y)")  // CRITICAL FIX: Include position in ID to trigger view refresh
                     .allowsHitTesting(true)
                     .onAppear {
                         Log.info("📝 UnifiedObjectView: Rendering text '\((shape.textContent ?? "").prefix(20))' at position \(position)", category: .general)
