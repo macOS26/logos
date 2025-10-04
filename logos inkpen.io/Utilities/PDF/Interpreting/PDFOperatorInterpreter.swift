@@ -187,8 +187,8 @@ class PDFOperatorInterpreter {
         CGPDFOperatorTableSetCallback(operatorTable, "Q") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
-            Log.info("PDF: 'Q' (restore graphics state) operator encountered", category: .general)
-            parser.resetClippingState()  // Reset clipping when restoring graphics state
+            Log.info("PDF: 'Q' (restore graphics state) - FINALIZING clipping group", category: .general)
+            parser.finalizeClippingGroup()  // Finalize the clipping group (separate clipping mask)
         }
         
         // Extended graphics state

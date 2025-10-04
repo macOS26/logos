@@ -227,16 +227,21 @@ extension PDFCommandParser {
 
         // IMPORTANT: In PDFs, images are inherently 1x1 unit squares at origin
         // The CTM transforms them to final size and position
-        // We need to extract the actual size from the CTM and store it as bounds
+        // However, if there's a CLIPPING PATH, the image bounds should match the clipping path, NOT the CTM
 
-        // The CTM format is [a, b, c, d, tx, ty] where:
-        // - a, d are scale factors for x and y
-        // - b, c are rotation/skew factors
-        // - tx, ty are translation values
+        var finalRect: CGRect
 
-        // Apply the transform to get final position and size
-        let unitRect = CGRect(x: 0, y: 0, width: 1.0, height: 1.0)
-        let finalRect = unitRect.applying(currentTransform)
+        // If we have a pending clipping path, use ITS bounds for the image
+        if let pendingClip = pendingClippingPath {
+            finalRect = pendingClip.bounds
+            Log.info("PDF: 🎯 Using CLIPPING PATH bounds for image: \(finalRect)", category: .general)
+            Log.info("PDF: (CTM would have given: \(CGRect(x: 0, y: 0, width: 1, height: 1).applying(currentTransform)))", category: .general)
+        } else {
+            // No clipping path - use CTM transform
+            let unitRect = CGRect(x: 0, y: 0, width: 1.0, height: 1.0)
+            finalRect = unitRect.applying(currentTransform)
+            Log.info("PDF: Using CTM transform for image bounds: \(finalRect)", category: .general)
+        }
 
         // Store transparent image bounds if applicable
         if hasUpcomingTransparentImage {
@@ -244,7 +249,7 @@ extension PDFCommandParser {
             Log.info("PDF: Stored transparent image bounds: \(finalRect)", category: .general)
         }
 
-        // Create a rectangle path for the image bounds using actual dimensions
+        // Create a rectangle path for the image bounds
         var imagePath = VectorPath(elements: [])
         imagePath.elements.append(.move(to: VectorPoint(finalRect.minX, finalRect.minY)))
         imagePath.elements.append(.line(to: VectorPoint(finalRect.maxX, finalRect.minY)))
@@ -279,6 +284,17 @@ extension PDFCommandParser {
             shapes.append(pendingClip)
             pendingClippingPath = nil
             Log.info("PDF: ✅ Added clipping path AFTER image for correct layer order", category: .general)
+
+            // CRITICAL: Completely reset ALL clipping and compound path state
+            // This ensures the NEXT image with clipping path is treated as SEPARATE, not combined
+            isInsideClippingPath = false
+            currentClippingPathId = nil
+            isInCompoundPath = false
+            compoundPathParts.removeAll()
+            moveToCount = 0
+            hasClipOperatorPending = false
+            clipOperatorPath.removeAll()
+            Log.info("PDF: 🔄 RESET all clipping state - ready for next SEPARATE clipping mask", category: .general)
         }
 
         // Clear the transparent image flag now that we've processed it
@@ -560,5 +576,31 @@ extension PDFCommandParser {
             isInsideClippingPath = false
             currentClippingPathId = nil
         }
+    }
+
+    /// Finalize clipping group - called when Q operator ends a clipping group
+    /// This ensures each q/Q block with a clipping mask is treated as SEPARATE
+    func finalizeClippingGroup() {
+        Log.info("PDF: 🔚 FINALIZING CLIPPING GROUP (Q operator)", category: .general)
+
+        // If we have a pending clipping path, add it now
+        if let pendingClip = pendingClippingPath {
+            shapes.append(pendingClip)
+            pendingClippingPath = nil
+            Log.info("PDF: ✅ Added pending clipping path from finalized group", category: .general)
+        }
+
+        // CRITICAL: Completely reset ALL clipping and compound path state
+        // Each q/Q block is a SEPARATE clipping group
+        isInsideClippingPath = false
+        currentClippingPathId = nil
+        isInCompoundPath = false
+        compoundPathParts.removeAll()
+        moveToCount = 0
+        hasClipOperatorPending = false
+        clipOperatorPath.removeAll()
+        currentPath.removeAll()  // Also clear current path
+
+        Log.info("PDF: 🔄 COMPLETE RESET - ready for next SEPARATE clipping group", category: .general)
     }
 }
