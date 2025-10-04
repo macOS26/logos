@@ -101,7 +101,8 @@ extension VectorDocument {
 
         // Apply to selected objects from unified system
         for objectID in selectedObjectIDs {
-            if let unifiedObject = unifiedObjects.first(where: { $0.id == objectID }) {
+            // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+            if let unifiedObject = findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     if shape.isTextObject {
@@ -160,7 +161,8 @@ extension VectorDocument {
     func getSelectedObjectColor() -> VectorColor? {
         guard let firstSelectedID = selectedObjectIDs.first else { return nil }
 
-        if let unifiedObject = unifiedObjects.first(where: { $0.id == firstSelectedID }) {
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        if let unifiedObject = findObject(by: firstSelectedID) {
             switch unifiedObject.objectType {
             case .shape(let shape):
                 if activeColorTarget == .stroke {
