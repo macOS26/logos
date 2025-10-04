@@ -18,24 +18,20 @@ struct FontPanel: View {
         guard !document.selectedTextIDs.isEmpty,
               let textID = document.selectedTextIDs.first else { return nil }
 
-        if let unifiedObj = document.unifiedObjects.first(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject && shape.id == textID
-            }
-            return false
-        }) {
-            if case .shape(let shape) = unifiedObj.objectType {
-                // CRITICAL FIX: If typography is nil, create it from the shape's stroke/fill styles
-                // This handles the case when text is restored from undo but typography wasn't preserved
-                if let typography = shape.typography {
-                    return typography
-                } else if shape.isTextObject {
-                    // Fallback: create typography from shape properties
-                    return TypographyProperties(
-                        strokeColor: shape.strokeStyle?.color ?? .black,
-                        fillColor: shape.fillStyle?.color ?? .black
-                    )
-                }
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        if let unifiedObj = document.findObject(by: textID),
+           case .shape(let shape) = unifiedObj.objectType,
+           shape.isTextObject {
+            // CRITICAL FIX: If typography is nil, create it from the shape's stroke/fill styles
+            // This handles the case when text is restored from undo but typography wasn't preserved
+            if let typography = shape.typography {
+                return typography
+            } else {
+                // Fallback: create typography from shape properties
+                return TypographyProperties(
+                    strokeColor: shape.strokeStyle?.color ?? .black,
+                    fillColor: shape.fillStyle?.color ?? .black
+                )
             }
         }
         return nil
@@ -48,16 +44,12 @@ struct FontPanel: View {
     private var selectedTextContent: String? {
         guard let textID = selectedTextID else { return nil }
 
-        if let unifiedObj = document.unifiedObjects.first(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject && shape.id == textID
-            }
-            return false
-        }) {
-            if case .shape(let shape) = unifiedObj.objectType {
-                // CRITICAL FIX: Use textContent if available, otherwise parse from name
-                return shape.textContent ?? shape.name.replacingOccurrences(of: "Text: ", with: "")
-            }
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        if let unifiedObj = document.findObject(by: textID),
+           case .shape(let shape) = unifiedObj.objectType,
+           shape.isTextObject {
+            // CRITICAL FIX: Use textContent if available, otherwise parse from name
+            return shape.textContent ?? shape.name.replacingOccurrences(of: "Text: ", with: "")
         }
         return nil
     }
@@ -67,18 +59,14 @@ struct FontPanel: View {
               let typography = selectedTextTypography else { return nil }
 
         // CRITICAL FIX: Try to get the actual VectorText from the shape first
-        if let unifiedObj = document.unifiedObjects.first(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject && shape.id == textID
-            }
-            return false
-        }) {
-            if case .shape(let shape) = unifiedObj.objectType {
-                // Use VectorText.from to properly reconstruct the text object
-                return VectorText.from(shape)
-            }
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        if let unifiedObj = document.findObject(by: textID),
+           case .shape(let shape) = unifiedObj.objectType,
+           shape.isTextObject {
+            // Use VectorText.from to properly reconstruct the text object
+            return VectorText.from(shape)
         }
-        
+
         // Fallback to creating a minimal VectorText
         var text = VectorText(
             content: selectedTextContent ?? "",
@@ -90,6 +78,8 @@ struct FontPanel: View {
     }
 
     private var editingText: VectorText? {
+        // NOTE: This O(N) loop is intentional - we need to find ANY text object in editing mode
+        // Cannot use UUID lookup since we don't know which text is being edited
         if let unifiedObj = document.unifiedObjects.first(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.isTextObject && (shape.isEditing == true)
