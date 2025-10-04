@@ -285,10 +285,8 @@ extension VectorDocument {
     
     /// Checks if a shape is part of a clipping mask (either as mask or clipped content)
     func isShapeInClippingMask(_ shapeID: UUID) -> Bool {
-        guard let layerIndex = selectedLayerIndex else { return false }
-        
-        let shapes = getShapesForLayer(layerIndex)
-        if let shape = shapes.first(where: { $0.id == shapeID }) {
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        if let shape = findShape(by: shapeID) {
             return shape.isClippingPath || shape.clippedByShapeID != nil
         }
         return false
@@ -297,14 +295,16 @@ extension VectorDocument {
     /// Gets all shapes that are part of a clipping mask (including the mask itself)
     func getClippingMaskGroup(for maskID: UUID) -> [VectorShape] {
         guard let layerIndex = selectedLayerIndex else { return [] }
-        
+
         var group: [VectorShape] = []
-        
+
         // Add the mask shape
-        let shapes = getShapesForLayer(layerIndex)
-        if let maskShape = shapes.first(where: { $0.id == maskID && $0.isClippingPath }) {
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        if let maskShape = findShape(by: maskID), maskShape.isClippingPath {
             group.append(maskShape)
         }
+
+        let shapes = getShapesForLayer(layerIndex)
         
         // Add all clipped content
         for shape in shapes {
