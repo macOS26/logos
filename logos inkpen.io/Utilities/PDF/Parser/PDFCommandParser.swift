@@ -72,6 +72,10 @@ class PDFCommandParser {
         var fillOpacity: Double
         var strokeOpacity: Double
         var transformMatrix: CGAffineTransform
+        // Compound path state - must be isolated per graphics state
+        var isInCompoundPath: Bool
+        var compoundPathParts: [[PathCommand]]
+        var moveToCount: Int
     }
     var graphicsStateStack: [GraphicsState] = []
 
