@@ -606,4 +606,52 @@ extension NSBezierPath {
             }
         }
     }
-} 
+}
+
+// MARK: - VectorText to VectorShape Conversion
+
+extension VectorText {
+    /// Convert VectorText to VectorShape for unified storage
+    /// This is used by both PDF and SVG import to convert text objects to shapes
+    func toVectorShape() -> VectorShape {
+        // Create fill and stroke styles from typography
+        let fillStyle = FillStyle(
+            color: typography.fillColor,
+            opacity: typography.fillOpacity
+        )
+
+        let strokeStyle = typography.hasStroke ? StrokeStyle(
+            color: typography.strokeColor,
+            width: typography.strokeWidth,
+            opacity: typography.strokeOpacity
+        ) : nil
+
+        // For text objects, position is handled separately from transform
+        // Use the text's transform (may contain rotation, scale, etc)
+        var shape = VectorShape(
+            name: "Text: \(content.prefix(20))",
+            path: VectorPath(elements: []), // Empty path for text objects
+            strokeStyle: strokeStyle,
+            fillStyle: fillStyle,
+            transform: transform  // Use text's transform
+        )
+
+        // Mark as text object
+        shape.isTextObject = true
+        shape.textContent = content
+        shape.textPosition = position
+        shape.typography = typography  // CRITICAL: Store typography for text rendering
+        shape.areaSize = areaSize      // CRITICAL: Store area size for text display
+        shape.bounds = bounds           // CRITICAL: Set proper bounds for rendering
+        shape.cursorPosition = 0        // Initialize cursor position
+
+        // Store font info in metadata for import reconstruction
+        shape.metadata["fontFamily"] = typography.fontFamily
+        shape.metadata["fontSize"] = "\(typography.fontSize)"
+        shape.metadata["letterSpacing"] = "\(typography.letterSpacing)"
+        shape.metadata["lineSpacing"] = "\(typography.lineSpacing)"
+
+        return shape
+    }
+}
+

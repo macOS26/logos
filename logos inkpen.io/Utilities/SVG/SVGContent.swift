@@ -25,22 +25,33 @@ struct SVGContent {
 func parseSVGContent(_ data: Data, useExtremeValueHandling: Bool = false) throws -> SVGContent {
     // PROFESSIONAL SVG PARSER IMPLEMENTATION
             Log.fileOperation("🔧 Implementing professional SVG parser...", level: .info)
-    
+
     guard let xmlString = String(data: data, encoding: .utf8) else {
         throw VectorImportError.parsingError("Could not decode SVG as UTF-8", line: nil)
     }
-    
+
     let parser = SVGParser()
-    
+
     // Enable extreme value handling if requested
     if useExtremeValueHandling {
         parser.enableExtremeValueHandling()
     }
-    
+
     let result = try parser.parse(xmlString)
 
+    // CRITICAL FIX: Convert textObjects to VectorShapes (same as PDF import)
+    var allShapes = result.shapes
+
+    for textObject in result.textObjects {
+        let textShape = textObject.toVectorShape()
+        allShapes.append(textShape)
+        Log.fileOperation("📝 Converted SVG text to shape: '\(textObject.content.prefix(30))...' (id: \(textShape.id))", level: .debug)
+    }
+
+    Log.fileOperation("✅ SVG parsing complete: \(result.shapes.count) shapes + \(result.textObjects.count) text objects = \(allShapes.count) total", level: .info)
+
     return SVGContent(
-        shapes: result.shapes,
+        shapes: allShapes,
         documentSize: result.documentSize,
         viewBoxSize: result.viewBoxSize,
         colorSpace: "RGB",
