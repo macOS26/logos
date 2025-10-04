@@ -191,7 +191,8 @@ class VectorDocument: ObservableObject, Codable {
 
         var combinedBounds: CGRect?
         for objectID in selectedObjectIDs {
-            if let unifiedObject = unifiedObjects.first(where: { $0.id == objectID }) {
+            // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+            if let unifiedObject = findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     let shapeBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
