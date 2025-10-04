@@ -271,15 +271,30 @@ extension SVGParser {
                     }
                 }
 
-                let textObject = VectorText(
+                // Calculate proper areaSize and bounds (same as PDF import)
+                let lines = multiLineContent.components(separatedBy: .newlines)
+                let maxLineLength = lines.map { $0.count }.max() ?? 0
+                let estimatedWidth = Double(maxLineLength) * firstFontSize * 0.6  // Same as PDF
+                let estimatedHeight = Double(lines.count) * firstFontSize * 1.2   // Same as PDF
+
+                var textObject = VectorText(
                     content: multiLineContent,
                     typography: typography,
                     position: CGPoint(x: adjustedX, y: baseY),
                     transform: finalTextTransform,
-                    areaSize: nil        // Will be calculated automatically
+                    areaSize: CGSize(width: max(100, estimatedWidth), height: max(firstFontSize, estimatedHeight))
+                )
+
+                // Set bounds explicitly (same as PDF import)
+                textObject.bounds = CGRect(
+                    x: adjustedX,
+                    y: baseY,
+                    width: max(100, estimatedWidth),
+                    height: max(firstFontSize, estimatedHeight)
                 )
 
                 textObjects.append(textObject)
+                Log.fileOperation("📝 SVG Import: Text areaSize=\(textObject.areaSize ?? .zero), bounds=\(textObject.bounds)", level: .debug)
                 Log.fileOperation("📝 Created single multi-line text object with \(combinedContent.count) lines: '\(multiLineContent.prefix(50))'", level: .info)
             }
         } else {
@@ -364,14 +379,31 @@ extension SVGParser {
                 }
             }
 
-            let textObject = VectorText(
-                content: currentTextContent.trimmingCharacters(in: .whitespacesAndNewlines),
+            // Calculate proper areaSize and bounds (same as PDF import)
+            let trimmedContent = currentTextContent.trimmingCharacters(in: .whitespacesAndNewlines)
+            let lines = trimmedContent.components(separatedBy: .newlines)
+            let maxLineLength = lines.map { $0.count }.max() ?? 0
+            let estimatedWidth = Double(maxLineLength) * fontSize * 0.6  // Same as PDF
+            let estimatedHeight = Double(lines.count) * fontSize * 1.2   // Same as PDF
+
+            var textObject = VectorText(
+                content: trimmedContent,
                 typography: typography,
                 position: CGPoint(x: adjustedX, y: y),
-                transform: finalTextTransform
+                transform: finalTextTransform,
+                areaSize: CGSize(width: max(100, estimatedWidth), height: max(fontSize, estimatedHeight))
             )
-            
+
+            // Set bounds explicitly (same as PDF import)
+            textObject.bounds = CGRect(
+                x: adjustedX,
+                y: y,
+                width: max(100, estimatedWidth),
+                height: max(fontSize, estimatedHeight)
+            )
+
             textObjects.append(textObject)
+            Log.fileOperation("📝 SVG Import: Text areaSize=\(textObject.areaSize ?? .zero), bounds=\(textObject.bounds)", level: .debug)
             Log.fileOperation("📝 Created single-line text object: '\(textObject.content)'", level: .info)
         }
         
