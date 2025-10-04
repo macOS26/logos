@@ -98,12 +98,8 @@ struct UnifiedObjectContentView: View {
                     }
             } else if let clipID = shape.clippedByShapeID {
                 // This shape is clipped by another shape - find the mask shape
-                if let maskUnifiedObject = document.unifiedObjects.first(where: { 
-                    if case .shape(let maskShape) = $0.objectType {
-                        return maskShape.id == clipID
-                    }
-                    return false
-                }),
+                // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+                if let maskUnifiedObject = document.findObject(by: clipID),
                 case .shape(let maskShape) = maskUnifiedObject.objectType {
                     // Create pre-transformed paths for the clipping mask
                     let clippedPath = createPreTransformedPath(for: shape)
