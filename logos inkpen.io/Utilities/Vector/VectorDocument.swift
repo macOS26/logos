@@ -72,8 +72,19 @@ class VectorDocument: ObservableObject, Codable {
     // NEW: Unified objects array for proper layer ordering
     @Published var unifiedObjects: [VectorObject] = [] {
         didSet {
-            // PERFORMANCE: Auto-rebuild lookup cache when unifiedObjects changes
-            rebuildLookupCache()
+            // PERFORMANCE: Only rebuild cache if array size changed (add/remove)
+            // Don't rebuild for in-place modifications (position updates, etc.)
+            if oldValue.count != unifiedObjects.count {
+                rebuildLookupCache()
+            } else {
+                // PERFORMANCE: For modifications, just update changed entries
+                // This avoids rebuilding entire dictionary on every position update
+                for (index, object) in unifiedObjects.enumerated() {
+                    if index < oldValue.count && oldValue[index].id == object.id {
+                        unifiedObjectLookupCache[object.id] = object
+                    }
+                }
+            }
         }
     }
 
