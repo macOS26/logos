@@ -230,13 +230,13 @@ struct DrawingCanvas: View {
     @State internal var activeBrushShape: VectorShape? = nil // Real-time brush shape preview
     @State internal var brushPreviewPath: VectorPath? = nil // Preview path drawn by Metal overlay (not in document)
 
-    // MARKER DRAWING STATE (Felt-tip marker tool)
+    // MARKER DRAWING STATE (Same as brush)
     @State internal var markerPath: VectorPath?
-    @State internal var markerRawPoints: [MarkerPoint] = [] // Raw mouse tracking points with pressure
-    @State internal var markerSimplifiedPoints: [CGPoint] = [] // Douglas-Peucker simplified points
+    @State internal var markerRawPoints: [MarkerPoint] = []
+    @State internal var markerSimplifiedPoints: [CGPoint] = []
     @State internal var isMarkerDrawing = false
-    @State internal var activeMarkerShape: VectorShape? = nil // Real-time marker shape preview
-    @State internal var markerPreviewPath: VectorPath? = nil // Preview path drawn by overlay (not in document)
+    @State internal var activeMarkerShape: VectorShape? = nil
+    @State internal var markerPreviewPath: VectorPath? = nil
 
     // Note: freehandSmoothingTolerance now comes from document.settings.freehandSmoothingTolerance
 

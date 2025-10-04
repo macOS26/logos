@@ -34,7 +34,6 @@ extension DrawingCanvas {
             return
         }
         
-        Log.info("Pen +/- Tool: No point or curve segment found at location", category: .general)
     }
     
     // MARK: - Point Insertion
@@ -49,7 +48,6 @@ extension DrawingCanvas {
         let element = shape.path.elements[elementIndex]
         
         guard case .curve(let to, let control1, let control2) = element else {
-            Log.info("Pen +/-: Can only insert points on curve segments", category: .general)
             return
         }
         
@@ -64,11 +62,9 @@ extension DrawingCanvas {
             case .move(let point), .line(let point), .curve(let point, _, _), .quadCurve(let point, _):
                 startPoint = point
             default:
-                Log.info("Pen +/-: Invalid previous element", category: .general)
                 return
             }
         } else {
-            Log.info("Pen +/-: Cannot insert on first element", category: .general)
             return
         }
         
@@ -117,7 +113,6 @@ extension DrawingCanvas {
         document.updateUnifiedObjectsOptimized()
         document.objectWillChange.send()
         
-        Log.info("Pen +/-: Inserted smooth point on curve segment", category: .general)
     }
     
     // MARK: - Point Deletion with Curve Preservation
@@ -142,8 +137,6 @@ extension DrawingCanvas {
         if !closedPathEndpoints.isEmpty {
             // System beep to indicate refusal
             NSSound.beep()
-            Log.info("🚫 PEN +/-: COINCIDENT POINT PROTECTION - Cannot remove first/last points (system beep)", category: .general)
-            Log.info("   Coincident points are sacred and maintain path closure integrity", category: .general)
             return
         }
         
@@ -152,8 +145,6 @@ extension DrawingCanvas {
         if !coincidentPoints.isEmpty {
             // System beep to indicate refusal
             NSSound.beep()
-            Log.info("🚫 PEN +/-: COINCIDENT POINT PROTECTION - Cannot remove coincident points (system beep)", category: .general)
-            Log.info("   Found \(coincidentPoints.count) coincident points - all coincident points are protected", category: .general)
             return
         }
         
@@ -171,7 +162,6 @@ extension DrawingCanvas {
         if pathPointCount <= 2 {
             // Delete entire shape if too few points remain using unified helper
             document.removeShapeFromUnifiedSystem(id: shape.id)
-            Log.info("Pen +/-: Deleted entire shape (too few points)", category: .general)
         } else {
             // Attempt to merge neighboring curves for smooth deletion
             let updatedElements = deletePointWithCurveMerging(
@@ -184,7 +174,6 @@ extension DrawingCanvas {
             modifiedShape.updateBounds()
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: modifiedShape)
             
-            Log.info("Pen +/-: Deleted point with curve preservation", category: .general)
         }
         
         // Update UI

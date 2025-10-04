@@ -17,26 +17,24 @@ extension VectorDocument {
         guard fromLayerIndex >= 0 && fromLayerIndex < layers.count,
               toLayerIndex >= 0 && toLayerIndex < layers.count,
               fromLayerIndex != toLayerIndex else {
-            Log.error("❌ Invalid layer indices for shape move: from=\(fromLayerIndex), to=\(toLayerIndex)", category: .error)
+            // Log.error("❌ Invalid layer indices for shape move: from=\(fromLayerIndex), to=\(toLayerIndex)", category: .error)
             return
         }
         
         // Don't allow moving to locked layers
         if layers[toLayerIndex].isLocked {
-            Log.info("🚫 Cannot move objects to locked layer '\(layers[toLayerIndex].name)'", category: .general)
             return
         }
         
         // Don't allow moving from locked layers unless it's a selection operation
         if layers[fromLayerIndex].isLocked {
-            Log.info("🚫 Cannot move objects from locked layer '\(layers[fromLayerIndex].name)'", category: .general)
             return
         }
         
         // Find and remove the shape from source layer
         let shapes = getShapesForLayer(fromLayerIndex)
         guard let shapeIndex = shapes.firstIndex(where: { $0.id == shapeId }) else {
-            Log.error("❌ Shape not found in source layer \(fromLayerIndex)", category: .error)
+            // Log.error("❌ Shape not found in source layer \(fromLayerIndex)", category: .error)
             return
         }
         
@@ -44,7 +42,7 @@ extension VectorDocument {
         
         // Get the shape before removing it
         guard let shape = getShapeAtIndex(layerIndex: fromLayerIndex, shapeIndex: shapeIndex) else {
-            Log.error("❌ Failed to get shape from source layer", category: .error)
+            // Log.error("❌ Failed to get shape from source layer", category: .error)
             return
         }
         
@@ -56,25 +54,23 @@ extension VectorDocument {
         selectedShapeIDs = [shapeId]
         selectedLayerIndex = toLayerIndex
         
-        Log.info("✅ Moved shape '\(shape.name)' from layer '\(layers[fromLayerIndex].name)' to '\(layers[toLayerIndex].name)'", category: .fileOperations)
     }
     
     /// Move a text object to a specific layer (conceptually)
     func moveTextToLayer(textId: UUID, toLayerIndex: Int) {
         guard toLayerIndex >= 0 && toLayerIndex < layers.count else {
-            Log.error("❌ Invalid layer index for text move: \(toLayerIndex)", category: .error)
+            // Log.error("❌ Invalid layer index for text move: \(toLayerIndex)", category: .error)
             return
         }
         
         // Don't allow moving to locked layers
         if layers[toLayerIndex].isLocked {
-            Log.info("🚫 Cannot move text to locked layer '\(layers[toLayerIndex].name)'", category: .general)
             return
         }
         
         // Check if text exists in unified system
         guard findText(by: textId) != nil else {
-            Log.error("❌ Text object not found", category: .error)
+            // Log.error("❌ Text object not found", category: .error)
             return
         }
         
@@ -88,7 +84,6 @@ extension VectorDocument {
         selectedShapeIDs.removeAll()
         selectedLayerIndex = toLayerIndex
         
-        Log.info("✅ Moved text object to layer '\(layers[toLayerIndex].name)'", category: .fileOperations)
     }
     
     /// Handle dropping a draggable object onto a layer

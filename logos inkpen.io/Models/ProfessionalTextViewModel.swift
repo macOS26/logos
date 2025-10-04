@@ -57,8 +57,6 @@ class ProfessionalTextViewModel: ObservableObject {
 
         self.isEditing = textObject.isEditing
 
-        Log.info("📝 TEXT INIT: '\(textObject.content)' at \(textObject.position)", category: .general)
-        Log.info("📝 TEXT INIT: Using areaSize \(textObject.areaSize?.debugDescription ?? "nil") for text box", category: .general)
     }
 
     // MARK: - Calculate Text Height
@@ -97,7 +95,7 @@ class ProfessionalTextViewModel: ObservableObject {
     func syncFromDocument(_ textObject: VectorText) {
         // CRITICAL: Check if we should update at all
         guard self.textObject.id == textObject.id else {
-            Log.error("❌ SYNC ERROR: Mismatched text IDs", category: .error)
+            // Log.error("❌ SYNC ERROR: Mismatched text IDs", category: .error)
             return
         }
 
@@ -117,8 +115,6 @@ class ProfessionalTextViewModel: ObservableObject {
         let fontChanged = self.fontSize != CGFloat(textObject.typography.fontSize)
         let editingChanged = self.isEditing != textObject.isEditing
         let colorChanged = self.textObject.typography.fillColor != textObject.typography.fillColor
-        // CRITICAL FIX: Store old font to detect style changes
-        let oldFont = self.selectedFont
 
         // Group all typography changes for cleaner code (with precision handling for line height)
         let typographyChanged = (
@@ -135,9 +131,7 @@ class ProfessionalTextViewModel: ObservableObject {
         }
 
         if shouldSyncContent {
-            Log.fileOperation("🔄 SYNCING from VectorText: '\(textObject.content)' (was: '\(self.text)') - Color changed: \(colorChanged)", level: .info)
         } else {
-            Log.fileOperation("🔄 SYNCING from VectorText: CONTENT SKIPPED (protecting typed text) - Color changed: \(colorChanged)", level: .info)
         }
 
         // Disable auto-resize during sync to prevent loops
@@ -151,9 +145,7 @@ class ProfessionalTextViewModel: ObservableObject {
         // VECTOR APP OPTIMIZATION: Only update text if content should be synced (protect typed text)
         if shouldSyncContent {
             self.text = textObject.content
-            Log.fileOperation("📝 TEXT CONTENT UPDATED: Cursor may be affected", level: .info)
         } else {
-            Log.fileOperation("📝 TEXT CONTENT UNCHANGED: Preserving cursor position", level: .info)
         }
 
         self.fontSize = CGFloat(textObject.typography.fontSize)
@@ -161,9 +153,6 @@ class ProfessionalTextViewModel: ObservableObject {
         // CRITICAL FIX: Always update the font when typography changes
         // This ensures font style, weight, and other properties update live
         self.selectedFont = textObject.typography.nsFont
-
-        // CRITICAL FIX: Detect font style changes that don't change the font name
-        let fontStyleChanged = oldFont != self.selectedFont
 
         // CRITICAL FIX: Don't reset editing state during active typing
         // Only sync isEditing if we're not currently editing to prevent focus loss
@@ -174,7 +163,6 @@ class ProfessionalTextViewModel: ObservableObject {
         // CURSOR POSITIONING: Sync cursor position from VectorText
         if textObject.isEditing && textObject.cursorPosition != self.userInitiatedCursorPosition {
             self.userInitiatedCursorPosition = textObject.cursorPosition
-            Log.info("🎯 CURSOR SYNC: Set userInitiatedCursorPosition = \(textObject.cursorPosition)", category: .general)
         }
 
         self.textAlignment = textObject.typography.alignment.nsTextAlignment
@@ -182,16 +170,7 @@ class ProfessionalTextViewModel: ObservableObject {
 
         // REMOVED: objectWillChange.send() - Properties are @Published and will auto-trigger updates
         // This was causing performance issues with rapid font changes
-        if colorChanged || typographyChanged || fontStyleChanged {
-            let changes = [
-                colorChanged ? "color" : nil,
-                typographyChanged ? "typography" : nil,
-                fontStyleChanged ? "font-style" : nil
-            ].compactMap { $0 }.joined(separator: ", ")
-
-            Log.fileOperation("🎨 Visual properties changed: \(changes)", level: .debug)
-            // NO MANUAL REFRESH NEEDED - SwiftUI handles this automatically
-        }
+        // NO MANUAL REFRESH NEEDED - SwiftUI handles this automatically
 
         // CRITICAL FIX: NEVER override user's manual resize - ONLY sync position
         // Text box size is ENTIRELY controlled by user manual resize and auto-resize
@@ -202,7 +181,6 @@ class ProfessionalTextViewModel: ObservableObject {
             height: self.textBoxFrame.height  // PRESERVE USER'S HEIGHT
         )
 
-      //  Log.info("📦 EXTERNAL SYNC: Preserved user text box size, only updated position", category: .general)
     }
 
     private var lastTypingTime: TimeInterval = 0
@@ -228,7 +206,6 @@ class ProfessionalTextViewModel: ObservableObject {
         // CRITICAL FIX: Update VectorText bounds when editing finishes
         // This ensures the selection box matches the text canvas when switching to arrow tool
         updateDocumentTextBounds(textBoxFrame)
-        Log.fileOperation("🔄 STOP EDITING: Updated VectorText bounds to match text canvas", level: .info)
     }
 
     func updateTextBoxFrame(_ newFrame: CGRect) {
@@ -241,7 +218,6 @@ class ProfessionalTextViewModel: ObservableObject {
         // This ensures the main selection system (blue/red rectangle) matches the text canvas
         updateDocumentTextBounds(newFrame)
 
-        Log.fileOperation("🔄 MANUAL RESIZE: Updated text box frame to \(newFrame)", level: .info)
 
         // Re-enable auto-resize after a delay
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
@@ -259,9 +235,6 @@ class ProfessionalTextViewModel: ObservableObject {
         ))
         // CRITICAL FIX: Update areaSize to match new dimensions for proper copy/paste
         document.updateTextAreaSizeInUnified(id: textObject.id, areaSize: CGSize(width: frame.width, height: frame.height))
-        if let textObj = document.findText(by: textObject.id) {
-            Log.fileOperation("📐 UPDATED VECTORTEXT BOUNDS: position=\(textObj.position), bounds=\(textObj.bounds), areaSize=\(textObj.areaSize?.debugDescription ?? "nil")", level: .info)
-        }
     }
 
     // MARK: - Rectangle Glyph Detection
@@ -337,7 +310,6 @@ class ProfessionalTextViewModel: ObservableObject {
         let isNested = (bounds1.contains(bounds2) || bounds2.contains(bounds1))
         
         if isNested {
-            Log.info("⚠️ DETECTED RECTANGLE GLYPH: Missing character placeholder with rectangular counter", category: .general)
             return true
         }
         
@@ -421,9 +393,6 @@ class ProfessionalTextViewModel: ObservableObject {
         // Force complete layout
         layoutManager.ensureGlyphs(forGlyphRange: NSRange(location: 0, length: text.count))
         layoutManager.ensureLayout(for: textContainer)
-        
-        // Get the actual used rect to understand where text is positioned
-        let usedRect = layoutManager.usedRect(for: textContainer)
 
         // Create paths from glyphs
         linePaths = []
@@ -459,11 +428,6 @@ class ProfessionalTextViewModel: ObservableObject {
                 actualLineRect = layoutManager.lineFragmentRect(forGlyphAt: glyphIndex, effectiveRange: &effectiveRange, withoutAdditionalLayout: true)
                 actualUsedRect = layoutManager.lineFragmentUsedRect(forGlyphAt: glyphIndex, effectiveRange: &effectiveRange, withoutAdditionalLayout: true)
 
-                // Get the typographic bounds for accurate baseline positioning
-                let textAscent = nsFont.ascender
-                let textDescent = abs(nsFont.descender)
-                let textLeading = nsFont.leading
-
                 // CRITICAL FIX: Handle X positioning based on text alignment
                 // Different alignments need different approaches for accurate positioning
                 let glyphX: CGFloat
@@ -489,24 +453,6 @@ class ProfessionalTextViewModel: ObservableObject {
 
                 // Enhanced debug logging for first glyph of each line
                 if glyphIndex == lineRange.location {
-                    Log.info("=== LINE \(self.linePaths.count) TEXT TO PATH CONVERSION ===", category: .general)
-                    Log.info("TextBox Frame: \(self.textBoxFrame)", category: .general)
-                    Log.info("  - Origin: (\(self.textBoxFrame.origin.x), \(self.textBoxFrame.origin.y))", category: .general)
-                    Log.info("  - Size: \(self.textBoxFrame.width) x \(self.textBoxFrame.height)", category: .general)
-                    Log.info("NSTextView Layout Info:", category: .general)
-                    Log.info("  - Container Used Rect: \(usedRect)", category: .general)
-                    Log.info("  - Line Rect: \(lineRect)", category: .general)
-                    Log.info("  - Actual Line Rect: \(actualLineRect)", category: .general)
-                    Log.info("  - Actual Used Rect: \(actualUsedRect)", category: .general)
-                    Log.info("Type Metrics:", category: .general)
-                    Log.info("  - Ascent: \(textAscent)", category: .general)
-                    Log.info("  - Descent: \(textDescent)", category: .general)
-                    Log.info("  - Leading: \(textLeading)", category: .general)
-                    Log.info("Glyph Positioning:", category: .general)
-                    Log.info("  - Glyph Location in Line: \(glyphLocation)", category: .general)
-                    Log.info("  - Final X: \(glyphX)", category: .general)
-                    Log.info("  - Final Y: \(glyphY)", category: .general)
-                    Log.info("====================================", category: .general)
                 }
 
                 // Create glyph path
@@ -515,11 +461,6 @@ class ProfessionalTextViewModel: ObservableObject {
                     if self.isRectangleGlyph(glyphPath) {
                         // Skip this glyph - it's a missing character placeholder
                         skippedGlyphCount += 1
-                        
-                        // Get the character for logging
-                        let charIndex = layoutManager.characterIndexForGlyph(at: glyphIndex)
-                        let char = (self.text as NSString).substring(with: NSRange(location: charIndex, length: 1))
-                        Log.info("⚠️ SKIPPING RECTANGLE GLYPH: Character '\(char)' at index \(charIndex) - missing from font", category: .general)
                         continue
                     }
                     
@@ -549,7 +490,6 @@ class ProfessionalTextViewModel: ObservableObject {
         
         // Report skipped glyphs if any
         if skippedGlyphCount > 0 {
-            Log.info("✅ RECTANGLE DETECTION: Skipped \(skippedGlyphCount) missing character placeholder(s)", category: .fileOperations)
         }
     }
 
@@ -566,11 +506,10 @@ class ProfessionalTextViewModel: ObservableObject {
     // PUBLIC method for document conversion - calls the working Core Text method
     func convertToPath() {
         guard !text.isEmpty else {
-            Log.error("❌ CONVERT TO OUTLINES: Cannot convert empty text", category: .error)
+            // Log.error("❌ CONVERT TO OUTLINES: Cannot convert empty text", category: .error)
             return
         }
 
-        Log.fileOperation("🎯 CONVERTING TO OUTLINES: Creating compound paths per line", level: .info)
 
         // NOTE: saveToUndoStack is called once in convertSelectedTextToOutlines() for atomic undo
         // DO NOT call it here to avoid duplicate undo entries
@@ -579,7 +518,7 @@ class ProfessionalTextViewModel: ObservableObject {
         convertToCoreTextPath()
 
         guard !linePaths.isEmpty else {
-            Log.error("❌ CONVERT TO OUTLINES FAILED: No line paths created", category: .error)
+            // Log.error("❌ CONVERT TO OUTLINES FAILED: No line paths created", category: .error)
             return
         }
 
@@ -608,17 +547,14 @@ class ProfessionalTextViewModel: ObservableObject {
             document.addShapeWithoutUndo(outlineShape, to: targetLayerIndex)
             createdShapeIDs.append(outlineShape.id)
 
-            Log.fileOperation("🎯 ADDED LINE SHAPE: '\(outlineShape.name)' to unified system", level: .info)
         }
 
-        Log.info("✅ TEXT CONVERSION COMPLETE: Created \(linePaths.count) compound path(s)", category: .fileOperations)
 
         // DON'T modify selection here - let parent function handle it
         // This was corrupting the undo state by modifying selection after saveToUndoStack()
 
         // Remove from unified system (which will also update textObjects array)
         document.removeTextFromUnifiedSystem(id: textObject.id)
-        Log.info("🗑️ REMOVED TEXT OBJECT FROM UNIFIED: ID \(textObject.id.uuidString.prefix(8))", category: .general)
 
         // Force UI update
         document.objectWillChange.send()
@@ -671,20 +607,16 @@ class ProfessionalTextViewModel: ObservableObject {
 
     // MARK: - Text Box Interaction Handler
     func handleTextBoxInteraction(textID: UUID, isDoubleClick: Bool = false, isCornerClick: Bool = false) {
-        Log.fileOperation("🎯 TEXT BOX INTERACTION: textID=\(textID.uuidString.prefix(8)), doubleClick=\(isDoubleClick), cornerClick=\(isCornerClick)", level: .info)
 
         guard let textObject = document.findText(by: textID) else {
-            Log.error("❌ TEXT NOT FOUND: ID \(textID)", category: .error)
+            // Log.error("❌ TEXT NOT FOUND: ID \(textID)", category: .error)
             return
         }
         let currentState = textObject.getState(in: document)
 
-        Log.fileOperation("📊 CURRENT STATE: \(currentState.description)", level: .info)
-        Log.fileOperation("📊 CURRENT TOOL: \(document.currentTool.rawValue)", level: .info)
 
         // Check if text is locked
         if textObject.isLocked {
-            Log.info("🚫 TEXT LOCKED: Cannot interact with locked text", category: .general)
             return
         }
 
@@ -696,12 +628,10 @@ class ProfessionalTextViewModel: ObservableObject {
                 // First select the text
                 document.selectedTextIDs = [textID]
                 document.selectedShapeIDs.removeAll()
-                Log.fileOperation("🎯 SELECTED TEXT: GRAY → GREEN", level: .info)
 
                 // If font tool is active and this is a corner click, also start editing
                 if document.currentTool == .font && isCornerClick {
                     startEditingText(textID: textID)
-                    Log.fileOperation("🎯 CORNER CLICK WITH TYPE TOOL: GRAY → GREEN → BLUE", level: .info)
                 }
 
             case .selected: // GREEN
@@ -709,22 +639,17 @@ class ProfessionalTextViewModel: ObservableObject {
                 if isDoubleClick {
                     // Switch to font tool
                     document.currentTool = .font
-                    Log.fileOperation("🔧 DOUBLE-CLICK: Switched to type tool", level: .info)
 
                     // Start editing the text
                     startEditingText(textID: textID)
-                    Log.fileOperation("🎯 DOUBLE-CLICK: GREEN → BLUE (switched to type tool)", level: .info)
                 } else if document.currentTool == .font {
                     // Single click with font tool active - start editing
                     startEditingText(textID: textID)
-                    Log.fileOperation("🎯 START EDITING: GREEN → BLUE", level: .info)
-                } else {
-                    Log.fileOperation("🎯 TYPE TOOL NOT ACTIVE: Staying GREEN", level: .info)
                 }
 
             case .editing: // BLUE
                 // Already editing - do nothing
-                Log.fileOperation("🎯 ALREADY EDITING: Staying BLUE", level: .info)
+                break
             }
         } else {
             // Single click behavior
@@ -733,22 +658,19 @@ class ProfessionalTextViewModel: ObservableObject {
                 // Select the text
                 document.selectedTextIDs = [textID]
                 document.selectedShapeIDs.removeAll()
-                Log.fileOperation("🎯 SINGLE CLICK: GRAY → GREEN", level: .info)
 
             case .selected: // GREEN
                 // Already selected - no change on single click
-                Log.fileOperation("🎯 SINGLE CLICK: Staying GREEN", level: .info)
-
+                break
             case .editing: // BLUE
                 // Let NSTextView handle clicks during editing
-                Log.fileOperation("🎯 SINGLE CLICK: Staying BLUE (NSTextView handles)", level: .info)
+                break
             }
         }
     }
 
     // MARK: - Start Editing Helper
     private func startEditingText(textID: UUID, at location: CGPoint = .zero) {
-        Log.fileOperation("✏️ STARTING EDIT MODE for textID: \(textID.uuidString.prefix(8)) at location: \(location)", level: .info)
 
         // Stop editing any other text boxes first
         var editingCount = 0
@@ -760,17 +682,11 @@ class ProfessionalTextViewModel: ObservableObject {
         }
 
         if editingCount > 0 {
-            Log.fileOperation("🔄 STOPPED \(editingCount) text box(es) that were in edit mode", level: .info)
         }
 
         // Find and start editing the target text
         if let textObject = document.findText(by: textID) {
 
-            Log.info("✏️ STARTING EDIT MODE:", category: .general)
-            Log.info("  - Text: '\(textObject.content)'", category: .general)
-            Log.info("  - Type: \(textObject.typography.fontFamily) \(textObject.typography.fontSize)pt", category: .general)
-            Log.info("  - State: GRAY/GREEN → BLUE (editing)", category: .general)
-            Log.info("  - Click location: (\(String(format: "%.1f", location.x)), \(String(format: "%.1f", location.y)))", category: .general)
 
             // CRITICAL: Set editing state BEFORE updating selection
             document.setTextEditingInUnified(id: textObject.id, isEditing: true)
@@ -786,26 +702,15 @@ class ProfessionalTextViewModel: ObservableObject {
                 // CRITICAL: Update the VectorText's cursor position directly
                 document.updateTextCursorPositionInUnified(id: textObject.id, cursorPosition: cursorPosition)
 
-                Log.info("🎯 CURSOR POSITIONING: Set cursor position \(cursorPosition) for click at (\(String(format: "%.1f", location.x)), \(String(format: "%.1f", location.y)))", category: .general)
-                Log.info("🎯 CURSOR POSITIONING: Updated VectorText.cursorPosition = \(cursorPosition)", category: .general)
             }
 
-            Log.info("✅ TEXT EDITING STARTED: Text box \(textID.uuidString.prefix(8)) is now in BLUE (edit) mode", category: .fileOperations)
         } else {
-            Log.error("❌ TEXT NOT FOUND: Could not find text with ID \(textID)", category: .error)
+            // Log.error("❌ TEXT NOT FOUND: Could not find text with ID \(textID)", category: .error)
         }
     }
 
     // MARK: - Cursor Position Calculation
     private func calculateCursorPosition(in textObj: VectorText, at tapLocation: CGPoint) -> Int {
-        // Convert tap location to text-relative coordinates
-        let relativePoint = CGPoint(
-            x: tapLocation.x - textObj.position.x,
-            y: tapLocation.y - textObj.position.y
-        )
-
-        Log.info("🎯 CURSOR CALC: Tap at (\(String(format: "%.1f", tapLocation.x)), \(String(format: "%.1f", tapLocation.y))), relative (\(String(format: "%.1f", relativePoint.x)), \(String(format: "%.1f", relativePoint.y)))", category: .general)
-
         // Simple cursor positioning: place cursor at the beginning for now
         // This can be enhanced later with more sophisticated text layout analysis
         return 0

@@ -609,7 +609,6 @@ struct VectorShape: Hashable, Identifiable {
             // Instead, we just remove the warp object status and keep current shapes
             unwrappedShape.originalPath = nil
             // Keep the current grouped shapes (they are already warped permanently)
-            Log.fileOperation("⚠️ GROUP UNWRAP: Cannot restore original - keeping warped shapes as permanent", level: .info)
         } else if let originalPath = originalPath {
             // SINGLE SHAPE WARP OBJECT: Restore original path
             unwrappedShape.originalPath = nil
@@ -825,27 +824,26 @@ extension VectorShape: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         // Debug logging disabled to reduce noise
-        // Log.info("🔍 VectorShape DECODE: Available keys: \(container.allKeys.map { $0.stringValue })", category: .debug)
 
         // Decode each field with detailed error handling
         do {
             id = try container.decode(UUID.self, forKey: .id)
         } catch {
-            Log.error("❌ Failed to decode 'id': \(error)", category: .error)
+            // Log.error("❌ Failed to decode 'id': \(error)", category: .error)
             throw error
         }
 
         do {
             name = try container.decode(String.self, forKey: .name)
         } catch {
-            Log.error("❌ Failed to decode 'name': \(error)", category: .error)
+            // Log.error("❌ Failed to decode 'name': \(error)", category: .error)
             throw error
         }
 
         do {
             path = try container.decode(VectorPath.self, forKey: .path)
         } catch {
-            Log.error("❌ Failed to decode 'path': \(error)", category: .error)
+            // Log.error("❌ Failed to decode 'path': \(error)", category: .error)
             throw error
         }
 

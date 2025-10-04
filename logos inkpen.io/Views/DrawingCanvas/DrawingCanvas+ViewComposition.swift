@@ -63,7 +63,17 @@ extension DrawingCanvas {
             .scaleEffect(document.zoomLevel, anchor: .topLeading)
             .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
         }
-        
+
+        // Marker live preview (SwiftUI overlay; avoids document mutations during drag)
+        if let preview = markerPreviewPath {
+            Path { path in
+                addPathElements(preview.elements, to: &path)
+            }
+            .modifier(MarkerPreviewStyleModifier(appState: appState, document: document, preview: preview))
+            .scaleEffect(document.zoomLevel, anchor: .topLeading)
+            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+        }
+
         // Freehand live preview (SwiftUI overlay; avoids document mutations during drag)
         if let preview = freehandPreviewPath {
             Path { path in
@@ -72,48 +82,6 @@ extension DrawingCanvas {
             .modifier(FreehandPreviewStyleModifier(appState: appState, document: document, preview: preview))
             .scaleEffect(document.zoomLevel, anchor: .topLeading)
             .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-        }
-
-        // Marker live preview (SwiftUI overlay; avoids document mutations during drag)
-        if let preview = markerPreviewPath {
-            let markerFillColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
-            let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
-            let showStroke = !document.markerApplyNoStroke
-
-            if showStroke {
-                // Match final stroke settings exactly
-                let strokeWidth = getCurrentStrokeWidth() * 2.0 // placement: .outside doubles width
-                let lineCap: CGLineCap = document.defaultStrokeLineCap == .round ? .round : (document.defaultStrokeLineCap == .square ? .square : .butt)
-                let lineJoin: CGLineJoin = document.defaultStrokeLineJoin == .round ? .round : (document.defaultStrokeLineJoin == .bevel ? .bevel : .miter)
-
-                Path { path in
-                    addPathElements(preview.elements, to: &path)
-                }
-                .fill(markerFillColor.color)
-                .opacity(document.currentMarkerOpacity)
-                .overlay(
-                    Path { path in
-                        addPathElements(preview.elements, to: &path)
-                    }
-                    .stroke(markerStrokeColor.color, style: SwiftUI.StrokeStyle(
-                        lineWidth: strokeWidth,
-                        lineCap: lineCap,
-                        lineJoin: lineJoin,
-                        miterLimit: document.defaultStrokeMiterLimit
-                    ))
-                    .opacity(document.currentMarkerOpacity)
-                )
-                .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-            } else {
-                Path { path in
-                    addPathElements(preview.elements, to: &path)
-                }
-                .fill(markerFillColor.color)
-                .opacity(document.currentMarkerOpacity)
-                .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-            }
         }
 
         bezierAnchorPoints()
@@ -323,7 +291,6 @@ extension DrawingCanvas {
             }
             .onTapGesture { location in
                 // CRITICAL: Single-click selection (was missing!)
-                Log.info("🎯 SINGLE CLICK DETECTED at: \(location)", category: .selection)
                 handleUnifiedTap(at: location, geometry: geometry)
             }
             .simultaneousGesture(
@@ -415,68 +382,49 @@ extension DrawingCanvas {
     }
     
     private func handlePressureDrawingStart(at location: CGPoint) {
-        Log.info("🎨 PRESSURE DRAWING START: Called for tool: \(document.currentTool)", category: .pressure)
-        Log.info("🎨 PRESSURE DRAWING START: Is brush drawing: \(isBrushDrawing)", category: .pressure)
 
         switch document.currentTool {
         case .brush:
             if !isBrushDrawing {
-                Log.info("🎨 PRESSURE DRAWING START: Starting brush drawing", category: .pressure)
                 handleBrushDragStart(at: location)
             } else {
-                Log.info("🎨 PRESSURE DRAWING START: Brush already drawing, skipping start", category: .pressure)
-            }
-        case .freehand:
-            if !isFreehandDrawing {
-                Log.info("🎨 PRESSURE DRAWING START: Starting freehand drawing", category: .pressure)
-                handleFreehandDragStart(at: location)
-            } else {
-                Log.info("🎨 PRESSURE DRAWING START: Freehand already drawing, skipping start", category: .pressure)
             }
         case .marker:
             if !isMarkerDrawing {
-                Log.info("🎨 PRESSURE DRAWING START: Starting marker drawing", category: .pressure)
                 handleMarkerDragStart(at: location)
             } else {
-                Log.info("🎨 PRESSURE DRAWING START: Marker already drawing, skipping start", category: .pressure)
+            }
+        case .freehand:
+            if !isFreehandDrawing {
+                handleFreehandDragStart(at: location)
+            } else {
             }
         default:
-            Log.info("🎨 PRESSURE DRAWING START: Unknown tool, skipping", category: .pressure)
             break
         }
     }
     
     private func handlePressureDrawingUpdate(at location: CGPoint) {
-        Log.info("🎨 PRESSURE DRAWING UPDATE: Called for tool: \(document.currentTool)", category: .pressure)
-        Log.info("🎨 PRESSURE DRAWING UPDATE: Is brush drawing: \(isBrushDrawing)", category: .pressure)
-
-        // Get the current pressure that was just updated by the pressure event
-        let currentPressure = PressureManager.shared.currentPressure
-
         switch document.currentTool {
         case .brush:
             if isBrushDrawing {
                 // Brush drag update - logging removed for performance
                 handleBrushDragUpdate(at: location)
             } else {
-                Log.info("🎨 PRESSURE DRAWING UPDATE: Brush not drawing, skipping update", category: .pressure)
+            }
+        case .marker:
+            if isMarkerDrawing {
+                // Marker drag update - logging removed for performance
+                handleMarkerDragUpdate(at: location)
+            } else {
             }
         case .freehand:
             if isFreehandDrawing {
                 // Freehand drag update - logging removed for performance
                 handleFreehandDragUpdate(at: location)
             } else {
-                Log.info("🎨 PRESSURE DRAWING UPDATE: Freehand not drawing, skipping update", category: .pressure)
-            }
-        case .marker:
-            if isMarkerDrawing {
-                // Marker drag update - pass pressure directly to avoid delay
-                handleMarkerDragUpdate(at: location, pressure: currentPressure)
-            } else {
-                Log.info("🎨 PRESSURE DRAWING UPDATE: Marker not drawing, skipping update", category: .pressure)
             }
         default:
-            Log.info("🎨 PRESSURE DRAWING UPDATE: Unknown tool, skipping", category: .pressure)
             break
         }
     }
@@ -487,13 +435,13 @@ extension DrawingCanvas {
             if isBrushDrawing {
                 handleBrushDragEnd()
             }
-        case .freehand:
-            if isFreehandDrawing {
-                handleFreehandDragEnd()
-            }
         case .marker:
             if isMarkerDrawing {
                 handleMarkerDragEnd()
+            }
+        case .freehand:
+            if isFreehandDrawing {
+                handleFreehandDragEnd()
             }
         default:
             break
@@ -521,13 +469,13 @@ private struct BrushPreviewStyleModifier: ViewModifier {
     let appStateRef: AppState?
     let document: VectorDocument
     let preview: VectorPath
-    
+
     init(appState: AppState, document: VectorDocument, preview: VectorPath) {
         self.document = document
         self.preview = preview
         self.appStateRef = appState
     }
-    
+
     func body(content: Content) -> some View {
         switch appStateRef?.brushPreviewStyle ?? .outline {
         case .outline:
@@ -537,9 +485,163 @@ private struct BrushPreviewStyleModifier: ViewModifier {
                     .stroke(Color.blue, lineWidth: max(1.0, 1.0 / document.zoomLevel))
             }
         case .fill:
+            // BRUSH TOOL: NO stroke - the path IS the stroke itself
             Path { p in addPathElements(preview.elements, to: &p) }
                 .fill(document.defaultFillColor.color)
                 .opacity(document.defaultFillOpacity)
+        }
+    }
+
+    @ViewBuilder
+    private func renderPreviewStrokeWithPlacement(
+        preview: VectorPath,
+        strokeColor: Color,
+        strokeWidth: Double,
+        strokeOpacity: Double,
+        lineCap: CGLineCap,
+        lineJoin: CGLineJoin,
+        miterLimit: Double,
+        placement: StrokePlacement
+    ) -> some View {
+        let swiftUIStrokeStyle = SwiftUI.StrokeStyle(
+            lineWidth: strokeWidth,
+            lineCap: lineCap.swiftUILineCap,
+            lineJoin: lineJoin.swiftUILineJoin,
+            miterLimit: miterLimit
+        )
+
+        switch placement {
+        case .center:
+            Path { p in addPathElements(preview.elements, to: &p) }
+                .stroke(strokeColor, style: swiftUIStrokeStyle)
+                .opacity(strokeOpacity)
+        case .inside:
+            let doubleWidthStyle = SwiftUI.StrokeStyle(
+                lineWidth: strokeWidth * 2,
+                lineCap: swiftUIStrokeStyle.lineCap,
+                lineJoin: swiftUIStrokeStyle.lineJoin,
+                miterLimit: swiftUIStrokeStyle.miterLimit
+            )
+            Path { p in addPathElements(preview.elements, to: &p) }
+                .stroke(strokeColor, style: doubleWidthStyle)
+                .opacity(strokeOpacity)
+                .mask(Path { p in addPathElements(preview.elements, to: &p) }.fill(Color.black))
+        case .outside:
+            let doubleWidthStyle = SwiftUI.StrokeStyle(
+                lineWidth: strokeWidth * 2,
+                lineCap: swiftUIStrokeStyle.lineCap,
+                lineJoin: swiftUIStrokeStyle.lineJoin,
+                miterLimit: swiftUIStrokeStyle.miterLimit
+            )
+            Path { p in addPathElements(preview.elements, to: &p) }
+                .stroke(strokeColor, style: doubleWidthStyle)
+                .mask(
+                    ZStack {
+                        Rectangle().fill(Color.black)
+                        Path { p in addPathElements(preview.elements, to: &p) }.fill(Color.clear).blendMode(.destinationOut)
+                    }.compositingGroup()
+                )
+                .opacity(1.0)
+        }
+    }
+}
+
+
+// MARK: - Marker Preview Styling
+private struct MarkerPreviewStyleModifier: ViewModifier {
+    @Environment(AppState.self) var appState
+    let appStateRef: AppState?
+    let document: VectorDocument
+    let preview: VectorPath
+
+    init(appState: AppState, document: VectorDocument, preview: VectorPath) {
+        self.document = document
+        self.preview = preview
+        self.appStateRef = appState
+    }
+
+    func body(content: Content) -> some View {
+        switch appStateRef?.brushPreviewStyle ?? .outline {
+        case .outline:
+            ZStack {
+                content.opacity(0.001)
+                Path { p in addPathElements(preview.elements, to: &p) }
+                    .stroke(Color.blue, lineWidth: max(1.0, 1.0 / document.zoomLevel))
+            }
+        case .fill:
+            // Marker uses fill and stroke from Paint panel
+            ZStack {
+                // Fill
+                Path { p in addPathElements(preview.elements, to: &p) }
+                    .fill(document.defaultFillColor.color)
+                    .opacity(document.defaultFillOpacity)
+                // Stroke with placement, joins, and caps
+                if document.defaultStrokeWidth > 0 {
+                    renderPreviewStrokeWithPlacement(
+                        preview: preview,
+                        strokeColor: document.defaultStrokeColor.color,
+                        strokeWidth: document.defaultStrokeWidth,
+                        strokeOpacity: document.defaultStrokeOpacity,
+                        lineCap: document.defaultStrokeLineCap,
+                        lineJoin: document.defaultStrokeLineJoin,
+                        miterLimit: document.defaultStrokeMiterLimit,
+                        placement: document.defaultStrokePlacement
+                    )
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func renderPreviewStrokeWithPlacement(
+        preview: VectorPath,
+        strokeColor: Color,
+        strokeWidth: Double,
+        strokeOpacity: Double,
+        lineCap: CGLineCap,
+        lineJoin: CGLineJoin,
+        miterLimit: Double,
+        placement: StrokePlacement
+    ) -> some View {
+        let swiftUIStrokeStyle = SwiftUI.StrokeStyle(
+            lineWidth: strokeWidth,
+            lineCap: lineCap.swiftUILineCap,
+            lineJoin: lineJoin.swiftUILineJoin,
+            miterLimit: miterLimit
+        )
+
+        switch placement {
+        case .center:
+            Path { p in addPathElements(preview.elements, to: &p) }
+                .stroke(strokeColor, style: swiftUIStrokeStyle)
+                .opacity(strokeOpacity)
+        case .inside:
+            let doubleWidthStyle = SwiftUI.StrokeStyle(
+                lineWidth: strokeWidth * 2,
+                lineCap: swiftUIStrokeStyle.lineCap,
+                lineJoin: swiftUIStrokeStyle.lineJoin,
+                miterLimit: swiftUIStrokeStyle.miterLimit
+            )
+            Path { p in addPathElements(preview.elements, to: &p) }
+                .stroke(strokeColor, style: doubleWidthStyle)
+                .opacity(strokeOpacity)
+                .mask(Path { p in addPathElements(preview.elements, to: &p) }.fill(Color.black))
+        case .outside:
+            let doubleWidthStyle = SwiftUI.StrokeStyle(
+                lineWidth: strokeWidth * 2,
+                lineCap: swiftUIStrokeStyle.lineCap,
+                lineJoin: swiftUIStrokeStyle.lineJoin,
+                miterLimit: swiftUIStrokeStyle.miterLimit
+            )
+            Path { p in addPathElements(preview.elements, to: &p) }
+                .stroke(strokeColor, style: doubleWidthStyle)
+                .mask(
+                    ZStack {
+                        Rectangle().fill(Color.black)
+                        Path { p in addPathElements(preview.elements, to: &p) }.fill(Color.clear).blendMode(.destinationOut)
+                    }.compositingGroup()
+                )
+                .opacity(1.0)
         }
     }
     

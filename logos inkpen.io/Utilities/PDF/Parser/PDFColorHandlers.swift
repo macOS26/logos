@@ -19,7 +19,7 @@ extension PDFCommandParser {
         guard CGPDFScannerPopNumber(scanner, &b),
               CGPDFScannerPopNumber(scanner, &g),
               CGPDFScannerPopNumber(scanner, &r) else {
-            Log.error("PDF: Failed to read RGB fill color", category: .error)
+            // Log.error("PDF: Failed to read RGB fill color", category: .error)
             return
         }
 
@@ -27,11 +27,10 @@ extension PDFCommandParser {
         let colorSpace = ColorManager.shared.workingCGColorSpace
         guard let color = CGColor(colorSpace: colorSpace,
                                   components: [r, g, b, 1.0]) else {
-            Log.error("PDF: Failed to create color in working color space for fill", category: .error)
+            // Log.error("PDF: Failed to create color in working color space for fill", category: .error)
             return
         }
         currentFillColor = color
-        Log.info("PDF: Set fill color to RGB(\(r), \(g), \(b))", category: .general)
     }
     
     func handleRGBStrokeColor(scanner: CGPDFScannerRef) {
@@ -45,11 +44,10 @@ extension PDFCommandParser {
         let colorSpace = ColorManager.shared.workingCGColorSpace
         guard let color = CGColor(colorSpace: colorSpace,
                                   components: [r, g, b, 1.0]) else {
-            Log.error("PDF: Failed to create color in working color space for stroke", category: .error)
+            // Log.error("PDF: Failed to create color in working color space for stroke", category: .error)
             return
         }
         currentStrokeColor = color
-        Log.info("PDF: Set stroke color to RGB(\(r), \(g), \(b))", category: .general)
     }
     
     func handleGrayFillColor(scanner: CGPDFScannerRef) {
@@ -61,7 +59,7 @@ extension PDFCommandParser {
         let colorSpace = ColorManager.shared.workingCGColorSpace
         guard let color = CGColor(colorSpace: colorSpace,
                                   components: [gray, gray, gray, 1.0]) else {
-            Log.error("PDF: Failed to create gray color in working color space for fill", category: .error)
+            // Log.error("PDF: Failed to create gray color in working color space for fill", category: .error)
             return
         }
         currentFillColor = color
@@ -76,11 +74,10 @@ extension PDFCommandParser {
         let colorSpace = ColorManager.shared.workingCGColorSpace
         guard let color = CGColor(colorSpace: colorSpace,
                                   components: [gray, gray, gray, 1.0]) else {
-            Log.error("PDF: Failed to create gray color in working color space for stroke", category: .error)
+            // Log.error("PDF: Failed to create gray color in working color space for stroke", category: .error)
             return
         }
         currentStrokeColor = color
-        Log.info("PDF: Set stroke color to Gray(\(gray))", category: .general)
     }
     
     func handleCMYKFillColor(scanner: CGPDFScannerRef) {
@@ -90,7 +87,7 @@ extension PDFCommandParser {
               CGPDFScannerPopNumber(scanner, &y),
               CGPDFScannerPopNumber(scanner, &m),
               CGPDFScannerPopNumber(scanner, &c) else { 
-            Log.error("PDF: Failed to read CMYK fill color", category: .error)
+            // Log.error("PDF: Failed to read CMYK fill color", category: .error)
             return 
         }
         
@@ -103,11 +100,10 @@ extension PDFCommandParser {
         let colorSpace = ColorManager.shared.workingCGColorSpace
         guard let color = CGColor(colorSpace: colorSpace,
                                   components: [r, g, b, 1.0]) else {
-            Log.error("PDF: Failed to create color in working color space for fill", category: .error)
+            // Log.error("PDF: Failed to create color in working color space for fill", category: .error)
             return
         }
         currentFillColor = color
-        Log.info("PDF: Set fill color to CMYK(\(c), \(m), \(y), \(k)) -> RGB(\(r), \(g), \(b))", category: .general)
     }
     
     func handleCMYKStrokeColor(scanner: CGPDFScannerRef) {
@@ -117,7 +113,7 @@ extension PDFCommandParser {
               CGPDFScannerPopNumber(scanner, &y),
               CGPDFScannerPopNumber(scanner, &m),
               CGPDFScannerPopNumber(scanner, &c) else { 
-            Log.error("PDF: Failed to read CMYK stroke color", category: .error)
+            // Log.error("PDF: Failed to read CMYK stroke color", category: .error)
             return 
         }
         
@@ -130,11 +126,10 @@ extension PDFCommandParser {
         let colorSpace = ColorManager.shared.workingCGColorSpace
         guard let color = CGColor(colorSpace: colorSpace,
                                   components: [r, g, b, 1.0]) else {
-            Log.error("PDF: Failed to create color in working color space for stroke", category: .error)
+            // Log.error("PDF: Failed to create color in working color space for stroke", category: .error)
             return
         }
         currentStrokeColor = color
-        Log.info("PDF: Set stroke color to CMYK(\(c), \(m), \(y), \(k)) -> RGB(\(r), \(g), \(b))", category: .general)
     }
     
     func handleGenericFillColor(scanner: CGPDFScannerRef) {
@@ -147,7 +142,6 @@ extension PDFCommandParser {
             values.insert(value, at: 0) // Insert at beginning to reverse stack order
         }
         
-        Log.info("PDF: Generic fill color - found \(values.count) values: \(values)", category: .general)
         
         if values.count >= 3 {
             let r = values[0]
@@ -157,7 +151,6 @@ extension PDFCommandParser {
             
             // Check if this might be transparency encoded in a different way
             if values.count == 4 {
-                Log.warning("PDF: ⚠️ FOUND 4-component color - might be RGBA or transparency: \(values)", category: .general)
                 currentFillOpacity = Double(a)
             }
             
@@ -165,13 +158,11 @@ extension PDFCommandParser {
             let colorSpace = ColorManager.shared.workingCGColorSpace
             guard let color = CGColor(colorSpace: colorSpace,
                                       components: [r, g, b, 1.0]) else {
-                Log.error("PDF: Failed to create color in working color space for generic fill", category: .error)
+                // Log.error("PDF: Failed to create color in working color space for generic fill", category: .error)
                 return
             }
             currentFillColor = color
-            Log.info("PDF: Generic fill color - RGB(\(r), \(g), \(b)) with potential alpha: \(a)", category: .general)
         } else {
-            Log.info("PDF: Generic fill color - could not parse parameters, got \(values.count) values", category: .general)
         }
     }
     
@@ -186,13 +177,11 @@ extension PDFCommandParser {
             let colorSpace = ColorManager.shared.workingCGColorSpace
             guard let color = CGColor(colorSpace: colorSpace,
                                       components: [r, g, b, 1.0]) else {
-                Log.error("PDF: Failed to create color in working color space for generic stroke", category: .error)
+                // Log.error("PDF: Failed to create color in working color space for generic stroke", category: .error)
                 return
             }
             currentStrokeColor = color
-            Log.info("PDF: Generic stroke color - assuming RGB(\(r), \(g), \(b))", category: .general)
         } else {
-            Log.info("PDF: Generic stroke color - could not parse parameters", category: .general)
         }
     }
 }

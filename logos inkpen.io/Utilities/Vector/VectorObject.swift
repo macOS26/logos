@@ -22,7 +22,6 @@ struct VectorObject: Identifiable, Hashable {
     init(shape: VectorShape, layerIndex: Int, orderID: Int) {
         // DEBUG: Log clipping properties during VectorObject creation
         if shape.isClippingPath || shape.clippedByShapeID != nil {
-            Log.info("🎭 VECTOROBJECT INIT DEBUG: Input shape '\(shape.name)' - isClippingPath: \(shape.isClippingPath), clippedByShapeID: \(shape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .debug)
         }
         
         self.id = shape.id
@@ -33,7 +32,6 @@ struct VectorObject: Identifiable, Hashable {
         // DEBUG: Check if properties are preserved after storing in enum
         if case .shape(let storedShape) = self.objectType {
             if storedShape.isClippingPath || storedShape.clippedByShapeID != nil {
-                Log.info("🎭 VECTOROBJECT INIT DEBUG: Stored shape '\(storedShape.name)' - isClippingPath: \(storedShape.isClippingPath), clippedByShapeID: \(storedShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .debug)
             }
         }
     }
@@ -93,17 +91,17 @@ extension VectorObject: Codable {
                 objectType = .shape(shape)
             } catch let shapeError {
                 // Only log actual errors, not normal decode operations
-                Log.error("❌ Failed to decode VectorShape - Error: \(shapeError)", category: .error)
+                // Log.error("❌ Failed to decode VectorShape - Error: \(shapeError)", category: .error)
                 if let decodingError = shapeError as? DecodingError {
                     switch decodingError {
                     case .typeMismatch(let type, let context):
-                        Log.info("   Type mismatch: expected \(type), context: \(context)", category: .general)
+                        Log.error("   Type mismatch: expected \(type), context: \(context)", category: .general)
                     case .valueNotFound(let type, let context):
-                        Log.info("   Value not found: type \(type), context: \(context)", category: .general)
+                        Log.error("   Value not found: type \(type), context: \(context)", category: .general)
                     case .keyNotFound(let key, let context):
-                        Log.info("   Key not found: \(key), context: \(context)", category: .general)
+                        Log.error("   Key not found: \(key), context: \(context)", category: .general)
                     case .dataCorrupted(let context):
-                        Log.info("   Data corrupted: \(context)", category: .general)
+                        Log.error("   Data corrupted: \(context)", category: .general)
                     @unknown default:
                         Log.error("   Unknown decoding error", category: .error)
                     }
@@ -111,7 +109,7 @@ extension VectorObject: Codable {
                 throw shapeError
             }
         } catch {
-            Log.error("❌ Failed to get nested container for objectType - Error: \(error)", category: .error)
+            // Log.error("❌ Failed to get nested container for objectType - Error: \(error)", category: .error)
             throw DecodingError.dataCorrupted(DecodingError.Context(
                 codingPath: decoder.codingPath,
                 debugDescription: "Unable to decode VectorObject.objectType - \(error.localizedDescription)"

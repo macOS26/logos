@@ -1,0 +1,229 @@
+//
+//  MarkerStrokeSection.swift
+//  logos inkpen.io
+//
+//  Marker stroke section - same UI as brush but with marker settings
+//
+
+import SwiftUI
+
+struct MarkerStrokeSection: View {
+    @ObservedObject var document: VectorDocument
+    @Environment(AppState.self) private var appState
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "pencil.tip")
+                    .foregroundColor(.accentColor)
+                Text("Marker Tool")
+                    .font(.headline)
+                Spacer()
+            }
+
+            // Marker Thickness
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Thickness")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.secondaryText)
+                    Spacer()
+                    Text("\(formatNumberForDisplay(document.currentMarkerThickness))pt")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.primaryText)
+                        .monospacedDigit()
+                }
+
+                Slider(value: Binding(
+                    get: { document.currentMarkerThickness },
+                    set: { document.currentMarkerThickness = $0 }
+                ), in: 1...100)
+                .controlSize(.regular)
+                .help("Adjust marker stroke thickness (1-100 points)")
+            }
+
+            // Pressure Sensitivity Toggle
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Pressure Sensitivity")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.secondaryText)
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { appState.pressureSensitivityEnabled },
+                        set: { appState.pressureSensitivityEnabled = $0 }
+                    ))
+                    .toggleStyle(SwitchToggleStyle())
+                    .controlSize(.small)
+                }
+                .help("Enable or disable pressure sensitivity for variable stroke")
+            }
+
+            // Marker Smoothness
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Smoothness")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.secondaryText)
+                    Spacer()
+                    Text("\(formatNumberForDisplay(document.currentMarkerSmoothingTolerance))")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.primaryText)
+                        .monospacedDigit()
+                }
+
+                Slider(value: Binding(
+                    get: { document.currentMarkerSmoothingTolerance },
+                    set: { document.currentMarkerSmoothingTolerance = $0 }
+                ), in: 0.5...10)
+                .controlSize(.regular)
+                .help("Curve fitting tolerance - lower values preserve more detail, higher values create smoother curves")
+            }
+
+            // Liquid (Curve Fluidity)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Liquid")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.secondaryText)
+                    Spacer()
+                    // Display reversed: internal 0 shows as 100%, internal 100 shows as 0%
+                    Text("\(Int(100.0 - document.currentMarkerLiquid))%")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.primaryText)
+                        .monospacedDigit()
+                }
+
+                Slider(value: Binding(
+                    get: { 100.0 - document.currentMarkerLiquid },  // Reverse for display
+                    set: { document.currentMarkerLiquid = 100.0 - $0 }  // Reverse when setting
+                ), in: 0...100)
+                .controlSize(.regular)
+                .help("Controls curve fluidity - 0% = no smoothing (all points), 50% = moderate smoothing, 100% = maximum liquid smoothing")
+            }
+
+            // Advanced Smoothing Section
+            Divider()
+                .padding(.vertical, 8)
+
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: "waveform.path")
+                        .foregroundColor(.purple)
+                    Text("Advanced Smoothing")
+                        .font(.headline)
+                        .foregroundColor(Color.ui.primaryText)
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { document.advancedSmoothingEnabled },
+                        set: { document.advancedSmoothingEnabled = $0 }
+                    ))
+                    .toggleStyle(SwitchToggleStyle(tint: .purple))
+                    .controlSize(.small)
+                }
+                .help("Enable advanced curve smoothing algorithms for ultra-smooth strokes")
+
+                if document.advancedSmoothingEnabled {
+                    // Chaikin Smoothing Iterations
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Chaikin Iterations")
+                                .font(.subheadline)
+                                .foregroundColor(Color.ui.secondaryText)
+                            Spacer()
+                            Text("\(document.chaikinSmoothingIterations)")
+                                .font(.subheadline)
+                                .foregroundColor(Color.ui.primaryText)
+                                .monospacedDigit()
+                        }
+
+                        Slider(value: Binding<Double>(
+                            get: { Double(document.chaikinSmoothingIterations) },
+                            set: { document.chaikinSmoothingIterations = Int(round($0)) }
+                        ), in: 0...6)
+                        .controlSize(.regular)
+                        .help("Number of smoothing passes - 0 = off, 6 = maximum smoothing")
+                    }
+
+                    // Preserve Sharp Corners Toggle
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Preserve Sharp Corners")
+                                .font(.subheadline)
+                                .foregroundColor(Color.ui.primaryText)
+                            Text("Keep intentional sharp angles in strokes")
+                                .font(.caption)
+                                .foregroundColor(Color.ui.secondaryText)
+                        }
+                        Spacer()
+                        Toggle("", isOn: Binding(
+                            get: { document.preserveSharpCorners },
+                            set: { document.preserveSharpCorners = $0 }
+                        ))
+                        .toggleStyle(SwitchToggleStyle(tint: .purple))
+                        .controlSize(.small)
+                        .help("Keep intentional sharp angles during simplification")
+                    }
+                }
+            }
+
+            // Marker Tool Options
+            VStack(alignment: .leading, spacing: 12) {
+                Divider()
+                    .padding(.vertical, 4)
+
+                // Marker Preview Style
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Preview Style")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.secondaryText)
+
+                    Picker("", selection: Binding(
+                        get: { appState.brushPreviewStyle },
+                        set: { appState.brushPreviewStyle = $0 }
+                    )) {
+                        Text("Blue Outline").tag(AppState.BrushPreviewStyle.outline)
+                        Text("Fill Color").tag(AppState.BrushPreviewStyle.fill)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(maxWidth: .infinity)
+                    .help("Choose how the marker preview appears while drawing")
+                }
+
+                // Remove Overlap Toggle
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Remove Overlap")
+                            .font(.subheadline)
+                            .foregroundColor(Color.ui.primaryText)
+                        Text("Union overlapping parts of same shape")
+                            .font(.caption)
+                            .foregroundColor(Color.ui.secondaryText)
+                    }
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { document.markerRemoveOverlap },
+                        set: { document.markerRemoveOverlap = $0 }
+                    ))
+                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                    .controlSize(.small)
+                    .help("When enabled, overlapping parts of marker strokes will be merged using union operation")
+                }
+            }
+
+            // Pressure Input Status
+            HStack {
+                Image(systemName: document.hasPressureInput ? "hand.point.up.braille" : "hand.tap")
+                    .foregroundColor(document.hasPressureInput ? .green : .orange)
+                Text(document.hasPressureInput ? "Pressure input detected" : "Using simulated pressure")
+                    .font(.caption)
+                    .foregroundColor(Color.ui.secondaryText)
+                Spacer()
+            }
+            .padding(.top, 4)
+        }
+        .padding()
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(12)
+    }
+}

@@ -15,7 +15,6 @@ extension VectorDocument {
     func syncShapeToLayer(_ shape: VectorShape, at layerIndex: Int) {
         // NO-OP: Everything is managed through unified objects
         // No sync needed since there's only one source of truth
-        Log.fileOperation("✅ Shape \(shape.id) managed through unified objects", level: .debug)
     }
     
     /// Get shape at specific index (compatibility wrapper)
@@ -208,7 +207,6 @@ extension VectorDocument {
         let textShape = VectorShape.from(textWithLayer)
         
         // DEBUG: Log the editing state
-        Log.fileOperation("🔍 addTextToUnifiedSystem: text.isEditing=\(text.isEditing), textShape.isEditing=\(textShape.isEditing ?? false)", level: .info)
         
         // Text shape is now only in unified objects
         

@@ -127,7 +127,6 @@ extension VectorDocument {
 
             setShapeAtIndex(layerIndex: 0, shapeIndex: pasteboardIndex, shape: updatedPasteboardShape)
 
-            Log.fileOperation("📐 Updated pasteboard: \(pasteboardSize) at \(pasteboardOrigin)", level: .info)
         }
     }
     
@@ -139,29 +138,18 @@ extension VectorDocument {
     /// Debug function to print current document state
     func debugCurrentState() {
 
-        Log.info("   Total layers: \(layers.count)", category: .general)
-        Log.info("   Selected layer index: \(selectedLayerIndex ?? -1)", category: .general)
-        for (index, layer) in layers.enumerated() {
-            let marker = (selectedLayerIndex == index) ? "👈" : "  "
-            let shapeCount = getShapesForLayer(index).count
-            Log.info("   \(marker) Layer \(index): '\(layer.name)' - locked: \(layer.isLocked), visible: \(layer.isVisible), shapes: \(shapeCount)", category: .general)
-        }
-        Log.info("   Selected shapes: \(selectedShapeIDs.count)", category: .general)
-        Log.info("   Current tool: \(currentTool)", category: .general)
     }
     
     /// Update canvas layer rectangle to match current `settings.sizeInPoints`
     func updateCanvasLayer() {
         guard layers.count > 1,
               layers[1].name == "Canvas" else {
-            Log.fileOperation("⚠️ Cannot update canvas - canvas layer not found", level: .info)
             return
         }
         
         // Use unified objects to find canvas shape index
         let shapesInLayer = getShapesForLayer(1)
         guard let canvasIndex = shapesInLayer.firstIndex(where: { $0.name == "Canvas Background" }) else {
-            Log.fileOperation("⚠️ Cannot update canvas - canvas background not found", level: .info)
             return
         }
         let newCanvasRect = VectorShape.rectangle(
@@ -175,7 +163,6 @@ extension VectorDocument {
         guard let existingCanvas = getShapeAtIndex(layerIndex: 1, shapeIndex: canvasIndex) else { return }
         updatedCanvasShape.id = existingCanvas.id
         setShapeAtIndex(layerIndex: 1, shapeIndex: canvasIndex, shape: updatedCanvasShape)
-        Log.fileOperation("📐 Updated canvas layer to size: \(settings.sizeInPoints)", level: .info)
     }
     
     /// Translate all content in the document by a delta. Skips background shapes by default.
@@ -208,7 +195,6 @@ extension VectorDocument {
     internal func setupSettingsObservation() {
         // Since settings is a struct, we can't directly observe individual properties
         // Instead, we'll provide a method that should be called when settings change
-        Log.fileOperation("🔧 Settings observation setup complete", level: .debug)
     }
     
     /// Call this method whenever document settings change to update pasteboard
@@ -221,6 +207,5 @@ extension VectorDocument {
         // Update any other dependent elements
         objectWillChange.send()
         
-        Log.fileOperation("🔄 Settings changed - updated pasteboard layer", level: .info)
     }
 }

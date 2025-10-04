@@ -19,7 +19,6 @@ class GPUMathAcceleratorSimple {
         if isMetalAvailable {
             // print("✅ GPU Math Accelerator (Simple): Ready with \(device?.name ?? "Unknown GPU")")
         } else {
-            Log.fileOperation("⚠️ GPU Math Accelerator (Simple): Using CPU-only mode", level: .info)
         }
     }
     
@@ -89,7 +88,6 @@ class GPUMathAcceleratorSimple {
         // Build result from kept points
         result = keepPoints.sorted().map { points[$0] }
         
-        Log.info("🚀 Phase 1: Simplified \(points.count) → \(result.count) points (GPU-ready algorithm)", category: .general)
         return result
     }
     
@@ -112,7 +110,6 @@ class GPUMathAcceleratorSimple {
     /// Main entry point for Phase 1 GPU acceleration
     func optimizeDrawingPath(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
         if points.count > 20 { // Lower threshold for testing
-            Log.info("🚀 Phase 1: GPU-ready optimization for \(points.count) points", category: .general)
             return douglasPeuckerSimplifyGPUReady(points, tolerance: tolerance)
         } else {
             return points

@@ -173,7 +173,6 @@ struct DocumentBasedMainView: View {
             if !hasInitializedTool {
                 document.currentTool = appState.defaultTool
                 hasInitializedTool = true
-                Log.info("🛠️ Applied default tool \(appState.defaultTool.rawValue) to DocumentGroup document (initial setup)", category: .general)
             }
             
             // Connect document to menu system
@@ -183,7 +182,6 @@ struct DocumentBasedMainView: View {
             if let configured = appState.pendingNewDocument {
                 loadImportedDocument(configured)
                 appState.pendingNewDocument = nil
-                Log.info("✅ Applied pending new document settings from setup window", category: .general)
             }
             
             // Defer fit to page operation to prevent blocking
@@ -193,7 +191,6 @@ struct DocumentBasedMainView: View {
         }
         .onDisappear {
             // CRITICAL: Clean up DocumentState when view disappears to prevent retain cycles
-            Log.startup("📄 DocumentBasedMainView disappearing - cleaning up DocumentState")
             documentState.cleanup()
         }
         // Cleanup is triggered directly by the AppDelegate via DocumentStateRegistry
@@ -208,7 +205,6 @@ struct DocumentBasedMainView: View {
         
         await MainActor.run {
             document.requestZoom(to: 0.0, mode: .fitToPage)
-            Log.info("🔍 DocumentGroup: Applied fit to page", category: .general)
         }
     }
     
@@ -236,7 +232,6 @@ struct DocumentBasedMainView: View {
         document.showRulers = importedDoc.showRulers
         document.snapToGrid = importedDoc.snapToGrid
         
-        Log.info("✅ Loaded imported document - \(document.layers.count) layers, \(document.unifiedObjects.count) objects", category: .fileOperations)
         
         // Defer fit to page operation to prevent blocking
         Task {
@@ -250,7 +245,6 @@ struct DocumentBasedMainView: View {
         
         await MainActor.run {
             document.requestZoom(to: 0.0, mode: .fitToPage)
-            Log.info("🔍 PROPER FIT TO PAGE: Applied for imported document after geometry established", category: .general)
         }
     }
     
@@ -284,14 +278,13 @@ struct DocumentBasedMainView: View {
                     document.selectedObjectIDs = newShapeIDs
                     document.syncSelectionArrays()
                     
-                    Log.info("✅ Import successful: \(result.shapes.count) shapes imported and added to undo stack", category: .fileOperations)
                     
                     // Defer fit to page operation to prevent blocking
                     Task {
                         await performVectorImportSetupAsync()
                     }
                 } else {
-                    Log.error("❌ Import failed: \(result.errors.map { $0.localizedDescription }.joined(separator: ", "))", category: .error)
+                    // Log.error("❌ Import failed: \(result.errors.map { $0.localizedDescription }.joined(separator: ", "))", category: .error)
                 }
                 
                 // Show import result dialog
@@ -306,14 +299,12 @@ struct DocumentBasedMainView: View {
         
         await MainActor.run {
             document.requestZoom(to: 0.0, mode: .fitToPage)
-            Log.info("🔍 PROPER FIT TO PAGE: Applied after vector import with geometry established", category: .general)
         }
     }
     
     
 
     private func runPasteboardDiagnostics() {
-        Log.info("🔧 DocumentGroup: Running pasteboard diagnostics", category: .general)
         let report = PasteboardDiagnostics.shared.runDiagnostics(on: document)
         report.printSummary()
         

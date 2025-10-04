@@ -181,19 +181,13 @@ struct ColorPanel: View {
     }
     
     private func selectColor(_ color: VectorColor) {
-        Log.fileOperation("🎨 COLOR PANEL: selectColor called with: \(color)", level: .info)
-        Log.fileOperation("🎨 COLOR PANEL: showGradientEditing = \(showGradientEditing)", level: .info)
-        Log.fileOperation("🎨 COLOR PANEL: Gradient editing state: \(appState.gradientEditingState != nil)", level: .info)
-        Log.fileOperation("🎨 COLOR PANEL: activeColorTarget = \(document.activeColorTarget)", level: .info)
         
         // If we have a specific callback, use it (we're in a modal for specific purpose)
         if let onColorSelected = onColorSelected {
-            Log.fileOperation("🎨 COLOR PANEL: Using onColorSelected callback (fill/stroke mode)", level: .info)
             onColorSelected(color)
         } else {
             // 🔥 FIXED: Apply color to active target when browsing colors in the Color tab
             // This makes the Color Panel behave consistently with the VerticalToolbar
-            Log.fileOperation("🎨 COLOR PANEL: Applying color to active target: \(document.activeColorTarget)", level: .info)
             
             // 🔥 CRITICAL FIX: Update the preview color in the INK panel
             currentPreviewColor = color
@@ -201,11 +195,9 @@ struct ColorPanel: View {
             // Apply color to the currently active target (fill or stroke)
             // FIX: Don't set defaults directly - setActiveColor handles this internally
             if document.activeColorTarget == .stroke {
-                Log.fileOperation("🎨 COLOR PANEL: Setting stroke color: \(color) (active target)", level: .info)
                 // Use setActiveColor which handles both defaults and selected objects
                 document.setActiveColor(color)
             } else {
-                Log.fileOperation("🎨 COLOR PANEL: Setting fill color: \(color) (active target)", level: .info)
                 // Use setActiveColor which handles both defaults and selected objects
                 document.setActiveColor(color)
             }

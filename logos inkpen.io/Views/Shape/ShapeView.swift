@@ -63,19 +63,8 @@ struct ShapeView: View {
                 // CRITICAL FIX: Let ShapeView handle zoom/offset - only apply group transform here
                 .transformEffect(shape.transform) // PREVIEW SCALING: Use preview transform during scaling
                 .onAppear {
-                    Log.info("🏗️ GROUP FIXED: Rendering group container \(shape.name)", category: .general)
-                    Log.info("   📊 Group bounds: \(shape.bounds)", category: .general)
-                    Log.info("   🔄 Group transform: \(shape.transform)", category: .general)
-                    Log.info("   🔍 Zoom level: \(zoomLevel)", category: .general)
-                    Log.info("   📍 Canvas offset: \(canvasOffset)", category: .general)
-                    Log.info("   👥 Contains \(shape.groupedShapes.count) grouped shapes", category: .general)
-                    Log.info("   ✅ COORDINATE FIX: Zoom/offset applied ONCE at group level", category: .general)
                     
-                    for (index, groupedShape) in shape.groupedShapes.enumerated() {
-                        Log.info("   🔥 Grouped shape \(index): \(groupedShape.name)", category: .general)
-                        Log.info("      📊 Bounds: \(groupedShape.bounds)", category: .general)
-                        Log.info("      🔄 Transform: \(groupedShape.transform)", category: .general)
-                        Log.info("      ✅ NO double zoom/offset application", category: .general)
+                    for (_, _) in shape.groupedShapes.enumerated() {
                     }
                 }
             } else {

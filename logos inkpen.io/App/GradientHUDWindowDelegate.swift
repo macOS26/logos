@@ -19,7 +19,6 @@ class GradientHUDWindowDelegate: NSObject, NSWindowDelegate {
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         // Check if this is our gradient HUD window
         if sender.title == "Select Gradient Color" {
-            Log.info("🎨 GRADIENT HUD: Close button clicked - preserving position with orderOut", category: .general)
             AppState.shared.persistentGradientHUD.stopEditing()
             sender.orderOut(nil)
             return false
@@ -27,7 +26,6 @@ class GradientHUDWindowDelegate: NSObject, NSWindowDelegate {
         
         // Check if this is our Ink Color Mixer HUD
         if sender.title == "Ink Color Mixer" {
-            Log.info("🖌️ INK HUD: Close button clicked - hiding window via orderOut", category: .general)
             AppState.shared.persistentInkHUD.hide()
             sender.orderOut(nil)
             return false

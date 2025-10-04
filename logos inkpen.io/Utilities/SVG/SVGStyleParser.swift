@@ -27,16 +27,13 @@ extension SVGParser {
         // Check for gradient reference: url(#gradientId)
         if stroke.hasPrefix("url(#") && stroke.hasSuffix(")") {
             let gradientId = String(stroke.dropFirst(5).dropLast(1)) // Remove "url(#" and ")"
-            Log.info("🔍 Looking for stroke gradient: \(gradientId)", category: .general)
-            Log.info("🔍 Available gradients: \(gradientDefinitions.keys.sorted())", category: .general)
             
                     if let gradient = gradientDefinitions[gradientId] {
             let width = parseLength(attributes["stroke-width"]) ?? 1.0
             let opacity = parseLength(attributes["stroke-opacity"]) ?? 1.0
-            Log.info("✅ Applied gradient stroke: \(gradientId)", category: .fileOperations)
             return StrokeStyle(gradient: gradient, width: width, placement: .center, opacity: opacity)
         }
-        Log.error("❌ Gradient reference not found for stroke: \(gradientId)", category: .error)
+        // Log.error("❌ Gradient reference not found for stroke: \(gradientId)", category: .error)
         // Fallback to black if gradient not found
         let width = parseLength(attributes["stroke-width"]) ?? 1.0
         let opacity = parseLength(attributes["stroke-opacity"]) ?? 1.0
@@ -57,15 +54,12 @@ extension SVGParser {
         // Check for gradient reference: url(#gradientId)
         if fill.hasPrefix("url(#") && fill.hasSuffix(")") {
             let gradientId = String(fill.dropFirst(5).dropLast(1)) // Remove "url(#" and ")"
-            Log.info("🔍 Looking for fill gradient: \(gradientId)", category: .general)
-            Log.info("🔍 Available gradients: \(gradientDefinitions.keys.sorted())", category: .general)
             
             if let gradient = gradientDefinitions[gradientId] {
                 let opacity = parseLength(attributes["fill-opacity"]) ?? 1.0
-                Log.info("✅ Applied gradient fill: \(gradientId)", category: .fileOperations)
                 return FillStyle(gradient: gradient, opacity: opacity)
             }
-            Log.error("❌ Gradient reference not found for fill: \(gradientId)", category: .error)
+            // Log.error("❌ Gradient reference not found for fill: \(gradientId)", category: .error)
             // Fallback to black if gradient not found
             return FillStyle(color: .black, opacity: parseLength(attributes["fill-opacity"]) ?? 1.0)
         }

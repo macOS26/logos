@@ -115,7 +115,7 @@ extension DrawingCanvas {
         if !isBezierDrawing {
             // CHECK FOR CONTINUING EXISTING PATH
             if let selectedPointID = selectedPoints.first {
-                if let _ = getShapeForPoint(selectedPointID),
+                if getShapeForPoint(selectedPointID) != nil,
                    let pointPosition = getPointPosition(selectedPointID) {
                     continueExistingPath(from: pointPosition)
                     return
@@ -233,14 +233,12 @@ extension DrawingCanvas {
     
     internal func finishBezierPath() {
         guard let activeBezierShape = activeBezierShape else {
-            Log.info("Cannot finish bezier path - no active shape", category: .general)
             cancelBezierDrawing()
             return
         }
         
         // Apply colors even for incomplete paths
         if bezierPoints.count < 2 {
-            Log.info("Incomplete bezier path with \(bezierPoints.count) points - applying colors before canceling", category: .general)
             ensureIncompletePathHasProperColors(shape: activeBezierShape)
             cancelBezierDrawing()
             currentShapeId = nil
@@ -250,7 +248,6 @@ extension DrawingCanvas {
         // Apply final colors to the path
         applyFinalColorsToPath(shape: activeBezierShape)
         
-        Log.info("✅ Finished bezier path with \(bezierPoints.count) points using toolbar colors", category: .fileOperations)
         
         // Reset bezier state BUT KEEP pen tool active for continuous tracing
         cancelBezierDrawing()
@@ -440,11 +437,9 @@ extension DrawingCanvas {
             document.addShape(shape)
         }
         
-        Log.fileOperation("🎯 CREATED FIRST POINT: Started new path at \(location)", level: .info)
     }
     
     private func continueExistingPath(from pointPosition: VectorPoint) {
-        Log.fileOperation("🎯 CONTINUING EXISTING PATH: Starting from selected point at \(pointPosition)", level: .info)
 
         let newPath = VectorPath(elements: [.move(to: pointPosition)])
         bezierPath = newPath
@@ -498,7 +493,6 @@ extension DrawingCanvas {
         
         updateActiveBezierShapeInDocument(isLiveDrag: true)
         
-        Log.fileOperation("🎯 CORNER POINT: Added point \(bezierPoints.count) at \(location)", level: .info)
     }
     
     private func applyAngleConstraintForDrag(currentLocation: CGPoint, startLocation: CGPoint) -> CGPoint {
@@ -528,7 +522,7 @@ extension DrawingCanvas {
     
     private func handleFirstPointCreationFromDrag(startLocation: CGPoint) {
         if let selectedPointID = selectedPoints.first {
-            if let _ = getShapeForPoint(selectedPointID),
+            if getShapeForPoint(selectedPointID) != nil,
                let pointPosition = getPointPosition(selectedPointID) {
                 continueExistingPath(from: pointPosition)
             } else {
@@ -564,14 +558,12 @@ extension DrawingCanvas {
         activeBezierShape = newShape
         document.addShape(newShape)
         
-        Log.fileOperation("🎯 CREATED FIRST POINT FROM DRAG: Started new path at \(location)", level: .info)
     }
     
     private func editExistingPointHandles(pointIndex: Int, currentLocation: CGPoint) {
         if !isDraggingBezierHandle {
             isDraggingBezierHandle = true
             isDraggingBezierPoint = true
-            Log.fileOperation("📝 EDITING: Dragging handles from existing point \(pointIndex)", level: .info)
         }
         
         let point = bezierPoints[pointIndex]
@@ -617,7 +609,6 @@ extension DrawingCanvas {
                 bezierPoints.append(newPoint)
                 activeBezierPointIndex = bezierPoints.count - 1
                 bezierPath?.addElement(.line(to: newPoint))
-                Log.fileOperation("🎯 NEW POINT: First plotted anchor point \(bezierPoints.count) at \(startLocation)", level: .info)
             } else {
                 activeBezierPointIndex = bezierPoints.count - 1
             }
@@ -684,7 +675,6 @@ extension DrawingCanvas {
             }
         }
         
-        Log.fileOperation("🎨 PEN TOOL FINAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)", level: .info)
         document.objectWillChange.send()
     }
 }

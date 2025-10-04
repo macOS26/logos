@@ -23,13 +23,5 @@ extension PDFCommandParser {
         
         let newTransform = CGAffineTransform(a: a, b: b, c: c, d: d, tx: tx, ty: ty)
         currentTransformMatrix = currentTransformMatrix.concatenating(newTransform)
-        
-        Log.info("PDF: 📐 Matrix concatenation 'cm': [\(a), \(b), \(c), \(d), \(tx), \(ty)]", category: .general)
-        Log.info("PDF: 🔄 Current CTM: [\(currentTransformMatrix.a), \(currentTransformMatrix.b), \(currentTransformMatrix.c), \(currentTransformMatrix.d), \(currentTransformMatrix.tx), \(currentTransformMatrix.ty)]", category: .general)
-        
-        // Extract rotation angle from transformation matrix
-        let angle = atan2(currentTransformMatrix.b, currentTransformMatrix.a)
-        let angleDegrees = angle * 180.0 / .pi
-        Log.info("PDF: 📐 CTM Rotation angle: \(angleDegrees)°", category: .general)
     }
 }

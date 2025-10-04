@@ -105,11 +105,9 @@ extension VectorDocument {
     // These layer-based functions are deprecated
     func updateShapeAtIndex(layerIndex: Int, shapeIndex: Int, shape: VectorShape) {
         // No longer using layer indices - operations should go through unified system
-        Log.warning("updateShapeAtIndex is deprecated - use unified system", category: .general)
     }
     
     func removeShapeAtIndex(layerIndex: Int, shapeIndex: Int) {
         // No longer using layer indices - operations should go through unified system  
-        Log.warning("removeShapeAtIndex is deprecated - use unified system", category: .general)
     }
 }

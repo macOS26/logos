@@ -79,8 +79,8 @@ struct MainToolbarContent: ToolbarContent {
                     // Find the shape in the layers array and update it
                     if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
                         let shapes = document.getShapesForLayer(layerIndex)
-                        if let _ = shapes.firstIndex(where: { $0.id == shape.id }) {
-                            
+                        if shapes.firstIndex(where: { $0.id == shape.id }) != nil {
+
                             // Check if path is open and has enough points
                             let hasCloseElement = shape.path.elements.contains { element in
                                 if case .close = element { return true }
@@ -101,7 +101,6 @@ struct MainToolbarContent: ToolbarContent {
                                 
                                 let newPath = VectorPath(elements: newElements, isClosed: true)
                                 document.updateShapePathUnified(id: shape.id, path: newPath)
-                                Log.info("🎯 Closed selected path for shape \(shape.name)", category: .shapes)
                             }
                         }
                     }
@@ -383,7 +382,7 @@ struct MainToolbarContent: ToolbarContent {
                         // Find the shape in the layers array and lock it
                         if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
                             let shapes = document.getShapesForLayer(layerIndex)
-                            if let _ = shapes.firstIndex(where: { $0.id == shape.id }) {
+                            if shapes.firstIndex(where: { $0.id == shape.id }) != nil {
                                 document.lockShapeInUnified(id: shape.id)
                             }
                         }
@@ -395,7 +394,6 @@ struct MainToolbarContent: ToolbarContent {
         // Clear selection (locked objects can't be selected)
         document.selectedObjectIDs.removeAll()
         
-        Log.info("🔒 Locked selected objects", category: .shapes)
     }
     
     private func unlockAllObjects() {
@@ -415,7 +413,6 @@ struct MainToolbarContent: ToolbarContent {
             }
         }
         
-        Log.info("🔓 Unlocked all objects", category: .shapes)
     }
     
     private func hideSelectedObjects() {
@@ -433,7 +430,7 @@ struct MainToolbarContent: ToolbarContent {
                         // Find the shape in the layers array and hide it
                         if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
                             let shapes = document.getShapesForLayer(layerIndex)
-                            if let _ = shapes.firstIndex(where: { $0.id == shape.id }) {
+                            if shapes.firstIndex(where: { $0.id == shape.id }) != nil {
                                 document.hideShapeInUnified(id: shape.id)
                             }
                         }
@@ -445,7 +442,6 @@ struct MainToolbarContent: ToolbarContent {
         // Clear selection (hidden objects can't be selected)
         document.selectedObjectIDs.removeAll()
         
-        Log.info("👁️‍🗨️ Hidden selected objects", category: .shapes)
     }
     
     private func showAllObjects() {
@@ -465,6 +461,5 @@ struct MainToolbarContent: ToolbarContent {
             }
         }
         
-        Log.info("👁️ Showed all objects", category: .shapes)
     }
 }

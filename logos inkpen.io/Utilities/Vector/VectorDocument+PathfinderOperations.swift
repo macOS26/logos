@@ -18,21 +18,17 @@ extension VectorDocument {
         // Get selected shapes in correct STACKING ORDER
         let selectedShapes = getSelectedShapesInStackingOrder()
         guard !selectedShapes.isEmpty else {
-            Log.error("❌ No shapes selected for pathfinder operation", category: .error)
+            // Log.error("❌ No shapes selected for pathfinder operation", category: .error)
             return false
         }
         
-        Log.info("📚 STACKING ORDER: Processing \(selectedShapes.count) shapes", category: .general)
-        for (index, shape) in selectedShapes.enumerated() {
-            Log.info("  \(index): \(shape.name) (bottom→top)", category: .general)
-        }
         
         // Convert shapes to CGPaths
         let paths = selectedShapes.map { $0.path.cgPath }
         
         // Validate operation can be performed
         guard ProfessionalPathOperations.canPerformOperation(operation, on: paths) else {
-            Log.error("❌ Cannot perform \(operation.rawValue) on selected shapes", category: .error)
+            // Log.error("❌ Cannot perform \(operation.rawValue) on selected shapes", category: .error)
             return false
         }
         
@@ -48,7 +44,7 @@ extension VectorDocument {
             // UNION: Combines exactly two shapes, result takes color of TOPMOST object
             if let unionPath = ProfessionalPathOperations.union(paths) {
                 guard let topmostShape = selectedShapes.last else {
-                    Log.error("❌ UNION: No topmost shape found", category: .general)
+                    // Log.error("❌ UNION: No topmost shape found", category: .general)
                     return false
                 } // Last in array = topmost in stacking order
                 let unionShape = VectorShape(
@@ -60,23 +56,21 @@ extension VectorDocument {
                     opacity: topmostShape.opacity
                 )
                 resultShapes = [unionShape]
-                Log.info("✅ UNION: Created unified shape with topmost object's color", category: .fileOperations)
             }
             
         case .minusFront:
             // PUNCH: Front objects subtract from back object, result takes color of BACK object
             guard selectedShapes.count >= 2 else { 
-                Log.error("❌ PUNCH requires at least 2 shapes", category: .error)
+                // Log.error("❌ PUNCH requires at least 2 shapes", category: .error)
                 return false 
             }
             
             guard let backShape = selectedShapes.first else {
-                Log.error("❌ PUNCH: No back shape found", category: .general)
+                // Log.error("❌ PUNCH: No back shape found", category: .general)
                 return false
             }    // First in array = bottommost = back
             let frontShapes = Array(selectedShapes.dropFirst()) // All others = front
             
-            Log.info("🔪 PUNCH: Back shape '\(backShape.name)' - Front shapes: \(frontShapes.map { $0.name })", category: .general)
             
             var resultPath = backShape.path.cgPath
             
@@ -84,7 +78,6 @@ extension VectorDocument {
             for frontShape in frontShapes {
                 if let subtractedPath = ProfessionalPathOperations.minusFront(frontShape.path.cgPath, from: resultPath) {
                     resultPath = subtractedPath
-                    Log.info("  ⚡ Subtracted '\(frontShape.name)' from result", category: .general)
                 }
             }
             
@@ -98,18 +91,17 @@ extension VectorDocument {
                 opacity: backShape.opacity
             )
             resultShapes = [resultShape]
-            Log.info("✅ PUNCH: Result takes back object's color (\(backShape.name))", category: .fileOperations)
             
         case .intersect:
             // INTERSECT: Keep only overlapping areas, result takes color of TOPMOST object
             guard selectedShapes.count == 2 else {
-                Log.error("❌ INTERSECT requires exactly 2 shapes", category: .error)
+                // Log.error("❌ INTERSECT requires exactly 2 shapes", category: .error)
                 return false
             }
             
             if let intersectedPath = ProfessionalPathOperations.intersect(paths[0], paths[1]) {
                 guard let topmostShape = selectedShapes.last else {
-                    Log.error("❌ No topmost shape found", category: .general)
+                    // Log.error("❌ No topmost shape found", category: .general)
                     return false
                 } // Last = topmost
                 let intersectedShape = VectorShape(
@@ -121,19 +113,18 @@ extension VectorDocument {
                     opacity: topmostShape.opacity
                 )
                 resultShapes = [intersectedShape]
-                Log.info("✅ INTERSECT: Result takes topmost object's color (\(topmostShape.name))", category: .fileOperations)
             }
             
         case .exclude:
             // EXCLUDE: Remove overlapping areas, result takes color of TOPMOST object
             guard selectedShapes.count == 2 else {
-                Log.error("❌ EXCLUDE requires exactly 2 shapes", category: .error)
+                // Log.error("❌ EXCLUDE requires exactly 2 shapes", category: .error)
                 return false
             }
             
             let excludedPaths = ProfessionalPathOperations.exclude(paths[0], paths[1])
             guard let topmostShape = selectedShapes.last else {
-                Log.error("❌ No topmost shape found", category: .error)
+                // Log.error("❌ No topmost shape found", category: .error)
                 return false
             }
             
@@ -148,7 +139,6 @@ extension VectorDocument {
                 )
                 resultShapes.append(excludedShape)
             }
-            Log.info("✅ EXCLUDE: Created \(resultShapes.count) pieces with topmost object's color (\(topmostShape.name))", category: .fileOperations)
         
         // PATHFINDER EFFECTS - These retain original colors
         case .mosaic:
@@ -177,7 +167,6 @@ extension VectorDocument {
                 )
                 resultShapes.append(mosaicShape)
             }
-            Log.info("✅ MOSAIC: Created \(resultShapes.count) pieces - TRUE stained glass effect (ALL visible areas preserved)", category: .fileOperations)
             
         case .cut:
             // CUT: CoreGraphics-based alternative to Trim with curve preservation
@@ -206,14 +195,13 @@ extension VectorDocument {
                 resultShapes.append(cutShape)
             }
             
-            Log.info("✅ CUT: Created \(resultShapes.count) cut shapes with curves preserved, removed strokes", category: .fileOperations)
             
         case .merge:
             // MERGE: Merge - cut all shapes first (maintain appearance), then merge same colors
             let colors = selectedShapes.compactMap { $0.fillStyle?.color ?? .clear }
             
             guard colors.count == selectedShapes.count else {
-                Log.error("❌ MERGE: Could not extract colors from all shapes", category: .error)
+                // Log.error("❌ MERGE: Could not extract colors from all shapes", category: .error)
                 return false
             }
             
@@ -241,7 +229,6 @@ extension VectorDocument {
                 )
                 resultShapes.append(mergedShape)
             }
-            Log.info("✅ MERGE: Created \(resultShapes.count) color-unified shapes with maintained appearance, removed strokes", category: .fileOperations)
             
         case .crop:
             // CROP: Use topmost shape to crop others, then trim. Top shape becomes invisible.
@@ -266,7 +253,6 @@ extension VectorDocument {
                         opacity: originalShape.opacity
                     )
                     resultShapes.append(invisibleCropShape)
-                    Log.info("   ✅ Created invisible crop boundary from \(originalShape.name)", category: .general)
                 } else {
                     // Track how many pieces we've created from this original shape
                     shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
@@ -284,7 +270,6 @@ extension VectorDocument {
                 }
             }
             
-            Log.info("✅ CROP: Created \(resultShapes.count) shapes (includes invisible crop boundary), removed strokes", category: .fileOperations)
             
         case .dieline:
             // DIELINE: Apply Divide then convert all results to 1px black strokes with no fill
@@ -307,19 +292,17 @@ extension VectorDocument {
                 )
                 resultShapes.append(dielineShape)
             }
-            Log.info("✅ DIELINE: Created \(resultShapes.count) dieline shapes", category: .fileOperations)
             
         case .separate:
             // SEPARATE: Break compound paths into individual components
             var separatedShapes: [VectorShape] = []
-            
-            for (shapeIndex, shape) in selectedShapes.enumerated() {
+
+            for (_, shape) in selectedShapes.enumerated() {
                 let components = CoreGraphicsPathOperations.componentsSeparated(shape.path.cgPath, using: .winding)
                 
                 if components.count <= 1 {
                     // No separation needed, keep original
                     separatedShapes.append(shape)
-                    Log.info("   Shape \(shapeIndex + 1): No components to separate", category: .general)
                 } else {
                     // Create separate shapes for each component
                     for (componentIndex, component) in components.enumerated() {
@@ -333,27 +316,24 @@ extension VectorDocument {
                         )
                         separatedShapes.append(separatedShape)
                     }
-                    Log.info("   Shape \(shapeIndex + 1): Separated into \(components.count) components", category: .general)
                 }
             }
             
             resultShapes = separatedShapes
-            Log.info("✅ SEPARATE: Created \(resultShapes.count) individual shapes from \(selectedShapes.count) compound paths", category: .fileOperations)
             
         case .kick:
             // KICK: Back objects subtract from front object, result takes color of FRONT object
             guard selectedShapes.count >= 2 else {
-                Log.error("❌ KICK requires at least 2 shapes", category: .error)
+                // Log.error("❌ KICK requires at least 2 shapes", category: .error)
                 return false
             }
             
             guard let frontShape = selectedShapes.last else {
-                Log.error("❌ KICK: No front shape found", category: .general)
+                // Log.error("❌ KICK: No front shape found", category: .general)
                 return false
             }     // Last in array = topmost = front
             let backShapes = Array(selectedShapes.dropLast()) // All others = back
             
-            Log.info("🔪 KICK: Front shape '\(frontShape.name)' - Back shapes: \(backShapes.map { $0.name })", category: .general)
             
             var resultPath = frontShape.path.cgPath
             
@@ -361,7 +341,6 @@ extension VectorDocument {
             for backShape in backShapes {
                 if let subtractedPath = ProfessionalPathOperations.kick(resultPath, from: backShape.path.cgPath) {
                     resultPath = subtractedPath
-                    Log.info("  ⚡ Subtracted '\(backShape.name)' from result", category: .general)
                 }
             }
             
@@ -375,11 +354,10 @@ extension VectorDocument {
                 opacity: frontShape.opacity
             )
             resultShapes = [resultShape]
-            Log.info("✅ KICK: Result takes front object's color (\(frontShape.name))", category: .fileOperations)
         }
         
         guard !resultShapes.isEmpty else {
-            Log.error("❌ Pathfinder operation \(operation.rawValue) produced no results", category: .error)
+            // Log.error("❌ Pathfinder operation \(operation.rawValue) produced no results", category: .error)
             return false
         }
         

@@ -282,8 +282,6 @@ struct PressureCalibrationView: View {
                 // Pressure-sensitive canvas with comprehensive event detection
                 PressureSensitiveCanvasRepresentable(
                     onPressureEvent: { location, pressure, eventType, isTabletEvent in
-                        Log.fileOperation("🎨 CALIBRATION CANVAS: Event received - type: \(eventType), pressure: \(pressure), tablet: \(isTabletEvent)", level: .info)
-                        Log.fileOperation("🎨 CALIBRATION CANVAS: Location: (\(location.x), \(location.y))", level: .info)
                         
                         // Update pressure manager
                         pressureManager.processRealPressure(pressure, at: location, isTabletEvent: isTabletEvent)
@@ -293,20 +291,9 @@ struct PressureCalibrationView: View {
                         
                         // Update calibration if active
                         if pressureManager.isCalibrating {
-                            Log.fileOperation("🎨 CALIBRATION CANVAS: Updating calibration with pressure: \(pressure)", level: .info)
                         }
                         
                         // Log all pressure events regardless of calibration state
-                        Log.fileOperation("🎨 CALIBRATION CANVAS: ALL PRESSURE EVENTS DETECTED:", level: .info)
-                        Log.info("   - Event Type: \(eventType)", category: .general)
-                        Log.info("   - Pressure Value: \(pressure)", category: .general)
-                        Log.info("   - Is Tablet Event: \(isTabletEvent)", category: .general)
-                        Log.info("   - Location: (\(location.x), \(location.y))", category: .general)
-                        Log.info("   - Calibration Active: \(pressureManager.isCalibrating)", category: .general)
-                        Log.info("   - Current Min: \(pressureManager.calibrationMinPressure)", category: .general)
-                        Log.info("   - Current Max: \(pressureManager.calibrationMaxPressure)", category: .general)
-                        Log.info("   - Sample Count: \(pressureManager.calibrationSampleCount)", category: .general)
-                        Log.info("   ---", category: .general)
                         
                         // Add to event log for real-time display
                         let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
@@ -781,17 +768,14 @@ struct PressureCalibrationView: View {
     // MARK: - Close Function
     
     private func closeCalibration() {
-        Log.fileOperation("🎨 CALIBRATION: Closing calibration window", level: .info)
         
         // Stop calibration if it's running
         if pressureManager.isCalibrating {
             pressureManager.stopCalibration()
-            Log.fileOperation("🎨 CALIBRATION: Stopped calibration before closing", level: .info)
         }
         
         // Dismiss the view
         presentationMode.wrappedValue.dismiss()
-        Log.fileOperation("🎨 CALIBRATION: Calibration window dismissed", level: .info)
     }
     
     // MARK: - Event Detection Helper

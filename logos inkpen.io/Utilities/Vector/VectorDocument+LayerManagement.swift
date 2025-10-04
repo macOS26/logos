@@ -12,17 +12,15 @@ extension VectorDocument {
     /// Rename a layer at the specified index
     func renameLayer(at index: Int, to newName: String) {
         guard index >= 0 && index < layers.count else {
-            Log.error("❌ Invalid layer index for rename: \(index)", category: .error)
+            // Log.error("❌ Invalid layer index for rename: \(index)", category: .error)
             return
         }
         
         // Don't allow renaming Canvas layer
         if index == 0 && layers[index].name == "Canvas" {
-            Log.info("🚫 Cannot rename Canvas layer", category: .general)
             return
         }
-        
-        let oldName = layers[index].name
+
         layers[index].name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
 
         // Update settings if this is the selected layer
@@ -32,19 +30,17 @@ extension VectorDocument {
         }
 
         saveToUndoStack()
-        Log.info("✏️ Renamed layer '\(oldName)' to '\(layers[index].name)'", category: .general)
     }
     
     /// Duplicate a layer at the specified index
     func duplicateLayer(at index: Int) {
         guard index >= 0 && index < layers.count else {
-            Log.error("❌ Invalid layer index for duplicate: \(index)", category: .error)
+            // Log.error("❌ Invalid layer index for duplicate: \(index)", category: .error)
             return
         }
         
         // Don't allow duplicating Canvas layer
         if index == 0 && layers[index].name == "Canvas" {
-            Log.info("🚫 Cannot duplicate Canvas layer", category: .general)
             return
         }
         
@@ -84,7 +80,6 @@ extension VectorDocument {
         settings.selectedLayerName = duplicatedLayer.name
         onSettingsChanged()
         
-        Log.fileOperation("📋 Duplicated layer '\(originalLayer.name)' to '\(duplicatedLayer.name)'", level: .info)
     }
     
     /// Move a layer from one index to another
@@ -92,31 +87,27 @@ extension VectorDocument {
         guard sourceIndex >= 0 && sourceIndex < layers.count,
               targetIndex >= 0 && targetIndex <= layers.count,  // Allow targetIndex == layers.count for "move to top"
               sourceIndex != targetIndex else {
-            Log.error("❌ Invalid layer indices for move: source=\(sourceIndex), target=\(targetIndex)", category: .error)
+            // Log.error("❌ Invalid layer indices for move: source=\(sourceIndex), target=\(targetIndex)", category: .error)
             return
         }
         
         // PROTECT PASTEBOARD LAYER: Never allow Pasteboard layer to be moved
         if sourceIndex == 0 && layers[sourceIndex].name == "Pasteboard" {
-            Log.info("🚫 Cannot move Pasteboard layer - it must remain at the bottom", category: .general)
             return
         }
         
         // PROTECT CANVAS LAYER: Never allow Canvas layer to be moved
         if sourceIndex == 1 && layers[sourceIndex].name == "Canvas" {
-            Log.info("🚫 Cannot move Canvas layer - it must remain above pasteboard", category: .general)
             return
         }
         
         // PROTECT PASTEBOARD LAYER: Never allow moving to Pasteboard position
         if targetIndex == 0 {
-            Log.info("🚫 Cannot move layers to Pasteboard position (index 0)", category: .general)
             return
         }
         
         // PROTECT CANVAS LAYER: Never allow moving to Canvas position
         if targetIndex == 1 && targetIndex < layers.count && layers[targetIndex].name == "Canvas" {
-            Log.info("🚫 Cannot move layers to Canvas position (index 1)", category: .general)
             return
         }
         
@@ -129,7 +120,6 @@ extension VectorDocument {
         if targetIndex == layers.count {
             // Special case: move to top (append to end after removal)
             adjustedTargetIndex = layers.count
-            Log.info("🔝 Moving to top position (will be index \(adjustedTargetIndex))", category: .general)
         } else if sourceIndex < targetIndex {
             // Moving forward in the array - adjust for removal
             adjustedTargetIndex = targetIndex - 1
@@ -152,7 +142,6 @@ extension VectorDocument {
             }
         }
         
-        Log.fileOperation("🔄 Moved layer '\(movingLayer.name)' from index \(sourceIndex) to \(adjustedTargetIndex)", level: .info)
     }
     
     func addLayer(name: String = "New Layer") {
@@ -169,7 +158,6 @@ extension VectorDocument {
     func removeLayer(at index: Int) {
         // Allow deletion of any layer, just prevent deleting the last layer
         guard index >= 0 && index < layers.count && layers.count > 1 else {
-            Log.fileOperation("⚠️ Cannot remove last remaining layer", level: .info)
             return
         }
 

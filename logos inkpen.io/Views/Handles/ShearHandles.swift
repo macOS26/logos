@@ -223,7 +223,6 @@ struct ShearHandles: View {
             // Set default locked pin point to center if none is set
             if lockedPinPointIndex == nil && shearAnchorPoint == .zero {
                 setLockedPinPoint(nil) // nil = center point
-                Log.info("🔴 SHEAR TOOL: Default locked pin set to center", category: .general)
             }
         }
         .onChange(of: shape.bounds) { oldBounds, newBounds in
@@ -231,7 +230,6 @@ struct ShearHandles: View {
             if !isShearing && oldBounds != newBounds {
                 extractPathPoints()
                 pointsRefreshTrigger += 1
-                Log.fileOperation("🔄 SHEAR TOOL: Shape bounds changed, refreshed points", level: .info)
             }
         }
         .id("shear-handles-\(pointsRefreshTrigger)") // Force view rebuild when points update
@@ -263,7 +261,6 @@ struct ShearHandles: View {
         // Ensure isShearing is true for preview visibility
         isShearing = true
         
-        Log.info("   📊 PIN-POINT SHEAR preview updated:", category: .general)
         // Removed excessive logging during drag operations
     }
     
@@ -272,7 +269,6 @@ struct ShearHandles: View {
         isShearing = false
         document.isHandleScalingActive = false
         
-        Log.info("🏁 SHEAR FINISH: Applying final transform to coordinates", category: .general)
         
         // CRITICAL FIX: Find the unified object that contains this specific shape
         // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
@@ -291,7 +287,6 @@ struct ShearHandles: View {
             // Apply the final transform to coordinates and reset transform to identity
             applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
             
-            Log.info("✅ SHEAR FINISHED: Applied shear to coordinates and reset transform to identity", category: .fileOperations)
             
             // CRITICAL FIX: Sync unified objects after shear to ensure UI updates
             document.updateUnifiedObjectsOptimized()
@@ -306,7 +301,7 @@ struct ShearHandles: View {
             }
         }
         } else {
-            Log.error("❌ SHEAR FAILED: Could not find shape in unified objects system", category: .error)
+            // Log.error("❌ SHEAR FAILED: Could not find shape in unified objects system", category: .error)
         }
         
         previewTransform = .identity
@@ -351,7 +346,6 @@ struct ShearHandles: View {
         let centroid = shape.calculateCentroid()
         centerPoint = VectorPoint(centroid)
         
-        Log.fileOperation("🎯 EXTRACTED \(pathPoints.count) path points + center for shear anchor selection", level: .info)
     }
     
     /// Display all path points with correct colors: GREEN = shearable, RED = locked pin
@@ -402,7 +396,6 @@ struct ShearHandles: View {
                 // Path point
                 let point = pathPoints[index]
                 shearAnchorPoint = CGPoint(x: point.x, y: point.y)
-                Log.info("🔴 LOCKED PIN: Set to path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))", category: .general)
             } else {
                 // Bounds corner point (if we add them later)
                 // CRITICAL FIX: Use the same bounds calculation for consistency
@@ -428,7 +421,6 @@ struct ShearHandles: View {
                 }
                 let center = CGPoint(x: bounds.midX, y: bounds.midY)
                 shearAnchorPoint = center // Fallback to center
-                Log.info("🔴 LOCKED PIN: Set to bounds point (fallback to center)", category: .general)
             }
         } else {
             // Center point - FIX: Use calculated center that accounts for transforms
@@ -446,7 +438,6 @@ struct ShearHandles: View {
         // CRITICAL: Check if caps-lock is pressed to prevent changing the locked pin point
         if isCapsLockPressed && draggedPointIndex != lockedPinPointIndex {
             // Caps-lock is active: locked pin point cannot be changed, only shear away from it
-            Log.info("🔒 CAPS-LOCK ACTIVE: Pin point locked, shearing away from locked point", category: .general)
         }
         
         // PROFESSIONAL SHEARING: Shear relative to the LOCKED PIN POINT (similar to scale tool)
@@ -517,7 +508,6 @@ struct ShearHandles: View {
         if lockedPinPointIndex == nil && shearAnchorPoint == .zero {
             // Default to center if no pin point was explicitly set
             setLockedPinPoint(nil) // nil = center
-            Log.fileOperation("🔄 SHEAR START: No pin point set, defaulting to center", level: .info)
         }
         
         // SHEAR START: Minimal logging for performance
@@ -598,7 +588,6 @@ struct ShearHandles: View {
             return
         }
         
-        Log.fileOperation("🔧 Applying shear transform to shape coordinates: \(shape.name)", level: .info)
         
         // Transform all path elements
         var transformedElements: [PathElement] = []
@@ -646,6 +635,5 @@ struct ShearHandles: View {
         updatedShape.updateBounds()
         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
         
-        Log.info("✅ Shape coordinates updated after shear - object origin stays with object", category: .fileOperations)
     }
 }

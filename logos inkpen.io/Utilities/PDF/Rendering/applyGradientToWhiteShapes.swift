@@ -10,7 +10,6 @@ import SwiftUI
 extension PDFCommandParser {
     
     func applyGradientToWhiteShapes(gradient: VectorGradient) {
-        Log.info("PDF: 🔍 Gradient/shading operation encountered - analyzing context", category: .debug)
         
         // Set the active gradient for any shapes that follow this shading command
         activeGradient = gradient
@@ -22,12 +21,10 @@ extension PDFCommandParser {
         
         if !currentPath.isEmpty {
             // Case 1: We have a current path - this gradient applies to the shape being built
-            Log.info("PDF: 🎯 SINGLE SHAPE GRADIENT - Current path exists, gradient will apply to next shape", category: .general)
             // activeGradient will be picked up by the next fill operation
             
         } else if isInCompoundPath || !compoundPathParts.isEmpty {
             // Case 2: We're building a compound path - gradient applies to compound shape
-            Log.info("PDF: 🔗 COMPOUND PATH GRADIENT - No current path, gradient for compound shape", category: .general)
             // Look for existing white shapes to retroactively apply gradient
             
             // Find recent white shapes that should be part of this compound path
@@ -41,16 +38,12 @@ extension PDFCommandParser {
                    rgbColor.red > 0.95 && rgbColor.green > 0.95 && rgbColor.blue > 0.95 {
                     // This is a white shape - mark it for gradient application
                     gradientShapes.append(i)
-                    Log.info("PDF: 📝 Tagged white shape '\(shape.name)' for compound gradient", category: .general)
                 }
             }
             
         } else {
             // Case 3: No current path and no compound path - gradient for next shape created
-            Log.info("PDF: 🎯 STANDALONE GRADIENT - No current path or compound, gradient for next shape", category: .general)
         }
         
-        Log.info("PDF: 🎨 Gradient marked as active - detection mode determined", category: .general)
-        Log.info("PDF: 📊 Tagged \(gradientShapes.count) white shapes for compound path (if applicable)", category: .debug)
     }
 }

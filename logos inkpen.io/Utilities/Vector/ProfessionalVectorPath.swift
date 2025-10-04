@@ -308,8 +308,8 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
         case .c1:
             // Ensure first derivative continuity (same magnitude)
             if let outgoing = currentPoint.outgoingHandle,
-               let _ = nextPoint.incomingHandle {
-                
+               nextPoint.incomingHandle != nil {
+
                 let direction = currentPoint.point.angle(to: outgoing)
                 let outgoingLength = currentPoint.point.distance(to: outgoing)
                 

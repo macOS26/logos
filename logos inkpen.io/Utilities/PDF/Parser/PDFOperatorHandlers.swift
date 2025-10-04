@@ -15,14 +15,12 @@ extension PDFCommandParser {
     func handleMoveTo(scanner: CGPDFScannerRef) {
         // COMPOUND PATH DETECTION: Multiple MoveTo operations before fill = compound path
         if !currentPath.isEmpty {
-            Log.info("PDF: COMPOUND PATH DETECTED - MoveTo with existing path, storing current path as part of compound", category: .general)
 
             // Store the current path as part of a compound path
             compoundPathParts.append(currentPath)
             isInCompoundPath = true
             moveToCount += 1
 
-            Log.info("PDF: Compound path part #\(compoundPathParts.count) stored (\(currentPath.count) commands)", category: .general)
 
             // DON'T clear currentPath here - we can't know yet if it's a gradient
             // The decision to clear or keep will be made later when we know
@@ -43,7 +41,6 @@ extension PDFCommandParser {
         currentPoint = point
         pathStartPoint = point
         currentPath.append(.moveTo(point))
-        Log.info("PDF: MoveTo(\(x), \(y))", category: .general)
     }
     
     func handleLineTo(scanner: CGPDFScannerRef) {
@@ -126,7 +123,6 @@ extension PDFCommandParser {
         
         // Skip page boundary rectangles
         if rect.width == pageSize.width && rect.height == pageSize.height {
-            Log.info("PDF: Skipping page boundary rectangle (\(rect.width) x \(rect.height))", category: .general)
             return
         }
         

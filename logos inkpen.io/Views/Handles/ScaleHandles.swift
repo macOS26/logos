@@ -328,7 +328,6 @@ struct ScaleHandles: View {
             // Set default locked pin point to center if none is set
             if lockedPinPointIndex == nil && scalingAnchorPoint == .zero {
                 setLockedPinPoint(nil) // nil = center point
-                Log.info("🔴 SCALE TOOL: Default locked pin set to center", category: .general)
             }
         }
         .onChange(of: shape.bounds) { oldBounds, newBounds in
@@ -336,7 +335,6 @@ struct ScaleHandles: View {
             if !isScaling && oldBounds != newBounds {
                 extractPathPoints()
                 pointsRefreshTrigger += 1
-                Log.fileOperation("🔄 SCALE TOOL: Shape bounds changed, refreshed points", level: .info)
             }
         }
         .id("scale-handles-\(pointsRefreshTrigger)") // Force view rebuild when points update

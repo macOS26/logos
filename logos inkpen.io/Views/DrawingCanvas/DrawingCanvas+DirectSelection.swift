@@ -23,8 +23,6 @@ extension DrawingCanvas {
                     
                     // IMPROVED LOCKED BEHAVIOR: Instead of preventing interaction, deselect current selection
                     if layer.isLocked || shape.isLocked {
-                        let lockType = layer.isLocked ? "locked layer" : "locked object"
-                        Log.info("🚫 Clicked on points/handles of \(lockType) '\(shape.name)' - deselecting current selection", category: .general)
                         directSelectedShapeIDs.removeAll()
                         selectedPoints.removeAll()
                         selectedHandles.removeAll()
@@ -36,7 +34,6 @@ extension DrawingCanvas {
                     // GROUP ANCHOR POINT SELECTION FIX: Handle groups differently
                     if shape.isGroupContainer {
                         // For groups, check anchor points in all grouped shapes
-                        Log.info("🔍 Checking anchor points in group '\(shape.name)' with \(shape.groupedShapes.count) shapes", category: .general)
                         for groupedShape in shape.groupedShapes {
                             if !groupedShape.isVisible { continue }
                             
@@ -100,11 +97,9 @@ extension DrawingCanvas {
                     for endpointID in closedPathEndpoints {
                         selectedPoints.remove(endpointID)
                     }
-                    Log.fileOperation("🎯 Deselected anchor point", level: .info)
                 } else {
                     // Select point with all coincident points for unified movement
                     selectPointWithCoincidents(pointID, addToSelection: isShiftPressed)
-                    Log.fileOperation("🎯 Selected anchor point", level: .info)
                 }
                 return true
             }
@@ -122,7 +117,6 @@ extension DrawingCanvas {
                         let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex, handleType: .control2)
                         if isShiftPressed && selectedHandles.contains(handleID) {
                             selectedHandles.remove(handleID)
-                            Log.fileOperation("🎯 Deselected INCOMING handle", level: .info)
                         } else {
                             if !isShiftPressed {
                                 selectedHandles.removeAll()
@@ -134,7 +128,6 @@ extension DrawingCanvas {
                             // CRITICAL: Also select corresponding handles on coincident points
                             selectCoincidentHandles(for: handleID, shape: shape)
 
-                            Log.fileOperation("🎯 Selected INCOMING handle", level: .info)
                         }
                         return true
                     }
@@ -150,7 +143,6 @@ extension DrawingCanvas {
                                 let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex + 1, handleType: .control1)
                                 if isShiftPressed && selectedHandles.contains(handleID) {
                                     selectedHandles.remove(handleID)
-                                    Log.fileOperation("🎯 Deselected OUTGOING handle", level: .info)
                                 } else {
                                     if !isShiftPressed {
                                         selectedHandles.removeAll()
@@ -162,7 +154,6 @@ extension DrawingCanvas {
                                     // CRITICAL: Also select corresponding handles on coincident points
                                     selectCoincidentHandles(for: handleID, shape: shape)
 
-                                    Log.fileOperation("🎯 Selected OUTGOING handle", level: .info)
                                 }
                                 return true
                             }
@@ -179,7 +170,6 @@ extension DrawingCanvas {
                         let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex, handleType: .control1)
                         if isShiftPressed && selectedHandles.contains(handleID) {
                             selectedHandles.remove(handleID)
-                            Log.fileOperation("🎯 Deselected quad handle", level: .info)
                         } else {
                             if !isShiftPressed {
                                 selectedHandles.removeAll()
@@ -191,7 +181,6 @@ extension DrawingCanvas {
                             // CRITICAL: Also select corresponding handles on coincident points
                             selectCoincidentHandles(for: handleID, shape: shape)
 
-                            Log.fileOperation("🎯 Selected quad handle", level: .info)
                         }
                         return true
                     }
@@ -208,7 +197,6 @@ extension DrawingCanvas {
                                 let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex + 1, handleType: .control1)
                                 if isShiftPressed && selectedHandles.contains(handleID) {
                                     selectedHandles.remove(handleID)
-                                    Log.fileOperation("🎯 Deselected OUTGOING handle from line/move", level: .info)
                                 } else {
                                     if !isShiftPressed {
                                         selectedHandles.removeAll()
@@ -220,7 +208,6 @@ extension DrawingCanvas {
                                     // CRITICAL: Also select corresponding handles on coincident points
                                     selectCoincidentHandles(for: handleID, shape: shape)
 
-                                    Log.fileOperation("🎯 Selected OUTGOING handle from line/move", level: .info)
                                 }
                                 return true
                             }
@@ -260,10 +247,8 @@ extension DrawingCanvas {
                     // Background shapes: Use EXACT bounds checking - no tolerance!
                     let shapeBounds = shape.bounds.applying(shape.transform)
                     isHit = shapeBounds.contains(location)
-                    Log.info("  - Background shape - exact bounds hit test: \(isHit)", category: .general)
                 } else if shape.isGroupContainer {
                     // GROUP HIT TESTING FIX: Check if we hit any of the grouped shapes
-                    Log.info("  - Group container: checking \(shape.groupedShapes.count) grouped shapes", category: .general)
                     for groupedShape in shape.groupedShapes {
                         if !groupedShape.isVisible { continue }
                         
@@ -276,7 +261,6 @@ extension DrawingCanvas {
                             let strokeTolerance = max(15.0, strokeWidth + 10.0)
                             if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: strokeTolerance) {
                                 isHit = true
-                                Log.info("    - Grouped shape '\(groupedShape.name)' stroke hit: \(isHit)", category: .general)
                                 break
                             }
                         } else {
@@ -287,7 +271,6 @@ extension DrawingCanvas {
                             
                             if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: pathTolerance) {
                                 isHit = true
-                                Log.info("    - Grouped shape '\(groupedShape.name)' object-based path hit: \(isHit)", category: .general)
                                 break
                             }
                         }
@@ -301,7 +284,6 @@ extension DrawingCanvas {
                         let strokeWidth = shape.strokeStyle?.width ?? 1.0
                         let strokeTolerance = max(15.0, strokeWidth + 10.0)
                         isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
-                        Log.info("  - Stroke hit test: \(isHit) (tolerance: \(strokeTolerance))", category: .general)
                     } else {
                         // Regular shapes: Use path-based hit testing for object-precise selection
                         // ZOOM-AWARE PATH HIT TEST TOLERANCE: Scale tolerance based on zoom level
@@ -309,15 +291,12 @@ extension DrawingCanvas {
                         let pathTolerance = max(2.0, basePathTolerance / document.zoomLevel) // Minimum 2px, scales with zoom
                         
                         isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: pathTolerance)
-                        Log.info("  - Object-based path hit test: \(isHit)", category: .general)
                     }
                 }
                 
                 if isHit {
                     // IMPROVED LOCKED BEHAVIOR: Instead of preventing interaction, deselect current selection
                     if layer.isLocked || shape.isLocked {
-                        let lockType = layer.isLocked ? "locked layer" : "locked object"
-                        Log.info("🚫 Direct-clicked on \(lockType) '\(shape.name)' - deselecting current selection", category: .general)
                         directSelectedShapeIDs.removeAll()
                         selectedPoints.removeAll()
                         selectedHandles.removeAll()
@@ -333,8 +312,6 @@ extension DrawingCanvas {
                     selectedHandles.removeAll()
                     syncDirectSelectionWithDocument()
                     
-                    Log.info("✅ DIRECT-SELECTED SHAPE: \(shape.name)", category: .fileOperations)
-                    Log.info("  Shape will now show ALL anchor points and handles (professional behavior)", category: .general)
                     return true
                 }
             }
@@ -345,7 +322,6 @@ extension DrawingCanvas {
     
     // TEXT TOOL COMPLETELY REMOVED - Starting over with simple approach
     internal func handleDirectSelectionTap(at location: CGPoint) {
-        Log.fileOperation("🎯 PROFESSIONAL DIRECT SELECTION tap at: \(location)", level: .info)
         
         // TEXT EDITING REMOVED
         
@@ -359,19 +335,17 @@ extension DrawingCanvas {
         
         // STAGE 1: Check if clicking on individual anchor points/handles (for already direct-selected shapes)
         if !directSelectedShapeIDs.isEmpty {
-            Log.fileOperation("🔥 STAGE 1: Checking individual anchor points in direct-selected shapes...", level: .info)
             foundSelection = selectIndividualAnchorPointOrHandle(at: location, tolerance: tolerance)
         }
         
         // STAGE 2: If no anchor point selected, try to direct-select a whole shape (professional behavior)
         if !foundSelection {
-            Log.fileOperation("🔥 STAGE 2: Looking for shapes to direct-select...", level: .info)
             foundSelection = directSelectWholeShape(at: location)
         }
         
         // STAGE 3: If nothing found, clear all selections (clicked empty space)
         if !foundSelection {
-            Log.error("❌ Clicked empty space - clearing all direct selections", category: .error)
+            // Log.error("❌ Clicked empty space - clearing all direct selections", category: .error)
             selectedPoints.removeAll()
             selectedHandles.removeAll()
             visibleHandles.removeAll()
@@ -379,10 +353,6 @@ extension DrawingCanvas {
             syncDirectSelectionWithDocument()
         }
         
-        Log.fileOperation("🎯 DIRECT SELECTION RESULT:", level: .info)
-        Log.info("  Selected points: \(selectedPoints.count)", category: .general)
-        Log.info("  Selected handles: \(selectedHandles.count)", category: .general)
-        Log.info("  Direct selected shapes: \(directSelectedShapeIDs.count)", category: .general)
         
         // Force UI update to show selections
         document.objectWillChange.send()
@@ -468,7 +438,6 @@ extension DrawingCanvas {
                             // DON'T add to visibleHandles if this is the handle we just selected!
                             if coincidentHandleID != handleID {
                                 visibleHandles.insert(coincidentHandleID)
-                                Log.info("🔗 Made coincident incoming handle VISIBLE (blue, not selected) at element \(index)", category: .general)
                             }
                         }
                     }
@@ -488,7 +457,6 @@ extension DrawingCanvas {
                                 // DON'T add to visibleHandles if this is the handle we just selected!
                                 if coincidentHandleID != handleID {
                                     visibleHandles.insert(coincidentHandleID)
-                                    Log.info("🔗 Made coincident outgoing handle VISIBLE (blue, not selected) at element \(nextIndex)", category: .general)
                                 }
                             }
                         }

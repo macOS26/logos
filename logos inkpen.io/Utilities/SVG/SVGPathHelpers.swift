@@ -126,11 +126,9 @@ extension SVGParser {
         var subpathStart = CGPoint.zero
         var lastControlPoint: CGPoint?
         
-        Log.info("🔍 RAW PATH DATA: \(pathData.prefix(100))...", category: .general)
         
         // Professional SVG tokenization using proper regex patterns
         let tokens = tokenizeSVGPath(pathData)
-        Log.fileOperation("🎯 FIRST 15 TOKENS: \(tokens.prefix(15))", level: .info)
         
         // Check for basic parsing issues
         var coordinateCount = 0
@@ -142,7 +140,6 @@ extension SVGParser {
                 coordinateCount += 1
             }
         }
-        Log.fileOperation("📊 PARSED: \(commandCount) commands, \(coordinateCount) coordinates", level: .info)
         
         var i = 0
         var currentCommand: String = ""
@@ -154,12 +151,10 @@ extension SVGParser {
             if token.rangeOfCharacter(from: .letters) != nil {
                 // It's a command
                 currentCommand = token
-                Log.fileOperation("🔧 COMMAND: \(currentCommand)", level: .info)
                 i += 1
 
                 // Handle commands that don't take parameters immediately
                 if currentCommand == "Z" || currentCommand == "z" {
-                    Log.info("   Close path", category: .general)
                     elements.append(.close)
                     currentPoint = subpathStart
                     lastControlPoint = nil
@@ -173,7 +168,6 @@ extension SVGParser {
                 if i + 1 < tokens.count {
                     let x = Double(tokens[i]) ?? 0
                     let y = Double(tokens[i + 1]) ?? 0
-                    Log.info("   Move to: (\(x), \(y))", category: .general)
                     currentPoint = CGPoint(x: x, y: y)
                     subpathStart = currentPoint
                     elements.append(.move(to: VectorPoint(currentPoint)))
@@ -181,7 +175,6 @@ extension SVGParser {
                     // After first moveto, subsequent coordinate pairs are treated as lineto
                     currentCommand = "L"
                 } else {
-                    Log.info("   ⚠️ Not enough tokens for M command", category: .general)
                     i += 1
                 }
                 
@@ -202,13 +195,11 @@ extension SVGParser {
                 if i + 1 < tokens.count {
                     let x = Double(tokens[i]) ?? 0
                     let y = Double(tokens[i + 1]) ?? 0
-                    Log.info("   Line to: (\(x), \(y))", category: .general)
                     currentPoint = CGPoint(x: x, y: y)
                     lastControlPoint = nil // Reset control point after line command
                     elements.append(.line(to: VectorPoint(currentPoint)))
                     i += 2
                 } else {
-                    Log.info("   ⚠️ Not enough tokens for L command", category: .general)
                     i += 1
                 }
                 
@@ -305,8 +296,6 @@ extension SVGParser {
                     let y2 = currentPoint.y + dy2
                     let newPoint = CGPoint(x: currentPoint.x + dx, y: currentPoint.y + dy)
                     
-                    Log.info("   Curve from (\(currentPoint.x), \(currentPoint.y)) to (\(newPoint.x), \(newPoint.y))", category: .general)
-                    Log.info("   Controls: (\(x1), \(y1)), (\(x2), \(y2))", category: .general)
                     
                     currentPoint = newPoint
                     lastControlPoint = CGPoint(x: x2, y: y2)
@@ -318,7 +307,6 @@ extension SVGParser {
                     ))
                     i += 6
                 } else {
-                    Log.info("   ⚠️ Not enough tokens for c command", category: .general)
                     i += 1
                 }
                 
@@ -343,8 +331,6 @@ extension SVGParser {
                         y1 = currentPoint.y
                     }
                     
-                    Log.info("   Smooth curve from (\(currentPoint.x), \(currentPoint.y)) to (\(x), \(y))", category: .general)
-                    Log.info("   Controls: (\(x1), \(y1)), (\(x2), \(y2))", category: .general)
                     
                     currentPoint = CGPoint(x: x, y: y)
                     lastControlPoint = CGPoint(x: x2, y: y2)
@@ -453,10 +439,6 @@ extension SVGParser {
             }
         }
         
-        Log.info("🏁 FINAL ELEMENTS: \(elements.count) total", category: .general)
-        for (index, element) in elements.enumerated() {
-            Log.info("  [\(index)] \(element)", category: .general)
-        }
         return elements
     }
 }

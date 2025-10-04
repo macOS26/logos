@@ -81,9 +81,8 @@ class SVGExporter {
                 svg += "    \(base64String)\n"
                 svg += "  </inkpen:document>\n"
                 svg += "</metadata>\n"
-                Log.info("📦 Embedded inkpen document in SVG metadata (\(base64String.count) chars)", category: .fileOperations)
             } catch {
-                Log.error("⚠️ Failed to embed inkpen data: \(error)", category: .error)
+                // Log.error("⚠️ Failed to embed inkpen data: \(error)", category: .error)
                 // Continue without embedding
             }
         }
@@ -97,11 +96,9 @@ class SVGExporter {
             if layer.name == "Pasteboard" { continue }
             // Skip Canvas layer if not including background
             if !includeBackground && layer.name == "Canvas" {
-                Log.info("📋 SVG EXPORT: Skipping Canvas layer (includeBackground=false)", category: .fileOperations)
                 continue
             }
 
-            Log.info("📋 SVG EXPORT: Including layer '\(layer.name)' (includeBackground=\(includeBackground))", category: .fileOperations)
             svg += "<!-- Layer: \(layer.name) -->\n"
             svg += "<g id=\"layer_\(layerIndex)\" opacity=\"\(layer.opacity)\">\n"
             
@@ -361,7 +358,6 @@ class SVGExporter {
         }
 
         if skippedGlyphCount > 0 {
-            Log.info("✅ SVG RECTANGLE DETECTION: Skipped \(skippedGlyphCount) missing character placeholder(s)", category: .fileOperations)
         }
 
         return svg

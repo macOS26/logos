@@ -26,12 +26,9 @@ struct logos_inken_ioApp: App {
         // Test Metal Compute Engine on app startup (silently)
         let metalWorking = MetalComputeEngine.testMetalEngine()
         if !metalWorking {
-            Log.metal("❌ Metal Engine Failed", level: .error)
         }
 
         // Debug sandbox status
-        Log.info("🎁 App Sandbox Status: \(SandboxChecker.isSandboxed ? "SANDBOXED" : "NOT SANDBOXED")", category: .general)
-        Log.info("🎁 Tip Jar Menu: \(SandboxChecker.isNotSandboxed ? "WILL SHOW" : "HIDDEN")", category: .general)
     }
     
     fileprivate func doNotRestoreThis(_ window: NSWindow) {
@@ -153,6 +150,11 @@ struct logos_inken_ioApp: App {
                             AppState.shared.defaultTool = .brush
                         }
                         .help("Set brush tool as default for new documents")
+
+                        Button(AppState.shared.defaultTool == .marker ? "✓ Marker Tool" : "Marker Tool") {
+                            AppState.shared.defaultTool = .marker
+                        }
+                        .help("Set marker tool as default for new documents")
 
                         Divider()
                         
@@ -1012,7 +1014,6 @@ class ClipboardManager {
                             let typography = originalText?.typography ?? shape.typography ?? TypographyProperties(strokeColor: .black, fillColor: .black)
                             
                             // DEBUG: Log what we're copying to identify the issue
-                            Log.info("📋 COPY DEBUG: textContent='\(textContent)', originalAreaSize=\(originalAreaSize?.debugDescription ?? "nil"), shapeAreaSize=\(shape.areaSize?.debugDescription ?? "nil")", category: .general)
                             
                             let position = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
                             let vectorText = VectorText(
@@ -1029,7 +1030,6 @@ class ClipboardManager {
                             )
                             
                             // DEBUG: Log the created VectorText to verify areaSize is preserved
-                            Log.info("📋 COPY DEBUG: Created VectorText with content='\(vectorText.content)', areaSize=\(vectorText.areaSize?.debugDescription ?? "nil")", category: .general)
                             
                             // SIZE FIX: VectorText initializer now properly handles areaSize for bounds
                             
@@ -1052,9 +1052,8 @@ class ClipboardManager {
             let data = try JSONEncoder().encode(clipboardData)
             pasteboard.clearContents()
             pasteboard.setData(data, forType: vectorObjectsType)
-            Log.info("📋 Copied \(shapesToCopy.count) shapes and \(textToCopy.count) text objects", category: .general)
         } catch {
-            Log.error("❌ Failed to copy objects: \(error)", category: .error)
+            // Log.error("❌ Failed to copy objects: \(error)", category: .error)
         }
     }
     
@@ -1073,7 +1072,7 @@ class ClipboardManager {
             if let layerIndex = document.selectedLayerIndex {
                 // PROTECT LOCKED LAYERS: Don't paste into locked layers
                 if layerIndex < document.layers.count && document.layers[layerIndex].isLocked {
-                    Log.error("❌ Cannot paste into locked layer '\(document.layers[layerIndex].name)'", category: .error)
+                    // Log.error("❌ Cannot paste into locked layer '\(document.layers[layerIndex].name)'", category: .error)
                     return
                 }
                 
@@ -1081,7 +1080,7 @@ class ClipboardManager {
                 if layerIndex < document.layers.count {
                     let layerName = document.layers[layerIndex].name
                     if layerName == "Canvas" || layerName == "Pasteboard" {
-                        Log.error("❌ Cannot paste into system layer '\(layerName)'", category: .error)
+                        // Log.error("❌ Cannot paste into system layer '\(layerName)'", category: .error)
                         return
                     }
                 }
@@ -1102,7 +1101,6 @@ class ClipboardManager {
                 newText.id = UUID()
                 
                 // DEBUG: Log what we're pasting to identify the issue
-                Log.info("📋 PASTE DEBUG: Pasting text with content='\(newText.content)', areaSize=\(newText.areaSize?.debugDescription ?? "nil")", category: .general)
                 
                 // PASTE AT EXACT ORIGINAL COORDINATES - no offset
                 // Add to unified objects system (this also adds to textObjects array)
@@ -1113,9 +1111,8 @@ class ClipboardManager {
             // CRITICAL FIX: Sync selection arrays for compatibility
             document.syncSelectionArrays()
             
-            Log.info("📋 Pasted \(clipboardData.shapes.count) shapes and \(clipboardData.texts.count) text objects at original coordinates", category: .general)
         } catch {
-            Log.error("❌ Failed to paste objects: \(error)", category: .error)
+            // Log.error("❌ Failed to paste objects: \(error)", category: .error)
         }
     }
     
@@ -1135,7 +1132,7 @@ class ClipboardManager {
             if let layerIndex = document.selectedLayerIndex {
                 // PROTECT LOCKED LAYERS: Don't paste into locked layers
                 if layerIndex < document.layers.count && document.layers[layerIndex].isLocked {
-                    Log.error("❌ Cannot paste into locked layer '\(document.layers[layerIndex].name)'", category: .error)
+                    // Log.error("❌ Cannot paste into locked layer '\(document.layers[layerIndex].name)'", category: .error)
                     return
                 }
                 
@@ -1143,7 +1140,7 @@ class ClipboardManager {
                 if layerIndex < document.layers.count {
                     let layerName = document.layers[layerIndex].name
                     if layerName == "Canvas" || layerName == "Pasteboard" {
-                        Log.error("❌ Cannot paste into system layer '\(layerName)'", category: .error)
+                        // Log.error("❌ Cannot paste into system layer '\(layerName)'", category: .error)
                         return
                     }
                 }
@@ -1211,9 +1208,8 @@ class ClipboardManager {
             // CRITICAL FIX: Sync selection arrays for compatibility
             document.syncSelectionArrays()
             
-            Log.info("📋 Pasted in back: \(clipboardData.shapes.count) shapes and \(clipboardData.texts.count) text objects at original coordinates", category: .general)
         } catch {
-            Log.error("❌ Failed to paste in back: \(error)", category: .error)
+            // Log.error("❌ Failed to paste in back: \(error)", category: .error)
         }
     }
 }
@@ -1239,20 +1235,17 @@ func openLogosInkPenHelp() {
 
         if FileManager.default.fileExists(atPath: indexPath.path) {
             NSWorkspace.shared.open(indexPath)
-            Log.info("📚 Opened Help Book at: \(indexPath.path)", category: .general)
         } else {
             // Fallback to opening the help book root
             NSWorkspace.shared.open(helpBookURL)
-            Log.warning("📚 Help index not found, opening Help Book root", category: .general)
         }
     } else {
         // If help book not found in bundle, try to open from project directory (for development)
         let projectHelpPath = "/Users/toddbruss/Documents/GitHub/logos/logos inkpen.io/LogosInkPenHelp.help/Contents/Resources/en.lproj/index.html"
         if FileManager.default.fileExists(atPath: projectHelpPath) {
             NSWorkspace.shared.open(URL(fileURLWithPath: projectHelpPath))
-            Log.info("📚 Opened development Help Book", category: .general)
         } else {
-            Log.error("📚 Help Book not found", category: .error)
+            // Log.error("📚 Help Book not found", category: .error)
             // Show an alert
             let alert = NSAlert()
             alert.messageText = "Help Not Available"

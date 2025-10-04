@@ -42,10 +42,6 @@ class PersistentGradientHUDManager {
         isHiding = false
         
         // Remember if window was already visible to avoid reopening
-        let wasAlreadyVisible = isVisible
-        Log.fileOperation("🎨 GRADIENT HUD: show() called - wasAlreadyVisible: \(wasAlreadyVisible)", level: .info)
-        Log.fileOperation("🎨 GRADIENT HUD: stopId = \(stopId.uuidString.prefix(8))", level: .info)
-        Log.fileOperation("🎨 GRADIENT HUD: current isVisible = \(isVisible)", level: .info)
         
         // Update state WITHOUT recreating anything
         self.editingStopId = stopId
@@ -68,7 +64,6 @@ class PersistentGradientHUDManager {
         
         for window in NSApplication.shared.windows {
             if let identifier = window.identifier?.rawValue, identifier.starts(with: "gradient-hud") {
-                Log.fileOperation("🎨 GRADIENT HUD: Found existing window: \(identifier)", level: .info)
                 
                 if !window.isVisible {
                     // 🔥 NEW: Safe window positioning
@@ -81,11 +76,9 @@ class PersistentGradientHUDManager {
         
         // Only open a new window if we didn't find an existing one
         if !foundExistingWindow {
-            Log.fileOperation("🎨 GRADIENT HUD: No existing window found, opening new one", level: .info)
             appState?.openWindowAction?("gradient-hud")
         }
         
-        Log.fileOperation("🎨 GRADIENT HUD: show() completed - isVisible = \(isVisible)", level: .info)
         // If already visible, the WindowGroup will automatically update the content
     }
     
@@ -101,7 +94,6 @@ class PersistentGradientHUDManager {
     
     // 🔥 NEW: Stop editing when window is closed with X button
     func stopEditing() {
-        Log.fileOperation("🎨 GRADIENT HUD: Stopping editing state", level: .info)
         isVisible = false
         editingStopId = nil
         editingStopColor = .black
@@ -117,13 +109,11 @@ class PersistentGradientHUDManager {
         // Call the onClose callback if it exists
         onClose?()
         
-        Log.fileOperation("🎨 GRADIENT HUD: Editing state cleared", level: .info)
     }
     
     // 🔥 EMERGENCY RESET: Force reset hiding flag
     func forceResetHidingFlag() {
         isHiding = false
-        Log.fileOperation("🎨 GRADIENT HUD: Force reset hiding flag", level: .info)
     }
     
     // 🔥 DEBUG: Count gradient windows
@@ -131,7 +121,6 @@ class PersistentGradientHUDManager {
         let count = NSApplication.shared.windows.filter { window in
             window.title.contains("Gradient Color Picker")
         }.count
-        Log.fileOperation("🎨 GRADIENT HUD: Found \(count) gradient windows", level: .info)
         return count
     }
     
@@ -158,13 +147,11 @@ class PersistentGradientHUDManager {
         // Check if we have valid displays
         let screens = NSScreen.screens
         guard !screens.isEmpty else {
-            Log.warning("🎨 GRADIENT HUD: No displays available", category: .general)
             return false
         }
         
         // Check if main display is valid
         guard let mainScreen = NSScreen.main else {
-            Log.warning("🎨 GRADIENT HUD: Main display is invalid", category: .general)
             return false
         }
         
@@ -173,7 +160,6 @@ class PersistentGradientHUDManager {
         guard frame.width > 0 && frame.height > 0 && 
               !frame.origin.x.isNaN && !frame.origin.y.isNaN &&
               !frame.width.isNaN && !frame.height.isNaN else {
-            Log.warning("🎨 GRADIENT HUD: Invalid display frame: \(frame)", category: .general)
             return false
         }
         
@@ -237,7 +223,6 @@ class PersistentInkHUDManager {
         
         // 🔥 NEW: Validate display before showing window
         if !validateDisplayForInkHUD() {
-            Log.warning("🖌️ INK HUD: Invalid display detected - using fallback positioning", category: .general)
             // Continue with fallback positioning
         }
         
@@ -272,13 +257,11 @@ class PersistentInkHUDManager {
         // Check if we have valid displays
         let screens = NSScreen.screens
         guard !screens.isEmpty else {
-            Log.warning("🖌️ INK HUD: No displays available", category: .general)
             return false
         }
         
         // Check if main display is valid
         guard let mainScreen = NSScreen.main else {
-            Log.warning("🖌️ INK HUD: Main display is invalid", category: .general)
             return false
         }
         
@@ -287,7 +270,6 @@ class PersistentInkHUDManager {
         guard frame.width > 0 && frame.height > 0 && 
               !frame.origin.x.isNaN && !frame.origin.y.isNaN &&
               !frame.width.isNaN && !frame.height.isNaN else {
-            Log.warning("🖌️ INK HUD: Invalid display frame: \(frame)", category: .general)
             return false
         }
         

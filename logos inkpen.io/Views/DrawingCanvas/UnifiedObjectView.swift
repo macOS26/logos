@@ -58,7 +58,7 @@ struct UnifiedObjectContentView: View {
             if shape.isTextObject {
                 // Render text using existing StableProfessionalTextCanvas
                 // Convert VectorShape back to VectorText for the text canvas
-                if let _ = shape.textContent, let _ = shape.typography {
+                if shape.textContent != nil, shape.typography != nil {
                     let position = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
 //                    let _ = VectorText(
 //                        content: textContent,
@@ -82,8 +82,6 @@ struct UnifiedObjectContentView: View {
                     .id("\(shape.id)-\(position.x)-\(position.y)")  // CRITICAL FIX: Include position in ID to trigger view refresh
                     .allowsHitTesting(true)
                     .onAppear {
-                        Log.info("📝 UnifiedObjectView: Rendering text '\((shape.textContent ?? "").prefix(20))' at position \(position)", category: .general)
-                        Log.info("   Shape bounds: \(shape.bounds), areaSize: \(shape.areaSize ?? .zero)", category: .general)
                     }
                 } else {
                     EmptyView()
@@ -94,7 +92,6 @@ struct UnifiedObjectContentView: View {
                 // Do not render clipping path shapes themselves
                 EmptyView()
                     .onAppear {
-                        Log.info("🎭 UNIFIED OBJECT: Skipping clipping path shape '\(shape.name)' - should be invisible", category: .general)
                     }
             } else if let clipID = shape.clippedByShapeID {
                 // This shape is clipped by another shape - find the mask shape
@@ -125,22 +122,17 @@ struct UnifiedObjectContentView: View {
                     )
                     .id("\(shape.id)-\(shape.path.isClosed)-\(maskShape.id)-\(maskShape.path.isClosed)-\(shape.clippedByShapeID?.uuidString ?? "none")")  // CRITICAL FIX: Include clipping mask ID
                     .onAppear {
-                        Log.info("🎭 UNIFIED OBJECT: Rendering clipped shape '\(shape.name)' clipped by '\(maskShape.name)'", category: .general)
-                        Log.info("   🎯 Selection state: clipped=\(isClippedShapeSelected), mask=\(isMaskShapeSelected)", category: .general)
                     }
                 } else {
                     // Mask shape not found - render as regular shape
                     renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(unifiedObject.id))
                         .onAppear {
-                            Log.info("🎭 UNIFIED OBJECT: Mask shape not found for '\(shape.name)' - rendering as regular shape", category: .general)
                         }
                 }
             } else {
                 // Regular shape - render normally
                 renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(unifiedObject.id))
                     .onAppear {
-                        Log.info("🎭 UNIFIED OBJECT: Rendering regular shape '\(shape.name)'", category: .general)
-                        Log.info("🎭 UNIFIED OBJECT DEBUG: Shape '\(shape.name)' - isClippingPath: \(shape.isClippingPath), clippedByShapeID: \(shape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .debug)
                     }
             }
             

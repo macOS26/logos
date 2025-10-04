@@ -14,7 +14,6 @@ extension SVGParser {
     
     internal func parseLinearGradient(attributes: [String: String]) {
         guard let id = attributes["id"] else {
-            Log.fileOperation("⚠️ Linear gradient missing id attribute", level: .info)
             return
         }
         
@@ -24,10 +23,6 @@ extension SVGParser {
         currentGradientStops = []
         isParsingGradient = true
         
-        Log.fileOperation("🎨 Parsing linear gradient: \(id)", level: .info)
-        Log.info("   - x1: \(attributes["x1"] ?? "0%"), y1: \(attributes["y1"] ?? "0%")", category: .general)
-        Log.info("   - x2: \(attributes["x2"] ?? "100%"), y2: \(attributes["y2"] ?? "0%")", category: .general)
-        Log.info("   - gradientUnits: \(attributes["gradientUnits"] ?? "objectBoundingBox")", category: .general)
     }
     
     internal func finishLinearGradientElement(inheritedGradient: VectorGradient?) -> VectorGradient {
@@ -40,14 +35,12 @@ extension SVGParser {
         let x2Raw = attributes["x2"] ?? "100%"
         let y2Raw = attributes["y2"] ?? "0%"
         
-        Log.fileOperation("🔧 Parsing coordinates: x1=\(x1Raw), y1=\(y1Raw), x2=\(x2Raw), y2=\(y2Raw), units=\(gradientUnits)", level: .info)
         
         let x1 = parseGradientCoordinate(x1Raw, gradientUnits: gradientUnits, isXCoordinate: true)
         let y1 = parseGradientCoordinate(y1Raw, gradientUnits: gradientUnits, isXCoordinate: false)
         let x2 = parseGradientCoordinate(x2Raw, gradientUnits: gradientUnits, isXCoordinate: true)
         let y2 = parseGradientCoordinate(y2Raw, gradientUnits: gradientUnits, isXCoordinate: false)
         
-        Log.fileOperation("🔧 Parsed coordinates: x1=\(x1), y1=\(y1), x2=\(x2), y2=\(y2)", level: .info)
         
         let transformInfo = parseGradientTransformFromAttributes(attributes)
         
@@ -79,10 +72,6 @@ extension SVGParser {
         
         let angleDegrees = computedAngle
         
-        Log.info("🎯 GRADIENT FROM SVG: angle=\(String(format: "%.2f", angleDegrees))° (transform: \(transformInfo.angle)°)", category: .general)
-        Log.info("   Start: (\(String(format: "%.3f", startPoint.x)), \(String(format: "%.3f", startPoint.y)))", category: .general)
-        Log.info("   End: (\(String(format: "%.3f", endPoint.x)), \(String(format: "%.3f", endPoint.y)))", category: .general)
-        Log.fileOperation("🔥 FINAL GRADIENT: Linear gradient with original coordinates, stops=\(currentGradientStops.count)", level: .info)
         
         let spreadMethod = parseSpreadMethod(from: attributes)
         
@@ -106,8 +95,6 @@ extension SVGParser {
         linearGradient.angle = angleDegrees
         
         let vectorGradient = VectorGradient.linear(linearGradient)
-        Log.info("✅ Created linear gradient: \(currentGradientId ?? "") with \(currentGradientStops.count) stops (FORCED objectBoundingBox)", category: .fileOperations)
-        Log.info("   - Start: \(startPoint), End: \(endPoint), Angle: \(String(format: "%.1f", angleDegrees))° (shape-relative)", category: .general)
         
         return vectorGradient
     }

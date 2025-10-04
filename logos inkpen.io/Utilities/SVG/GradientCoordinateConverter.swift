@@ -118,7 +118,7 @@ struct GradientCoordinateConverter {
         let gradientPattern = #"<radialGradient[^>]*id="([^"]*)"[^>]*gradientUnits="([^"]*)"[^>]*cx="([^"]*)"[^>]*cy="([^"]*)"[^>]*r="([^"]*)"[^>]*>(.*?)</radialGradient>"#
         
         guard let regex = try? NSRegularExpression(pattern: gradientPattern, options: [.dotMatchesLineSeparators]) else {
-            Log.error("Failed to create regex for gradient pattern", category: .error)
+            // Log.error("Failed to create regex for gradient pattern", category: .error)
             return []
         }
         let matches = regex.matches(in: svgContent, options: [], range: NSRange(svgContent.startIndex..., in: svgContent))
@@ -143,7 +143,7 @@ struct GradientCoordinateConverter {
             
             guard let fxRegex = try? NSRegularExpression(pattern: fxPattern),
                   let fyRegex = try? NSRegularExpression(pattern: fyPattern) else {
-                Log.error("Failed to create regex for fx/fy patterns", category: .error)
+                // Log.error("Failed to create regex for fx/fy patterns", category: .error)
                 continue
             }
             
@@ -179,7 +179,7 @@ struct GradientCoordinateConverter {
         
         let stopPattern = #"<stop[^>]*offset="([^"]*)"[^>]*stop-color="([^"]*)"[^>]*/>"#
         guard let regex = try? NSRegularExpression(pattern: stopPattern) else {
-            Log.error("Failed to create regex for stop pattern", category: .error)
+            // Log.error("Failed to create regex for stop pattern", category: .error)
             return []
         }
         let matches = regex.matches(in: content, options: [], range: NSRange(content.startIndex..., in: content))
@@ -210,7 +210,7 @@ struct GradientCoordinateConverter {
         // Look for viewBox attribute
         let viewBoxPattern = #"viewBox="([^"]*)"#
         guard let viewBoxRegex = try? NSRegularExpression(pattern: viewBoxPattern) else {
-            Log.error("Failed to create regex for viewBox pattern", category: .error)
+            // Log.error("Failed to create regex for viewBox pattern", category: .error)
             return nil
         }
         
@@ -233,7 +233,7 @@ struct GradientCoordinateConverter {
         
         guard let widthRegex = try? NSRegularExpression(pattern: widthPattern),
               let heightRegex = try? NSRegularExpression(pattern: heightPattern) else {
-            Log.error("Failed to create regex for width/height patterns", category: .error)
+            // Log.error("Failed to create regex for width/height patterns", category: .error)
             return nil
         }
         
@@ -274,7 +274,7 @@ struct GradientCoordinateConverter {
             let newGradientContent = generateGradientSVG(gradient: gradient)
             
             guard let regex = try? NSRegularExpression(pattern: oldGradientPattern, options: [.dotMatchesLineSeparators]) else {
-                Log.error("Failed to create regex for old gradient pattern", category: .error)
+                // Log.error("Failed to create regex for old gradient pattern", category: .error)
                 continue
             }
             result = regex.stringByReplacingMatches(
@@ -344,34 +344,23 @@ extension GradientCoordinateConverter {
                             if normalizedValue < 0.0 {
                                 // Negative coordinates: map to 0.0-0.5 range
                                 finalValue = 0.5 + (normalizedValue * 0.5)
-                                Log.fileOperation("🚨 EXTREME NEGATIVE COORDINATE: \(absoluteValue) → \(normalizedValue) → \(finalValue)", level: .info)
                             } else {
                                 // Values > 1.0: map to 0.5-1.0 range
                                 finalValue = 0.5 + ((normalizedValue - 1.0) * 0.5)
-                                Log.fileOperation("🚨 EXTREME LARGE COORDINATE: \(absoluteValue) → \(normalizedValue) → \(finalValue)", level: .info)
                             }
                         } else {
                             // Coordinates within 0-1 range: use as-is
                             finalValue = normalizedValue
-                            Log.info("✅ NORMAL COORDINATE: \(absoluteValue) → \(normalizedValue)", category: .fileOperations)
                         }
                     } else {
                         // STANDARD MODE: Preserve normalized value even if outside 0-1; clamping happens later
                         finalValue = normalizedValue
-                        Log.info("✅ STANDARD COORDINATE: \(absoluteValue) → \(normalizedValue) (preserved)", category: .fileOperations)
                     }
                     
                     // Ensure final value is within 0-1 range
                     let clampedValue = max(0.0, min(1.0, finalValue))
-                    
-                    let modeLabel = useExtremeValueHandling ? "EXTREME VALUE" : "STANDARD"
-                    Log.fileOperation("🔧 \(modeLabel) CONVERSION: \(absoluteValue) → \(normalizedValue) → \(finalValue) → \(clampedValue) (userSpaceOnUse → objectBoundingBox)", level: .info)
-                    Log.info("   Formula: \(absoluteValue) / \(normalizer)", category: .general)
-                    Log.info("   Using viewBox: \(viewBoxWidth) × \(viewBoxHeight)", category: .general)
-                    Log.info("   Mapping: \(normalizedValue < 0.0 || normalizedValue > 1.0 ? (useExtremeValueHandling ? "outside 0-1→proportional mapping" : "outside 0-1→0.5") : "within 0-1 range")", category: .general)
                     return clampedValue
                 } else {
-                    Log.fileOperation("⚠️ Invalid viewBox dimension, using absolute coordinate", level: .info)
                     return absoluteValue
                 }
             } else {

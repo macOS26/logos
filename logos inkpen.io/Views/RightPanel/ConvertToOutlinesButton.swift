@@ -46,7 +46,7 @@ struct ConvertToOutlinesButton: View {
     
     private func convertSelectedTextToOutlines() {
         guard !document.selectedTextIDs.isEmpty else {
-            Log.error("❌ CONVERT TO OUTLINES: No text selected", category: .error)
+            // Log.error("❌ CONVERT TO OUTLINES: No text selected", category: .error)
             return
         }
 
@@ -55,7 +55,7 @@ struct ConvertToOutlinesButton: View {
            layerIndex >= 0 && layerIndex < document.layers.count {
             let layer = document.layers[layerIndex]
             if layer.isLocked {
-                Log.error("❌ CONVERT TO OUTLINES: Layer '\(layer.name)' is locked", category: .error)
+                // Log.error("❌ CONVERT TO OUTLINES: Layer '\(layer.name)' is locked", category: .error)
                 return
             }
         }
