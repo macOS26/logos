@@ -279,17 +279,6 @@ extension PDFCommandParser {
             shapes.append(pendingClip)
             pendingClippingPath = nil
             Log.info("PDF: ✅ Added clipping path AFTER image for correct layer order", category: .general)
-
-            // CRITICAL: Clear clipping state and compound path state after processing image
-            // This prevents the next clipping mask from being combined with this one
-            isInsideClippingPath = false
-            currentClippingPathId = nil
-            isInCompoundPath = false
-            compoundPathParts.removeAll()
-            moveToCount = 0
-            hasClipOperatorPending = false
-            clipOperatorPath.removeAll()
-            Log.info("PDF: 🔄 Cleared clipping and compound path state after image - ready for next clipping mask", category: .general)
         }
 
         // Clear the transparent image flag now that we've processed it
@@ -479,26 +468,20 @@ extension PDFCommandParser {
         guard hasClipOperatorPending else { return }
 
         Log.info("PDF: Creating clipping path from pending W operator path", category: .general)
-        Log.info("PDF: 🔍 Current compound path parts count: \(compoundPathParts.count)", category: .general)
-        Log.info("PDF: 🔍 Current isInCompoundPath: \(isInCompoundPath)", category: .general)
 
-        // CRITICAL: For image clipping, we should ONLY have ONE path (the clip path)
-        // Compound paths are ONLY for a single image with multiple subpaths (like a donut)
-        // If we have compoundPathParts from a PREVIOUS image, ignore them - they're stale
+        // Check if we have a compound path
         var allPathCommands: [[PathCommand]] = []
 
-        // Only use compound path parts if we're actively in a compound path AND have the clip operator path
-        // This prevents combining separate images into one compound path
-        if isInCompoundPath && !compoundPathParts.isEmpty && !clipOperatorPath.isEmpty {
-            Log.info("PDF: Creating compound clipping path from \(compoundPathParts.count) parts FOR SINGLE IMAGE", category: .general)
+        if !compoundPathParts.isEmpty {
+            Log.info("PDF: Creating compound clipping path from \(compoundPathParts.count) parts", category: .general)
             allPathCommands = compoundPathParts
-            allPathCommands.append(clipOperatorPath)
+            // Add current path if not empty
+            if !clipOperatorPath.isEmpty {
+                allPathCommands.append(clipOperatorPath)
+            }
         } else if !clipOperatorPath.isEmpty {
-            // Simple single-path clipping mask
             allPathCommands = [clipOperatorPath]
-            Log.info("PDF: Creating SIMPLE clipping path (not compound) for single image", category: .general)
         } else {
-            Log.info("PDF: ⚠️ No clip operator path to create clipping mask from", category: .general)
             return
         }
 
@@ -587,23 +570,13 @@ extension PDFCommandParser {
             pendingClippingPath: pendingClippingPath,
             fillOpacity: currentFillOpacity,
             strokeOpacity: currentStrokeOpacity,
-            transformMatrix: currentTransformMatrix,
-            isInCompoundPath: isInCompoundPath,
-            compoundPathParts: compoundPathParts,
-            moveToCount: moveToCount
+            transformMatrix: currentTransformMatrix
         )
         graphicsStateStack.append(state)
         Log.info("PDF: 💾 Saved graphics state (stack depth: \(graphicsStateStack.count))", category: .general)
         Log.info("PDF:    - Clipping path ID: \(currentClippingPathId?.uuidString ?? "none")", category: .general)
         Log.info("PDF:    - Inside clipping path: \(isInsideClippingPath)", category: .general)
         Log.info("PDF:    - Has pending clip: \(pendingClippingPath != nil)", category: .general)
-        Log.info("PDF:    - Compound path parts: \(compoundPathParts.count)", category: .general)
-
-        // CRITICAL: Reset compound path state for the new graphics state
-        // Each clipping mask should start fresh, not inherit compound path state
-        isInCompoundPath = false
-        compoundPathParts.removeAll()
-        moveToCount = 0
     }
 
     /// Restore previous graphics state including clipping mask state
@@ -627,14 +600,10 @@ extension PDFCommandParser {
         currentFillOpacity = state.fillOpacity
         currentStrokeOpacity = state.strokeOpacity
         currentTransformMatrix = state.transformMatrix
-        isInCompoundPath = state.isInCompoundPath
-        compoundPathParts = state.compoundPathParts
-        moveToCount = state.moveToCount
 
         Log.info("PDF: 🔄 Restored graphics state (stack depth: \(graphicsStateStack.count))", category: .general)
         Log.info("PDF:    - Clipping path ID: \(currentClippingPathId?.uuidString ?? "none")", category: .general)
         Log.info("PDF:    - Inside clipping path: \(isInsideClippingPath)", category: .general)
         Log.info("PDF:    - Has pending clip: \(pendingClippingPath != nil)", category: .general)
-        Log.info("PDF:    - Compound path parts: \(compoundPathParts.count)", category: .general)
     }
 }
