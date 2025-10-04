@@ -83,12 +83,7 @@ struct ProfessionalTextCanvas: View {
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
         }
         // CRITICAL FIX: Monitor document text objects for editing state changes
-        .onChange(of: document.unifiedObjects.compactMap { obj -> Bool? in
-            if case .shape(let shape) = obj.objectType, shape.isTextObject {
-                return shape.isEditing
-            }
-            return nil
-        }) { _, _ in
+        .onChange(of: document.allTextObjects.map { $0.isEditing }) { _, _ in
             Log.fileOperation("🔧 ANY TEXT EDITING STATE CHANGED - refreshing state", level: .info)
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
         }
@@ -163,15 +158,11 @@ struct ProfessionalTextCanvas: View {
         let oldState = textBoxState
 
         // CRITICAL FIX: Always use current document text object, not potentially stale view model reference
-        guard let unifiedObj = document.unifiedObjects.first(where: { $0.id == textObjectID }),
-              case .shape(let shape) = unifiedObj.objectType,
-              shape.isTextObject,
-              var currentTextObject = VectorText.from(shape) else {
+        guard let currentTextObject = document.allTextObjects.first(where: { $0.id == textObjectID }) else {
             textBoxState = .gray
             Log.info("  → GRAY (text object not found in document)", category: .general)
             return
         }
-        currentTextObject.layerIndex = unifiedObj.layerIndex
 
         // PROFESSIONAL UX: Keep editing active while font tool is selected
         let isTextToolActive = document.currentTool == .font

@@ -115,11 +115,7 @@ struct FontAlignmentControls: View {
 
         // Then update selected text if any - with immediate update
         if let textID = document.selectedTextIDs.first,
-           let unifiedObj = document.unifiedObjects.first(where: { $0.id == textID }),
-           case .shape(let shape) = unifiedObj.objectType,
-           shape.isTextObject,
-           var freshText = VectorText.from(shape) {
-            freshText.layerIndex = unifiedObj.layerIndex
+           let freshText = document.allTextObjects.first(where: { $0.id == textID }) {
             var updatedTypography = freshText.typography
             updatedTypography.alignment = alignment
             document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)

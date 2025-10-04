@@ -380,13 +380,7 @@ class DocumentState: ObservableObject {
                     var svgContent: String
 
                     // Use shared helper for text to outlines conversion
-                    let hasTextObjects = document.unifiedObjects.contains { obj in
-                        if case .shape(let shape) = obj.objectType {
-                            return shape.isTextObject
-                        }
-                        return false
-                    }
-                    if convertTextToOutlines && hasTextObjects {
+                    if convertTextToOutlines && !document.allTextObjects.isEmpty {
                         svgContent = try await DocumentState.exportSVGWithTextToOutlines(
                             document,
                             includeBackground: includeBackground,
@@ -520,13 +514,7 @@ class DocumentState: ObservableObject {
                     var pdfData: Data
 
                     // Use shared helper for text to outlines conversion
-                    let hasTextObjects = document.unifiedObjects.contains { obj in
-                        if case .shape(let shape) = obj.objectType {
-                            return shape.isTextObject
-                        }
-                        return false
-                    }
-                    if convertTextToOutlines && hasTextObjects {
+                    if convertTextToOutlines && !document.allTextObjects.isEmpty {
                         pdfData = try await DocumentState.exportWithTextToOutlines(document) {
                             try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData, includeBackground: includeBackground)
                         }
@@ -768,13 +756,7 @@ class DocumentState: ObservableObject {
                     Task {
                         do {
                             // Use shared helper for text to outlines conversion
-                            let hasTextObjects = document.unifiedObjects.contains { obj in
-                        if case .shape(let shape) = obj.objectType {
-                            return shape.isTextObject
-                        }
-                        return false
-                    }
-                    if convertTextToOutlines && hasTextObjects {
+                            if convertTextToOutlines && !document.allTextObjects.isEmpty {
                                 _ = try await DocumentState.exportWithTextToOutlines(document) {
                                     try FileOperations.exportToPNG(document, url: url, scale: scale,
                                                                    includeBackground: includeBackground)
@@ -898,13 +880,7 @@ class DocumentState: ObservableObject {
                     var svgContent: String
 
                     // Use shared helper for text to outlines conversion
-                    let hasTextObjects = document.unifiedObjects.contains { obj in
-                        if case .shape(let shape) = obj.objectType {
-                            return shape.isTextObject
-                        }
-                        return false
-                    }
-                    if convertTextToOutlines && hasTextObjects {
+                    if convertTextToOutlines && !document.allTextObjects.isEmpty {
                         svgContent = try await DocumentState.exportSVGWithTextToOutlines(
                             document,
                             includeBackground: includeBackground,
@@ -1264,13 +1240,7 @@ class DocumentState: ObservableObject {
     // Helper function to convert all text to outlines for export
     static func convertAllTextToOutlinesForExport(_ document: VectorDocument) {
         // Get all text objects
-        let allTexts = document.unifiedObjects.compactMap { obj -> VectorText? in
-            if case .shape(let shape) = obj.objectType, shape.isTextObject, var text = VectorText.from(shape) {
-                text.layerIndex = obj.layerIndex
-                return text
-            }
-            return nil
-        }
+        let allTexts = document.allTextObjects
 
         guard !allTexts.isEmpty else { return }
 

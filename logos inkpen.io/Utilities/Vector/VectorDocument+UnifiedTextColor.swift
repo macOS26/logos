@@ -114,11 +114,7 @@ extension VectorDocument {
     /// Uses preview typography to avoid updating unified objects during drag
     func updateTextFontSizePreview(id: UUID, fontSize: CGFloat) {
         // Find the current text object
-        if let unifiedObj = unifiedObjects.first(where: { $0.id == id }),
-           case .shape(let shape) = unifiedObj.objectType,
-           shape.isTextObject,
-           var textObject = VectorText.from(shape) {
-            textObject.layerIndex = unifiedObj.layerIndex
+        if let textObject = allTextObjects.first(where: { $0.id == id }) {
             var previewTypography = textObject.typography
             let oldFontSize = previewTypography.fontSize
             let lineHeightRatio = previewTypography.lineHeight / oldFontSize
@@ -141,11 +137,7 @@ extension VectorDocument {
     /// Uses preview typography to avoid updating unified objects during drag
     func updateTextLineSpacingPreview(id: UUID, lineSpacing: Double) {
         // Find the current text object
-        if let unifiedObj = unifiedObjects.first(where: { $0.id == id }),
-           case .shape(let shape) = unifiedObj.objectType,
-           shape.isTextObject,
-           var textObject = VectorText.from(shape) {
-            textObject.layerIndex = unifiedObj.layerIndex
+        if let textObject = allTextObjects.first(where: { $0.id == id }) {
             var previewTypography = textPreviewTypography[id] ?? textObject.typography
             previewTypography.lineSpacing = lineSpacing
 
@@ -165,11 +157,7 @@ extension VectorDocument {
     /// Uses preview typography to avoid updating unified objects during drag
     func updateTextLineHeightPreview(id: UUID, lineHeight: Double) {
         // Find the current text object
-        if let unifiedObj = unifiedObjects.first(where: { $0.id == id }),
-           case .shape(let shape) = unifiedObj.objectType,
-           shape.isTextObject,
-           var textObject = VectorText.from(shape) {
-            textObject.layerIndex = unifiedObj.layerIndex
+        if let textObject = allTextObjects.first(where: { $0.id == id }) {
             var previewTypography = textPreviewTypography[id] ?? textObject.typography
             previewTypography.lineHeight = lineHeight
 
