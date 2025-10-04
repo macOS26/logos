@@ -340,7 +340,7 @@ struct TransformationControls: View {
         var combinedBounds: CGRect?
 
         for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+            if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     // Use group bounds for groups, regular bounds for other shapes
@@ -379,7 +379,7 @@ struct TransformationControls: View {
 
         // Apply transformation to each selected object
         for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }),
+            if let unifiedObject = document.findObject(by: objectID),
                case .shape(var shape) = unifiedObject.objectType {
 
                 // Check if this is a group - handle grouped shapes specially

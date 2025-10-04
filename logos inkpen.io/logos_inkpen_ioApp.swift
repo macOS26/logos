@@ -1000,7 +1000,7 @@ class ClipboardManager {
         
         // Collect selected objects from unified system
         for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+            if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     if shape.isTextObject {

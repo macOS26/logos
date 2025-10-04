@@ -331,7 +331,7 @@ extension DrawingCanvas {
         if !isDrawing && !document.isHandleScalingActive {
             // Check if we hit any transform handle
             for objectID in document.selectedObjectIDs {
-                if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }),
+                if let unifiedObject = document.findObject(by: objectID),
                    case .shape(let shape) = unifiedObject.objectType {
                     // Skip background shapes
                     if shape.name != "Canvas Background" && shape.name != "Pasteboard Background" {

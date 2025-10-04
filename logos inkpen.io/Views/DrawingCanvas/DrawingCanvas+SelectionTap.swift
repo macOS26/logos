@@ -471,7 +471,7 @@ extension DrawingCanvas {
         
         // Check selected objects using unified system
         for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+            if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     Log.error("🚨 DEBUG SHAPE: id=\(shape.id), isTextObject=\(shape.isTextObject)", category: .debug)

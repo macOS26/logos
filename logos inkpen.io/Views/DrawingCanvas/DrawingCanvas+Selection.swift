@@ -20,7 +20,7 @@ extension DrawingCanvas {
         
         // Check all selected objects (shapes and text) using unified objects
         for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+            if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     // CRITICAL FIX: Handle text objects represented as VectorShape

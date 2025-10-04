@@ -276,7 +276,7 @@ extension DrawingCanvas {
 
         // Nudge each selected object
         for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+            if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(var shape):
                     // Check if this is a group - handle grouped shapes specially

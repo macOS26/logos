@@ -25,7 +25,7 @@ struct ColorSwatchGrid: View {
     private var currentFillColor: VectorColor {
         // Get the first selected object from unified system
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
-           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .shape(let shape):
                 if let fillStyle = shape.fillStyle {
@@ -42,7 +42,7 @@ struct ColorSwatchGrid: View {
     private var currentStrokeColor: VectorColor {
         // Get the first selected object from unified system
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
-           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .shape(let shape):
                 if let strokeStyle = shape.strokeStyle {
@@ -61,7 +61,7 @@ struct ColorSwatchGrid: View {
     private var currentFillOpacity: Double {
         // Get the first selected object from unified system
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
-           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .shape(let shape):
                 if let fillStyle = shape.fillStyle {
@@ -78,7 +78,7 @@ struct ColorSwatchGrid: View {
     private var currentStrokeOpacity: Double {
         // Get the first selected object from unified system
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
-           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .shape(let shape):
                 if let strokeStyle = shape.strokeStyle {

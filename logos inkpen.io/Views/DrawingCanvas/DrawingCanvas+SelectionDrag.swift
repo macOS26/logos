@@ -134,7 +134,7 @@ extension DrawingCanvas {
             // Get the first selected object's bounds to snap its corner instead of center
             if let firstObjectID = document.selectedObjectIDs.first,
                let initialCenter = initialObjectPositions[firstObjectID],
-               let firstObject = document.unifiedObjects.first(where: { $0.id == firstObjectID }) {
+               let firstObject = document.findObject(by: firstObjectID) {
 
                 // Get the object's bounds to find its top-left corner
                 if case .shape(let shape) = firstObject.objectType {

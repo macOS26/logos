@@ -614,7 +614,7 @@ struct GradientFillSection: View {
             // OPTIMIZED: During live drag, update both shape data AND specific unified objects
             // This matches the gradient tool pattern for smooth real-time updates
             for objectID in document.selectedObjectIDs {
-                if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+                if let unifiedObject = document.findObject(by: objectID) {
                     if case .shape(let shape) = unifiedObject.objectType,
                        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
                        document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
@@ -634,7 +634,7 @@ struct GradientFillSection: View {
         
         // Apply gradient to selected objects from unified system
         for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+            if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     // Find the shape in the layers array and update it

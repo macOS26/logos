@@ -37,7 +37,7 @@ struct MainToolbarContent: ToolbarContent {
         guard !document.selectedObjectIDs.isEmpty else { return false }
         
         for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+            if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     // Skip text objects - they don't have paths to close
@@ -70,7 +70,7 @@ struct MainToolbarContent: ToolbarContent {
         document.saveToUndoStack()
         
         for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+            if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     // Skip text objects - they don't have paths to close
@@ -329,7 +329,7 @@ struct MainToolbarContent: ToolbarContent {
         var combinedBounds: CGRect?
         
         for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+            if let unifiedObject = document.findObject(by: objectID) {
                 // Only include objects in user layers (>= 2)
                 if unifiedObject.layerIndex >= 2 {
                     switch unifiedObject.objectType {
@@ -373,7 +373,7 @@ struct MainToolbarContent: ToolbarContent {
         document.saveToUndoStack()
         
         for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+            if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     if shape.isTextObject {
@@ -423,7 +423,7 @@ struct MainToolbarContent: ToolbarContent {
         document.saveToUndoStack()
         
         for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+            if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     if shape.isTextObject {

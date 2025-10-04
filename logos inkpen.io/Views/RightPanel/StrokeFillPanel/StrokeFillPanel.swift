@@ -18,7 +18,7 @@ struct StrokeFillPanel: View {
     private var selectedStrokeColor: VectorColor {
         // Get the first selected object from unified system
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
-           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .shape(let shape):
                 if shape.isTextObject {
@@ -38,7 +38,7 @@ struct StrokeFillPanel: View {
     private var selectedFillColor: VectorColor {
         // Get the first selected object from unified system
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
-           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .shape(let shape):
                 if shape.isTextObject {
@@ -56,7 +56,7 @@ struct StrokeFillPanel: View {
     private var strokeWidth: Double {
         // REFACTORED: Use unified objects system for stroke width
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
-           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .shape(let shape):
                 if shape.isTextObject {
@@ -72,7 +72,7 @@ struct StrokeFillPanel: View {
     private var strokePlacement: StrokePlacement {
         // REFACTORED: Use unified objects system for stroke placement
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
-           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .shape(let shape):
                 if shape.isTextObject {
@@ -88,7 +88,7 @@ struct StrokeFillPanel: View {
     private var fillOpacity: Double {
         // REFACTORED: Use unified objects system for fill opacity
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
-           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .shape(let shape):
                 if shape.isTextObject {
@@ -107,7 +107,7 @@ struct StrokeFillPanel: View {
     private var strokeOpacity: Double {
         // REFACTORED: Use unified objects system for stroke opacity
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
-           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .shape(let shape):
                 if shape.isTextObject {
@@ -127,7 +127,7 @@ struct StrokeFillPanel: View {
     private var strokeLineJoin: CGLineJoin {
         // REFACTORED: Use unified objects system for stroke line join
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
-           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .shape(let shape):
                 if shape.isTextObject {
@@ -144,7 +144,7 @@ struct StrokeFillPanel: View {
     private var strokeLineCap: CGLineCap {
         // REFACTORED: Use unified objects system for stroke line cap
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
-           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .shape(let shape):
                 if shape.isTextObject {
@@ -161,7 +161,7 @@ struct StrokeFillPanel: View {
     private var strokeMiterLimit: Double {
         // REFACTORED: Use unified objects system for stroke miter limit
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
-           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .shape(let shape):
                 if shape.isTextObject {
@@ -178,7 +178,7 @@ struct StrokeFillPanel: View {
     private var hasSelectedImages: Bool {
         // REFACTORED: Use unified objects system for image detection
         return document.selectedObjectIDs.contains { objectID in
-            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+            if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     if shape.isTextObject {
@@ -195,7 +195,7 @@ struct StrokeFillPanel: View {
     private var selectedImageOpacity: Double {
         // REFACTORED: Use unified objects system for image opacity
         for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+            if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     if shape.isTextObject {
@@ -380,7 +380,7 @@ struct StrokeFillPanel: View {
 
         // Apply to selected objects from unified system
         for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+            if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     if shape.isTextObject {
@@ -420,7 +420,7 @@ struct StrokeFillPanel: View {
 
         // Apply to selected objects from unified system
         for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+            if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     if shape.isTextObject {
