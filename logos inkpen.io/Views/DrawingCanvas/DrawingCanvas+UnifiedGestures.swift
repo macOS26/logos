@@ -54,7 +54,7 @@ extension DrawingCanvas {
             Log.info("🎯 DOUBLE CLICK: Entered text editing mode - I-beam cursor will be maintained", category: .selection)
             
             // Additional: Position cursor in text at click location
-            if let textObj = document.allTextObjects.first(where: { $0.id == textID }) {
+            if let textObj = document.findText(by: textID) {
                 
                 // Calculate relative position within the text box
                 let relativeX = canvasLocation.x - textObj.position.x
