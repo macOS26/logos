@@ -114,7 +114,7 @@ extension VectorDocument {
     /// Uses preview typography to avoid updating unified objects during drag
     func updateTextFontSizePreview(id: UUID, fontSize: CGFloat) {
         // Find the current text object
-        if let textObject = allTextObjects.first(where: { $0.id == id }) {
+        if let textObject = findText(by: id) {
             var previewTypography = textObject.typography
             let oldFontSize = previewTypography.fontSize
             let lineHeightRatio = previewTypography.lineHeight / oldFontSize
@@ -137,7 +137,7 @@ extension VectorDocument {
     /// Uses preview typography to avoid updating unified objects during drag
     func updateTextLineSpacingPreview(id: UUID, lineSpacing: Double) {
         // Find the current text object
-        if let textObject = allTextObjects.first(where: { $0.id == id }) {
+        if let textObject = findText(by: id) {
             var previewTypography = textPreviewTypography[id] ?? textObject.typography
             previewTypography.lineSpacing = lineSpacing
 
@@ -157,7 +157,7 @@ extension VectorDocument {
     /// Uses preview typography to avoid updating unified objects during drag
     func updateTextLineHeightPreview(id: UUID, lineHeight: Double) {
         // Find the current text object
-        if let textObject = allTextObjects.first(where: { $0.id == id }) {
+        if let textObject = findText(by: id) {
             var previewTypography = textPreviewTypography[id] ?? textObject.typography
             previewTypography.lineHeight = lineHeight
 

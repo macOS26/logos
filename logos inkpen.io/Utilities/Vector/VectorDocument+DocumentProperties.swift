@@ -48,7 +48,11 @@ extension VectorDocument {
         }
         
         // Include all visible text objects
-        for textObj in allTextObjects {
+        for unifiedObj in unifiedObjects {
+            guard case .shape(let shape) = unifiedObj.objectType,
+                  shape.isTextObject,
+                  var textObj = VectorText.from(shape) else { continue }
+            textObj.layerIndex = unifiedObj.layerIndex
             guard textObj.isVisible else { continue }
             
             let textBounds = textObj.bounds
@@ -90,7 +94,12 @@ extension VectorDocument {
         }
 
         // Include visible text objects that belong to user layers (>= 2)
-        for textObj in allTextObjects where textObj.isVisible {
+        for unifiedObj in unifiedObjects {
+            guard case .shape(let shape) = unifiedObj.objectType,
+                  shape.isTextObject,
+                  var textObj = VectorText.from(shape),
+                  textObj.isVisible else { continue }
+            textObj.layerIndex = unifiedObj.layerIndex
             if let li = textObj.layerIndex, li >= 2 {
                 let textBounds = CGRect(
                     x: textObj.position.x + textObj.bounds.minX,
