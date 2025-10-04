@@ -585,14 +585,17 @@ extension DrawingCanvas {
     
     /// CRITICAL FIX: Sync unified objects array after shapes/text have been moved
     /// IMPORTANT: This only updates object data without changing layer ordering
+    /// PERFORMANCE: Only syncs SELECTED objects that were actually moved
     private func syncUnifiedObjectsAfterMovement() {
-        // CRITICAL FIX: Don't call populateUnifiedObjectsFromLayers() which reorders everything!
-        // Just update the object data while preserving orderID and layerIndex
-        
-        // Update unified objects to reflect changes in layers and textObjects
+        // PERFORMANCE: Only update objects that were actually moved (selectedObjectIDs)
+        // Don't loop through ALL objects when only 1 was moved!
+
         for i in document.unifiedObjects.indices {
             let unifiedObject = document.unifiedObjects[i]
-            
+
+            // PERFORMANCE: Skip objects that weren't selected/moved
+            guard document.selectedObjectIDs.contains(unifiedObject.id) else { continue }
+
             switch unifiedObject.objectType {
             case .shape(let oldShape):
                 // CRITICAL FIX: Handle text objects - sync unified objects FROM textObjects (after drag)
@@ -600,7 +603,7 @@ extension DrawingCanvas {
                     Log.error("🚨 SYNC DEBUG: Text object - syncing unified objects", category: .debug)
                     if let updatedText = document.findText(by: oldShape.id) {
                         Log.error("🚨 SYNC DEBUG: Updating unified object position to (\(updatedText.position.x), \(updatedText.position.y))", category: .debug)
-                        
+
                         // CRITICAL FIX: Update unified object FROM textObjects array (textObjects has new position)
                         let updatedShape = VectorShape.from(updatedText)
                         document.unifiedObjects[i] = VectorObject(
@@ -608,7 +611,7 @@ extension DrawingCanvas {
                             layerIndex: unifiedObject.layerIndex,
                             orderID: unifiedObject.orderID  // Keep same orderID = no reordering
                         )
-                        
+
                         Log.error("🚨 SYNC DEBUG: Updated unified objects array from textObjects authority", category: .debug)
                     } else {
                         Log.error("🚨 SYNC DEBUG: TEXT OBJECT NOT FOUND in textObjects array!", category: .debug)
@@ -633,7 +636,7 @@ extension DrawingCanvas {
                 }
             }
         }
-        
-        Log.info("🔧 DRAG SYNC: Updated unified objects data without reordering", category: .general)
+
+        Log.info("🔧 DRAG SYNC: Updated \(document.selectedObjectIDs.count) moved object(s) without reordering", category: .general)
     }
 } 
