@@ -230,7 +230,7 @@ extension DrawingCanvas {
                         }
                     }
                     
-                    if let textObj = document.allTextObjects.first(where: { $0.id == unifiedObject.id }),
+                    if let textObj = document.findText(by: unifiedObject.id),
                        let initialCenter = initialObjectPositions[unifiedObject.id] {
                         // CRITICAL FIX: Use absolute positioning from initial reference, not delta accumulation
                         // Convert from center-based reference to position-based coordinates
