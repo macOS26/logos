@@ -89,12 +89,8 @@ extension VectorDocument {
         // CRITICAL FIX: During undo/redo operations, preserve the original orderID if available
         if isUndoRedoOperation {
             // Try to find an existing unified object for this shape to preserve its orderID
-            if let existingObject = unifiedObjects.first(where: { 
-                if case .shape(let existingShape) = $0.objectType {
-                    return existingShape.id == shape.id
-                }
-                return false
-            }) {
+            // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+            if let existingObject = findObject(by: shape.id) {
                 // Use the existing orderID to preserve order
                 let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: existingObject.orderID)
                 unifiedObjects.append(unifiedObject)
@@ -127,12 +123,8 @@ extension VectorDocument {
         // CRITICAL FIX: During undo/redo operations, preserve the original orderID if available
         if isUndoRedoOperation {
             // Try to find an existing unified object for this shape to preserve its orderID
-            if let existingObject = unifiedObjects.first(where: { 
-                if case .shape(let existingShape) = $0.objectType {
-                    return existingShape.id == shape.id
-                }
-                return false
-            }) {
+            // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+            if let existingObject = findObject(by: shape.id) {
                 // Use the existing orderID to preserve order
                 let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: existingObject.orderID)
                 unifiedObjects.append(unifiedObject)
@@ -225,12 +217,8 @@ extension VectorDocument {
         // CRITICAL FIX: During undo/redo operations, preserve the original orderID if available
         if isUndoRedoOperation {
             // Try to find an existing unified object for this text to preserve its orderID
-            if let existingObject = unifiedObjects.first(where: { 
-                if case .shape(let existingShape) = $0.objectType {
-                    return existingShape.id == text.id
-                }
-                return false
-            }) {
+            // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+            if let existingObject = findObject(by: text.id) {
                 // Use the existing orderID to preserve order
                 let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex, orderID: existingObject.orderID)
                 unifiedObjects.append(unifiedObject)
