@@ -72,6 +72,17 @@ class PDFCommandParser {
     var hasClipOperatorPending: Bool = false  // Track if we just saw a W operator
     var clipOperatorPath: [PathCommand] = []  // Store the path from W operator
 
+    // Graphics state stack for q/Q operators
+    struct PDFGraphicsState {
+        var transformMatrix: CGAffineTransform
+        var fillOpacity: Double
+        var strokeOpacity: Double
+        var clippingPathId: UUID?
+        var isInsideClippingPath: Bool
+        var pendingClippingPath: VectorShape?
+    }
+    var graphicsStateStack: [PDFGraphicsState] = []
+
     // MARK: - Text State Properties
     var isInTextObject: Bool = false  // Track if we're between BT and ET
     var currentTextMatrix: CGAffineTransform = .identity  // Text matrix (Tm)

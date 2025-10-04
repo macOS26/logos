@@ -225,23 +225,20 @@ extension PDFCommandParser {
             }
         }
 
-        // IMPORTANT: In PDFs, images are inherently 1x1 unit squares at origin
-        // The CTM transforms them to final size and position
-        // However, if there's a CLIPPING PATH, the image bounds should match the clipping path, NOT the CTM
+        // CRITICAL: In PDFs, images are ALWAYS defined as 1x1 unit squares at origin (0,0) -> (1,1)
+        // The CTM (Current Transform Matrix) transforms this unit square to final position/size
+        // We MUST apply the CTM to get accurate image positioning in ANY PDF file
+        let unitRect = CGRect(x: 0, y: 0, width: 1.0, height: 1.0)
+        let pdfRect = unitRect.applying(currentTransform)
 
-        var finalRect: CGRect
+        // CRITICAL: Flip Y-axis because PDF has origin at bottom-left, we use top-left
+        let flippedY = pageSize.height - pdfRect.maxY  // maxY becomes minY after flip
+        let finalRect = CGRect(x: pdfRect.minX, y: flippedY, width: pdfRect.width, height: pdfRect.height)
 
-        // If we have a pending clipping path, use ITS bounds for the image
-        if let pendingClip = pendingClippingPath {
-            finalRect = pendingClip.bounds
-            Log.info("PDF: 🎯 Using CLIPPING PATH bounds for image: \(finalRect)", category: .general)
-            Log.info("PDF: (CTM would have given: \(CGRect(x: 0, y: 0, width: 1, height: 1).applying(currentTransform)))", category: .general)
-        } else {
-            // No clipping path - use CTM transform
-            let unitRect = CGRect(x: 0, y: 0, width: 1.0, height: 1.0)
-            finalRect = unitRect.applying(currentTransform)
-            Log.info("PDF: Using CTM transform for image bounds: \(finalRect)", category: .general)
-        }
+        Log.info("PDF: Image pixel dimensions: \(width)x\(height)", category: .general)
+        Log.info("PDF: CTM: \(currentTransform)", category: .general)
+        Log.info("PDF: PDF rect (CTM applied): \(pdfRect)", category: .general)
+        Log.info("PDF: Final image bounds (Y-flipped): \(finalRect)", category: .general)
 
         // Store transparent image bounds if applicable
         if hasUpcomingTransparentImage {
@@ -602,5 +599,45 @@ extension PDFCommandParser {
         currentPath.removeAll()  // Also clear current path
 
         Log.info("PDF: 🔄 COMPLETE RESET - ready for next SEPARATE clipping group", category: .general)
+    }
+
+    // MARK: - Graphics State Stack for q/Q operators
+
+    /// Save graphics state (q operator)
+    func saveGraphicsState() {
+        let state = PDFGraphicsState(
+            transformMatrix: currentTransformMatrix,
+            fillOpacity: currentFillOpacity,
+            strokeOpacity: currentStrokeOpacity,
+            clippingPathId: currentClippingPathId,
+            isInsideClippingPath: isInsideClippingPath,
+            pendingClippingPath: pendingClippingPath
+        )
+        graphicsStateStack.append(state)
+        Log.info("PDF: 💾 Saved graphics state (stack depth: \(graphicsStateStack.count))", category: .general)
+        Log.info("PDF:    - CTM: \(currentTransformMatrix)", category: .general)
+    }
+
+    /// Restore graphics state (Q operator)
+    func restoreGraphicsState() {
+        // First finalize the current clipping group
+        finalizeClippingGroup()
+
+        // Then restore the saved state
+        guard !graphicsStateStack.isEmpty else {
+            Log.info("PDF: ⚠️ Cannot restore graphics state - stack is empty", category: .general)
+            return
+        }
+
+        let state = graphicsStateStack.removeLast()
+        currentTransformMatrix = state.transformMatrix
+        currentFillOpacity = state.fillOpacity
+        currentStrokeOpacity = state.strokeOpacity
+        currentClippingPathId = state.clippingPathId
+        isInsideClippingPath = state.isInsideClippingPath
+        pendingClippingPath = state.pendingClippingPath
+
+        Log.info("PDF: 🔄 Restored graphics state (stack depth: \(graphicsStateStack.count))", category: .general)
+        Log.info("PDF:    - CTM restored to: \(currentTransformMatrix)", category: .general)
     }
 }
