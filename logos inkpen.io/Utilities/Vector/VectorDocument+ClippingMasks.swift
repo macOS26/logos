@@ -58,12 +58,8 @@ extension VectorDocument {
         
         // CRITICAL FIX: Use unified objects system for selection
         // Find the unified object for the mask shape
-        if let maskUnifiedObject = unifiedObjects.first(where: { 
-            if case .shape(let shape) = $0.objectType {
-                return shape.id == maskID
-            }
-            return false
-        }) {
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        if let maskUnifiedObject = findObject(by: maskID) {
             selectedObjectIDs = [maskUnifiedObject.id]
             syncSelectionArrays() // Keep legacy arrays in sync
         }
