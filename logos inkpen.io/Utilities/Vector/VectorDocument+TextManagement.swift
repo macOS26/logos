@@ -83,7 +83,7 @@ extension VectorDocument {
         var newTextIDs: Set<UUID> = []
         
         for textID in selectedTextIDs {
-            if let originalText = allTextObjects.first(where: { $0.id == textID }) {
+            if let originalText = findText(by: textID) {
                 // Create duplicate with slight offset
                 var duplicateText = originalText
                 duplicateText.id = UUID() // New unique ID
@@ -138,7 +138,7 @@ extension VectorDocument {
 
         saveToUndoStack()
 
-        let selectedTexts = allTextObjects.filter { selectedTextIDs.contains($0.id) }
+        let selectedTexts = selectedTextIDs.compactMap { textID in findText(by: textID) }
         var newShapeIDs: Set<UUID> = []
 
         // Track shapes before conversion - only count non-text shapes

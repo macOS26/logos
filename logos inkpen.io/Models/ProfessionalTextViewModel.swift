@@ -752,9 +752,9 @@ class ProfessionalTextViewModel: ObservableObject {
 
         // Stop editing any other text boxes first
         var editingCount = 0
-        for textObject in document.getAllTextObjects() {
-            if textObject.isEditing {
-                document.setTextEditingInUnified(id: textObject.id, isEditing: false)
+        for unifiedObj in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject, shape.isEditing == true {
+                document.setTextEditingInUnified(id: shape.id, isEditing: false)
                 editingCount += 1
             }
         }
