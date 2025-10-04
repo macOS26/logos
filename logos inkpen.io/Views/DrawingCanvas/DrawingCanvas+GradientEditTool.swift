@@ -58,10 +58,9 @@ extension DrawingCanvas {
     
     /// Get the selected shape that has a gradient
     private func getSelectedShapeWithGradient() -> VectorShape? {
-        guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first else { return nil }
-        let shapes = document.getShapesForLayer(layerIndex)
-        guard let shape = shapes.first(where: { $0.id == firstSelectedID }),
+        guard let firstSelectedID = document.selectedShapeIDs.first else { return nil }
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        guard let shape = document.findShape(by: firstSelectedID),
               let fillStyle = shape.fillStyle,
               case .gradient = fillStyle.color else {
             return nil
@@ -255,10 +254,9 @@ extension DrawingCanvas {
     
     /// Helper function to get selected shape gradient (copied from StrokeFillPanel)
     private func getSelectedShapeGradient(document: VectorDocument) -> VectorGradient? {
-        guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first else { return nil }
-        let shapes = document.getShapesForLayer(layerIndex)
-        guard let shape = shapes.first(where: { $0.id == firstSelectedID }),
+        guard let firstSelectedID = document.selectedShapeIDs.first else { return nil }
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        guard let shape = document.findShape(by: firstSelectedID),
               let fillStyle = shape.fillStyle,
               case .gradient(let gradient) = fillStyle.color else {
             return nil
