@@ -15,9 +15,10 @@ extension VectorDocument {
     /// Expands selection to include complete clipping mask units (mask + all clipped shapes)
     private func expandSelectionForClippingMasks(_ selectedIDs: Set<UUID>, in layerObjects: [VectorObject]) -> Set<UUID> {
         var expandedSelectedIDs = selectedIDs
-        
+
         for selectedID in selectedIDs {
-            if let selectedObject = layerObjects.first(where: { $0.id == selectedID }),
+            // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+            if let selectedObject = findObject(by: selectedID),
                case .shape(let selectedShape) = selectedObject.objectType {
                 
                 // If selected object is a mask, include all its clipped shapes
@@ -31,12 +32,8 @@ extension VectorDocument {
                 }
                 // If selected object is clipped, include its mask
                 else if let maskID = selectedShape.clippedByShapeID {
-                    if let maskObject = layerObjects.first(where: { 
-                        if case .shape(let maskShape) = $0.objectType {
-                            return maskShape.id == maskID
-                        }
-                        return false
-                    }) {
+                    // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+                    if let maskObject = findObject(by: maskID) {
                         expandedSelectedIDs.insert(maskObject.id)
                         // Also include all other shapes clipped by the same mask
                         for obj in layerObjects {

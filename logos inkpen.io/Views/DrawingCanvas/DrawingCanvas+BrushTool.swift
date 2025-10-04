@@ -281,7 +281,7 @@ extension DrawingCanvas {
                 )
             }
 
-            Log.info("🖌️ PREVIEW: Simplified from \(pointsToProcess.count) to \(simplifiedPoints.count) points", category: .general)
+           // Log.info("🖌️ PREVIEW: Simplified from \(pointsToProcess.count) to \(simplifiedPoints.count) points", category: .general)
         }
 
         if simplifiedPoints.count >= 2 {
