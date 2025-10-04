@@ -61,7 +61,53 @@ extension PDFCommandParser {
             }
         }
 
-        Log.info("PDF: 📏 Expected total bytes: \(width * height * 3) for RGB or \(width * height * 4) for RGBA", category: .general)
+        // Check ColorSpace to determine image format
+        var colorSpaceObj: CGPDFObjectRef?
+        var colorSpaceName: String = "Unknown"
+        var isIndexedColor = false
+        var colorPalette: Data?
+
+        if CGPDFDictionaryGetObject(streamDict, "ColorSpace", &colorSpaceObj), let csObj = colorSpaceObj {
+            var namePtr: UnsafePointer<CChar>?
+            if CGPDFObjectGetValue(csObj, .name, &namePtr), let name = namePtr {
+                colorSpaceName = String(cString: name)
+                Log.info("PDF: ColorSpace: \(colorSpaceName)", category: .general)
+            } else if CGPDFObjectGetValue(csObj, .array, &colorSpaceObj) {
+                // ColorSpace is an array - likely [/Indexed /DeviceRGB ...]
+                var arrayRef: CGPDFArrayRef?
+                if CGPDFObjectGetValue(csObj, .array, &arrayRef), let array = arrayRef {
+                    var firstElement: CGPDFObjectRef?
+                    if CGPDFArrayGetObject(array, 0, &firstElement), let first = firstElement {
+                        if CGPDFObjectGetValue(first, .name, &namePtr), let name = namePtr {
+                            colorSpaceName = String(cString: name)
+                            isIndexedColor = (colorSpaceName == "Indexed")
+                            Log.info("PDF: ColorSpace array type: \(colorSpaceName)", category: .general)
+
+                            // For indexed color, extract the palette
+                            if isIndexedColor && CGPDFArrayGetCount(array) >= 4 {
+                                var paletteString: CGPDFStringRef?
+                                var paletteStream: CGPDFStreamRef?
+                                if CGPDFArrayGetString(array, 3, &paletteString), let palString = paletteString {
+                                    let length = CGPDFStringGetLength(palString)
+                                    if let bytePtr = CGPDFStringGetBytePtr(palString) {
+                                        colorPalette = Data(bytes: bytePtr, count: length)
+                                        Log.info("PDF: Extracted indexed color palette: \(colorPalette?.count ?? 0) bytes", category: .general)
+                                    }
+                                } else if CGPDFArrayGetStream(array, 3, &paletteStream), let palStream = paletteStream {
+                                    var palFormat: CGPDFDataFormat = .raw
+                                    if let palData = CGPDFStreamCopyData(palStream, &palFormat) {
+                                        colorPalette = palData as Data
+                                        Log.info("PDF: Extracted indexed color palette from stream: \(colorPalette?.count ?? 0) bytes", category: .general)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Log.info("PDF: 📏 Expected total bytes: \(width * height * 3) for RGB, \(width * height * 4) for RGBA, or \(width * height) for indexed/gray", category: .general)
 
         // Get the image data from the stream
         var format: CGPDFDataFormat = .raw
@@ -100,13 +146,101 @@ extension PDFCommandParser {
             // Create an NSImage from the raw pixel data
             Log.info("PDF: Processing raw image data (\(nsData.length) bytes)", category: .general)
 
-            // Calculate bytes per pixel (usually 3 for RGB or 4 for RGBA)
+            // Calculate bytes per pixel (usually 3 for RGB, 4 for RGBA, or 1 for indexed/gray)
             let totalPixels = width * height
             let bytesPerPixel = nsData.length / totalPixels
             Log.info("PDF: Calculated \(bytesPerPixel) bytes per pixel for \(width)x\(height) image", category: .general)
 
+            // Handle indexed color (1 byte per pixel with color palette)
+            if bytesPerPixel == 1 && isIndexedColor, let palette = colorPalette {
+                Log.info("PDF: Processing indexed color image with palette", category: .general)
+
+                // Convert indexed color to RGBA using the palette
+                guard let rgbaData = NSMutableData(capacity: width * height * 4) else {
+                    Log.error("PDF: Failed to allocate RGBA data for indexed image", category: .error)
+                    return
+                }
+
+                let indexBytes = nsData.bytes.assumingMemoryBound(to: UInt8.self)
+                let paletteBytes = palette.withUnsafeBytes { $0.bindMemory(to: UInt8.self) }
+                let paletteEntries = palette.count / 3  // Each palette entry is 3 bytes (RGB)
+
+                Log.info("PDF: Palette has \(paletteEntries) color entries (\(palette.count) bytes)", category: .general)
+
+                for i in 0..<(width * height) {
+                    let paletteIndex = Int(indexBytes[i])
+
+                    // Bounds check
+                    if paletteIndex < paletteEntries {
+                        let paletteOffset = paletteIndex * 3
+                        rgbaData.append(paletteBytes.baseAddress! + paletteOffset, length: 3) // RGB from palette
+                    } else {
+                        // Out of bounds - use black
+                        var black: [UInt8] = [0, 0, 0]
+                        rgbaData.append(&black, length: 3)
+                    }
+
+                    // Add alpha channel
+                    var alpha: UInt8
+                    if let maskBytes = maskData?.withUnsafeBytes({ $0.bindMemory(to: UInt8.self) }), i < (maskData?.count ?? 0) {
+                        alpha = maskBytes[i]
+                    } else {
+                        alpha = 255 // Full opacity
+                    }
+                    rgbaData.append(&alpha, length: 1)
+                }
+
+                // DEBUG: Save RGBA data
+                let rgbaDebugPath = "/Users/toddbruss/Documents/pdf_indexed_rgba_image_\(name)_\(width)x\(height).dat"
+                try? (rgbaData as Data).write(to: URL(fileURLWithPath: rgbaDebugPath))
+                Log.info("PDF: 💾 DEBUG - Saved indexed->RGBA data to: \(rgbaDebugPath)", category: .debug)
+
+                // Create bitmap representation
+                let bitmapRep = NSBitmapImageRep(
+                    bitmapDataPlanes: nil,
+                    pixelsWide: width,
+                    pixelsHigh: height,
+                    bitsPerSample: 8,
+                    samplesPerPixel: 4,
+                    hasAlpha: true,
+                    isPlanar: false,
+                    colorSpaceName: .deviceRGB,
+                    bitmapFormat: hasSMask ? [.alphaNonpremultiplied] : [],
+                    bytesPerRow: width * 4,
+                    bitsPerPixel: 32
+                )
+
+                if let bitmapRep = bitmapRep {
+                    // Copy RGBA data to bitmap
+                    let bitmapData = bitmapRep.bitmapData!
+                    rgbaData.getBytes(bitmapData, length: width * height * 4)
+
+                    // Create NSImage from bitmap
+                    let nsImage = NSImage(size: NSSize(width: width, height: height))
+                    nsImage.addRepresentation(bitmapRep)
+
+                    // Convert to PNG
+                    if let pngData = bitmapRep.representation(using: .png, properties: [:]) {
+                        imageShape.embeddedImageData = pngData
+                        Log.info("PDF: ✅ Successfully converted indexed color to PNG (\(pngData.count) bytes)", category: .general)
+                        Log.info("PDF: 🔍 Shape ID for image: \(imageShape.id)", category: .debug)
+
+                        // DEBUG: Save PNG data
+                        let pngDebugPath = "/Users/toddbruss/Documents/pdf_indexed_final_image_\(name).png"
+                        try? pngData.write(to: URL(fileURLWithPath: pngDebugPath))
+                        Log.info("PDF: 💾 DEBUG - Saved final indexed PNG to: \(pngDebugPath)", category: .debug)
+                    } else {
+                        // Fallback: store RGBA data directly
+                        imageShape.embeddedImageData = rgbaData as Data
+                        Log.info("PDF: Stored as RGBA data (fallback)", category: .general)
+                    }
+                } else {
+                    Log.info("PDF: Could not create NSBitmapImageRep for indexed image", category: .general)
+                    imageShape.embeddedImageData = nsData as Data
+                }
+            }
             // Handle RGB (3 bytes per pixel) by converting to RGBA
-            if bytesPerPixel == 3 {
+            else if bytesPerPixel == 3 {
                 // Convert RGB to RGBA by adding alpha channel
                 guard let rgbaData = NSMutableData(capacity: width * height * 4) else {
                     Log.error("PDF: Failed to allocate RGBA data", category: .error)
