@@ -380,7 +380,10 @@ class DocumentState: ObservableObject {
                     var svgContent: String
 
                     // Use shared helper for text to outlines conversion
-                    if convertTextToOutlines && !document.allTextObjects.isEmpty {
+                    if convertTextToOutlines && document.unifiedObjects.contains(where: { obj in
+                        if case .shape(let shape) = obj.objectType { return shape.isTextObject }
+                        return false
+                    }) {
                         svgContent = try await DocumentState.exportSVGWithTextToOutlines(
                             document,
                             includeBackground: includeBackground,
@@ -514,7 +517,10 @@ class DocumentState: ObservableObject {
                     var pdfData: Data
 
                     // Use shared helper for text to outlines conversion
-                    if convertTextToOutlines && !document.allTextObjects.isEmpty {
+                    if convertTextToOutlines && document.unifiedObjects.contains(where: { obj in
+                        if case .shape(let shape) = obj.objectType { return shape.isTextObject }
+                        return false
+                    }) {
                         pdfData = try await DocumentState.exportWithTextToOutlines(document) {
                             try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData, includeBackground: includeBackground)
                         }
@@ -756,7 +762,10 @@ class DocumentState: ObservableObject {
                     Task {
                         do {
                             // Use shared helper for text to outlines conversion
-                            if convertTextToOutlines && !document.allTextObjects.isEmpty {
+                            if convertTextToOutlines && document.unifiedObjects.contains(where: { obj in
+                        if case .shape(let shape) = obj.objectType { return shape.isTextObject }
+                        return false
+                    }) {
                                 _ = try await DocumentState.exportWithTextToOutlines(document) {
                                     try FileOperations.exportToPNG(document, url: url, scale: scale,
                                                                    includeBackground: includeBackground)
@@ -880,7 +889,10 @@ class DocumentState: ObservableObject {
                     var svgContent: String
 
                     // Use shared helper for text to outlines conversion
-                    if convertTextToOutlines && !document.allTextObjects.isEmpty {
+                    if convertTextToOutlines && document.unifiedObjects.contains(where: { obj in
+                        if case .shape(let shape) = obj.objectType { return shape.isTextObject }
+                        return false
+                    }) {
                         svgContent = try await DocumentState.exportSVGWithTextToOutlines(
                             document,
                             includeBackground: includeBackground,
@@ -1239,13 +1251,18 @@ class DocumentState: ObservableObject {
 
     // Helper function to convert all text to outlines for export
     static func convertAllTextToOutlinesForExport(_ document: VectorDocument) {
-        // Get all text objects
-        let allTexts = document.allTextObjects
+        // Get all text objects from unified objects directly
+        let textObjects = document.unifiedObjects.compactMap { obj -> VectorText? in
+            guard case .shape(let shape) = obj.objectType, shape.isTextObject else { return nil }
+            var vectorText = VectorText.from(shape)
+            vectorText?.layerIndex = obj.layerIndex
+            return vectorText
+        }
 
-        guard !allTexts.isEmpty else { return }
+        guard !textObjects.isEmpty else { return }
 
         // Convert each text object to outlines
-        for textObj in allTexts {
+        for textObj in textObjects {
             // Use ProfessionalTextCanvas convertToPath logic
             let viewModel = ProfessionalTextViewModel(textObject: textObj, document: document)
 
@@ -1264,6 +1281,6 @@ class DocumentState: ObservableObject {
         // Clear text selection
         document.selectedTextIDs.removeAll()
 
-        Log.info("✅ Converted \(allTexts.count) text object(s) to outlines for export", category: .fileOperations)
+        Log.info("✅ Converted \(textObjects.count) text object(s) to outlines for export", category: .fileOperations)
     }
 }
