@@ -117,11 +117,11 @@ extension DrawingCanvas {
     /// CRITICAL: For closed paths, ONLY considers first/last points coincident if they are at the SAME LOCATION
     func findClosedPathEndpoints(for pointID: PointID) -> Set<PointID> {
         var endpointPairs: Set<PointID> = []
-        
+
         // Find the shape containing this point
-        for layerIndex in document.layers.indices {
-            let shapes = document.getShapesForLayer(layerIndex)
-            if let shape = shapes.first(where: { $0.id == pointID.shapeID }) {
+        // PERFORMANCE: Use O(1) UUID lookup instead of searching all layers
+        if let unifiedObject = document.findObject(by: pointID.shapeID),
+           case .shape(let shape) = unifiedObject.objectType {
                 
                 // MUST have a close command to be considered a closed path
                 let hasCloseElement = shape.path.elements.contains { element in
@@ -174,10 +174,8 @@ extension DrawingCanvas {
                         }
                     }
                 }
-                break
-            }
         }
-        
+
         return endpointPairs
     }
     
