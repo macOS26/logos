@@ -204,7 +204,12 @@ extension DrawingCanvas {
         }.count
         
         // Count text objects from unified system
-        count += document.allTextObjects.filter { $0.isVisible }.count
+        count += document.unifiedObjects.filter { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject && shape.isVisible
+            }
+            return false
+        }.count
         
         // Count current drawing path if active
         if currentPath != nil && isDrawing {

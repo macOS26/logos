@@ -62,9 +62,11 @@ extension VectorDocument {
         }
         
         // Unlock all text objects using unified helpers
-        for textObject in allTextObjects {
-            if textObject.isLocked {
-                unlockTextInUnified(id: textObject.id)
+        for obj in unifiedObjects {
+            guard case .shape(let shape) = obj.objectType,
+                  shape.isTextObject else { continue }
+            if shape.isLocked {
+                unlockTextInUnified(id: shape.id)
                 unlockedCount += 1
             }
         }
@@ -124,9 +126,11 @@ extension VectorDocument {
         }
         
         // Show all text objects using unified helpers
-        for textObject in allTextObjects {
-            if !textObject.isVisible {
-                showTextInUnified(id: textObject.id)
+        for obj in unifiedObjects {
+            guard case .shape(let shape) = obj.objectType,
+                  shape.isTextObject else { continue }
+            if !shape.isVisible {
+                showTextInUnified(id: shape.id)
                 shownCount += 1
             }
         }

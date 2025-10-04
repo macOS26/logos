@@ -563,7 +563,13 @@ struct MainView: View {
                 var pdfData: Data
 
                 // If converting text to outlines, create a temporary copy and convert
-                if convertTextToOutlines && !document.allTextObjects.isEmpty {
+                let hasTextObjects = document.unifiedObjects.contains { obj in
+                    if case .shape(let shape) = obj.objectType {
+                        return shape.isTextObject
+                    }
+                    return false
+                }
+                if convertTextToOutlines && hasTextObjects {
                     // Save current document state
                     let savedData = try JSONEncoder().encode(document)
                     let savedState = try JSONDecoder().decode(VectorDocument.self, from: savedData)

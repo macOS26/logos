@@ -187,7 +187,11 @@ struct FontSizeControls: View {
 
             // Then update selected text if any
             if let textID = document.selectedTextIDs.first,
-               let freshText = document.allTextObjects.first(where: { $0.id == textID }) {
+               let unifiedObj = document.unifiedObjects.first(where: { $0.id == textID }),
+               case .shape(let shape) = unifiedObj.objectType,
+               shape.isTextObject,
+               var freshText = VectorText.from(shape) {
+                freshText.layerIndex = unifiedObj.layerIndex
                 var updatedTypography = freshText.typography
                 let oldFontSize = updatedTypography.fontSize
 
@@ -217,7 +221,11 @@ struct FontSizeControls: View {
 
             // Then update selected text if any
             if let textID = document.selectedTextIDs.first,
-               let freshText = document.allTextObjects.first(where: { $0.id == textID }) {
+               let unifiedObj = document.unifiedObjects.first(where: { $0.id == textID }),
+               case .shape(let shape) = unifiedObj.objectType,
+               shape.isTextObject,
+               var freshText = VectorText.from(shape) {
+                freshText.layerIndex = unifiedObj.layerIndex
                 var updatedTypography = freshText.typography
 
                 // Check if line spacing actually changed
@@ -244,7 +252,11 @@ struct FontSizeControls: View {
 
             // Then update selected text if any
             if let textID = document.selectedTextIDs.first,
-               let freshText = document.allTextObjects.first(where: { $0.id == textID }) {
+               let unifiedObj = document.unifiedObjects.first(where: { $0.id == textID }),
+               case .shape(let shape) = unifiedObj.objectType,
+               shape.isTextObject,
+               var freshText = VectorText.from(shape) {
+                freshText.layerIndex = unifiedObj.layerIndex
                 var updatedTypography = freshText.typography
 
                 // Check if line height actually changed

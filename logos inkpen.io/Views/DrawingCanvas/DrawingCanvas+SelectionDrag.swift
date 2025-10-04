@@ -230,8 +230,11 @@ extension DrawingCanvas {
                         }
                     }
                     
-                    if let textObj = document.allTextObjects.first(where: { $0.id == unifiedObject.id }),
+                    if case .shape(let shape) = unifiedObject.objectType,
+                       shape.isTextObject,
+                       var textObj = VectorText.from(shape),
                        let initialCenter = initialObjectPositions[unifiedObject.id] {
+                        textObj.layerIndex = unifiedObject.layerIndex
                         // CRITICAL FIX: Use absolute positioning from initial reference, not delta accumulation
                         // Convert from center-based reference to position-based coordinates
                         let textBounds = textObj.bounds
@@ -597,8 +600,12 @@ extension DrawingCanvas {
             case .shape(let oldShape):
                 // CRITICAL FIX: Handle text objects - sync unified objects FROM textObjects (after drag)
                 if oldShape.isTextObject {
-                    Log.error("🚨 SYNC DEBUG: Text object - syncing unified objects FROM allTextObjects (CORRECTED)", category: .debug)
-                    if let updatedText = document.allTextObjects.first(where: { $0.id == oldShape.id }) {
+                    Log.error("🚨 SYNC DEBUG: Text object - syncing unified objects (CORRECTED)", category: .debug)
+                    if let currentObj = document.unifiedObjects.first(where: { $0.id == oldShape.id }),
+                       case .shape(let currentShape) = currentObj.objectType,
+                       currentShape.isTextObject,
+                       var updatedText = VectorText.from(currentShape) {
+                        updatedText.layerIndex = currentObj.layerIndex
                         Log.error("🚨 SYNC DEBUG: Updating unified object position to (\(updatedText.position.x), \(updatedText.position.y))", category: .debug)
                         
                         // CRITICAL FIX: Update unified object FROM textObjects array (textObjects has new position)

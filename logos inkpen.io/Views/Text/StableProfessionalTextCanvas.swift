@@ -26,8 +26,12 @@ struct StableProfessionalTextCanvas: View {
         self.dragPreviewTrigger = dragPreviewTrigger
 
         // Create view model ONCE and reuse it
-        // Use allTextObjects computed property instead of textObjects array
-        if let textObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
+        // Access unified objects directly instead of allTextObjects
+        if let unifiedObj = document.unifiedObjects.first(where: { $0.id == textObjectID }),
+           case .shape(let shape) = unifiedObj.objectType,
+           shape.isTextObject,
+           var textObject = VectorText.from(shape) {
+            textObject.layerIndex = unifiedObj.layerIndex
             Log.info("📝 StableProfessionalTextCanvas: Creating view model for text '\(textObject.content.prefix(20))' at position \(textObject.position)", category: .general)
             self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: textObject, document: document))
         } else {
@@ -54,7 +58,11 @@ struct StableProfessionalTextCanvas: View {
             // This ensures we catch ALL changes including nested typography updates
             .onReceive(document.objectWillChange) { _ in
                 // Check if our text object has changed
-                if let currentTextObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
+                if let unifiedObj = document.unifiedObjects.first(where: { $0.id == textObjectID }),
+                   case .shape(let shape) = unifiedObj.objectType,
+                   shape.isTextObject,
+                   var currentTextObject = VectorText.from(shape) {
+                    currentTextObject.layerIndex = unifiedObj.layerIndex
                     // Always sync when document changes - the unified system is the source of truth
                     viewModel.syncFromDocument(currentTextObject)
                 }
@@ -65,20 +73,32 @@ struct StableProfessionalTextCanvas: View {
     }
 
     private func updateViewModelFromDocument() {
-        // Use allTextObjects from unified system
-        if let currentTextObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
+        // Access unified system directly
+        if let unifiedObj = document.unifiedObjects.first(where: { $0.id == textObjectID }),
+           case .shape(let shape) = unifiedObj.objectType,
+           shape.isTextObject,
+           var currentTextObject = VectorText.from(shape) {
+            currentTextObject.layerIndex = unifiedObj.layerIndex
             viewModel.syncFromDocument(currentTextObject)
             Log.fileOperation("✅ TEXT CANVAS: Found text object \(textObjectID.uuidString.prefix(8)) content: '\(currentTextObject.content)'", level: .info)
         } else {
             // FALLBACK: If text object missing from unified objects, log issue with debugging info
             Log.fileOperation("⚠️ TEXT CANVAS: Text object \(textObjectID.uuidString.prefix(8)) not found in unified objects", level: .info)
-            Log.fileOperation("🔍 DEBUG: Available text object IDs: \(document.allTextObjects.map { $0.id.uuidString.prefix(8) })", level: .info)
-            Log.fileOperation("🔍 DEBUG: Total text objects: \(document.allTextObjects.count)", level: .info)
+            let textShapeIDs = document.unifiedObjects.compactMap { obj -> String? in
+                if case .shape(let shape) = obj.objectType, shape.isTextObject {
+                    return String(obj.id.uuidString.prefix(8))
+                }
+                return nil
+            }
+            Log.fileOperation("🔍 DEBUG: Available text object IDs: \(textShapeIDs)", level: .info)
+            Log.fileOperation("🔍 DEBUG: Total text objects: \(textShapeIDs.count)", level: .info)
         }
     }
 
     private func getDocumentMode() -> String {
-        if let currentTextObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
+        if let unifiedObj = document.unifiedObjects.first(where: { $0.id == textObjectID }),
+           case .shape(let shape) = unifiedObj.objectType,
+           shape.isTextObject {
             // PROFESSIONAL UX: Stable view while font tool is active
             // Create compact typography hash to avoid super long strings
 
@@ -87,7 +107,8 @@ struct StableProfessionalTextCanvas: View {
                 return "font-tool"
             } else {
                 // When other tools are active, include content for proper updates
-                return "\(currentTextObject.content)-\(currentTextObject.isEditing)"
+                let editing = (shape.isEditing ?? false) ? "editing" : "not-editing"
+                return "\(shape.textContent ?? "")-\(editing)"
             }
         }
         return "text-missing"
