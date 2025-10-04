@@ -618,20 +618,18 @@ extension DrawingCanvas {
                     }
                 } else {
                     // Regular shapes - find in unified objects
-                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
-                        let shapes = document.getShapesForLayer(layerIndex)
-                        if let updatedShape = shapes.first(where: { $0.id == oldShape.id }) {
-                            // DEBUG: Check clipping properties before and after sync
-                            if oldShape.clippedByShapeID != nil || updatedShape.clippedByShapeID != nil {
-                                Log.info("🎭 DRAG SYNC DEBUG: Shape '\(oldShape.name)' - old clippedByShapeID: \(oldShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil"), new clippedByShapeID: \(updatedShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .general)
-                            }
-                            // CRITICAL FIX: Preserve original orderID - DO NOT reorder during drag
-                            document.unifiedObjects[i] = VectorObject(
-                                shape: updatedShape,
-                                layerIndex: unifiedObject.layerIndex,
-                                orderID: unifiedObject.orderID  // Keep same orderID = no reordering
-                            )
+                    // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+                    if let updatedShape = document.findShape(by: oldShape.id) {
+                        // DEBUG: Check clipping properties before and after sync
+                        if oldShape.clippedByShapeID != nil || updatedShape.clippedByShapeID != nil {
+                            Log.info("🎭 DRAG SYNC DEBUG: Shape '\(oldShape.name)' - old clippedByShapeID: \(oldShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil"), new clippedByShapeID: \(updatedShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .general)
                         }
+                        // CRITICAL FIX: Preserve original orderID - DO NOT reorder during drag
+                        document.unifiedObjects[i] = VectorObject(
+                            shape: updatedShape,
+                            layerIndex: unifiedObject.layerIndex,
+                            orderID: unifiedObject.orderID  // Keep same orderID = no reordering
+                        )
                     }
                 }
             }
