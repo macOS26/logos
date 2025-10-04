@@ -597,8 +597,8 @@ extension DrawingCanvas {
             case .shape(let oldShape):
                 // CRITICAL FIX: Handle text objects - sync unified objects FROM textObjects (after drag)
                 if oldShape.isTextObject {
-                    Log.error("🚨 SYNC DEBUG: Text object - syncing unified objects FROM allTextObjects (CORRECTED)", category: .debug)
-                    if let updatedText = document.allTextObjects.first(where: { $0.id == oldShape.id }) {
+                    Log.error("🚨 SYNC DEBUG: Text object - syncing unified objects", category: .debug)
+                    if let updatedText = document.findText(by: oldShape.id) {
                         Log.error("🚨 SYNC DEBUG: Updating unified object position to (\(updatedText.position.x), \(updatedText.position.y))", category: .debug)
                         
                         // CRITICAL FIX: Update unified object FROM textObjects array (textObjects has new position)
