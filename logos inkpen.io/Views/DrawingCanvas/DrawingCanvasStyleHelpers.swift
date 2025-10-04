@@ -20,13 +20,11 @@ extension DrawingCanvas {
         }
         
         // PRIORITY 2: If shapes are selected, use their color
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first {
-            let shapes = document.getShapesForLayer(layerIndex)
-            if let shape = shapes.first(where: { $0.id == firstSelectedID }),
-               let fillColor = shape.fillStyle?.color {
-                return fillColor
-            }
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        if let firstSelectedID = document.selectedShapeIDs.first,
+           let shape = document.findShape(by: firstSelectedID),
+           let fillColor = shape.fillStyle?.color {
+            return fillColor
         }
         
         // PRIORITY 3: Use default color for new shapes
@@ -41,13 +39,11 @@ extension DrawingCanvas {
         }
         
         // PRIORITY 2: If shapes are selected, use their opacity
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first {
-            let shapes = document.getShapesForLayer(layerIndex)
-            if let shape = shapes.first(where: { $0.id == firstSelectedID }),
-               let opacity = shape.fillStyle?.opacity {
-                return opacity
-            }
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        if let firstSelectedID = document.selectedShapeIDs.first,
+           let shape = document.findShape(by: firstSelectedID),
+           let opacity = shape.fillStyle?.opacity {
+            return opacity
         }
         
         // PRIORITY 3: Use default opacity for new shapes
@@ -62,13 +58,11 @@ extension DrawingCanvas {
         }
         
         // PRIORITY 2: If shapes are selected, use their color
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first {
-            let shapes = document.getShapesForLayer(layerIndex)
-            if let shape = shapes.first(where: { $0.id == firstSelectedID }),
-               let strokeColor = shape.strokeStyle?.color {
-                return strokeColor
-            }
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        if let firstSelectedID = document.selectedShapeIDs.first,
+           let shape = document.findShape(by: firstSelectedID),
+           let strokeColor = shape.strokeStyle?.color {
+            return strokeColor
         }
         
         // PRIORITY 3: Use default color for new shapes
@@ -83,13 +77,11 @@ extension DrawingCanvas {
         }
         
         // PRIORITY 2: If shapes are selected, use their opacity
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first {
-            let shapes = document.getShapesForLayer(layerIndex)
-            if let shape = shapes.first(where: { $0.id == firstSelectedID }),
-               let opacity = shape.strokeStyle?.opacity {
-                return opacity
-            }
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        if let firstSelectedID = document.selectedShapeIDs.first,
+           let shape = document.findShape(by: firstSelectedID),
+           let opacity = shape.strokeStyle?.opacity {
+            return opacity
         }
         
         // PRIORITY 3: Use default opacity for new shapes
@@ -98,15 +90,13 @@ extension DrawingCanvas {
     
     internal func getCurrentStrokeWidth() -> Double {
         // If shapes are selected, use their stroke width
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first {
-            let shapes = document.getShapesForLayer(layerIndex)
-            if let shape = shapes.first(where: { $0.id == firstSelectedID }),
-               let width = shape.strokeStyle?.width {
-                return width
-            }
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        if let firstSelectedID = document.selectedShapeIDs.first,
+           let shape = document.findShape(by: firstSelectedID),
+           let width = shape.strokeStyle?.width {
+            return width
         }
-        
+
         // Use default width for new shapes
         return document.defaultStrokeWidth
     }
