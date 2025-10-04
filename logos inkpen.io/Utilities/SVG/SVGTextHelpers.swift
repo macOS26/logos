@@ -198,11 +198,11 @@ extension SVGParser {
             // Create a single multi-line text object
             if !combinedContent.isEmpty {
                 let multiLineContent = combinedContent.joined(separator: "\n")
-                
+
                 // Parse font weight and alignment from the first tspan or CSS
                 let fontWeight = parseFontWeight(from: currentTextSpans.first?.attributes ?? currentTextAttributes)
                 let textAlignment = detectTextAlignment(from: currentTextSpans)
-                
+
                 let typography = TypographyProperties(
                     fontFamily: firstFontFamily,
                     fontWeight: fontWeight,  // FIXED: Use parsed font weight
@@ -219,15 +219,66 @@ extension SVGParser {
                     fillColor: firstFillColor,
                     fillOpacity: 1.0
                 )
-                
+
+                // CRITICAL FIX: Adjust X position based on text-anchor for multi-line text
+                // Check text-anchor from parent <text> element or first tspan
+                let textAnchor = currentTextAttributes["text-anchor"]?.lowercased() ??
+                                 currentTextSpans.first?.attributes["text-anchor"]?.lowercased() ??
+                                 "start"
+                var adjustedX = baseX
+
+                if textAnchor == "middle" || textAnchor == "end" {
+                    // For multi-line text, find the widest line
+                    let nsFont = typography.nsFont
+                    let paragraphStyle = NSMutableParagraphStyle()
+                    paragraphStyle.alignment = typography.alignment.nsTextAlignment
+                    paragraphStyle.lineSpacing = typography.lineSpacing
+                    paragraphStyle.minimumLineHeight = typography.lineHeight
+                    paragraphStyle.maximumLineHeight = typography.lineHeight
+
+                    let attributes: [NSAttributedString.Key: Any] = [
+                        .font: nsFont,
+                        .paragraphStyle: paragraphStyle
+                    ]
+
+                    let attributedString = NSAttributedString(string: multiLineContent, attributes: attributes)
+                    let textStorage = NSTextStorage(attributedString: attributedString)
+                    let layoutManager = NSLayoutManager()
+                    textStorage.addLayoutManager(layoutManager)
+
+                    // Use actual text box width if we can determine it
+                    let containerWidth = CGFloat.greatestFiniteMagnitude
+                    let textContainer = NSTextContainer(size: CGSize(width: containerWidth, height: CGFloat.greatestFiniteMagnitude))
+                    textContainer.lineFragmentPadding = 0
+                    textContainer.lineBreakMode = .byWordWrapping
+                    layoutManager.addTextContainer(textContainer)
+
+                    // Find the widest line
+                    let glyphRange = layoutManager.glyphRange(for: textContainer)
+                    var maxLineWidth: CGFloat = 0
+
+                    layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { (lineRect, lineUsedRect, container, lineRange, stop) in
+                        maxLineWidth = max(maxLineWidth, lineUsedRect.width)
+                    }
+
+                    // Adjust x position based on anchor and widest line
+                    if textAnchor == "middle" {
+                        adjustedX -= maxLineWidth / 2.0
+                        Log.fileOperation("📝 SVG Import: Adjusted center-aligned multi-line text x from \(baseX) to \(adjustedX) (max width: \(maxLineWidth))", level: .debug)
+                    } else if textAnchor == "end" {
+                        adjustedX -= maxLineWidth
+                        Log.fileOperation("📝 SVG Import: Adjusted right-aligned multi-line text x from \(baseX) to \(adjustedX) (max width: \(maxLineWidth))", level: .debug)
+                    }
+                }
+
                 let textObject = VectorText(
                     content: multiLineContent,
                     typography: typography,
-                    position: CGPoint(x: baseX, y: baseY),
+                    position: CGPoint(x: adjustedX, y: baseY),
                     transform: finalTextTransform,
                     areaSize: nil        // Will be calculated automatically
                 )
-                
+
                 textObjects.append(textObject)
                 Log.fileOperation("📝 Created single multi-line text object with \(combinedContent.count) lines: '\(multiLineContent.prefix(50))'", level: .info)
             }
@@ -248,17 +299,14 @@ extension SVGParser {
             let fontWeight = parseFontWeight(from: currentTextAttributes)
             // Check text-anchor attribute for alignment
             let textAlignment: TextAlignment
-            if let textAnchor = currentTextAttributes["text-anchor"] {
-                switch textAnchor.lowercased() {
-                case "start": textAlignment = .left
-                case "middle": textAlignment = .center
-                case "end": textAlignment = .right
-                default: textAlignment = .left
-                }
-            } else {
-                textAlignment = .left  // Default to left if no text-anchor
+            let textAnchor = currentTextAttributes["text-anchor"]?.lowercased() ?? "start"
+            switch textAnchor {
+            case "start": textAlignment = .left
+            case "middle": textAlignment = .center
+            case "end": textAlignment = .right
+            default: textAlignment = .left
             }
-            
+
             let typography = TypographyProperties(
                 fontFamily: fontFamily,
                 fontWeight: fontWeight,  // FIXED: Use parsed font weight
@@ -275,11 +323,51 @@ extension SVGParser {
                 fillColor: parseColor(fill) ?? .black,
                 fillOpacity: 1.0
             )
-            
+
+            // CRITICAL FIX: Adjust X position based on text-anchor
+            // SVG text-anchor uses the x position as:
+            // - "start": x is at the left edge (our internal format)
+            // - "middle": x is at the center - we need to subtract half the text width
+            // - "end": x is at the right edge - we need to subtract the full text width
+            var adjustedX = x
+            if textAnchor == "middle" || textAnchor == "end" {
+                // Calculate text width using NSLayoutManager (same as PDF/SVG export)
+                let nsFont = typography.nsFont
+                let paragraphStyle = NSMutableParagraphStyle()
+                paragraphStyle.alignment = typography.alignment.nsTextAlignment
+
+                let attributes: [NSAttributedString.Key: Any] = [
+                    .font: nsFont,
+                    .paragraphStyle: paragraphStyle
+                ]
+
+                let attributedString = NSAttributedString(string: currentTextContent.trimmingCharacters(in: .whitespacesAndNewlines), attributes: attributes)
+                let textStorage = NSTextStorage(attributedString: attributedString)
+                let layoutManager = NSLayoutManager()
+                textStorage.addLayoutManager(layoutManager)
+                let textContainer = NSTextContainer(size: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude))
+                textContainer.lineFragmentPadding = 0
+                layoutManager.addTextContainer(textContainer)
+
+                // Get the used rect to find actual text width
+                let glyphRange = layoutManager.glyphRange(for: textContainer)
+                let textBounds = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
+                let textWidth = textBounds.width
+
+                // Adjust x position based on anchor
+                if textAnchor == "middle" {
+                    adjustedX -= textWidth / 2.0
+                    Log.fileOperation("📝 SVG Import: Adjusted center-aligned text x from \(x) to \(adjustedX) (width: \(textWidth))", level: .debug)
+                } else if textAnchor == "end" {
+                    adjustedX -= textWidth
+                    Log.fileOperation("📝 SVG Import: Adjusted right-aligned text x from \(x) to \(adjustedX) (width: \(textWidth))", level: .debug)
+                }
+            }
+
             let textObject = VectorText(
                 content: currentTextContent.trimmingCharacters(in: .whitespacesAndNewlines),
                 typography: typography,
-                position: CGPoint(x: x, y: y),
+                position: CGPoint(x: adjustedX, y: y),
                 transform: finalTextTransform
             )
             
