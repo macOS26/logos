@@ -47,11 +47,15 @@ struct InkpenDocument: FileDocument {
 
                 // CRITICAL FIX: Reset all text objects' editing state when loading a document
                 // This prevents text fields from incorrectly entering i-beam edit mode on document open
-                for textObject in self.document.allTextObjects {
-                    self.document.setTextEditingInUnified(id: textObject.id, isEditing: false)
+                var textCount = 0
+                for unifiedObj in self.document.unifiedObjects {
+                    if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject {
+                        self.document.setTextEditingInUnified(id: shape.id, isEditing: false)
+                        textCount += 1
+                    }
                 }
-                if self.document.allTextObjects.count > 0 {
-                    Log.info("🔄 Reset editing state for \(self.document.allTextObjects.count) text objects (SVG import)", category: .fileOperations)
+                if textCount > 0 {
+                    Log.info("🔄 Reset editing state for \(textCount) text objects (SVG import)", category: .fileOperations)
                 }
 
                 self.document.updateUnifiedObjectsOptimized()
@@ -73,11 +77,15 @@ struct InkpenDocument: FileDocument {
 
                 // CRITICAL FIX: Reset all text objects' editing state when loading a document
                 // This prevents text fields from incorrectly entering i-beam edit mode on document open
-                for textObject in self.document.allTextObjects {
-                    self.document.setTextEditingInUnified(id: textObject.id, isEditing: false)
+                var textCount = 0
+                for unifiedObj in self.document.unifiedObjects {
+                    if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject {
+                        self.document.setTextEditingInUnified(id: shape.id, isEditing: false)
+                        textCount += 1
+                    }
                 }
-                if self.document.allTextObjects.count > 0 {
-                    Log.info("🔄 Reset editing state for \(self.document.allTextObjects.count) text objects (PDF import)", category: .fileOperations)
+                if textCount > 0 {
+                    Log.info("🔄 Reset editing state for \(textCount) text objects (PDF import)", category: .fileOperations)
                 }
 
                 self.document.updateUnifiedObjectsOptimized()
@@ -95,10 +103,14 @@ struct InkpenDocument: FileDocument {
 
                 // CRITICAL FIX: Reset all text objects' editing state when loading a document
                 // This prevents text fields from incorrectly entering i-beam edit mode on document open
-                for textObject in self.document.allTextObjects {
-                    self.document.setTextEditingInUnified(id: textObject.id, isEditing: false)
+                var textCount = 0
+                for unifiedObj in self.document.unifiedObjects {
+                    if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject {
+                        self.document.setTextEditingInUnified(id: shape.id, isEditing: false)
+                        textCount += 1
+                    }
                 }
-                Log.info("🔄 Reset editing state for \(self.document.allTextObjects.count) text objects", category: .fileOperations)
+                Log.info("🔄 Reset editing state for \(textCount) text objects", category: .fileOperations)
 
                 // CRITICAL FIX: Only populate unified objects if they weren't loaded from the JSON file
                 // If unified objects exist in the saved file, preserve their exact ordering
