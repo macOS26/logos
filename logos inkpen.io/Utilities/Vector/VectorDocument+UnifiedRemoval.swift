@@ -22,10 +22,8 @@ extension VectorDocument {
         
         // Remove from selection if selected
         selectedShapeIDs.remove(id)
-        if let unifiedObj = unifiedObjects.first(where: { obj in
-            if case .shape(let s) = obj.objectType { return s.id == id }
-            return false
-        }) {
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        if let unifiedObj = findObject(by: id) {
             selectedObjectIDs.remove(unifiedObj.id)
         }
     }
@@ -46,10 +44,8 @@ extension VectorDocument {
         
         // Remove from selection if selected
         selectedTextIDs.remove(id)
-        if let unifiedObj = unifiedObjects.first(where: { obj in
-            if case .shape(let s) = obj.objectType { return s.id == id && s.isTextObject }
-            return false
-        }) {
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        if let unifiedObj = findObject(by: id) {
             selectedObjectIDs.remove(unifiedObj.id)
         }
         
