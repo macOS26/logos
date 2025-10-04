@@ -847,13 +847,12 @@ struct GradientFillSection: View {
         }
         
         // Fallback: try to find in selected shape's gradient
-        guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first else {
+        guard let firstSelectedID = document.selectedShapeIDs.first else {
             return .black
         }
-        
-        let shapes = document.getShapesForLayer(layerIndex)
-        guard let shape = shapes.first(where: { $0.id == firstSelectedID }),
+
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        guard let shape = document.findShape(by: firstSelectedID),
               let fillStyle = shape.fillStyle else {
             return .black
         }
