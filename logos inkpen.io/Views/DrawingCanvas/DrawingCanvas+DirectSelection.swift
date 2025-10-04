@@ -15,11 +15,11 @@ extension DrawingCanvas {
     internal func selectIndividualAnchorPointOrHandle(at location: CGPoint, tolerance: Double) -> Bool {
         // Search through all direct-selected shapes for individual anchor points and handles
         for shapeID in directSelectedShapeIDs {
-            // Find the shape in the document
-            for layerIndex in document.layers.indices {
+            // PERFORMANCE: Use O(1) UUID lookup instead of searching all layers
+            if let unifiedObject = document.findObject(by: shapeID),
+               case .shape(let shape) = unifiedObject.objectType {
+                let layerIndex = unifiedObject.layerIndex
                 let layer = document.layers[layerIndex]
-                let shapes = document.getShapesForLayer(layerIndex)
-                if let shape = shapes.first(where: { $0.id == shapeID }) {
                     
                     // IMPROVED LOCKED BEHAVIOR: Instead of preventing interaction, deselect current selection
                     if layer.isLocked || shape.isLocked {
@@ -51,10 +51,9 @@ extension DrawingCanvas {
                             return true
                         }
                     }
-                }
             }
         }
-        
+
         return false
     }
     
