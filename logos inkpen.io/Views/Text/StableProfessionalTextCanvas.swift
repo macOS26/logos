@@ -2,125 +2,44 @@
 //  StableProfessionalTextCanvas.swift
 //  logos inkpen.io
 //
-//  Lightweight text rendering - only creates view model when editing
+//  Professional text editing using the proven working NewTextBoxFontTool approach
+//  Stable wrapper that prevents ViewModel recreation
 //
 
 import SwiftUI
+import Combine
 
-// MARK: - Lightweight Text Canvas (No View Model Unless Editing)
+// MARK: - Stable Text Canvas Wrapper (Prevents ViewModel Recreation)
 struct StableProfessionalTextCanvas: View {
     @ObservedObject var document: VectorDocument
     let textObjectID: UUID
-    let dragPreviewDelta: CGPoint
-    let dragPreviewTrigger: Bool
-
-    var body: some View {
-        if let textObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
-            // Check if this text is being edited
-            if textObject.isEditing {
-                // EDITING MODE: Create full view model and editing canvas
-                EditingTextCanvas(
-                    document: document,
-                    textObjectID: textObjectID,
-                    dragPreviewDelta: dragPreviewDelta,
-                    dragPreviewTrigger: dragPreviewTrigger
-                )
-            } else {
-                // NON-EDITING MODE: Simple lightweight text display (no view model)
-                LightweightTextDisplay(
-                    textObject: textObject,
-                    document: document,
-                    dragPreviewDelta: dragPreviewDelta
-                )
-            }
-        }
-    }
-}
-
-// MARK: - Lightweight Text Display (For Non-Editing Text)
-struct LightweightTextDisplay: View {
-    let textObject: VectorText
-    @ObservedObject var document: VectorDocument
-    let dragPreviewDelta: CGPoint
-
-    private var isSelected: Bool {
-        document.selectedTextIDs.contains(textObject.id)
-    }
-
-    private var boxColor: Color {
-        if isSelected {
-            return Color.green.opacity(0.3)  // GREEN mode
-        } else {
-            return Color.gray.opacity(0.2)   // GRAY mode
-        }
-    }
-
-    var body: some View {
-        ZStack {
-            // Text box border (gray or green)
-            Rectangle()
-                .stroke(isSelected ? Color.green : Color.gray, lineWidth: 1)
-                .frame(width: textObject.bounds.width, height: textObject.bounds.height)
-                .background(boxColor)
-
-            // Text content
-            Text(textObject.content)
-                .font(Font(textObject.typography.nsFont))
-                .foregroundColor(Color(nsColor: NSColor(textObject.typography.fillColor.color)))
-                .frame(width: textObject.bounds.width, height: textObject.bounds.height, alignment: .topLeading)
-        }
-        .position(
-            x: textObject.position.x + textObject.bounds.width / 2,
-            y: textObject.position.y + textObject.bounds.height / 2
-        )
-        .scaleEffect(document.zoomLevel, anchor: .topLeading)
-        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-        // Apply drag preview ONLY if selected
-        .offset(
-            x: isSelected ? dragPreviewDelta.x * document.zoomLevel : 0,
-            y: isSelected ? dragPreviewDelta.y * document.zoomLevel : 0
-        )
-        .contentShape(Rectangle())  // Make entire frame tappable
-        .onTapGesture {
-            handleTap()
-        }
-    }
-
-    private func handleTap() {
-        // Select this text object
-        if !isSelected {
-            document.selectedTextIDs = [textObject.id]
-            document.selectedShapeIDs.removeAll()
-            Log.info("🎯 LIGHTWEIGHT TEXT: Selected '\(textObject.content.prefix(20))'", category: .general)
-        }
-    }
-}
-
-// MARK: - Editing Text Canvas (With View Model)
-struct EditingTextCanvas: View {
-    @ObservedObject var document: VectorDocument
-    let textObjectID: UUID
     @StateObject private var viewModel: ProfessionalTextViewModel
+
+    // NEW: Drag preview parameters for live preview during dragging
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
 
-    init(document: VectorDocument, textObjectID: UUID, dragPreviewDelta: CGPoint, dragPreviewTrigger: Bool) {
+    init(document: VectorDocument, textObjectID: UUID, dragPreviewDelta: CGPoint = .zero, dragPreviewTrigger: Bool = false) {
         self.document = document
         self.textObjectID = textObjectID
         self.dragPreviewDelta = dragPreviewDelta
         self.dragPreviewTrigger = dragPreviewTrigger
 
-        // Create view model ONLY for editing text
+        // Create view model ONCE and reuse it
+        // Use allTextObjects computed property instead of textObjects array
         if let textObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
-            Log.info("📝 EDITING: Creating view model for '\(textObject.content.prefix(20))'", category: .general)
+            Log.info("📝 StableProfessionalTextCanvas: Creating view model for text '\(textObject.content.prefix(20))' at position \(textObject.position)", category: .general)
             self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: textObject, document: document))
         } else {
+            // MIGRATION FIX: Create fallback text with proper content
+            Log.error("⚠️ StableProfessionalTextCanvas: Text object \(textObjectID) not found! Creating fallback", category: .error)
             let fallbackText = VectorText(content: "Text", typography: TypographyProperties(strokeColor: .black, fillColor: .black))
             self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: fallbackText, document: document))
         }
     }
 
     var body: some View {
+        // Update view model when text object changes (without recreating it)
         ProfessionalTextCanvas(
             document: document,
             viewModel: viewModel,
@@ -128,5 +47,49 @@ struct EditingTextCanvas: View {
             dragPreviewDelta: dragPreviewDelta,
             dragPreviewTrigger: dragPreviewTrigger
         )
+            .onAppear {
+                updateViewModelFromDocument()
+            }
+            // CRITICAL FIX: Monitor document changes directly via objectWillChange
+            // This ensures we catch ALL changes including nested typography updates
+            .onReceive(document.objectWillChange) { _ in
+                // Check if our text object has changed
+                if let currentTextObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
+                    // Always sync when document changes - the unified system is the source of truth
+                    viewModel.syncFromDocument(currentTextObject)
+                }
+            }
+            // Additional fix: Use id to force view refresh when text content changes
+            .id("\(textObjectID)-\(getDocumentMode())")
+
+    }
+
+    private func updateViewModelFromDocument() {
+        // Use allTextObjects from unified system
+        if let currentTextObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
+            viewModel.syncFromDocument(currentTextObject)
+            Log.fileOperation("✅ TEXT CANVAS: Found text object \(textObjectID.uuidString.prefix(8)) content: '\(currentTextObject.content)'", level: .info)
+        } else {
+            // FALLBACK: If text object missing from unified objects, log issue with debugging info
+            Log.fileOperation("⚠️ TEXT CANVAS: Text object \(textObjectID.uuidString.prefix(8)) not found in unified objects", level: .info)
+            Log.fileOperation("🔍 DEBUG: Available text object IDs: \(document.allTextObjects.map { $0.id.uuidString.prefix(8) })", level: .info)
+            Log.fileOperation("🔍 DEBUG: Total text objects: \(document.allTextObjects.count)", level: .info)
+        }
+    }
+
+    private func getDocumentMode() -> String {
+        if let currentTextObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
+            // PROFESSIONAL UX: Stable view while font tool is active
+            // Create compact typography hash to avoid super long strings
+
+            if document.currentTool == .font {
+                // While font tool is active, exclude content to prevent view recreation during typing
+                return "font-tool"
+            } else {
+                // When other tools are active, include content for proper updates
+                return "\(currentTextObject.content)-\(currentTextObject.isEditing)"
+            }
+        }
+        return "text-missing"
     }
 }
