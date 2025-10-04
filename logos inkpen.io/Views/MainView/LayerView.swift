@@ -43,7 +43,8 @@ struct LayerView: View {
                 // Do not render clipping path shapes themselves
                 if currentShape.isClippingPath {
                     EmptyView()
-                } else if let clipID = currentShape.clippedByShapeID, let maskShape = shapes.first(where: { $0.id == clipID }) {
+                // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+                } else if let clipID = currentShape.clippedByShapeID, let maskShape = document.findShape(by: clipID) {
                     // FIXED CLIPPING MASK: Use NSView approach like gradient fills
                     // Create pre-transformed paths for the clipping mask
                     let clippedPath = createPreTransformedPath(for: currentShape)
