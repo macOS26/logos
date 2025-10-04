@@ -107,10 +107,13 @@ struct ProfessionalTextCanvas: View {
 
             // CRITICAL: Ensure only one text box can be edited at a time
             // Stop editing on all other text boxes first
-            for textObject in document.getAllTextObjects() {
-                if textObject.id != viewModel.textObject.id && textObject.isEditing {
-                    document.setTextEditingInUnified(id: textObject.id, isEditing: false)
-                    Log.fileOperation("🔄 STOPPING EDIT: Text box \(textObject.id.uuidString.prefix(8)) was in edit mode", level: .info)
+            for unifiedObj in document.unifiedObjects {
+                if case .shape(let shape) = unifiedObj.objectType,
+                   shape.isTextObject,
+                   shape.id != viewModel.textObject.id,
+                   shape.isEditing == true {
+                    document.setTextEditingInUnified(id: shape.id, isEditing: false)
+                    Log.fileOperation("🔄 STOPPING EDIT: Text box \(shape.id.uuidString.prefix(8)) was in edit mode", level: .info)
                 }
             }
 

@@ -409,8 +409,10 @@ struct MainToolbarContent: ToolbarContent {
         }
         
         // Unlock all text objects using unified helpers
-        for textObject in document.getAllTextObjects() {
-            document.unlockTextInUnified(id: textObject.id)
+        for unifiedObj in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject {
+                document.unlockTextInUnified(id: shape.id)
+            }
         }
         
         Log.info("🔓 Unlocked all objects", category: .shapes)
@@ -457,8 +459,10 @@ struct MainToolbarContent: ToolbarContent {
         }
         
         // Show all text objects using unified helpers
-        for textObject in document.getAllTextObjects() {
-            document.showTextInUnified(id: textObject.id)
+        for unifiedObj in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject {
+                document.showTextInUnified(id: shape.id)
+            }
         }
         
         Log.info("👁️ Showed all objects", category: .shapes)

@@ -174,9 +174,9 @@ extension DrawingCanvas {
                 }
 
                 // Stop editing any text that might be in edit mode in the unified system
-                for textObject in self.document.getAllTextObjects() {
-                    if textObject.isEditing {
-                        self.document.setTextEditingInUnified(id: textObject.id, isEditing: false)
+                for unifiedObj in self.document.unifiedObjects {
+                    if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject, shape.isEditing == true {
+                        self.document.setTextEditingInUnified(id: shape.id, isEditing: false)
                     }
                 }
 

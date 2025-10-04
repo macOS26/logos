@@ -62,14 +62,13 @@ extension DrawingCanvas {
     // NEW: Helper function to stop all text editing across all text boxes
     private func stopAllTextEditing() {
         // Find and stop editing for ALL text boxes that might be in editing mode
-        let allTextObjects = document.getAllTextObjects()
         var stoppedCount = 0
 
-        for textObject in allTextObjects {
-            if textObject.isEditing {
-                document.setTextEditingInUnified(id: textObject.id, isEditing: false)
+        for unifiedObj in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject, shape.isEditing == true {
+                document.setTextEditingInUnified(id: shape.id, isEditing: false)
                 stoppedCount += 1
-                Log.info("🛑 STOPPED EDITING: Text box \(textObject.id.uuidString.prefix(8))", category: .selection)
+                Log.info("🛑 STOPPED EDITING: Text box \(shape.id.uuidString.prefix(8))", category: .selection)
             }
         }
 
