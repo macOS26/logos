@@ -221,12 +221,8 @@ extension VectorDocument {
     /// Selects a shape by its ID (clears other selections)
     func selectShape(_ shapeID: UUID) {
         // Find the unified object for this shape
-        if let unifiedObject = unifiedObjects.first(where: { 
-            if case .shape(let shape) = $0.objectType {
-                return shape.id == shapeID
-            }
-            return false
-        }) {
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        if let unifiedObject = findObject(by: shapeID) {
             selectedObjectIDs = [unifiedObject.id]
             syncSelectionArrays() // Keep legacy arrays in sync
         }
@@ -235,12 +231,8 @@ extension VectorDocument {
     /// Adds a shape to the current selection (multi-select)
     func addToSelection(_ shapeID: UUID) {
         // Find the unified object for this shape
-        if let unifiedObject = unifiedObjects.first(where: { 
-            if case .shape(let shape) = $0.objectType {
-                return shape.id == shapeID
-            }
-            return false
-        }) {
+        // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+        if let unifiedObject = findObject(by: shapeID) {
             selectedObjectIDs.insert(unifiedObject.id)
             syncSelectionArrays() // Keep legacy arrays in sync
         }
