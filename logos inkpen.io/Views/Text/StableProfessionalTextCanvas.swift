@@ -53,9 +53,8 @@ struct StableProfessionalTextCanvas: View {
             // CRITICAL FIX: Monitor document changes directly via objectWillChange
             // This ensures we catch ALL changes including nested typography updates
             .onReceive(document.objectWillChange) { _ in
-                // Check if our text object has changed
-                if let currentTextObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
-                    // Always sync when document changes - the unified system is the source of truth
+                // PERFORMANCE: Use UUID lookup instead of looping
+                if let currentTextObject = document.findText(by: textObjectID) {
                     viewModel.syncFromDocument(currentTextObject)
                 }
             }
@@ -65,28 +64,21 @@ struct StableProfessionalTextCanvas: View {
     }
 
     private func updateViewModelFromDocument() {
-        // Use allTextObjects from unified system
-        if let currentTextObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
+        // PERFORMANCE: Use UUID lookup instead of looping
+        if let currentTextObject = document.findText(by: textObjectID) {
             viewModel.syncFromDocument(currentTextObject)
             Log.fileOperation("✅ TEXT CANVAS: Found text object \(textObjectID.uuidString.prefix(8)) content: '\(currentTextObject.content)'", level: .info)
         } else {
-            // FALLBACK: If text object missing from unified objects, log issue with debugging info
-            Log.fileOperation("⚠️ TEXT CANVAS: Text object \(textObjectID.uuidString.prefix(8)) not found in unified objects", level: .info)
-            Log.fileOperation("🔍 DEBUG: Available text object IDs: \(document.allTextObjects.map { $0.id.uuidString.prefix(8) })", level: .info)
-            Log.fileOperation("🔍 DEBUG: Total text objects: \(document.allTextObjects.count)", level: .info)
+            Log.fileOperation("⚠️ TEXT CANVAS: Text object \(textObjectID.uuidString.prefix(8)) not found", level: .info)
         }
     }
 
     private func getDocumentMode() -> String {
-        if let currentTextObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
-            // PROFESSIONAL UX: Stable view while font tool is active
-            // Create compact typography hash to avoid super long strings
-
+        // PERFORMANCE: Use UUID lookup instead of looping
+        if let currentTextObject = document.findText(by: textObjectID) {
             if document.currentTool == .font {
-                // While font tool is active, exclude content to prevent view recreation during typing
                 return "font-tool"
             } else {
-                // When other tools are active, include content for proper updates
                 return "\(currentTextObject.content)-\(currentTextObject.isEditing)"
             }
         }
