@@ -58,22 +58,11 @@ class PDFCommandParser {
     var gs3FillOpacity: Double = 1.0
     var gs3StrokeOpacity: Double = 1.0
 
-    // For clipping path support with graphics state stack
+    // For clipping path support
     var isInsideClippingPath: Bool = false
     var currentClippingPathId: UUID? = nil
     var pendingClippingPath: VectorShape? = nil  // Store clipping path to add after clipped content
     // Note: currentTransformMatrix already exists and tracks the CTM
-
-    // MARK: - Graphics State Stack for Multiple Clipping Masks
-    struct GraphicsState {
-        var clippingPathId: UUID?
-        var isInsideClippingPath: Bool
-        var pendingClippingPath: VectorShape?
-        var fillOpacity: Double
-        var strokeOpacity: Double
-        var transformMatrix: CGAffineTransform
-    }
-    var graphicsStateStack: [GraphicsState] = []
 
     // For transparent image handling
     var hasUpcomingTransparentImage: Bool = false

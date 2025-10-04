@@ -163,14 +163,11 @@ extension FileOperations {
             // Render shapes in layer using unified objects
             let shapesInLayer = document.getShapesForLayer(index)
             for shape in shapesInLayer where shape.isVisible {
-                // Skip Canvas Background AND Pasteboard Background if not including background
-                if !includeBackground && (shape.name == "Canvas Background" || shape.name == "Pasteboard Background") {
-                    Log.fileOperation("📋 PDF EXPORT: Skipping background shape '\(shape.name)' (includeBackground=false)", level: .info)
+                // Skip Canvas Background if not including background
+                if !includeBackground && shape.name == "Canvas Background" {
+                    Log.fileOperation("📋 PDF EXPORT: Skipping Canvas Background (includeBackground=false)", level: .debug)
                     continue
                 }
-
-                // Log what we're actually rendering
-                Log.fileOperation("📋 PDF EXPORT: Rendering shape '\(shape.name)' in layer '\(layer.name)'", level: .info)
 
                 // Skip if already rendered as part of a clipping group
                 guard !renderedShapeIds.contains(shape.id) else { continue }
