@@ -34,8 +34,12 @@ extension DrawingCanvas {
         
         Log.info("🔍 BACKGROUND TAP: Checking if location \(location) hits any text", category: .general)
         
-        // Use the same generous hit testing logic as findTextAt
-        let tapHitsText = document.allTextObjects.contains { textObj in
+        // Use the same generous hit testing logic as findTextAt - check unified objects directly
+        let tapHitsText = document.unifiedObjects.contains { unifiedObj in
+            guard case .shape(let shape) = unifiedObj.objectType,
+                  shape.isTextObject,
+                  var textObj = VectorText.from(shape) else { return false }
+            textObj.layerIndex = unifiedObj.layerIndex
             if !textObj.isVisible || textObj.isLocked { return false }
             
             // Use the same three hit testing methods as findTextAt
@@ -73,9 +77,9 @@ extension DrawingCanvas {
             document.selectedShapeIDs.removeAll()
             
             // Stop all editing
-            for textObject in document.getAllTextObjects() {
-                if textObject.isEditing {
-                    document.setTextEditingInUnified(id: textObject.id, isEditing: false)
+            for unifiedObj in document.unifiedObjects {
+                if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject, shape.isEditing == true {
+                    document.setTextEditingInUnified(id: shape.id, isEditing: false)
                 }
             }
             
@@ -88,8 +92,12 @@ extension DrawingCanvas {
     
     func findTextAt(location: CGPoint) -> UUID? {
         Log.info("🔍 FIND TEXT: Looking for text at location \(location)", category: .general)
-        
-        for textObj in document.getAllTextObjects() {
+
+        for unifiedObj in document.unifiedObjects {
+            guard case .shape(let shape) = unifiedObj.objectType,
+                  shape.isTextObject,
+                  var textObj = VectorText.from(shape) else { continue }
+            textObj.layerIndex = unifiedObj.layerIndex
             if !textObj.isVisible || textObj.isLocked { continue }
             
             // ACCURATE HIT TESTING: Use precise text bounds with minimal tolerance
@@ -128,8 +136,11 @@ extension DrawingCanvas {
         
         // CRITICAL: Ensure only one text box can be in edit mode at a time
         var editingCount = 0
-        let allTextObjects = document.getAllTextObjects()
-        for textObject in allTextObjects {
+        for unifiedObj in document.unifiedObjects {
+            guard case .shape(let shape) = unifiedObj.objectType,
+                  shape.isTextObject,
+                  var textObject = VectorText.from(shape) else { continue }
+            textObject.layerIndex = unifiedObj.layerIndex
             if textObject.isEditing {
                 editingCount += 1
                 Log.fileOperation("🔄 STOPPING EDIT: Text box \(textObject.id.uuidString.prefix(8)) was in edit mode", level: .info)
@@ -141,8 +152,8 @@ extension DrawingCanvas {
             Log.fileOperation("🔄 STOPPED \(editingCount) text box(es) that were in edit mode", level: .info)
         }
         
-        // Find and start editing the target text  
-        if let textObject = document.allTextObjects.first(where: { $0.id == textID }) {
+        // Find and start editing the target text using UUID lookup
+        if let textObject = document.findText(by: textID) {
             
             Log.info("✏️ STARTING EDIT MODE:", category: .general)
             Log.info("  - Text: '\(textObject.content)'", category: .general)
@@ -181,8 +192,8 @@ extension DrawingCanvas {
     // ENHANCED: Better double-click detection and corner circle support
     func handleTextBoxInteraction(textID: UUID, isDoubleClick: Bool = false, isCornerClick: Bool = false) {
         Log.fileOperation("🎯 TEXT BOX INTERACTION: textID=\(textID.uuidString.prefix(8)), doubleClick=\(isDoubleClick), cornerClick=\(isCornerClick)", level: .info)
-        
-        guard let textObject = document.allTextObjects.first(where: { $0.id == textID }) else {
+
+        guard let textObject = document.findText(by: textID) else {
             Log.error("❌ TEXT NOT FOUND: ID \(textID)", category: .error)
             return
         }
@@ -312,7 +323,7 @@ extension DrawingCanvas {
     private func updateTextViewModelCursorPosition(textID: UUID, position: Int, length: Int) {
         // ENHANCED: Store the desired cursor position in the text object itself temporarily
         // This will be picked up by the view model when it syncs
-        if document.allTextObjects.contains(where: { $0.id == textID }) {
+        if document.findText(by: textID) != nil {
             // Store cursor position in a temporary property or use a custom approach
             Log.info("🎯 TEXT VIEW MODEL: Storing cursor position \(position) for textID \(textID.uuidString.prefix(8))", category: .general)
             
@@ -406,7 +417,7 @@ extension DrawingCanvas {
     
     func insertTextAtCursor(_ text: String) {
         guard let editingID = editingTextID,
-              var textObj = document.allTextObjects.first(where: { $0.id == editingID }) else { return }
+              var textObj = document.findText(by: editingID) else { return }
         
         // Insert text at current cursor position
         let insertIndex = textObj.content.index(
@@ -428,7 +439,7 @@ extension DrawingCanvas {
     
     func deleteBackward() {
         guard let editingID = editingTextID,
-              var textObj = document.allTextObjects.first(where: { $0.id == editingID }) else { return }
+              var textObj = document.findText(by: editingID) else { return }
         
         if currentSelectionRange.length > 0 {
             // Delete selected text
@@ -454,7 +465,7 @@ extension DrawingCanvas {
     
     func deleteSelectedText() {
         guard let editingID = editingTextID,
-              var textObj = document.allTextObjects.first(where: { $0.id == editingID }),
+              var textObj = document.findText(by: editingID),
               currentSelectionRange.length > 0 else { return }
         
         let startIndex = textObj.content.index(
@@ -483,7 +494,7 @@ extension DrawingCanvas {
     
     func selectAll() {
         guard let editingID = editingTextID,
-              let textObj = document.allTextObjects.first(where: { $0.id == editingID }) else { return }
+              let textObj = document.findText(by: editingID) else { return }
         currentSelectionRange = NSRange(location: 0, length: textObj.content.count)
         currentCursorPosition = textObj.content.count
         
@@ -502,7 +513,7 @@ extension DrawingCanvas {
     
     func moveCursorRight() {
         guard let editingID = editingTextID,
-              let textObj = document.allTextObjects.first(where: { $0.id == editingID }) else { return }
+              let textObj = document.findText(by: editingID) else { return }
         if currentCursorPosition < textObj.content.count {
             currentCursorPosition += 1
             currentSelectionRange = NSRange(location: currentCursorPosition, length: 0)
@@ -518,7 +529,7 @@ extension DrawingCanvas {
     
     func moveCursorToEnd() {
         guard let editingID = editingTextID,
-              let textObj = document.allTextObjects.first(where: { $0.id == editingID }) else { return }
+              let textObj = document.findText(by: editingID) else { return }
         currentCursorPosition = textObj.content.count
         currentSelectionRange = NSRange(location: currentCursorPosition, length: 0)
         Log.info("⤵️ Cursor moved to end", category: .general)
@@ -529,7 +540,7 @@ extension DrawingCanvas {
     func finishTextEditing() {
         if let editingID = editingTextID {
             // Mark text as not editing
-            if var textObj = document.allTextObjects.first(where: { $0.id == editingID }) {
+            if var textObj = document.findText(by: editingID) {
                 document.setTextEditingInUnified(id: textObj.id, isEditing: false)
                 textObj.updateBounds()
                 document.updateTextInUnified(textObj)
@@ -561,7 +572,7 @@ extension DrawingCanvas {
     func cancelTextEditing() {
         if let editingID = editingTextID {
             // If text is empty or was just created, remove it
-            if let textObj = document.allTextObjects.first(where: { $0.id == editingID }) {
+            if let textObj = document.findText(by: editingID) {
                 if textObj.content.isEmpty {
                     // Use unified helper to remove text
                     document.removeTextFromUnifiedSystem(id: editingID)
@@ -612,7 +623,7 @@ extension DrawingCanvas {
     
     private func deleteForward() {
         guard let editingID = editingTextID,
-              var textObj = document.allTextObjects.first(where: { $0.id == editingID }) else { return }
+              var textObj = document.findText(by: editingID) else { return }
         
         if currentSelectionRange.length > 0 {
             deleteSelectedText()
@@ -655,9 +666,9 @@ extension DrawingCanvas {
             document.saveToUndoStack()
             isEditingText = true
             editingTextID = textID
-            
+
             // Mark text as editing in document
-            if let textObj = document.allTextObjects.first(where: { $0.id == textID }) {
+            if let textObj = document.findText(by: textID) {
                 document.setTextEditingInUnified(id: textObj.id, isEditing: true)
             }
             
@@ -668,7 +679,7 @@ extension DrawingCanvas {
             Log.info("✏️ NEW TEXT BOX: Started editing text \(textID)", category: .general)
         } else {
             // Stop editing
-            if let textObj = document.allTextObjects.first(where: { $0.id == textID }) {
+            if let textObj = document.findText(by: textID) {
                 document.setTextEditingInUnified(id: textObj.id, isEditing: false)
                 
                 // If text is empty, remove it
@@ -695,7 +706,7 @@ extension DrawingCanvas {
     }
     
     func handleTextContentChange(textID: UUID, newContent: String) {
-        guard var textObj = document.allTextObjects.first(where: { $0.id == textID }) else { return }
+        guard var textObj = document.findText(by: textID) else { return }
         
         // Update text content
         document.updateTextContentInUnified(id: textObj.id, content: newContent)
@@ -707,7 +718,7 @@ extension DrawingCanvas {
     }
     
     func handleTextPositionChange(textID: UUID, newPosition: CGPoint) {
-        guard let textObj = document.allTextObjects.first(where: { $0.id == textID }) else { return }
+        guard let textObj = document.findText(by: textID) else { return }
         
         // Save to undo stack before making changes
         document.saveToUndoStack()
@@ -720,7 +731,7 @@ extension DrawingCanvas {
     }
     
     func handleTextBoundsChange(textID: UUID, newBounds: CGRect) {
-        guard let textObj = document.allTextObjects.first(where: { $0.id == textID }) else { return }
+        guard let textObj = document.findText(by: textID) else { return }
         
         // Save to undo stack before making changes
         document.saveToUndoStack()
@@ -736,9 +747,13 @@ extension DrawingCanvas {
     
     func handleCanvasBackgroundTap(at location: CGPoint) {
         // AGGRESSIVE background tap handler - deselects ALL text boxes
-        
-        // Check if tapping outside all text boxes (use fixed 300pt width)
-        let hitAnyTextBox = document.allTextObjects.contains { textObj in
+
+        // Check if tapping outside all text boxes (use fixed 300pt width) - check unified objects directly
+        let hitAnyTextBox = document.unifiedObjects.contains { unifiedObj in
+            guard case .shape(let shape) = unifiedObj.objectType,
+                  shape.isTextObject,
+                  var textObj = VectorText.from(shape) else { return false }
+            textObj.layerIndex = unifiedObj.layerIndex
             let textFrame = CGRect(
                 x: textObj.position.x,
                 y: textObj.position.y,
@@ -754,9 +769,9 @@ extension DrawingCanvas {
             document.selectedShapeIDs.removeAll()
             
             // Stop editing any text that might be in edit mode
-            for textObject in document.getAllTextObjects() {
-                if textObject.isEditing {
-                    document.setTextEditingInUnified(id: textObject.id, isEditing: false)
+            for unifiedObj in document.unifiedObjects {
+                if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject, shape.isEditing == true {
+                    document.setTextEditingInUnified(id: shape.id, isEditing: false)
                 }
             }
             
@@ -773,7 +788,12 @@ extension DrawingCanvas {
     /// Handle text box drawing like rectangle tool - user drags to define size
     func handleTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
         // CRITICAL FIX: Don't create new text boxes when any text box is in editing mode (blue state)
-        let hasEditingTextBox = document.allTextObjects.contains { $0.isEditing }
+        let hasEditingTextBox = document.unifiedObjects.contains { unifiedObj in
+            if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject {
+                return shape.isEditing == true
+            }
+            return false
+        }
         if hasEditingTextBox {
             Log.info("🚫 TYPE TOOL: Blocked - text box is in editing mode, not creating new text box", category: .general)
             Log.info("🚫 BLUE OUTLINE: Will NOT appear - this is a resize operation", category: .general)
@@ -836,7 +856,12 @@ extension DrawingCanvas {
     /// Finish text box drawing and create text with user-defined size
     func finishTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
         // CRITICAL FIX: Don't create new text boxes when any text box is in editing mode (blue state)
-        let hasEditingTextBox = document.allTextObjects.contains { $0.isEditing }
+        let hasEditingTextBox = document.unifiedObjects.contains { unifiedObj in
+            if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject {
+                return shape.isEditing == true
+            }
+            return false
+        }
         if hasEditingTextBox {
             Log.info("🚫 TYPE TOOL: Blocked - text box is in editing mode, not creating new text box", category: .general)
             return
@@ -894,8 +919,12 @@ extension DrawingCanvas {
         let totalTolerance = handleRadius + tolerance
         
         Log.info("🔍 RESIZE HANDLE CHECK: Testing location \(location)", category: .general)
-        
-        for textObj in document.getAllTextObjects() {
+
+        for unifiedObj in document.unifiedObjects {
+            guard case .shape(let shape) = unifiedObj.objectType,
+                  shape.isTextObject,
+                  var textObj = VectorText.from(shape) else { continue }
+            textObj.layerIndex = unifiedObj.layerIndex
             if !textObj.isVisible || textObj.isLocked { continue }
             
             // Check ALL text boxes - editing, selected, and even unselected ones
