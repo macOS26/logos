@@ -61,30 +61,23 @@ extension DrawingCanvas {
         guard !selectedPoints.isEmpty || !selectedHandles.isEmpty else { return }
         
         // PROTECT LOCKED LAYERS: Don't allow editing points/handles on locked layers
+        // PERFORMANCE: Use O(1) UUID lookup instead of searching all layers
         for pointID in selectedPoints {
-            // Find which layer this point belongs to
-            for layerIndex in document.layers.indices {
-                let shapes = document.getShapesForLayer(layerIndex)
-                if let _ = shapes.first(where: { $0.id == pointID.shapeID }) {
-                    if document.layers[layerIndex].isLocked {
-                        Log.info("🚫 Cannot edit points on locked layer '\(document.layers[layerIndex].name)'", category: .general)
-                        return
-                    }
-                    break
+            if let unifiedObject = document.findObject(by: pointID.shapeID) {
+                let layerIndex = unifiedObject.layerIndex
+                if document.layers[layerIndex].isLocked {
+                    Log.info("🚫 Cannot edit points on locked layer '\(document.layers[layerIndex].name)'", category: .general)
+                    return
                 }
             }
         }
-        
+
         for handleID in selectedHandles {
-            // Find which layer this handle belongs to
-            for layerIndex in document.layers.indices {
-                let shapes = document.getShapesForLayer(layerIndex)
-                if let _ = shapes.first(where: { $0.id == handleID.shapeID }) {
-                    if document.layers[layerIndex].isLocked {
-                        Log.info("🚫 Cannot edit handles on locked layer '\(document.layers[layerIndex].name)'", category: .general)
-                        return
-                    }
-                    break
+            if let unifiedObject = document.findObject(by: handleID.shapeID) {
+                let layerIndex = unifiedObject.layerIndex
+                if document.layers[layerIndex].isLocked {
+                    Log.info("🚫 Cannot edit handles on locked layer '\(document.layers[layerIndex].name)'", category: .general)
+                    return
                 }
             }
         }
