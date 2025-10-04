@@ -26,8 +26,8 @@ struct StableProfessionalTextCanvas: View {
         self.dragPreviewTrigger = dragPreviewTrigger
 
         // Create view model ONCE and reuse it
-        // Use allTextObjects computed property instead of textObjects array
-        if let textObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
+        // Use UUID lookup instead of looping
+        if let textObject = document.findText(by: textObjectID) {
             Log.info("📝 StableProfessionalTextCanvas: Creating view model for text '\(textObject.content.prefix(20))' at position \(textObject.position)", category: .general)
             self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: textObject, document: document))
         } else {

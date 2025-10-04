@@ -187,7 +187,7 @@ struct FontSizeControls: View {
 
             // Then update selected text if any
             if let textID = document.selectedTextIDs.first,
-               let freshText = document.allTextObjects.first(where: { $0.id == textID }) {
+               let freshText = document.findText(by: textID) {
                 var updatedTypography = freshText.typography
                 let oldFontSize = updatedTypography.fontSize
 
@@ -217,7 +217,7 @@ struct FontSizeControls: View {
 
             // Then update selected text if any
             if let textID = document.selectedTextIDs.first,
-               let freshText = document.allTextObjects.first(where: { $0.id == textID }) {
+               let freshText = document.findText(by: textID) {
                 var updatedTypography = freshText.typography
 
                 // Check if line spacing actually changed
@@ -244,7 +244,7 @@ struct FontSizeControls: View {
 
             // Then update selected text if any
             if let textID = document.selectedTextIDs.first,
-               let freshText = document.allTextObjects.first(where: { $0.id == textID }) {
+               let freshText = document.findText(by: textID) {
                 var updatedTypography = freshText.typography
 
                 // Check if line height actually changed

@@ -181,7 +181,7 @@ struct FontPanel: View {
                 Log.fileOperation("🎯 TEXT SELECTED: \(addedID.uuidString.prefix(8)) - loading unique type settings", level: .info)
             }
 
-            if let newSelectedText = document.allTextObjects.first(where: { newIDs.contains($0.id) }) {
+            if let firstID = newIDs.first, let newSelectedText = document.findText(by: firstID) {
                 if newSelectedText.id != lastLoggedSelection {
                     lastLoggedSelection = newSelectedText.id
                     Log.fileOperation("🎯 TYPE PANEL: Found selected text - UUID: \(newSelectedText.id.uuidString.prefix(8)), Line Spacing: \(newSelectedText.typography.lineSpacing)", level: .info)
@@ -194,7 +194,18 @@ struct FontPanel: View {
             }
         }
         .onChange(of: document.unifiedObjects.map { $0.id }) { _, _ in
-            let freshEditingText = document.allTextObjects.first { $0.isEditing }
+            let freshEditingText = document.unifiedObjects.first { obj in
+                if case .shape(let shape) = obj.objectType, shape.isTextObject {
+                    return shape.isEditing == true
+                }
+                return false
+            }.flatMap { obj -> VectorText? in
+                if case .shape(let shape) = obj.objectType, var text = VectorText.from(shape) {
+                    text.layerIndex = obj.layerIndex
+                    return text
+                }
+                return nil
+            }
 
             if let newEditingText = freshEditingText {
                 if newEditingText.id != lastLoggedEditing {
