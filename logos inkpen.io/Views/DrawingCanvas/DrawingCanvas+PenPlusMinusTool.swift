@@ -125,13 +125,13 @@ extension DrawingCanvas {
     /// Deletes a point while attempting to preserve curve continuity
     /// CRITICAL: Protects coincident points (first/last in closed paths) - refuses deletion with system beep
     private func deletePointWithCurvePreservation(pointID: PointID) {
-        guard let layerIndex = document.layers.firstIndex(where: { layer in
-            document.getShapesForLayer(document.layers.firstIndex(of: layer) ?? -1).contains { $0.id == pointID.shapeID }
-        }),
-        let shapes = document.getShapesForLayer(layerIndex).enumerated().first(where: { $0.element.id == pointID.shapeID }) else { return }
-        
-        let shapeIndex = shapes.offset
-        let shape = shapes.element
+        // PERFORMANCE: Use O(1) UUID lookup instead of searching all layers
+        guard let unifiedObject = document.findObject(by: pointID.shapeID),
+              case .shape(let shape) = unifiedObject.objectType else { return }
+
+        let layerIndex = unifiedObject.layerIndex
+        let shapes = document.getShapesForLayer(layerIndex)
+        guard let shapeIndex = shapes.firstIndex(where: { $0.id == pointID.shapeID }) else { return }
         let elements = shape.path.elements
         
         guard pointID.elementIndex < elements.count else { return }
