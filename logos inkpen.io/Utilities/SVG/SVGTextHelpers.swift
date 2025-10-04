@@ -246,7 +246,18 @@ extension SVGParser {
             
             // Parse font weight and alignment for single-line text
             let fontWeight = parseFontWeight(from: currentTextAttributes)
-            let textAlignment = TextAlignment.left  // Single line defaults to left
+            // Check text-anchor attribute for alignment
+            let textAlignment: TextAlignment
+            if let textAnchor = currentTextAttributes["text-anchor"] {
+                switch textAnchor.lowercased() {
+                case "start": textAlignment = .left
+                case "middle": textAlignment = .center
+                case "end": textAlignment = .right
+                default: textAlignment = .left
+                }
+            } else {
+                textAlignment = .left  // Default to left if no text-anchor
+            }
             
             let typography = TypographyProperties(
                 fontFamily: fontFamily,
