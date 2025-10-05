@@ -145,11 +145,9 @@ struct DocumentSettings: Codable, Hashable {
         let newPointsPerUnit = newUnit.pointsPerUnit
         width = currentSizeInPoints.width / newPointsPerUnit
         height = currentSizeInPoints.height / newPointsPerUnit
-        
+
         // Store the preserved size in points
         _sizeInPoints = currentSizeInPoints
-        
-        Log.info("🔄 Unit changed to \(newUnit.rawValue) - Document size preserved: \(String(format: "%.1f", currentSizeInPoints.width))×\(String(format: "%.1f", currentSizeInPoints.height)) points", category: .general)
     }
 
     /// Set the document size in points, updating width/height according to current unit
