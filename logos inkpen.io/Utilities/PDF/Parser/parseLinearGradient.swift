@@ -11,11 +11,9 @@ extension PDFCommandParser {
     
     func parseLinearGradient(from dict: CGPDFDictionaryRef) -> VectorGradient? {
         // DEBUG: Print all available keys in the gradient dictionary
-        Log.info("PDF: 🔍 Examining gradient dictionary keys:", category: .debug)
         CGPDFDictionaryApplyFunction(dict, { key, value, info in
             let keyString = String(cString: key)
             let valueType = CGPDFObjectGetType(value)
-            Log.info("PDF: 📋 Key: '\(keyString)' Type: \(valueType)", category: .general)
             
             // Check for transform matrices
             if keyString == "Matrix" || keyString == "Transform" {
@@ -28,7 +26,6 @@ extension PDFCommandParser {
                         CGPDFArrayGetNumber(matrixArray, i, &num)
                         matrixValues.append(num)
                     }
-                    Log.info("PDF: 📐 Found transform matrix: \(matrixValues)", category: .general)
                 }
             }
             
@@ -47,8 +44,6 @@ extension PDFCommandParser {
         CGPDFArrayGetNumber(coords, 2, &x1)
         CGPDFArrayGetNumber(coords, 3, &y1)
         
-        Log.info("PDF: 📐 Raw gradient coordinates: (\(x0), \(y0)) -> (\(x1), \(y1))", category: .general)
-        Log.info("PDF: 📏 Page size: \(pageSize.width) x \(pageSize.height)", category: .general)
         
         // Check if coordinates appear to be absolute (greater than 1.0) and normalize them
         // PDFs can contain gradients in either normalized (0-1) or absolute coordinates
@@ -63,7 +58,6 @@ extension PDFCommandParser {
             // because our export already has the correct orientation
             startPoint = CGPoint(x: Double(x0 / pageSize.width), y: Double(y0 / pageSize.height))
             endPoint = CGPoint(x: Double(x1 / pageSize.width), y: Double(y1 / pageSize.height))
-            Log.info("PDF: 🔄 Normalized absolute coordinates to unit space (keeping original Y orientation)", category: .general)
         } else {
             // For normalized coordinates (0-1 range):
             // Keep original coordinates without Y-flip
@@ -82,11 +76,6 @@ extension PDFCommandParser {
         // Combine coordinate angle with CTM angle
         let angleDegrees = coordinateAngle + ctmAngle
         
-        Log.info("PDF: 📍 Original PDF coordinates: (\(x0), \(y0)) -> (\(x1), \(y1))", category: .general)
-        Log.info("PDF: 🔄 Final coordinates: (\(startPoint.x), \(startPoint.y)) -> (\(endPoint.x), \(endPoint.y))", category: .general)
-        Log.info("PDF: 📊 Delta values: ΔX=\(deltaX), ΔY=\(deltaY)", category: .debug)
-        Log.info("PDF: 📐 Coordinate angle: \(coordinateAngle)°, CTM angle (corrected): \(ctmAngle)°", category: .general)
-        Log.info("PDF: 🎯 FINAL gradient angle: \(angleDegrees)° (coordinate + CTM)", category: .general)
         
         // Get function for color interpolation from the actual PDF data
         let stops = extractGradientStops(from: dict)
@@ -101,8 +90,6 @@ extension PDFCommandParser {
         // CRITICAL: Override the calculated angle with the CTM-adjusted angle
         linearGradient.storedAngle = angleDegrees
         
-        Log.info("PDF: Created linear gradient from (\(startPoint)) to (\(endPoint)) with \(stops.count) stops", category: .general)
-        Log.info("PDF: ✅ Applied CTM-corrected angle: \(angleDegrees)° to gradient", category: .general)
         
         return .linear(linearGradient)
     }
