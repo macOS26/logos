@@ -29,37 +29,18 @@ struct SelectionOutline: View {
                         let groupedShape = shape.groupedShapes[index]
                         // PERFORMANCE OPTIMIZATION: Use cached path creation
                         let cachedPath = Path { path in
-                            var hasCurrentPoint = false
                             for element in groupedShape.path.elements {
                                 switch element {
                                 case .move(let to):
-                                    let point = to.cgPoint
-                                    guard !point.x.isNaN && !point.y.isNaN else { continue }
-                                    path.move(to: point)
-                                    hasCurrentPoint = true
+                                    path.move(to: to.cgPoint)
                                 case .line(let to):
-                                    let point = to.cgPoint
-                                    guard !point.x.isNaN && !point.y.isNaN else { continue }
-                                    if hasCurrentPoint { path.addLine(to: point) }
+                                    path.addLine(to: to.cgPoint)
                                 case .curve(let to, let control1, let control2):
-                                    let toPoint = to.cgPoint
-                                    let cp1 = control1.cgPoint
-                                    let cp2 = control2.cgPoint
-                                    guard !toPoint.x.isNaN && !toPoint.y.isNaN &&
-                                          !cp1.x.isNaN && !cp1.y.isNaN &&
-                                          !cp2.x.isNaN && !cp2.y.isNaN else { continue }
-                                    if hasCurrentPoint { path.addCurve(to: toPoint, control1: cp1, control2: cp2) }
+                                    path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
                                 case .quadCurve(let to, let control):
-                                    let toPoint = to.cgPoint
-                                    let cp = control.cgPoint
-                                    guard !toPoint.x.isNaN && !toPoint.y.isNaN &&
-                                          !cp.x.isNaN && !cp.y.isNaN else { continue }
-                                    if hasCurrentPoint { path.addQuadCurve(to: toPoint, control: cp) }
+                                    path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
                                 case .close:
-                                    if hasCurrentPoint {
-                                        path.closeSubpath()
-                                        hasCurrentPoint = false
-                                    }
+                                    path.closeSubpath()
                                 }
                             }
                         }
@@ -72,37 +53,18 @@ struct SelectionOutline: View {
                 } else {
                     // REGULAR SHAPE: Show single path outline with cached path
                     let cachedPath = Path { path in
-                        var hasCurrentPoint = false
                         for element in shape.path.elements {
                             switch element {
                             case .move(let to):
-                                let point = to.cgPoint
-                                guard !point.x.isNaN && !point.y.isNaN else { continue }
-                                path.move(to: point)
-                                hasCurrentPoint = true
+                                path.move(to: to.cgPoint)
                             case .line(let to):
-                                let point = to.cgPoint
-                                guard !point.x.isNaN && !point.y.isNaN else { continue }
-                                if hasCurrentPoint { path.addLine(to: point) }
+                                path.addLine(to: to.cgPoint)
                             case .curve(let to, let control1, let control2):
-                                let toPoint = to.cgPoint
-                                let cp1 = control1.cgPoint
-                                let cp2 = control2.cgPoint
-                                guard !toPoint.x.isNaN && !toPoint.y.isNaN &&
-                                      !cp1.x.isNaN && !cp1.y.isNaN &&
-                                      !cp2.x.isNaN && !cp2.y.isNaN else { continue }
-                                if hasCurrentPoint { path.addCurve(to: toPoint, control1: cp1, control2: cp2) }
+                                path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
                             case .quadCurve(let to, let control):
-                                let toPoint = to.cgPoint
-                                let cp = control.cgPoint
-                                guard !toPoint.x.isNaN && !toPoint.y.isNaN &&
-                                      !cp.x.isNaN && !cp.y.isNaN else { continue }
-                                if hasCurrentPoint { path.addQuadCurve(to: toPoint, control: cp) }
+                                path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
                             case .close:
-                                if hasCurrentPoint {
-                                    path.closeSubpath()
-                                    hasCurrentPoint = false
-                                }
+                                path.closeSubpath()
                             }
                         }
                     }
@@ -222,44 +184,26 @@ struct SelectionOutline: View {
                     )
                 } else {
                     // Draw regular rectangle for non-warped shapes
-                    // CRITICAL FIX: Validate bounds before creating Path to prevent NaN errors
-                    if !transformedBounds.origin.x.isNaN &&
-                       !transformedBounds.origin.y.isNaN &&
-                       !transformedBounds.size.width.isNaN &&
-                       !transformedBounds.size.height.isNaN &&
-                       transformedBounds.size.width > 0 &&
-                       transformedBounds.size.height > 0 {
-                        Path { path in
-                            path.addRect(transformedBounds)
-                        }
-                        .stroke(Color.blue, lineWidth: 1.0 / zoomLevel)
-                        .scaleEffect(zoomLevel, anchor: .topLeading)
-                        .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    } else {
-                        // CRITICAL FIX: Log invalid bounds instead of crashing
-                        EmptyView()
-                            .onAppear {
-                                Log.error("⚠️ Invalid bounds for selection outline on shape '\(shape.name)': \(transformedBounds)", category: .error)
-                            }
+                    Path { path in
+                        path.addRect(transformedBounds)
                     }
+                    .stroke(Color.blue, lineWidth: 1.0 / zoomLevel)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
                 }
                 
                 // CENTER POINT: Blue square same size as corners
                 // CRITICAL: If shape is warped, don't transform center - it's already positioned
                 let transformedCenter = (shape.isWarpObject && !shape.warpEnvelope.isEmpty) ?
                     center : CGPoint(x: center.x, y: center.y).applying(shape.transform)
-
-                // CRITICAL FIX: Validate center position before rendering
-                if !transformedCenter.x.isNaN && !transformedCenter.y.isNaN {
-                    Rectangle()
-                        .fill(Color.blue)
-                        .stroke(Color.white, lineWidth: 1.0)
-                        .frame(width: handleSize, height: handleSize) // Fixed UI size - does not scale with artwork
-                        .position(CGPoint(
-                            x: transformedCenter.x * zoomLevel + canvasOffset.x,
-                            y: transformedCenter.y * zoomLevel + canvasOffset.y
-                        ))
-                }
+                Rectangle()
+                    .fill(Color.blue)
+                    .stroke(Color.white, lineWidth: 1.0)
+                    .frame(width: handleSize, height: handleSize) // Fixed UI size - does not scale with artwork
+                    .position(CGPoint(
+                        x: transformedCenter.x * zoomLevel + canvasOffset.x,
+                        y: transformedCenter.y * zoomLevel + canvasOffset.y
+                    ))
                 
                 // 4 Corner handles - use SHARED component for warped shapes
                 if shape.isWarpObject {
@@ -275,17 +219,14 @@ struct SelectionOutline: View {
                         let position = cornerPosition(for: i, in: baseBounds, center: center)
                         let transformedCorner = CGPoint(x: position.x, y: position.y).applying(shape.transform)
 
-                        // CRITICAL FIX: Validate corner position before rendering
-                        if !transformedCorner.x.isNaN && !transformedCorner.y.isNaN {
-                            Rectangle()
-                                .fill(Color.blue)
-                                .stroke(Color.white, lineWidth: 1.0)
-                                .frame(width: handleSize, height: handleSize)
-                                .position(CGPoint(
-                                    x: transformedCorner.x * zoomLevel + canvasOffset.x,
-                                    y: transformedCorner.y * zoomLevel + canvasOffset.y
-                                ))
-                        }
+                        Rectangle()
+                            .fill(Color.blue)
+                            .stroke(Color.white, lineWidth: 1.0)
+                            .frame(width: handleSize, height: handleSize)
+                            .position(CGPoint(
+                                x: transformedCorner.x * zoomLevel + canvasOffset.x,
+                                y: transformedCorner.y * zoomLevel + canvasOffset.y
+                            ))
                     }
                 }
             }

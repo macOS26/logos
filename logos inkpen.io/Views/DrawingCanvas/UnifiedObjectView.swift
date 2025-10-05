@@ -166,72 +166,30 @@ struct UnifiedObjectContentView: View {
     // Helper function to create pre-transformed paths for clipping masks
     private func createPreTransformedPath(for shape: VectorShape) -> CGPath {
         let path = CGMutablePath()
-        var hasCurrentPoint = false
-
+        
         // Add path elements
         for element in shape.path.elements {
             switch element {
             case .move(let to):
-                let point = to.cgPoint
-                // CRITICAL FIX: Check for NaN values before adding to path
-                guard !point.x.isNaN && !point.y.isNaN else {
-                    Log.error("⚠️ NaN detected in move point for shape '\(shape.name)': \(point)", category: .error)
-                    continue
-                }
-                path.move(to: point)
-                hasCurrentPoint = true
+                path.move(to: to.cgPoint)
             case .line(let to):
-                let point = to.cgPoint
-                // CRITICAL FIX: Check for NaN values before adding to path
-                guard !point.x.isNaN && !point.y.isNaN else {
-                    Log.error("⚠️ NaN detected in line point for shape '\(shape.name)': \(point)", category: .error)
-                    continue
-                }
-                if hasCurrentPoint {
-                    path.addLine(to: point)
-                }
+                path.addLine(to: to.cgPoint)
             case .curve(let to, let control1, let control2):
-                let toPoint = to.cgPoint
-                let cp1 = control1.cgPoint
-                let cp2 = control2.cgPoint
-                // CRITICAL FIX: Check for NaN values before adding to path
-                guard !toPoint.x.isNaN && !toPoint.y.isNaN &&
-                      !cp1.x.isNaN && !cp1.y.isNaN &&
-                      !cp2.x.isNaN && !cp2.y.isNaN else {
-                    Log.error("⚠️ NaN detected in curve for shape '\(shape.name)': to=\(toPoint), cp1=\(cp1), cp2=\(cp2)", category: .error)
-                    continue
-                }
-                if hasCurrentPoint {
-                    path.addCurve(to: toPoint, control1: cp1, control2: cp2)
-                }
+                path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
             case .quadCurve(let to, let control):
-                let toPoint = to.cgPoint
-                let cp = control.cgPoint
-                // CRITICAL FIX: Check for NaN values before adding to path
-                guard !toPoint.x.isNaN && !toPoint.y.isNaN &&
-                      !cp.x.isNaN && !cp.y.isNaN else {
-                    Log.error("⚠️ NaN detected in quad curve for shape '\(shape.name)': to=\(toPoint), cp=\(cp)", category: .error)
-                    continue
-                }
-                if hasCurrentPoint {
-                    path.addQuadCurve(to: toPoint, control: cp)
-                }
+                path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
             case .close:
-                // CRITICAL FIX: Only close subpath if there's a current point
-                if hasCurrentPoint {
-                    path.closeSubpath()
-                    hasCurrentPoint = false
-                }
+                path.closeSubpath()
             }
         }
-
+        
         // Apply shape transform for proper positioning
         if !shape.transform.isIdentity {
             let transformedPath = CGMutablePath()
             transformedPath.addPath(path, transform: shape.transform)
             return transformedPath
         }
-
+        
         return path
     }
 }
