@@ -240,10 +240,7 @@ extension FileOperations {
         
         // Text objects are now imported as shapes with isTextObject=true
         // They were already processed above as shapes
-
-        // CRITICAL FIX: Align text boxes that are slightly misaligned
-        alignTextBoxes(in: document, tolerance: 3.0)
-
+        
         // Force sync unified objects
         document.forceResyncUnifiedObjects()
         
@@ -253,69 +250,5 @@ extension FileOperations {
         Log.fileOperation("✅ SVG import complete: \(document.unifiedObjects.count) objects in document", level: .info)
         
         return document
-    }
-
-    // MARK: - Text Box Alignment Helper
-
-    /// Aligns text box edges (left/right) within tolerance to snap to common alignment
-    private static func alignTextBoxes(in document: VectorDocument, tolerance: Double) {
-        // Get all text objects
-        var textShapes: [(id: UUID, shape: VectorShape, left: Double, right: Double)] = []
-
-        for obj in document.unifiedObjects {
-            if case .shape(let shape) = obj.objectType, shape.isTextObject {
-                let position = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
-                let width = shape.areaSize?.width ?? shape.bounds.width
-                let left = position.x
-                let right = position.x + width
-                textShapes.append((id: shape.id, shape: shape, left: left, right: right))
-            }
-        }
-
-        guard textShapes.count > 1 else { return }
-
-        // Find common left edges (multiple text boxes with same left X)
-        var leftEdges: [Double: Int] = [:]
-        for text in textShapes {
-            // Round to find nearby edges
-            let roundedLeft = round(text.left)
-            leftEdges[roundedLeft, default: 0] += 1
-        }
-
-        // Find common right edges
-        var rightEdges: [Double: Int] = [:]
-        for text in textShapes {
-            let roundedRight = round(text.right)
-            rightEdges[roundedRight, default: 0] += 1
-        }
-
-        // Find the most common right edge (where most text boxes align)
-        let mostCommonRight = rightEdges.max(by: { $0.value < $1.value })?.key
-
-        // Snap text boxes to common alignment
-        for text in textShapes {
-            var needsUpdate = false
-            var newWidth = text.shape.areaSize?.width ?? text.shape.bounds.width
-
-            // If this text box's right edge is close to the common right edge, snap it
-            if let commonRight = mostCommonRight {
-                let rightDiff = abs(text.right - commonRight)
-                if rightDiff > 0.5 && rightDiff <= tolerance {
-                    // Adjust width to align right edge
-                    newWidth = commonRight - text.left
-                    needsUpdate = true
-                    Log.fileOperation("📐 Aligning text box '\(text.shape.textContent?.prefix(20) ?? "")' right edge: \(text.right) → \(commonRight) (diff: \(rightDiff)pt)", level: .debug)
-                }
-            }
-
-            // Update the text object's area size
-            if needsUpdate, let index = document.unifiedObjects.firstIndex(where: { $0.id == text.id }) {
-                if case .shape(var shape) = document.unifiedObjects[index].objectType {
-                    shape.areaSize = CGSize(width: newWidth, height: shape.areaSize?.height ?? shape.bounds.height)
-                    let obj = document.unifiedObjects[index]
-                    document.unifiedObjects[index] = VectorObject(shape: shape, layerIndex: obj.layerIndex, orderID: obj.orderID)
-                }
-            }
-        }
     }
 }
