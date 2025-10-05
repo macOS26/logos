@@ -182,7 +182,6 @@ class ProfessionalTextViewModel: ObservableObject {
             height: self.textBoxFrame.height  // PRESERVE USER'S HEIGHT
         )
 
-      //  Log.info("📦 EXTERNAL SYNC: Preserved user text box size, only updated position", category: .general)
     }
 
     private var lastTypingTime: TimeInterval = 0
@@ -699,11 +698,6 @@ class ProfessionalTextViewModel: ObservableObject {
         // Find and start editing the target text
         if let textObject = document.findText(by: textID) {
 
-            Log.info("✏️ STARTING EDIT MODE:", category: .general)
-            Log.info("  - Text: '\(textObject.content)'", category: .general)
-            Log.info("  - Type: \(textObject.typography.fontFamily) \(textObject.typography.fontSize)pt", category: .general)
-            Log.info("  - State: GRAY/GREEN → BLUE (editing)", category: .general)
-            Log.info("  - Click location: (\(String(format: "%.1f", location.x)), \(String(format: "%.1f", location.y)))", category: .general)
 
             // CRITICAL: Set editing state BEFORE updating selection
             document.setTextEditingInUnified(id: textObject.id, isEditing: true)
@@ -719,11 +713,8 @@ class ProfessionalTextViewModel: ObservableObject {
                 // CRITICAL: Update the VectorText's cursor position directly
                 document.updateTextCursorPositionInUnified(id: textObject.id, cursorPosition: cursorPosition)
 
-                Log.info("🎯 CURSOR POSITIONING: Set cursor position \(cursorPosition) for click at (\(String(format: "%.1f", location.x)), \(String(format: "%.1f", location.y)))", category: .general)
-                Log.info("🎯 CURSOR POSITIONING: Updated VectorText.cursorPosition = \(cursorPosition)", category: .general)
             }
 
-            Log.info("✅ TEXT EDITING STARTED: Text box \(textID.uuidString.prefix(8)) is now in BLUE (edit) mode", category: .fileOperations)
         } else {
             Log.error("❌ TEXT NOT FOUND: Could not find text with ID \(textID)", category: .error)
         }
@@ -731,14 +722,6 @@ class ProfessionalTextViewModel: ObservableObject {
 
     // MARK: - Cursor Position Calculation
     private func calculateCursorPosition(in textObj: VectorText, at tapLocation: CGPoint) -> Int {
-        // Convert tap location to text-relative coordinates
-        let relativePoint = CGPoint(
-            x: tapLocation.x - textObj.position.x,
-            y: tapLocation.y - textObj.position.y
-        )
-
-        Log.info("🎯 CURSOR CALC: Tap at (\(String(format: "%.1f", tapLocation.x)), \(String(format: "%.1f", tapLocation.y))), relative (\(String(format: "%.1f", relativePoint.x)), \(String(format: "%.1f", relativePoint.y)))", category: .general)
-
         // Simple cursor positioning: place cursor at the beginning for now
         // This can be enhanced later with more sophisticated text layout analysis
         return 0
