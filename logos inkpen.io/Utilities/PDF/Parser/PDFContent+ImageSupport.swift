@@ -132,39 +132,16 @@ extension PDFCommandParser {
             // Handle indexed color (1 byte per pixel with color palette)
             if bytesPerPixel == 1 && isIndexedColor, let palette = colorPalette {
 
-                // Convert indexed color to RGBA using the palette
-                guard let rgbaData = NSMutableData(capacity: width * height * 4) else {
-                    Log.error("PDF: Failed to allocate RGBA data for indexed image", category: .error)
-                    return
-                }
-
-                let indexBytes = nsData.bytes.assumingMemoryBound(to: UInt8.self)
-                let paletteBytes = palette.withUnsafeBytes { $0.bindMemory(to: UInt8.self) }
-                let paletteEntries = palette.count / 3  // Each palette entry is 3 bytes (RGB)
-
-
-                for i in 0..<(width * height) {
-                    let paletteIndex = Int(indexBytes[i])
-
-                    // Bounds check
-                    if paletteIndex < paletteEntries {
-                        let paletteOffset = paletteIndex * 3
-                        rgbaData.append(paletteBytes.baseAddress! + paletteOffset, length: 3) // RGB from palette
-                    } else {
-                        // Out of bounds - use black
-                        var black: [UInt8] = [0, 0, 0]
-                        rgbaData.append(&black, length: 3)
-                    }
-
-                    // Add alpha channel
-                    var alpha: UInt8
-                    if let maskBytes = maskData?.withUnsafeBytes({ $0.bindMemory(to: UInt8.self) }), i < (maskData?.count ?? 0) {
-                        alpha = maskBytes[i]
-                    } else {
-                        alpha = 255 // Full opacity
-                    }
-                    rgbaData.append(&alpha, length: 1)
-                }
+                // Try GPU acceleration first (MUCH faster for large images)
+                if let gpuRGBAData = PDFMetalProcessor.shared.convertIndexedToRGBA(
+                    indexData: nsData as Data,
+                    paletteData: palette,
+                    maskData: maskData,
+                    width: width,
+                    height: height
+                ) {
+                    // GPU conversion succeeded!
+                    let rgbaData = NSMutableData(data: gpuRGBAData)
 
                 // DEBUG: Save RGBA data
                 let rgbaDebugPath = "/Users/toddbruss/Documents/pdf_indexed_rgba_image_\(name)_\(width)x\(height).dat"
@@ -208,30 +185,98 @@ extension PDFCommandParser {
                 } else {
                     imageShape.embeddedImageData = nsData as Data
                 }
+                } else {
+                    // GPU failed or unavailable - fall back to CPU
+                    Log.warning("⚠️ Using CPU fallback for indexed->RGBA conversion", category: .general)
+
+                    guard let rgbaData = NSMutableData(capacity: width * height * 4) else {
+                        Log.error("PDF: Failed to allocate RGBA data for indexed image", category: .error)
+                        return
+                    }
+
+                    let indexBytes = nsData.bytes.assumingMemoryBound(to: UInt8.self)
+                    let paletteBytes = palette.withUnsafeBytes { $0.bindMemory(to: UInt8.self) }
+                    let paletteEntries = palette.count / 3  // Each palette entry is 3 bytes (RGB)
+
+
+                    for i in 0..<(width * height) {
+                        let paletteIndex = Int(indexBytes[i])
+
+                        // Bounds check
+                        if paletteIndex < paletteEntries {
+                            let paletteOffset = paletteIndex * 3
+                            rgbaData.append(paletteBytes.baseAddress! + paletteOffset, length: 3) // RGB from palette
+                        } else {
+                            // Out of bounds - use black
+                            var black: [UInt8] = [0, 0, 0]
+                            rgbaData.append(&black, length: 3)
+                        }
+
+                        // Add alpha channel
+                        var alpha: UInt8
+                        if let maskBytes = maskData?.withUnsafeBytes({ $0.bindMemory(to: UInt8.self) }), i < (maskData?.count ?? 0) {
+                            alpha = maskBytes[i]
+                        } else {
+                            alpha = 255 // Full opacity
+                        }
+                        rgbaData.append(&alpha, length: 1)
+                    }
+
+                    // DEBUG: Save RGBA data
+                    let rgbaDebugPath = "/Users/toddbruss/Documents/pdf_indexed_rgba_image_\(name)_\(width)x\(height).dat"
+                    try? (rgbaData as Data).write(to: URL(fileURLWithPath: rgbaDebugPath))
+
+                    // Create bitmap representation
+                    let bitmapRep = NSBitmapImageRep(
+                        bitmapDataPlanes: nil,
+                        pixelsWide: width,
+                        pixelsHigh: height,
+                        bitsPerSample: 8,
+                        samplesPerPixel: 4,
+                        hasAlpha: true,
+                        isPlanar: false,
+                        colorSpaceName: .deviceRGB,
+                        bitmapFormat: hasSMask ? [.alphaNonpremultiplied] : [],
+                        bytesPerRow: width * 4,
+                        bitsPerPixel: 32
+                    )
+
+                    if let bitmapRep = bitmapRep {
+                        // Copy RGBA data to bitmap
+                        let bitmapData = bitmapRep.bitmapData!
+                        rgbaData.getBytes(bitmapData, length: width * height * 4)
+
+                        // Create NSImage from bitmap
+                        let nsImage = NSImage(size: NSSize(width: width, height: height))
+                        nsImage.addRepresentation(bitmapRep)
+
+                        // Convert to PNG
+                        if let pngData = bitmapRep.representation(using: .png, properties: [:]) {
+                            imageShape.embeddedImageData = pngData
+
+                            // DEBUG: Save PNG data
+                            let pngDebugPath = "/Users/toddbruss/Documents/pdf_indexed_final_image_\(name).png"
+                            try? pngData.write(to: URL(fileURLWithPath: pngDebugPath))
+                        } else {
+                            // Fallback: store RGBA data directly
+                            imageShape.embeddedImageData = rgbaData as Data
+                        }
+                    } else {
+                        imageShape.embeddedImageData = nsData as Data
+                    }
+                }
             }
             // Handle RGB (3 bytes per pixel) by converting to RGBA
             else if bytesPerPixel == 3 {
-                // Convert RGB to RGBA by adding alpha channel
-                guard let rgbaData = NSMutableData(capacity: width * height * 4) else {
-                    Log.error("PDF: Failed to allocate RGBA data", category: .error)
-                    return
-                }
-                let sourceBytes = nsData.bytes.assumingMemoryBound(to: UInt8.self)
-                let maskBytes = maskData?.withUnsafeBytes { $0.bindMemory(to: UInt8.self) }
-
-                for i in 0..<(width * height) {
-                    let srcOffset = i * 3
-                    rgbaData.append(sourceBytes + srcOffset, length: 3) // RGB
-
-                    // Use mask data for alpha if available, otherwise full opacity
-                    var alpha: UInt8
-                    if let maskBytes = maskBytes, i < (maskData?.count ?? 0) {
-                        alpha = maskBytes[i]
-                    } else {
-                        alpha = 255 // Full opacity if no mask
-                    }
-                    rgbaData.append(&alpha, length: 1) // A
-                }
+                // Try GPU acceleration first (MUCH faster for large images)
+                if let gpuRGBAData = PDFMetalProcessor.shared.convertRGBtoRGBA(
+                    rgbData: nsData as Data,
+                    maskData: maskData,
+                    width: width,
+                    height: height
+                ) {
+                    // GPU conversion succeeded!
+                    let rgbaData = NSMutableData(data: gpuRGBAData)
 
                 // DEBUG: Save RGBA data
                 let rgbaDebugPath = "/Users/toddbruss/Documents/pdf_rgba_image_\(name)_\(width)x\(height).dat"
@@ -274,6 +319,74 @@ extension PDFCommandParser {
                     }
                 } else {
                     imageShape.embeddedImageData = nsData as Data
+                }
+                } else {
+                    // GPU failed or unavailable - fall back to CPU
+                    Log.warning("⚠️ Using CPU fallback for RGB->RGBA conversion", category: .general)
+
+                    guard let rgbaData = NSMutableData(capacity: width * height * 4) else {
+                        Log.error("PDF: Failed to allocate RGBA data", category: .error)
+                        return
+                    }
+                    let sourceBytes = nsData.bytes.assumingMemoryBound(to: UInt8.self)
+                    let maskBytes = maskData?.withUnsafeBytes { $0.bindMemory(to: UInt8.self) }
+
+                    for i in 0..<(width * height) {
+                        let srcOffset = i * 3
+                        rgbaData.append(sourceBytes + srcOffset, length: 3) // RGB
+
+                        // Use mask data for alpha if available, otherwise full opacity
+                        var alpha: UInt8
+                        if let maskBytes = maskBytes, i < (maskData?.count ?? 0) {
+                            alpha = maskBytes[i]
+                        } else {
+                            alpha = 255 // Full opacity if no mask
+                        }
+                        rgbaData.append(&alpha, length: 1) // A
+                    }
+
+                    // DEBUG: Save RGBA data
+                    let rgbaDebugPath = "/Users/toddbruss/Documents/pdf_rgba_image_\(name)_\(width)x\(height).dat"
+                    try? (rgbaData as Data).write(to: URL(fileURLWithPath: rgbaDebugPath))
+
+                    // Create bitmap representation with proper alpha handling
+                    let bitmapRep = NSBitmapImageRep(
+                        bitmapDataPlanes: nil,
+                        pixelsWide: width,
+                        pixelsHigh: height,
+                        bitsPerSample: 8,
+                        samplesPerPixel: 4,
+                        hasAlpha: true,
+                        isPlanar: false,
+                        colorSpaceName: .deviceRGB,
+                        bitmapFormat: hasSMask ? [.alphaNonpremultiplied] : [],
+                        bytesPerRow: width * 4,
+                        bitsPerPixel: 32
+                    )
+
+                    if let bitmapRep = bitmapRep {
+                        // Copy RGBA data to bitmap
+                        let bitmapData = bitmapRep.bitmapData!
+                        rgbaData.getBytes(bitmapData, length: width * height * 4)
+
+                        // Create NSImage from bitmap
+                        let nsImage = NSImage(size: NSSize(width: width, height: height))
+                        nsImage.addRepresentation(bitmapRep)
+
+                        // Convert to PNG
+                        if let pngData = bitmapRep.representation(using: .png, properties: [:]) {
+                            imageShape.embeddedImageData = pngData
+
+                            // DEBUG: Save PNG data
+                            let pngDebugPath = "/Users/toddbruss/Documents/pdf_final_image_\(name).png"
+                            try? pngData.write(to: URL(fileURLWithPath: pngDebugPath))
+                        } else {
+                            // Fallback: store RGBA data directly
+                            imageShape.embeddedImageData = rgbaData as Data
+                        }
+                    } else {
+                        imageShape.embeddedImageData = nsData as Data
+                    }
                 }
             } else if bytesPerPixel == 4 {
                 // RGBA data - handle with proper alpha premultiplication
