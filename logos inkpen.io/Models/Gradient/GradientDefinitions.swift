@@ -128,9 +128,6 @@ struct LinearGradient: Codable, Hashable, Identifiable {
             startPoint.y = max(0, min(1, startPoint.y))
             endPoint.x = max(0, min(1, endPoint.x))
             endPoint.y = max(0, min(1, endPoint.y))
-            Log.fileOperation("🔧 ANGLE SET: Clamped to objectBoundingBox range (0-1)", level: .info)
-        } else {
-            Log.fileOperation("🔧 ANGLE SET: userSpaceOnUse - coordinates can extend beyond 0-1", level: .info)
         }
         
     }
