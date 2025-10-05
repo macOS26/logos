@@ -169,9 +169,8 @@ struct SVGToInkPenConverter: View {
             guard let url = urls.first else { return }
             
             importedDocument = importer.importSVGFile(from: url)
-            
+
         } catch {
-            Log.info("Error selecting file: \(error.localizedDescription)", category: .general)
         }
     }
     
@@ -189,7 +188,6 @@ struct SVGToInkPenConverter: View {
                     let data = try encoder.encode(document)
                     try data.write(to: url)
                 } catch {
-                    Log.info("Error saving document: \(error.localizedDescription)", category: .general)
                 }
             }
         }
