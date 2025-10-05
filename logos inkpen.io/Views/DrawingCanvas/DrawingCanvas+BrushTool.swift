@@ -75,21 +75,16 @@ extension DrawingCanvas {
         // Logging disabled in hot path to reduce CPU overhead
     }
     
-    internal func handleBrushDragUpdate(at location: CGPoint) {
+    internal func handleBrushDragUpdate(at location: CGPoint, pressure: Double? = nil) {
         guard isBrushDrawing else { return }
 
-        // Only use pressure when BOTH enabled AND real pressure device detected
-        let pressure: Double
-        if appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput {
-            pressure = PressureManager.shared.getPressure(for: location, sensitivity: 0.5)
-        } else {
-            pressure = 1.0  // Constant pressure for mouse/trackpad
-        }
+        // Use pressure passed directly from event, or fall back to PressureManager current value (NO SIMULATION)
+        let actualPressure = pressure ?? PressureManager.shared.currentPressure
 
-        // Add point to raw path with pressure data
-        let newPoint = BrushPoint(location: location, pressure: pressure)
+        // Add point to raw path with RAW pressure data (no speed-based simulation)
+        let newPoint = BrushPoint(location: location, pressure: actualPressure)
         brushRawPoints.append(newPoint)
-        
+
         // Update preview with new point
         updateBrushPreview()
     }
@@ -235,11 +230,8 @@ extension DrawingCanvas {
                     y: startPoint.location.y + (endPoint.location.y - startPoint.location.y) * t + perpY * jitterAmount
                 )
 
-                // Vary pressure for more natural tapering
-                // Create a subtle "bulge" in the middle
-                let basePressure = startPoint.pressure + (endPoint.pressure - startPoint.pressure) * t
-                let pressureVariation = sin(t * .pi) * 0.15 // Add up to 15% variation
-                let interpolatedPressure = min(1.0, basePressure * (1.0 + pressureVariation))
+                // Linear pressure interpolation (no artificial bulge)
+                let interpolatedPressure = startPoint.pressure + (endPoint.pressure - startPoint.pressure) * t
 
                 interpolatedPoints.append(BrushPoint(
                     location: interpolatedLocation,
@@ -656,26 +648,8 @@ extension DrawingCanvas {
         for (index, point) in centerPoints.enumerated() {
             let progress = Double(index) / Double(centerPoints.count - 1)
 
-            // Create leaf shape with smooth tapering
+            // Base thickness from brush settings (like marker tool)
             var finalThickness = thickness
-
-            // ENHANCED LEAF SHAPE - Better end tapering for proper leaf form
-            // Creates characteristic leaf bulge at both start and end
-
-            // Create leaf shape with asymmetric tapering for better end shape
-            let distanceFromCenter = abs(progress - 0.5) * 2.0 // 0 at center, 1 at ends
-
-            // Use sine-based curve for the main shape (smooth and natural)
-            let sineShape = sin((1.0 - distanceFromCenter) * .pi * 0.5) // Half sine wave
-
-            // Add subtle power curve to enhance the leaf bulge
-            let powerShape = 1.0 - pow(distanceFromCenter, 2.0) // Quadratic for gentler curve
-
-            // Blend for best of both - more sine for smoothness, some power for bulge
-            let leafShape = sineShape * 0.7 + powerShape * 0.3
-
-            // Apply thickness with good base scaling
-            finalThickness = thickness * leafShape
 
             // SPECIAL TREATMENT FOR STRAIGHT LINES - Aggressive taper at end to avoid phallic shape
             if isStraightLine {
