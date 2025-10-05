@@ -389,97 +389,11 @@ extension DrawingCanvas {
             return
         }
         
-        let rawPointLocations = brushRawPoints.map { $0.location }
-        // Logging disabled in hot path to reduce CPU overhead
-        
-        var processedPoints = rawPointLocations
-        
-        // Step 1: Apply Chaikin smoothing for initial curve smoothing (if enabled)
-        if document.advancedSmoothingEnabled {
-            // Prefer GPU Chaikin for large strokes; fall back to CPU
-            if processedPoints.count >= 200 {
-                let metalEngine = MetalComputeEngine.shared
-                let gpuResult = metalEngine.chaikinSmoothingGPU(points: processedPoints, ratio: 0.25)
-                switch gpuResult {
-                case .success(let pts):
-                    processedPoints = pts
-                case .failure(_):
-                    let chaikinSmoothed = CurveSmoothing.chaikinSmooth(
-                        points: processedPoints,
-                        iterations: document.chaikinSmoothingIterations,
-                        ratio: 0.25
-                    )
-                    processedPoints = chaikinSmoothed
-                }
-            } else {
-                let chaikinSmoothed = CurveSmoothing.chaikinSmooth(
-                    points: processedPoints,
-                    iterations: document.chaikinSmoothingIterations,
-                    ratio: 0.25
-                )
-                processedPoints = chaikinSmoothed
-            }
-        }
-        
-        // Step 2: Apply improved Douglas-Peucker simplification with sharp corner preservation
-        // Use extremely low tolerance to preserve almost all points for maximum smoothness
-        let smoothingTolerance = document.currentBrushSmoothingTolerance * 0.01  // Keep 99% of points
-        if processedPoints.count >= 200 {
-            // Try GPU DP first; then apply CPU corner-preserving refinement if desired
-            let metalEngine = MetalComputeEngine.shared
-            let result = metalEngine.douglasPeuckerGPU(processedPoints, tolerance: Float(smoothingTolerance))
-            switch result {
-            case .success(let pts):
-                if document.advancedSmoothingEnabled {
-                    brushSimplifiedPoints = CurveSmoothing.improvedDouglassPeucker(
-                        points: pts,
-                        tolerance: smoothingTolerance,
-                        preserveSharpCorners: document.preserveSharpCorners
-                    )
-                } else {
-                    brushSimplifiedPoints = pts
-                }
-            case .failure(_):
-                brushSimplifiedPoints = document.advancedSmoothingEnabled ?
-                    CurveSmoothing.improvedDouglassPeucker(
-                        points: processedPoints,
-                        tolerance: smoothingTolerance,
-                        preserveSharpCorners: document.preserveSharpCorners
-                    ) :
-                    DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
-            }
-        } else {
-            brushSimplifiedPoints = document.advancedSmoothingEnabled ?
-                CurveSmoothing.improvedDouglassPeucker(
-                    points: processedPoints,
-                    tolerance: smoothingTolerance,
-                    preserveSharpCorners: document.preserveSharpCorners
-                ) :
-                DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
-        }
-        
-        // CRITICAL: Ensure we have enough points for smooth tapers (matching marker tool)
-        // Need MORE points when pressure sensitivity is off since taper is the only variation
-        let minPoints = appState.pressureSensitivityEnabled ? 8 : 20
-        if brushSimplifiedPoints.count < minPoints && processedPoints.count > 2 {
-            // Try again with minimal tolerance
-            let minTolerance = smoothingTolerance * 0.001
-            brushSimplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: minTolerance)
+        // USE RAW POINTS DIRECTLY - NO SIMPLIFICATION OR SMOOTHING
+        // Accept the curve exactly as drawn by the user
+        brushSimplifiedPoints = brushRawPoints.map { $0.location }
 
-            // If still too few, sample from processed points
-            if brushSimplifiedPoints.count < minPoints {
-                let stepSize = max(1, processedPoints.count / (minPoints + 10))
-                brushSimplifiedPoints = []
-                for i in Swift.stride(from: 0, to: processedPoints.count, by: stepSize) {
-                    brushSimplifiedPoints.append(processedPoints[i])
-                }
-                if let last = processedPoints.last, brushSimplifiedPoints.last != last {
-                    brushSimplifiedPoints.append(last)
-                }
-            }
-        }
-
-        Log.info("🖌️ PROCESS: Final simplified points: \(brushSimplifiedPoints.count)", category: .general)
+        Log.info("🖌️ PROCESS: Using \(brushSimplifiedPoints.count) raw points (no simplification)", category: .general)
 
         // Step 3: Generate variable width brush stroke path using the SIMPLIFIED POINTS with pressure data
         // The smoothness comes from the final bezier path creation, not from over-sampling
