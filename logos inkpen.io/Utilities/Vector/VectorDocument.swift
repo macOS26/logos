@@ -222,6 +222,9 @@ class VectorDocument: ObservableObject, Codable {
     @Published var currentBrushLiquid: Double = 0.0 {  // Internal: 0=moderate, 50=none, 100=max (UI shows reversed)
         didSet { UserDefaults.standard.set(currentBrushLiquid, forKey: "brushLiquid") }
     }
+    @Published var currentBrushMinTaperThickness: Double = 0.5 {  // Minimum thickness at taper ends (0-15 pts)
+        didSet { UserDefaults.standard.set(currentBrushMinTaperThickness, forKey: "brushMinTaperThickness") }
+    }
     @Published var hasPressureInput: Bool = false // Whether pressure-sensitive input is detected
     @Published var brushApplyNoStroke: Bool = true {
         didSet { UserDefaults.standard.set(brushApplyNoStroke, forKey: "brushApplyNoStroke") }
@@ -788,6 +791,7 @@ class VectorDocument: ObservableObject, Codable {
         // currentBrushTaper removed - tapering is now hardcoded in brush tool
         currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 2.0
         currentBrushLiquid = UserDefaults.standard.object(forKey: "brushLiquid") as? Double ?? 0.0
+        currentBrushMinTaperThickness = UserDefaults.standard.object(forKey: "brushMinTaperThickness") as? Double ?? 0.5
 
         // Initialize advanced smoothing settings from UserDefaults (properties with didSet)
         advancedSmoothingEnabled = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? false

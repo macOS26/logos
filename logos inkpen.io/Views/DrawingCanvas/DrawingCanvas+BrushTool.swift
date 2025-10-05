@@ -587,9 +587,10 @@ extension DrawingCanvas {
                 }
             }
 
-            // Ensure minimum thickness to avoid zero (unless explicitly set to 0 for tail removal)
+            // Ensure minimum thickness using user setting
+            let minThickness = document.currentBrushMinTaperThickness
             if finalThickness > 0 {
-                finalThickness = max(finalThickness, 0.5)
+                finalThickness = max(finalThickness, minThickness)
             }
             
             // PROPER PRESSURE MAPPING: Find the closest raw point for pressure data
@@ -751,9 +752,10 @@ extension DrawingCanvas {
                 }
             }
 
-            // Ensure minimum thickness (unless explicitly set to 0 for tail removal)
+            // Ensure minimum thickness using user setting
+            let minThickness = document.currentBrushMinTaperThickness
             if finalThickness > 0 {
-                finalThickness = max(finalThickness, 0.5)
+                finalThickness = max(finalThickness, minThickness)
             }
             
             // Interpolate pressure from raw points to simplified points

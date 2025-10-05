@@ -106,6 +106,27 @@ struct VariableStrokeSection: View {
                 .help("Controls curve fluidity - 0% = no smoothing (all points), 50% = moderate smoothing, 100% = maximum liquid smoothing")
             }
 
+            // Min Taper Thickness
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Min Taper Thickness")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.secondaryText)
+                    Spacer()
+                    Text("\(formatNumberForDisplay(document.currentBrushMinTaperThickness))pt")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.primaryText)
+                        .monospacedDigit()
+                }
+
+                Slider(value: Binding(
+                    get: { document.currentBrushMinTaperThickness },
+                    set: { document.currentBrushMinTaperThickness = $0 }
+                ), in: 0...15)
+                .controlSize(.regular)
+                .help("Minimum thickness at taper ends (0-15 points)")
+            }
+
             // Advanced Smoothing Section
             Divider()
                 .padding(.vertical, 8)
