@@ -150,12 +150,16 @@ extension FileOperations {
             document.layers[2] = importedLayer
         }
         
+        // CRITICAL FIX: Reverse the shapes array so first shape in SVG gets highest orderID
+        // This ensures the first item in the SVG appears at the top of the Layers panel
+        let reversedShapes = result.shapes.reversed()
+
         // Group shapes by clipping mask relationships
         var clippingMasks: [UUID: (mask: VectorShape, clippedShapes: [VectorShape])] = [:]
         var standaloneShapes: [VectorShape] = []
-        
+
         // First pass: identify clipping masks and their relationships
-        for shape in result.shapes {
+        for shape in reversedShapes {
             if shape.isClippingPath {
                 // This is a clipping mask
                 if clippingMasks[shape.id] == nil {
