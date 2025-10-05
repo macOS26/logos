@@ -506,13 +506,40 @@ extension DrawingCanvas {
             }
         }
 
-        // CHECK: If the preview path has barely any thickness, replace with artificial leaf shape
+        // CHECK: If the path has coincident points at BOTH ends (no thickness), replace with artificial leaf shape
         if brushRawPoints.count >= 2 {
-            let pathBounds = preview.cgPath.boundingBox
-            let pathWidth = min(pathBounds.width, pathBounds.height) // Use the smaller dimension
+            let cgPath = preview.cgPath
+            var pathPoints: [CGPoint] = []
 
-            // If path is extremely thin (< 2pt), check if it's a straight line and use leaf shape
-            if pathWidth < 2.0 {
+            // Extract all points from the path
+            cgPath.applyWithBlock { element in
+                switch element.pointee.type {
+                case .moveToPoint, .addLineToPoint:
+                    pathPoints.append(element.pointee.points[0])
+                case .addQuadCurveToPoint:
+                    pathPoints.append(element.pointee.points[1])
+                case .addCurveToPoint:
+                    pathPoints.append(element.pointee.points[2])
+                case .closeSubpath:
+                    break
+                @unknown default:
+                    break
+                }
+            }
+
+            guard pathPoints.count >= 2 else { return }
+
+            // Check if BOTH ends have coincident points (collapsed to a line)
+            let firstPoint = pathPoints[0]
+            let secondPoint = pathPoints[1]
+            let lastPoint = pathPoints[pathPoints.count - 1]
+            let secondLastPoint = pathPoints[pathPoints.count - 2]
+
+            let startCoincident = sqrt(pow(firstPoint.x - secondPoint.x, 2) + pow(firstPoint.y - secondPoint.y, 2)) < 0.5
+            let endCoincident = sqrt(pow(lastPoint.x - secondLastPoint.x, 2) + pow(lastPoint.y - secondLastPoint.y, 2)) < 0.5
+
+            // If BOTH ends are coincident (no thickness at both ends), use artificial leaf shape
+            if startCoincident && endCoincident {
                 let start = brushRawPoints.first!.location
                 let end = brushRawPoints.last!.location
 
@@ -520,7 +547,7 @@ extension DrawingCanvas {
                 let dy = end.y - start.y
                 let lineLength = sqrt(dx * dx + dy * dy)
 
-                // Check if all points are close to the straight line (< 5% deviation)
+                // Check if it's a straight line
                 var maxDeviation = 0.0
                 for point in brushRawPoints {
                     let px = point.location.x - start.x
@@ -534,7 +561,7 @@ extension DrawingCanvas {
                 if isStraightLine {
                     let angle = atan2(dy, dx)
 
-                    // Create leaf shape to replace the barely-visible path
+                    // Create leaf shape to replace the no-thickness path
                     let width = document.currentBrushThickness
                     let leafPath = CGMutablePath()
                     leafPath.move(to: CGPoint(x: 0, y: 0))
@@ -553,7 +580,7 @@ extension DrawingCanvas {
                             fillStyle: FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
                         )
                         document.addShape(finalShape)
-                        Log.info("🖌️ BRUSH: Replaced barely-visible path (width: \(pathWidth)pt) with artificial leaf shape", category: .general)
+                        Log.info("🖌️ BRUSH: Replaced no-thickness path (coincident ends) with artificial leaf shape", category: .general)
                         return
                     }
                 }
