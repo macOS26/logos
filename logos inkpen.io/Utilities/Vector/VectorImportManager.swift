@@ -303,21 +303,75 @@ class VectorImportManager {
                 warnings: warnings
             )
         }
-        
+
+        // CRITICAL OPTIMIZATION: Check for embedded inkpen metadata FIRST
+        // This avoids parsing the entire PDF if it's a native inkpen document
+        var inkpenMetadata: String? = nil
+
+        if let pdfDoc = page.document, let catalog = pdfDoc.catalog {
+            var metadataRef: CGPDFStreamRef?
+
+            // Try to get the Metadata stream from the catalog
+            if CGPDFDictionaryGetStream(catalog, "Metadata", &metadataRef),
+               let metadataStream = metadataRef {
+
+                var format: CGPDFDataFormat = .raw
+                if let data = CGPDFStreamCopyData(metadataStream, &format) {
+                    if let xmpString = String(data: data as Data, encoding: .utf8) {
+                        Log.info("📦 Found XMP metadata in PDF (\(xmpString.count) chars) - checking for inkpen data FIRST", category: .fileOperations)
+
+                        // Parse XMP to extract inkpen:document element
+                        if let range = xmpString.range(of: "<inkpen:document>"),
+                           let endRange = xmpString.range(of: "</inkpen:document>") {
+                            let startIndex = range.upperBound
+                            let endIndex = endRange.lowerBound
+                            let base64Data = String(xmpString[startIndex..<endIndex])
+                            inkpenMetadata = base64Data
+                            Log.info("✅ Found embedded inkpen document (\(base64Data.count) base64 chars) - SKIPPING PDF vector parsing!", category: .fileOperations)
+                        }
+                    }
+                }
+            }
+        }
+
+        let mediaBox = page.getBoxRect(.mediaBox)
+
+        // If we found inkpen metadata, return it immediately without parsing vector content
+        if let metadata = inkpenMetadata {
+            Log.info("🚀 FAST PATH: Using embedded inkpen metadata - PDF vector parsing completely skipped", category: .fileOperations)
+
+            let importMetadata = VectorImportMetadata(
+                originalFormat: .pdf,
+                documentSize: mediaBox.size,
+                viewBoxSize: nil,
+                colorSpace: "RGB",
+                units: .points,
+                dpi: 72.0,
+                layerCount: 1,
+                shapeCount: 0,  // We didn't parse shapes
+                textObjectCount: 0,
+                importDate: Date(),
+                sourceApplication: "Inkpen.io",
+                documentVersion: nil,
+                inkpenMetadata: metadata
+            )
+
+            return VectorImportResult(
+                success: true,
+                shapes: [],  // Empty - will be restored from metadata
+                metadata: importMetadata,
+                errors: errors,
+                warnings: warnings
+            )
+        }
+
+        // No inkpen metadata found - parse as regular PDF
+        Log.info("📄 No inkpen metadata found - parsing as regular PDF", category: .fileOperations)
+
         // Extract vector paths from PDF
         do {
             let pdfContent = try extractPDFVectorContent(page)
             shapes = pdfContent.shapes
-            
-            let mediaBox = page.getBoxRect(.mediaBox)
-            
-            // Check if Producer field contains inkpen metadata (from XMP extraction)
-            var inkpenMetadata: String? = nil
-            if let producer = pdfContent.producer {
-                // Producer now contains the raw base64 data from XMP extraction
-                inkpenMetadata = producer
-                Log.info("📦 Extracted inkpen metadata from PDF (via XMP)", category: .fileOperations)
-            }
 
             let metadata = VectorImportMetadata(
                 originalFormat: .pdf,
