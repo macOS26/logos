@@ -26,6 +26,14 @@ class SVGParser: NSObject, XMLParserDelegate {
     private var currentStyleContent = ""
     internal var currentTextContent = ""
     internal var currentTextAttributes: [String: String] = [:]
+
+    // PERFORMANCE: Reusable layout components to avoid recreation for each text box
+    internal lazy var sharedTextStorage = NSTextStorage()
+    internal lazy var sharedLayoutManager = NSLayoutManager()
+    internal lazy var sharedTextContainer = NSTextContainer(size: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude))
+
+    // PERFORMANCE: Font cache to avoid repeated NSFont lookups
+    internal var fontCache: [String: NSFont] = [:]
     
     // Multi-line text support
     internal var currentTextSpans: [(content: String, attributes: [String: String], x: Double, y: Double)] = []
@@ -79,10 +87,22 @@ class SVGParser: NSObject, XMLParserDelegate {
         guard let data = xmlString.data(using: .utf8) else {
             throw VectorImportError.parsingError("Invalid SVG string", line: nil)
         }
-        
+
+        // PERFORMANCE: Initialize shared layout manager once per parse
+        sharedTextStorage = NSTextStorage()
+        sharedLayoutManager = NSLayoutManager()
+        sharedTextContainer = NSTextContainer(size: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude))
+        sharedTextContainer.lineFragmentPadding = 0
+        sharedTextContainer.lineBreakMode = .byWordWrapping
+        sharedTextStorage.addLayoutManager(sharedLayoutManager)
+        sharedLayoutManager.addTextContainer(sharedTextContainer)
+
+        // Clear font cache for new parse
+        fontCache.removeAll()
+
         let xmlParser = XMLParser(data: data)
         xmlParser.delegate = self
-        
+
         if !xmlParser.parse() {
             if let error = xmlParser.parserError {
                 throw VectorImportError.parsingError("XML parsing failed: \(error.localizedDescription)", line: xmlParser.lineNumber)

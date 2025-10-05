@@ -9,9 +9,42 @@
 import SwiftUI
 
 extension SVGParser {
-    
+
     // MARK: - Text Processing Helper Methods
-    
+
+    // PERFORMANCE: Get or create cached NSFont to avoid repeated lookups
+    internal func getCachedFont(family: String, size: Double, weight: FontWeight) -> NSFont {
+        let cacheKey = "\(family)-\(size)-\(weight.rawValue)"
+        if let cached = fontCache[cacheKey] {
+            return cached
+        }
+
+        let nsFont = NSFont(name: family, size: size) ?? NSFont.systemFont(ofSize: size)
+        fontCache[cacheKey] = nsFont
+        return nsFont
+    }
+
+    // PERFORMANCE: Calculate text width using shared layout manager (reusable across all text boxes)
+    internal func calculateTextWidth(for text: String, font: NSFont, alignment: TextAlignment) -> CGFloat {
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = alignment.nsTextAlignment
+
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .paragraphStyle: paragraphStyle
+        ]
+
+        let attributedString = NSAttributedString(string: text, attributes: attributes)
+
+        // CRITICAL: Reuse shared components instead of creating new ones
+        sharedTextStorage.setAttributedString(attributedString)
+
+        let glyphRange = sharedLayoutManager.glyphRange(for: sharedTextContainer)
+        let boundingRect = sharedLayoutManager.boundingRect(forGlyphRange: glyphRange, in: sharedTextContainer)
+
+        return ceil(boundingRect.width)
+    }
+
     // Extract a font-family from either the explicit attribute or inline style
     func extractFontFamily(from attributes: [String: String]) -> String? {
         if let explicit = attributes["font-family"], !explicit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -228,38 +261,9 @@ extension SVGParser {
                 var adjustedX = baseX
 
                 if textAnchor == "middle" || textAnchor == "end" {
-                    // For multi-line text, find the widest line
-                    let nsFont = typography.nsFont
-                    let paragraphStyle = NSMutableParagraphStyle()
-                    paragraphStyle.alignment = typography.alignment.nsTextAlignment
-                    paragraphStyle.lineSpacing = typography.lineSpacing
-                    paragraphStyle.minimumLineHeight = typography.lineHeight
-                    paragraphStyle.maximumLineHeight = typography.lineHeight
-
-                    let attributes: [NSAttributedString.Key: Any] = [
-                        .font: nsFont,
-                        .paragraphStyle: paragraphStyle
-                    ]
-
-                    let attributedString = NSAttributedString(string: multiLineContent, attributes: attributes)
-                    let textStorage = NSTextStorage(attributedString: attributedString)
-                    let layoutManager = NSLayoutManager()
-                    textStorage.addLayoutManager(layoutManager)
-
-                    // Use actual text box width if we can determine it
-                    let containerWidth = CGFloat.greatestFiniteMagnitude
-                    let textContainer = NSTextContainer(size: CGSize(width: containerWidth, height: CGFloat.greatestFiniteMagnitude))
-                    textContainer.lineFragmentPadding = 0
-                    textContainer.lineBreakMode = .byWordWrapping
-                    layoutManager.addTextContainer(textContainer)
-
-                    // Find the widest line
-                    let glyphRange = layoutManager.glyphRange(for: textContainer)
-                    var maxLineWidth: CGFloat = 0
-
-                    layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { (lineRect, lineUsedRect, container, lineRange, stop) in
-                        maxLineWidth = max(maxLineWidth, lineUsedRect.width)
-                    }
+                    // PERFORMANCE: Use cached font and shared layout manager
+                    let nsFont = getCachedFont(family: firstFontFamily, size: firstFontSize, weight: fontWeight)
+                    let maxLineWidth = calculateTextWidth(for: multiLineContent, font: nsFont, alignment: textAlignment)
 
                     // Adjust x position based on anchor and widest line
                     if textAnchor == "middle" {
@@ -271,38 +275,9 @@ extension SVGParser {
                     }
                 }
 
-                // CRITICAL FIX: Calculate ACTUAL text width using NSLayoutManager instead of estimation
-                // This prevents text boxes from overlapping when multiple text elements are adjacent
-                let nsFont = typography.nsFont
-                let paragraphStyle = NSMutableParagraphStyle()
-                paragraphStyle.alignment = typography.alignment.nsTextAlignment
-                paragraphStyle.lineSpacing = typography.lineSpacing
-                paragraphStyle.minimumLineHeight = typography.lineHeight
-                paragraphStyle.maximumLineHeight = typography.lineHeight
-
-                let attributes: [NSAttributedString.Key: Any] = [
-                    .font: nsFont,
-                    .paragraphStyle: paragraphStyle
-                ]
-
-                let attributedString = NSAttributedString(string: multiLineContent, attributes: attributes)
-                let textStorage = NSTextStorage(attributedString: attributedString)
-                let layoutManager = NSLayoutManager()
-                textStorage.addLayoutManager(layoutManager)
-
-                // Use a container with unlimited width to get actual text width
-                let textContainer = NSTextContainer(size: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude))
-                textContainer.lineFragmentPadding = 0
-                textContainer.lineBreakMode = .byWordWrapping
-                layoutManager.addTextContainer(textContainer)
-
-                // CRITICAL: Use boundingRect for tight bounds around actual glyphs
-                // This prevents boxes from extending too far right or below the text
-                let glyphRange = layoutManager.glyphRange(for: textContainer)
-                let boundingRect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
-
-                // Use tight bounding rect width, but use fontSize for height to prevent overlap
-                let actualWidth = ceil(boundingRect.width)
+                // PERFORMANCE: Calculate ACTUAL text width using cached components
+                let nsFont = getCachedFont(family: firstFontFamily, size: firstFontSize, weight: fontWeight)
+                let actualWidth = calculateTextWidth(for: multiLineContent, font: nsFont, alignment: textAlignment)
                 // Use fontSize for height to prevent boxes from overlapping stacked text
                 let actualHeight = firstFontSize
 
@@ -373,71 +348,24 @@ extension SVGParser {
             // - "start": x is at the left edge (our internal format)
             // - "middle": x is at the center - we need to subtract half the text width
             // - "end": x is at the right edge - we need to subtract the full text width
+            let trimmedContent = currentTextContent.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            // PERFORMANCE: Calculate text width once using cached components
+            let nsFont = getCachedFont(family: fontFamily, size: fontSize, weight: fontWeight)
+            let actualWidth = calculateTextWidth(for: trimmedContent, font: nsFont, alignment: textAlignment)
+
             var adjustedX = x
             if textAnchor == "middle" || textAnchor == "end" {
-                // Calculate text width using NSLayoutManager (same as PDF/SVG export)
-                let nsFont = typography.nsFont
-                let paragraphStyle = NSMutableParagraphStyle()
-                paragraphStyle.alignment = typography.alignment.nsTextAlignment
-
-                let attributes: [NSAttributedString.Key: Any] = [
-                    .font: nsFont,
-                    .paragraphStyle: paragraphStyle
-                ]
-
-                let attributedString = NSAttributedString(string: currentTextContent.trimmingCharacters(in: .whitespacesAndNewlines), attributes: attributes)
-                let textStorage = NSTextStorage(attributedString: attributedString)
-                let layoutManager = NSLayoutManager()
-                textStorage.addLayoutManager(layoutManager)
-                let textContainer = NSTextContainer(size: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude))
-                textContainer.lineFragmentPadding = 0
-                layoutManager.addTextContainer(textContainer)
-
-                // Get the used rect to find actual text width
-                let glyphRange = layoutManager.glyphRange(for: textContainer)
-                let textBounds = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
-                let textWidth = textBounds.width
-
                 // Adjust x position based on anchor
                 if textAnchor == "middle" {
-                    adjustedX -= textWidth / 2.0
-                    Log.fileOperation("📝 SVG Import: Adjusted center-aligned text x from \(x) to \(adjustedX) (width: \(textWidth))", level: .debug)
+                    adjustedX -= actualWidth / 2.0
+                    Log.fileOperation("📝 SVG Import: Adjusted center-aligned text x from \(x) to \(adjustedX) (width: \(actualWidth))", level: .debug)
                 } else if textAnchor == "end" {
-                    adjustedX -= textWidth
-                    Log.fileOperation("📝 SVG Import: Adjusted right-aligned text x from \(x) to \(adjustedX) (width: \(textWidth))", level: .debug)
+                    adjustedX -= actualWidth
+                    Log.fileOperation("📝 SVG Import: Adjusted right-aligned text x from \(x) to \(adjustedX) (width: \(actualWidth))", level: .debug)
                 }
             }
 
-            // CRITICAL FIX: Calculate ACTUAL text width using NSLayoutManager instead of estimation
-            // This prevents text boxes from overlapping when multiple text elements are adjacent
-            let trimmedContent = currentTextContent.trimmingCharacters(in: .whitespacesAndNewlines)
-
-            let nsFont = typography.nsFont
-            let paragraphStyle = NSMutableParagraphStyle()
-            paragraphStyle.alignment = typography.alignment.nsTextAlignment
-
-            let attributes: [NSAttributedString.Key: Any] = [
-                .font: nsFont,
-                .paragraphStyle: paragraphStyle
-            ]
-
-            let attributedString = NSAttributedString(string: trimmedContent, attributes: attributes)
-            let textStorage = NSTextStorage(attributedString: attributedString)
-            let layoutManager = NSLayoutManager()
-            textStorage.addLayoutManager(layoutManager)
-
-            // Use a container with unlimited width to get actual text width
-            let textContainer = NSTextContainer(size: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude))
-            textContainer.lineFragmentPadding = 0
-            layoutManager.addTextContainer(textContainer)
-
-            // CRITICAL: Use boundingRect for tight bounds around actual glyphs
-            // This prevents boxes from extending too far right or below the text
-            let glyphRange = layoutManager.glyphRange(for: textContainer)
-            let boundingRect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
-
-            // Use tight bounding rect width, but use fontSize for height to prevent overlap
-            let actualWidth = ceil(boundingRect.width)
             // Use fontSize for height to prevent boxes from overlapping stacked text
             let actualHeight = fontSize
 
