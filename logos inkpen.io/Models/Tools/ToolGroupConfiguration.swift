@@ -32,7 +32,7 @@ struct ToolGroupConfiguration {
         // Polygons: show 5–9 sides explicitly
         "polygons": [.pentagon, .hexagon, .heptagon, .octagon, .nonagon],
         "lines": [.bezierPen, .line],
-        "brushes": [.brush, .marker, .freehand],
+        "brushes": [.marker, .freehand],
         "transforms": [.scale, .rotate, .shear, .warp],
         "stars": [.star], // Star has variants handled separately
         "navigation": [.hand, .zoom], // Navigation tools group

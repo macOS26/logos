@@ -20,7 +20,15 @@ struct MarkerPoint {
 }
 
 extension DrawingCanvas {
-    
+
+    // MARK: - Path Validation Helpers
+
+    /// Check if a CGRect has finite values (no infinity or NaN)
+    func isPathBoundsFinite(_ rect: CGRect) -> Bool {
+        return rect.origin.x.isFinite && rect.origin.y.isFinite &&
+               rect.size.width.isFinite && rect.size.height.isFinite
+    }
+
     // MARK: - Marker Tool Management
     
     internal func cancelMarkerDrawing() {

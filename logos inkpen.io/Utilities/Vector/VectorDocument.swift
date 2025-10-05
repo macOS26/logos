@@ -164,7 +164,7 @@ class VectorDocument: ObservableObject, Codable {
     
     
     
-    @Published var currentTool: DrawingTool = .brush {
+    @Published var currentTool: DrawingTool = .marker {
         didSet {
             UserDefaults.standard.set(currentTool.rawValue, forKey: "lastUsedTool")
         }

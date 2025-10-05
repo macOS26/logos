@@ -245,14 +245,6 @@ extension DrawingCanvas {
             }
             handleFreehandDragUpdate(at: currentLocation)
 
-        case .brush:
-            let currentLocation = screenToCanvas(value.location, geometry: geometry)
-            if !isBrushDrawing {
-                let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
-                handleBrushDragStart(at: startLocation)
-            }
-            handleBrushDragUpdate(at: currentLocation)
-
         case .marker:
             // MARKER USES PRESSURE EVENTS ONLY - DragGesture disabled to prevent timing conflicts
             // Pressure events handle all drawing (began/changed/ended) via PressureSensitiveCanvasView
@@ -308,9 +300,6 @@ extension DrawingCanvas {
 
         case .freehand:
             handleFreehandDragEnd()
-
-        case .brush:
-            handleBrushDragEnd()
 
         case .marker:
             // MARKER USES PRESSURE EVENTS ONLY - DragGesture disabled to prevent timing conflicts

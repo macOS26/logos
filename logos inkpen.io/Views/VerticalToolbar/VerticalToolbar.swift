@@ -348,8 +348,6 @@ struct VerticalToolbar: View {
             return "Bezier Pen Tool (P) - Draw bezier curves and paths"
         case .freehand:
             return "Freehand Tool (F) - Draw freehand with smooth curves"
-        case .brush:
-            return "Brush Tool (B) - Draw variable width brush strokes"
         case .marker:
             return "Marker Tool (M) - Draw with pressure-sensitive marker strokes"
         case .font:

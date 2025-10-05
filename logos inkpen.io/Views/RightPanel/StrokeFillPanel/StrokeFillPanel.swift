@@ -355,8 +355,6 @@ struct StrokeFillPanel: View {
                     switch document.currentTool {
                     case .freehand:
                         FreehandSettingsSection(document: document)
-                    case .brush:
-                        VariableStrokeSection(document: document)
                     case .marker:
                         MarkerSettingsSection(document: document)
                     default:

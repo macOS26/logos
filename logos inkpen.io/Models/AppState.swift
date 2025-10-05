@@ -18,7 +18,7 @@ class AppState {
     }
     
     // MARK: - Default Tool Setting (Persistent across app launches)
-    var defaultTool: DrawingTool = .brush {
+    var defaultTool: DrawingTool = .marker {
         didSet {
             UserDefaults.standard.set(defaultTool.rawValue, forKey: "defaultTool")
             Log.info("🛠️ Default tool changed to: \(defaultTool.rawValue)")
@@ -132,17 +132,7 @@ class AppState {
     
     /// Controls whether the New Document Setup window should be available for opening
     var shouldShowDocumentSetup: Bool = false
-    
-    // MARK: - Preferences: Brush Preview
-    enum BrushPreviewStyle: String, CaseIterable { case outline, fill }
-    var brushPreviewStyle: BrushPreviewStyle = .fill {
-        didSet { UserDefaults.standard.set(brushPreviewStyle.rawValue, forKey: "brushPreviewStyle") }
-    }
-    /// If true, the live preview is treated as final; we bake exactly that path on mouse up
-    var brushPreviewIsFinal: Bool = false {
-        didSet { UserDefaults.standard.set(brushPreviewIsFinal, forKey: "brushPreviewIsFinal") }
-    }
-    
+
     // MARK: - PDF Export Preferences
     /// Controls whether to use CGGradient or CGShading for PDF gradient rendering
     enum PDFGradientMethod: String, CaseIterable {
@@ -300,8 +290,8 @@ class AppState {
             self.defaultTool = tool
             Log.info("🛠️ Loaded saved default tool: \(tool.rawValue)")
         } else {
-            self.defaultTool = .brush
-            Log.info("🛠️ Using default tool: brush")
+            self.defaultTool = .marker
+            Log.info("🛠️ Using default tool: marker")
         }
         
         // Load saved pressure sensitivity setting - default to false (OFF) for mouse/trackpad
@@ -310,13 +300,6 @@ class AppState {
 
         // Load saved pressure curve
         loadPressureCurve()
-        
-        // Load brush preview preferences
-        if let styleRaw = UserDefaults.standard.string(forKey: "brushPreviewStyle"),
-           let style = BrushPreviewStyle(rawValue: styleRaw) {
-            self.brushPreviewStyle = style
-        }
-        self.brushPreviewIsFinal = UserDefaults.standard.object(forKey: "brushPreviewIsFinal") as? Bool ?? false
 
         // Load Apple system HUD preference and layout
         self.enableSystemMetalHUD = UserDefaults.standard.object(forKey: "enableSystemMetalHUD") as? Bool ?? false

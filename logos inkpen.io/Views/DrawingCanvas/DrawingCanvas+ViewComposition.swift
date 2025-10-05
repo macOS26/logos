@@ -54,16 +54,6 @@ extension DrawingCanvas {
         // PROFESSIONAL RUBBER BAND PREVIEW (Professional Standards)
         rubberBandPreview(geometry: geometry)
         
-        // Brush live preview (SwiftUI overlay; avoids document mutations during drag)
-        if let preview = brushPreviewPath {
-            Path { path in
-                addPathElements(preview.elements, to: &path)
-            }
-            .modifier(BrushPreviewStyleModifier(appState: appState, document: document, preview: preview))
-            .scaleEffect(document.zoomLevel, anchor: .topLeading)
-            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-        }
-        
         // Freehand live preview (SwiftUI overlay; avoids document mutations during drag)
         if let preview = freehandPreviewPath {
             Path { path in
@@ -372,7 +362,7 @@ extension DrawingCanvas {
     @ViewBuilder
     internal func pressureSensitiveOverlay(geometry: GeometryProxy) -> some View {
         // Only show pressure overlay for drawing tools that use pressure
-        if document.currentTool == .brush || document.currentTool == .freehand || document.currentTool == .marker {
+        if document.currentTool == .freehand || document.currentTool == .marker {
             PressureSensitiveCanvasRepresentable(
                                             onPressureEvent: { location, pressure, eventType, isTabletEvent in
                                 handlePressureEvent(location: location, pressure: pressure, eventType: eventType, isTabletEvent: isTabletEvent, geometry: geometry)
@@ -416,16 +406,8 @@ extension DrawingCanvas {
     
     private func handlePressureDrawingStart(at location: CGPoint) {
         Log.info("🎨 PRESSURE DRAWING START: Called for tool: \(document.currentTool)", category: .pressure)
-        Log.info("🎨 PRESSURE DRAWING START: Is brush drawing: \(isBrushDrawing)", category: .pressure)
 
         switch document.currentTool {
-        case .brush:
-            if !isBrushDrawing {
-                Log.info("🎨 PRESSURE DRAWING START: Starting brush drawing", category: .pressure)
-                handleBrushDragStart(at: location)
-            } else {
-                Log.info("🎨 PRESSURE DRAWING START: Brush already drawing, skipping start", category: .pressure)
-            }
         case .freehand:
             if !isFreehandDrawing {
                 Log.info("🎨 PRESSURE DRAWING START: Starting freehand drawing", category: .pressure)
@@ -448,19 +430,11 @@ extension DrawingCanvas {
     
     private func handlePressureDrawingUpdate(at location: CGPoint) {
         Log.info("🎨 PRESSURE DRAWING UPDATE: Called for tool: \(document.currentTool)", category: .pressure)
-        Log.info("🎨 PRESSURE DRAWING UPDATE: Is brush drawing: \(isBrushDrawing)", category: .pressure)
 
         // Get the current pressure that was just updated by the pressure event
         let currentPressure = PressureManager.shared.currentPressure
 
         switch document.currentTool {
-        case .brush:
-            if isBrushDrawing {
-                // Brush drag update - logging removed for performance
-                handleBrushDragUpdate(at: location)
-            } else {
-                Log.info("🎨 PRESSURE DRAWING UPDATE: Brush not drawing, skipping update", category: .pressure)
-            }
         case .freehand:
             if isFreehandDrawing {
                 // Freehand drag update - logging removed for performance
@@ -483,10 +457,6 @@ extension DrawingCanvas {
     
     private func handlePressureDrawingEnd(at location: CGPoint) {
         switch document.currentTool {
-        case .brush:
-            if isBrushDrawing {
-                handleBrushDragEnd()
-            }
         case .freehand:
             if isFreehandDrawing {
                 handleFreehandDragEnd()
@@ -513,112 +483,6 @@ extension DrawingCanvas {
             )
     }
 
-} 
-
-// MARK: - Brush Preview Styling
-private struct BrushPreviewStyleModifier: ViewModifier {
-    @Environment(AppState.self) var appState
-    let appStateRef: AppState?
-    let document: VectorDocument
-    let preview: VectorPath
-    
-    init(appState: AppState, document: VectorDocument, preview: VectorPath) {
-        self.document = document
-        self.preview = preview
-        self.appStateRef = appState
-    }
-    
-    func body(content: Content) -> some View {
-        switch appStateRef?.brushPreviewStyle ?? .outline {
-        case .outline:
-            ZStack {
-                content.opacity(0.001)
-                Path { p in addPathElements(preview.elements, to: &p) }
-                    .stroke(Color.blue, lineWidth: max(1.0, 1.0 / document.zoomLevel))
-            }
-        case .fill:
-            Path { p in addPathElements(preview.elements, to: &p) }
-                .fill(document.defaultFillColor.color)
-                .opacity(document.defaultFillOpacity)
-        }
-    }
-    
-    /// VECTOR APP OPTIMIZATION: Render only dragged objects as overlay (no full scene redraw)
-    @ViewBuilder
-    internal func draggedObjectPreview(geometry: GeometryProxy, dragDelta: CGPoint) -> some View {
-        if dragDelta != .zero && !document.selectedObjectIDs.isEmpty {
-            let draggedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
-            ForEach(draggedObjects, id: \.id) { unifiedObject in
-                draggedObjectView(unifiedObject, dragDelta: dragDelta)
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private func draggedObjectView(_ unifiedObject: VectorObject, dragDelta: CGPoint) -> some View {
-        switch unifiedObject.objectType {
-        case .shape(let shape):
-            draggedShapeView(shape, dragDelta: dragDelta)
-            // Text handled as VectorShape
-        }
-    }
-    
-    @ViewBuilder
-    private func draggedShapeView(_ shape: VectorShape, dragDelta: CGPoint) -> some View {
-        let offsetShape = applyDragOffsetToShape(shape, offset: dragDelta)
-        Path { path in
-            addPathElements(offsetShape.path.elements, to: &path)
-        }
-        .fill(shape.fillStyle?.color.color ?? .clear)
-        .overlay(
-            Path { path in
-                addPathElements(offsetShape.path.elements, to: &path)
-            }
-            .stroke(shape.strokeStyle?.color.color ?? .clear, lineWidth: shape.strokeStyle?.width ?? 0)
-        )
-        .scaleEffect(document.zoomLevel, anchor: .topLeading)
-        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-        .opacity(0.8)
-    }
-    
-    @ViewBuilder
-    private func draggedTextView(_ text: VectorText, dragDelta: CGPoint) -> some View {
-        Text(text.content)
-            .font(.system(size: text.typography.fontSize * document.zoomLevel))
-            .foregroundColor(text.typography.fillColor.color)
-            .position(
-                x: (text.position.x + dragDelta.x) * document.zoomLevel + document.canvasOffset.x,
-                y: (text.position.y + dragDelta.y) * document.zoomLevel + document.canvasOffset.y
-            )
-            .opacity(0.8)
-    }
-    
-    /// Apply drag offset to shape coordinates without modifying the original
-    private func applyDragOffsetToShape(_ shape: VectorShape, offset: CGPoint) -> VectorShape {
-        var offsetShape = shape
-        offsetShape.path = VectorPath(elements: shape.path.elements.map { element in
-            switch element {
-            case .move(let to):
-                return .move(to: VectorPoint(to.x + offset.x, to.y + offset.y))
-            case .line(let to):
-                return .line(to: VectorPoint(to.x + offset.x, to.y + offset.y))
-            case .curve(let to, let cp1, let cp2):
-                return .curve(
-                    to: VectorPoint(to.x + offset.x, to.y + offset.y),
-                    control1: VectorPoint(cp1.x + offset.x, cp1.y + offset.y),
-                    control2: VectorPoint(cp2.x + offset.x, cp2.y + offset.y)
-                )
-            case .quadCurve(let to, let cp):
-                return .quadCurve(
-                    to: VectorPoint(to.x + offset.x, to.y + offset.y),
-                    control: VectorPoint(cp.x + offset.x, cp.y + offset.y)
-                )
-            case .close:
-                return .close
-            }
-        })
-        return offsetShape
-    }
 }
 
 // MARK: - Freehand Preview Style Modifier
