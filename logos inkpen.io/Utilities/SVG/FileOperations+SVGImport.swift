@@ -173,12 +173,26 @@ extension FileOperations {
                 }
             } else {
                 // Standalone shape without clipping
-                // CRITICAL FIX: Skip invalid NON-TEXT shapes with empty paths (e.g., <path d=""/>)
-                // BUT keep text objects even if path is empty
-                if !shape.path.elements.isEmpty || shape.isTextObject {
+                // CRITICAL FIX: Skip invalid shapes
+                let shouldSkip: Bool = {
+                    // Skip non-text shapes with empty paths (e.g., <path d=""/>)
+                    if !shape.isTextObject && shape.path.elements.isEmpty {
+                        return true
+                    }
+                    // Skip text objects with no content or only whitespace
+                    if shape.isTextObject {
+                        let textContent = shape.textContent?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                        if textContent.isEmpty {
+                            return true
+                        }
+                    }
+                    return false
+                }()
+
+                if !shouldSkip {
                     standaloneShapes.append(shape)
                 } else {
-                    Log.fileOperation("⚠️ Skipping invalid shape with empty path: \(shape.name)", level: .debug)
+                    Log.fileOperation("⚠️ Skipping invalid shape: \(shape.name)", level: .debug)
                 }
             }
         }
