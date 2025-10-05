@@ -150,26 +150,86 @@ class VectorImportManager {
         var errors: [VectorImportError] = []
         var warnings: [String] = []
         var shapes: [VectorShape] = []
-        
+
         Log.fileOperation("📊 Importing SVG using professional SVG parser...", level: .info)
         if useExtremeValueHandling {
             Log.fileOperation("🔧 Using extreme value handling for radial gradients", level: .info)
         }
-        
+
         do {
             guard let data = try? Data(contentsOf: url) else {
                 throw VectorImportError.fileNotFound
             }
-            
+
+            // CRITICAL OPTIMIZATION: Check for embedded inkpen metadata FIRST
+            // This avoids parsing the entire SVG if it's a native inkpen document
+            if let svgString = String(data: data, encoding: .utf8) {
+                // Quick check for inkpen metadata before full parsing
+                if let range = svgString.range(of: "<inkpen:document"),
+                   let endRange = svgString.range(of: "</inkpen:document>") {
+
+                    // Extract the base64 content
+                    if let contentStart = svgString.range(of: ">", range: range.upperBound..<endRange.lowerBound),
+                       let contentEnd = svgString.range(of: "<", options: .backwards, range: contentStart.upperBound..<endRange.lowerBound) {
+
+                        let base64Data = String(svgString[contentStart.upperBound..<contentEnd.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+
+                        Log.info("✅ Found embedded inkpen document (\(base64Data.count) base64 chars) - SKIPPING SVG parsing!", category: .fileOperations)
+
+                        // Extract document size from SVG (we still need this for the metadata)
+                        var documentSize = CGSize(width: 8.5 * 72, height: 11 * 72) // Default
+                        if let widthRange = svgString.range(of: "width=\""),
+                           let widthEnd = svgString.range(of: "\"", range: widthRange.upperBound..<svgString.endIndex),
+                           let width = Double(svgString[widthRange.upperBound..<widthEnd.lowerBound]) {
+                            documentSize.width = width
+                        }
+                        if let heightRange = svgString.range(of: "height=\""),
+                           let heightEnd = svgString.range(of: "\"", range: heightRange.upperBound..<svgString.endIndex),
+                           let height = Double(svgString[heightRange.upperBound..<heightEnd.lowerBound]) {
+                            documentSize.height = height
+                        }
+
+                        Log.info("🚀 FAST PATH: Using embedded inkpen metadata - SVG parsing completely skipped", category: .fileOperations)
+
+                        let metadata = VectorImportMetadata(
+                            originalFormat: .svg,
+                            documentSize: documentSize,
+                            viewBoxSize: nil,
+                            colorSpace: "RGB",
+                            units: .points,
+                            dpi: 72.0,
+                            layerCount: 1,
+                            shapeCount: 0,  // We didn't parse shapes
+                            textObjectCount: 0,
+                            importDate: Date(),
+                            sourceApplication: "Inkpen.io",
+                            documentVersion: nil,
+                            inkpenMetadata: base64Data
+                        )
+
+                        return VectorImportResult(
+                            success: true,
+                            shapes: [],  // Empty - will be restored from metadata
+                            metadata: metadata,
+                            errors: errors,
+                            warnings: warnings
+                        )
+                    }
+                }
+            }
+
+            // No inkpen metadata found - parse as regular SVG
+            Log.info("📄 No inkpen metadata found - parsing as regular SVG", category: .fileOperations)
+
             // Parse SVG using professional XML parser
             let svgContent = try parseSVGContent(data, useExtremeValueHandling: useExtremeValueHandling)
             shapes = svgContent.shapes
             // Text objects are now imported as shapes with isTextObject=true
-            
+
             if !svgContent.missingFonts.isEmpty {
                 warnings.append("Missing fonts: \(svgContent.missingFonts.joined(separator: ", "))")
             }
-            
+
             let metadata = VectorImportMetadata(
                 originalFormat: .svg,
                 documentSize: svgContent.documentSize,
