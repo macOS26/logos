@@ -271,26 +271,53 @@ extension SVGParser {
                     }
                 }
 
-                // Calculate proper areaSize and bounds (same as PDF import)
-                let lines = multiLineContent.components(separatedBy: .newlines)
-                let maxLineLength = lines.map { $0.count }.max() ?? 0
-                let estimatedWidth = Double(maxLineLength) * firstFontSize * 0.6  // Same as PDF
-                let estimatedHeight = Double(lines.count) * firstFontSize * 1.2   // Same as PDF
+                // CRITICAL FIX: Calculate ACTUAL text width using NSLayoutManager instead of estimation
+                // This prevents text boxes from overlapping when multiple text elements are adjacent
+                let nsFont = typography.nsFont
+                let paragraphStyle = NSMutableParagraphStyle()
+                paragraphStyle.alignment = typography.alignment.nsTextAlignment
+                paragraphStyle.lineSpacing = typography.lineSpacing
+                paragraphStyle.minimumLineHeight = typography.lineHeight
+                paragraphStyle.maximumLineHeight = typography.lineHeight
+
+                let attributes: [NSAttributedString.Key: Any] = [
+                    .font: nsFont,
+                    .paragraphStyle: paragraphStyle
+                ]
+
+                let attributedString = NSAttributedString(string: multiLineContent, attributes: attributes)
+                let textStorage = NSTextStorage(attributedString: attributedString)
+                let layoutManager = NSLayoutManager()
+                textStorage.addLayoutManager(layoutManager)
+
+                // Use a container with unlimited width to get actual text width
+                let textContainer = NSTextContainer(size: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude))
+                textContainer.lineFragmentPadding = 0
+                textContainer.lineBreakMode = .byWordWrapping
+                layoutManager.addTextContainer(textContainer)
+
+                // Get the actual bounding rect for the text
+                let glyphRange = layoutManager.glyphRange(for: textContainer)
+                let textBounds = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
+
+                // Use actual width and height from the layout
+                let actualWidth = ceil(textBounds.width) + 4.0  // Add small padding
+                let actualHeight = ceil(textBounds.height)
 
                 var textObject = VectorText(
                     content: multiLineContent,
                     typography: typography,
                     position: CGPoint(x: adjustedX, y: baseY),
                     transform: finalTextTransform,
-                    areaSize: CGSize(width: max(100, estimatedWidth), height: max(firstFontSize, estimatedHeight))
+                    areaSize: CGSize(width: actualWidth, height: max(firstFontSize, actualHeight))
                 )
 
-                // Set bounds explicitly (same as PDF import)
+                // Set bounds explicitly using actual dimensions
                 textObject.bounds = CGRect(
                     x: adjustedX,
                     y: baseY,
-                    width: max(100, estimatedWidth),
-                    height: max(firstFontSize, estimatedHeight)
+                    width: actualWidth,
+                    height: max(firstFontSize, actualHeight)
                 )
 
                 textObjects.append(textObject)
@@ -379,27 +406,51 @@ extension SVGParser {
                 }
             }
 
-            // Calculate proper areaSize and bounds (same as PDF import)
+            // CRITICAL FIX: Calculate ACTUAL text width using NSLayoutManager instead of estimation
+            // This prevents text boxes from overlapping when multiple text elements are adjacent
             let trimmedContent = currentTextContent.trimmingCharacters(in: .whitespacesAndNewlines)
-            let lines = trimmedContent.components(separatedBy: .newlines)
-            let maxLineLength = lines.map { $0.count }.max() ?? 0
-            let estimatedWidth = Double(maxLineLength) * fontSize * 0.6  // Same as PDF
-            let estimatedHeight = Double(lines.count) * fontSize * 1.2   // Same as PDF
+
+            let nsFont = typography.nsFont
+            let paragraphStyle = NSMutableParagraphStyle()
+            paragraphStyle.alignment = typography.alignment.nsTextAlignment
+
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: nsFont,
+                .paragraphStyle: paragraphStyle
+            ]
+
+            let attributedString = NSAttributedString(string: trimmedContent, attributes: attributes)
+            let textStorage = NSTextStorage(attributedString: attributedString)
+            let layoutManager = NSLayoutManager()
+            textStorage.addLayoutManager(layoutManager)
+
+            // Use a container with unlimited width to get actual text width
+            let textContainer = NSTextContainer(size: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude))
+            textContainer.lineFragmentPadding = 0
+            layoutManager.addTextContainer(textContainer)
+
+            // Get the actual bounding rect for the text
+            let glyphRange = layoutManager.glyphRange(for: textContainer)
+            let textBounds = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
+
+            // Use actual width and height from the layout
+            let actualWidth = ceil(textBounds.width) + 4.0  // Add small padding
+            let actualHeight = ceil(textBounds.height)
 
             var textObject = VectorText(
                 content: trimmedContent,
                 typography: typography,
                 position: CGPoint(x: adjustedX, y: y),
                 transform: finalTextTransform,
-                areaSize: CGSize(width: max(100, estimatedWidth), height: max(fontSize, estimatedHeight))
+                areaSize: CGSize(width: actualWidth, height: max(fontSize, actualHeight))
             )
 
-            // Set bounds explicitly (same as PDF import)
+            // Set bounds explicitly using actual dimensions
             textObject.bounds = CGRect(
                 x: adjustedX,
                 y: y,
-                width: max(100, estimatedWidth),
-                height: max(fontSize, estimatedHeight)
+                width: actualWidth,
+                height: max(fontSize, actualHeight)
             )
 
             textObjects.append(textObject)
