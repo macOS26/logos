@@ -148,7 +148,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                         clipShape.isCompoundPath = true
                         updatedShapes.append(clipShape)
                         
-                        Log.info("✅ Auto-connected orphaned clipPath to image", category: .fileOperations)
                     } else if !unclippedImages.contains(where: { $0.id == shape.id }) {
                         // Keep other shapes as-is
                         updatedShapes.append(shape)
@@ -306,7 +305,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                 // Trim and store the base64 content
                 inkpenMetadata = currentMetadataContent.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !inkpenMetadata!.isEmpty {
-                    Log.info("📦 Found embedded inkpen document in SVG metadata (\(inkpenMetadata!.count) chars)", category: .fileOperations)
                 }
                 isInInkpenDocument = false
                 currentMetadataContent = ""
@@ -337,11 +335,9 @@ class SVGParser: NSObject, XMLParserDelegate {
             if !clipPathStack.isEmpty {
                 let previousClipPath = clipPathStack.removeLast()
                 if pendingClipPathId != previousClipPath {
-                    Log.info("🔚 Restoring clip path from '\(pendingClipPathId ?? "none")' to '\(previousClipPath ?? "none")' on group exit", category: .fileOperations)
                 }
                 pendingClipPathId = previousClipPath
             } else if pendingClipPathId != nil {
-                Log.info("🔚 Clearing pending clip path '\(pendingClipPathId!)' on group exit (no stack)", category: .fileOperations)
                 pendingClipPathId = nil
             }
             
@@ -363,7 +359,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             isParsingClipPath = false
             if let clipId = currentClipPathId, let clipPath = currentClipPath {
                 clipPathDefinitions[clipId] = clipPath
-                Log.info("✅ Stored clipPath definition: \(clipId)", category: .fileOperations)
             }
             currentClipPathId = nil
             currentClipPath = nil
@@ -426,7 +421,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
         }
         
-        Log.info("✅ CSS parsing complete - \(cssStyles.count) rules parsed", category: .fileOperations)
     }
 
     // Apply space-separated CSS classes from a class attribute into an attribute dictionary
@@ -531,18 +525,15 @@ class SVGParser: NSObject, XMLParserDelegate {
         // First check if group has a class that might define clip-path
         var mergedAttributes = attributes
         if let className = attributes["class"] {
-            Log.info("🏷️ Processing group classes: \(className)", category: .fileOperations)
             // Handle multiple classes separated by spaces
             let classNames = className.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
             for cls in classNames {
                 let selector = "." + cls
                 if let classStyles = cssStyles[selector] {
-                    Log.info("✅ Found styles for group \(selector): \(classStyles)", category: .fileOperations)
                     // CSS class styles have lower priority than inline styles
                     for (key, value) in classStyles {
                         if mergedAttributes[key] == nil {
                             mergedAttributes[key] = value
-                            Log.info("   Applied to group \(key): \(value)", category: .general)
                         }
                     }
                 }
@@ -552,7 +543,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         // Check for clip-path on the group (now checking merged attributes which includes CSS class styles)
         // CRITICAL FIX: Only apply clip path if we don't already have one from parent group
         if pendingClipPathId == nil, let clipPathAttr = mergedAttributes["clip-path"] {
-            Log.info("🎭 Found clip-path on group: \(clipPathAttr)", category: .fileOperations)
             // Extract ID from "url(#id)" format
             if let range = clipPathAttr.range(of: "#") {
                 let idPart = clipPathAttr[range.upperBound...]
@@ -560,10 +550,9 @@ class SVGParser: NSObject, XMLParserDelegate {
                     let clipId = String(idPart[..<endRange.lowerBound])
                     // CRITICAL: Validate the clip path exists before setting pendingClipPathId
                     // This prevents race conditions where groups reference non-existent clip paths
-                    if let clipPath = clipPathDefinitions[clipId] {
+                    if clipPathDefinitions[clipId] != nil {
                         // Store this for elements within the group
                         pendingClipPathId = clipId
-                        Log.info("📎 Group will apply existing clip path: \(clipId) with \(clipPath.elements.count) elements", category: .fileOperations)
                     } else {
                         // Clip path not yet defined, store for later resolution
                         // This can happen if clipPath is defined after the group in the SVG
@@ -573,14 +562,12 @@ class SVGParser: NSObject, XMLParserDelegate {
                 }
             }
         } else if pendingClipPathId != nil {
-            Log.info("🔒 Preserving parent group clip path '\(pendingClipPathId!)' - not overriding with nested group", category: .fileOperations)
         }
     }
     
     private func parsePath(attributes: [String: String]) {
         guard let d = attributes["d"] else { return }
         
-        Log.info("🔍 Parsing SVG path: \(d)", category: .general)
 
         let pathData = parsePathData(d)
         let hasCloseElement = pathData.contains { if case .close = $0 { return true }; return false }
@@ -617,7 +604,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             shapes.append(shape)
         }
         
-        Log.info("✅ Added shape to collection - total: \(shapes.count)", category: .fileOperations)
     }
     
     
@@ -625,7 +611,6 @@ class SVGParser: NSObject, XMLParserDelegate {
     
     private func parseImage(attributes: [String: String]) {
         // Debug log to see what attributes we're getting
-        Log.info("🖼️ parseImage called with attributes: \(attributes)", category: .fileOperations)
         
         // First, merge CSS class styles with inline styles to get the full attribute set
         var mergedAttributes = attributes
@@ -637,12 +622,10 @@ class SVGParser: NSObject, XMLParserDelegate {
             for cls in classNames {
                 let selector = "." + cls
                 if let classStyles = cssStyles[selector] {
-                    Log.info("✅ Found styles for image \(selector): \(classStyles)", category: .fileOperations)
                     // CSS class styles have lower priority than inline styles
                     for (key, value) in classStyles {
                         if mergedAttributes[key] == nil {
                             mergedAttributes[key] = value
-                            Log.info("   Applied to image \(key): \(value)", category: .general)
                         }
                     }
                 }
@@ -663,7 +646,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         var clipPathId: String? = nil
         
         if let clipPathAttr = mergedAttributes["clip-path"], !clipPathAttr.isEmpty {
-            Log.info("🎭 Found clip-path attribute on image: \(clipPathAttr)", category: .fileOperations)
             // Extract ID from "url(#id)" format
             if let range = clipPathAttr.range(of: "#") {
                 let idPart = clipPathAttr[range.upperBound...]
@@ -671,7 +653,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                     let extractedId = String(idPart[..<endRange.lowerBound])
                     if !extractedId.isEmpty {
                         clipPathId = extractedId
-                        Log.info("📎 Extracted clip path ID: \(clipPathId ?? "")", category: .fileOperations)
                     }
                 }
             }
@@ -680,7 +661,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         // If no clip path was extracted from attributes, use pending clip path from parent group
         if clipPathId == nil, let pendingId = pendingClipPathId {
             clipPathId = pendingId
-            Log.info("📎 Using clip path from parent group: \(pendingId)", category: .fileOperations)
         }
         
         // Create a rectangle path for the image bounds
@@ -722,16 +702,13 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
         
         // Apply clip path if specified
-        Log.info("🔍 Checking for clip path - ID: \(clipPathId ?? "none"), Available definitions: \(clipPathDefinitions.keys.joined(separator: ", "))", category: .fileOperations)
 
         // CRITICAL FIX: Validate the clip path exists before applying
         // This prevents race conditions where wrong clip paths are applied
         if let clipId = clipPathId {
             // Log detailed information about the clip path resolution
-            Log.info("📎 Attempting to apply clip path '\(clipId)' to image", category: .fileOperations)
 
             if let clipPath = clipPathDefinitions[clipId] {
-                Log.info("✅ Found clip path definition for '\(clipId)' with \(clipPath.elements.count) elements", category: .fileOperations)
                 // Ensure the clip path is closed
                 var closedClipPath = clipPath
                 if !closedClipPath.isClosed {
@@ -775,7 +752,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                 // Add the clip shape LAST (on top)
                 shapes.append(clipShape)
 
-                Log.info("✅ Added clipped image with proper InkPen ordering: image first (id: \(maskedImageShape.id)), mask last (id: \(clipShapeId))", category: .fileOperations)
                 return // Don't add the original unmasked image
             } else {
                 // CRITICAL: Log warning if clip path is referenced but not found
@@ -785,7 +761,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
         
         shapes.append(imageShape)
-        Log.info("✅ Added image shape with \(imageHref.hasPrefix("data:") ? "embedded" : "linked") data", category: .fileOperations)
     }
     
     // MARK: - ClipPath Parsing
@@ -794,7 +769,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         isParsingClipPath = true
         currentClipPathId = attributes["id"]
         currentClipPath = nil
-        Log.info("🎭 Starting clipPath parsing: \(currentClipPathId ?? "unnamed")", category: .fileOperations)
     }
     
     private func parseShapeForClipPath(elementName: String, attributes: [String: String]) {
@@ -806,7 +780,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             if let d = attributes["d"] {
                 let pathData = parsePathData(d)
                 clipPath = VectorPath(elements: pathData, isClosed: true)
-                Log.info("📐 Parsed path for clipPath with \(pathData.count) elements", category: .fileOperations)
             }
             
         case "rect":
@@ -822,7 +795,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                 .line(to: VectorPoint(rect.minX, rect.maxY)),
                 .close
             ], isClosed: true)
-            Log.info("📐 Parsed rect for clipPath: \(rect)", category: .fileOperations)
             
         case "circle":
             let cx = parseLength(attributes["cx"]) ?? 0
@@ -846,7 +818,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                        control2: VectorPoint(center.x + r, center.y - r * 0.552)),
                 .close
             ], isClosed: true)
-            Log.info("📐 Parsed circle for clipPath: center=\(center), radius=\(r)", category: .fileOperations)
             
         case "ellipse":
             let cx = parseLength(attributes["cx"]) ?? 0
@@ -871,7 +842,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                        control2: VectorPoint(center.x + rx, center.y - ry * 0.552)),
                 .close
             ], isClosed: true)
-            Log.info("📐 Parsed ellipse for clipPath: center=\(center), rx=\(rx), ry=\(ry)", category: .fileOperations)
             
         case "polygon":
             if let points = attributes["points"] {
@@ -886,7 +856,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                 }
                 elements.append(.close)
                 clipPath = VectorPath(elements: elements, isClosed: true)
-                Log.info("📐 Parsed polygon for clipPath with \(parsedPoints.count) points", category: .fileOperations)
             }
             
         default:
@@ -897,11 +866,9 @@ class SVGParser: NSObject, XMLParserDelegate {
         if let path = clipPath {
             if currentClipPath == nil {
                 currentClipPath = path
-                Log.info("✅ Set currentClipPath for clipPath ID: \(currentClipPathId ?? "unnamed")", category: .fileOperations)
             } else {
                 // Combine multiple paths in a clipPath element
                 // For now, just use the first one (could be enhanced to support compound clip paths)
-                Log.info("⚠️ Multiple shapes in clipPath - using first one only", category: .fileOperations)
             }
         }
     }
@@ -923,12 +890,10 @@ class SVGParser: NSObject, XMLParserDelegate {
             for cls in classNames {
                 let selector = "." + cls
                 if let classStyles = cssStyles[selector] {
-                    Log.info("✅ Found styles for \(selector): \(classStyles)", category: .fileOperations)
                     // CSS class styles have lower priority than inline styles
                     for (key, value) in classStyles {
                         if mergedAttributes[key] == nil {
                             mergedAttributes[key] = value
-                            Log.info("   Applied \(key): \(value)", category: .general)
                         }
                     }
                 } else {
@@ -974,7 +939,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         } else {
             // Our own exported SVG (no transform attribute) - coordinates are already correct
             transform = currentTransform.isIdentity ? .identity : currentTransform
-            Log.info("✅ Using identity transform for logos-exported shape", category: .fileOperations)
         }
         
         return VectorShape(
@@ -1010,13 +974,11 @@ class SVGParser: NSObject, XMLParserDelegate {
         
         // Check for clip-path attribute
         if let clipPathAttr = mergedAttributes["clip-path"] {
-            Log.info("🎭 Found clip-path attribute: \(clipPathAttr)", category: .fileOperations)
             // Extract ID from "url(#id)" format
             if let range = clipPathAttr.range(of: "#") {
                 let idPart = clipPathAttr[range.upperBound...]
                 if let endRange = idPart.range(of: ")") {
                     let clipPathId = String(idPart[..<endRange.lowerBound])
-                    Log.info("📎 Extracted clip path ID: \(clipPathId)", category: .fileOperations)
                     return (true, clipPathId)
                 }
             }
@@ -1066,7 +1028,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         
         shapes.append(clipShape)
         
-        Log.info("✅ Applied clip path to shape: \(maskedShape.name) with mask id: \(clipShapeId)", category: .fileOperations)
     }
     
     
