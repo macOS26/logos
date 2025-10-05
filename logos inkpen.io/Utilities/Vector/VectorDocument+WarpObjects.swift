@@ -47,6 +47,7 @@ extension VectorDocument {
                     selectedObjectIDs.remove(shape.id)
                     selectedObjectIDs.insert(unwrappedShape.id)
                     
+                    Log.info("✅ UNWRAPPED WARP OBJECT: \(shape.name) → \(unwrappedShape.name)", category: .fileOperations)
                 }
                }
             }
@@ -91,6 +92,7 @@ extension VectorDocument {
                     selectedObjectIDs.remove(shape.id)
                     selectedObjectIDs.insert(expandedShape.id)
                     
+                    Log.info("✅ EXPANDED WARP OBJECT: \(shape.name) → \(expandedShape.name)", category: .fileOperations)
                 }
                }
             }

@@ -32,6 +32,7 @@ extension VectorDocument {
         // Log clipping mask creation for debugging
         let shapesForLogging = getShapesForLayer(layerIndex)
         if shapesForLogging.first(where: { $0.id == maskID }) != nil {
+            Log.info("🎭 CLIPPING MASK: Creating mask with shape '\(shapesForLogging.first(where: { $0.id == maskID })?.name ?? "Unknown")'", category: .general)
         }
         
         // Mark mask
@@ -40,6 +41,7 @@ extension VectorDocument {
            var maskShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: idx) {
             maskShape.isClippingPath = true
             setShapeAtIndex(layerIndex: layerIndex, shapeIndex: idx, shape: maskShape)
+            Log.info("🎭 CLIPPING MASK DEBUG: Set isClippingPath=true for shape '\(maskShape.name)' in layers array", category: .general)
         }
         
         // Apply clipping to others
@@ -49,6 +51,8 @@ extension VectorDocument {
                var clippedShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: i) {
                 clippedShape.clippedByShapeID = maskID
                 setShapeAtIndex(layerIndex: layerIndex, shapeIndex: i, shape: clippedShape)
+                Log.info("🎭 CLIPPING MASK: Applied clipping to shape '\(s.name)'", category: .general)
+                Log.info("🎭 CLIPPING MASK DEBUG: Set clippedByShapeID=\(maskID.uuidString.prefix(8)) for shape '\(s.name)' in layers array", category: .general)
             }
         }
         
@@ -61,10 +65,12 @@ extension VectorDocument {
         }
         
         // DEBUG: Check layers array before unified sync
+        Log.info("🎭 CLIPPING MASK DEBUG: Before unified sync - checking layers array:", category: .general)
         for (idx, _) in layers.enumerated() {
             let shapesInLayer = getShapesForLayer(idx)
             for shape in shapesInLayer {
                 if shape.id == maskID || selectedShapes.dropLast().contains(where: { $0.id == shape.id }) {
+                    Log.info("🎭 CLIPPING MASK DEBUG: Layer \(idx) shape '\(shape.name)' - isClippingPath: \(shape.isClippingPath), clippedByShapeID: \(shape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .general)
                 }
             }
         }
@@ -73,10 +79,13 @@ extension VectorDocument {
         forceResyncUnifiedObjects()
         
         // DEBUG: Check if unified objects were synced correctly
+        Log.info("🎭 CLIPPING MASK DEBUG: After unified sync - checking unified objects:", category: .general)
         for unifiedObject in unifiedObjects {
             if case .shape(let shape) = unifiedObject.objectType {
                 if shape.id == maskID {
+                    Log.info("🎭 CLIPPING MASK DEBUG: Unified object for mask '\(shape.name)' - isClippingPath: \(shape.isClippingPath)", category: .general)
                 } else if selectedShapes.dropLast().contains(where: { $0.id == shape.id }) {
+                    Log.info("🎭 CLIPPING MASK DEBUG: Unified object for clipped shape '\(shape.name)' - clippedByShapeID: \(shape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .general)
                 }
             }
         }
@@ -84,6 +93,7 @@ extension VectorDocument {
         // Force immediate UI update
         objectWillChange.send()
         
+        Log.info("✅ CLIPPING MASK: Created successfully with \(selectedShapes.count - 1) clipped shapes", category: .general)
     }
     
     /// Releases any clipping relationship among selected shapes
@@ -127,6 +137,7 @@ extension VectorDocument {
                     if ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
                         // Force bounds recalculation for image shapes
                         updatedShape.updateBounds()
+                        Log.info("🎭 CLIPPING MASK: Restored bounds for image shape '\(shape.name)'", category: .general)
                     }
                     setShapeAtIndex(layerIndex: layerIndex, shapeIndex: idx, shape: updatedShape)
                 }
@@ -149,6 +160,7 @@ extension VectorDocument {
                 var updatedShape = shape
                 updatedShape.updateBounds()
                 setShapeAtIndex(layerIndex: layerIndex, shapeIndex: idx, shape: updatedShape)
+                Log.info("🎭 CLIPPING MASK: Restored bounds for unclipped image shape '\(shape.name)'", category: .general)
             }
         }
         
@@ -156,6 +168,7 @@ extension VectorDocument {
         forceResyncUnifiedObjects()
         objectWillChange.send()
         
+        Log.info("✅ CLIPPING MASK: Released successfully", category: .general)
     }
     
     /// Moves a clipping mask and all its clipped content together
@@ -188,6 +201,7 @@ extension VectorDocument {
         forceResyncUnifiedObjects()
         objectWillChange.send()
         
+        Log.info("🎭 CLIPPING MASK: Moved mask and clipped content by \(offset)", category: .general)
     }
     
     /// Helper function to move a shape by updating its path coordinates

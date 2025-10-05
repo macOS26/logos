@@ -17,8 +17,10 @@ class TemplateManager {
     
     private init() {
         // Initialize templates synchronously - they're fast to load
+        Log.info("📄 Starting template initialization...", category: .general)
         loadAvailableTemplates()
         isInitialized = true
+        Log.info("✅ Template initialization completed", category: .fileOperations)
     }
     
     // MARK: - Template Types
@@ -40,11 +42,13 @@ class TemplateManager {
     
     private func loadAvailableTemplates() {
         // Template loading removed - functionality was not being used
+        Log.info("📄 Template system initialized", category: .general)
     }
     // MARK: - Public Interface
     
     /// Create a truly blank document (no content whatsoever)
     func createBlankDocument(with defaultTool: DrawingTool = .selection) -> VectorDocument {
+        Log.info("📄 Creating truly blank document...", category: .general)
         
         // Create document immediately without waiting for template initialization
         let blankSettings = DocumentSettings(
@@ -71,7 +75,9 @@ class TemplateManager {
         
         // Apply the default tool setting
         document.currentTool = defaultTool
+        Log.info("🛠️ Set default tool to: \(defaultTool.rawValue)", category: .general)
         
+        Log.info("✅ Created truly blank document - single layer!", category: .fileOperations)
         return document
     }
 }

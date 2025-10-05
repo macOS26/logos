@@ -36,6 +36,7 @@ class DocumentState: ObservableObject {
     private var pasteboardChangeCount: Int = 0
 
     init() {
+        Log.info("🎯 DocumentState initialized with automatic menu state updates")
         // Defer observer setup until document is set to prevent blocking during launch
 
         // Register with central registry (no notifications)
@@ -48,6 +49,7 @@ class DocumentState: ObservableObject {
     deinit {
         // CRITICAL: Clean up all subscriptions to prevent retain cycles
         cancellables.removeAll()
+        Log.info("🎯 DocumentState deallocated - subscriptions cleaned up")
     }
     
     func setDocument(_ document: VectorDocument) {
@@ -67,10 +69,12 @@ class DocumentState: ObservableObject {
         // Explicit cleanup method for app shutdown
         cancellables.removeAll()
         document = nil
+        Log.info("🎯 DocumentState cleanup completed")
     }
     
     func forceCleanup() {
         // Force cleanup called from app termination
+        Log.info("🎯 DocumentState force cleanup initiated")
         isTerminating = true
         cancellables.removeAll()
         
@@ -95,6 +99,7 @@ class DocumentState: ObservableObject {
         canUnwrapWarpObject = false
         canExpandWarpObject = false
         
+        Log.info("🎯 DocumentState force cleanup completed")
     }
     
     private func startPasteboardMonitoring() {
@@ -124,11 +129,13 @@ class DocumentState: ObservableObject {
         }
         .store(in: &cancellables)
 
+        Log.startup("✅ Document observers set up asynchronously")
     }
     
     private func updateAllStates() {
         // CRITICAL: Don't update states during app termination to prevent SwiftUI constraint crashes
         guard !isTerminating else {
+            Log.info("🎯 DocumentState: Skipping state update during termination")
             return
         }
         
@@ -393,10 +400,11 @@ class DocumentState: ObservableObject {
                     try svgContent.write(to: url, atomically: true, encoding: .utf8)
 
                     await MainActor.run {
+                        Log.info("✅ Exported SVG to: \(url.path) (text to outlines: \(convertTextToOutlines))", category: .fileOperations)
                     }
                 } catch {
                     await MainActor.run {
-                        // Log.error("❌ Failed to export SVG: \(error)", category: .error)
+                        Log.error("❌ Failed to export SVG: \(error)", category: .error)
 
                         let alert = NSAlert()
                         alert.messageText = "Export Failed"
@@ -525,10 +533,11 @@ class DocumentState: ObservableObject {
                     try pdfData.write(to: url)
 
                     await MainActor.run {
+                        Log.info("✅ Exported PDF to: \(url.path) (text to outlines: \(convertTextToOutlines))", category: .fileOperations)
                     }
                 } catch {
                     await MainActor.run {
-                        // Log.error("❌ Failed to export PDF: \(error)", category: .error)
+                        Log.error("❌ Failed to export PDF: \(error)", category: .error)
 
                         let alert = NSAlert()
                         alert.messageText = "Export Failed"
@@ -699,10 +708,12 @@ class DocumentState: ObservableObject {
                         try FileOperations.exportIconSet(document, folderURL: folderURL)
 
                         await MainActor.run {
+                            Log.info("✅ Exported icon set to: \(folderURL.path)",
+                                    category: .fileOperations)
                         }
                     } catch {
                         await MainActor.run {
-                            // Log.error("❌ Failed to export icon set: \(error)", category: .error)
+                            Log.error("❌ Failed to export icon set: \(error)", category: .error)
 
                             let alert = NSAlert()
                             alert.messageText = "Export Failed"
@@ -728,10 +739,12 @@ class DocumentState: ObservableObject {
                             try FileOperations.exportSingleIcon(document, url: url, pixelSize: pixelSize)
 
                             await MainActor.run {
+                                Log.info("✅ Exported \(pixelSize)×\(pixelSize) icon to: \(url.path)",
+                                        category: .fileOperations)
                             }
                         } catch {
                             await MainActor.run {
-                                // Log.error("❌ Failed to export icon: \(error)", category: .error)
+                                Log.error("❌ Failed to export icon: \(error)", category: .error)
 
                                 let alert = NSAlert()
                                 alert.messageText = "Export Failed"
@@ -764,11 +777,13 @@ class DocumentState: ObservableObject {
                                                                 includeBackground: includeBackground)
                             }
 
-                            //await MainActor.run {
-                            //}
+                            await MainActor.run {
+                                Log.info("✅ Exported PNG to: \(url.path) (scale: \(scale)x, background: \(includeBackground), text to outlines: \(convertTextToOutlines))",
+                                        category: .fileOperations)
+                            }
                         } catch {
                             await MainActor.run {
-                                // Log.error("❌ Failed to export PNG: \(error)", category: .error)
+                                Log.error("❌ Failed to export PNG: \(error)", category: .error)
 
                                 let alert = NSAlert()
                                 alert.messageText = "Export Failed"
@@ -894,10 +909,11 @@ class DocumentState: ObservableObject {
                     try svgContent.write(to: url, atomically: true, encoding: .utf8)
 
                     await MainActor.run {
+                        Log.info("✅ Exported AutoDesk SVG to: \(url.path) (background: \(includeBackground), text to outlines: \(convertTextToOutlines))", category: .fileOperations)
                     }
                 } catch {
                     await MainActor.run {
-                        // Log.error("❌ Failed to export AutoDesk SVG: \(error)", category: .error)
+                        Log.error("❌ Failed to export AutoDesk SVG: \(error)", category: .error)
 
                         let alert = NSAlert()
                         alert.messageText = "Export Failed"
@@ -964,6 +980,7 @@ class DocumentState: ObservableObject {
         document.removeSelectedObjects()
         
         updateAllStates()
+        Log.info("🗑️ MENU: Deleted selected objects", category: .general)
     }
     
     func bringToFront() {
@@ -1069,49 +1086,61 @@ class DocumentState: ObservableObject {
     // MARK: - View Commands
     func zoomIn() {
         guard let document = document else { return }
+        let oldZoom = document.zoomLevel
         let newZoom = min(document.zoomLevel * 1.25, 50.0)
         document.requestZoom(to: newZoom, mode: .zoomIn)
+        Log.info("🔍 MENU: Zoom In from \(String(format: "%.1f", oldZoom * 100))% to \(String(format: "%.1f", newZoom * 100))%", category: .zoom)
     }
     
     func zoomOut() {
         guard let document = document else { return }
+        let oldZoom = document.zoomLevel
         let newZoom = max(document.zoomLevel / 1.25, 0.01)
         document.requestZoom(to: newZoom, mode: .zoomOut)
+        Log.info("🔍 MENU: Zoom Out from \(String(format: "%.1f", oldZoom * 100))% to \(String(format: "%.1f", newZoom * 100))%", category: .zoom)
     }
     
     func fitToPage() {
         document?.requestZoom(to: 0.0, mode: .fitToPage)
+        Log.info("📐 MENU: Fit to Page", category: .general)
     }
     
     func actualSize() {
         document?.zoomLevel = 1.0
+        Log.info("📏 MENU: Actual Size (100%)", category: .general)
     }
     
     func switchToColorView() {
         document?.viewMode = .color
+        Log.info("🎨 MENU: Switched to Color View", category: .general)
     }
     
     func switchToKeylineView() {
         document?.viewMode = .keyline
+        Log.info("📝 MENU: Switched to Keyline View", category: .general)
     }
 
     func toggleColorKeylineView() {
         guard let doc = document else { return }
         if doc.viewMode == .color {
             doc.viewMode = .keyline
+            Log.info("📝 MENU: Toggled to Keyline View", category: .general)
         } else {
             doc.viewMode = .color
+            Log.info("🎨 MENU: Toggled to Color View", category: .general)
         }
     }
 
     func toggleRulers() {
         document?.showRulers.toggle()
+        Log.info("📏 MENU: Rulers \(document?.showRulers == true ? "shown" : "hidden")", category: .general)
     }
     
     func toggleGrid() {
         // Toggle both settings.showGrid and the actual showGrid property
         document?.settings.showGrid.toggle()
         document?.showGrid = document?.settings.showGrid ?? false
+        Log.info("🔲 MENU: Grid \(document?.showGrid == true ? "shown" : "hidden")", category: .general)
     }
 
     func toggleSnapToGrid() {
@@ -1119,6 +1148,7 @@ class DocumentState: ObservableObject {
         document?.snapToGrid.toggle()
         // Also sync with settings
         document?.settings.snapToGrid = document?.snapToGrid ?? false
+        Log.info("🧲 MENU: Snap to Grid \(document?.snapToGrid == true ? "enabled" : "disabled")", category: .general)
     }
 
     func toggleSnapToPoint() {
@@ -1126,6 +1156,7 @@ class DocumentState: ObservableObject {
         document?.snapToPoint.toggle()
         // Also sync with settings if needed
         document?.settings.snapToPoint = document?.snapToPoint ?? false
+        Log.info("📍 MENU: Snap to Point \(document?.snapToPoint == true ? "enabled" : "disabled")", category: .general)
     }
     
     // MARK: - Text Commands
@@ -1133,6 +1164,7 @@ class DocumentState: ObservableObject {
         guard let document = document, !document.selectedTextIDs.isEmpty else { return }
         document.convertSelectedTextToOutlines()
         updateAllStates()
+        Log.info("📝 MENU: Converted selected text to outlines", category: .general)
     }
     
     // MARK: - Links Commands
@@ -1172,6 +1204,7 @@ class DocumentState: ObservableObject {
             }
         }
         if anyEmbedded {
+            Log.info("🧩 Embedded linked images into document for selected shapes", category: .general)
         }
         updateAllStates()
     }
@@ -1181,8 +1214,10 @@ class DocumentState: ObservableObject {
         guard let document = document else { return }
         if !document.selectedShapeIDs.isEmpty {
             ProfessionalPathOperations.cleanupSelectedShapesDuplicates(document, tolerance: 5.0)
+            Log.info("🧹 MENU: Cleaned duplicate points in selected shapes", category: .general)
         } else {
             ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
+            Log.info("🧹 MENU: Cleaned duplicate points in all shapes", category: .general)
         }
         updateAllStates()
     }
@@ -1190,24 +1225,28 @@ class DocumentState: ObservableObject {
     func cleanupAllDuplicatePoints() {
         guard let document = document else { return }
         ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
+        Log.info("🧹 MENU: Cleaned duplicate points in all document shapes", category: .general)
         updateAllStates()
     }
     
     func testDuplicatePointMerger() {
         ProfessionalPathOperations.testDuplicatePointMerger()
+        Log.info("🧪 MENU: Ran duplicate point merger test", category: .general)
     }
     
     // MARK: - Tool Switching Commands
     func switchToTool(_ tool: DrawingTool) {
         guard let document = document else { return }
+        let previousTool = document.currentTool
         document.currentTool = tool
-
+        
         // PROPER TOOL GROUP HANDLING: When switching to a tool via keyboard shortcut,
         // make it the active tool in its group and expand the group if needed
 
         // Update the shared ToolGroupManager to reflect the new tool selection
         ToolGroupManager.shared.handleKeyboardToolSwitch(tool: tool)
         
+        Log.info("🛠️ MENU: Switched from \(previousTool.rawValue) to \(tool.rawValue)", category: .general)
     }
 
     // Helper function to convert all text to outlines for export
@@ -1242,5 +1281,6 @@ class DocumentState: ObservableObject {
         // Clear text selection
         document.selectedTextIDs.removeAll()
 
+        Log.info("✅ Converted \(textObjects.count) text object(s) to outlines for export", category: .fileOperations)
     }
 }

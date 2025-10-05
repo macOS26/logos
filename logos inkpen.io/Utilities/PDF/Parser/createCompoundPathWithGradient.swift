@@ -12,9 +12,11 @@ extension PDFCommandParser {
     func createCompoundPathWithGradient(gradient: VectorGradient) {
         // Use the tracked gradient shapes instead of hardcoded logic
         guard !gradientShapes.isEmpty else {
+            Log.warning("PDF: ⚠️ No gradient shapes tracked", category: .general)
             return
         }
         
+        Log.info("PDF: 🔍 Creating compound path from \(gradientShapes.count) tracked gradient shapes", category: .debug)
         
         var combinedPaths: [VectorPath] = []
         
@@ -23,6 +25,7 @@ extension PDFCommandParser {
             if shapeIndex < shapes.count {
                 let shape = shapes[shapeIndex]
                 combinedPaths.append(shape.path)
+                Log.info("PDF: 📝 Adding tracked shape '\(shape.name)' to compound path", category: .general)
             }
         }
         
@@ -50,6 +53,7 @@ extension PDFCommandParser {
         )
         
         shapes.append(compoundShape)
+        Log.info("PDF: ✅ Created compound shape with \(combinedPaths.count) subpaths", category: .general)
         
         // Clear the tracking for next gradient
         gradientShapes.removeAll()

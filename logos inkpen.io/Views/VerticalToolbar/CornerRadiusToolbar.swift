@@ -248,6 +248,7 @@ struct CornerRadiusToolbar: View {
                 
                 // ENABLE CORNER RADIUS SUPPORT: Convert regular rectangles to corner-radius-enabled rectangles
                 if !shape.isRoundedRectangle && isRectangleShape(shape) {
+                    Log.fileOperation("🔄 Converting regular rectangle to corner-radius-enabled rectangle", level: .info)
                     
                     // Calculate original bounds from current path
                     let pathBounds = shape.path.cgPath.boundingBox
@@ -281,6 +282,7 @@ struct CornerRadiusToolbar: View {
                 // Use unified helper to update shape
                 document.updateShapeCornerRadiiInUnified(id: shape.id, cornerRadii: updatedRadii, path: newPath)
                 
+                Log.info("🔄 Updated corner \(index + 1) radius to \(String(format: "%.1f", value))pt", category: .general)
                 break
             }
         }

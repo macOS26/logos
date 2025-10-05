@@ -58,24 +58,28 @@ extension VectorDocument {
     func notifyActiveToolsOfFillOpacityChange() {
         lastColorChangeType = .fillOpacity
         colorChangeNotification = UUID()
+        Log.fileOperation("🎨 VectorDocument: Notified active drawing tools of fill opacity change", level: .info)
     }
     
     /// Notify active drawing tools that stroke color has changed 
     func notifyActiveToolsOfStrokeColorChange() {
         lastColorChangeType = .strokeColor
         colorChangeNotification = UUID()
+        Log.fileOperation("🎨 VectorDocument: Notified active drawing tools of stroke color change", level: .info)
     }
     
     /// Notify active drawing tools that stroke opacity has changed
     func notifyActiveToolsOfStrokeOpacityChange() {
         lastColorChangeType = .strokeOpacity
         colorChangeNotification = UUID()
+        Log.fileOperation("🎨 VectorDocument: Notified active drawing tools of stroke opacity change", level: .info)
     }
     
     /// Generic notification for any color/opacity change (legacy support)
     func notifyActiveToolsOfColorChange() {
         lastColorChangeType = .fillOpacity // Default to fill opacity for legacy calls
         colorChangeNotification = UUID()
+        Log.fileOperation("🎨 VectorDocument: Notified active drawing tools of color change", level: .info)
     }
     
     func setActiveColor(_ color: VectorColor) {
@@ -180,6 +184,7 @@ extension VectorDocument {
     // SIMPLIFIED - No longer needed with separate arrays
     func updateColorSwatchesForMode() {
         // Nothing to do - each mode maintains its own array
+        Log.fileOperation("🎨 Color mode switched to \(settings.colorMode.rawValue)", level: .info)
     }
     
     // SIMPLIFIED - Create default arrays for each mode

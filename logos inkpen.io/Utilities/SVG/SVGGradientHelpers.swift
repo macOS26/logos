@@ -28,7 +28,9 @@ extension SVGParser {
             }
             inheritedGradient = gradientDefinitions[refId]
             if inheritedGradient != nil {
+                Log.fileOperation("🧬 Inheriting gradient from \(refId) for \(gradientId)", level: .info)
             } else {
+                Log.fileOperation("⚠️ Referenced gradient not found: \(refId)", level: .info)
             }
         }
         
@@ -36,7 +38,9 @@ extension SVGParser {
         if currentGradientStops.isEmpty {
             if let inherited = inheritedGradient {
                 currentGradientStops = inherited.stops
+                Log.info("✅ Inherited \(currentGradientStops.count) stops from referenced gradient", category: .fileOperations)
             } else {
+                Log.fileOperation("⚠️ Gradient \(gradientId) has no color stops - creating default black to white", level: .info)
                 currentGradientStops = [
                     GradientStop(position: 0.0, color: .black),
                     GradientStop(position: 1.0, color: .white)
@@ -64,10 +68,12 @@ extension SVGParser {
         
         // Reset extreme value handling for next gradient
         if detectedExtremeValues {
+            Log.fileOperation("🔄 Resetting extreme value handling for next gradient", level: .info)
             detectedExtremeValues = false
             useExtremeValueHandling = false
         }
         
+        Log.info("📚 Stored gradient definition: \(gradientId) with \(vectorGradient.stops.count) stops", category: .general)
     }
     
     internal func parseGradientUnits(from attributes: [String: String]) -> GradientUnits {
@@ -92,10 +98,12 @@ extension SVGParser {
         var gradientScaleY: Double = 1.0
         
         if let gradientTransformRaw = attributes["gradientTransform"] {
+            Log.fileOperation("🔄 Parsing gradientTransform: \(gradientTransformRaw)", level: .info)
             let transforms = parseGradientTransform(gradientTransformRaw)
             gradientAngle = transforms.angle
             gradientScaleX = transforms.scaleX
             gradientScaleY = transforms.scaleY
+            Log.fileOperation("🔄 Extracted: angle=\(gradientAngle)°, scaleX=\(gradientScaleX), scaleY=\(gradientScaleY)", level: .info)
         }
         
         return (angle: gradientAngle, scaleX: gradientScaleX, scaleY: gradientScaleY)
@@ -129,6 +137,7 @@ extension SVGParser {
         let gradientStop = GradientStop(position: offset, color: stopColor, opacity: stopOpacity)
         currentGradientStops.append(gradientStop)
         
+        Log.fileOperation("🎨 Added gradient stop: offset=\(offset), color=\(stopColor)", level: .info)
     }
     
     internal func parseGradientTransform(_ transform: String) -> (angle: Double, scaleX: Double, scaleY: Double) {
@@ -141,6 +150,7 @@ extension SVGParser {
             let numbers = extractNumbers(from: rotateSubstring)
             if let rotateAngle = numbers.first {
                 angle = -rotateAngle
+                Log.fileOperation("🔄 Extracted rotation: \(rotateAngle)° -> angle: \(angle)°", level: .info)
             }
         }
         
@@ -150,9 +160,11 @@ extension SVGParser {
             if numbers.count >= 2 {
                 scaleX = numbers[0]
                 scaleY = numbers[1]
+                Log.fileOperation("🔄 Extracted scale: x=\(scaleX), y=\(scaleY)", level: .info)
             } else if numbers.count == 1 {
                 scaleX = numbers[0]
                 scaleY = numbers[0]
+                Log.fileOperation("🔄 Extracted uniform scale: \(numbers[0])", level: .info)
             }
         }
         
@@ -162,6 +174,7 @@ extension SVGParser {
     internal func extractNumbers(from string: String) -> [Double] {
         let pattern = #"-?\d*\.?\d+"#
         guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            Log.fileOperation("Failed to create regex for number extraction", level: .info)
             return []
         }
         let range = NSRange(string.startIndex..<string.endIndex, in: string)

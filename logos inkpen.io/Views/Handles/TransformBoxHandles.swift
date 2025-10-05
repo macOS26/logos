@@ -388,7 +388,7 @@ struct TransformBoxHandles: View {
             document.updateUnifiedObjectsOptimized()
         }
         } else {
-            // Log.error("❌ SCALING FAILED: Could not find shape in unified objects system", category: .error)
+            Log.error("❌ SCALING FAILED: Could not find shape in unified objects system", category: .error)
         }
     }
 

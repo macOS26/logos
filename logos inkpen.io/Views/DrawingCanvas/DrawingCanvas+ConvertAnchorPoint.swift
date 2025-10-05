@@ -18,6 +18,7 @@ extension DrawingCanvas {
         
         // FIRST: Check if clicking on an anchor point with collapsed handles to restore them
         if let restoreResult = restoreCollapsedHandlesIfClicked(at: location, tolerance: tolerance) {
+            Log.fileOperation("🎯 CONVERT POINT TOOL: Restored handles - \(restoreResult)", level: .info)
             
             // Enable direct selection UI to show the result
             enableDirectSelectionForConvertedPoint(shapeID: restoreResult.shapeID, elementIndex: restoreResult.elementIndex)
@@ -26,6 +27,7 @@ extension DrawingCanvas {
         
         // SECOND: Check for handle clicks to collapse them
         if let collapseResult = collapseHandleIfClicked(at: location, tolerance: tolerance) {
+            Log.fileOperation("🎯 CONVERT POINT TOOL: Collapsed handle - \(collapseResult)", level: .info)
             
             // Enable direct selection UI to show the result
             enableDirectSelectionForConvertedPoint(shapeID: collapseResult.shapeID, elementIndex: collapseResult.elementIndex)
@@ -35,6 +37,7 @@ extension DrawingCanvas {
         // If no handle was clicked, try to select the shape for direct selection UI
         tryToSelectShapeForConvertTool(at: location)
         
+        Log.info("Convert Anchor Point: No handle found at location \(location)", category: .general)
     }
     
     // MARK: - Handle Collapse and Restore Functionality
@@ -78,9 +81,9 @@ extension DrawingCanvas {
                 // If we found a clicked anchor point, check ALL elements for collapsed handles
                 if let anchorPoint = clickedAnchorPoint, let elementIndex = clickedElementIndex {
                     var hasCollapsedHandles = false
-
+                    
                     // Check ALL elements for handles that belong to this anchor point
-                    for checkElement in shape.path.elements {
+                    for (checkIndex, checkElement) in shape.path.elements.enumerated() {
                         switch checkElement {
                         case .curve(_, let control1, let control2):
                             // Check if this element's handles belong to the clicked anchor point
@@ -89,6 +92,7 @@ extension DrawingCanvas {
                             
                             if control1Collapsed || control2Collapsed {
                                 hasCollapsedHandles = true
+                                Log.info("🎯 FOUND COLLAPSED HANDLE: Element \(checkIndex) has handle collapsed to anchor point", category: .general)
                             }
                             
                         default:
@@ -97,6 +101,7 @@ extension DrawingCanvas {
                     }
                     
                     if hasCollapsedHandles {
+                        Log.info("🎯 FOUND COLLAPSED HANDLES: Restoring all handles for anchor point at element \(elementIndex)", category: .general)
                         restoreAllHandlesForAnchorPoint(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex, anchorPoint: anchorPoint)
                         return (shape.id, elementIndex)
                     }
@@ -111,6 +116,7 @@ extension DrawingCanvas {
                             let control2Extended = !(abs(control2.x - anchorPoint.x) < 0.1 && abs(control2.y - anchorPoint.y) < 0.1)
                             
                             if control1Extended && control2Extended {
+                                Log.info("🎯 BOTH HANDLES EXTENDED: Collapsing both handles for anchor point at element \(elementIndex)", category: .general)
                                 collapseBothHandlesForAnchorPoint(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex, anchorPoint: anchorPoint)
                                 return (shape.id, elementIndex)
                             }
@@ -265,6 +271,7 @@ extension DrawingCanvas {
             document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
             
+            Log.info("✅ COLLAPSED CONTROL1 HANDLE: Handle collapsed to its anchor point", category: .fileOperations)
             
         case .quadCurve(let to, _):
             // For quadCurve, collapsing the handle converts it to a line
@@ -279,6 +286,7 @@ extension DrawingCanvas {
             document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
             
+            Log.info("✅ COLLAPSED QUAD HANDLE: Converted to line (corner)", category: .fileOperations)
             
         default:
             break
@@ -316,6 +324,7 @@ extension DrawingCanvas {
             document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
             
+            Log.info("✅ COLLAPSED CONTROL2 HANDLE: Handle collapsed to its anchor point", category: .fileOperations)
             
         case .quadCurve(let to, _):
             // For quadCurve, collapsing the handle converts it to a line
@@ -330,6 +339,7 @@ extension DrawingCanvas {
             document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
             
+            Log.info("✅ COLLAPSED QUAD HANDLE: Converted to line (corner)", category: .fileOperations)
             
         default:
             break
@@ -380,6 +390,7 @@ extension DrawingCanvas {
             document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
             
+            Log.info("✅ COLLAPSED NEXT ELEMENT CONTROL1 HANDLE: Handle collapsed to source anchor point", category: .fileOperations)
             
         default:
             break
@@ -443,6 +454,7 @@ extension DrawingCanvas {
             document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
             
+            Log.info("✅ RESTORED CURVE HANDLES: Handles restored to reasonable positions", category: .fileOperations)
             
         default:
             break
@@ -508,6 +520,7 @@ extension DrawingCanvas {
             document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
             
+            Log.info("✅ RESTORED NEXT ELEMENT CONTROL1 HANDLE: Handle restored to reasonable position", category: .fileOperations)
             
         default:
             break
@@ -543,6 +556,7 @@ extension DrawingCanvas {
                     if let originalPosition = document.originalHandlePositions[control1Key] {
                         restoredControl1 = originalPosition
                         elementNeedsUpdate = true
+                        Log.info("🎯 RESTORE: Restoring control1 for element \(checkIndex)", category: .general)
                     }
                 }
                 
@@ -552,6 +566,7 @@ extension DrawingCanvas {
                     if let originalPosition = document.originalHandlePositions[control2Key] {
                         restoredControl2 = originalPosition
                         elementNeedsUpdate = true
+                        Log.info("🎯 RESTORE: Restoring control2 for element \(checkIndex)", category: .general)
                     }
                 }
                 
@@ -572,6 +587,7 @@ extension DrawingCanvas {
             document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
             
+            Log.info("✅ RESTORED ALL HANDLES: All handles for anchor point restored to original positions", category: .fileOperations)
         }
     }
     
@@ -600,6 +616,7 @@ extension DrawingCanvas {
                     let collapsedControl2 = VectorPoint(anchorPoint.x, anchorPoint.y)
                     elements[checkIndex] = .curve(to: to, control1: control1, control2: collapsedControl2)
                     needsUpdate = true
+                    Log.info("🎯 COLLAPSE: Collapsed control2 for element \(checkIndex)", category: .general)
                 }
                 
                 // Check if this element's control1 belongs to the clicked anchor point (outgoing handle from this anchor point)
@@ -624,6 +641,7 @@ extension DrawingCanvas {
                         let collapsedControl1 = VectorPoint(anchorPoint.x, anchorPoint.y)
                         elements[checkIndex] = .curve(to: to, control1: collapsedControl1, control2: control2)
                         needsUpdate = true
+                        Log.info("🎯 COLLAPSE: Collapsed control1 for element \(checkIndex)", category: .general)
                     }
                 }
             }
@@ -639,6 +657,7 @@ extension DrawingCanvas {
             document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
             
+            Log.info("✅ COLLAPSED ALL HANDLES: All handles for anchor point collapsed to anchor point", category: .fileOperations)
         }
     }
     
@@ -668,6 +687,7 @@ extension DrawingCanvas {
                 
                 if isBackgroundShape {
                     // SKIP background shapes entirely - they should not be selectable
+                    Log.info("  - Background shape '\(shape.name)' SKIPPED - not selectable", category: .general)
                     continue
                 } else {
                     // Regular shapes: Use different logic for stroke vs filled
@@ -694,6 +714,8 @@ extension DrawingCanvas {
                 if isHit {
                     // IMPROVED LOCKED BEHAVIOR: Handle locked layers/objects properly
                     if layer.isLocked || shape.isLocked {
+                        let lockType = layer.isLocked ? "locked layer" : "locked object"
+                        Log.info("🚫 Convert Point Tool clicked on \(lockType) '\(shape.name)' - deselecting current selection", category: .general)
                         selectedPoints.removeAll()
                         selectedHandles.removeAll()
                         directSelectedShapeIDs.removeAll()
@@ -716,6 +738,7 @@ extension DrawingCanvas {
                     // Force UI update
                     document.objectWillChange.send()
                     
+                    Log.fileOperation("🎯 CONVERT POINT TOOL: Selected shape \(shape.name) for direct selection UI", level: .info)
                     return
                 }
             }
@@ -756,5 +779,9 @@ extension DrawingCanvas {
         // Force UI update to show the changes
         document.objectWillChange.send()
         
+        Log.fileOperation("🎯 CONVERT POINT TOOL: Enabled direct selection UI (tool stays active)", level: .info)
+        Log.info("  - Shape: \(shapeID)", category: .general)
+        Log.info("  - Point: Element \(elementIndex)", category: .general)
+        Log.info("  - User can see bezier handles while continuing to use Convert Point tool", category: .general)
     }
 }

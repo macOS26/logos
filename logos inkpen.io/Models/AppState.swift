@@ -21,6 +21,7 @@ class AppState {
     var defaultTool: DrawingTool = .brush {
         didSet {
             UserDefaults.standard.set(defaultTool.rawValue, forKey: "defaultTool")
+            Log.info("🛠️ Default tool changed to: \(defaultTool.rawValue)")
         }
     }
     
@@ -28,6 +29,7 @@ class AppState {
     var pressureSensitivityEnabled: Bool = false {
         didSet {
             UserDefaults.standard.set(pressureSensitivityEnabled, forKey: "pressureSensitivityEnabled")
+            Log.info("🎨 PRESSURE: Sensitivity toggled to: \(pressureSensitivityEnabled)", category: .pressure)
         }
     }
 
@@ -44,6 +46,8 @@ class AppState {
     var pressureCurve: [CGPoint] {
         get { _pressureCurve }
         set {
+            let curveString = newValue.map { "(\(String(format: "%.2f", $0.x)),\(String(format: "%.2f", $0.y)))" }.joined(separator: " ")
+            Log.info("🎨 PRESSURE CURVE SETTER: [\(curveString)]", category: .pressure)
             _pressureCurve = newValue
             savePressureCurve()
         }
@@ -53,20 +57,27 @@ class AppState {
         let data = pressureCurve.map { ["x": $0.x, "y": $0.y] }
         UserDefaults.standard.set(data, forKey: "pressureCurve")
         UserDefaults.standard.synchronize()
+        let curveString = pressureCurve.map { "(\(String(format: "%.2f", $0.x)),\(String(format: "%.2f", $0.y)))" }.joined(separator: " ")
+        Log.info("💾 SAVED PRESSURE CURVE: [\(curveString)]", category: .pressure)
     }
 
     private func loadPressureCurve() {
         if let data = UserDefaults.standard.array(forKey: "pressureCurve") as? [[String: Double]] {
+            Log.info("📂 LOADING PRESSURE CURVE: Found \(data.count) points in UserDefaults", category: .pressure)
             let loadedCurve = data.compactMap { dict -> CGPoint? in
                 guard let x = dict["x"], let y = dict["y"] else { return nil }
                 return CGPoint(x: x, y: y)
             }
             if loadedCurve.count < 2 {
                 // Keep default if invalid
+                Log.info("📂 INVALID CURVE: Keeping default linear curve", category: .pressure)
             } else {
                 _pressureCurve = loadedCurve  // Set backing storage directly to avoid triggering save
+                let curveString = _pressureCurve.map { "(\(String(format: "%.2f", $0.x)),\(String(format: "%.2f", $0.y)))" }.joined(separator: " ")
+                Log.info("📂 LOADED PRESSURE CURVE: [\(curveString)]", category: .pressure)
             }
         } else {
+            Log.info("📂 NO SAVED CURVE: Using default linear curve", category: .pressure)
         }
     }
     
@@ -76,6 +87,7 @@ class AppState {
     var enableClippingMaskContentSelection: Bool = false {
         didSet {
             UserDefaults.standard.set(enableClippingMaskContentSelection, forKey: "enableClippingMaskContentSelection")
+            Log.info("🎭 CLIPPING MASK: Content selection mode \(enableClippingMaskContentSelection ? "enabled" : "disabled")", category: .general)
         }
     }
     
@@ -162,6 +174,7 @@ class AppState {
     var pdfGradientMethod: PDFGradientMethod = .cgGradient {
         didSet {
             UserDefaults.standard.set(pdfGradientMethod.rawValue, forKey: "pdfGradientMethod")
+            Log.info("📄 PDF gradient method changed to: \(pdfGradientMethod.displayName)")
         }
     }
 
@@ -188,6 +201,7 @@ class AppState {
     var pdfTextRenderingMode: PDFTextRenderingMode = .glyphs {
         didSet {
             UserDefaults.standard.set(pdfTextRenderingMode.rawValue, forKey: "pdfTextRenderingMode")
+            Log.info("📄 PDF text rendering mode changed to: \(pdfTextRenderingMode.displayName)")
         }
     }
 
@@ -197,6 +211,7 @@ class AppState {
     var svgTextRenderingMode: SVGTextRenderingMode = .glyphs {
         didSet {
             UserDefaults.standard.set(svgTextRenderingMode.rawValue, forKey: "svgTextRenderingMode")
+            Log.info("📄 SVG text rendering mode changed to: \(svgTextRenderingMode.displayName)")
         }
     }
 
@@ -208,6 +223,7 @@ class AppState {
                 pdfBlendSteps = clampedValue
             }
             UserDefaults.standard.set(pdfBlendSteps, forKey: "pdfBlendSteps")
+            Log.info("📄 PDF blend steps changed to: \(pdfBlendSteps)")
         }
     }
 
@@ -219,6 +235,7 @@ class AppState {
                 pdfMeshGridX = clampedValue
             }
             UserDefaults.standard.set(pdfMeshGridX, forKey: "pdfMeshGridX")
+            Log.info("📄 PDF mesh grid X changed to: \(pdfMeshGridX)")
         }
     }
 
@@ -230,6 +247,7 @@ class AppState {
                 pdfMeshGridY = clampedValue
             }
             UserDefaults.standard.set(pdfMeshGridY, forKey: "pdfMeshGridY")
+            Log.info("📄 PDF mesh grid Y changed to: \(pdfMeshGridY)")
         }
     }
 
@@ -280,12 +298,15 @@ class AppState {
         if let toolRawValue = UserDefaults.standard.string(forKey: "defaultTool"),
            let tool = DrawingTool(rawValue: toolRawValue) {
             self.defaultTool = tool
+            Log.info("🛠️ Loaded saved default tool: \(tool.rawValue)")
         } else {
             self.defaultTool = .brush
+            Log.info("🛠️ Using default tool: brush")
         }
         
         // Load saved pressure sensitivity setting - default to false (OFF) for mouse/trackpad
         self.pressureSensitivityEnabled = UserDefaults.standard.object(forKey: "pressureSensitivityEnabled") as? Bool ?? false
+        Log.info("🎨 PRESSURE: Loaded sensitivity setting: \(pressureSensitivityEnabled)", category: .pressure)
 
         // Load saved pressure curve
         loadPressureCurve()
@@ -347,6 +368,7 @@ class AppState {
         
         self.dismissWindowAction = { id in
             if id.contains("gradient-hud") {
+                Log.fileOperation("🎨 GRADIENT HUD: dismissWindowAction called - closing window", level: .info)
                 
                 // 🔥 NEW: Stop editing state when window is closed
                 self.persistentGradientHUD.stopEditing()
@@ -354,17 +376,21 @@ class AppState {
                 // 🔥 PRESERVE WINDOW POSITION - Use orderOut instead of close
                 NSApplication.shared.windows.forEach { window in
                     if window.title.contains("Select Gradient Color") && window.isVisible {
+                        Log.fileOperation("🎨 GRADIENT HUD: Hiding window to preserve position: \(window.title)", level: .info)
                         // Use orderOut to hide without destroying, preserving position
                         window.orderOut(nil)
                     }
                 }
+                Log.fileOperation("🎨 GRADIENT HUD: dismissWindowAction completed", level: .info)
             } else if id.contains("ink-hud") {
+                Log.info("🖌️ INK HUD: dismissWindowAction called - hiding window", category: .general)
                 self.persistentInkHUD.hide()
                 NSApplication.shared.windows.forEach { window in
                     if window.title.contains("Ink Color Mixer") && window.isVisible {
                         window.orderOut(nil)
                     }
                 }
+                Log.info("🖌️ INK HUD: dismissWindowAction completed", category: .general)
             }
             dismissWindow(id)
         }

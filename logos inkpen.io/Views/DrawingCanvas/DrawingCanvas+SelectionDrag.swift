@@ -10,7 +10,7 @@ import Combine
 
 extension DrawingCanvas {
     internal func startSelectionDrag() {
-        guard document.selectedLayerIndex != nil,
+        guard let _ = document.selectedLayerIndex,
               !document.selectedObjectIDs.isEmpty else { return }
 
         // Reset update counter for 60fps throttling
@@ -24,6 +24,7 @@ extension DrawingCanvas {
             switch unifiedObject.objectType {
             case .shape(let shape):
                 if shape.isLocked {
+                    Log.info("🚫 Cannot move locked shape '\(shape.name)'", category: .general)
                     return
                 }
             }
@@ -52,26 +53,26 @@ extension DrawingCanvas {
         for unifiedObject in selectedObjects {
             switch unifiedObject.objectType {
             case .shape(let shape):
-                // Log.error("🚨 DRAG DEBUG: Processing shape id=\(shape.id), isTextObject=\(shape.isTextObject)", category: .debug)
+                Log.error("🚨 DRAG DEBUG: Processing shape id=\(shape.id), isTextObject=\(shape.isTextObject)", category: .debug)
                 
                 if shape.isTextObject {
                     // CRITICAL FIX: For text objects, use actual position from unified system + center offset
                     if let textObject = document.findText(by: shape.id) {
-                        // Log.error("🚨 DRAG DEBUG: Found textObject position=\(textObject.position), bounds=\(textObject.bounds)", category: .debug)
+                        Log.error("🚨 DRAG DEBUG: Found textObject position=\(textObject.position), bounds=\(textObject.bounds)", category: .debug)
                         let centerX = textObject.position.x + textObject.bounds.width/2  
                         let centerY = textObject.position.y + textObject.bounds.height/2
                         let calculatedCenter = CGPoint(x: centerX, y: centerY)
-                        // Log.error("🚨 DRAG DEBUG: Calculated text center=\(calculatedCenter)", category: .debug)
+                        Log.error("🚨 DRAG DEBUG: Calculated text center=\(calculatedCenter)", category: .debug)
                         initialObjectPositions[unifiedObject.id] = calculatedCenter
                     } else {
                         // Fallback: Use shape bounds center
-                        // Log.error("🚨 DRAG DEBUG: NO textObject found! Using shape fallback", category: .debug)
-                        // Log.error("🚨 DRAG DEBUG: Shape transform=\(shape.transform), bounds=\(shape.bounds)", category: .debug)
+                        Log.error("🚨 DRAG DEBUG: NO textObject found! Using shape fallback", category: .debug)
+                        Log.error("🚨 DRAG DEBUG: Shape transform=\(shape.transform), bounds=\(shape.bounds)", category: .debug)
                         let bounds = shape.bounds
                         let centerX = shape.transform.tx + bounds.width/2
                         let centerY = shape.transform.ty + bounds.height/2
                         let fallbackCenter = CGPoint(x: centerX, y: centerY)
-                        // Log.error("🚨 DRAG DEBUG: Fallback text center=\(fallbackCenter)", category: .debug)
+                        Log.error("🚨 DRAG DEBUG: Fallback text center=\(fallbackCenter)", category: .debug)
                         initialObjectPositions[unifiedObject.id] = fallbackCenter
                     }
                 } else {
@@ -84,14 +85,18 @@ extension DrawingCanvas {
                 }
                 
                 // CRITICAL FIX: Store initial transform to prevent jitter
-                // Log.error("🚨 DRAG DEBUG: Storing initial transform=\(shape.transform)", category: .debug)
+                Log.error("🚨 DRAG DEBUG: Storing initial transform=\(shape.transform)", category: .debug)
                 initialObjectTransforms[unifiedObject.id] = shape.transform
             }
         }
+        
+        let shapeCount = selectedObjects.filter { if case .shape = $0.objectType { return true } else { return false } }.count
+        let textCount = selectedObjects.filter { if case .shape(let shape) = $0.objectType, shape.isTextObject { return true } else { return false } }.count
+        Log.fileOperation("🎯 SELECTION DRAG: Established reference positions for \(shapeCount) shapes and \(textCount) text objects", level: .info)
     }
     
     internal func handleSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
-        guard document.selectedLayerIndex != nil,
+        guard let _ = document.selectedLayerIndex,
               !document.selectedObjectIDs.isEmpty else { return }
 
         // REFACTORED: Use unified objects system for selection checking
@@ -161,6 +166,7 @@ extension DrawingCanvas {
                 // CLIPPING MASK PREVIEW: Use same preview system as regular objects
                 // Don't modify actual document during drag - use currentDragDelta for preview
                 if shape.isClippingPath {
+                    Log.info("🎭 CLIPPING MASK PREVIEW: Using preview system for mask '\(shape.name)'", category: .selection)
                     // Continue with normal preview system - don't return early
                 }
             }
@@ -202,7 +208,7 @@ extension DrawingCanvas {
 
             // BLAZING FAST FINISH: Apply accumulated drag delta to actual coordinates at the end
             // This ensures smooth 60fps preview during drag, then commits changes once
-            guard document.selectedLayerIndex != nil else { return }
+            guard let _ = document.selectedLayerIndex else { return }
             
             // REFACTORED: Use unified objects system for applying drag delta
             let selectedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
@@ -232,15 +238,15 @@ extension DrawingCanvas {
                         let newPositionX = initialCenter.x - textBounds.width/2 + currentDragDelta.x
                         let newPositionY = initialCenter.y - textBounds.height/2 + currentDragDelta.y
                         
-                        // Log.error("🚨 FINISH DRAG: textID=\(unifiedObject.id)", category: .debug)
-                        // Log.error("🚨 FINISH DRAG: OLD position=\(textObj.position)", category: .debug)
-                        // Log.error("🚨 FINISH DRAG: NEW position=(\(newPositionX), \(newPositionY))", category: .debug)
-                        // Log.error("🚨 FINISH DRAG: initialCenter=\(initialCenter), dragDelta=\(currentDragDelta)", category: .debug)
+                        Log.error("🚨 FINISH DRAG: textID=\(unifiedObject.id)", category: .debug)
+                        Log.error("🚨 FINISH DRAG: OLD position=\(textObj.position)", category: .debug)
+                        Log.error("🚨 FINISH DRAG: NEW position=(\(newPositionX), \(newPositionY))", category: .debug)
+                        Log.error("🚨 FINISH DRAG: initialCenter=\(initialCenter), dragDelta=\(currentDragDelta)", category: .debug)
                         
                         let delta = CGPoint(x: newPositionX - textObj.position.x, y: newPositionY - textObj.position.y)
                         document.translateTextInUnified(id: unifiedObject.id, delta: delta)
                         
-                        // Log.error("🚨 FINISH DRAG: Updated textObject position to (\(newPositionX), \(newPositionY))", category: .debug)
+                        Log.error("🚨 FINISH DRAG: Updated textObject position to (\(newPositionX), \(newPositionY))", category: .debug)
                     }
                 }
             }
@@ -299,6 +305,7 @@ extension DrawingCanvas {
                 // This preserves all existing scaling, rotation, and skew while adding movement
                 updatedShape.transform = currentTransform.concatenating(translationTransform)
                 
+                Log.info("🖼️ IMAGE TRANSFORM: Applied delta (\(String(format: "%.2f", delta.x)), \(String(format: "%.2f", delta.y))) to existing transform", category: .fileOperations)
             }
             
             // Bounds for images are their rectangular path; keep as-is (transform applied at render time)
@@ -369,6 +376,7 @@ extension DrawingCanvas {
                 groupShape.warpEnvelope = updatedWarpEnvelope
                 
                 // CRITICAL FIX: DO NOT move originalEnvelope - it must stay as reference coordinate system
+                Log.fileOperation("🔧 GROUP WARP ENVELOPE MOVED: Updated \(updatedWarpEnvelope.count) current coordinates (original envelope preserved)", level: .info)
             }
             
             groupShape.updateBounds()
@@ -430,6 +438,7 @@ extension DrawingCanvas {
             
             // CRITICAL FIX: DO NOT move originalEnvelope - it must stay as reference coordinate system
             // The originalEnvelope represents the coordinate system before ANY transformations
+            Log.fileOperation("🔧 WARP ENVELOPE MOVED: Updated \(updatedWarpEnvelope.count) current coordinates (original envelope preserved)", level: .info)
         }
         
         // CLIPPING MASK: If this is a mask shape, also move all its clipped content
@@ -457,6 +466,7 @@ extension DrawingCanvas {
             return
         }
         
+        Log.fileOperation("🔧 Applying transform to shape coordinates: \(shape.name)", level: .info)
         
         // FLATTENED SHAPE FIX: Handle groups correctly
         if shape.isGroupContainer && !shape.groupedShapes.isEmpty {
@@ -514,6 +524,7 @@ extension DrawingCanvas {
             shape.updateBounds()
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
             
+            Log.info("✅ Flattened group coordinates updated - transformed \(transformedGroupedShapes.count) individual shapes", category: .fileOperations)
             return
         }
         
@@ -569,6 +580,7 @@ extension DrawingCanvas {
             document.updateShapeCornerRadiiInUnified(id: updatedShape.id, cornerRadii: updatedShape.cornerRadii, path: updatedShape.path)
         }
         
+        Log.info("✅ Shape coordinates updated after movement - object origin stays with object", category: .fileOperations)
     }
     
     /// CRITICAL FIX: Sync unified objects array after shapes/text have been moved
@@ -588,9 +600,9 @@ extension DrawingCanvas {
             case .shape(let oldShape):
                 // CRITICAL FIX: Handle text objects - sync unified objects FROM textObjects (after drag)
                 if oldShape.isTextObject {
-                    // Log.error("🚨 SYNC DEBUG: Text object - syncing unified objects", category: .debug)
+                    Log.error("🚨 SYNC DEBUG: Text object - syncing unified objects", category: .debug)
                     if let updatedText = document.findText(by: oldShape.id) {
-                        // Log.error("🚨 SYNC DEBUG: Updating unified object position to (\(updatedText.position.x), \(updatedText.position.y))", category: .debug)
+                        Log.error("🚨 SYNC DEBUG: Updating unified object position to (\(updatedText.position.x), \(updatedText.position.y))", category: .debug)
 
                         // CRITICAL FIX: Update unified object FROM textObjects array (textObjects has new position)
                         let updatedShape = VectorShape.from(updatedText)
@@ -600,9 +612,9 @@ extension DrawingCanvas {
                             orderID: unifiedObject.orderID  // Keep same orderID = no reordering
                         )
 
-                        // Log.error("🚨 SYNC DEBUG: Updated unified objects array from textObjects authority", category: .debug)
+                        Log.error("🚨 SYNC DEBUG: Updated unified objects array from textObjects authority", category: .debug)
                     } else {
-                        // Log.error("🚨 SYNC DEBUG: TEXT OBJECT NOT FOUND in textObjects array!", category: .debug)
+                        Log.error("🚨 SYNC DEBUG: TEXT OBJECT NOT FOUND in textObjects array!", category: .debug)
                     }
                 } else {
                     // Regular shapes - find in unified objects
@@ -610,6 +622,7 @@ extension DrawingCanvas {
                     if let updatedShape = document.findShape(by: oldShape.id) {
                         // DEBUG: Check clipping properties before and after sync
                         if oldShape.clippedByShapeID != nil || updatedShape.clippedByShapeID != nil {
+                            Log.info("🎭 DRAG SYNC DEBUG: Shape '\(oldShape.name)' - old clippedByShapeID: \(oldShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil"), new clippedByShapeID: \(updatedShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .general)
                         }
                         // CRITICAL FIX: Preserve original orderID - DO NOT reorder during drag
                         document.unifiedObjects[i] = VectorObject(
@@ -622,5 +635,6 @@ extension DrawingCanvas {
             }
         }
 
+        Log.info("🔧 DRAG SYNC: Updated \(document.selectedObjectIDs.count) moved object(s) without reordering", category: .general)
     }
 } 

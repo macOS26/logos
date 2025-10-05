@@ -142,6 +142,7 @@ extension DrawingCanvas {
             let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
             let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
             
+            // Log.fileOperation("🎯 Linear gradient drag - Canvas: \(canvasPoint), Origin: (\(relativeX), \(relativeY))", level: .info) // Disabled for performance
             
             // OPTIMIZED: Use combined update for maximum performance - single update instead of two separate calls
             updateGradientOriginXYOptimized(relativeX, relativeY, shape: shape, applyToShapes: true, isLiveDrag: true)
@@ -152,6 +153,7 @@ extension DrawingCanvas {
             let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
             let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
             
+            // Log.fileOperation("🎯 Radial gradient drag - Canvas: \(canvasPoint), Relative: (\(relativeX), \(relativeY))", level: .info) // Disabled for performance
             
             // Don't clamp the coordinates - allow them to extend beyond object bounds
             // This allows the origin point to move freely within the scaled gradient area
@@ -228,6 +230,7 @@ extension DrawingCanvas {
     private func updateShapeGradientOptimized(shape: VectorShape, newGradient: VectorGradient, isLiveDrag: Bool) {
         guard let layerIndex = document.selectedLayerIndex else { return }
         
+        // Log.fileOperation("🎯 GRADIENT TOOL: updateShapeGradientOptimized called with isLiveDrag: \(isLiveDrag)", level: .info) // Disabled for performance
         
         // Find and update the shape in the document using unified helper
         let shapes = document.getShapesForLayer(layerIndex)
@@ -245,6 +248,7 @@ extension DrawingCanvas {
                 }
             }
             
+            Log.fileOperation("🎨 GRADIENT TOOL: Updated shape gradient for \(shape.id.uuidString.prefix(8)) (liveDrag: \(isLiveDrag))", level: .info)
         }
     }
     

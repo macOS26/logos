@@ -10,6 +10,7 @@ import SwiftUI
 extension PDFCommandParser {
     
     func extractColorsFromSampledFunction(_ function: CGPDFDictionaryRef) -> [VectorColor] {
+        Log.info("PDF: 📊 Extracting colors from sampled function...", category: .debug)
         
         // This function contains a lookup table with actual color samples
         // We need to read the actual sample data, not just the Range bounds
@@ -25,6 +26,7 @@ extension PDFCommandParser {
         CGPDFDictionaryGetArray(function, "Domain", &domainArray)
         CGPDFDictionaryGetArray(function, "Range", &rangeArray)
         
+        Log.info("PDF: 📊 Sampled function parameters: BitsPerSample=\(bitsPerSample)", category: .debug)
         
         // The function dictionary may contain a separate stream object
         // First check if there's a stream reference in the dictionary
@@ -39,6 +41,7 @@ extension PDFCommandParser {
             }
         } else {
             // Function dictionary itself might be a stream - this often crashes, so skip for now
+            Log.info("PDF: 📊 No separate stream found in function dictionary", category: .debug)
         }
         
         if let data = streamData {
@@ -46,11 +49,13 @@ extension PDFCommandParser {
             let dataBytes = CFDataGetBytePtr(cfData)
             let dataLength = CFDataGetLength(cfData)
             
+            Log.info("PDF: 📊 Sample data length: \(dataLength) bytes", category: .debug)
             
             // Determine number of output components (typically 3 for RGB)
             var outputComponents = 3
             if let range = rangeArray {
                 outputComponents = Int(CGPDFArrayGetCount(range)) / 2
+                Log.info("PDF: 📊 Output components: \(outputComponents)", category: .debug)
             }
             
             // Determine number of samples
@@ -64,9 +69,13 @@ extension PDFCommandParser {
                     }
                 }
             }
-
+            Log.info("PDF: 📊 Total samples: \(totalSamples)", category: .debug)
+            
             let bytesPerSample = Int(bitsPerSample) / 8
-
+            let expectedDataLength = totalSamples * outputComponents * bytesPerSample
+            
+            Log.info("PDF: 📊 Expected data length: \(expectedDataLength), actual: \(dataLength)", category: .debug)
+            
             // Extract color samples
             var colors: [VectorColor] = []
             
@@ -91,6 +100,7 @@ extension PDFCommandParser {
                             b = Double((UInt16(bytes[baseOffset + 4]) << 8) | UInt16(bytes[baseOffset + 5])) / 65535.0
                         }
                     default:
+                        Log.warning("PDF: ⚠️ Unsupported bits per sample: \(bitsPerSample)", category: .general)
                         continue
                     }
                     
@@ -115,6 +125,7 @@ extension PDFCommandParser {
                     let color = VectorColor.rgb(RGBColor(red: r, green: g, blue: b))
                     colors.append(color)
                     
+                    Log.info("PDF: 🎨 Sample \(sampleIndex): R=\(r) G=\(g) B=\(b)", category: .general)
                 }
             }
             
@@ -125,6 +136,7 @@ extension PDFCommandParser {
         
         // Fallback to Range values if stream reading fails
         if let range = rangeArray {
+            Log.info("PDF: 📊 Using Range values as fallback", category: .debug)
             // Range typically contains [Rmin Rmax Gmin Gmax Bmin Bmax]
             if CGPDFArrayGetCount(range) >= 6 {
                 var r1: CGPDFReal = 0, r2: CGPDFReal = 1
@@ -141,11 +153,14 @@ extension PDFCommandParser {
                 let startColor = VectorColor.rgb(RGBColor(red: Double(r1), green: Double(g1), blue: Double(b1)))
                 let endColor = VectorColor.rgb(RGBColor(red: Double(r2), green: Double(g2), blue: Double(b2)))
                 
+                Log.info("PDF: 🎨 Range start color: R=\(r1) G=\(g1) B=\(b1)", category: .general)
+                Log.info("PDF: 🎨 Range end color: R=\(r2) G=\(g2) B=\(b2)", category: .general)
                 
                 return [startColor, endColor]
             }
         }
         
+        Log.warning("PDF: ⚠️ Could not extract colors from sampled function, using defaults", category: .general)
         return [.black, .white]
     }
 }

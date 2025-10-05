@@ -16,6 +16,7 @@ extension VectorDocument {
     func requestZoom(to targetZoom: CGFloat, mode: ZoomMode) {
         let request = ZoomRequest(targetZoom: targetZoom, mode: mode)
         zoomRequest = request
+        Log.info("🔍 ZOOM REQUEST: \(mode) → \(String(format: "%.1f", targetZoom * 100))%", category: .zoom)
     }
     
     /// Clear zoom request after processing

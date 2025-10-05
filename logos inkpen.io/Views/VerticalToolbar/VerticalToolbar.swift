@@ -17,6 +17,7 @@ struct VerticalToolbar: View {
     
     private func handleToolLongPress(_ tool: DrawingTool, variantIndex: Int? = nil) {
         toolGroupManager.longPressedTool(tool, variantIndex: variantIndex)
+        Log.fileOperation("🔧 Long press on tool: \(tool.rawValue)", level: .info)
     }
     
     // MARK: - Icon Display Functions
@@ -261,10 +262,12 @@ struct VerticalToolbar: View {
                                                 document.currentTool = .star
                                                 toolGroupManager.currentToolInGroup = .star
                                                 toolGroupManager.setSelectedToolInGroup(.star)
+                                                Log.info("⭐ Selected star variant: \(starVariant.rawValue)", category: .general)
                                             } else {
                                                 document.currentTool = toolItem.tool
                                                 toolGroupManager.currentToolInGroup = toolItem.tool
                                                 toolGroupManager.setSelectedToolInGroup(toolItem.tool)
+                                                Log.info("🛠️ Switched to tool: \(toolItem.tool.rawValue)", category: .general)
                                             }
                                         },
                                         onLongPress: {
@@ -348,7 +351,7 @@ struct VerticalToolbar: View {
         case .brush:
             return "Brush Tool (B) - Draw variable width brush strokes"
         case .marker:
-            return "Marker Tool (M) - Draw with fill and stroke, expand stroke option"
+            return "Marker Tool (M) - Draw with pressure-sensitive marker strokes"
         case .font:
             return "Font Tool (T) - Add and edit text"
         case .line:
@@ -441,6 +444,7 @@ struct VerticalToolbarButton: View {
 
     fileprivate func FreeHandMXLongPress() {
         inc += 0.1
+        Log.info("\(inc)", category: .general)
         
         // always handle tap
         lastTappedTool = toolItem.tool.rawValue

@@ -38,6 +38,7 @@ extension VectorDocument {
         // CRITICAL FIX: Update unified selection to use the new group
         selectedObjectIDs = [groupShape.id]
         
+        Log.info("📦 Grouped \(selectedShapes.count) objects into group '\(groupShape.name)'", category: .general)
     }
     
     /// Flatten selected objects (preserves individual colors, enables transform tools)
@@ -88,6 +89,7 @@ extension VectorDocument {
         // CRITICAL FIX: Update unified selection to use the new flattened group
         selectedObjectIDs = [flattenedShape.id]
         
+        Log.fileOperation("🎨 Flattened \(selectedShapes.count) objects - preserving all colors, enabling transform tools", level: .info)
     }
     
     /// Ungroup selected objects
@@ -118,6 +120,7 @@ extension VectorDocument {
                     // Mark group for removal
                     shapesToRemove.append(shapeID)
                     
+                    Log.info("📦 Ungrouped '\(shape.name)' containing \(shape.groupedShapes.count) objects", category: .general)
                 } else {
                     // Not a group, keep it selected
                     newSelectedShapeIDs.insert(shapeID)
@@ -143,7 +146,9 @@ extension VectorDocument {
         selectedObjectIDs = newSelectedShapeIDs
         
         if !shapesToRemove.isEmpty {
+            Log.info("📦 Ungrouped \(shapesToRemove.count) groups, added \(shapesToAdd.count) objects", category: .general)
         } else {
+            Log.info("📦 No groups found in selection", category: .general)
         }
     }
     
@@ -191,6 +196,7 @@ extension VectorDocument {
         // CRITICAL FIX: Update unified selection to use the unflattened shapes
         selectedObjectIDs = newSelectedIDs
         
+        Log.fileOperation("🎨 Unflattened group - restored \(shapesToAdd.count) individual shapes with original colors", level: .info)
     }
     
     // MARK: - Compound Path Methods
@@ -234,6 +240,7 @@ extension VectorDocument {
         // CRITICAL FIX: Update unified selection to use the new compound path
         selectedObjectIDs = [compoundShape.id]
         
+        Log.info("🔗 Made compound path from \(selectedShapes.count) objects", category: .general)
     }
     
     /// Make looping path from selected objects (uses winding fill rule instead of even-odd)
@@ -275,6 +282,7 @@ extension VectorDocument {
         // CRITICAL FIX: Update unified selection to use the new looping path
         selectedObjectIDs = [loopingShape.id]
         
+        Log.fileOperation("🔄 Made looping path from \(selectedShapes.count) objects using winding fill rule", level: .info)
     }
     
     /// Release compound path back to individual paths
@@ -325,6 +333,7 @@ extension VectorDocument {
         // CRITICAL FIX: Update unified selection to use the released paths
         selectedObjectIDs = newSelectedIDs
         
+        Log.info("🔗 Released compound path into \(newShapes.count) individual paths", category: .general)
     }
     
     /// Release looping path back to individual paths
@@ -375,6 +384,7 @@ extension VectorDocument {
         // CRITICAL FIX: Update unified selection to use the released paths
         selectedObjectIDs = newSelectedIDs
         
+        Log.fileOperation("🔄 Released looping path into \(newShapes.count) individual paths", level: .info)
     }
     
     // Helper function to extract individual subpaths from a compound CGPath

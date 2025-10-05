@@ -23,7 +23,8 @@ func calculateLinkedHandle(anchorPoint: CGPoint, draggedHandle: CGPoint, origina
         if let result = linkedHandles.first {
             return result
         }
-    case .failure:
+    case .failure(let error):
+        Log.fileOperation("⚠️ GPU CALC FAILED: \(error) - falling back to CPU", level: .info)
         // Fallback to CPU calculation
         break
     }

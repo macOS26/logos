@@ -99,6 +99,7 @@ struct ColorSwatchGrid: View {
                 Button {
                     // Just switch target, don't apply any color
                     document.activeColorTarget = .stroke
+                    Log.info("Switched to stroke target - no color change", category: .general)
                 } label: {
                     if case .clear = currentStrokeColor {
                         ZStack {
@@ -164,6 +165,7 @@ struct ColorSwatchGrid: View {
                 Button {
                     // Just switch target, don't apply any color
                     document.activeColorTarget = .fill
+                    Log.info("Switched to fill target - no color change", category: .general)
                 } label: {
                     if case .clear = currentFillColor {
                         ZStack {
@@ -239,9 +241,11 @@ struct ColorSwatchGrid: View {
                         if document.activeColorTarget == .stroke {
                             selectedStrokeColor = color
                             document.setActiveColor(color)
+                            Log.fileOperation("🎨 SWATCH CLICK: Set stroke color: \(color)", level: .debug)
                         } else {
                             selectedFillColor = color
                             document.setActiveColor(color)
+                            Log.fileOperation("🎨 SWATCH CLICK: Set fill color: \(color)", level: .debug)
                         }
                     } label: {
                         ZStack {

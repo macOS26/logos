@@ -59,6 +59,7 @@ extension FileOperations {
     
     @MainActor
     static func openSVGFile(url: URL) async throws -> VectorDocument {
+        Log.fileOperation("🔄 Opening SVG file: \(url.lastPathComponent)", level: .info)
         
         // Create new document with default Canvas and Pasteboard layers
         let document = VectorDocument(settings: DocumentSettings())
@@ -84,10 +85,11 @@ extension FileOperations {
 
         // Check if SVG contains embedded inkpen metadata
         if let inkpenMetadata = result.metadata.inkpenMetadata {
+            Log.info("📦 Found embedded inkpen document in SVG, using native data", category: .fileOperations)
 
             // Decode base64 and parse as JSON
             guard let inkpenData = Data(base64Encoded: inkpenMetadata) else {
-                // Log.error("❌ Failed to decode inkpen metadata from base64", category: .error)
+                Log.error("❌ Failed to decode inkpen metadata from base64", category: .error)
                 throw VectorImportError.parsingError("Invalid inkpen metadata encoding", line: nil)
             }
 
@@ -97,9 +99,11 @@ extension FileOperations {
             let inkpenDocument = try decoder.decode(VectorDocument.self, from: inkpenData)
 
             // Return the original inkpen document
+            Log.info("✅ Successfully restored inkpen document from SVG metadata", category: .fileOperations)
             return inkpenDocument
         }
 
+        Log.fileOperation("📊 Imported \(result.shapes.count) shapes from SVG", level: .info)
         
         // Update document settings based on imported metadata
         let metadata = result.metadata
@@ -114,6 +118,7 @@ extension FileOperations {
             // Check if the ratio is approximately 96/72 (1.333...)
             if abs(widthRatio - (96.0/72.0)) < 0.1 && abs(heightRatio - (96.0/72.0)) < 0.1 {
                 // This is likely a 96 DPI SVG (AutoCAD format)
+                Log.fileOperation("🔍 Detected 96 DPI SVG (AutoCAD format), using viewBox dimensions", level: .info)
 
                 // Use viewBox size for document dimensions (already in 72 DPI)
                 document.settings.width = viewBoxSize.width / 72.0
@@ -129,6 +134,7 @@ extension FileOperations {
             document.settings.height = docSize.height / 72.0
         }
 
+        Log.fileOperation("📐 Document size: \(document.settings.width * 72.0) × \(document.settings.height * 72.0) points", level: .info)
         
         // Update Canvas and Pasteboard layers to match new document size
         document.updateCanvasLayer()
@@ -174,6 +180,11 @@ extension FileOperations {
         // Add standalone shapes first
         for shape in standaloneShapes {
             // Keep shape at its original position - no centering
+            Log.fileOperation("🔷 Adding standalone shape: \(shape.name)", level: .debug)
+            Log.fileOperation("   📍 Position: \(shape.bounds.origin)", level: .debug)
+            Log.fileOperation("   📏 Size: \(shape.bounds.size)", level: .debug)
+            Log.fileOperation("   🎨 Fill: \(shape.fillStyle.map { String(describing: $0.color) } ?? "none")", level: .debug)
+            Log.fileOperation("   🖌️ Stroke: \(shape.strokeStyle.map { String(describing: $0.color) } ?? "none")", level: .debug)
 
             // Add shape to unified system (layer index 2 for imported layer)
             document.addShapeToUnifiedSystem(shape, layerIndex: 2)
@@ -181,13 +192,15 @@ extension FileOperations {
         
         // Add clipping mask groups
         // CRITICAL: Must add shapes in the correct order for InkPen's clipping mask system
-        for (_, maskGroup) in clippingMasks {
+        for (maskId, maskGroup) in clippingMasks {
             // Skip if we don't have a valid mask (placeholder)
             guard maskGroup.mask.name != "Placeholder" else { continue }
 
             // IMPORTANT: Add clipped shapes FIRST (they go under the mask in InkPen's system)
             for clippedShape in maskGroup.clippedShapes {
                 // Keep shape at its original position - no centering
+                Log.fileOperation("🔶 Adding clipped shape: \(clippedShape.name)", level: .debug)
+                Log.fileOperation("   🎭 Clipped by: \(maskId.uuidString.prefix(8))", level: .debug)
 
                 // Add shape to unified system
                 document.addShapeToUnifiedSystem(clippedShape, layerIndex: 2)
@@ -195,6 +208,9 @@ extension FileOperations {
 
             // Then add the clipping mask LAST (it goes on top in InkPen's system)
             // Keep mask at its original position - no centering
+            Log.fileOperation("🎭 Adding clipping mask: \(maskGroup.mask.name)", level: .debug)
+            Log.fileOperation("   📍 Position: \(maskGroup.mask.bounds.origin)", level: .debug)
+            Log.fileOperation("   📏 Size: \(maskGroup.mask.bounds.size)", level: .debug)
 
             // Add mask to unified system
             document.addShapeToUnifiedSystem(maskGroup.mask, layerIndex: 2)
@@ -209,6 +225,7 @@ extension FileOperations {
         // Select the imported layer
         document.selectedLayerIndex = 2
         
+        Log.fileOperation("✅ SVG import complete: \(document.unifiedObjects.count) objects in document", level: .info)
         
         return document
     }

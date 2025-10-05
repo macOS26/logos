@@ -15,6 +15,8 @@ class PasteboardDiagnostics {
     
     /// Run comprehensive pasteboard diagnostics
     func runDiagnostics(on document: VectorDocument) -> DiagnosticReport {
+        Log.info("🔍 RUNNING PASTEBOARD DIAGNOSTICS", category: .general)
+        Log.info("=" * 50, category: .general)
         
         var report = DiagnosticReport()
         
@@ -33,6 +35,8 @@ class PasteboardDiagnostics {
         // Test 5: Performance
         report.performance = testPerformance(document)
         
+        Log.info("🔍 DIAGNOSTICS COMPLETE", category: .general)
+        Log.info("=" * 50, category: .general)
         
         return report
     }
@@ -40,6 +44,7 @@ class PasteboardDiagnostics {
     // MARK: - Individual Test Functions
     
     private func testLayerStructure(_ document: VectorDocument) -> LayerStructureTest {
+        Log.info("🧪 TEST 1: Layer Structure", category: .general)
         
         var test = LayerStructureTest()
         
@@ -74,12 +79,16 @@ class PasteboardDiagnostics {
         
         test.passed = test.layerCountCorrect && test.layerNamesCorrect && test.lockStatusCorrect
         
-        // Log.error("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
+        Log.info("  Layer count: \(test.layerCount)/\(test.expectedLayerCount) ✓", category: .general)
+        Log.info("  Layer names: \(test.layerNamesCorrect ? "✓" : "✗")", category: .general)
+        Log.info("  Lock status: \(test.lockStatusCorrect ? "✓" : "✗")", category: .general)
+        Log.error("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
         
         return test
     }
     
     private func testBackgroundShapes(_ document: VectorDocument) -> BackgroundShapesTest {
+        Log.info("🧪 TEST 2: Background Shapes", category: .general)
         
         var test = BackgroundShapesTest()
         
@@ -137,17 +146,23 @@ class PasteboardDiagnostics {
         
         test.passed = test.pasteboardShapeCorrect && test.canvasShapeCorrect && test.sizingCorrect && test.positioningCorrect
         
-        // Log.error("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
+        Log.info("  Pasteboard shape: \(test.pasteboardShapeCorrect ? "✓" : "✗")", category: .general)
+        Log.info("  Canvas shape: \(test.canvasShapeCorrect ? "✓" : "✗")", category: .general)
+        Log.info("  Sizing: \(test.sizingCorrect ? "✓" : "✗")", category: .general)
+        Log.info("  Positioning: \(test.positioningCorrect ? "✓" : "✗")", category: .general)
+        Log.error("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
         
         return test
     }
     
     private func testHitTestingSimulation(_ document: VectorDocument) -> HitTestingTest {
+        Log.info("🧪 TEST 3: Hit Testing Simulation", category: .general)
         
         var test = HitTestingTest()
         
         guard document.layers.count >= 3 else {
             test.passed = false
+            Log.info("  ✗ FAIL: Insufficient layers", category: .general)
             return test
         }
         
@@ -183,12 +198,16 @@ class PasteboardDiagnostics {
         
         test.passed = test.pasteboardHitCorrect && test.canvasPriorityCorrect && test.layerIterationTest.passed
         
-        // Log.error("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
+        Log.info("  Pasteboard hit: \(test.pasteboardHitCorrect ? "✓" : "✗")", category: .general)
+        Log.info("  Canvas priority: \(test.canvasPriorityCorrect ? "✓" : "✗")", category: .general)
+        Log.info("  Layer iteration: \(test.layerIterationTest.passed ? "✓" : "✗")", category: .general)
+        Log.error("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
         
         return test
     }
     
     private func testLayerIteration(_ document: VectorDocument) -> LayerIterationTest {
+        Log.info("    🔍 Testing layer iteration...", category: .general)
         
         var test = LayerIterationTest()
         let testPoint = CGPoint(x: 100, y: 100)
@@ -216,6 +235,7 @@ class PasteboardDiagnostics {
                     let shapeBounds = shape.bounds.applying(shape.transform)
                     let isHit = shapeBounds.contains(testPoint)
                     
+                    Log.info("      Testing Layer \(layerIndex) - \(shape.name): \(isHit ? "HIT" : "miss")", category: .general)
                     
                     if isHit {
                         break
@@ -238,11 +258,14 @@ class PasteboardDiagnostics {
         
         test.passed = test.allLayersTested && test.allBackgroundShapesTested
         
+        Log.info("      Layers tested: \(test.allLayersTested ? "✓" : "✗")", category: .general)
+        Log.info("      Background shapes tested: \(test.allBackgroundShapesTested ? "✓" : "✗")", category: .general)
         
         return test
     }
     
     private func testRealWorldScenarios(_ document: VectorDocument) -> RealWorldScenariosTest {
+        Log.info("🧪 TEST 4: Real-World Scenarios", category: .general)
         
         var test = RealWorldScenariosTest()
         
@@ -332,12 +355,16 @@ class PasteboardDiagnostics {
         
         test.passed = test.pasteboardObjectHitCorrect && test.canvasObjectHitCorrect && test.emptyPasteboardHitCorrect
         
-        // Log.error("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
+        Log.info("  Pasteboard object hit: \(test.pasteboardObjectHitCorrect ? "✓" : "✗")", category: .general)
+        Log.info("  Canvas object hit: \(test.canvasObjectHitCorrect ? "✓" : "✗")", category: .general)
+        Log.info("  Empty pasteboard hit: \(test.emptyPasteboardHitCorrect ? "✓" : "✗")", category: .general)
+        Log.error("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
         
         return test
     }
     
     private func testPerformance(_ document: VectorDocument) -> PerformanceTest {
+        Log.info("🧪 TEST 5: Performance", category: .general)
         
         var test = PerformanceTest()
         
@@ -377,7 +404,9 @@ class PasteboardDiagnostics {
         
         test.passed = test.averageTimePerHitTest < 0.001 // Less than 1ms per hit test
         
-        // Log.error("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
+        Log.info("  Total time: \(String(format: "%.4f", test.totalTime))s", category: .general)
+        Log.info("  Average per hit test: \(String(format: "%.6f", test.averageTimePerHitTest))s", category: .general)
+        Log.error("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
         
         return test
     }
@@ -449,12 +478,16 @@ struct DiagnosticReport {
     }
     
     func printSummary() {
-        // Log.error("Layer Structure:     \(layerStructure.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
-        // Log.error("Background Shapes:   \(backgroundShapes.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
-        // Log.error("Hit Testing:         \(hitTesting.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
-        // Log.error("Real-World Scenarios:\(realWorldScenarios.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
-        // Log.error("Performance:         \(performance.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
-        // Log.error("OVERALL:             \(overallPassed ? "✅ PASS" : "❌ FAIL")", category: .error)
+        Log.info("\n📊 DIAGNOSTIC REPORT SUMMARY", category: .general)
+        Log.info("=" * 40, category: .general)
+        Log.error("Layer Structure:     \(layerStructure.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
+        Log.error("Background Shapes:   \(backgroundShapes.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
+        Log.error("Hit Testing:         \(hitTesting.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
+        Log.error("Real-World Scenarios:\(realWorldScenarios.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
+        Log.error("Performance:         \(performance.passed ? "✓ PASS" : "✗ FAIL")", category: .error)
+        Log.info("=" * 40, category: .general)
+        Log.error("OVERALL:             \(overallPassed ? "✅ PASS" : "❌ FAIL")", category: .error)
+        Log.info("=" * 40, category: .general)
     }
 }
 

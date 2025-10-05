@@ -50,6 +50,7 @@ extension VectorDocument {
         selectedLayerIndex = layerIndex // Select the layer we added text to
         syncSelectionArrays()
         
+        Log.fileOperation("📝 Added editable text to layer \(layerIndex) (\(layers[layerIndex].name))", level: .info)
     }
     
     func removeSelectedText() {
@@ -103,6 +104,7 @@ extension VectorDocument {
         
         // Select the duplicated text objects
         selectedTextIDs = newTextIDs
+        Log.info("✅ Duplicated \(newTextIDs.count) text objects", category: .fileOperations)
     }
     
     // MARK: - Helper method for updating text in unified system
@@ -181,8 +183,9 @@ extension VectorDocument {
             selectedTextIDs.removeAll()
             selectedShapeIDs = newShapeIDs
 
+            Log.info("✅ TEXT TO OUTLINES: Converted \(selectedTexts.count) text object(s) into \(newShapeIDs.count) shape(s)", category: .fileOperations)
         } else {
-            // Log.error("❌ TEXT TO OUTLINES FAILED: No new shapes were created", category: .error)
+            Log.error("❌ TEXT TO OUTLINES FAILED: No new shapes were created", category: .error)
         }
 
         // Text is now fully managed in unified system

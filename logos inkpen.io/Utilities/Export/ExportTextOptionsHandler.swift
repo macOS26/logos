@@ -57,6 +57,7 @@ extension DocumentState {
 
         // Convert all text to outlines
         await MainActor.run {
+            Log.info("📝 Converting all text to outlines for export...", category: .fileOperations)
             DocumentState.convertAllTextToOutlinesForExport(document)
         }
 
@@ -65,6 +66,7 @@ extension DocumentState {
 
         // Restore original document state
         await MainActor.run {
+            Log.info("↩️ Restoring original document state after export", category: .fileOperations)
             document.unifiedObjects = savedState.unifiedObjects
             document.layers = savedState.layers
             document.selectedObjectIDs = savedState.selectedObjectIDs
@@ -90,6 +92,8 @@ extension DocumentState {
 
         // Convert all text to outlines
         await MainActor.run {
+            let exportType = isAutoDesk ? "AutoDesk SVG" : "SVG"
+            Log.info("📝 Converting all text to outlines for \(exportType) export...", category: .fileOperations)
             DocumentState.convertAllTextToOutlinesForExport(document)
         }
 
@@ -112,6 +116,7 @@ extension DocumentState {
 
         // Restore original document state
         await MainActor.run {
+            Log.info("↩️ Restoring original document state after export", category: .fileOperations)
             document.unifiedObjects = savedState.unifiedObjects
             document.layers = savedState.layers
             document.selectedObjectIDs = savedState.selectedObjectIDs

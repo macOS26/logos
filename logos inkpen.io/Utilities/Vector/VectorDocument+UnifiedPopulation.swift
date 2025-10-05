@@ -18,7 +18,7 @@ extension VectorDocument {
     @available(*, deprecated, message: "Use populateUnifiedObjectsFromLayersPreservingOrder() instead - this function reverses order!")
     internal func populateUnifiedObjectsFromLayers() {
         // CRITICAL SAFEGUARD: Prevent this dangerous function from executing - always call the safe version instead
-        // Log.error("⚠️ CRITICAL BUG PREVENTED: populateUnifiedObjectsFromLayers() blocked to prevent layer corruption! Using safe version.", category: .error)
+        Log.error("⚠️ CRITICAL BUG PREVENTED: populateUnifiedObjectsFromLayers() blocked to prevent layer corruption! Using safe version.", category: .error)
         populateUnifiedObjectsFromLayersPreservingOrder()
         return
     }
@@ -28,15 +28,19 @@ extension VectorDocument {
     internal func populateUnifiedObjectsFromLayersPreservingOrder() {
         // CRITICAL FIX: Skip reordering during undo/redo operations to preserve exact order
         if isUndoRedoOperation {
+            Log.info("🔧 POPULATE: Skipping unified objects population during undo/redo operation to preserve order", category: .general)
             return
         }
         
         // Unified objects is now the primary storage - this function is mostly a no-op
+        Log.info("🔧 UNIFIED OBJECTS: Check complete with \(unifiedObjects.count) objects", category: .general)
     }
     
     /// Sync selection arrays to maintain compatibility with existing code
     func syncSelectionArrays() {
         // CRITICAL LOGGING: Track when this is called
+        Log.info("⚠️ syncSelectionArrays CALLED - This CLEARS all selections!", category: .general)
+        Log.info("⚠️ BEFORE CLEAR: selectedShapeIDs = \(selectedShapeIDs), selectedTextIDs = \(selectedTextIDs), selectedObjectIDs = \(selectedObjectIDs)", category: .general)
 
         // Update selectedShapeIDs and selectedTextIDs based on selectedObjectIDs
         selectedShapeIDs.removeAll()
@@ -64,7 +68,7 @@ extension VectorDocument {
         // Add selected shapes
         for shapeID in selectedShapeIDs {
             // PERFORMANCE: Use O(1) UUID lookup via findShape instead of O(N) loop
-            if findShape(by: shapeID) != nil,
+            if let _ = findShape(by: shapeID),
                let unifiedObject = findObject(by: shapeID) {
                 selectedObjectIDs.insert(unifiedObject.id)
             }
@@ -73,7 +77,7 @@ extension VectorDocument {
         // Add selected text objects (now represented as VectorShape with isTextObject = true)
         for textID in selectedTextIDs {
             // PERFORMANCE: Use O(1) UUID lookup via findText instead of O(N) loop
-            if findText(by: textID) != nil,
+            if let _ = findText(by: textID),
                let unifiedObject = findObject(by: textID) {
                 selectedObjectIDs.insert(unifiedObject.id)
             }
@@ -83,6 +87,7 @@ extension VectorDocument {
     /// CRITICAL FIX: Update unified objects ordering to match layer ordering
     private func updateUnifiedObjectsOrdering() {
         // Since unified objects is primary storage, just log the action
+        Log.fileOperation("🔧 UNIFIED OBJECTS: Ordering check complete", level: .info)
     }
     
     /// OPTIMIZED: Update unified objects without full sync - preserves text object order and IDs
@@ -102,8 +107,10 @@ extension VectorDocument {
     func forceResyncUnifiedObjects() {
         // CRITICAL FIX: Skip reordering during undo/redo operations to preserve exact order
         if isUndoRedoOperation {
+            Log.info("🔧 FORCE RESYNC: Skipping unified objects resync during undo/redo operation to preserve order", category: .general)
             return
         }
         
+        Log.info("🔧 FORCE RESYNC: Unified objects system check with \(unifiedObjects.count) objects", category: .general)
     }
 }

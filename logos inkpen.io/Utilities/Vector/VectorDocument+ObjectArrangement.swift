@@ -115,6 +115,7 @@ extension VectorDocument {
         // CRITICAL FIX: No more rebuilding arrays - just work with unifiedObjects directly
         // syncLegacyArraysFromUnified() - REMOVED to prevent object corruption
         
+        Log.info("⬆️⬆️ Brought to front \(selectedObjectIDs.count) objects", category: .general)
     }
     
     /// Bring selected objects forward (unified system)
@@ -185,6 +186,7 @@ extension VectorDocument {
             }
         }
         
+        Log.info("⬆️ Brought forward \(selectedObjectIDs.count) objects", category: .general)
     }
     
     /// Send selected objects backward (unified system)
@@ -260,6 +262,7 @@ extension VectorDocument {
             }
         }
         
+        Log.info("⬇️ Sent backward \(selectedObjectIDs.count) objects", category: .general)
     }
     
     /// Send selected objects to back (unified system)
@@ -325,5 +328,6 @@ extension VectorDocument {
         // CRITICAL FIX: No more rebuilding arrays - just work with unifiedObjects directly
         // syncLegacyArraysFromUnified() - REMOVED to prevent object corruption
         
+        Log.info("⬇️⬇️ Sent to back \(selectedObjectIDs.count) objects", category: .general)
     }
 }

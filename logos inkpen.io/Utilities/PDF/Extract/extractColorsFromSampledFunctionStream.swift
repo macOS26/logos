@@ -10,6 +10,7 @@ import SwiftUI
 extension PDFCommandParser {
     
     func extractColorsFromSampledFunctionStream(stream: CGPDFStreamRef, dictionary: CGPDFDictionaryRef) -> [VectorColor] {
+        Log.info("PDF: 📊 Extracting colors from sampled function stream data", category: .debug)
         
         // Get parameters from the stream dictionary
         var sizeArray: CGPDFArrayRef?
@@ -20,6 +21,7 @@ extension PDFCommandParser {
         CGPDFDictionaryGetInteger(dictionary, "BitsPerSample", &bitsPerSample)
         CGPDFDictionaryGetArray(dictionary, "Range", &rangeArray)
         
+        Log.info("PDF: 📊 Stream function parameters: BitsPerSample=\(bitsPerSample)", category: .debug)
         
         // Get the raw stream data
         var format: CGPDFDataFormat = CGPDFDataFormat.raw
@@ -28,11 +30,13 @@ extension PDFCommandParser {
             let dataBytes = CFDataGetBytePtr(cfData)
             let dataLength = CFDataGetLength(cfData)
             
+            Log.info("PDF: 📊 Stream sample data length: \(dataLength) bytes", category: .debug)
             
             // Determine number of output components (typically 3 for RGB)
             var outputComponents = 3
             if let range = rangeArray {
                 outputComponents = Int(CGPDFArrayGetCount(range)) / 2
+                Log.info("PDF: 📊 Output components: \(outputComponents)", category: .debug)
             }
             
             // Determine number of samples from Size array
@@ -46,6 +50,7 @@ extension PDFCommandParser {
                     }
                 }
             }
+            Log.info("PDF: 📊 Total samples: \(totalSamples)", category: .debug)
             
             let bytesPerSample = Int(bitsPerSample) / 8
             
@@ -67,6 +72,7 @@ extension PDFCommandParser {
                             b = Double(bytes[baseOffset + 2]) / 255.0
                         }
                     default:
+                        Log.warning("PDF: ⚠️ Unsupported bits per sample: \(bitsPerSample)", category: .general)
                         continue
                     }
                     
@@ -100,6 +106,7 @@ extension PDFCommandParser {
             }
         }
         
+        Log.warning("PDF: ⚠️ Could not extract colors from stream, using defaults", category: .general)
         return [.black, .white]
     }
 }

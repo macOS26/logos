@@ -498,6 +498,7 @@ struct NewDocumentSetupView: View {
         
         // Apply the user's default tool setting
         document.currentTool = appState.defaultTool
+        Log.info("🛠️ Applied default tool \(appState.defaultTool.rawValue) to new document from setup", category: .general)
         
         // Create a suggested URL for the document
         let filename = setupData.filename.trimmingCharacters(in: .whitespacesAndNewlines)

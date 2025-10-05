@@ -25,6 +25,7 @@ extension DrawingCanvas {
             let screenTolerance: Double = 15.0
             let tolerance: Double = screenTolerance / document.zoomLevel
 
+            Log.fileOperation("🎯 IMMEDIATE DRAG: Attempting auto-selection at start location \(canvasLocation)", level: .info)
 
             // Try to auto-select a point or handle at the drag start location
             var foundPointOrHandle = false
@@ -49,9 +50,11 @@ extension DrawingCanvas {
             }
 
             if !foundPointOrHandle {
+                Log.fileOperation("🎯 IMMEDIATE DRAG: No point or handle found at drag start - early return", level: .info)
                 return
             }
 
+            Log.fileOperation("🎯 IMMEDIATE DRAG: Auto-selected for dragging", level: .info)
         }
 
         // Now proceed with normal drag logic (points/handles should be selected)
@@ -63,6 +66,7 @@ extension DrawingCanvas {
             if let unifiedObject = document.findObject(by: pointID.shapeID) {
                 let layerIndex = unifiedObject.layerIndex
                 if document.layers[layerIndex].isLocked {
+                    Log.info("🚫 Cannot edit points on locked layer '\(document.layers[layerIndex].name)'", category: .general)
                     return
                 }
             }
@@ -72,6 +76,7 @@ extension DrawingCanvas {
             if let unifiedObject = document.findObject(by: handleID.shapeID) {
                 let layerIndex = unifiedObject.layerIndex
                 if document.layers[layerIndex].isLocked {
+                    Log.info("🚫 Cannot edit handles on locked layer '\(document.layers[layerIndex].name)'", category: .general)
                     return
                 }
             }

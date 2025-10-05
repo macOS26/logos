@@ -27,6 +27,7 @@ extension PDFCommandParser {
             let color = subSampledColors[colorIndex]
             
             stops.append(GradientStop(position: position, color: color, opacity: 1.0))
+            Log.info("PDF: 📍 Sub-sampled gradient stop at \(Int(position * 100))%: \(color)", category: .general)
         }
         
         return stops

@@ -203,6 +203,7 @@ struct ProfessionalOffsetPathSection: View {
     private func performOffsetPath() {
         guard !document.selectedShapeIDs.isEmpty else { return }
         
+        Log.fileOperation("🎨 PROFESSIONAL OFFSET PATH: \(offsetDistance)pt, join: \(selectedJoinType)", level: .info)
         
         // Save to undo stack
         document.saveToUndoStack()
@@ -239,15 +240,19 @@ struct ProfessionalOffsetPathSection: View {
                 // POSITIVE OFFSET: Union with original
                 if let unionResult = CoreGraphicsPathOperations.union(shape.path.cgPath, offsetPath, using: .winding) {
                     finalPath = unionResult
+                    Log.fileOperation("🔧 POSITIVE OFFSET: Created expanded offset path", level: .info)
                 } else {
                     finalPath = offsetPath
+                    Log.fileOperation("⚠️ POSITIVE OFFSET: Union failed, using stroke result", level: .info)
                 }
             } else {
                 // NEGATIVE OFFSET: Subtract stroke from original
                 if let subtractResult = CoreGraphicsPathOperations.subtract(offsetPath, from: shape.path.cgPath, using: .winding) {
                     finalPath = subtractResult
+                    Log.fileOperation("🔧 NEGATIVE OFFSET: Created contracted offset path", level: .info)
                 } else {
                     finalPath = shape.path.cgPath
+                    Log.fileOperation("⚠️ NEGATIVE OFFSET: Subtraction failed, keeping original", level: .info)
                 }
             }
                 
@@ -270,9 +275,11 @@ struct ProfessionalOffsetPathSection: View {
                         // Use new behind insertion method to ensure proper orderID
                         document.addShapeBehindInUnifiedSystem(offsetShape, layerIndex: layerIndex, behindShapeIDs: [shape.id])
                     }
+                    Log.fileOperation("🔧 POSITIVE OFFSET: Added behind original with lower orderID", level: .info)
                 } else {
                     // NEGATIVE OFFSET: Goes in FRONT of original shape (higher orderID)  
                     document.addShape(offsetShape)
+                    Log.fileOperation("🔧 NEGATIVE OFFSET: Added in front of original with higher orderID", level: .info)
                 }
                 
                 newOffsetShapeIDs.insert(offsetShape.id)
@@ -283,8 +290,10 @@ struct ProfessionalOffsetPathSection: View {
         if keepOriginalPath {
             if offsetDistance >= 0 {
                 // POSITIVE OFFSET: Offset shapes are already inserted behind originals
+                Log.fileOperation("🔧 POSITIVE OFFSET: Offset shapes already positioned behind originals", level: .info)
             } else {
                 // NEGATIVE OFFSET: Offset shapes are already positioned after originals
+                Log.fileOperation("🔧 NEGATIVE OFFSET: Offset shapes already positioned after originals", level: .info)
             }
         } else {
             // Remove original shapes if not keeping them
@@ -300,6 +309,7 @@ struct ProfessionalOffsetPathSection: View {
         // Force document refresh so arrow tool can see newly created shapes
         document.objectWillChange.send()
          
+         Log.info("✅ OFFSET PATH: Created offset shapes \(keepOriginalPath ? "behind" : "replacing") originals", category: .general)
     }
     
 

@@ -126,6 +126,7 @@ class ToolGroupManager: ObservableObject {
         selectedToolByGroup[groupName] = tool
         // Maintain currentToolInGroup for any legacy code paths
         currentToolInGroup = tool
+        Log.fileOperation("🔧 KEYBOARD: Selected \(tool.rawValue) in group \(groupName)", level: .info)
     }
 
     func longPressedTool(_ tool: DrawingTool, variantIndex: Int? = nil) {
@@ -143,6 +144,7 @@ class ToolGroupManager: ObservableObject {
         // Toggle only this group's expansion
         if expandedGroups.contains(groupName) {
             expandedGroups.remove(groupName)
+            Log.fileOperation("🔧 Collapsed group \(groupName), showing tool: \(tool.rawValue)", level: .info)
         } else {
             // When expanding, reorder the group to put current tool first
             let toolGroup = ToolGroupConfiguration.getToolGroup(for: tool)
@@ -155,6 +157,7 @@ class ToolGroupManager: ObservableObject {
             customToolOrder[groupName] = reorderedTools
 
             expandedGroups.insert(groupName)
+            Log.fileOperation("🔧 Expanded group \(groupName) from tool: \(tool.rawValue) - reordered with \(tool.rawValue) first", level: .info)
         }
         currentToolInGroup = tool
     }
@@ -169,15 +172,18 @@ class ToolGroupManager: ObservableObject {
             // Toggle expansion
             if expandedGroups.contains(groupName) {
                 expandedGroups.remove(groupName)
+                Log.fileOperation("🔧 Collapsed star variants, selected: \(variant.rawValue)", level: .info)
             } else {
                 expandedGroups.insert(groupName)
                 anchorVariantByGroup[groupName] = variant
+                Log.fileOperation("🔧 Expanded star variants from: \(variant.rawValue)", level: .info)
             }
         }
     }
 
     func selectStarVariant(_ variant: StarVariant) {
         selectedVariant = variant
+        Log.fileOperation("⭐ Selected star variant: \(variant.rawValue)", level: .info)
     }
 
     func setSelectedToolInGroup(_ tool: DrawingTool) {

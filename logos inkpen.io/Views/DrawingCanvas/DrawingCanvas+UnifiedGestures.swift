@@ -41,15 +41,31 @@ extension DrawingCanvas {
         if let textID = findTextAt(location: canvasLocation) {
             // 1. Switch to Font tool (Aa)
             document.currentTool = .font
+            Log.info("🎯 DOUBLE CLICK: Switched to Type tool", category: .selection)
             
             // 2. Turn text box to blue edit mode
             startEditingText(textID: textID, at: canvasLocation)
+            Log.info("🎯 DOUBLE CLICK: Activated blue edit mode for text", category: .selection)
             
             // 3. Activate I-beam cursor and enter text editing mode
             isTextEditingMode = true
             NSCursor.iBeam.set()
+            Log.info("🎯 DOUBLE CLICK: Set I-beam cursor at location (\(String(format: "%.1f", canvasLocation.x)), \(String(format: "%.1f", canvasLocation.y)))", category: .selection)
+            Log.info("🎯 DOUBLE CLICK: Entered text editing mode - I-beam cursor will be maintained", category: .selection)
+            
+            // Additional: Position cursor in text at click location
+            if let textObj = document.findText(by: textID) {
+                
+                // Calculate relative position within the text box
+                let relativeX = canvasLocation.x - textObj.position.x
+                let relativeY = canvasLocation.y - textObj.position.y
+                
+                Log.info("🎯 DOUBLE CLICK: Text cursor positioned at relative coordinates (\(String(format: "%.1f", relativeX)), \(String(format: "%.1f", relativeY)))", category: .selection)
+                Log.info("🎯 DOUBLE CLICK: Text content: '\(textObj.content)'", category: .selection)
+            }
         } else {
             // If not clicking on text, just log the double-click
+            Log.info("🎯 DOUBLE CLICK: No text box at location (\(String(format: "%.1f", canvasLocation.x)), \(String(format: "%.1f", canvasLocation.y)))", category: .selection)
         }
     }
     
@@ -64,6 +80,7 @@ extension DrawingCanvas {
         // Validate coordinates to catch any sync issues
         let validatedCanvasLocation = validateCanvasLocation(canvasLocation)
         if validatedCanvasLocation != canvasLocation {
+            Log.info("🎯 COORDINATE VALIDATION: Adjusted canvas location from \(canvasLocation) to \(validatedCanvasLocation)", category: .selection)
         }
         
         // DOUBLE-CLICK DETECTION
@@ -90,6 +107,7 @@ extension DrawingCanvas {
             }
             
             // Handle double-click immediately
+            Log.info("🎯 DOUBLE CLICK DETECTED at: \(location)", category: .selection)
             handleDoubleClick(at: location, geometry: geometry)
             return // Exit early for double-clicks
         } else {
@@ -115,6 +133,7 @@ extension DrawingCanvas {
         switch document.currentTool {
         case .selection, .scale, .rotate, .shear, .warp:
             // All transform tools use selection logic
+            Log.fileOperation("🎯 UNIFIED: Routing to handleSelectionTap...", level: .info)
             handleSelectionTap(at: canvasLocation)
             // REMOVED: handleAggressiveBackgroundTap - this was deselecting objects immediately after selection!
             
@@ -135,13 +154,15 @@ extension DrawingCanvas {
             // Font tool: Only handle editing existing text on tap, new text requires drag
             if let existingTextID = findTextAt(location: canvasLocation) {
                 startEditingText(textID: existingTextID, at: canvasLocation)
+            } else {
+                Log.fileOperation("📝 TYPE TOOL: Tap on empty area - drag to create new text box (like rectangle tool)", level: .info)
             }
             // Keep background tap handling for font tool only (this makes sense for font tool)
             handleAggressiveBackgroundTap(at: canvasLocation)
             
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             // Shape tools are drag-only - ignore taps
-            break
+            Log.fileOperation("🎨 UNIFIED: Shape tools (\(document.currentTool.rawValue)) are drag-only - tap ignored", level: .info)
         
         case .zoom:
             // Ensure zoom cursor stays during click
@@ -233,12 +254,9 @@ extension DrawingCanvas {
             handleBrushDragUpdate(at: currentLocation)
 
         case .marker:
-            let currentLocation = screenToCanvas(value.location, geometry: geometry)
-            if !isMarkerDrawing {
-                let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
-                handleMarkerDragStart(at: startLocation)
-            }
-            handleMarkerDragUpdate(at: currentLocation)
+            // MARKER USES PRESSURE EVENTS ONLY - DragGesture disabled to prevent timing conflicts
+            // Pressure events handle all drawing (began/changed/ended) via PressureSensitiveCanvasView
+            break
 
         case .scale, .rotate, .shear, .warp:
             // Transform tools don't use drag gestures - handled by their own handles
@@ -295,7 +313,9 @@ extension DrawingCanvas {
             handleBrushDragEnd()
 
         case .marker:
-            handleMarkerDragEnd()
+            // MARKER USES PRESSURE EVENTS ONLY - DragGesture disabled to prevent timing conflicts
+            // Pressure event .ended handles drawing completion via PressureSensitiveCanvasView
+            break
 
         default:
             break
@@ -359,9 +379,11 @@ extension DrawingCanvas {
     // MARK: - State Reset Helpers
     
     private func finishPanGesture() {
+        let finalOffset = document.canvasOffset
         initialCanvasOffset = CGPoint.zero
         handToolDragStart = CGPoint.zero
         isPanGestureActive = false
+        Log.info("✋ UNIFIED: Hand tool completed - final position: (\(String(format: "%.1f", finalOffset.x)), \(String(format: "%.1f", finalOffset.y)))", category: .general)
         // After pan ends, show open hand if still hovering and tool is still hand, else arrow
         if isCanvasHovering && document.currentTool == .hand {
             NSCursor.openHand.set()
@@ -402,14 +424,14 @@ extension DrawingCanvas {
     private func validateCanvasLocation(_ location: CGPoint) -> CGPoint {
         // Check for NaN or infinite values that could cause selection issues
         if location.x.isNaN || location.y.isNaN || location.x.isInfinite || location.y.isInfinite {
-            // Log.error("❌ INVALID CANVAS COORDINATES: \(location) - using zero point", category: .error)
+            Log.error("❌ INVALID CANVAS COORDINATES: \(location) - using zero point", category: .error)
             return .zero
         }
         
         // Check for extreme values that might indicate coordinate system corruption
         let maxReasonableValue: CGFloat = 1000000.0
         if abs(location.x) > maxReasonableValue || abs(location.y) > maxReasonableValue {
-            // Log.error("❌ EXTREME CANVAS COORDINATES: \(location) - using zero point", category: .error)
+            Log.error("❌ EXTREME CANVAS COORDINATES: \(location) - using zero point", category: .error)
             return .zero
         }
         

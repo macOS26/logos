@@ -31,10 +31,12 @@ extension DrawingCanvas {
                     if points.count >= pathPointCount || pathPointCount <= 2 {
                         // Delete entire shape using unified helper
                         document.removeShapeFromUnifiedSystem(id: shape.id)
+                        Log.info("Deleted entire shape", category: .general)
                     } else {
                         // Delete specific points while maintaining path integrity
                         let updatedPath = deletePointsFromPath(shape.path, selectedPoints: points)
                         document.updateShapePathUnified(id: shape.id, path: updatedPath)
+                        Log.info("Deleted \(points.count) points from path, \(updatedPath.elements.count) elements remain", category: .general)
                     }
                     break
                 }
@@ -51,9 +53,10 @@ extension DrawingCanvas {
     
             // MARK: - Professional Point Deletion (Professional Standards)
     internal func closeBezierPath() {
-        guard bezierPath != nil,
+        guard let _ = bezierPath,
                 let activeShape = activeBezierShape,
               bezierPoints.count >= 3 else {
+            Log.info("Cannot close bezier path - insufficient points or no path", category: .general)
             cancelBezierDrawing()
             return
         }
@@ -63,6 +66,7 @@ extension DrawingCanvas {
         
         // PROFESSIONAL PATH CLOSING: Connect last point to first with proper curve
         guard let updatedPath = bezierPath else {
+            Log.info("Failed to update path with handles", category: .general)
             cancelBezierDrawing()
             return
         }
@@ -81,15 +85,19 @@ extension DrawingCanvas {
         if let lastControl2 = lastPointHandles?.control2, let firstControl1 = firstPointHandles?.control1 {
             // Both points have handles - create smooth closing curve
             finalElements.append(.curve(to: firstPoint, control1: lastControl2, control2: firstControl1))
+            Log.fileOperation("🎯 Created smooth closing curve with both handles", level: .info)
         } else if let lastControl2 = lastPointHandles?.control2 {
             // Only last point has handle - create asymmetric curve
             finalElements.append(.curve(to: firstPoint, control1: lastControl2, control2: firstPoint))
+            Log.fileOperation("🎯 Created closing curve with outgoing handle", level: .info)
         } else if let firstControl1 = firstPointHandles?.control1 {
             // Only first point has handle - create asymmetric curve
             finalElements.append(.curve(to: firstPoint, control1: VectorPoint(bezierPoints[lastIndex].x, bezierPoints[lastIndex].y), control2: firstControl1))
+            Log.fileOperation("🎯 Created closing curve with incoming handle", level: .info)
         } else {
             // No handles - straight line close
             finalElements.append(.line(to: firstPoint))
+            Log.fileOperation("🎯 Created straight line closing", level: .info)
         }
         
         // Add close element to mark path as closed
@@ -120,6 +128,10 @@ extension DrawingCanvas {
         }
         
 
+        Log.info("✅ SUCCESSFULLY CLOSED BEZIER PATH with \(bezierPoints.count) points using document defaults", category: .fileOperations)
+        Log.info("Path elements: \(closedPath.elements.count) (including close)", category: .general)
+        Log.info("Curve data preserved: \(closedPath.elements.compactMap { if case .curve = $0 { return 1 } else { return nil } }.count) curves", category: .general)
+        Log.fileOperation("🎨 PEN TOOL CLOSED PATH COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)", level: .info)
         
         // CRITICAL FIX: Force UI update to ensure the closed shape is immediately visible
         document.objectWillChange.send()
@@ -142,5 +154,6 @@ extension DrawingCanvas {
         // Users can manually switch tools when they're ready to edit points
         // This enables uninterrupted tracing workflows
         
+        Log.info("✅ CLOSED PATH: Pen tool remains active for continuous tracing", category: .fileOperations)
     }
 } 
