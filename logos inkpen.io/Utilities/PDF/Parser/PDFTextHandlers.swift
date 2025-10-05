@@ -13,7 +13,6 @@ extension PDFCommandParser {
 
     /// Begin text object (BT)
     func handleBeginText() {
-        Log.info("📝 PDF Text: Begin text object (BT)", category: .general)
 
         isInTextObject = true
         // Reset text matrices - text starts at origin
@@ -31,12 +30,10 @@ extension PDFCommandParser {
 
         // Text state should persist between text objects within a page
         // But reset position-related state
-        Log.info("   Starting new text object - Font: \(currentFontName ?? "none") Size: \(currentFontSize)", category: .general)
     }
 
     /// End text object (ET)
     func handleEndText() {
-        Log.info("📝 PDF Text: End text object (ET) - Content: '\(currentTextContent)'", category: .general)
 
         guard isInTextObject else { return }
         isInTextObject = false
@@ -67,17 +64,14 @@ extension PDFCommandParser {
             currentFontName = fontName
             currentFontSize = Double(fontSize)
 
-            Log.info("PDF Text: Set font '\(fontName)' size \(fontSize) (Tf)", category: .general)
 
             // Try to resolve actual font from resources and get font dictionary
             if let (resolvedFont, fontDict) = resolveFontFromResourcesWithDict(fontName) {
                 currentFontName = resolvedFont
                 currentFontDict = fontDict
-                Log.info("   Resolved to: '\(resolvedFont)'", category: .general)
             } else if let resolvedFont = resolveFontFromResources(fontName) {
                 currentFontName = resolvedFont
                 currentFontDict = nil
-                Log.info("   Resolved to: '\(resolvedFont)'", category: .general)
             }
         } else {
             Log.error("PDF Text: Failed to parse Tf operator", category: .error)
@@ -89,7 +83,6 @@ extension PDFCommandParser {
         var charSpace: CGPDFReal = 0
         if CGPDFScannerPopNumber(scanner, &charSpace) {
             textCharacterSpacing = Double(charSpace)
-            Log.info("PDF Text: Set character spacing \(charSpace) (Tc)", category: .general)
         }
     }
 
@@ -98,7 +91,6 @@ extension PDFCommandParser {
         var wordSpace: CGPDFReal = 0
         if CGPDFScannerPopNumber(scanner, &wordSpace) {
             textWordSpacing = Double(wordSpace)
-            Log.info("PDF Text: Set word spacing \(wordSpace) (Tw)", category: .general)
         }
     }
 
@@ -107,7 +99,6 @@ extension PDFCommandParser {
         var scale: CGPDFReal = 100
         if CGPDFScannerPopNumber(scanner, &scale) {
             textHorizontalScaling = Double(scale)
-            Log.info("PDF Text: Set horizontal scaling \(scale)% (Tz)", category: .general)
         }
     }
 
@@ -116,7 +107,6 @@ extension PDFCommandParser {
         var leading: CGPDFReal = 0
         if CGPDFScannerPopNumber(scanner, &leading) {
             textLeading = Double(leading)
-            Log.info("PDF Text: Set text leading \(leading) (TL)", category: .general)
         }
     }
 
@@ -126,7 +116,6 @@ extension PDFCommandParser {
         if CGPDFScannerPopInteger(scanner, &mode) {
             textRenderingMode = Int(mode)
             let modeDesc = ["fill", "stroke", "fill+stroke", "invisible", "fill+clip", "stroke+clip", "fill+stroke+clip", "clip"][min(Int(mode), 7)]
-            Log.info("PDF Text: Set rendering mode \(mode) (\(modeDesc)) (Tr)", category: .general)
         }
     }
 
@@ -135,7 +124,6 @@ extension PDFCommandParser {
         var rise: CGPDFReal = 0
         if CGPDFScannerPopNumber(scanner, &rise) {
             textRise = Double(rise)
-            Log.info("PDF Text: Set text rise \(rise) (Ts)", category: .general)
         }
     }
 
@@ -163,7 +151,6 @@ extension PDFCommandParser {
             // Capture new start position
             currentTextStartPosition = CGPoint(x: currentTextMatrix.tx, y: currentTextMatrix.ty)
 
-            Log.info("PDF Text: Move text position (\(tx), \(ty)) (Td)", category: .general)
         }
     }
 
@@ -192,7 +179,6 @@ extension PDFCommandParser {
             // Capture new start position
             currentTextStartPosition = CGPoint(x: currentTextMatrix.tx, y: currentTextMatrix.ty)
 
-            Log.info("PDF Text: Move text position (\(tx), \(ty)) and set leading (TD)", category: .general)
         }
     }
 
@@ -219,7 +205,6 @@ extension PDFCommandParser {
 
                 // If position changed significantly (more than 1 unit), flush accumulated text
                 if abs(newPosition.x - startPosition.x) > 1 || abs(newPosition.y - startPosition.y) > 1 {
-                    Log.info("   Position changed from \(startPosition) to \(newPosition) - flushing text", category: .general)
                     createVectorTextFromAccumulated()
                     currentTextContent = ""
                 }
@@ -236,7 +221,6 @@ extension PDFCommandParser {
                 currentTextStartPosition = CGPoint(x: CGFloat(e), y: CGFloat(f))
             }
 
-            Log.info("PDF Text: Set text matrix [\(a) \(b) \(c) \(d) \(e) \(f)] (Tm)", category: .general)
         }
     }
 
@@ -256,7 +240,6 @@ extension PDFCommandParser {
         // Capture new start position
         currentTextStartPosition = CGPoint(x: currentTextMatrix.tx, y: currentTextMatrix.ty)
 
-        Log.info("PDF Text: Move to next line (T*)", category: .general)
     }
 
     // MARK: - Text Showing Operators
@@ -271,7 +254,6 @@ extension PDFCommandParser {
             let text = extractTextFromPDFString(stringRef)
             currentTextContent += text
 
-            Log.info("📝 PDF Text: Show text '\(text)' (Tj) - Total: '\(currentTextContent)'", category: .general)
 
             // Advance text position based on text width
             advanceTextPosition(for: text)
@@ -308,7 +290,6 @@ extension PDFCommandParser {
             }
 
             currentTextContent += combinedText
-            Log.info("PDF Text: Show text with positioning '\(combinedText)' (TJ)", category: .general)
 
             // Advance text position
             advanceTextPosition(for: combinedText)
@@ -346,7 +327,6 @@ extension PDFCommandParser {
                 let text = extractTextFromPDFString(stringRef)
                 currentTextContent += text
 
-                Log.info("PDF Text: Set spacing and show '\(text)' (\")", category: .general)
 
                 advanceTextPosition(for: text)
             }
@@ -361,7 +341,6 @@ extension PDFCommandParser {
         // This handles cases where CGPDFStringCopyTextString doesn't properly decode ligatures
         if let fontDict = currentFontDict {
             if let decodedText = decodeTextUsingToUnicode(pdfString, fontDict: fontDict) {
-                Log.info("   Decoded using ToUnicode CMap: '\(decodedText)'", category: .general)
                 return decodedText
             }
         }
@@ -374,7 +353,6 @@ extension PDFCommandParser {
             // Log if we found any ligatures or special characters
             if result.contains("\u{FB00}") || result.contains("\u{FB01}") ||
                result.contains("\u{FB02}") || result.contains("\u{FB03}") || result.contains("\u{FB04}") {
-                Log.info("   Found ligature in text: '\(result)'", category: .general)
             }
 
             return result
@@ -532,7 +510,6 @@ extension PDFCommandParser {
 
                         if !unicodeString.isEmpty {
                             mapping[charCode] = unicodeString
-                            Log.info("   CMap: Code 0x\(String(charCode, radix: 16)) → '\(unicodeString)' (U+\(String(unicodeValue, radix: 16).uppercased()))", category: .general)
                         }
                     }
                 }
@@ -677,9 +654,6 @@ extension PDFCommandParser {
         let finalY = pdfY - actualFontSize
         let position = CGPoint(x: pdfX, y: finalY)
 
-        Log.info("📝 Creating text at position: \(position) | PDF coords: (\(pdfX), \(pdfY))", category: .general)
-        Log.info("   Actual font size: \(actualFontSize) = Tf(\(currentFontSize)) × matrix(\(matrixFontSize))", category: .general)
-        Log.info("   Text Matrix: \(tm)", category: .general)
 
         // Determine font attributes
         let fontFamily = currentFontName ?? "Helvetica"
@@ -750,8 +724,5 @@ extension PDFCommandParser {
         let shape = vectorText.toVectorShape()
         shapes.append(shape)
 
-        Log.info("✅ PDF Text: Created text object with '\(currentTextContent.prefix(50))...' at \(position)", category: .general)
-        Log.info("   Text bounds: \(shape.bounds), areaSize: \(shape.areaSize ?? .zero)", category: .general)
-        Log.info("   Shape ID: \(shape.id), isTextObject: \(shape.isTextObject)", category: .general)
     }
 }
