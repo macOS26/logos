@@ -466,16 +466,17 @@ extension DrawingCanvas {
                 DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
         }
         
-        // CRITICAL: Keep many points for high-fidelity smooth curves
-        // If simplification was too aggressive, re-interpolate points
-        if brushSimplifiedPoints.count < 50 && processedPoints.count > 2 {
+        // CRITICAL: Ensure we have enough points for smooth tapers (matching marker tool)
+        // Need MORE points when pressure sensitivity is off since taper is the only variation
+        let minPoints = appState.pressureSensitivityEnabled ? 8 : 20
+        if brushSimplifiedPoints.count < minPoints && processedPoints.count > 2 {
             // Try again with minimal tolerance
             let minTolerance = smoothingTolerance * 0.001
             brushSimplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: minTolerance)
 
-            // If still too few, sample densely from processed points
-            if brushSimplifiedPoints.count < 50 {
-                let stepSize = max(1, processedPoints.count / 100)  // Keep up to 100 points
+            // If still too few, sample from processed points
+            if brushSimplifiedPoints.count < minPoints {
+                let stepSize = max(1, processedPoints.count / (minPoints + 10))
                 brushSimplifiedPoints = []
                 for i in Swift.stride(from: 0, to: processedPoints.count, by: stepSize) {
                     brushSimplifiedPoints.append(processedPoints[i])
@@ -690,10 +691,7 @@ extension DrawingCanvas {
                     finalThickness *= pow(1.0 - endProgress, 3.0)
                 }
             } else {
-                // Normal curved strokes - CLIP OFF NARROW TAILS
-                // ONLY apply tapering/bulges when NOT using pressure sensitivity
-                let usingPressure = appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput
-
+                // Normal curved strokes - Simple taper without bulges (like marker tool)
                 if progress < 0.03 {
                     // START: Cut off very thin tails at beginning
                     finalThickness = 0  // Completely remove narrow tail
@@ -701,12 +699,6 @@ extension DrawingCanvas {
                     // Quick taper from zero
                     let startTaper = pow((progress - 0.03) / 0.05, 2.0)
                     finalThickness *= startTaper
-                } else if !usingPressure && progress > 0.15 && progress <= 0.3 {
-                    let bulgeAmount = sin((progress - 0.15) / 0.15 * .pi)
-                    finalThickness *= (1.0 + bulgeAmount * 0.15)
-                } else if !usingPressure && progress > 0.8 && progress <= 0.88 {
-                    let endBulgeAmount = sin((progress - 0.8) / 0.08 * .pi)
-                    finalThickness *= (1.0 + endBulgeAmount * 0.3)
                 } else if progress > 0.88 && progress < 0.97 {
                     // Quick taper to zero
                     let endProgress = (progress - 0.88) / 0.09
@@ -877,10 +869,7 @@ extension DrawingCanvas {
                     finalThickness *= pow(1.0 - endProgress, 3.0)
                 }
             } else {
-                // CLIP OFF NARROW TAILS for curved strokes
-                // ONLY apply tapering/bulges when NOT using pressure sensitivity
-                let usingPressure = appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput
-
+                // Simple taper for curved strokes without bulges
                 if progress < 0.03 {
                     // START: Cut off very thin tails at beginning
                     finalThickness = 0  // Completely remove narrow tail
@@ -888,12 +877,6 @@ extension DrawingCanvas {
                     // Quick taper from zero
                     let startTaper = pow((progress - 0.03) / 0.05, 2.0)
                     finalThickness *= startTaper
-                } else if !usingPressure && progress > 0.15 && progress <= 0.3 {
-                    let bulgeAmount = sin((progress - 0.15) / 0.15 * .pi)
-                    finalThickness *= (1.0 + bulgeAmount * 0.15)
-                } else if !usingPressure && progress > 0.8 && progress <= 0.88 {
-                    let endBulgeAmount = sin((progress - 0.8) / 0.08 * .pi)
-                    finalThickness *= (1.0 + endBulgeAmount * 0.3)
                 } else if progress > 0.88 && progress < 0.97 {
                     // Quick taper to zero
                     let endProgress = (progress - 0.88) / 0.09
