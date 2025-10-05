@@ -122,49 +122,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         // Only intercept if we're actually launching fresh without documents
         let hasDocuments = NSDocumentController.shared.documents.count > 0
-        Log.startup("📄 App: applicationShouldOpenUntitledFile called - hasDocuments: \(hasDocuments), hasLaunchedBefore: \(hasLaunchedBefore)")
-        
+
         // If we already have documents (from restoration), don't interfere
         if hasDocuments {
-            Log.startup("📄 App: Documents already exist, not intercepting untitled file creation")
             return false
         }
-        
+
         // Only show setup window on the VERY FIRST launch ever
         if !hasLaunchedBefore {
-            Log.startup("📄 App: First launch ever detected - will show Document Setup")
             UserDefaults.standard.set(true, forKey: "HasLaunchedBefore")
-            
+
             // Show the document setup window for first launch
             DispatchQueue.main.async {
                 AppState.shared.openWindowAction?("onboarding-setup")
             }
             return false
         }
-        
-        Log.startup("📄 App: Not first launch - creating normal untitled document")
         return true // Let the system create a normal untitled document
     }
     
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        Log.startup("📄 App: Application should terminate - starting graceful shutdown")
-        
         // CRITICAL: Close Document Setup window before termination to prevent restoration
         for window in NSApplication.shared.windows {
             if window.title == "Document Setup" || window.identifier?.rawValue == "onboarding-setup" {
                 window.close()
-                Log.startup("📄 Closed Document Setup window before termination")
             }
         }
-        
+
         // Directly instruct all DocumentState instances to stop updating immediately
         DocumentStateRegistry.shared.forceCleanupAll()
-        
-        // Allow a brief moment for cleanup to complete
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            Log.startup("📄 App: Cleanup phase completed, terminating now")
-        }
-        
+
         return .terminateNow
     }
     
@@ -186,14 +173,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     // SAVE: Window state when app is about to terminate
     func applicationWillTerminate(_ notification: Notification) {
-        Log.startup("📄 App: Starting termination cleanup...")
-                
         // CRITICAL: Force cleanup of all DocumentState instances
         DocumentStateRegistry.shared.forceCleanupAll()
-        
+
         // Force synchronize UserDefaults before shutdown
         UserDefaults.standard.synchronize()
-        
-        Log.startup("📄 App: Application termination cleanup completed")
     }
 }
