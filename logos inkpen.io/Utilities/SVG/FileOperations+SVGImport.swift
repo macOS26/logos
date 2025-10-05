@@ -197,10 +197,10 @@ extension FileOperations {
             }
         }
         
-        // CRITICAL FIX: Add standalone shapes in reverse order to preserve visual stacking
+        // Add standalone shapes in order to preserve visual stacking
         // SVG renders first elements at bottom, last elements at top
-        // So we reverse the order when adding to unified system
-        for shape in standaloneShapes.reversed() {
+        // InkPen's unified system assigns orderIDs sequentially, so first added = lowest orderID = bottom
+        for shape in standaloneShapes {
             autoreleasepool {
                 // Keep shape at its original position - no centering
                 Log.fileOperation("🔷 Adding standalone shape: \(shape.name)", level: .debug)

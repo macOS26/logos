@@ -42,7 +42,8 @@ func parseSVGContent(_ data: Data, useExtremeValueHandling: Bool = false) throws
     // CRITICAL FIX: Convert textObjects to VectorShapes (same as PDF import)
     var allShapes = result.shapes
 
-    for textObject in result.textObjects {
+    // Reverse text objects to fix stacking order (last letter should be last, not first)
+    for textObject in result.textObjects.reversed() {
         let textShape = textObject.toVectorShape()
         allShapes.append(textShape)
         Log.fileOperation("📝 Converted SVG text to shape: '\(textObject.content.prefix(30))...' (id: \(textShape.id))", level: .debug)

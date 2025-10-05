@@ -42,7 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // 🔥 NEW: Initialize display monitor to handle display changes
-        _ = DisplayMonitor.shared
+        // _ = DisplayMonitor.shared
 
         // SETUP: Global error handling for system-level issues
         setupGlobalErrorHandling()

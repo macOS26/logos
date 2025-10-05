@@ -626,11 +626,7 @@ private func getMajorTickInterval(for unit: MeasurementUnit, zoomLevel: Double) 
 
 private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) -> Double {
     let pointsPerUnit = unit.pointsPerUnit
-    
-    // PROFESSIONAL TICK SPACING: Use PICAS frequency as model for ALL units
-    // PICA model: 12 points per pica, with 1-point minor intervals = perfect frequency
-    let _ : Double
-    
+        
     switch unit {
     case .pixels, .points:
         // Pixels/Points: spacing at 12.5 units to create ticks at 25%, 50%, 75% positions

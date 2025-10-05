@@ -1206,8 +1206,6 @@ struct ClipboardData: Codable {
     let texts: [VectorText]
 }
 
-// MARK: - Display Monitor for Handling Display Changes
-
 // MARK: - Help Functions
 
 func openLogosInkPenHelp() {
@@ -1243,104 +1241,104 @@ func openLogosInkPenHelp() {
     }
 }
 
-class DisplayMonitor: NSObject {
-    
-    static let shared = DisplayMonitor()
-    
-    private override init() {
-        super.init()
-        setupDisplayMonitoring()
-    }
-    
-    private func setupDisplayMonitoring() {
-        // Monitor for display configuration changes
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(displayConfigurationChanged),
-            name: NSApplication.didChangeScreenParametersNotification,
-            object: nil
-        )
-        
-        // Monitor for display connection changes
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(displayConfigurationChanged),
-            name: NSWindow.didChangeScreenNotification,
-            object: nil
-        )
-    }
-    
-    @objc private func displayConfigurationChanged(_ notification: Notification) {
-        // Logging removed
-        
-        // Validate all displays after configuration change
-        validateDisplays()
-        
-        // Reposition any floating windows that might be on invalid displays
-        repositionFloatingWindows()
-    }
-    
-    private func validateDisplays() {
-        let screens = NSScreen.screens
-        // Logging removed
-        
-        for (_, screen) in screens.enumerated() {
-            let frame = screen.frame
-            let isValid = frame.width > 0 && frame.height > 0 &&
-                         !frame.origin.x.isNaN && !frame.origin.y.isNaN &&
-                         !frame.width.isNaN && !frame.height.isNaN
-            
-            if isValid {
-                // Logging removed
-            } else {
-                // Logging removed
-            }
-        }
-    }
-    
-    private func repositionFloatingWindows() {
-        DispatchQueue.main.async {
-            // Get valid screen bounds
-            guard let mainScreen = NSScreen.main else {
-                // Logging removed
-                return
-            }
-            
-            let screenFrame = mainScreen.visibleFrame
-            
-            // Reposition gradient HUD windows
-            for window in NSApplication.shared.windows {
-                if let identifier = window.identifier?.rawValue, identifier.starts(with: "gradient-hud") {
-                    if !screenFrame.intersects(window.frame) {
-                        // Logging removed
-                        let newFrame = CGRect(
-                            x: screenFrame.minX + 50,
-                            y: screenFrame.minY + 50,
-                            width: window.frame.width,
-                            height: window.frame.height
-                        )
-                        window.setFrame(newFrame, display: true)
-                    }
-                }
-                
-                // Reposition ink HUD windows
-                if let identifier = window.identifier?.rawValue, identifier.starts(with: "ink-hud") {
-                    if !screenFrame.intersects(window.frame) {
-                        // Logging removed
-                        let newFrame = CGRect(
-                            x: screenFrame.minX + 100,
-                            y: screenFrame.minY + 100,
-                            width: window.frame.width,
-                            height: window.frame.height
-                        )
-                        window.setFrame(newFrame, display: true)
-                    }
-                }
-            }
-        }
-    }
-    
-    deinit {
-        NotificationCenter.default.removeObserver(self)
-    }
-}
+//class DisplayMonitor: NSObject {
+//    
+//    static let shared = DisplayMonitor()
+//    
+//    private override init() {
+//        super.init()
+//        setupDisplayMonitoring()
+//    }
+//    
+//    private func setupDisplayMonitoring() {
+//        // Monitor for display configuration changes
+//        NotificationCenter.default.addObserver(
+//            self,
+//            selector: #selector(displayConfigurationChanged),
+//            name: NSApplication.didChangeScreenParametersNotification,
+//            object: nil
+//        )
+//        
+//        // Monitor for display connection changes
+//        NotificationCenter.default.addObserver(
+//            self,
+//            selector: #selector(displayConfigurationChanged),
+//            name: NSWindow.didChangeScreenNotification,
+//            object: nil
+//        )
+//    }
+//    
+//    @objc private func displayConfigurationChanged(_ notification: Notification) {
+//        // Logging removed
+//        
+//        // Validate all displays after configuration change
+//        validateDisplays()
+//        
+//        // Reposition any floating windows that might be on invalid displays
+//        repositionFloatingWindows()
+//    }
+//    
+//    private func validateDisplays() {
+//        let screens = NSScreen.screens
+//        // Logging removed
+//        
+//        for (_, screen) in screens.enumerated() {
+//            let frame = screen.frame
+//            let isValid = frame.width > 0 && frame.height > 0 &&
+//                         !frame.origin.x.isNaN && !frame.origin.y.isNaN &&
+//                         !frame.width.isNaN && !frame.height.isNaN
+//            
+//            if isValid {
+//                // Logging removed
+//            } else {
+//                // Logging removed
+//            }
+//        }
+//    }
+//    
+//    private func repositionFloatingWindows() {
+//        DispatchQueue.main.async {
+//            // Get valid screen bounds
+//            guard let mainScreen = NSScreen.main else {
+//                // Logging removed
+//                return
+//            }
+//            
+//            let screenFrame = mainScreen.visibleFrame
+//            
+//            // Reposition gradient HUD windows
+//            for window in NSApplication.shared.windows {
+//                if let identifier = window.identifier?.rawValue, identifier.starts(with: "gradient-hud") {
+//                    if !screenFrame.intersects(window.frame) {
+//                        // Logging removed
+//                        let newFrame = CGRect(
+//                            x: screenFrame.minX + 50,
+//                            y: screenFrame.minY + 50,
+//                            width: window.frame.width,
+//                            height: window.frame.height
+//                        )
+//                        window.setFrame(newFrame, display: true)
+//                    }
+//                }
+//                
+//                // Reposition ink HUD windows
+//                if let identifier = window.identifier?.rawValue, identifier.starts(with: "ink-hud") {
+//                    if !screenFrame.intersects(window.frame) {
+//                        // Logging removed
+//                        let newFrame = CGRect(
+//                            x: screenFrame.minX + 100,
+//                            y: screenFrame.minY + 100,
+//                            width: window.frame.width,
+//                            height: window.frame.height
+//                        )
+//                        window.setFrame(newFrame, display: true)
+//                    }
+//                }
+//            }
+//        }
+//    }
+//    
+//    deinit {
+//        NotificationCenter.default.removeObserver(self)
+//    }
+//}

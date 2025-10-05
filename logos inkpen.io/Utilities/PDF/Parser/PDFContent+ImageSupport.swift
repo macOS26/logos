@@ -456,6 +456,7 @@ extension PDFCommandParser {
             processImageXObject(name: name, xObjectStream: xObjectStream, currentTransform: currentTransformMatrix)
 
         default:
+            break
         }
     }
 }

@@ -47,6 +47,7 @@ class ExportTextOptionsHandler: NSObject {
 /// Helper to export with text converted to outlines
 /// Eliminates duplication of save/convert/restore pattern
 extension DocumentState {
+    @discardableResult
     static func exportWithTextToOutlines(
         _ document: VectorDocument,
         exportHandler: () throws -> Data
