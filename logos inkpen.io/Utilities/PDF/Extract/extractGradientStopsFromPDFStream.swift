@@ -10,23 +10,7 @@ import SwiftUI
 extension PDFCommandParser {
     
     func extractGradientStopsFromPDFStream(shadingDict: CGPDFDictionaryRef) -> [GradientStop] {
-        
-        // DEBUG: Print all keys in the shading dictionary first
-        CGPDFDictionaryApplyFunction(shadingDict, { (key, _, _) in
-            let keyString = String(cString: key)
 
-            // Look for Adobe private data or additional references
-            if keyString.hasPrefix("Adobe") || keyString.hasPrefix("AI") || keyString.hasPrefix("Private") {
-            }
-        }, nil)
-        
-        // Check if there are any additional references to gradient objects
-        var additionalRefs: CGPDFObjectRef?
-        if CGPDFDictionaryGetObject(shadingDict, "GradientStops", &additionalRefs) ||
-           CGPDFDictionaryGetObject(shadingDict, "Adobe", &additionalRefs) ||
-           CGPDFDictionaryGetObject(shadingDict, "AI", &additionalRefs) {
-        }
-        
         // Get the Function object from the shading dictionary
         var functionObj: CGPDFObjectRef?
         guard CGPDFDictionaryGetObject(shadingDict, "Function", &functionObj),
@@ -45,16 +29,7 @@ extension PDFCommandParser {
                 Log.error("PDF: Failed to get stream dictionary", category: .error)
                 return []
             }
-            
-            // DEBUG: Check function stream dictionary for Adobe metadata or original gradient info
-            CGPDFDictionaryApplyFunction(streamDict, { (key, _, _) in
-                let keyString = String(cString: key)
 
-                // Look for any clues about original gradient structure
-                if keyString.contains("Stop") || keyString.contains("Color") || keyString.contains("Adobe") || keyString.contains("AI") {
-                }
-            }, nil)
-            
             // Get function parameters
             var functionType: CGPDFInteger = 0
             CGPDFDictionaryGetInteger(streamDict, "FunctionType", &functionType)
