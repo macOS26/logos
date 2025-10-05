@@ -13,7 +13,6 @@ extension PDFCommandParser {
         // For standalone shadings, we need to create a shape that covers the entire page
         // or the current clipping area. This is common for background gradients.
         
-        Log.info("PDF: 📐 Creating standalone shading shape covering page bounds", category: .general)
         
         // Create a rectangle covering the entire page
         let pageRect = [
@@ -44,7 +43,6 @@ extension PDFCommandParser {
         let vectorPath = VectorPath(elements: vectorElements, isClosed: true)
         let fillStyle = FillStyle(gradient: gradient)
         
-        Log.info("PDF: 🌈 Creating GRADIENT COMPOUND PATH from shading - marking as compound for editor compatibility", category: .general)
 
         let shadingShape = VectorShape(
             name: "PDF Shading Shape \(shapes.count + 1)",
@@ -55,6 +53,5 @@ extension PDFCommandParser {
         )
 
         shapes.append(shadingShape)
-        Log.info("PDF: ✅ Created standalone shading shape as compound path", category: .general)
     }
 }
