@@ -131,21 +131,23 @@ extension FileOperations {
 
         // First pass: organize shapes by clipping relationships
         for (index, layer) in document.layers.enumerated() {
-            // Skip pasteboard (index 0) and canvas (index 1) for PDF export
-            guard index >= 2, !layer.isLocked, layer.isVisible else { continue }
+            autoreleasepool {
+                // Skip pasteboard (index 0) and canvas (index 1) for PDF export
+                guard index >= 2, !layer.isLocked, layer.isVisible else { return }
 
-            let shapesInLayer = document.getShapesForLayer(index)
-            for shape in shapesInLayer where shape.isVisible {
-                if shape.isClippingPath {
-                    clippingMasks[shape.id] = shape
-                    if clippedShapes[shape.id] == nil {
-                        clippedShapes[shape.id] = []
+                let shapesInLayer = document.getShapesForLayer(index)
+                for shape in shapesInLayer where shape.isVisible {
+                    if shape.isClippingPath {
+                        clippingMasks[shape.id] = shape
+                        if clippedShapes[shape.id] == nil {
+                            clippedShapes[shape.id] = []
+                        }
+                    } else if let clipId = shape.clippedByShapeID {
+                        if clippedShapes[clipId] == nil {
+                            clippedShapes[clipId] = []
+                        }
+                        clippedShapes[clipId]?.append(shape)
                     }
-                } else if let clipId = shape.clippedByShapeID {
-                    if clippedShapes[clipId] == nil {
-                        clippedShapes[clipId] = []
-                    }
-                    clippedShapes[clipId]?.append(shape)
                 }
             }
         }
@@ -158,42 +160,44 @@ extension FileOperations {
             // Skip pasteboard (index 0) and canvas (index 1) for PDF export
             guard index >= 2, !layer.isLocked, layer.isVisible else { continue }
 
-            Log.fileOperation("🎨 Rendering layer: \(layer.name)", level: .info)
+            try autoreleasepool {
+                Log.fileOperation("🎨 Rendering layer: \(layer.name)", level: .info)
 
-            // Render shapes in layer using unified objects
-            let shapesInLayer = document.getShapesForLayer(index)
-            for shape in shapesInLayer where shape.isVisible {
-                // Skip Canvas Background if not including background
-                if !includeBackground && shape.name == "Canvas Background" {
-                    Log.fileOperation("📋 PDF EXPORT: Skipping Canvas Background (includeBackground=false)", level: .debug)
-                    continue
-                }
+                // Render shapes in layer using unified objects
+                let shapesInLayer = document.getShapesForLayer(index)
+                for shape in shapesInLayer where shape.isVisible {
+                    // Skip Canvas Background if not including background
+                    if !includeBackground && shape.name == "Canvas Background" {
+                        Log.fileOperation("📋 PDF EXPORT: Skipping Canvas Background (includeBackground=false)", level: .debug)
+                        continue
+                    }
 
-                // Skip if already rendered as part of a clipping group
-                guard !renderedShapeIds.contains(shape.id) else { continue }
+                    // Skip if already rendered as part of a clipping group
+                    guard !renderedShapeIds.contains(shape.id) else { continue }
 
-                // If this shape is clipped by another shape, skip it here
-                // It will be rendered with its clipping mask
-                if shape.clippedByShapeID != nil {
-                    continue
-                }
+                    // If this shape is clipped by another shape, skip it here
+                    // It will be rendered with its clipping mask
+                    if shape.clippedByShapeID != nil {
+                        continue
+                    }
 
-                // If this is a clipping mask, render it with its clipped shapes
-                if shape.isClippingPath, let clipped = clippedShapes[shape.id], !clipped.isEmpty {
-                    try renderClippingGroup(
-                        clippingMask: shape,
-                        clippedShapes: clipped,
-                        context: context,
-                        isExport: isExport,
-                        useCMYK: useCMYK,
-                        textRenderingMode: textRenderingMode
-                    )
-                    renderedShapeIds.insert(shape.id)
-                    clipped.forEach { renderedShapeIds.insert($0.id) }
-                } else if !shape.isClippingPath {
-                    // Regular shape without clipping
-                    try renderShapeToPDFWithImageSupport(shape: shape, context: context, isExport: isExport, useCMYK: useCMYK, textRenderingMode: textRenderingMode)
-                    renderedShapeIds.insert(shape.id)
+                    // If this is a clipping mask, render it with its clipped shapes
+                    if shape.isClippingPath, let clipped = clippedShapes[shape.id], !clipped.isEmpty {
+                        try renderClippingGroup(
+                            clippingMask: shape,
+                            clippedShapes: clipped,
+                            context: context,
+                            isExport: isExport,
+                            useCMYK: useCMYK,
+                            textRenderingMode: textRenderingMode
+                        )
+                        renderedShapeIds.insert(shape.id)
+                        clipped.forEach { renderedShapeIds.insert($0.id) }
+                    } else if !shape.isClippingPath {
+                        // Regular shape without clipping
+                        try renderShapeToPDFWithImageSupport(shape: shape, context: context, isExport: isExport, useCMYK: useCMYK, textRenderingMode: textRenderingMode)
+                        renderedShapeIds.insert(shape.id)
+                    }
                 }
             }
         }
