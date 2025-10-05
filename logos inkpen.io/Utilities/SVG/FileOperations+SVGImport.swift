@@ -173,7 +173,13 @@ extension FileOperations {
                 }
             } else {
                 // Standalone shape without clipping
-                standaloneShapes.append(shape)
+                // CRITICAL FIX: Skip invalid NON-TEXT shapes with empty paths (e.g., <path d=""/>)
+                // BUT keep text objects even if path is empty
+                if !shape.path.elements.isEmpty || shape.isTextObject {
+                    standaloneShapes.append(shape)
+                } else {
+                    Log.fileOperation("⚠️ Skipping invalid shape with empty path: \(shape.name)", level: .debug)
+                }
             }
         }
         
