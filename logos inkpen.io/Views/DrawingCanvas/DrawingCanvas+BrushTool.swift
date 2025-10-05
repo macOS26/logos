@@ -682,16 +682,21 @@ extension DrawingCanvas {
             let strokeLength = Double(centerPoints.count)
             let isShortStroke = strokeLength < 5
 
-            // ALWAYS taper to pointed ends for leaf-like appearance
+            // ALWAYS taper to pointed ends using SAME curve as artificial leaf shape
             let taperZone = 0.15 // Taper over first/last 15% of stroke
 
             if progress < taperZone {
-                // Start taper: goes from 0 to full thickness
-                finalThickness *= pow(progress / taperZone, 2.0)
+                // Start taper: use quadratic bezier curve (same as leaf shape)
+                // Quadratic bezier: B(t) = (1-t)²*P0 + 2(1-t)t*P1 + t²*P2
+                // P0 = 0 (start at point), P1 = 0.5 (control at middle), P2 = 1.0 (end at full)
+                let t = progress / taperZone
+                let bezierValue = 2.0 * (1.0 - t) * t * 0.5 + t * t * 1.0
+                finalThickness *= bezierValue
             } else if progress > (1.0 - taperZone) {
-                // End taper: goes from full thickness to 0
-                let endProgress = (1.0 - progress) / taperZone
-                finalThickness *= pow(endProgress, 2.0)
+                // End taper: use quadratic bezier curve (same as leaf shape)
+                let t = (1.0 - progress) / taperZone
+                let bezierValue = 2.0 * (1.0 - t) * t * 0.5 + t * t * 1.0
+                finalThickness *= bezierValue
             }
 
             // PROPER PRESSURE MAPPING: Find the closest raw point for pressure data
@@ -838,16 +843,21 @@ extension DrawingCanvas {
             let strokeLength = Double(centerPoints.count)
             let isShortStroke = strokeLength < 5
 
-            // ALWAYS taper to pointed ends for leaf-like appearance
+            // ALWAYS taper to pointed ends using SAME curve as artificial leaf shape
             let taperZone = 0.15 // Taper over first/last 15% of stroke
 
             if progress < taperZone {
-                // Start taper: goes from 0 to full thickness
-                finalThickness *= pow(progress / taperZone, 2.0)
+                // Start taper: use quadratic bezier curve (same as leaf shape)
+                // Quadratic bezier: B(t) = (1-t)²*P0 + 2(1-t)t*P1 + t²*P2
+                // P0 = 0 (start at point), P1 = 0.5 (control at middle), P2 = 1.0 (end at full)
+                let t = progress / taperZone
+                let bezierValue = 2.0 * (1.0 - t) * t * 0.5 + t * t * 1.0
+                finalThickness *= bezierValue
             } else if progress > (1.0 - taperZone) {
-                // End taper: goes from full thickness to 0
-                let endProgress = (1.0 - progress) / taperZone
-                finalThickness *= pow(endProgress, 2.0)
+                // End taper: use quadratic bezier curve (same as leaf shape)
+                let t = (1.0 - progress) / taperZone
+                let bezierValue = 2.0 * (1.0 - t) * t * 0.5 + t * t * 1.0
+                finalThickness *= bezierValue
             }
 
             // Interpolate pressure from raw points to simplified points
