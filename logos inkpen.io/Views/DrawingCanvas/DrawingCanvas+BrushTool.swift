@@ -482,7 +482,7 @@ extension DrawingCanvas {
                 // Simulate the taper calculation to see if any point has thickness > threshold
                 let baseThickness = document.currentBrushThickness
                 let taperZone = 0.15
-                let thicknessThreshold = 0.5 // Points - consider stroke with no thickness if all points < 0.5pt
+                let thicknessThreshold = 5.0 // Points - use artificial leaf if max thickness < 5pt
 
                 var hasThickness = false
                 let numCheckPoints = 10
