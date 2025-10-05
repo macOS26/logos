@@ -51,8 +51,14 @@ struct StableProfessionalTextCanvas: View {
                     viewModel.syncFromDocument(currentTextObject)
                 }
             }
-            // Additional fix: Use id to force view refresh when text content changes
-            .id("\(textObjectID)-\(getDocumentMode())")
+            // PERF: Update position when drag preview changes
+            .onChange(of: dragPreviewTrigger) { _, _ in
+                if let currentTextObject = document.findText(by: textObjectID) {
+                    viewModel.syncFromDocument(currentTextObject)
+                }
+            }
+            // PERF: Removed .id() modifier - was causing view to recreate on every drag
+            // The view model's @StateObject ensures stability across updates
 
     }
 
@@ -60,17 +66,19 @@ struct StableProfessionalTextCanvas: View {
         // PERF: Initialize view model with actual text object on first appearance
         // This defers expensive setup until the view is actually rendered
         if let currentTextObject = document.findText(by: textObjectID) {
-            // Check if this is the initial dummy object
-            if viewModel.textObject.content.isEmpty && viewModel.textObject.id != textObjectID {
-                // First time - replace dummy with real text object
+            // Check if view model has the wrong ID (initial dummy object)
+            if viewModel.textObject.id != textObjectID {
+                // First time only - replace dummy with real text object
                 viewModel.textObject = currentTextObject
                 viewModel.text = currentTextObject.content
                 viewModel.fontSize = CGFloat(currentTextObject.typography.fontSize)
                 viewModel.selectedFont = currentTextObject.typography.nsFont
                 viewModel.textAlignment = currentTextObject.typography.alignment.nsTextAlignment
 
-                let width = currentTextObject.areaSize?.width ?? 200.0
-                let height = currentTextObject.areaSize?.height ?? 50.0
+                // Use bounds from file if available
+                let width = currentTextObject.areaSize?.width ?? (currentTextObject.bounds.width > 1 ? currentTextObject.bounds.width : 200.0)
+                let height = currentTextObject.areaSize?.height ?? (currentTextObject.bounds.height > 1 ? currentTextObject.bounds.height : 50.0)
+
                 viewModel.textBoxFrame = CGRect(
                     x: currentTextObject.position.x,
                     y: currentTextObject.position.y,
@@ -79,7 +87,7 @@ struct StableProfessionalTextCanvas: View {
                 )
                 Log.info("⚡️ LAZY INIT: Initialized text '\(currentTextObject.content.prefix(20))' on demand", category: .general)
             } else {
-                // Normal sync
+                // Already initialized - just sync position/properties (no re-init)
                 viewModel.syncFromDocument(currentTextObject)
             }
         }

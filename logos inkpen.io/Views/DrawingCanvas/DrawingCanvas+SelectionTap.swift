@@ -49,7 +49,17 @@ extension DrawingCanvas {
                     // FIXED: Use zoom-aware tolerance for consistent hit detection
                     let baseTolerance: CGFloat = 8.0
                     let tolerance = max(2.0, baseTolerance / document.zoomLevel)
-                    let isHit = PathOperations.hitTest(shape.transformedPath, point: validatedLocation, tolerance: tolerance)
+
+                    // CRITICAL FIX: Text objects have empty paths - use bounds for hit testing
+                    let isHit: Bool
+                    if shape.isTextObject {
+                        // Use bounds for text object hit testing
+                        let transformedBounds = shape.bounds.applying(shape.transform)
+                        isHit = transformedBounds.contains(validatedLocation)
+                    } else {
+                        isHit = PathOperations.hitTest(shape.transformedPath, point: validatedLocation, tolerance: tolerance)
+                    }
+
                     if isHit {
                         hitShape = shape
                         hitLayerIndex = unifiedObject.layerIndex
@@ -214,10 +224,14 @@ extension DrawingCanvas {
                         continue 
                     }
                     
+                    // CRITICAL FIX: Use textPosition if available, otherwise use transform for position
+                    // SVG text may store position in transform instead of textPosition
+                    let textPos = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+
                     // Use the same hit testing logic as findTextAt
                     let textContentArea = CGRect(
-                        x: CGPoint(x: shape.transform.tx, y: shape.transform.ty).x,
-                        y: CGPoint(x: shape.transform.tx, y: shape.transform.ty).y,
+                        x: textPos.x,
+                        y: textPos.y,
                         width: shape.bounds.width,
                         height: shape.bounds.height
                     )

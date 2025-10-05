@@ -130,7 +130,13 @@ class ProfessionalTextViewModel: ObservableObject {
             abs(self.textObject.typography.lineSpacing - textObject.typography.lineSpacing) > 0.01
         )
 
-        if !shouldSyncContent && !fontChanged && !editingChanged && !colorChanged && !typographyChanged {
+        // CRITICAL FIX: Check for position changes to ensure drag updates work without .id() modifier
+        let positionChanged = (
+            abs(self.textBoxFrame.origin.x - textObject.position.x) > 0.1 ||
+            abs(self.textBoxFrame.origin.y - textObject.position.y) > 0.1
+        )
+
+        if !shouldSyncContent && !fontChanged && !editingChanged && !colorChanged && !typographyChanged && !positionChanged {
             return // No changes, skip sync
         }
 
