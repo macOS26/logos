@@ -159,7 +159,7 @@ class SVGParser: NSObject, XMLParserDelegate {
 
 
     /// Adjusts text box widths to prevent overlapping when multiple text elements are adjacent
-    /// If a text box would extend past the start of the next text box on the same line, trim it
+    /// ONLY trims if the actual text width would cause overlap with the next text box
     private func adjustTextBoxWidthsToPreventOverlap(_ textObjects: [VectorText]) -> [VectorText] {
         guard textObjects.count > 1 else { return textObjects }
 
@@ -180,13 +180,17 @@ class SVGParser: NSObject, XMLParserDelegate {
             // Look for the next text object on the same line (similar Y position)
             if let nextObj = sortedByPosition.dropFirst(index + 1).first(where: {
                 abs($0.position.y - textObj.position.y) < 2.0 && $0.position.x > textObj.position.x
-            }) {
+            }), let currentAreaSize = textObj.areaSize {
+
+                // Calculate where the current text box would end with its actual width
+                let currentBoxEnd = textObj.position.x + currentAreaSize.width
+
                 // Calculate the maximum width before reaching the next text box
                 let maxWidth = nextObj.position.x - textObj.position.x - 2.0  // 2pt gap
 
-                // If current text box would overlap, trim it
-                if let currentAreaSize = textObj.areaSize, currentAreaSize.width > maxWidth {
-                    Log.fileOperation("📏 Trimming text box width from \(currentAreaSize.width) to \(maxWidth) to prevent overlap", level: .debug)
+                // ONLY trim if the current box would actually overlap the next box
+                if currentBoxEnd > nextObj.position.x {
+                    Log.fileOperation("📏 Trimming text box width from \(currentAreaSize.width) to \(maxWidth) to prevent overlap (box end: \(currentBoxEnd), next start: \(nextObj.position.x))", level: .debug)
 
                     // Update areaSize
                     adjustedObj.areaSize = CGSize(width: max(10, maxWidth), height: currentAreaSize.height)
