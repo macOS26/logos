@@ -300,8 +300,9 @@ extension SVGParser {
                 let glyphRange = layoutManager.glyphRange(for: textContainer)
                 let textBounds = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
 
-                // Use actual width and height from the layout
-                let actualWidth = ceil(textBounds.width) + 4.0  // Add small padding
+                // Use actual width - just use the text bounds without extra padding
+                // The bounding rect already includes proper character spacing
+                let actualWidth = ceil(textBounds.width)
                 let actualHeight = ceil(textBounds.height)
 
                 var textObject = VectorText(
@@ -433,8 +434,9 @@ extension SVGParser {
             let glyphRange = layoutManager.glyphRange(for: textContainer)
             let textBounds = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
 
-            // Use actual width and height from the layout
-            let actualWidth = ceil(textBounds.width) + 4.0  // Add small padding
+            // Use actual width - just use the text bounds without extra padding
+            // The bounding rect already includes proper character spacing
+            let actualWidth = ceil(textBounds.width)
             let actualHeight = ceil(textBounds.height)
 
             var textObject = VectorText(
