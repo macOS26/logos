@@ -25,17 +25,10 @@ struct StableProfessionalTextCanvas: View {
         self.dragPreviewDelta = dragPreviewDelta
         self.dragPreviewTrigger = dragPreviewTrigger
 
-        // Create view model ONCE and reuse it
-        // Use UUID lookup instead of looping
-        if let textObject = document.findText(by: textObjectID) {
-            Log.info("📝 StableProfessionalTextCanvas: Creating view model for text '\(textObject.content.prefix(20))' at position \(textObject.position)", category: .general)
-            self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: textObject, document: document))
-        } else {
-            // MIGRATION FIX: Create fallback text with proper content
-            Log.error("⚠️ StableProfessionalTextCanvas: Text object \(textObjectID) not found! Creating fallback", category: .error)
-            let fallbackText = VectorText(content: "Text", typography: TypographyProperties(strokeColor: .black, fillColor: .black))
-            self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: fallbackText, document: document))
-        }
+        // PERF: Defer view model creation until onAppear to prevent blocking during document load
+        // This allows the window to appear immediately even with 100+ text boxes
+        let fallbackText = VectorText(content: "", typography: TypographyProperties(strokeColor: .black, fillColor: .black))
+        self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: fallbackText, document: document))
     }
 
     var body: some View {
@@ -64,12 +57,31 @@ struct StableProfessionalTextCanvas: View {
     }
 
     private func updateViewModelFromDocument() {
-        // PERFORMANCE: Use UUID lookup instead of looping
+        // PERF: Initialize view model with actual text object on first appearance
+        // This defers expensive setup until the view is actually rendered
         if let currentTextObject = document.findText(by: textObjectID) {
-            viewModel.syncFromDocument(currentTextObject)
-            Log.fileOperation("✅ TEXT CANVAS: Found text object \(textObjectID.uuidString.prefix(8)) content: '\(currentTextObject.content)'", level: .info)
-        } else {
-            Log.fileOperation("⚠️ TEXT CANVAS: Text object \(textObjectID.uuidString.prefix(8)) not found", level: .info)
+            // Check if this is the initial dummy object
+            if viewModel.textObject.content.isEmpty && viewModel.textObject.id != textObjectID {
+                // First time - replace dummy with real text object
+                viewModel.textObject = currentTextObject
+                viewModel.text = currentTextObject.content
+                viewModel.fontSize = CGFloat(currentTextObject.typography.fontSize)
+                viewModel.selectedFont = currentTextObject.typography.nsFont
+                viewModel.textAlignment = currentTextObject.typography.alignment.nsTextAlignment
+
+                let width = currentTextObject.areaSize?.width ?? 200.0
+                let height = currentTextObject.areaSize?.height ?? 50.0
+                viewModel.textBoxFrame = CGRect(
+                    x: currentTextObject.position.x,
+                    y: currentTextObject.position.y,
+                    width: width,
+                    height: height
+                )
+                Log.info("⚡️ LAZY INIT: Initialized text '\(currentTextObject.content.prefix(20))' on demand", category: .general)
+            } else {
+                // Normal sync
+                viewModel.syncFromDocument(currentTextObject)
+            }
         }
     }
 

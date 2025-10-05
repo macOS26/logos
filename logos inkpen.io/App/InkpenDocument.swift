@@ -99,7 +99,10 @@ struct InkpenDocument: FileDocument {
         } else {
             // Handle InkPen/JSON file import
             do {
+                let startDecode = CFAbsoluteTimeGetCurrent()
                 self.document = try FileOperations.importFromJSONData(data)
+                let endDecode = CFAbsoluteTimeGetCurrent()
+                Log.info("⚡️ JSON DECODE: \((endDecode - startDecode) * 1000)ms for \(self.document.unifiedObjects.count) objects", category: .fileOperations)
 
                 // CRITICAL FIX: Reset all text objects' editing state when loading a document
                 // This prevents text fields from incorrectly entering i-beam edit mode on document open
