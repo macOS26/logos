@@ -461,7 +461,6 @@ extension FileOperations {
             },
             releaseInfo: { info in
                 guard info != nil else { return }
-                //_ = Unmanaged<GradientData>.fromOpaque(info).takeRetainedValue()
             }
         )
         
@@ -534,7 +533,6 @@ extension FileOperations {
             },
             releaseInfo: { info in
                 guard info != nil else { return }
-                //_ = Unmanaged<GradientData>.fromOpaque(info).takeRetainedValue()
             }
         )
         

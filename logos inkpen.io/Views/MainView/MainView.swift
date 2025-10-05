@@ -578,7 +578,7 @@ struct MainView: View {
                     }
 
                     // Generate PDF with outlined text
-                    pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: false, includeBackground: includeBackground)
+                    pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: true, includeBackground: includeBackground)
 
                     // Restore original document state
                     await MainActor.run {
@@ -592,7 +592,7 @@ struct MainView: View {
                     }
                 } else {
                     // No text conversion needed, export normally
-                    pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: false, includeBackground: includeBackground)
+                    pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: true, includeBackground: includeBackground)
                 }
 
                 // Write to file

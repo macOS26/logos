@@ -186,7 +186,7 @@ extension PDFCommandParser {
             Log.info("\(detectedPDFVersion): XObject '\(name)' - PARSING CONTENT STREAM FOR REAL!", category: .general)
             
             // Create a simple content stream from the data and parse it
-            if let _ = String(data: previewData, encoding: .ascii), dataLength < 1000 {
+            if String(data: previewData, encoding: .ascii) != nil, dataLength < 1000 {
                 // For small streams, show full content
                 Log.info("\(detectedPDFVersion): XObject '\(name)' - FULL CONTENT:", category: .general)
                 Log.info(String(data: Data(bytes: dataPtr, count: dataLength), encoding: .ascii) ?? "binary", category: .general)

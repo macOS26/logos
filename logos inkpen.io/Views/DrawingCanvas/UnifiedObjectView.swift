@@ -58,20 +58,8 @@ struct UnifiedObjectContentView: View {
             if shape.isTextObject {
                 // Render text using existing StableProfessionalTextCanvas
                 // Convert VectorShape back to VectorText for the text canvas
-                if let _ = shape.textContent, let _ = shape.typography {
+                if shape.textContent != nil, shape.typography != nil {
                     let position = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
-//                    let _ = VectorText(
-//                        content: textContent,
-//                        typography: typography,
-//                        position: position,
-//                        transform: .identity,
-//                        isVisible: shape.isVisible,
-//                        isLocked: shape.isLocked,
-//                        isEditing: shape.isEditing ?? false,
-//                        layerIndex: nil, // Will be handled by unified object
-//                        cursorPosition: shape.cursorPosition ?? 0,
-//                        areaSize: shape.areaSize
-//                    )
                     
                     StableProfessionalTextCanvas(
                         document: document,

@@ -82,7 +82,10 @@
       "Bash(cat:*)",
       "Bash(git stash:*)",
       "Bash(defaults read:*)",
-      "Bash(pdftotext:*)"
+      "Bash(pdftotext:*)",
+      "Bash(mdls:*)",
+      "Bash(/usr/libexec/PlistBuddy:*)",
+      "Bash(exiftool:*)"
     ],
     "deny": [],
     "ask": []
