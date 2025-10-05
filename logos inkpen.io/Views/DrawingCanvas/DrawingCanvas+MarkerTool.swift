@@ -65,7 +65,7 @@ extension DrawingCanvas {
         let strokeStyle = strokeColor != nil ? StrokeStyle(
             color: markerStrokeColor,
             width: strokeWidth,
-            placement: .outside,
+            placement: document.defaultStrokePlacement,
             lineCap: .round,
             lineJoin: .round,
             opacity: markerOpacity
@@ -288,7 +288,7 @@ extension DrawingCanvas {
         let strokeStyle = strokeColor != nil ? StrokeStyle(
             color: markerStrokeColor,
             width: strokeWidth,
-            placement: .outside,
+            placement: document.defaultStrokePlacement,
             lineCap: .round,
             lineJoin: .round,
             opacity: markerOpacity
@@ -308,42 +308,44 @@ extension DrawingCanvas {
         
         // Apply expand stroke and union if remove overlap is enabled
         if document.markerRemoveOverlap {
-            let originalPath = finalShape.path.cgPath
+            var currentPath = finalShape.path.cgPath
 
-            // Step 1: Expand the stroke outline if stroke exists
+            // Step 1: FIRST remove overlap from the fill path to avoid artifacts
+            var cleanedFillPath: CGPath? = nil
+            cleanedFillPath = CoreGraphicsPathOperations.normalized(currentPath, using: .winding)
+            if cleanedFillPath == nil { cleanedFillPath = CoreGraphicsPathOperations.normalized(currentPath, using: .evenOdd) }
+            if cleanedFillPath == nil { cleanedFillPath = CoreGraphicsPathOperations.union(currentPath, currentPath, using: .winding) }
+            if cleanedFillPath == nil { cleanedFillPath = CoreGraphicsPathOperations.union(currentPath, currentPath, using: .evenOdd) }
+
+            if let cleaned = cleanedFillPath, !cleaned.isEmpty, isPathBoundsFinite(cleaned.boundingBox) {
+                currentPath = cleaned
+                finalShape.path = VectorPath(cgPath: cleaned)
+                Log.info("🖊️ MARKER: Removed fill path overlap first", category: .general)
+            }
+
+            // Step 2: Expand the stroke outline if stroke exists and union with cleaned fill
             if let stroke = finalShape.strokeStyle, stroke.width > 0 {
-                if let expandedStroke = PathOperations.outlineStroke(path: originalPath, strokeStyle: stroke) {
-                    // Step 2: Union the expanded stroke with itself to remove internal overlaps
+                if let expandedStroke = PathOperations.outlineStroke(path: currentPath, strokeStyle: stroke) {
+                    // Step 3: Union the expanded stroke with itself to remove internal overlaps
                     var unionedStroke: CGPath? = nil
                     unionedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .winding)
                     if unionedStroke == nil {
                         unionedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .evenOdd)
                     }
 
-                    // Step 3: Union the expanded stroke with the original fill path
+                    // Step 4: Union the expanded stroke with the cleaned fill path
                     let strokeToMerge = unionedStroke ?? expandedStroke
                     var merged: CGPath? = nil
-                    merged = CoreGraphicsPathOperations.union(originalPath, strokeToMerge, using: .winding)
+                    merged = CoreGraphicsPathOperations.union(currentPath, strokeToMerge, using: .winding)
                     if merged == nil {
-                        merged = CoreGraphicsPathOperations.union(originalPath, strokeToMerge, using: .evenOdd)
+                        merged = CoreGraphicsPathOperations.union(currentPath, strokeToMerge, using: .evenOdd)
                     }
 
                     if let mergedPath = merged, !mergedPath.isEmpty, isPathBoundsFinite(mergedPath.boundingBox) {
                         finalShape.path = VectorPath(cgPath: mergedPath)
                         finalShape.strokeStyle = nil // Convert to fill-only shape
-                        Log.info("🖊️ MARKER: Expanded stroke and unioned with fill", category: .general)
+                        Log.info("🖊️ MARKER: Expanded stroke and unioned with cleaned fill", category: .general)
                     }
-                }
-            } else {
-                // No stroke, just normalize the fill path
-                var cleaned: CGPath? = nil
-                cleaned = CoreGraphicsPathOperations.normalized(originalPath, using: .winding)
-                if cleaned == nil { cleaned = CoreGraphicsPathOperations.normalized(originalPath, using: .evenOdd) }
-                if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(originalPath, originalPath, using: .winding) }
-                if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(originalPath, originalPath, using: .evenOdd) }
-                if let cleanedPath = cleaned, !cleanedPath.isEmpty, isPathBoundsFinite(cleanedPath.boundingBox) {
-                    finalShape.path = VectorPath(cgPath: cleanedPath)
-                    Log.info("🖊️ MARKER: Removed self-overlap", category: .general)
                 }
             }
         }
@@ -370,7 +372,7 @@ extension DrawingCanvas {
         let strokeStyle = strokeColor != nil ? StrokeStyle(
             color: markerStrokeColor,
             width: strokeWidth,
-            placement: .outside,
+            placement: document.defaultStrokePlacement,
             lineCap: .round,
             lineJoin: .round,
             opacity: markerOpacity
@@ -382,22 +384,53 @@ extension DrawingCanvas {
         )
 
         var finalPath = preview
+        var finalStrokeStyle = strokeStyle
 
         // Apply remove overlap if enabled
         if document.markerRemoveOverlap {
-            let cg = preview.cgPath
-            var cleaned: CGPath? = nil
-            cleaned = CoreGraphicsPathOperations.normalized(cg, using: .winding)
-            if cleaned == nil { cleaned = CoreGraphicsPathOperations.normalized(cg, using: .evenOdd) }
-            if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .winding) }
-            if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .evenOdd) }
-            if let cleanedPath = cleaned, !cleanedPath.isEmpty, isPathBoundsFinite(cleanedPath.boundingBox) {
-                finalPath = VectorPath(cgPath: cleanedPath)
-                Log.info("🖊️ MARKER: Removed self-overlap for preview bake", category: .general)
+            var currentPath = preview.cgPath
+
+            // Step 1: FIRST remove overlap from the fill path to avoid artifacts
+            var cleanedFillPath: CGPath? = nil
+            cleanedFillPath = CoreGraphicsPathOperations.normalized(currentPath, using: .winding)
+            if cleanedFillPath == nil { cleanedFillPath = CoreGraphicsPathOperations.normalized(currentPath, using: .evenOdd) }
+            if cleanedFillPath == nil { cleanedFillPath = CoreGraphicsPathOperations.union(currentPath, currentPath, using: .winding) }
+            if cleanedFillPath == nil { cleanedFillPath = CoreGraphicsPathOperations.union(currentPath, currentPath, using: .evenOdd) }
+
+            if let cleaned = cleanedFillPath, !cleaned.isEmpty, isPathBoundsFinite(cleaned.boundingBox) {
+                currentPath = cleaned
+                finalPath = VectorPath(cgPath: cleaned)
+                Log.info("🖊️ MARKER: Removed fill path overlap first (preview)", category: .general)
+            }
+
+            // Step 2: Expand the stroke outline if stroke exists and union with cleaned fill
+            if let stroke = strokeStyle, stroke.width > 0 {
+                if let expandedStroke = PathOperations.outlineStroke(path: currentPath, strokeStyle: stroke) {
+                    // Step 3: Union the expanded stroke with itself to remove internal overlaps
+                    var unionedStroke: CGPath? = nil
+                    unionedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .winding)
+                    if unionedStroke == nil {
+                        unionedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .evenOdd)
+                    }
+
+                    // Step 4: Union the expanded stroke with the cleaned fill path
+                    let strokeToMerge = unionedStroke ?? expandedStroke
+                    var merged: CGPath? = nil
+                    merged = CoreGraphicsPathOperations.union(currentPath, strokeToMerge, using: .winding)
+                    if merged == nil {
+                        merged = CoreGraphicsPathOperations.union(currentPath, strokeToMerge, using: .evenOdd)
+                    }
+
+                    if let mergedPath = merged, !mergedPath.isEmpty, isPathBoundsFinite(mergedPath.boundingBox) {
+                        finalPath = VectorPath(cgPath: mergedPath)
+                        finalStrokeStyle = nil // Convert to fill-only shape
+                        Log.info("🖊️ MARKER: Expanded stroke and unioned with cleaned fill (preview)", category: .general)
+                    }
+                }
             }
         }
 
-        let shape = VectorShape(name: "Marker Stroke", path: finalPath, strokeStyle: strokeStyle, fillStyle: fillStyle)
+        let shape = VectorShape(name: "Marker Stroke", path: finalPath, strokeStyle: finalStrokeStyle, fillStyle: fillStyle)
         guard let layerIndex = document.selectedLayerIndex else { return }
         document.addShapeToFrontOfUnifiedSystem(shape, layerIndex: layerIndex)
     }
@@ -462,8 +495,9 @@ extension DrawingCanvas {
                 }
             } else {
                 // Longer strokes: Sharp marker tapering (thin points at start and end)
-                let startTaper = max(0.15, document.currentMarkerTaperStart)
-                let endTaper = max(0.15, document.currentMarkerTaperEnd)
+                // Increased minimum taper amount to make taper start sooner
+                let startTaper = max(0.25, document.currentMarkerTaperStart)
+                let endTaper = max(0.25, document.currentMarkerTaperEnd)
 
                 if progress < startTaper {
                     finalThickness *= pow(progress / startTaper, 1.5)
@@ -525,6 +559,12 @@ extension DrawingCanvas {
                 }
 
                 finalThickness *= mappedPressure
+            }
+
+            // Ensure minimum thickness AFTER all multipliers (taper + pressure)
+            let minThickness = document.currentMarkerMinTaperThickness
+            if finalThickness > 0 {
+                finalThickness = max(finalThickness, minThickness)
             }
 
             thicknessPoints.append((location: point, thickness: finalThickness))

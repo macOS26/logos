@@ -217,9 +217,29 @@ extension DrawingCanvas {
     // MARK: - Final Shape Update
     
     private func updateFinalFreehandShape(with smoothPath: VectorPath) {
-        // Create and add the final freehand shape using CURRENT settings (not defaults!)
+        // Get current colors
+        var strokeColor = getCurrentStrokeColor()
+        var fillColor = getCurrentFillColor()
+
+        // Apply freehand-specific color rules:
+        // If stroke is none/clear, use fill color for stroke
+        if strokeColor == .clear {
+            strokeColor = fillColor
+        }
+
+        // If fill is none/clear, use red (5th color = index 4) for fill and blue (4th color = index 3) for stroke
+        if fillColor == .clear {
+            // Use RGB swatches: index 4 is red, index 3 is blue
+            let rgbSwatches = ColorManager.shared.colorDefaults.rgbSwatches
+            if rgbSwatches.count > 4 {
+                fillColor = rgbSwatches[4] // Red (5th swatch)
+                strokeColor = rgbSwatches[3] // Blue (4th swatch)
+            }
+        }
+
+        // Create and add the final freehand shape using adjusted colors
         let strokeStyle = StrokeStyle(
-            color: getCurrentStrokeColor(), // Use current stroke color from UI
+            color: strokeColor,
             width: getCurrentStrokeWidth(), // Use current stroke width from UI
             lineCap: .round, // Always use round caps for freehand
             lineJoin: .round, // Always use round joins for freehand
@@ -229,7 +249,7 @@ extension DrawingCanvas {
 
         // Use fill mode setting to determine fill style
         let fillStyle: FillStyle? = document.freehandFillMode == .fill
-            ? FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
+            ? FillStyle(color: fillColor, opacity: getCurrentFillOpacity())
             : nil
 
         // Check if we need to expand stroke to outline

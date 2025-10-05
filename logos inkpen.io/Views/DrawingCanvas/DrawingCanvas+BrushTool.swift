@@ -389,6 +389,12 @@ extension DrawingCanvas {
             return
         }
         
+        // SPECIAL CASE: For 4 points or less (straight lines that auto-close), skip - they're invalid
+        if brushRawPoints.count <= 4 {
+            Log.info("🖌️ BRUSH: Skipping stroke with \(brushRawPoints.count) points (too few for variable width)", category: .general)
+            return
+        }
+
         // USE RAW POINTS DIRECTLY - NO SIMPLIFICATION OR SMOOTHING
         // Accept the curve exactly as drawn by the user
         brushSimplifiedPoints = brushRawPoints.map { $0.location }
@@ -404,7 +410,7 @@ extension DrawingCanvas {
             pressureSensitivity: 0.5,  // Fixed sensitivity
             taper: 0.5  // Fixed taper
         )
-        
+
         // Step 3: Create and add the final brush stroke to the document
         var finalShape = VectorShape(
             name: "Brush Stroke",
@@ -447,6 +453,59 @@ extension DrawingCanvas {
     // MARK: - Finalize From Preview (no recompute)
     private func finalizeFromPreview(_ preview: VectorPath) {
         guard document.selectedLayerIndex != nil else { return }
+
+        // SPECIAL CASE: Detect if this is a straight line by checking path geometry
+        if brushRawPoints.count >= 2 {
+            let start = brushRawPoints.first!.location
+            let end = brushRawPoints.last!.location
+
+            // Calculate line length
+            let dx = end.x - start.x
+            let dy = end.y - start.y
+            let lineLength = sqrt(dx * dx + dy * dy)
+
+            // Check if all points are close to the straight line (< 5% deviation)
+            var maxDeviation = 0.0
+            for point in brushRawPoints {
+                let px = point.location.x - start.x
+                let py = point.location.y - start.y
+
+                // Distance from point to line
+                let deviation = abs(dy * px - dx * py) / lineLength
+                maxDeviation = max(maxDeviation, deviation)
+            }
+
+            let isStraightLine = maxDeviation < lineLength * 0.05
+
+            if isStraightLine {
+                let angle = atan2(dy, dx)
+
+                // Create leaf shape centered at origin
+                let width = document.currentBrushThickness
+                let leafPath = CGMutablePath()
+                leafPath.move(to: CGPoint(x: 0, y: 0))
+                leafPath.addQuadCurve(to: CGPoint(x: lineLength, y: 0), control: CGPoint(x: lineLength * 0.5, y: width * 0.5))
+                leafPath.addQuadCurve(to: CGPoint(x: 0, y: 0), control: CGPoint(x: lineLength * 0.5, y: -width * 0.5))
+                leafPath.closeSubpath()
+
+                // Transform: rotate and translate to match line
+                var transform = CGAffineTransform(translationX: start.x, y: start.y)
+                transform = transform.rotated(by: angle)
+
+                if let transformedPath = leafPath.copy(using: &transform) {
+                    let finalShape = VectorShape(
+                        name: "Brush Stroke",
+                        path: VectorPath(cgPath: transformedPath),
+                        strokeStyle: nil,
+                        fillStyle: FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
+                    )
+                    document.addShape(finalShape)
+                    Log.info("🖌️ BRUSH: Created leaf shape for straight line (deviation: \(maxDeviation), length: \(lineLength))", category: .general)
+                    return
+                }
+            }
+        }
+
         let strokeStyle: StrokeStyle? = document.brushApplyNoStroke ? nil : StrokeStyle(
             color: getCurrentStrokeColor(),
             width: getCurrentStrokeWidth(),
@@ -457,18 +516,21 @@ extension DrawingCanvas {
         )
         let fillStyle = FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
         var finalPath = preview
+
+        // CRITICAL: Brush has NO STROKE - only fill. Use WINDING rule to prevent reversed holes.
         if document.brushRemoveOverlap {
-            let cg = preview.cgPath
+            let currentPath = preview.cgPath
+
+            // Use WINDING fill rule to prevent even-odd reversed holes on self-overlap
             var cleaned: CGPath? = nil
-            cleaned = CoreGraphicsPathOperations.normalized(cg, using: .winding)
-            if cleaned == nil { cleaned = CoreGraphicsPathOperations.normalized(cg, using: .evenOdd) }
-            if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .winding) }
-            if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .evenOdd) }
+            cleaned = CoreGraphicsPathOperations.union(currentPath, currentPath, using: .winding)
+            if cleaned == nil {
+                cleaned = CoreGraphicsPathOperations.normalized(currentPath, using: .winding)
+            }
+
             if let cleanedPath = cleaned, !cleanedPath.isEmpty, isPathBoundsFinite(cleanedPath.boundingBox) {
-                finalPath = VectorPath(cgPath: cleanedPath)
-                Log.info("🖌️ BRUSH: Removed self-overlap for preview bake", category: .general)
-            } else {
-                Log.info("🖌️ BRUSH: Overlap removal (preview bake) produced no change", category: .general)
+                finalPath = VectorPath(cgPath: cleanedPath, fillRule: .winding)
+                Log.info("🖌️ BRUSH: Removed self-overlap using WINDING rule (preview)", category: .general)
             }
         }
         let shape = VectorShape(name: "Brush Stroke", path: finalPath, strokeStyle: strokeStyle, fillStyle: fillStyle)
@@ -567,17 +629,22 @@ extension DrawingCanvas {
             let isShortStroke = strokeLength < 5
 
             if isShortStroke {
-                // Very short strokes: Sharp taper from thin point to thick and back to thin point
-                if progress < 0.3 {
-                    finalThickness *= pow(progress / 0.3, 1.5)
-                } else if progress > 0.7 {
-                    let endProgress = (1.0 - progress) / 0.3
+                // Very short strokes: FORCE full-stroke taper to prevent untapered lines
+                // Use symmetrical envelope: taper from 0 at ends to 1.0 at center
+                if progress <= 0.5 {
+                    // First half: taper up
+                    finalThickness *= pow(progress * 2.0, 1.5)
+                } else {
+                    // Second half: taper down
+                    let endProgress = (1.0 - progress) * 2.0
                     finalThickness *= pow(endProgress, 1.5)
                 }
             } else {
-                // Longer strokes: Use brush taper settings (or default to 0.15)
-                let startTaper = max(0.15, 0.15)  // Can expose as brush setting later
-                let endTaper = max(0.15, 0.15)    // Can expose as brush setting later
+                // Longer strokes: Use brush taper settings
+                // More aggressive taper when pressure sensitivity is disabled
+                let taperAmount = (appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput) ? 0.15 : 0.30
+                let startTaper = max(0.15, taperAmount)
+                let endTaper = max(0.15, taperAmount)
 
                 if progress < startTaper {
                     finalThickness *= pow(progress / startTaper, 1.5)
@@ -732,17 +799,22 @@ extension DrawingCanvas {
             let isShortStroke = strokeLength < 5
 
             if isShortStroke {
-                // Very short strokes: Sharp taper from thin point to thick and back to thin point
-                if progress < 0.3 {
-                    finalThickness *= pow(progress / 0.3, 1.5)
-                } else if progress > 0.7 {
-                    let endProgress = (1.0 - progress) / 0.3
+                // Very short strokes: FORCE full-stroke taper to prevent untapered lines
+                // Use symmetrical envelope: taper from 0 at ends to 1.0 at center
+                if progress <= 0.5 {
+                    // First half: taper up
+                    finalThickness *= pow(progress * 2.0, 1.5)
+                } else {
+                    // Second half: taper down
+                    let endProgress = (1.0 - progress) * 2.0
                     finalThickness *= pow(endProgress, 1.5)
                 }
             } else {
-                // Longer strokes: Use brush taper settings (or default to 0.15)
-                let startTaper = max(0.15, 0.15)  // Can expose as brush setting later
-                let endTaper = max(0.15, 0.15)    // Can expose as brush setting later
+                // Longer strokes: Use brush taper settings
+                // More aggressive taper when pressure sensitivity is disabled
+                let taperAmount = (appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput) ? 0.15 : 0.30
+                let startTaper = max(0.15, taperAmount)
+                let endTaper = max(0.15, taperAmount)
 
                 if progress < startTaper {
                     finalThickness *= pow(progress / startTaper, 1.5)

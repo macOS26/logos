@@ -154,28 +154,31 @@ class PressureManager: ObservableObject {
             lastLocation = location
             lastTimestamp = timestamp
         }
-        
+
         // Need previous point for speed calculation
         guard let lastLoc = lastLocation, let lastTime = lastTimestamp else {
             return 1.0
         }
-        
+
         // Calculate drawing speed
         let distance = sqrt(pow(location.x - lastLoc.x, 2) + pow(location.y - lastLoc.y, 2))
         let timeInterval = timestamp.timeIntervalSince(lastTime)
-        
+
         guard timeInterval > 0 else { return currentPressure } // Keep current pressure for same timestamp
-        
+
         let speed = distance / timeInterval
-        
+
         // Convert speed to pressure (fast = light, slow = heavy)
         let normalizedSpeed = min(speed / maxSpeed, 1.0)
-        let basePressure = 1.0 - (normalizedSpeed * 0.5) // Reduce pressure with speed
-        
-        // Apply sensitivity
-        let pressureVariation = (basePressure - 0.5) * sensitivity
-        let finalPressure = 0.5 + pressureVariation
-        
+
+        // Use sensitivity to control the pressure range
+        // Higher sensitivity = more variation, lower sensitivity = flatter response
+        let pressureRange = sensitivity // Use sensitivity directly as range multiplier
+        let basePressure = 1.0 - (normalizedSpeed * pressureRange)
+
+        // Clamp to 0.1-1.0 range
+        let finalPressure = max(0.1, min(1.0, basePressure))
+
         // Smooth the pressure transition
         let smoothedPressure = (currentPressure * (1.0 - speedSmoothingFactor)) + (finalPressure * speedSmoothingFactor)
 

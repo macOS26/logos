@@ -82,9 +82,11 @@ extension DrawingCanvas {
 
             if showStroke {
                 // Match final stroke settings exactly
-                let strokeWidth = getCurrentStrokeWidth() * 2.0 // placement: .outside doubles width
-                let lineCap: CGLineCap = document.defaultStrokeLineCap == .round ? .round : (document.defaultStrokeLineCap == .square ? .square : .butt)
-                let lineJoin: CGLineJoin = document.defaultStrokeLineJoin == .round ? .round : (document.defaultStrokeLineJoin == .bevel ? .bevel : .miter)
+                // IMPORTANT: placement .inside or .outside doubles the stroke width (see ShapeView.swift line 208, 265)
+                let baseStrokeWidth = getCurrentStrokeWidth()
+                let strokeWidth = (document.defaultStrokePlacement == .center) ? baseStrokeWidth : baseStrokeWidth * 2.0
+                let lineCap: CGLineCap = .round // Always round for marker tool (per line 69 in MarkerTool.swift)
+                let lineJoin: CGLineJoin = .round // Always round for marker tool (per line 70 in MarkerTool.swift)
 
                 Path { path in
                     addPathElements(preview.elements, to: &path)

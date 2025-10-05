@@ -227,6 +227,37 @@ struct MarkerSettingsSection: View {
                 .help("Thickness tapering at the end of marker strokes")
             }
 
+            // Min Taper Thickness
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Min Taper Thickness")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.secondaryText)
+                    Spacer()
+                    Text("\(formatNumberForDisplay(document.currentMarkerMinTaperThickness))pt")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.primaryText)
+                        .monospacedDigit()
+                }
+
+                Slider(value: Binding(
+                    get: { document.currentMarkerMinTaperThickness },
+                    set: { document.currentMarkerMinTaperThickness = $0 }
+                ), in: 0...60) {
+                    Text("Min Taper Thickness")
+                } minimumValueLabel: {
+                    Text("0")
+                        .font(.caption)
+                        .foregroundColor(Color.ui.secondaryText)
+                } maximumValueLabel: {
+                    Text("60")
+                        .font(.caption)
+                        .foregroundColor(Color.ui.secondaryText)
+                }
+                .controlSize(.regular)
+                .help("Minimum thickness at taper ends (0-60 points)")
+            }
+
             // Marker Tool Options
             VStack(alignment: .leading, spacing: 12) {
                 Divider()
