@@ -38,7 +38,6 @@ extension SVGParser {
         if currentGradientStops.isEmpty {
             if let inherited = inheritedGradient {
                 currentGradientStops = inherited.stops
-                Log.info("✅ Inherited \(currentGradientStops.count) stops from referenced gradient", category: .fileOperations)
             } else {
                 Log.fileOperation("⚠️ Gradient \(gradientId) has no color stops - creating default black to white", level: .info)
                 currentGradientStops = [
@@ -73,7 +72,6 @@ extension SVGParser {
             useExtremeValueHandling = false
         }
         
-        Log.info("📚 Stored gradient definition: \(gradientId) with \(vectorGradient.stops.count) stops", category: .general)
     }
     
     internal func parseGradientUnits(from attributes: [String: String]) -> GradientUnits {

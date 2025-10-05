@@ -85,7 +85,6 @@ extension FileOperations {
 
         // Check if SVG contains embedded inkpen metadata
         if let inkpenMetadata = result.metadata.inkpenMetadata {
-            Log.info("📦 Found embedded inkpen document in SVG, using native data", category: .fileOperations)
 
             // Decode base64 and parse as JSON
             guard let inkpenData = Data(base64Encoded: inkpenMetadata) else {
@@ -99,7 +98,6 @@ extension FileOperations {
             let inkpenDocument = try decoder.decode(VectorDocument.self, from: inkpenData)
 
             // Return the original inkpen document
-            Log.info("✅ Successfully restored inkpen document from SVG metadata", category: .fileOperations)
             return inkpenDocument
         }
 

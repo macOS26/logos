@@ -16,7 +16,6 @@ extension FileOperations {
             // Use the proper SVG exporter with text rendering mode
             let svgContent = try SVGExporter.shared.exportToSVG(document, includeBackground: includeBackground, textRenderingMode: textRenderingMode)
             try svgContent.write(to: url, atomically: true, encoding: .utf8)
-            Log.info("✅ Successfully exported SVG document", category: .fileOperations)
         } catch {
             Log.error("❌ SVG export failed: \(error)", category: .error)
             throw VectorImportError.parsingError("Failed to export SVG: \(error.localizedDescription)", line: nil)
