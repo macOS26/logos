@@ -82,7 +82,8 @@
       "Bash(cat:*)",
       "Bash(git stash:*)",
       "Bash(defaults read:*)",
-      "Bash(pdftotext:*)"
+      "Bash(pdftotext:*)",
+      "Bash(launchctl setenv:*)"
     ],
     "deny": [],
     "ask": []
