@@ -199,20 +199,8 @@ extension DrawingCanvas {
             return VectorPath(elements: [.move(to: VectorPoint(brushRawPoints[0].location))])
         }
 
-        // OPTIMIZATION: Once we have enough points, only recalculate the last 20 points
-        // Keep the beginning frozen to avoid constant re-evaluation
-        let frozenThreshold = 30  // Start freezing after 30 points
-        let tailWindow = 20       // Only recalculate last 20 points
-
-        var pointsToProcess: [BrushPoint]
-
-        if brushRawPoints.count > frozenThreshold {
-            // Use only the recent tail for calculation
-            pointsToProcess = Array(brushRawPoints.suffix(tailWindow))
-        } else {
-            // For short strokes, process all points
-            pointsToProcess = brushRawPoints
-        }
+        // ALWAYS use ALL points - never delete the beginning
+        var pointsToProcess = brushRawPoints
         if brushRawPoints.count == 2 {
             let startPoint = brushRawPoints[0]
             let endPoint = brushRawPoints[1]
