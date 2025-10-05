@@ -587,12 +587,6 @@ extension DrawingCanvas {
                 }
             }
 
-            // Ensure minimum thickness using user setting
-            let minThickness = document.currentBrushMinTaperThickness
-            if finalThickness > 0 {
-                finalThickness = max(finalThickness, minThickness)
-            }
-            
             // PROPER PRESSURE MAPPING: Find the closest raw point for pressure data
             if !recentRawPoints.isEmpty {
                 var closestDistance = Double.infinity
@@ -624,7 +618,13 @@ extension DrawingCanvas {
 
                 finalThickness *= mappedPressure
             }
-            
+
+            // Ensure minimum thickness AFTER all multipliers (taper + pressure)
+            let minThickness = document.currentBrushMinTaperThickness
+            if finalThickness > 0 {
+                finalThickness = max(finalThickness, minThickness)
+            }
+
             thicknessPoints.append((location: point, thickness: finalThickness))
         }
         
@@ -752,12 +752,6 @@ extension DrawingCanvas {
                 }
             }
 
-            // Ensure minimum thickness using user setting
-            let minThickness = document.currentBrushMinTaperThickness
-            if finalThickness > 0 {
-                finalThickness = max(finalThickness, minThickness)
-            }
-            
             // Interpolate pressure from raw points to simplified points
             let interpolatedPressure = interpolatePressureForPoint(point, from: rawPoints)
 
@@ -778,7 +772,13 @@ extension DrawingCanvas {
             }
 
             finalThickness *= mappedPressure
-            
+
+            // Ensure minimum thickness AFTER all multipliers (taper + pressure)
+            let minThickness = document.currentBrushMinTaperThickness
+            if finalThickness > 0 {
+                finalThickness = max(finalThickness, minThickness)
+            }
+
             thicknessPoints.append((location: point, thickness: finalThickness))
         }
         
