@@ -142,10 +142,14 @@ class SVGParser: NSObject, XMLParserDelegate {
         // Consolidate shapes that share identical gradients into compound paths
         // FIXED: Use the order-preserving consolidation method
         let consolidatedShapes = SVGConsolidationHelpers.consolidateSharedGradientsFixed(in: finalShapes)
-        
+
+        // CRITICAL FIX: Adjust text box widths to prevent overlap
+        // Sort text objects by Y position, then by X position
+        let adjustedTextObjects = adjustTextBoxWidthsToPreventOverlap(textObjects)
+
         return ParseResult(
             shapes: consolidatedShapes,
-            textObjects: textObjects,
+            textObjects: adjustedTextObjects,
             documentSize: documentSize,
             viewBoxSize: hasViewBox ? CGSize(width: viewBoxWidth, height: viewBoxHeight) : nil,
             creator: creator,
@@ -153,7 +157,56 @@ class SVGParser: NSObject, XMLParserDelegate {
         )
     }
 
-    
+
+    /// Adjusts text box widths to prevent overlapping when multiple text elements are adjacent
+    /// If a text box would extend past the start of the next text box on the same line, trim it
+    private func adjustTextBoxWidthsToPreventOverlap(_ textObjects: [VectorText]) -> [VectorText] {
+        guard textObjects.count > 1 else { return textObjects }
+
+        var adjustedObjects: [VectorText] = []
+
+        // Sort by Y position first, then X position (to group text on the same line)
+        let sortedByPosition = textObjects.sorted { obj1, obj2 in
+            // Consider same Y if within 2 points (accounting for minor alignment differences)
+            if abs(obj1.position.y - obj2.position.y) < 2.0 {
+                return obj1.position.x < obj2.position.x
+            }
+            return obj1.position.y < obj2.position.y
+        }
+
+        for (index, textObj) in sortedByPosition.enumerated() {
+            var adjustedObj = textObj
+
+            // Look for the next text object on the same line (similar Y position)
+            if let nextObj = sortedByPosition.dropFirst(index + 1).first(where: {
+                abs($0.position.y - textObj.position.y) < 2.0 && $0.position.x > textObj.position.x
+            }) {
+                // Calculate the maximum width before reaching the next text box
+                let maxWidth = nextObj.position.x - textObj.position.x - 2.0  // 2pt gap
+
+                // If current text box would overlap, trim it
+                if let currentAreaSize = textObj.areaSize, currentAreaSize.width > maxWidth {
+                    Log.fileOperation("📏 Trimming text box width from \(currentAreaSize.width) to \(maxWidth) to prevent overlap", level: .debug)
+
+                    // Update areaSize
+                    adjustedObj.areaSize = CGSize(width: max(10, maxWidth), height: currentAreaSize.height)
+
+                    // Update bounds to match
+                    adjustedObj.bounds = CGRect(
+                        x: textObj.bounds.origin.x,
+                        y: textObj.bounds.origin.y,
+                        width: max(10, maxWidth),
+                        height: textObj.bounds.height
+                    )
+                }
+            }
+
+            adjustedObjects.append(adjustedObj)
+        }
+
+        return adjustedObjects
+    }
+
     /// Enable extreme value handling for radial gradients that cannot be reproduced
     /// Use this for SVGs with extreme coordinate values that cause rendering issues
     func enableExtremeValueHandling() {
