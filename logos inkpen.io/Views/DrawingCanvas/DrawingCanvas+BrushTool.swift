@@ -709,19 +709,8 @@ extension DrawingCanvas {
             let strokeLength = Double(centerPoints.count)
             let isShortStroke = strokeLength < 5
 
-            // Apply taper to ends
-            let taperZone = 0.15 // Taper over first/last 15% of stroke
-
-            if progress < taperZone {
-                // Start taper: goes from 0 to full thickness
-                finalThickness *= pow(progress / taperZone, 2.0)
-            } else if progress > (1.0 - taperZone) {
-                // End taper: goes from full thickness to 0
-                let endProgress = (1.0 - progress) / taperZone
-                finalThickness *= pow(endProgress, 2.0)
-            }
-
             // PROPER PRESSURE MAPPING: Find the closest raw point for pressure data
+            var mappedPressure = 1.0
             if !recentRawPoints.isEmpty {
                 var closestDistance = Double.infinity
                 var closestPressure = 1.0
@@ -743,15 +732,30 @@ extension DrawingCanvas {
                     Log.info("📊 BRUSH CURVE: [\(curveStr)]", category: .pressure)
                 }
 
-                let mappedPressure = getThicknessFromPressureCurve(pressure: closestPressure, curve: curve)
+                mappedPressure = getThicknessFromPressureCurve(pressure: closestPressure, curve: curve)
 
                 // LOG PRESSURE VALUES
                 if index % 5 == 0 {  // Log every 5th point to reduce spam
-                    Log.info("📊 BRUSH PRESSURE: raw=\(String(format: "%.3f", closestPressure)) → mapped=\(String(format: "%.3f", mappedPressure)) | thickness before=\(String(format: "%.2f", finalThickness)) after=\(String(format: "%.2f", finalThickness * mappedPressure))", category: .pressure)
+                    Log.info("📊 BRUSH PRESSURE: raw=\(String(format: "%.3f", closestPressure)) → mapped=\(String(format: "%.3f", mappedPressure)) | thickness before pressure=\(String(format: "%.2f", finalThickness))", category: .pressure)
                 }
-
-                finalThickness *= mappedPressure
             }
+
+            // Apply taper to ends - BLEND with pressure for smoother transitions
+            let taperZone = 0.15 // Taper over first/last 15% of stroke
+            var taperMultiplier = 1.0
+
+            if progress < taperZone {
+                // Start taper: use smoother curve that blends with pressure
+                let t = progress / taperZone
+                taperMultiplier = pow(t, 1.5) // Gentler curve for better blending
+            } else if progress > (1.0 - taperZone) {
+                // End taper: use smoother curve that blends with pressure
+                let t = (1.0 - progress) / taperZone
+                taperMultiplier = pow(t, 1.5) // Gentler curve for better blending
+            }
+
+            // Blend taper and pressure together for smooth transitions
+            finalThickness *= (taperMultiplier * mappedPressure)
 
             // Ensure minimum thickness AFTER all multipliers (taper + pressure)
             let minThickness = document.currentBrushMinTaperThickness
@@ -865,18 +869,6 @@ extension DrawingCanvas {
             let strokeLength = Double(centerPoints.count)
             let isShortStroke = strokeLength < 5
 
-            // Apply taper to ends
-            let taperZone = 0.15 // Taper over first/last 15% of stroke
-
-            if progress < taperZone {
-                // Start taper: goes from 0 to full thickness
-                finalThickness *= pow(progress / taperZone, 2.0)
-            } else if progress > (1.0 - taperZone) {
-                // End taper: goes from full thickness to 0
-                let endProgress = (1.0 - progress) / taperZone
-                finalThickness *= pow(endProgress, 2.0)
-            }
-
             // Interpolate pressure from raw points to simplified points
             let interpolatedPressure = interpolatePressureForPoint(point, from: rawPoints)
 
@@ -893,10 +885,25 @@ extension DrawingCanvas {
 
             // LOG PRESSURE VALUES
             if index % 5 == 0 {  // Log every 5th point to reduce spam
-                Log.info("📊 BRUSH SMOOTH PRESSURE: raw=\(String(format: "%.3f", interpolatedPressure)) → mapped=\(String(format: "%.3f", mappedPressure)) | thickness before=\(String(format: "%.2f", finalThickness)) after=\(String(format: "%.2f", finalThickness * mappedPressure))", category: .pressure)
+                Log.info("📊 BRUSH SMOOTH PRESSURE: raw=\(String(format: "%.3f", interpolatedPressure)) → mapped=\(String(format: "%.3f", mappedPressure)) | thickness before pressure=\(String(format: "%.2f", finalThickness))", category: .pressure)
             }
 
-            finalThickness *= mappedPressure
+            // Apply taper to ends - BLEND with pressure for smoother transitions
+            let taperZone = 0.15 // Taper over first/last 15% of stroke
+            var taperMultiplier = 1.0
+
+            if progress < taperZone {
+                // Start taper: use smoother curve that blends with pressure
+                let t = progress / taperZone
+                taperMultiplier = pow(t, 1.5) // Gentler curve for better blending
+            } else if progress > (1.0 - taperZone) {
+                // End taper: use smoother curve that blends with pressure
+                let t = (1.0 - progress) / taperZone
+                taperMultiplier = pow(t, 1.5) // Gentler curve for better blending
+            }
+
+            // Blend taper and pressure together for smooth transitions
+            finalThickness *= (taperMultiplier * mappedPressure)
 
             // Ensure minimum thickness AFTER all multipliers (taper + pressure)
             let minThickness = document.currentBrushMinTaperThickness
