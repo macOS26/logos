@@ -383,8 +383,8 @@ extension DrawingCanvas {
     
     private func processBrushStroke() {
         guard brushRawPoints.count >= 2,  // Allow 2 points for straight lines
-              let _ = activeBrushShape,
-              let _ = document.selectedLayerIndex else {
+              activeBrushShape != nil,
+              document.selectedLayerIndex != nil else {
             Log.info("🖌️ BRUSH: Too few points (\(brushRawPoints.count)) - keeping as simple shape", category: .general)
             return
         }

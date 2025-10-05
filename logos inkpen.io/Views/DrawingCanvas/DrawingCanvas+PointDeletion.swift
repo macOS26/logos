@@ -53,7 +53,7 @@ extension DrawingCanvas {
     
             // MARK: - Professional Point Deletion (Professional Standards)
     internal func closeBezierPath() {
-        guard let _ = bezierPath,
+        guard bezierPath != nil,
                 let activeShape = activeBezierShape,
               bezierPoints.count >= 3 else {
             Log.info("Cannot close bezier path - insufficient points or no path", category: .general)

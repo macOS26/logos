@@ -10,7 +10,7 @@ import Combine
 
 extension DrawingCanvas {
     internal func startSelectionDrag() {
-        guard let _ = document.selectedLayerIndex,
+        guard document.selectedLayerIndex != nil,
               !document.selectedObjectIDs.isEmpty else { return }
 
         // Reset update counter for 60fps throttling
@@ -96,7 +96,7 @@ extension DrawingCanvas {
     }
     
     internal func handleSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
-        guard let _ = document.selectedLayerIndex,
+        guard document.selectedLayerIndex != nil,
               !document.selectedObjectIDs.isEmpty else { return }
 
         // REFACTORED: Use unified objects system for selection checking
@@ -208,7 +208,7 @@ extension DrawingCanvas {
 
             // BLAZING FAST FINISH: Apply accumulated drag delta to actual coordinates at the end
             // This ensures smooth 60fps preview during drag, then commits changes once
-            guard let _ = document.selectedLayerIndex else { return }
+            guard document.selectedLayerIndex != nil else { return }
             
             // REFACTORED: Use unified objects system for applying drag delta
             let selectedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }

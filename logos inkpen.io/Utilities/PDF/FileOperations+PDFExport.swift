@@ -47,7 +47,6 @@ extension FileOperations {
 
         // Embed inkpen document metadata if requested
         if includeInkpenData {
-            Log.info("📦 Embedding inkpen document in PDF metadata", category: .fileOperations)
 
             // Serialize document to JSON
             let encoder = JSONEncoder()
@@ -74,7 +73,6 @@ extension FileOperations {
                 // Convert to CFData and add to PDF context
                 if let xmpData = xmpMetadata.data(using: .utf8) {
                     pdfContext.addDocumentMetadata(xmpData as CFData)
-                    Log.info("✅ Successfully embedded inkpen metadata in PDF (\(jsonData.count) bytes → \(base64String.count) base64 chars)", category: .fileOperations)
                 }
             }
         }
@@ -512,12 +510,6 @@ extension FileOperations {
                         // Skip this glyph - it's a missing character placeholder
                         skippedGlyphCount += 1
 
-                        // Get the character for logging
-                        let charIndex = layoutManager.characterIndexForGlyph(at: glyphIndex)
-                        if charIndex < vectorText.content.count {
-                            let char = (vectorText.content as NSString).substring(with: NSRange(location: charIndex, length: 1))
-                            Log.info("⚠️ SKIPPING RECTANGLE GLYPH in PDF: Character '\(char)' at index \(charIndex) - missing from font", category: .general)
-                        }
                         continue
                     }
                 }
@@ -566,7 +558,6 @@ extension FileOperations {
 
         // Report skipped glyphs if any
         if skippedGlyphCount > 0 {
-            Log.info("✅ PDF RECTANGLE DETECTION: Skipped \(skippedGlyphCount) missing character placeholder(s)", category: .fileOperations)
         }
 
         Log.fileOperation("   ✅ PDF text rendered at: \(vectorText.position)", level: .debug)
@@ -644,7 +635,6 @@ extension FileOperations {
         let isNested = (bounds1.contains(bounds2) || bounds2.contains(bounds1))
 
         if isNested {
-            Log.info("⚠️ DETECTED RECTANGLE GLYPH in PDF: Missing character placeholder with rectangular counter", category: .general)
             return true
         }
 

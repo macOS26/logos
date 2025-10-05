@@ -101,7 +101,7 @@ struct EnvelopeHandles: View {
             }
             
             // WARPED PREVIEW: Show the warped shape when there's a preview (continuous editing)
-            if let _ = previewPath {
+            if previewPath != nil {
                 warpedShapePreview()
             }
         }

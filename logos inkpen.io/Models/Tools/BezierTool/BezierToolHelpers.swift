@@ -115,7 +115,7 @@ extension DrawingCanvas {
         if !isBezierDrawing {
             // CHECK FOR CONTINUING EXISTING PATH
             if let selectedPointID = selectedPoints.first {
-                if let _ = getShapeForPoint(selectedPointID),
+                if getShapeForPoint(selectedPointID) != nil,
                    let pointPosition = getPointPosition(selectedPointID) {
                     continueExistingPath(from: pointPosition)
                     return
@@ -519,7 +519,7 @@ extension DrawingCanvas {
     
     private func handleFirstPointCreationFromDrag(startLocation: CGPoint) {
         if let selectedPointID = selectedPoints.first {
-            if let _ = getShapeForPoint(selectedPointID),
+            if getShapeForPoint(selectedPointID) != nil,
                let pointPosition = getPointPosition(selectedPointID) {
                 continueExistingPath(from: pointPosition)
             } else {

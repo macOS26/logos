@@ -210,7 +210,7 @@ extension DrawingCanvas {
     
     private func processMarkerStroke() {
         guard markerRawPoints.count >= 2,
-              let _ = activeMarkerShape,
+              activeMarkerShape != nil,
               document.selectedLayerIndex != nil else {
             Log.fileOperation("🖊️ MARKER: Too few points (\(markerRawPoints.count)) - keeping as simple stroke", level: .info)
             return

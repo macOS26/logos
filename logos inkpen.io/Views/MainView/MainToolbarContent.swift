@@ -79,8 +79,8 @@ struct MainToolbarContent: ToolbarContent {
                     // Find the shape in the layers array and update it
                     if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
                         let shapes = document.getShapesForLayer(layerIndex)
-                        if let _ = shapes.firstIndex(where: { $0.id == shape.id }) {
-                            
+                        if shapes.contains(where: { $0.id == shape.id }) {
+
                             // Check if path is open and has enough points
                             let hasCloseElement = shape.path.elements.contains { element in
                                 if case .close = element { return true }
@@ -383,7 +383,7 @@ struct MainToolbarContent: ToolbarContent {
                         // Find the shape in the layers array and lock it
                         if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
                             let shapes = document.getShapesForLayer(layerIndex)
-                            if let _ = shapes.firstIndex(where: { $0.id == shape.id }) {
+                            if shapes.contains(where: { $0.id == shape.id }) {
                                 document.lockShapeInUnified(id: shape.id)
                             }
                         }
@@ -433,7 +433,7 @@ struct MainToolbarContent: ToolbarContent {
                         // Find the shape in the layers array and hide it
                         if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
                             let shapes = document.getShapesForLayer(layerIndex)
-                            if let _ = shapes.firstIndex(where: { $0.id == shape.id }) {
+                            if shapes.contains(where: { $0.id == shape.id }) {
                                 document.hideShapeInUnified(id: shape.id)
                             }
                         }

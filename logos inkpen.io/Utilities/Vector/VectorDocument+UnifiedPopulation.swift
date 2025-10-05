@@ -68,7 +68,7 @@ extension VectorDocument {
         // Add selected shapes
         for shapeID in selectedShapeIDs {
             // PERFORMANCE: Use O(1) UUID lookup via findShape instead of O(N) loop
-            if let _ = findShape(by: shapeID),
+            if findShape(by: shapeID) != nil,
                let unifiedObject = findObject(by: shapeID) {
                 selectedObjectIDs.insert(unifiedObject.id)
             }
@@ -77,7 +77,7 @@ extension VectorDocument {
         // Add selected text objects (now represented as VectorShape with isTextObject = true)
         for textID in selectedTextIDs {
             // PERFORMANCE: Use O(1) UUID lookup via findText instead of O(N) loop
-            if let _ = findText(by: textID),
+            if findText(by: textID) != nil,
                let unifiedObject = findObject(by: textID) {
                 selectedObjectIDs.insert(unifiedObject.id)
             }
