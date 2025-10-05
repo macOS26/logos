@@ -39,7 +39,7 @@ extension FileOperations {
         let snapshot = DocumentSnapshot(from: document)
         
         let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.outputFormatting = [.sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
 
         do {
