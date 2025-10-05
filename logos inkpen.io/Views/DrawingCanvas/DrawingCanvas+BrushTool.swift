@@ -478,30 +478,73 @@ extension DrawingCanvas {
             let isStraightLine = maxDeviation < lineLength * 0.05
 
             if isStraightLine {
-                let angle = atan2(dy, dx)
+                // Check if the stroke would have any thickness anywhere
+                // Simulate the taper calculation to see if any point has thickness > threshold
+                let baseThickness = document.currentBrushThickness
+                let taperZone = 0.15
+                let thicknessThreshold = 0.5 // Points - consider stroke with no thickness if all points < 0.5pt
 
-                // Create leaf shape centered at origin
-                let width = document.currentBrushThickness
-                let leafPath = CGMutablePath()
-                leafPath.move(to: CGPoint(x: 0, y: 0))
-                leafPath.addQuadCurve(to: CGPoint(x: lineLength, y: 0), control: CGPoint(x: lineLength * 0.5, y: width * 0.5))
-                leafPath.addQuadCurve(to: CGPoint(x: 0, y: 0), control: CGPoint(x: lineLength * 0.5, y: -width * 0.5))
-                leafPath.closeSubpath()
+                var hasThickness = false
+                let numCheckPoints = 10
 
-                // Transform: rotate and translate to match line
-                var transform = CGAffineTransform(translationX: start.x, y: start.y)
-                transform = transform.rotated(by: angle)
+                for i in 0...numCheckPoints {
+                    let progress = Double(i) / Double(numCheckPoints)
+                    var thickness = baseThickness
 
-                if let transformedPath = leafPath.copy(using: &transform) {
-                    let finalShape = VectorShape(
-                        name: "Brush Stroke",
-                        path: VectorPath(cgPath: transformedPath),
-                        strokeStyle: nil,
-                        fillStyle: FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
-                    )
-                    document.addShape(finalShape)
-                    Log.info("🖌️ BRUSH: Created leaf shape for straight line (deviation: \(maxDeviation), length: \(lineLength))", category: .general)
-                    return
+                    // Apply taper formula (same as in generatePreviewVariableWidthPath)
+                    if progress < taperZone {
+                        thickness *= pow(progress / taperZone, 2.0)
+                    } else if progress > (1.0 - taperZone) {
+                        let endProgress = (1.0 - progress) / taperZone
+                        thickness *= pow(endProgress, 2.0)
+                    }
+
+                    // Apply pressure (check if pressure would add thickness)
+                    // For simplicity, assume average pressure across the stroke
+                    let avgPressure = brushRawPoints.map { $0.pressure }.reduce(0.0, +) / Double(brushRawPoints.count)
+
+                    // Apply pressure curve if enabled
+                    if appState.pressureSensitivityEnabled {
+                        let curve = appState.pressureCurve
+                        let mappedPressure = getThicknessFromPressureCurve(pressure: avgPressure, curve: curve)
+                        thickness *= mappedPressure
+                    }
+
+                    if thickness > thicknessThreshold {
+                        hasThickness = true
+                        break
+                    }
+                }
+
+                // Only use artificial leaf shape if stroke has no thickness anywhere
+                if !hasThickness {
+                    let angle = atan2(dy, dx)
+
+                    // Create leaf shape centered at origin
+                    let width = document.currentBrushThickness
+                    let leafPath = CGMutablePath()
+                    leafPath.move(to: CGPoint(x: 0, y: 0))
+                    leafPath.addQuadCurve(to: CGPoint(x: lineLength, y: 0), control: CGPoint(x: lineLength * 0.5, y: width * 0.5))
+                    leafPath.addQuadCurve(to: CGPoint(x: 0, y: 0), control: CGPoint(x: lineLength * 0.5, y: -width * 0.5))
+                    leafPath.closeSubpath()
+
+                    // Transform: rotate and translate to match line
+                    var transform = CGAffineTransform(translationX: start.x, y: start.y)
+                    transform = transform.rotated(by: angle)
+
+                    if let transformedPath = leafPath.copy(using: &transform) {
+                        let finalShape = VectorShape(
+                            name: "Brush Stroke",
+                            path: VectorPath(cgPath: transformedPath),
+                            strokeStyle: nil,
+                            fillStyle: FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
+                        )
+                        document.addShape(finalShape)
+                        Log.info("🖌️ BRUSH: Created artificial leaf shape for zero-thickness straight line (deviation: \(maxDeviation), length: \(lineLength))", category: .general)
+                        return
+                    }
+                } else {
+                    Log.info("🖌️ BRUSH: Straight line has thickness - using normal taper instead of artificial leaf", category: .general)
                 }
             }
         }
@@ -628,30 +671,16 @@ extension DrawingCanvas {
             let strokeLength = Double(centerPoints.count)
             let isShortStroke = strokeLength < 5
 
-            if isShortStroke {
-                // Very short strokes: FORCE full-stroke taper to prevent untapered lines
-                // Use symmetrical envelope: taper from 0 at ends to 1.0 at center
-                if progress <= 0.5 {
-                    // First half: taper up
-                    finalThickness *= pow(progress * 2.0, 1.5)
-                } else {
-                    // Second half: taper down
-                    let endProgress = (1.0 - progress) * 2.0
-                    finalThickness *= pow(endProgress, 1.5)
-                }
-            } else {
-                // Longer strokes: Use brush taper settings
-                // More aggressive taper when pressure sensitivity is disabled
-                let taperAmount = (appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput) ? 0.15 : 0.30
-                let startTaper = max(0.15, taperAmount)
-                let endTaper = max(0.15, taperAmount)
+            // ALWAYS taper to pointed ends for leaf-like appearance
+            let taperZone = 0.15 // Taper over first/last 15% of stroke
 
-                if progress < startTaper {
-                    finalThickness *= pow(progress / startTaper, 1.5)
-                } else if progress > (1.0 - endTaper) {
-                    let endProgress = (1.0 - progress) / endTaper
-                    finalThickness *= pow(endProgress, 1.5)
-                }
+            if progress < taperZone {
+                // Start taper: goes from 0 to full thickness
+                finalThickness *= pow(progress / taperZone, 2.0)
+            } else if progress > (1.0 - taperZone) {
+                // End taper: goes from full thickness to 0
+                let endProgress = (1.0 - progress) / taperZone
+                finalThickness *= pow(endProgress, 2.0)
             }
 
             // PROPER PRESSURE MAPPING: Find the closest raw point for pressure data
@@ -798,30 +827,16 @@ extension DrawingCanvas {
             let strokeLength = Double(centerPoints.count)
             let isShortStroke = strokeLength < 5
 
-            if isShortStroke {
-                // Very short strokes: FORCE full-stroke taper to prevent untapered lines
-                // Use symmetrical envelope: taper from 0 at ends to 1.0 at center
-                if progress <= 0.5 {
-                    // First half: taper up
-                    finalThickness *= pow(progress * 2.0, 1.5)
-                } else {
-                    // Second half: taper down
-                    let endProgress = (1.0 - progress) * 2.0
-                    finalThickness *= pow(endProgress, 1.5)
-                }
-            } else {
-                // Longer strokes: Use brush taper settings
-                // More aggressive taper when pressure sensitivity is disabled
-                let taperAmount = (appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput) ? 0.15 : 0.30
-                let startTaper = max(0.15, taperAmount)
-                let endTaper = max(0.15, taperAmount)
+            // ALWAYS taper to pointed ends for leaf-like appearance
+            let taperZone = 0.15 // Taper over first/last 15% of stroke
 
-                if progress < startTaper {
-                    finalThickness *= pow(progress / startTaper, 1.5)
-                } else if progress > (1.0 - endTaper) {
-                    let endProgress = (1.0 - progress) / endTaper
-                    finalThickness *= pow(endProgress, 1.5)
-                }
+            if progress < taperZone {
+                // Start taper: goes from 0 to full thickness
+                finalThickness *= pow(progress / taperZone, 2.0)
+            } else if progress > (1.0 - taperZone) {
+                // End taper: goes from full thickness to 0
+                let endProgress = (1.0 - progress) / taperZone
+                finalThickness *= pow(endProgress, 2.0)
             }
 
             // Interpolate pressure from raw points to simplified points
