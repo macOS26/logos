@@ -296,14 +296,14 @@ extension SVGParser {
                 textContainer.lineBreakMode = .byWordWrapping
                 layoutManager.addTextContainer(textContainer)
 
-                // CRITICAL: Use usedRect which gives the actual space used by glyphs
-                // This is more accurate than boundingRect for determining text box width
-                layoutManager.glyphRange(for: textContainer)  // Force layout
-                let usedRect = layoutManager.usedRect(for: textContainer)
+                // CRITICAL: Use boundingRect for tight bounds around actual glyphs
+                // This prevents boxes from extending too far right or below the text
+                let glyphRange = layoutManager.glyphRange(for: textContainer)
+                let boundingRect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
 
-                // Use actual width from usedRect - no padding needed
-                let actualWidth = ceil(usedRect.width)
-                let actualHeight = ceil(usedRect.height)
+                // Use tight bounding rect - just the actual glyph bounds
+                let actualWidth = ceil(boundingRect.width)
+                let actualHeight = ceil(boundingRect.height)
 
                 var textObject = VectorText(
                     content: multiLineContent,
@@ -430,14 +430,14 @@ extension SVGParser {
             textContainer.lineFragmentPadding = 0
             layoutManager.addTextContainer(textContainer)
 
-            // CRITICAL: Use usedRect which gives the actual space used by glyphs
-            // This is more accurate than boundingRect for determining text box width
-            layoutManager.glyphRange(for: textContainer)  // Force layout
-            let usedRect = layoutManager.usedRect(for: textContainer)
+            // CRITICAL: Use boundingRect for tight bounds around actual glyphs
+            // This prevents boxes from extending too far right or below the text
+            let glyphRange = layoutManager.glyphRange(for: textContainer)
+            let boundingRect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
 
-            // Use actual width from usedRect - no padding needed
-            let actualWidth = ceil(usedRect.width)
-            let actualHeight = ceil(usedRect.height)
+            // Use tight bounding rect - just the actual glyph bounds
+            let actualWidth = ceil(boundingRect.width)
+            let actualHeight = ceil(boundingRect.height)
 
             var textObject = VectorText(
                 content: trimmedContent,
