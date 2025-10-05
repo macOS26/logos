@@ -1122,7 +1122,7 @@ class MetalComputeEngine {
             } else {
                 return false
             }
-        case .failure(let error):
+        case .failure:
             return false
         }
     }
