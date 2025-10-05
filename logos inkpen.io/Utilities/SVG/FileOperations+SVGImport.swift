@@ -154,43 +154,45 @@ extension FileOperations {
 
         // First pass: identify clipping masks and their relationships
         for shape in result.shapes {
-            if shape.isClippingPath {
-                // This is a clipping mask
-                if clippingMasks[shape.id] == nil {
-                    clippingMasks[shape.id] = (mask: shape, clippedShapes: [])
-                } else {
-                    clippingMasks[shape.id]?.mask = shape
-                }
-            } else if let clipId = shape.clippedByShapeID {
-                // This shape is clipped by another shape
-                if clippingMasks[clipId] == nil {
-                    // Create placeholder for mask that will be found later
-                    clippingMasks[clipId] = (mask: VectorShape(name: "Placeholder", path: VectorPath(elements: [])), clippedShapes: [shape])
-                } else {
-                    clippingMasks[clipId]?.clippedShapes.append(shape)
-                }
-            } else {
-                // Standalone shape without clipping
-                // CRITICAL FIX: Skip invalid shapes
-                let shouldSkip: Bool = {
-                    // Skip non-text shapes with empty paths (e.g., <path d=""/>)
-                    if !shape.isTextObject && shape.path.elements.isEmpty {
-                        return true
+            autoreleasepool {
+                if shape.isClippingPath {
+                    // This is a clipping mask
+                    if clippingMasks[shape.id] == nil {
+                        clippingMasks[shape.id] = (mask: shape, clippedShapes: [])
+                    } else {
+                        clippingMasks[shape.id]?.mask = shape
                     }
-                    // Skip text objects with no content or only whitespace
-                    if shape.isTextObject {
-                        let textContent = shape.textContent?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                        if textContent.isEmpty {
+                } else if let clipId = shape.clippedByShapeID {
+                    // This shape is clipped by another shape
+                    if clippingMasks[clipId] == nil {
+                        // Create placeholder for mask that will be found later
+                        clippingMasks[clipId] = (mask: VectorShape(name: "Placeholder", path: VectorPath(elements: [])), clippedShapes: [shape])
+                    } else {
+                        clippingMasks[clipId]?.clippedShapes.append(shape)
+                    }
+                } else {
+                    // Standalone shape without clipping
+                    // CRITICAL FIX: Skip invalid shapes
+                    let shouldSkip: Bool = {
+                        // Skip non-text shapes with empty paths (e.g., <path d=""/>)
+                        if !shape.isTextObject && shape.path.elements.isEmpty {
                             return true
                         }
-                    }
-                    return false
-                }()
+                        // Skip text objects with no content or only whitespace
+                        if shape.isTextObject {
+                            let textContent = shape.textContent?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                            if textContent.isEmpty {
+                                return true
+                            }
+                        }
+                        return false
+                    }()
 
-                if !shouldSkip {
-                    standaloneShapes.append(shape)
-                } else {
-                    Log.fileOperation("⚠️ Skipping invalid shape: \(shape.name)", level: .debug)
+                    if !shouldSkip {
+                        standaloneShapes.append(shape)
+                    } else {
+                        Log.fileOperation("⚠️ Skipping invalid shape: \(shape.name)", level: .debug)
+                    }
                 }
             }
         }
@@ -199,41 +201,45 @@ extension FileOperations {
         // SVG renders first elements at bottom, last elements at top
         // So we reverse the order when adding to unified system
         for shape in standaloneShapes.reversed() {
-            // Keep shape at its original position - no centering
-            Log.fileOperation("🔷 Adding standalone shape: \(shape.name)", level: .debug)
-            Log.fileOperation("   📍 Position: \(shape.bounds.origin)", level: .debug)
-            Log.fileOperation("   📏 Size: \(shape.bounds.size)", level: .debug)
-            Log.fileOperation("   🎨 Fill: \(shape.fillStyle.map { String(describing: $0.color) } ?? "none")", level: .debug)
-            Log.fileOperation("   🖌️ Stroke: \(shape.strokeStyle.map { String(describing: $0.color) } ?? "none")", level: .debug)
+            autoreleasepool {
+                // Keep shape at its original position - no centering
+                Log.fileOperation("🔷 Adding standalone shape: \(shape.name)", level: .debug)
+                Log.fileOperation("   📍 Position: \(shape.bounds.origin)", level: .debug)
+                Log.fileOperation("   📏 Size: \(shape.bounds.size)", level: .debug)
+                Log.fileOperation("   🎨 Fill: \(shape.fillStyle.map { String(describing: $0.color) } ?? "none")", level: .debug)
+                Log.fileOperation("   🖌️ Stroke: \(shape.strokeStyle.map { String(describing: $0.color) } ?? "none")", level: .debug)
 
-            // Add shape to unified system (layer index 2 for imported layer)
-            document.addShapeToUnifiedSystem(shape, layerIndex: 2)
+                // Add shape to unified system (layer index 2 for imported layer)
+                document.addShapeToUnifiedSystem(shape, layerIndex: 2)
+            }
         }
         
         // Add clipping mask groups
         // CRITICAL: Must add shapes in the correct order for InkPen's clipping mask system
         for (maskId, maskGroup) in clippingMasks {
-            // Skip if we don't have a valid mask (placeholder)
-            guard maskGroup.mask.name != "Placeholder" else { continue }
+            autoreleasepool {
+                // Skip if we don't have a valid mask (placeholder)
+                guard maskGroup.mask.name != "Placeholder" else { return }
 
-            // IMPORTANT: Add clipped shapes FIRST (they go under the mask in InkPen's system)
-            for clippedShape in maskGroup.clippedShapes {
-                // Keep shape at its original position - no centering
-                Log.fileOperation("🔶 Adding clipped shape: \(clippedShape.name)", level: .debug)
-                Log.fileOperation("   🎭 Clipped by: \(maskId.uuidString.prefix(8))", level: .debug)
+                // IMPORTANT: Add clipped shapes FIRST (they go under the mask in InkPen's system)
+                for clippedShape in maskGroup.clippedShapes {
+                    // Keep shape at its original position - no centering
+                    Log.fileOperation("🔶 Adding clipped shape: \(clippedShape.name)", level: .debug)
+                    Log.fileOperation("   🎭 Clipped by: \(maskId.uuidString.prefix(8))", level: .debug)
 
-                // Add shape to unified system
-                document.addShapeToUnifiedSystem(clippedShape, layerIndex: 2)
+                    // Add shape to unified system
+                    document.addShapeToUnifiedSystem(clippedShape, layerIndex: 2)
+                }
+
+                // Then add the clipping mask LAST (it goes on top in InkPen's system)
+                // Keep mask at its original position - no centering
+                Log.fileOperation("🎭 Adding clipping mask: \(maskGroup.mask.name)", level: .debug)
+                Log.fileOperation("   📍 Position: \(maskGroup.mask.bounds.origin)", level: .debug)
+                Log.fileOperation("   📏 Size: \(maskGroup.mask.bounds.size)", level: .debug)
+
+                // Add mask to unified system
+                document.addShapeToUnifiedSystem(maskGroup.mask, layerIndex: 2)
             }
-
-            // Then add the clipping mask LAST (it goes on top in InkPen's system)
-            // Keep mask at its original position - no centering
-            Log.fileOperation("🎭 Adding clipping mask: \(maskGroup.mask.name)", level: .debug)
-            Log.fileOperation("   📍 Position: \(maskGroup.mask.bounds.origin)", level: .debug)
-            Log.fileOperation("   📏 Size: \(maskGroup.mask.bounds.size)", level: .debug)
-
-            // Add mask to unified system
-            document.addShapeToUnifiedSystem(maskGroup.mask, layerIndex: 2)
         }
         
         // Text objects are now imported as shapes with isTextObject=true
