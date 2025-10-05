@@ -296,14 +296,14 @@ extension SVGParser {
                 textContainer.lineBreakMode = .byWordWrapping
                 layoutManager.addTextContainer(textContainer)
 
-                // Get the actual bounding rect for the text
-                let glyphRange = layoutManager.glyphRange(for: textContainer)
-                let textBounds = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
+                // CRITICAL: Use usedRect which gives the actual space used by glyphs
+                // This is more accurate than boundingRect for determining text box width
+                layoutManager.glyphRange(for: textContainer)  // Force layout
+                let usedRect = layoutManager.usedRect(for: textContainer)
 
-                // Use actual width - just use the text bounds without extra padding
-                // The bounding rect already includes proper character spacing
-                let actualWidth = ceil(textBounds.width)
-                let actualHeight = ceil(textBounds.height)
+                // Use actual width from usedRect - no padding needed
+                let actualWidth = ceil(usedRect.width)
+                let actualHeight = ceil(usedRect.height)
 
                 var textObject = VectorText(
                     content: multiLineContent,
@@ -430,14 +430,14 @@ extension SVGParser {
             textContainer.lineFragmentPadding = 0
             layoutManager.addTextContainer(textContainer)
 
-            // Get the actual bounding rect for the text
-            let glyphRange = layoutManager.glyphRange(for: textContainer)
-            let textBounds = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
+            // CRITICAL: Use usedRect which gives the actual space used by glyphs
+            // This is more accurate than boundingRect for determining text box width
+            layoutManager.glyphRange(for: textContainer)  // Force layout
+            let usedRect = layoutManager.usedRect(for: textContainer)
 
-            // Use actual width - just use the text bounds without extra padding
-            // The bounding rect already includes proper character spacing
-            let actualWidth = ceil(textBounds.width)
-            let actualHeight = ceil(textBounds.height)
+            // Use actual width from usedRect - no padding needed
+            let actualWidth = ceil(usedRect.width)
+            let actualHeight = ceil(usedRect.height)
 
             var textObject = VectorText(
                 content: trimmedContent,
