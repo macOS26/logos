@@ -301,16 +301,17 @@ extension SVGParser {
                 let glyphRange = layoutManager.glyphRange(for: textContainer)
                 let boundingRect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
 
-                // Use tight bounding rect - just the actual glyph bounds
+                // Use tight bounding rect width, but use fontSize for height to prevent overlap
                 let actualWidth = ceil(boundingRect.width)
-                let actualHeight = ceil(boundingRect.height)
+                // Use fontSize for height to prevent boxes from overlapping stacked text
+                let actualHeight = firstFontSize
 
                 var textObject = VectorText(
                     content: multiLineContent,
                     typography: typography,
                     position: CGPoint(x: adjustedX, y: baseY),
                     transform: finalTextTransform,
-                    areaSize: CGSize(width: actualWidth, height: max(firstFontSize, actualHeight))
+                    areaSize: CGSize(width: actualWidth, height: actualHeight)
                 )
 
                 // Set bounds explicitly using actual dimensions
@@ -318,7 +319,7 @@ extension SVGParser {
                     x: adjustedX,
                     y: baseY,
                     width: actualWidth,
-                    height: max(firstFontSize, actualHeight)
+                    height: actualHeight
                 )
 
                 textObjects.append(textObject)
@@ -435,16 +436,17 @@ extension SVGParser {
             let glyphRange = layoutManager.glyphRange(for: textContainer)
             let boundingRect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
 
-            // Use tight bounding rect - just the actual glyph bounds
+            // Use tight bounding rect width, but use fontSize for height to prevent overlap
             let actualWidth = ceil(boundingRect.width)
-            let actualHeight = ceil(boundingRect.height)
+            // Use fontSize for height to prevent boxes from overlapping stacked text
+            let actualHeight = fontSize
 
             var textObject = VectorText(
                 content: trimmedContent,
                 typography: typography,
                 position: CGPoint(x: adjustedX, y: y),
                 transform: finalTextTransform,
-                areaSize: CGSize(width: actualWidth, height: max(fontSize, actualHeight))
+                areaSize: CGSize(width: actualWidth, height: actualHeight)
             )
 
             // Set bounds explicitly using actual dimensions
@@ -452,7 +454,7 @@ extension SVGParser {
                 x: adjustedX,
                 y: y,
                 width: actualWidth,
-                height: max(fontSize, actualHeight)
+                height: actualHeight
             )
 
             textObjects.append(textObject)
