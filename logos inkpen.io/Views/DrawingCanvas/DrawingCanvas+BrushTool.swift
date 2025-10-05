@@ -705,10 +705,6 @@ extension DrawingCanvas {
             // Base thickness from brush settings (like marker tool)
             var finalThickness = thickness
 
-            // Use marker-style taper for consistent quality
-            let strokeLength = Double(centerPoints.count)
-            let isShortStroke = strokeLength < 5
-
             // PROPER PRESSURE MAPPING: Find the closest raw point for pressure data
             var mappedPressure = 1.0
             if !recentRawPoints.isEmpty {
@@ -864,10 +860,6 @@ extension DrawingCanvas {
 
             // Base thickness from brush settings (like marker tool)
             var finalThickness = thickness
-
-            // Use marker-style taper for consistent quality
-            let strokeLength = Double(centerPoints.count)
-            let isShortStroke = strokeLength < 5
 
             // Interpolate pressure from raw points to simplified points
             let interpolatedPressure = interpolatePressureForPoint(point, from: rawPoints)
