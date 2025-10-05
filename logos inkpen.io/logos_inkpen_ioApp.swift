@@ -28,10 +28,6 @@ struct logos_inken_ioApp: App {
         if !metalWorking {
             Log.metal("❌ Metal Engine Failed", level: .error)
         }
-
-        // Debug sandbox status
-        Log.info("🎁 App Sandbox Status: \(SandboxChecker.isSandboxed ? "SANDBOXED" : "NOT SANDBOXED")", category: .general)
-        Log.info("🎁 Tip Jar Menu: \(SandboxChecker.isNotSandboxed ? "WILL SHOW" : "HIDDEN")", category: .general)
     }
     
     fileprivate func doNotRestoreThis(_ window: NSWindow) {
@@ -1011,9 +1007,6 @@ class ClipboardManager {
                             let originalAreaSize = originalText?.areaSize ?? shape.areaSize
                             let typography = originalText?.typography ?? shape.typography ?? TypographyProperties(strokeColor: .black, fillColor: .black)
                             
-                            // DEBUG: Log what we're copying to identify the issue
-                            Log.info("📋 COPY DEBUG: textContent='\(textContent)', originalAreaSize=\(originalAreaSize?.debugDescription ?? "nil"), shapeAreaSize=\(shape.areaSize?.debugDescription ?? "nil")", category: .general)
-                            
                             let position = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
                             let vectorText = VectorText(
                                 content: textContent,
@@ -1027,9 +1020,6 @@ class ClipboardManager {
                                 cursorPosition: 0,  // Reset cursor position for pasted text
                                 areaSize: originalAreaSize  // Use the original text's areaSize, not the shape's
                             )
-                            
-                            // DEBUG: Log the created VectorText to verify areaSize is preserved
-                            Log.info("📋 COPY DEBUG: Created VectorText with content='\(vectorText.content)', areaSize=\(vectorText.areaSize?.debugDescription ?? "nil")", category: .general)
                             
                             // SIZE FIX: VectorText initializer now properly handles areaSize for bounds
                             
@@ -1046,13 +1036,12 @@ class ClipboardManager {
         
         // Create clipboard data
         let clipboardData = ClipboardData(shapes: shapesToCopy, texts: textToCopy)
-        
+
         // Encode and write to pasteboard
         do {
             let data = try JSONEncoder().encode(clipboardData)
             pasteboard.clearContents()
             pasteboard.setData(data, forType: vectorObjectsType)
-            Log.info("📋 Copied \(shapesToCopy.count) shapes and \(textToCopy.count) text objects", category: .general)
         } catch {
             Log.error("❌ Failed to copy objects: \(error)", category: .error)
         }
@@ -1100,20 +1089,15 @@ class ClipboardManager {
             for text in clipboardData.texts {
                 var newText = text
                 newText.id = UUID()
-                
-                // DEBUG: Log what we're pasting to identify the issue
-                Log.info("📋 PASTE DEBUG: Pasting text with content='\(newText.content)', areaSize=\(newText.areaSize?.debugDescription ?? "nil")", category: .general)
-                
+
                 // PASTE AT EXACT ORIGINAL COORDINATES - no offset
                 // Add to unified objects system (this also adds to textObjects array)
                 document.addTextToUnifiedSystem(newText, layerIndex: document.selectedLayerIndex ?? 2)
                 document.selectedObjectIDs.insert(newText.id)
             }
-            
+
             // CRITICAL FIX: Sync selection arrays for compatibility
             document.syncSelectionArrays()
-            
-            Log.info("📋 Pasted \(clipboardData.shapes.count) shapes and \(clipboardData.texts.count) text objects at original coordinates", category: .general)
         } catch {
             Log.error("❌ Failed to paste objects: \(error)", category: .error)
         }
@@ -1210,8 +1194,6 @@ class ClipboardManager {
             
             // CRITICAL FIX: Sync selection arrays for compatibility
             document.syncSelectionArrays()
-            
-            Log.info("📋 Pasted in back: \(clipboardData.shapes.count) shapes and \(clipboardData.texts.count) text objects at original coordinates", category: .general)
         } catch {
             Log.error("❌ Failed to paste in back: \(error)", category: .error)
         }
@@ -1239,7 +1221,6 @@ func openLogosInkPenHelp() {
 
         if FileManager.default.fileExists(atPath: indexPath.path) {
             NSWorkspace.shared.open(indexPath)
-            Log.info("📚 Opened Help Book at: \(indexPath.path)", category: .general)
         } else {
             // Fallback to opening the help book root
             NSWorkspace.shared.open(helpBookURL)
@@ -1250,7 +1231,6 @@ func openLogosInkPenHelp() {
         let projectHelpPath = "/Users/toddbruss/Documents/GitHub/logos/logos inkpen.io/LogosInkPenHelp.help/Contents/Resources/en.lproj/index.html"
         if FileManager.default.fileExists(atPath: projectHelpPath) {
             NSWorkspace.shared.open(URL(fileURLWithPath: projectHelpPath))
-            Log.info("📚 Opened development Help Book", category: .general)
         } else {
             Log.error("📚 Help Book not found", category: .error)
             // Show an alert
