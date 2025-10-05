@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import SwiftUI
 
 // MARK: - Vector Color
 enum VectorColor: Hashable {
