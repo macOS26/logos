@@ -478,49 +478,63 @@ extension DrawingCanvas {
             let isStraightLine = maxDeviation < lineLength * 0.05
 
             if isStraightLine {
-                // Check if the stroke would have any thickness anywhere
-                // Simulate the taper calculation to see if any point has thickness > threshold
-                let baseThickness = document.currentBrushThickness
-                let taperZone = 0.15
-                let thicknessThreshold = 5.0 // Points - use artificial leaf if max thickness < 5pt
+                let angle = atan2(dy, dx)
 
-                var hasThickness = false
-                let numCheckPoints = 10
+                // Create leaf shape centered at origin
+                let width = document.currentBrushThickness
+                let leafPath = CGMutablePath()
+                leafPath.move(to: CGPoint(x: 0, y: 0))
+                leafPath.addQuadCurve(to: CGPoint(x: lineLength, y: 0), control: CGPoint(x: lineLength * 0.5, y: width * 0.5))
+                leafPath.addQuadCurve(to: CGPoint(x: 0, y: 0), control: CGPoint(x: lineLength * 0.5, y: -width * 0.5))
+                leafPath.closeSubpath()
 
-                for i in 0...numCheckPoints {
-                    let progress = Double(i) / Double(numCheckPoints)
-                    var thickness = baseThickness
+                // Transform: rotate and translate to match line
+                var transform = CGAffineTransform(translationX: start.x, y: start.y)
+                transform = transform.rotated(by: angle)
 
-                    // Apply taper formula (same as in generatePreviewVariableWidthPath)
-                    if progress < taperZone {
-                        thickness *= pow(progress / taperZone, 2.0)
-                    } else if progress > (1.0 - taperZone) {
-                        let endProgress = (1.0 - progress) / taperZone
-                        thickness *= pow(endProgress, 2.0)
-                    }
+                if let transformedPath = leafPath.copy(using: &transform) {
+                    let finalShape = VectorShape(
+                        name: "Brush Stroke",
+                        path: VectorPath(cgPath: transformedPath),
+                        strokeStyle: nil,
+                        fillStyle: FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
+                    )
+                    document.addShape(finalShape)
+                    Log.info("🖌️ BRUSH: Created artificial leaf shape for straight line (deviation: \(maxDeviation), length: \(lineLength))", category: .general)
+                    return
+                }
+            }
+        }
 
-                    // Apply pressure (check if pressure would add thickness)
-                    // For simplicity, assume average pressure across the stroke
-                    let avgPressure = brushRawPoints.map { $0.pressure }.reduce(0.0, +) / Double(brushRawPoints.count)
+        // CHECK: If the preview path has barely any thickness, replace with artificial leaf shape
+        if brushRawPoints.count >= 2 {
+            let pathBounds = preview.cgPath.boundingBox
+            let pathWidth = min(pathBounds.width, pathBounds.height) // Use the smaller dimension
 
-                    // Apply pressure curve if enabled
-                    if appState.pressureSensitivityEnabled {
-                        let curve = appState.pressureCurve
-                        let mappedPressure = getThicknessFromPressureCurve(pressure: avgPressure, curve: curve)
-                        thickness *= mappedPressure
-                    }
+            // If path is extremely thin (< 2pt), check if it's a straight line and use leaf shape
+            if pathWidth < 2.0 {
+                let start = brushRawPoints.first!.location
+                let end = brushRawPoints.last!.location
 
-                    if thickness > thicknessThreshold {
-                        hasThickness = true
-                        break
-                    }
+                let dx = end.x - start.x
+                let dy = end.y - start.y
+                let lineLength = sqrt(dx * dx + dy * dy)
+
+                // Check if all points are close to the straight line (< 5% deviation)
+                var maxDeviation = 0.0
+                for point in brushRawPoints {
+                    let px = point.location.x - start.x
+                    let py = point.location.y - start.y
+                    let deviation = abs(dy * px - dx * py) / lineLength
+                    maxDeviation = max(maxDeviation, deviation)
                 }
 
-                // Only use artificial leaf shape if stroke has no thickness anywhere
-                if !hasThickness {
+                let isStraightLine = maxDeviation < lineLength * 0.05
+
+                if isStraightLine {
                     let angle = atan2(dy, dx)
 
-                    // Create leaf shape centered at origin
+                    // Create leaf shape to replace the barely-visible path
                     let width = document.currentBrushThickness
                     let leafPath = CGMutablePath()
                     leafPath.move(to: CGPoint(x: 0, y: 0))
@@ -528,7 +542,6 @@ extension DrawingCanvas {
                     leafPath.addQuadCurve(to: CGPoint(x: 0, y: 0), control: CGPoint(x: lineLength * 0.5, y: -width * 0.5))
                     leafPath.closeSubpath()
 
-                    // Transform: rotate and translate to match line
                     var transform = CGAffineTransform(translationX: start.x, y: start.y)
                     transform = transform.rotated(by: angle)
 
@@ -540,11 +553,9 @@ extension DrawingCanvas {
                             fillStyle: FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
                         )
                         document.addShape(finalShape)
-                        Log.info("🖌️ BRUSH: Created artificial leaf shape for zero-thickness straight line (deviation: \(maxDeviation), length: \(lineLength))", category: .general)
+                        Log.info("🖌️ BRUSH: Replaced barely-visible path (width: \(pathWidth)pt) with artificial leaf shape", category: .general)
                         return
                     }
-                } else {
-                    Log.info("🖌️ BRUSH: Straight line has thickness - using normal taper instead of artificial leaf", category: .general)
                 }
             }
         }
