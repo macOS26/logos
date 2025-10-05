@@ -638,9 +638,6 @@ extension DrawingCanvas {
             return VectorPath(elements: [.move(to: VectorPoint(centerPoints[0]))])
         }
 
-        // DETECT STRAIGHT LINES for special leaf shape treatment
-        let isStraightLine = detectStraightLine(points: centerPoints)
-
         // Calculate variable thickness at each simplified point with proper pressure mapping
         var thicknessPoints: [(location: CGPoint, thickness: Double)] = []
 
@@ -651,36 +648,28 @@ extension DrawingCanvas {
             // Base thickness from brush settings (like marker tool)
             var finalThickness = thickness
 
-            // SPECIAL TREATMENT FOR STRAIGHT LINES - Aggressive taper at end to avoid phallic shape
-            if isStraightLine {
-                // For straight lines, AGGRESSIVE TAPER at end - no bulge whatsoever
-                if progress < 0.1 {
-                    // Start: Quick taper from point
-                    finalThickness *= pow(progress / 0.1, 2.0)
-                } else if progress > 0.5 {
-                    // END: Much more aggressive taper starting earlier
-                    let endProgress = (progress - 0.5) / 0.5
-                    // Use power of 3 for very aggressive thinning
-                    // This creates a sharp point with no bulge
-                    finalThickness *= pow(1.0 - endProgress, 3.0)
+            // Use marker-style taper for consistent quality
+            let strokeLength = Double(centerPoints.count)
+            let isShortStroke = strokeLength < 5
+
+            if isShortStroke {
+                // Very short strokes: Sharp taper from thin point to thick and back to thin point
+                if progress < 0.3 {
+                    finalThickness *= pow(progress / 0.3, 1.5)
+                } else if progress > 0.7 {
+                    let endProgress = (1.0 - progress) / 0.3
+                    finalThickness *= pow(endProgress, 1.5)
                 }
             } else {
-                // Normal curved strokes - Simple taper without bulges (like marker tool)
-                if progress < 0.03 {
-                    // START: Cut off very thin tails at beginning
-                    finalThickness = 0  // Completely remove narrow tail
-                } else if progress < 0.08 {
-                    // Quick taper from zero
-                    let startTaper = pow((progress - 0.03) / 0.05, 2.0)
-                    finalThickness *= startTaper
-                } else if progress > 0.88 && progress < 0.97 {
-                    // Quick taper to zero
-                    let endProgress = (progress - 0.88) / 0.09
-                    let endTaper = 1.0 - pow(endProgress, 1.5)
-                    finalThickness *= endTaper
-                } else if progress >= 0.97 {
-                    // END: Cut off very thin tails at end
-                    finalThickness = 0  // Completely remove narrow tail
+                // Longer strokes: Use brush taper settings (or default to 0.15)
+                let startTaper = max(0.15, 0.15)  // Can expose as brush setting later
+                let endTaper = max(0.15, 0.15)    // Can expose as brush setting later
+
+                if progress < startTaper {
+                    finalThickness *= pow(progress / startTaper, 1.5)
+                } else if progress > (1.0 - endTaper) {
+                    let endProgress = (1.0 - progress) / endTaper
+                    finalThickness *= pow(endProgress, 1.5)
                 }
             }
 
@@ -813,9 +802,6 @@ extension DrawingCanvas {
             return VectorPath(elements: [.move(to: VectorPoint(rawPoints[0].location))])
         }
 
-        // Detect if this is a straight line
-        let isStraightLine = detectStraightLine(points: centerPoints)
-
         // Calculate variable thickness at each simplified point with proper pressure interpolation
         var thicknessPoints: [(location: CGPoint, thickness: Double)] = []
 
@@ -823,42 +809,31 @@ extension DrawingCanvas {
         for (index, point) in centerPoints.enumerated() {
             let progress = Double(index) / Double(centerPoints.count - 1)
 
-            // ENHANCED LEAF SHAPE - matching preview generation
+            // Base thickness from brush settings (like marker tool)
             var finalThickness = thickness
 
-            // Consistent with preview generation
-            let distanceFromCenter = abs(progress - 0.5) * 2.0
-            let sineShape = sin((1.0 - distanceFromCenter) * .pi * 0.5)
-            let powerShape = 1.0 - pow(distanceFromCenter, 2.0)
-            let leafShape = sineShape * 0.7 + powerShape * 0.3
-            finalThickness = thickness * leafShape
+            // Use marker-style taper for consistent quality
+            let strokeLength = Double(centerPoints.count)
+            let isShortStroke = strokeLength < 5
 
-            // Special treatment for straight lines - aggressive taper to very thin end
-            if isStraightLine {
-                if progress < 0.1 {
-                    finalThickness *= pow(progress / 0.1, 2.0)
-                } else if progress > 0.5 {
-                    let endProgress = (progress - 0.5) / 0.5
-                    // Power of 3 for aggressive thinning
-                    finalThickness *= pow(1.0 - endProgress, 3.0)
+            if isShortStroke {
+                // Very short strokes: Sharp taper from thin point to thick and back to thin point
+                if progress < 0.3 {
+                    finalThickness *= pow(progress / 0.3, 1.5)
+                } else if progress > 0.7 {
+                    let endProgress = (1.0 - progress) / 0.3
+                    finalThickness *= pow(endProgress, 1.5)
                 }
             } else {
-                // Simple taper for curved strokes without bulges
-                if progress < 0.03 {
-                    // START: Cut off very thin tails at beginning
-                    finalThickness = 0  // Completely remove narrow tail
-                } else if progress < 0.08 {
-                    // Quick taper from zero
-                    let startTaper = pow((progress - 0.03) / 0.05, 2.0)
-                    finalThickness *= startTaper
-                } else if progress > 0.88 && progress < 0.97 {
-                    // Quick taper to zero
-                    let endProgress = (progress - 0.88) / 0.09
-                    let endTaper = 1.0 - pow(endProgress, 1.5)
-                    finalThickness *= endTaper
-                } else if progress >= 0.97 {
-                    // END: Cut off very thin tails at end
-                    finalThickness = 0  // Completely remove narrow tail
+                // Longer strokes: Use brush taper settings (or default to 0.15)
+                let startTaper = max(0.15, 0.15)  // Can expose as brush setting later
+                let endTaper = max(0.15, 0.15)    // Can expose as brush setting later
+
+                if progress < startTaper {
+                    finalThickness *= pow(progress / startTaper, 1.5)
+                } else if progress > (1.0 - endTaper) {
+                    let endProgress = (1.0 - progress) / endTaper
+                    finalThickness *= pow(endProgress, 1.5)
                 }
             }
 
