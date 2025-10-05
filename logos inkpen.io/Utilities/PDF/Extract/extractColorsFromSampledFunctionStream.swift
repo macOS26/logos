@@ -96,8 +96,6 @@ extension PDFCommandParser {
                     
                     let color = VectorColor.rgb(RGBColor(red: r, green: g, blue: b))
                     colors.append(color)
-                    
-                   //print("PDF: 🎨 Stream Sample \(sampleIndex): R=\(r) G=\(g) B=\(b)")
                 }
             }
             

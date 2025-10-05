@@ -65,16 +65,6 @@ struct LayerView: View {
                     )
                     // REMOVED: All SwiftUI transforms - handle everything in NSView
                     // The NSView will handle zoom, offset, and transforms internally
-                    .onAppear {
-                        // Debug clipping mask rendering
-                        // print("🎭 RENDERING CLIPPED SHAPE: '\(currentShape.name)' clipped by '\(maskShape.name)'")
-                        // print("   📊 Clipped shape bounds: \(currentShape.bounds)")
-                        // print("   📊 Mask shape bounds: \(maskShape.bounds)")
-                        // print("   🔄 Clipped shape transform: \(currentShape.transform)")
-                        // print("   🔄 Mask shape transform: \(maskShape.transform)")
-                        // print("   🔍 Zoom level: \(zoomLevel)")
-                        // print("   📍 Canvas offset: \(canvasOffset)")
-                    }
                 } else {
                     ShapeView(
                         shape: currentShape,

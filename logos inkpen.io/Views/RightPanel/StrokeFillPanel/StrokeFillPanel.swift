@@ -648,7 +648,6 @@ struct StrokeFillPanel: View {
     private func updateStrokeMiterLimit(_ miterLimit: Double) {
         // ALWAYS update the default miter limit for new shapes
         document.defaultStrokeMiterLimit = miterLimit
-        //print("🎨 Set default stroke miter limit: \(String(format: "%.1f", miterLimit))")
 
         // If there are active shapes (regular or direct selection), update them too
         let activeShapeIDs = document.getActiveShapeIDs()

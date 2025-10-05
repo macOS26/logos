@@ -320,7 +320,6 @@ struct GradientFillSection: View {
             return linear.originPoint.y
         case .radial(let radial):
             let originY = radial.originPoint.y
-            //print("// Log.debug("🔍 getGradientOriginY: \(originY) (radial.originPoint.y)", category: .general)
             return originY
         }
     }
