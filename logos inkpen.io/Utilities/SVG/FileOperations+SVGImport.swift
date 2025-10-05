@@ -177,8 +177,10 @@ extension FileOperations {
             }
         }
         
-        // Add standalone shapes first
-        for shape in standaloneShapes {
+        // CRITICAL FIX: Add standalone shapes in reverse order to preserve visual stacking
+        // SVG renders first elements at bottom, last elements at top
+        // So we reverse the order when adding to unified system
+        for shape in standaloneShapes.reversed() {
             // Keep shape at its original position - no centering
             Log.fileOperation("🔷 Adding standalone shape: \(shape.name)", level: .debug)
             Log.fileOperation("   📍 Position: \(shape.bounds.origin)", level: .debug)
