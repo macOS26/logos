@@ -39,7 +39,6 @@ private struct CanvasCursorOverlayRepresentable: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: CursorOverlayNSView, context: Context) {
-        _ = nsView.currentTool != currentTool || nsView.isPanActive != isPanActive || nsView.isHovering != isHovering
         nsView.isHovering = isHovering
         nsView.currentTool = currentTool
         nsView.isPanActive = isPanActive
