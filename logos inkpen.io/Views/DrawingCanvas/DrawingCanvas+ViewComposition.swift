@@ -421,17 +421,14 @@ extension DrawingCanvas {
         case .brush:
             if !isBrushDrawing {
                 handleBrushDragStart(at: location)
-            } else {
             }
         case .freehand:
             if !isFreehandDrawing {
                 handleFreehandDragStart(at: location)
-            } else {
             }
         case .marker:
             if !isMarkerDrawing {
                 handleMarkerDragStart(at: location)
-            } else {
             }
         default:
             break
@@ -448,19 +445,16 @@ extension DrawingCanvas {
             if isBrushDrawing {
                 // Brush drag update - logging removed for performance
                 handleBrushDragUpdate(at: location)
-            } else {
             }
         case .freehand:
             if isFreehandDrawing {
                 // Freehand drag update - logging removed for performance
                 handleFreehandDragUpdate(at: location)
-            } else {
             }
         case .marker:
             if isMarkerDrawing {
                 // Marker drag update - pass pressure directly to avoid delay
                 handleMarkerDragUpdate(at: location, pressure: currentPressure)
-            } else {
             }
         default:
             break
