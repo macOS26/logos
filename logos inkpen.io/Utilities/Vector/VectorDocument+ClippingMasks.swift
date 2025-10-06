@@ -57,9 +57,7 @@ extension VectorDocument {
         
         // DEBUG: Check layers array before unified sync
         for (idx, _) in layers.enumerated() {
-            let shapesInLayer = getShapesForLayer(idx)
-            for _ in shapesInLayer {
-            }
+            _ = getShapesForLayer(idx)
         }
         
         // CRITICAL FIX: Use full resync for clipping mask changes since they affect object relationships

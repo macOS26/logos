@@ -134,8 +134,6 @@ extension SVGParser {
         radialGradient.scaleY = abs(gradientScaleY)
         
         let vectorGradient = VectorGradient.radial(radialGradient)
-        if useExtremeHandling {
-        }
         
         return vectorGradient
     }

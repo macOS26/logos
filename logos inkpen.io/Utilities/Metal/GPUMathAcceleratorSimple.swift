@@ -16,8 +16,6 @@ class GPUMathAcceleratorSimple {
         self.commandQueue = device?.makeCommandQueue()
         self.isMetalAvailable = (device != nil && commandQueue != nil)
         
-        if isMetalAvailable {
-        }
     }
     
     // MARK: - Phase 1: Optimized CPU Implementation (Metal-Ready)

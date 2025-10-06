@@ -27,8 +27,6 @@ extension SVGParser {
                 refId = String(refId.dropFirst())
             }
             inheritedGradient = gradientDefinitions[refId]
-            if inheritedGradient != nil {
-            }
         }
         
         // Ensure we have at least one gradient stop

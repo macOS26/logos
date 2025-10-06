@@ -818,8 +818,6 @@ extension ProfessionalPathOperations {
         
         let cleanedPath = VectorPath(elements: cleanedElements, isClosed: path.isClosed)
 
-        if duplicatesRemoved > 0 {
-        }
 
         return cleanedPath
     }

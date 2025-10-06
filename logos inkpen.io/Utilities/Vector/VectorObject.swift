@@ -27,8 +27,6 @@ struct VectorObject: Identifiable, Hashable {
         self.objectType = .shape(shape)
 
         // DEBUG: Check if properties are preserved after storing in enum
-        if case .shape(_) = self.objectType {
-        }
     }
     
     

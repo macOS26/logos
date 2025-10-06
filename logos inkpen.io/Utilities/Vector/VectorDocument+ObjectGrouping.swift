@@ -142,8 +142,6 @@ extension VectorDocument {
         // CRITICAL FIX: Update unified selection to use the ungrouped shapes
         selectedObjectIDs = newSelectedShapeIDs
         
-        if !shapesToRemove.isEmpty {
-        }
     }
     
     /// Unflatten selected objects (restore flattened groups to individual shapes)

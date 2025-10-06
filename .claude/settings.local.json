@@ -91,7 +91,16 @@
       "Bash(xargs:*)",
       "Bash(xxd:*)",
       "Bash(/tmp/remove_info_logs.sh:*)",
-      "Bash(/tmp/process_all_noops.sh:*)"
+      "Bash(/tmp/process_all_noops.sh:*)",
+      "Bash(\"logos inkpen.io/Utilities/SVG/SVGGradientHelpers.swift\" )",
+      "Bash(\"logos inkpen.io/Utilities/SVG/SVGRadialGradientParser.swift\" )",
+      "Bash(\"logos inkpen.io/Utilities/Metal/MetalDrawingOptimizer.swift\" )",
+      "Bash(\"logos inkpen.io/Utilities/Metal/GPUMathAcceleratorSimple.swift\" )",
+      "Bash(\"logos inkpen.io/Utilities/Vector/VectorDocument+ObjectGrouping.swift\" )",
+      "Bash(\"logos inkpen.io/Utilities/Vector/VectorDocument+ClippingMasks.swift\" )",
+      "Bash(\"logos inkpen.io/Utilities/Vector/VectorObject.swift\" )",
+      "Bash(\"logos inkpen.io/Utilities/Vector/PathOperations.swift\" )",
+      "Bash(\"logos inkpen.io/Views/DrawingCanvas/DrawingCanvas+CoincidentPointHandling.swift\")"
     ],
     "deny": [],
     "ask": []

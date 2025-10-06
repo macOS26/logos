@@ -15,8 +15,6 @@ class MetalDrawingOptimizer {
         self.commandQueue = device?.makeCommandQueue()
         self.isMetalAvailable = (device != nil && commandQueue != nil)
         
-        if isMetalAvailable {
-        }
     }
     
     // MARK: - Drawing Optimization

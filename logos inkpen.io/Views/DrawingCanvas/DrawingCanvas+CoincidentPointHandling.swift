@@ -214,8 +214,6 @@ extension DrawingCanvas {
             }
         }
 
-        if totalCoincidentGroups == 0 {
-        }
     }
     
     // MARK: - Smooth Handle Management for Coincident Points
