@@ -364,9 +364,33 @@ struct TransformBoxHandles: View {
            let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
             
             var updatedShape = currentShape
-            // SPECIAL-CASE RASTER IMAGES AND TEXT: Keep transforms on transform property instead of baking into path
-            if ImageContentRegistry.containsImage(currentShape) || currentShape.isTextObject {
-                // Commit the preview transform as the shape.transform
+
+            // TEXT OBJECTS: Update areaSize and bounds directly (like text tool resize)
+            if currentShape.isTextObject {
+                // Extract scale from transform
+                let scaleX = sqrt(previewTransform.a * previewTransform.a + previewTransform.c * previewTransform.c)
+                let scaleY = sqrt(previewTransform.b * previewTransform.b + previewTransform.d * previewTransform.d)
+
+                // Calculate new dimensions from original areaSize
+                if let originalAreaSize = currentShape.areaSize {
+                    let newWidth = originalAreaSize.width * scaleX
+                    let newHeight = originalAreaSize.height * scaleY
+
+                    // Update areaSize (this is what text tool does)
+                    updatedShape.areaSize = CGSize(width: newWidth, height: newHeight)
+                    // Update bounds to match areaSize
+                    updatedShape.bounds = CGRect(x: 0, y: 0, width: newWidth, height: newHeight)
+                    // Keep transform identity for text objects
+                    updatedShape.transform = .identity
+
+                    document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
+
+                    // Also update in unified system
+                    document.updateTextAreaSizeInUnified(id: currentShape.id, areaSize: CGSize(width: newWidth, height: newHeight))
+                    document.updateTextBoundsInUnified(id: currentShape.id, bounds: CGRect(x: 0, y: 0, width: newWidth, height: newHeight))
+                }
+            } else if ImageContentRegistry.containsImage(currentShape) {
+                // RASTER IMAGES: Keep transforms on transform property instead of baking into path
                 updatedShape.transform = previewTransform
                 updatedShape.updateBounds()
                 document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
