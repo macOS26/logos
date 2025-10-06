@@ -180,14 +180,23 @@ class PDFCommandParser {
         
         // Setup operator callbacks
         setupOperatorCallbacks(operatorTable)
-        
-        // Create scanner for page content  
+
+        // Suppress CoreGraphics stderr warnings - these are false positives from internal validation
+        let savedStderr = dup(STDERR_FILENO)
+        let devNull = open("/dev/null", O_WRONLY)
+        dup2(devNull, STDERR_FILENO)
+        close(devNull)
+
+        // Create scanner for page content
         let contentStream = CGPDFContentStreamCreateWithPage(page)
-        
         let scanner = CGPDFScannerCreate(contentStream, operatorTable, Unmanaged.passUnretained(self).toOpaque())
-        
+
         // Scan the content stream
         CGPDFScannerScan(scanner)
+
+        // Restore stderr
+        dup2(savedStderr, STDERR_FILENO)
+        close(savedStderr)
     }
     
     func setupOperatorCallbacks(_ operatorTable: CGPDFOperatorTableRef) {

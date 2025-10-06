@@ -88,7 +88,8 @@
       "Bash(exiftool:*)",
       "Bash(/tmp/comment_logs.sh:*)",
       "Bash(/tmp/fix_unused_vars.sh:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(xxd:*)"
     ],
     "deny": [],
     "ask": []
