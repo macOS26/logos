@@ -11,13 +11,6 @@ import Combine
 // MARK: - Undo/Redo
 extension VectorDocument {
     func saveToUndoStack() {
-        // Log current selection state before saving
-        // Log.info("📸 SAVING UNDO: Current state has \(selectedTextIDs.count) text IDs, \(selectedShapeIDs.count) shape IDs, \(selectedObjectIDs.count) object IDs", category: .general)
-        // Log.info("📸 SAVING UNDO: selectedObjectIDs = \(selectedObjectIDs)", category: .general)
-        if !selectedTextIDs.isEmpty {
-            // Log.info("📸 SAVING UNDO: Text IDs being saved: \(selectedTextIDs)", category: .general)
-        }
-
         // Create a copy of the current state
         do {
             let data = try JSONEncoder().encode(self)
@@ -32,31 +25,26 @@ extension VectorDocument {
             // Clear redo stack when a new action is performed
             redoStack.removeAll()
         } catch {
-            // Log.info("Error saving to undo stack: \(error)", category: .general)
         }
     }
     
     func undo() {
         guard !undoStack.isEmpty else { return }
-        
+
         // Set flag to prevent reordering during undo operation
         isUndoRedoOperation = true
         defer { isUndoRedoOperation = false }
-        
+
         // Save current state to redo stack
         do {
             let data = try JSONEncoder().encode(self)
             let copy = try JSONDecoder().decode(VectorDocument.self, from: data)
             redoStack.append(copy)
         } catch {
-            // Log.info("Error saving to redo stack: \(error)", category: .general)
         }
-        
+
         // Restore previous state
         let previousState = undoStack.removeLast()
-
-        // Log what we're restoring for debugging
-        // Log.info("🔧 UNDO: Previous state has \(previousState.selectedTextIDs.count) text IDs, \(previousState.selectedShapeIDs.count) shape IDs", category: .general)
 
         settings = previousState.settings
         layers = previousState.layers
@@ -69,15 +57,6 @@ extension VectorDocument {
         selectedTextIDs = previousState.selectedTextIDs
         selectedObjectIDs = previousState.selectedObjectIDs
 
-        // Log selection restoration for debugging
-        if !selectedTextIDs.isEmpty {
-            // Log.info("🔧 UNDO: Restored text selection with \(selectedTextIDs.count) text IDs: \(selectedTextIDs)", category: .general)
-        } else {
-            // Log.info("🔧 UNDO: No text selection to restore (selectedTextIDs is empty)", category: .general)
-        }
-        if !selectedShapeIDs.isEmpty {
-            // Log.info("🔧 UNDO: Restored shape selection with \(selectedShapeIDs.count) shape IDs", category: .general)
-        }
         // Text is now stored in unified system
         unifiedObjects = previousState.unifiedObjects
         currentTool = previousState.currentTool
@@ -119,19 +98,14 @@ extension VectorDocument {
         
         // No need to fix ordering - undo restored the exact state that was saved
         // CRITICAL FIX: Sync legacy arrays to ensure consistency
-        syncLegacyArraysAfterUndo()
+        //syncLegacyArraysAfterUndo()
 
         // CRITICAL FIX: DON'T MESS WITH SELECTIONS - JUST RESTORE WHAT WAS SAVED!
         // The selection was already restored above (lines 67-69).
         // All this "validation" and "merging" logic is corrupting the restored selection.
         // If the selection was saved properly, it should be restored properly. Period.
 
-        // LOG FINAL SELECTION STATE AFTER UNDO
-        // Log.info("🔧 UNDO FINAL: selectedShapeIDs = \(selectedShapeIDs), selectedTextIDs = \(selectedTextIDs), selectedObjectIDs = \(selectedObjectIDs)", category: .general)
-
         objectWillChange.send()
-
-        // Log.info("✅ Undo completed - restored state with \(unifiedObjects.count) unified objects", category: .general)
     }
     
     func redo() {
@@ -152,13 +126,11 @@ extension VectorDocument {
                 undoStack.removeFirst()
             }
         } catch {
-            // Log.info("Error saving to undo stack: \(error)", category: .general)
         }
-        
+
         // Restore next state (double-check the stack isn't empty)
-        guard !redoStack.isEmpty else { 
-            // Log.info("Warning: Redo stack became empty during redo operation", category: .general)
-            return 
+        guard !redoStack.isEmpty else {
+            return
         }
         let nextState = redoStack.removeLast()
         settings = nextState.settings
@@ -172,13 +144,6 @@ extension VectorDocument {
         selectedTextIDs = nextState.selectedTextIDs
         selectedObjectIDs = nextState.selectedObjectIDs
 
-        // Log selection restoration for debugging
-        if !selectedTextIDs.isEmpty {
-            // Log.info("🔧 REDO: Restoring text selection with \(selectedTextIDs.count) text IDs", category: .general)
-        }
-        if !selectedShapeIDs.isEmpty {
-            // Log.info("🔧 REDO: Restoring shape selection with \(selectedShapeIDs.count) shape IDs", category: .general)
-        }
         // Text is now stored in unified system
         unifiedObjects = nextState.unifiedObjects
         currentTool = nextState.currentTool
@@ -220,7 +185,7 @@ extension VectorDocument {
         
         // No need to fix ordering - redo restored the exact state that was saved
         // CRITICAL FIX: Sync legacy arrays to ensure consistency
-        syncLegacyArraysAfterUndo()
+        //syncLegacyArraysAfterUndo()
 
         // DON'T CALL syncSelectionArrays() HERE! It clears the selections we just restored!
         // syncSelectionArrays()
@@ -250,16 +215,10 @@ extension VectorDocument {
 
                 // Clear shape selection when text is selected in Font mode
                 selectedShapeIDs.removeAll()
-
-                // Log.info("🔧 REDO: Restored \(validTextIDs.count) text selections in Font mode", category: .general)
-            } else if !validTextIDs.isEmpty {
-                // Log.info("🔧 REDO: Restored \(validTextIDs.count) text selections (tool: \(currentTool))", category: .general)
             }
         }
 
         objectWillChange.send()
-
-        // Log.info("✅ Redo completed - restored state with \(unifiedObjects.count) unified objects", category: .general)
     }
     
     /// CRITICAL FIX: Ensures unified objects are properly ordered after undo/redo operations
@@ -291,10 +250,6 @@ extension VectorDocument {
             let needsFixing = orderIDs != expectedOrderIDs
             
             if needsFixing {
-                // Log.info("🔧 UNDO FIX: OrderIDs inconsistent for layer \(layerIndex), fixing...", category: .general)
-                // Log.info("  Current orderIDs: \(orderIDs)", category: .general)
-                // Log.info("  Expected orderIDs: \(expectedOrderIDs)", category: .general)
-                
                 // CRITICAL: The issue is that the orderIDs are in the wrong order
                 // We need to reverse them so that the last created object (which should be on top) gets the highest orderID
                 let sortedObjects = layerObjects.sorted { $0.orderID < $1.orderID }
@@ -328,72 +283,13 @@ extension VectorDocument {
     
     /// CRITICAL FIX: Special handling for text objects to ensure they maintain their proper order during undo/redo
     private func fixTextObjectOrderingAfterUndo() {
-        // For each layer, ensure text objects maintain their relative position to shapes
-        for layerIndex in layers.indices {
-            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
-            let textObjects = layerObjects.filter { 
-                if case .shape(let shape) = $0.objectType, shape.isTextObject { return true }
-                return false
-            }
-            let shapeObjects = layerObjects.filter { 
-                if case .shape = $0.objectType { return true }
-                return false
-            }
-            
-            // If we have both text and shape objects, ensure text objects don't jump to the top
-            if !textObjects.isEmpty && !shapeObjects.isEmpty {
-                // Log.info("🔧 TEXT ORDER FIX: Layer \(layerIndex) has \(textObjects.count) text objects and \(shapeObjects.count) shape objects", category: .general)
-                
-                // Get the current order of objects by orderID
-                let sortedLayerObjects = layerObjects.sorted { $0.orderID < $1.orderID }
-                
-                // Check if any text objects are at the top when they shouldn't be
-                let topObjects = sortedLayerObjects.suffix(min(3, sortedLayerObjects.count))
-                let textObjectsAtTop = topObjects.filter { 
-                    if case .shape(let shape) = $0.objectType, shape.isTextObject { return true }
-                    return false
-                }
-                
-                if !textObjectsAtTop.isEmpty {
-                    // Log.info("🔧 TEXT ORDER FIX: Found \(textObjectsAtTop.count) text objects at top of layer \(layerIndex), checking if this is correct...", category: .general)
-                    
-                    // If text objects are at the top but there are shapes that should be above them,
-                    // we need to adjust the orderIDs to maintain the original stacking order
-                    // This is a conservative fix - only adjust if it's clearly wrong
-                    let shapeObjectsAtTop = topObjects.filter { 
-                        if case .shape = $0.objectType { return true }
-                        return false
-                    }
-                    
-                    if shapeObjectsAtTop.isEmpty {
-                        // Log.info("🔧 TEXT ORDER FIX: No shape objects at top, text objects at top may be correct", category: .general)
-                    } else {
-                        // Log.info("🔧 TEXT ORDER FIX: Shape objects also at top, maintaining current order", category: .general)
-                    }
-                }
-            }
-        }
     }
-    
-    /// Debug function to log the current order state
-//    private func logCurrentOrderState(_ stage: String) {
-//        // Log.info("🔍 ORDER DEBUG [\(stage)]: Unified objects order state", category: .general)
-//        
-//        for layerIndex in layers.indices {
-//            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
-//            guard !layerObjects.isEmpty else { continue }
-//            
-//            let sortedObjects = layerObjects.sorted { $0.orderID < $1.orderID }
-//            let orderIDs = sortedObjects.map { $0.orderID }
-//        }
-//    }
     
     /// CRITICAL FIX: Sync legacy arrays after undo/redo operations to ensure consistency
-    private func syncLegacyArraysAfterUndo() {
-        // Temporarily disable the undo/redo flag to allow this specific operation
-        let wasUndoRedoOperation = isUndoRedoOperation
-        isUndoRedoOperation = false
-    
-        isUndoRedoOperation = wasUndoRedoOperation
-    }
+//    private func syncLegacyArraysAfterUndo() {
+//        // Temporarily disable the undo/redo flag to allow this specific operation
+//        let wasUndoRedoOperation = isUndoRedoOperation
+//        isUndoRedoOperation = false
+//        isUndoRedoOperation = wasUndoRedoOperation
+//    }
 }
