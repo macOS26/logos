@@ -155,9 +155,9 @@ extension PDFCommandParser {
             Log.error("PDF: Failed to read XObject name", category: .error)
             return
         }
-        
-        let name = String(cString: namePtr!)
-        
+
+        _ = String(cString: namePtr!)
+
         // CRITICAL FIX: Save graphics state BEFORE processing XObject
         // At this point we have the correct outer scope opacity values
         let savedFillOpacity = currentFillOpacity

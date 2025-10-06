@@ -134,8 +134,8 @@ extension FileOperations {
 
         // Select the working layer which contains imported shapes
         document.selectedLayerIndex = 2 // Working layer is at index 2
-        
-        for warning in result.warnings {
+
+        for _ in result.warnings {
         }
 
         return document

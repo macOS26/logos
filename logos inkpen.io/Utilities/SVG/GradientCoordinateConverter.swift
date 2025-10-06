@@ -359,8 +359,7 @@ extension GradientCoordinateConverter {
                     
                     // Ensure final value is within 0-1 range
                     let clampedValue = max(0.0, min(1.0, finalValue))
-                    
-                    let modeLabel = useExtremeValueHandling ? "EXTREME VALUE" : "STANDARD"
+
                     return clampedValue
                 } else {
                     return absoluteValue

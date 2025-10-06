@@ -206,7 +206,7 @@ extension FileOperations {
         
         // Add clipping mask groups
         // CRITICAL: Must add shapes in the correct order for InkPen's clipping mask system
-        for (maskId, maskGroup) in clippingMasks {
+        for (_, maskGroup) in clippingMasks {
             autoreleasepool {
                 // Skip if we don't have a valid mask (placeholder)
                 guard maskGroup.mask.name != "Placeholder" else { return }

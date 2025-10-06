@@ -12,8 +12,6 @@ extension FileOperations {
 
     /// Generate PDF data from VectorDocument with proper clipping path and image support
     static func generatePDFDataWithClippingSupport(from document: VectorDocument, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, includeInkpenData: Bool = false, includeBackground: Bool = true) throws -> Data {
-        let operation = isExport ? "export" : "save"
-
         // Get document dimensions - use sizeInPoints which is already in points
         let documentSize = document.settings.sizeInPoints
 

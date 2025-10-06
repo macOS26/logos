@@ -88,9 +88,6 @@ extension DrawingCanvas {
                 initialObjectTransforms[unifiedObject.id] = shape.transform
             }
         }
-        
-        let shapeCount = selectedObjects.filter { if case .shape = $0.objectType { return true } else { return false } }.count
-        let textCount = selectedObjects.filter { if case .shape(let shape) = $0.objectType, shape.isTextObject { return true } else { return false } }.count
     }
     
     internal func handleSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {

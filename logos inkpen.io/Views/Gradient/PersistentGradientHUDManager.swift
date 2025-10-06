@@ -40,10 +40,7 @@ class PersistentGradientHUDManager {
               onColorSelected: @escaping (UUID, VectorColor) -> Void, onClose: @escaping () -> Void) {
         // 🔥 FIXED: Reset hiding flag when showing
         isHiding = false
-        
-        // Remember if window was already visible to avoid reopening
-        let wasAlreadyVisible = isVisible
-        
+
         // Update state WITHOUT recreating anything
         self.editingStopId = stopId
         self.editingStopColor = color

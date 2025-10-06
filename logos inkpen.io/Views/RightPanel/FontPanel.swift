@@ -147,10 +147,10 @@ struct FontPanel: View {
             // NO CACHE - always use fresh data
         }
         .onChange(of: document.currentTool) { oldTool, newTool in
-            
-            if let editingText = editingText {
+
+            if editingText != nil {
             }
-            if let selectedText = selectedText {
+            if selectedText != nil {
             }
             if selectedText == nil && editingText == nil {
             }
@@ -159,9 +159,9 @@ struct FontPanel: View {
             let removedIDs = oldIDs.subtracting(newIDs)
             let addedIDs = newIDs.subtracting(oldIDs)
 
-            for removedID in removedIDs {
+            for _ in removedIDs {
             }
-            for addedID in addedIDs {
+            for _ in addedIDs {
             }
 
             if let firstID = newIDs.first, let newSelectedText = document.findText(by: firstID) {

@@ -586,14 +586,14 @@ class SVGParser: NSObject, XMLParserDelegate {
             path: vectorPath,
             attributes: attributes
         )
-        
-        if let fill = shape.fillStyle {
+
+        if shape.fillStyle != nil {
         } else {
         }
-        if let stroke = shape.strokeStyle {
+        if shape.strokeStyle != nil {
         } else {
         }
-        
+
         // Apply clipping if needed
         if shouldClip, let clipId = clipPathId {
             applyClipPathToShape(shape, clipPathId: clipId)
