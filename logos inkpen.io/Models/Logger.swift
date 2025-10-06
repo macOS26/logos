@@ -183,20 +183,7 @@ struct Log {
         #endif
         // In Release: immediate return, no work done at all
     }
-    
-    static func startup(_ message: String, level: LogLevel = .info) {
-        #if DEBUG
-        switch level {
-        case .debug: info(message, category: .startup)
-        case .info: info(message, category: .startup)
-        case .warning: warning(message, category: .startup)
-        case .error: error(message, category: .error)
-        case .fault: fault(message, category: .error)
-        }
-        #endif
-        // In Release: immediate return, no work done at all
-    }
-    
+
     static func fileOperation(_ message: String, level: LogLevel = .info) {
         #if DEBUG
         switch level {
