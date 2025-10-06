@@ -887,14 +887,7 @@ struct PageOriginCrosshair: View {
                         .position(point)
                 }
 
-                // Vertical guide line - blue halo
-                Path { path in
-                    path.move(to: CGPoint(x: snappedLocation.x, y: 0))
-                    path.addLine(to: CGPoint(x: snappedLocation.x, y: geometry.size.height))
-                }
-                .stroke(Color.blue.opacity(0.5), lineWidth: 3)
-
-                // Vertical guide line - black/white dashed
+                // Vertical guide line - blue/white dashed
                 Path { path in
                     path.move(to: CGPoint(x: snappedLocation.x, y: 0))
                     path.addLine(to: CGPoint(x: snappedLocation.x, y: geometry.size.height))
@@ -905,16 +898,9 @@ struct PageOriginCrosshair: View {
                     path.move(to: CGPoint(x: snappedLocation.x, y: 0))
                     path.addLine(to: CGPoint(x: snappedLocation.x, y: geometry.size.height))
                 }
-                .stroke(Color.black, style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5], dashPhase: 5))
+                .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5], dashPhase: 5))
 
-                // Horizontal guide line - blue halo
-                Path { path in
-                    path.move(to: CGPoint(x: 0, y: snappedLocation.y))
-                    path.addLine(to: CGPoint(x: geometry.size.width, y: snappedLocation.y))
-                }
-                .stroke(Color.blue.opacity(0.5), lineWidth: 3)
-
-                // Horizontal guide line - black/white dashed
+                // Horizontal guide line - blue/white dashed
                 Path { path in
                     path.move(to: CGPoint(x: 0, y: snappedLocation.y))
                     path.addLine(to: CGPoint(x: geometry.size.width, y: snappedLocation.y))
@@ -925,7 +911,7 @@ struct PageOriginCrosshair: View {
                     path.move(to: CGPoint(x: 0, y: snappedLocation.y))
                     path.addLine(to: CGPoint(x: geometry.size.width, y: snappedLocation.y))
                 }
-                .stroke(Color.black, style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5], dashPhase: 5))
+                .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5], dashPhase: 5))
             }
         }
     }
@@ -961,7 +947,7 @@ struct PageOriginCrosshair: View {
         let canvasWidth = document.settings.sizeInPoints.width
         let canvasHeight = document.settings.sizeInPoints.height
 
-        let snapThreshold: CGFloat = 50.0 // 50 point threshold in canvas space for easier snapping
+        let snapThreshold: CGFloat = 25.0 // 25 point threshold in canvas space
 
         // Define 9 snap points - canvas always starts at (0,0)
         let snapPoints: [CGPoint] = [
