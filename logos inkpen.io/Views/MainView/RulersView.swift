@@ -916,15 +916,15 @@ struct PageOriginCrosshair: View {
     private func applySnapToCanvasPoint(_ canvasPoint: CGPoint) -> CGPoint {
         let pageWidth = document.settings.sizeInPoints.width
         let pageHeight = document.settings.sizeInPoints.height
-        let snapThreshold: CGFloat = 10 / document.zoomLevel // 10 pixels in canvas space
+        let snapThreshold: CGFloat = 10.0 // Fixed 10 point threshold in canvas space
 
         // Define 9 snap points: 4 corners + 4 edge midpoints + 1 center
         let snapPoints: [CGPoint] = [
-            // 4 Corners
-            CGPoint(x: 0, y: 0),                        // Top-left
-            CGPoint(x: pageWidth, y: 0),                // Top-right
-            CGPoint(x: 0, y: pageHeight),               // Bottom-left
-            CGPoint(x: pageWidth, y: pageHeight),       // Bottom-right
+            // 4 Corners - canvas edges
+            CGPoint(x: 0, y: 0),                        // Top-left corner
+            CGPoint(x: pageWidth, y: 0),                // Top-right corner
+            CGPoint(x: 0, y: pageHeight),               // Bottom-left corner
+            CGPoint(x: pageWidth, y: pageHeight),       // Bottom-right corner
 
             // 4 Edge midpoints
             CGPoint(x: pageWidth / 2, y: 0),            // Top edge midpoint
