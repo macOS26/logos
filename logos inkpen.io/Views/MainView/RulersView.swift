@@ -877,17 +877,19 @@ struct PageOriginCrosshair: View {
 
             // Guide lines when dragging - show where the new origin will be
             if isDragging, let dragLocation = currentDragLocation {
+                let snappedLocation = getSnappedScreenLocation(dragLocation)
+
                 // Vertical line
                 Path { path in
-                    path.move(to: CGPoint(x: dragLocation.x, y: 0))
-                    path.addLine(to: CGPoint(x: dragLocation.x, y: geometry.size.height))
+                    path.move(to: CGPoint(x: snappedLocation.x, y: 0))
+                    path.addLine(to: CGPoint(x: snappedLocation.x, y: geometry.size.height))
                 }
                 .stroke(Color.blue.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5]))
 
                 // Horizontal line
                 Path { path in
-                    path.move(to: CGPoint(x: 0, y: dragLocation.y))
-                    path.addLine(to: CGPoint(x: geometry.size.width, y: dragLocation.y))
+                    path.move(to: CGPoint(x: 0, y: snappedLocation.y))
+                    path.addLine(to: CGPoint(x: geometry.size.width, y: snappedLocation.y))
                 }
                 .stroke(Color.blue.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5]))
             }
@@ -900,6 +902,36 @@ struct PageOriginCrosshair: View {
             x: (screenPoint.x - rulerThickness - document.canvasOffset.x) / document.zoomLevel,
             y: (screenPoint.y - rulerThickness - document.canvasOffset.y) / document.zoomLevel
         )
+    }
+
+    // Convert canvas coordinates to screen coordinates
+    private func canvasToScreenPosition(_ canvasPoint: CGPoint) -> CGPoint {
+        CGPoint(
+            x: canvasPoint.x * document.zoomLevel + document.canvasOffset.x + rulerThickness,
+            y: canvasPoint.y * document.zoomLevel + document.canvasOffset.y + rulerThickness
+        )
+    }
+
+    // Get snapped screen location with snap-to-center logic
+    private func getSnappedScreenLocation(_ screenPoint: CGPoint) -> CGPoint {
+        var canvasPoint = screenToCanvasPosition(screenPoint)
+
+        // Snap to page center if close
+        let pageCenter = CGPoint(
+            x: document.settings.sizeInPoints.width / 2,
+            y: document.settings.sizeInPoints.height / 2
+        )
+
+        let snapThreshold: CGFloat = 10 / document.zoomLevel // 10 pixels in canvas space
+
+        if abs(canvasPoint.x - pageCenter.x) < snapThreshold {
+            canvasPoint.x = pageCenter.x
+        }
+        if abs(canvasPoint.y - pageCenter.y) < snapThreshold {
+            canvasPoint.y = pageCenter.y
+        }
+
+        return canvasToScreenPosition(canvasPoint)
     }
 
     private func updatePageOrigin(screenLocation: CGPoint) {
