@@ -879,15 +879,15 @@ struct PageOriginCrosshair: View {
             if isDragging, let dragLocation = currentDragLocation {
                 let snappedLocation = getSnappedScreenLocation(dragLocation)
 
-                // Show all snap points in blue
+                // Show all snap points in red
                 ForEach(getSnapPointsInScreenSpace(), id: \.debugDescription) { point in
                     Circle()
-                        .fill(Color.blue.opacity(0.7))
+                        .fill(Color.red.opacity(0.7))
                         .frame(width: 8, height: 8)
                         .position(point)
                 }
 
-                // Vertical guide line - blue/white dashed
+                // Vertical guide line - black/white dashed
                 Path { path in
                     path.move(to: CGPoint(x: snappedLocation.x, y: 0))
                     path.addLine(to: CGPoint(x: snappedLocation.x, y: geometry.size.height))
@@ -898,9 +898,9 @@ struct PageOriginCrosshair: View {
                     path.move(to: CGPoint(x: snappedLocation.x, y: 0))
                     path.addLine(to: CGPoint(x: snappedLocation.x, y: geometry.size.height))
                 }
-                .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5], dashPhase: 5))
+                .stroke(Color.black, style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5], dashPhase: 5))
 
-                // Horizontal guide line - blue/white dashed
+                // Horizontal guide line - black/white dashed
                 Path { path in
                     path.move(to: CGPoint(x: 0, y: snappedLocation.y))
                     path.addLine(to: CGPoint(x: geometry.size.width, y: snappedLocation.y))
@@ -911,7 +911,7 @@ struct PageOriginCrosshair: View {
                     path.move(to: CGPoint(x: 0, y: snappedLocation.y))
                     path.addLine(to: CGPoint(x: geometry.size.width, y: snappedLocation.y))
                 }
-                .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5], dashPhase: 5))
+                .stroke(Color.black, style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5], dashPhase: 5))
             }
         }
     }
@@ -1021,25 +1021,27 @@ struct PageOriginCrosshair: View {
 
 struct CrosshairIcon: View {
     var body: some View {
-        ZStack {
-            // Background
-            Rectangle()
-                .fill(Color.ui.controlBackground)
+        GeometryReader { geometry in
+            ZStack {
+                // Background
+                Rectangle()
+                    .fill(Color.ui.controlBackground)
 
-            // Simple gray crosshair symbol (no effects)
-            Path { path in
-                // Horizontal line
-                path.move(to: CGPoint(x: 4, y: 10))
-                path.addLine(to: CGPoint(x: 16, y: 10))
-                // Vertical line
-                path.move(to: CGPoint(x: 10, y: 4))
-                path.addLine(to: CGPoint(x: 10, y: 16))
+                // Crosshair extending to edges
+                Path { path in
+                    // Horizontal line (full width)
+                    path.move(to: CGPoint(x: 0, y: geometry.size.height / 2))
+                    path.addLine(to: CGPoint(x: geometry.size.width, y: geometry.size.height / 2))
+                    // Vertical line (full height)
+                    path.move(to: CGPoint(x: geometry.size.width / 2, y: 0))
+                    path.addLine(to: CGPoint(x: geometry.size.width / 2, y: geometry.size.height))
+                }
+                .stroke(Color.gray, lineWidth: 1.5)
+
+                // Border
+                Rectangle()
+                    .stroke(Color.ui.lightGrayBorder, lineWidth: 0.5)
             }
-            .stroke(Color.gray, lineWidth: 1.5)
-
-            // Border
-            Rectangle()
-                .stroke(Color.ui.lightGrayBorder, lineWidth: 0.5)
         }
         .contentShape(Rectangle())
     }
