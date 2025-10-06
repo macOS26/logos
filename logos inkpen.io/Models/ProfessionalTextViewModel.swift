@@ -131,7 +131,13 @@ class ProfessionalTextViewModel: ObservableObject {
             abs(self.textBoxFrame.origin.y - textObject.position.y) > 0.1
         )
 
-        if !shouldSyncContent && !fontChanged && !editingChanged && !colorChanged && !typographyChanged && !positionChanged {
+        // CRITICAL FIX: Check for size changes from transformation box resize
+        let sizeChanged = (
+            abs(self.textBoxFrame.width - textObject.bounds.width) > 0.1 ||
+            abs(self.textBoxFrame.height - textObject.bounds.height) > 0.1
+        )
+
+        if !shouldSyncContent && !fontChanged && !editingChanged && !colorChanged && !typographyChanged && !positionChanged && !sizeChanged {
             return // No changes, skip sync
         }
 
@@ -173,13 +179,13 @@ class ProfessionalTextViewModel: ObservableObject {
         // This was causing performance issues with rapid font changes
         // NO MANUAL REFRESH NEEDED - SwiftUI handles this automatically
 
-        // CRITICAL FIX: NEVER override user's manual resize - ONLY sync position
-        // Text box size is ENTIRELY controlled by user manual resize and auto-resize
+        // CRITICAL FIX: Sync both position AND size from document
+        // Size can change from transformation box resize, position from dragging
         self.textBoxFrame = CGRect(
             x: textObject.position.x,
             y: textObject.position.y,
-            width: self.textBoxFrame.width,   // PRESERVE USER'S WIDTH
-            height: self.textBoxFrame.height  // PRESERVE USER'S HEIGHT
+            width: textObject.bounds.width,   // USE DOCUMENT SIZE (updated by transformation)
+            height: textObject.bounds.height  // USE DOCUMENT SIZE (updated by transformation)
         )
 
     }
