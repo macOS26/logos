@@ -60,10 +60,7 @@ extension DrawingCanvas {
             let hits = textContentArea.contains(location) || 
                       exactBounds.contains(location) || 
                       expandedBounds.contains(location)
-            
-            if hits {
-            }
-            
+
             return hits
         }
         
@@ -78,9 +75,8 @@ extension DrawingCanvas {
                     document.setTextEditingInUnified(id: shape.id, isEditing: false)
                 }
             }
-            
+
             finishTextEditing()
-        } else {
         }
     }
     
@@ -202,9 +198,9 @@ extension DrawingCanvas {
                 } else if document.currentTool == .font {
                     // Single click with font tool active - start editing
                     startEditingText(textID: textID, at: .zero)
-                } else {
                 }
-                
+
+
             case .editing: // BLUE
                 // Already editing - do nothing
                 break
@@ -815,15 +811,11 @@ extension DrawingCanvas {
     
     /// Reset text box drawing state
     func resetTextBoxDrawingState() {
-        let wasDrawing = isDrawing
         isDrawing = false
         currentPath = nil
         shapeDragStart = CGPoint.zero
         shapeStartPoint = CGPoint.zero
         drawingStartPoint = nil
-        
-        if wasDrawing {
-        }
     }
     
     /// Check if location is on a text box resize handle
