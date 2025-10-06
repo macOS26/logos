@@ -311,8 +311,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             if isInInkpenDocument {
                 // Trim and store the base64 content
                 inkpenMetadata = currentMetadataContent.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !inkpenMetadata!.isEmpty {
-                }
                 isInInkpenDocument = false
                 currentMetadataContent = ""
             }
@@ -341,8 +339,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             // Pop clip path stack when exiting group
             if !clipPathStack.isEmpty {
                 let previousClipPath = clipPathStack.removeLast()
-                if pendingClipPathId != previousClipPath {
-                }
                 pendingClipPathId = previousClipPath
             } else if pendingClipPathId != nil {
                 pendingClipPathId = nil
@@ -586,13 +582,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             path: vectorPath,
             attributes: attributes
         )
-
-        if shape.fillStyle != nil {
-        } else {
-        }
-        if shape.strokeStyle != nil {
-        } else {
-        }
 
         // Apply clipping if needed
         if shouldClip, let clipId = clipPathId {

@@ -123,20 +123,14 @@ extension FileOperations {
                     Log.error("PDF IMPORT: ❌ Failed to create NSImage from \(imageData.count) bytes of data", category: .error)
                     Log.error("❌ Could not create NSImage from embedded data for '\(importedShape.name)'", category: .error)
                 }
-            } else {
             }
 
             // Add shape to unified system (layer index 2 for working layer)
-            if importedShape.isTextObject {
-            }
             document.addShapeToUnifiedSystem(importedShape, layerIndex: 2)
         }
 
         // Select the working layer which contains imported shapes
         document.selectedLayerIndex = 2 // Working layer is at index 2
-
-        for _ in result.warnings {
-        }
 
         return document
     }
