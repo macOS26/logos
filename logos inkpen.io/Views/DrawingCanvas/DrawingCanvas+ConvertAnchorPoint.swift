@@ -33,11 +33,9 @@ extension DrawingCanvas {
             enableDirectSelectionForConvertedPoint(shapeID: collapseResult.shapeID, elementIndex: collapseResult.elementIndex)
             return
         }
-        
+
         // If no handle was clicked, try to select the shape for direct selection UI
         tryToSelectShapeForConvertTool(at: location)
-        
-        // Log.info("Convert Anchor Point: No handle found at location \(location)", category: .general)
     }
     
     // MARK: - Handle Collapse and Restore Functionality
@@ -89,19 +87,17 @@ extension DrawingCanvas {
                             // Check if this element's handles belong to the clicked anchor point
                             let control1Collapsed = (abs(control1.x - anchorPoint.x) < 0.1 && abs(control1.y - anchorPoint.y) < 0.1)
                             let control2Collapsed = (abs(control2.x - anchorPoint.x) < 0.1 && abs(control2.y - anchorPoint.y) < 0.1)
-                            
+
                             if control1Collapsed || control2Collapsed {
                                 hasCollapsedHandles = true
-                                // Log.info("🎯 FOUND COLLAPSED HANDLE: Element \(checkIndex) has handle collapsed to anchor point", category: .general)
                             }
                             
                         default:
                             break
                         }
                     }
-                    
+
                     if hasCollapsedHandles {
-                        // Log.info("🎯 FOUND COLLAPSED HANDLES: Restoring all handles for anchor point at element \(elementIndex)", category: .general)
                         restoreAllHandlesForAnchorPoint(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex, anchorPoint: anchorPoint)
                         return (shape.id, elementIndex)
                     }
@@ -114,9 +110,8 @@ extension DrawingCanvas {
                             // Check if both handles are extended (not collapsed to the anchor point)
                             let control1Extended = !(abs(control1.x - anchorPoint.x) < 0.1 && abs(control1.y - anchorPoint.y) < 0.1)
                             let control2Extended = !(abs(control2.x - anchorPoint.x) < 0.1 && abs(control2.y - anchorPoint.y) < 0.1)
-                            
+
                             if control1Extended && control2Extended {
-                                // Log.info("🎯 BOTH HANDLES EXTENDED: Collapsing both handles for anchor point at element \(elementIndex)", category: .general)
                                 collapseBothHandlesForAnchorPoint(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex, anchorPoint: anchorPoint)
                                 return (shape.id, elementIndex)
                             }
@@ -270,29 +265,25 @@ extension DrawingCanvas {
             // Sync unified objects system after path changes
             document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
-            
-            // Log.info("✅ COLLAPSED CONTROL1 HANDLE: Handle collapsed to its anchor point", category: .fileOperations)
-            
+
         case .quadCurve(let to, _):
             // For quadCurve, collapsing the handle converts it to a line
             elements[elementIndex] = .line(to: to)
-            
+
             var updatedShape = shape
             updatedShape.path.elements = elements
             updatedShape.updateBounds()
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-            
+
             // Sync unified objects system after path changes
             document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
-            
-            // Log.info("✅ COLLAPSED QUAD HANDLE: Converted to line (corner)", category: .fileOperations)
-            
+
         default:
             break
         }
     }
-    
+
     /// Collapses the control2 handle of a curve element to its anchor point
     func collapseControl2Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
@@ -323,24 +314,20 @@ extension DrawingCanvas {
             // Sync unified objects system after path changes
             document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
-            
-            // Log.info("✅ COLLAPSED CONTROL2 HANDLE: Handle collapsed to its anchor point", category: .fileOperations)
-            
+
         case .quadCurve(let to, _):
             // For quadCurve, collapsing the handle converts it to a line
             elements[elementIndex] = .line(to: to)
-            
+
             var updatedShape = shape
             updatedShape.path.elements = elements
             updatedShape.updateBounds()
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-            
+
             // Sync unified objects system after path changes
             document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
-            
-            // Log.info("✅ COLLAPSED QUAD HANDLE: Converted to line (corner)", category: .fileOperations)
-            
+
         default:
             break
         }
@@ -453,9 +440,7 @@ extension DrawingCanvas {
             // Sync unified objects system after path changes
             document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
-            
-            // Log.info("✅ RESTORED CURVE HANDLES: Handles restored to reasonable positions", category: .fileOperations)
-            
+
         default:
             break
         }
@@ -519,9 +504,7 @@ extension DrawingCanvas {
             // Sync unified objects system after path changes
             document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
-            
-            // Log.info("✅ RESTORED NEXT ELEMENT CONTROL1 HANDLE: Handle restored to reasonable position", category: .fileOperations)
-            
+
         default:
             break
         }
@@ -556,7 +539,6 @@ extension DrawingCanvas {
                     if let originalPosition = document.originalHandlePositions[control1Key] {
                         restoredControl1 = originalPosition
                         elementNeedsUpdate = true
-                        // Log.info("🎯 RESTORE: Restoring control1 for element \(checkIndex)", category: .general)
                     }
                 }
                 
@@ -566,7 +548,6 @@ extension DrawingCanvas {
                     if let originalPosition = document.originalHandlePositions[control2Key] {
                         restoredControl2 = originalPosition
                         elementNeedsUpdate = true
-                        // Log.info("🎯 RESTORE: Restoring control2 for element \(checkIndex)", category: .general)
                     }
                 }
                 
@@ -586,8 +567,6 @@ extension DrawingCanvas {
             // Sync unified objects system after path changes
             document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
-            
-            // Log.info("✅ RESTORED ALL HANDLES: All handles for anchor point restored to original positions", category: .fileOperations)
         }
     }
     
@@ -616,7 +595,6 @@ extension DrawingCanvas {
                     let collapsedControl2 = VectorPoint(anchorPoint.x, anchorPoint.y)
                     elements[checkIndex] = .curve(to: to, control1: control1, control2: collapsedControl2)
                     needsUpdate = true
-                    // Log.info("🎯 COLLAPSE: Collapsed control2 for element \(checkIndex)", category: .general)
                 }
                 
                 // Check if this element's control1 belongs to the clicked anchor point (outgoing handle from this anchor point)
@@ -641,7 +619,6 @@ extension DrawingCanvas {
                         let collapsedControl1 = VectorPoint(anchorPoint.x, anchorPoint.y)
                         elements[checkIndex] = .curve(to: to, control1: collapsedControl1, control2: control2)
                         needsUpdate = true
-                        // Log.info("🎯 COLLAPSE: Collapsed control1 for element \(checkIndex)", category: .general)
                     }
                 }
             }
@@ -656,8 +633,6 @@ extension DrawingCanvas {
             // Sync unified objects system after path changes
             document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
-            
-            // Log.info("✅ COLLAPSED ALL HANDLES: All handles for anchor point collapsed to anchor point", category: .fileOperations)
         }
     }
     
@@ -684,10 +659,9 @@ extension DrawingCanvas {
                 // Use the same hit testing logic as selection tool
                 // CRITICAL FIX: Background shapes (Canvas/Pasteboard) should NEVER be selectable
                 let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
-                
+
                 if isBackgroundShape {
                     // SKIP background shapes entirely - they should not be selectable
-                    // Log.info("  - Background shape '\(shape.name)' SKIPPED - not selectable", category: .general)
                     continue
                 } else {
                     // Regular shapes: Use different logic for stroke vs filled
@@ -714,8 +688,6 @@ extension DrawingCanvas {
                 if isHit {
                     // IMPROVED LOCKED BEHAVIOR: Handle locked layers/objects properly
                     if layer.isLocked || shape.isLocked {
-                        
-                        // Log.info("🚫 Convert Point Tool clicked on \(lockType) '\(shape.name)' - deselecting current selection", category: .general)
                         selectedPoints.removeAll()
                         selectedHandles.removeAll()
                         directSelectedShapeIDs.removeAll()
@@ -780,8 +752,5 @@ extension DrawingCanvas {
         document.objectWillChange.send()
         
         Log.fileOperation("🎯 CONVERT POINT TOOL: Enabled direct selection UI (tool stays active)", level: .info)
-        // Log.info("  - Shape: \(shapeID)", category: .general)
-        // Log.info("  - Point: Element \(elementIndex)", category: .general)
-        // Log.info("  - User can see bezier handles while continuing to use Convert Point tool", category: .general)
     }
 }
