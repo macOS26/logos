@@ -127,7 +127,7 @@ struct TransformBoxHandles: View {
                 let pt = handlePosition(index: index, in: transformedBounds)
                 let isAnchorPoint = isHandleTheAnchor(index: index)
                 let isAdjacentToAnchor = isHandleAdjacentToAnchor(index: index)
-                let isDisabled = isAdjacentToAnchor
+                let isDisabled = isAnchorPoint || isAdjacentToAnchor
 
                 ZStack {
                     // Invisible expanded hit area for easier selection (disabled for adjacent handles)
