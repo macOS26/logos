@@ -724,7 +724,7 @@ class ProfessionalTextViewModel: ObservableObject {
     }
 
     // MARK: - Cursor Position Calculation
-    private func calculateCursorPosition(in textObj: VectorText, at tapLocation: CGPoint) -> Int {
+    private func calculateCursorPosition(in _: VectorText, at _: CGPoint) -> Int {
         // Simple cursor positioning: place cursor at the beginning for now
         // This can be enhanced later with more sophisticated text layout analysis
         return 0
