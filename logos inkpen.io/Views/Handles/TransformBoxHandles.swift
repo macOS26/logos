@@ -279,6 +279,12 @@ struct TransformBoxHandles: View {
 
             previewTransform = scaleTransform  // Direct transform, no concatenation
             document.isHandleScalingActive = true
+
+            // TEXT OBJECTS: Update live preview during drag
+            if shape.isTextObject {
+                updateTextObjectLivePreview(transform: scaleTransform)
+            }
+
             document.objectWillChange.send()
             return
         }
@@ -345,6 +351,11 @@ struct TransformBoxHandles: View {
         let currentBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         let newBounds = currentBounds.applying(scaleTransform)
         document.scalePreviewDimensions = CGSize(width: newBounds.width, height: newBounds.height)
+
+        // TEXT OBJECTS: Update live preview during drag
+        if shape.isTextObject {
+            updateTextObjectLivePreview(transform: scaleTransform)
+        }
 
         document.objectWillChange.send()
     }
@@ -498,5 +509,29 @@ struct TransformBoxHandles: View {
             let newPath = VectorPath(elements: transformedElements, isClosed: targetShape.path.isClosed)
             document.updateShapeTransformAndPathInUnified(id: targetShape.id, path: newPath, transform: .identity)
         }
+    }
+
+    // LIVE PREVIEW: Update text object size/position during drag for interactive feedback
+    private func updateTextObjectLivePreview(transform: CGAffineTransform) {
+        guard let originalPosition = shape.textPosition,
+              let originalAreaSize = shape.areaSize else { return }
+
+        // Extract scale from transform
+        let scaleX = sqrt(transform.a * transform.a + transform.c * transform.c)
+        let scaleY = sqrt(transform.b * transform.b + transform.d * transform.d)
+
+        // Calculate new dimensions
+        let newWidth = originalAreaSize.width * scaleX
+        let newHeight = originalAreaSize.height * scaleY
+
+        // Calculate new position from transformed bounds
+        let originalBounds = CGRect(x: originalPosition.x, y: originalPosition.y, width: originalAreaSize.width, height: originalAreaSize.height)
+        let transformedBounds = originalBounds.applying(transform)
+        let newPosition = CGPoint(x: transformedBounds.minX, y: transformedBounds.minY)
+
+        // Update in unified system for live preview (temporary until drag ends)
+        document.updateTextAreaSizeInUnified(id: shape.id, areaSize: CGSize(width: newWidth, height: newHeight))
+        document.updateTextBoundsInUnified(id: shape.id, bounds: CGRect(x: 0, y: 0, width: newWidth, height: newHeight))
+        document.updateTextPositionInUnified(id: shape.id, position: newPosition)
     }
 }
