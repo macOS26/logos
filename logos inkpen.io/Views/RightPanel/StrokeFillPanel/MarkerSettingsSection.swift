@@ -14,7 +14,7 @@ struct MarkerSettingsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Image(systemName: "pen")
+                Image(systemName: "pencil.tip")
                     .foregroundColor(.accentColor)
                 Text("Marker Settings")
                     .font(.headline)
