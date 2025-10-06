@@ -41,7 +41,6 @@ extension PDFCommandParser {
                    let parentXObject = parentXObjectRef {
                     foundXObject = parentXObject
                     foundResourcesDict = parentResources
-                } else {
                 }
             }
         }
@@ -151,8 +150,6 @@ extension PDFCommandParser {
                                           savedFillOpacity: savedFillOpacity, 
                                           savedStrokeOpacity: savedStrokeOpacity,
                                           resourcesDict: resourcesDict)
-            
-        } else {
         }
     }
     
@@ -183,7 +180,6 @@ extension PDFCommandParser {
                                  savedFillOpacity: savedFillOpacity, 
                                  savedStrokeOpacity: savedStrokeOpacity,
                                  resourcesDict: resourcesDict)
-        } else {
         }
     }
     
@@ -310,8 +306,6 @@ extension PDFCommandParser {
                 if i >= 1,
                    let xobjectName = operations[i - 1].hasPrefix("/") ? String(operations[i - 1].dropFirst()) : nil {
                     // Handle nested XObjects - this is likely where the black background is!
-                    if xobjectName == "Fm2" {
-                    }
                     // CRITICAL FIX: Pass the current XObject's resources as parent for nested lookup
                     // Use the image-supporting version for nested XObjects
                     processXObjectWithImageSupport(name: xobjectName)
@@ -332,7 +326,6 @@ extension PDFCommandParser {
                     currentFillOpacity = tempFillOpacity  
                     currentStrokeOpacity = tempStrokeOpacity
                     hasPath = false
-                } else {
                 }
                 i += 1
                 
