@@ -887,19 +887,45 @@ struct PageOriginCrosshair: View {
                         .position(point)
                 }
 
-                // Vertical line
+                // Vertical guide line - blue halo
                 Path { path in
                     path.move(to: CGPoint(x: snappedLocation.x, y: 0))
                     path.addLine(to: CGPoint(x: snappedLocation.x, y: geometry.size.height))
                 }
-                .stroke(Color.blue.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5]))
+                .stroke(Color.blue.opacity(0.5), lineWidth: 3)
 
-                // Horizontal line
+                // Vertical guide line - black/white dashed
+                Path { path in
+                    path.move(to: CGPoint(x: snappedLocation.x, y: 0))
+                    path.addLine(to: CGPoint(x: snappedLocation.x, y: geometry.size.height))
+                }
+                .stroke(Color.white, style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5]))
+
+                Path { path in
+                    path.move(to: CGPoint(x: snappedLocation.x, y: 0))
+                    path.addLine(to: CGPoint(x: snappedLocation.x, y: geometry.size.height))
+                }
+                .stroke(Color.black, style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5], dashPhase: 5))
+
+                // Horizontal guide line - blue halo
                 Path { path in
                     path.move(to: CGPoint(x: 0, y: snappedLocation.y))
                     path.addLine(to: CGPoint(x: geometry.size.width, y: snappedLocation.y))
                 }
-                .stroke(Color.blue.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5]))
+                .stroke(Color.blue.opacity(0.5), lineWidth: 3)
+
+                // Horizontal guide line - black/white dashed
+                Path { path in
+                    path.move(to: CGPoint(x: 0, y: snappedLocation.y))
+                    path.addLine(to: CGPoint(x: geometry.size.width, y: snappedLocation.y))
+                }
+                .stroke(Color.white, style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5]))
+
+                Path { path in
+                    path.move(to: CGPoint(x: 0, y: snappedLocation.y))
+                    path.addLine(to: CGPoint(x: geometry.size.width, y: snappedLocation.y))
+                }
+                .stroke(Color.black, style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5], dashPhase: 5))
             }
         }
     }
@@ -1014,7 +1040,7 @@ struct CrosshairIcon: View {
             Rectangle()
                 .fill(Color.ui.controlBackground)
 
-            // Crosshair symbol with white halo
+            // Simple gray crosshair symbol (no effects)
             Path { path in
                 // Horizontal line
                 path.move(to: CGPoint(x: 4, y: 10))
@@ -1023,18 +1049,7 @@ struct CrosshairIcon: View {
                 path.move(to: CGPoint(x: 10, y: 4))
                 path.addLine(to: CGPoint(x: 10, y: 16))
             }
-            .stroke(Color.white.opacity(0.5), lineWidth: 2.5)  // 1px halo at 50% white
-
-            // Blue crosshair on top
-            Path { path in
-                // Horizontal line
-                path.move(to: CGPoint(x: 4, y: 10))
-                path.addLine(to: CGPoint(x: 16, y: 10))
-                // Vertical line
-                path.move(to: CGPoint(x: 10, y: 4))
-                path.addLine(to: CGPoint(x: 10, y: 16))
-            }
-            .stroke(Color.blue, lineWidth: 1.5)
+            .stroke(Color.gray, lineWidth: 1.5)
 
             // Border
             Rectangle()
