@@ -372,14 +372,24 @@ struct TransformBoxHandles: View {
                 let scaleY = sqrt(previewTransform.b * previewTransform.b + previewTransform.d * previewTransform.d)
 
                 // Calculate new dimensions from original areaSize
-                if let originalAreaSize = currentShape.areaSize {
+                if let originalAreaSize = currentShape.areaSize, let originalPosition = currentShape.textPosition {
                     let newWidth = originalAreaSize.width * scaleX
                     let newHeight = originalAreaSize.height * scaleY
+
+                    // CRITICAL: Calculate new position based on anchor point and scale
+                    // The anchor point (transform origin) stays fixed, position moves accordingly
+                    let originalBounds = CGRect(x: originalPosition.x, y: originalPosition.y, width: originalAreaSize.width, height: originalAreaSize.height)
+                    let transformedBounds = originalBounds.applying(previewTransform)
+
+                    // New position is the top-left of the transformed bounds
+                    let newPosition = CGPoint(x: transformedBounds.minX, y: transformedBounds.minY)
 
                     // Update areaSize (this is what text tool does)
                     updatedShape.areaSize = CGSize(width: newWidth, height: newHeight)
                     // Update bounds to match areaSize
                     updatedShape.bounds = CGRect(x: 0, y: 0, width: newWidth, height: newHeight)
+                    // Update position to account for anchor point
+                    updatedShape.textPosition = newPosition
                     // Keep transform identity for text objects
                     updatedShape.transform = .identity
 
@@ -388,6 +398,7 @@ struct TransformBoxHandles: View {
                     // Also update in unified system
                     document.updateTextAreaSizeInUnified(id: currentShape.id, areaSize: CGSize(width: newWidth, height: newHeight))
                     document.updateTextBoundsInUnified(id: currentShape.id, bounds: CGRect(x: 0, y: 0, width: newWidth, height: newHeight))
+                    document.updateTextPositionInUnified(id: currentShape.id, position: newPosition)
                 }
             } else if ImageContentRegistry.containsImage(currentShape) {
                 // RASTER IMAGES: Keep transforms on transform property instead of baking into path
