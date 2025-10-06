@@ -182,8 +182,6 @@ struct ProfessionalTextCanvas: View {
         }
 
         if oldState != textBoxState {
-            // LOG TEXT POSITION ON STATE CHANGE
-
             // VECTOR APP OPTIMIZATION: Save text to document when exiting editing mode
             if oldState == .blue && (textBoxState == .green || textBoxState == .gray) {
                 // Save final text content and bounds to document
