@@ -1139,9 +1139,10 @@ extension DrawingCanvas {
 
         guard points.count > 2 else { return path }
 
-        // Calculate tolerance based on simplify amount (50-100% maps to tolerance 2.0-10.0)
+        // Calculate tolerance based on simplify amount (50-100% maps to tolerance 1.0-4.0)
+        // Less aggressive than before to preserve shape better
         let normalizedAmount = (simplifyAmount - 50.0) / 50.0 // 0.0 to 1.0
-        let tolerance = 2.0 + (normalizedAmount * 8.0) // 2.0 to 10.0
+        let tolerance = 1.0 + (normalizedAmount * 3.0) // 1.0 to 4.0
 
         // Apply Douglas-Peucker simplification
         let simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
@@ -1149,14 +1150,24 @@ extension DrawingCanvas {
             tolerance: tolerance
         )
 
-        // Rebuild path with simplified points
+        // Rebuild path with smooth bezier curves instead of straight lines
         guard simplifiedPoints.count > 1 else { return path }
 
         var newElements: [PathElement] = []
         newElements.append(.move(to: VectorPoint(simplifiedPoints[0])))
 
-        for i in 1..<simplifiedPoints.count {
-            newElements.append(.line(to: VectorPoint(simplifiedPoints[i])))
+        // Use smooth bezier curves through simplified points
+        if simplifiedPoints.count == 2 {
+            newElements.append(.line(to: VectorPoint(simplifiedPoints[1])))
+        } else {
+            // Generate smooth curves using adaptive curve fitting
+            let curveSegments = CurveSmoothing.adaptiveCurveFitting(
+                points: simplifiedPoints,
+                adaptiveTension: true,
+                baseTension: 0.3
+            )
+            // Skip the first move element since we already added it
+            newElements.append(contentsOf: curveSegments.dropFirst())
         }
 
         // Preserve close element if original had one
