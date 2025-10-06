@@ -313,7 +313,12 @@ extension DrawingCanvas {
                 // REGULAR CLICK: Replace selection
                 document.selectedObjectIDs = [objectToSelect.id]
             }
-            
+
+            // TEXT OBJECTS: Set transform origin to top-left by default
+            if case .shape(let shape) = objectToSelect.objectType, shape.isTextObject {
+                document.transformOrigin = .topLeft
+            }
+
             // Update selected layer
             document.selectedLayerIndex = objectToSelect.layerIndex
             
