@@ -856,28 +856,26 @@ struct PageOriginCrosshair: View {
     @State private var currentDragLocation: CGPoint?
 
     var body: some View {
-        let origin = effectiveOrigin
-        let crosshairScreenPos = originToScreenPosition(origin)
-
         ZStack {
-            // Crosshair icon - positioned based on current origin
+            // Crosshair icon - fixed at top-left corner
             CrosshairIcon()
                 .frame(width: rulerThickness, height: rulerThickness)
-                .position(x: crosshairScreenPos.x, y: crosshairScreenPos.y)
+                .position(x: rulerThickness / 2, y: rulerThickness / 2)
                 .gesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in
                             isDragging = true
                             currentDragLocation = value.location
-                            updatePageOrigin(screenLocation: value.location)
                         }
-                        .onEnded { _ in
+                        .onEnded { value in
                             isDragging = false
                             currentDragLocation = nil
+                            // Update page origin only when drag ends
+                            updatePageOrigin(screenLocation: value.location)
                         }
                 )
 
-            // Crosshair lines when dragging
+            // Guide lines when dragging - show where the new origin will be
             if isDragging, let dragLocation = currentDragLocation {
                 // Vertical line
                 Path { path in
@@ -894,18 +892,6 @@ struct PageOriginCrosshair: View {
                 .stroke(Color.blue.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5]))
             }
         }
-    }
-
-    private var effectiveOrigin: CGPoint {
-        document.settings.pageOrigin ?? .zero
-    }
-
-    // Convert canvas coordinates to screen position (accounting for zoom and offset)
-    private func originToScreenPosition(_ canvasPoint: CGPoint) -> CGPoint {
-        CGPoint(
-            x: canvasPoint.x * document.zoomLevel + document.canvasOffset.x + rulerThickness,
-            y: canvasPoint.y * document.zoomLevel + document.canvasOffset.y + rulerThickness
-        )
     }
 
     // Convert screen coordinates to canvas coordinates
