@@ -162,20 +162,14 @@ struct ProfessionalTextCanvas: View {
 
         // CRITICAL RULE: NO blue text boxes can exist unless font tool is selected
         let isTextToolActive = document.currentTool == .font
-        let hasTextViewFocus = NSApp.keyWindow?.firstResponder is NSTextView
         let isThisTextSelected = selectedIDs.contains(currentTextObject.id) // Use current document object
 
-        // State check - reduced logging for performance
-
-        // CRITICAL FIX: Only allow blue (editing) mode when font tool is active
+        // CRITICAL FIX: Only allow blue (editing) mode when font tool is active AND isEditing is true
+        // REMOVED hasTextViewFocus check - it was matching ANY NSTextView, causing ALL text boxes to go blue!
         if isTextToolActive && currentTextObject.isEditing {
             textBoxState = .blue
-        } else if isTextToolActive && hasTextViewFocus {
-            textBoxState = .blue
-        } else if isTextToolActive && isThisTextSelected {
-            // FIXED: When text is selected AND font tool is active, go to BLUE (editing) mode, not GREEN!
-            textBoxState = .blue
         } else if isThisTextSelected {
+            // When selected, stay GREEN unless explicitly in editing mode
             textBoxState = .green
         } else {
             textBoxState = .gray
