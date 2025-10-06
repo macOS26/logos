@@ -922,39 +922,29 @@ struct PageOriginCrosshair: View {
 
     // Apply 9-point snap logic to a canvas point
     private func applySnapToCanvasPoint(_ canvasPoint: CGPoint) -> CGPoint {
-        // Get actual canvas background bounds
-        let canvasBackground = document.getObjectsInStackingOrder().first { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.name == "Canvas Background"
-            }
-            return false
-        }
-
-        var canvasBounds = CGRect(x: 0, y: 0, width: document.settings.sizeInPoints.width, height: document.settings.sizeInPoints.height)
-        if let canvasBackground = canvasBackground,
-           case .shape(let shape) = canvasBackground.objectType {
-            canvasBounds = shape.bounds
-            print("Canvas Background bounds: \(canvasBounds)")
-        }
+        // Canvas is always created at (0,0) with size = settings.sizeInPoints
+        // See VectorDocument+CanvasManagement.swift line 47-50
+        let canvasWidth = document.settings.sizeInPoints.width
+        let canvasHeight = document.settings.sizeInPoints.height
 
         let snapThreshold: CGFloat = 50.0 // 50 point threshold in canvas space for easier snapping
 
-        // Define 9 snap points using actual canvas background bounds
+        // Define 9 snap points - canvas always starts at (0,0)
         let snapPoints: [CGPoint] = [
-            // 4 Corners - actual canvas edges
-            CGPoint(x: canvasBounds.minX, y: canvasBounds.minY),      // Top-left corner
-            CGPoint(x: canvasBounds.maxX, y: canvasBounds.minY),      // Top-right corner
-            CGPoint(x: canvasBounds.minX, y: canvasBounds.maxY),      // Bottom-left corner
-            CGPoint(x: canvasBounds.maxX, y: canvasBounds.maxY),      // Bottom-right corner
+            // 4 Corners
+            CGPoint(x: 0, y: 0),                           // Top-left corner
+            CGPoint(x: canvasWidth, y: 0),                 // Top-right corner
+            CGPoint(x: 0, y: canvasHeight),                // Bottom-left corner
+            CGPoint(x: canvasWidth, y: canvasHeight),      // Bottom-right corner
 
             // 4 Edge midpoints
-            CGPoint(x: canvasBounds.midX, y: canvasBounds.minY),      // Top edge midpoint
-            CGPoint(x: canvasBounds.midX, y: canvasBounds.maxY),      // Bottom edge midpoint
-            CGPoint(x: canvasBounds.minX, y: canvasBounds.midY),      // Left edge midpoint
-            CGPoint(x: canvasBounds.maxX, y: canvasBounds.midY),      // Right edge midpoint
+            CGPoint(x: canvasWidth / 2, y: 0),             // Top edge midpoint
+            CGPoint(x: canvasWidth / 2, y: canvasHeight),  // Bottom edge midpoint
+            CGPoint(x: 0, y: canvasHeight / 2),            // Left edge midpoint
+            CGPoint(x: canvasWidth, y: canvasHeight / 2),  // Right edge midpoint
 
             // 1 Center
-            CGPoint(x: canvasBounds.midX, y: canvasBounds.midY)
+            CGPoint(x: canvasWidth / 2, y: canvasHeight / 2)
         ]
 
         // Find closest snap point within threshold
@@ -987,31 +977,20 @@ struct PageOriginCrosshair: View {
 
     // DEBUG: Get all snap points in screen space for visual debugging
     private func getSnapPointsInScreenSpace() -> [CGPoint] {
-        // Get actual canvas background bounds
-        let canvasBackground = document.getObjectsInStackingOrder().first { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.name == "Canvas Background"
-            }
-            return false
-        }
-
-        var canvasBounds = CGRect(x: 0, y: 0, width: document.settings.sizeInPoints.width, height: document.settings.sizeInPoints.height)
-        if let canvasBackground = canvasBackground,
-           case .shape(let shape) = canvasBackground.objectType {
-            canvasBounds = shape.bounds
-        }
+        let canvasWidth = document.settings.sizeInPoints.width
+        let canvasHeight = document.settings.sizeInPoints.height
 
         // Define 9 snap points in canvas space
         let canvasSnapPoints: [CGPoint] = [
-            CGPoint(x: canvasBounds.minX, y: canvasBounds.minY),      // Top-left
-            CGPoint(x: canvasBounds.maxX, y: canvasBounds.minY),      // Top-right
-            CGPoint(x: canvasBounds.minX, y: canvasBounds.maxY),      // Bottom-left
-            CGPoint(x: canvasBounds.maxX, y: canvasBounds.maxY),      // Bottom-right
-            CGPoint(x: canvasBounds.midX, y: canvasBounds.minY),      // Top mid
-            CGPoint(x: canvasBounds.midX, y: canvasBounds.maxY),      // Bottom mid
-            CGPoint(x: canvasBounds.minX, y: canvasBounds.midY),      // Left mid
-            CGPoint(x: canvasBounds.maxX, y: canvasBounds.midY),      // Right mid
-            CGPoint(x: canvasBounds.midX, y: canvasBounds.midY)       // Center
+            CGPoint(x: 0, y: 0),                           // Top-left
+            CGPoint(x: canvasWidth, y: 0),                 // Top-right
+            CGPoint(x: 0, y: canvasHeight),                // Bottom-left
+            CGPoint(x: canvasWidth, y: canvasHeight),      // Bottom-right
+            CGPoint(x: canvasWidth / 2, y: 0),             // Top mid
+            CGPoint(x: canvasWidth / 2, y: canvasHeight),  // Bottom mid
+            CGPoint(x: 0, y: canvasHeight / 2),            // Left mid
+            CGPoint(x: canvasWidth, y: canvasHeight / 2),  // Right mid
+            CGPoint(x: canvasWidth / 2, y: canvasHeight / 2)  // Center
         ]
 
         // Convert to screen space
