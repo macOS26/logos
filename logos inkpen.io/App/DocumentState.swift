@@ -1067,15 +1067,7 @@ class DocumentState: ObservableObject {
     func actualSize() {
         document?.zoomLevel = 1.0
     }
-    
-    func switchToColorView() {
-        document?.viewMode = .color
-    }
-    
-    func switchToKeylineView() {
-        document?.viewMode = .keyline
-    }
-    
+
     func toggleColorKeylineView() {
         guard let doc = document else { return }
         if doc.viewMode == .color {
