@@ -126,16 +126,20 @@ struct TransformBoxHandles: View {
             ForEach(0..<9) { index in
                 let pt = handlePosition(index: index, in: transformedBounds)
                 let isAnchorPoint = isHandleTheAnchor(index: index)
+                let isAdjacentToAnchor = isHandleAdjacentToAnchor(index: index)
+                let isDisabled = isAdjacentToAnchor
+
                 ZStack {
-                    // Invisible expanded hit area for easier selection
+                    // Invisible expanded hit area for easier selection (disabled for adjacent handles)
                     Circle()
                         .fill(Color.clear)
                         .frame(width: handleHitAreaSize, height: handleHitAreaSize)
                         .contentShape(Circle())
+                        .allowsHitTesting(!isDisabled)  // Disable interaction for adjacent handles
 
-                    // Visible handle - RED for anchor point, blue for others
+                    // Visible handle - RED for anchor, ORANGE for disabled, BLUE for active
                     Circle()
-                        .fill(isAnchorPoint ? Color.red : Color.blue)
+                        .fill(isAnchorPoint ? Color.red : (isDisabled ? Color.orange : Color.blue))
                         .overlay(Circle().stroke(Color.white, lineWidth: isAnchorPoint ? 2.0 : 1.0))
                         .frame(width: isAnchorPoint ? handleSize * 1.2 : handleSize,
                                height: isAnchorPoint ? handleSize * 1.2 : handleSize)
@@ -219,6 +223,22 @@ struct TransformBoxHandles: View {
             .bottomLeft, .middleLeft, .center
         ]
         return index < handleToOrigin.count && handleToOrigin[index] == transformOrigin
+    }
+
+    private func isHandleAdjacentToAnchor(index: Int) -> Bool {
+        // For each anchor point, return the two adjacent edge handles that cannot scale
+        // 0=TL, 1=Top, 2=TR, 3=Right, 4=BR, 5=Bottom, 6=BL, 7=Left
+        switch transformOrigin {
+        case .topLeft:      return index == 1 || index == 7  // Top and Left
+        case .topCenter:    return index == 1                 // Top
+        case .topRight:     return index == 1 || index == 3  // Top and Right
+        case .middleRight:  return index == 3                 // Right
+        case .bottomRight:  return index == 3 || index == 5  // Right and Bottom
+        case .bottomCenter: return index == 5                 // Bottom
+        case .bottomLeft:   return index == 5 || index == 7  // Bottom and Left
+        case .middleLeft:   return index == 7                 // Left
+        case .center:       return false                      // No restrictions for center
+        }
     }
 
     private func getTransformAnchor(in rect: CGRect) -> CGPoint {
