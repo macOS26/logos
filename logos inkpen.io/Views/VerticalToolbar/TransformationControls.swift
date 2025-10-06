@@ -289,8 +289,9 @@ struct TransformationControls: View {
         // X,Y should show the position of the selected origin point
         // Account for current drag offset to show live position during dragging
         let origin = document.transformOrigin.point
-        let x = bounds.minX + bounds.width * origin.x + document.currentDragOffset.x
-        let y = bounds.minY + bounds.height * origin.y + document.currentDragOffset.y
+        let pageOrigin = document.settings.pageOrigin ?? .zero
+        let x = bounds.minX + bounds.width * origin.x + document.currentDragOffset.x - pageOrigin.x
+        let y = bounds.minY + bounds.height * origin.y + document.currentDragOffset.y - pageOrigin.y
 
         xValue = String(format: "%.2f", x)
         yValue = String(format: "%.2f", y)
@@ -310,8 +311,9 @@ struct TransformationControls: View {
         // X,Y should show the position of the selected origin point
         // Account for current drag offset to show live position during dragging
         let origin = document.transformOrigin.point
-        let x = bounds.minX + bounds.width * origin.x + document.currentDragOffset.x
-        let y = bounds.minY + bounds.height * origin.y + document.currentDragOffset.y
+        let pageOrigin = document.settings.pageOrigin ?? .zero
+        let x = bounds.minX + bounds.width * origin.x + document.currentDragOffset.x - pageOrigin.x
+        let y = bounds.minY + bounds.height * origin.y + document.currentDragOffset.y - pageOrigin.y
 
         xValue = String(format: "%.2f", x)
         yValue = String(format: "%.2f", y)
@@ -380,9 +382,11 @@ struct TransformationControls: View {
         let currentOriginX = currentBounds.minX + currentBounds.width * originOffset.x
         let currentOriginY = currentBounds.minY + currentBounds.height * originOffset.y
 
-        // The X,Y values ARE the position of the selected origin point
-        let newOriginX = newX
-        let newOriginY = newY
+        // The X,Y values ARE the position of the selected origin point relative to page origin
+        // Add page origin back to convert to canvas coordinates
+        let pageOrigin = document.settings.pageOrigin ?? .zero
+        let newOriginX = newX + pageOrigin.x
+        let newOriginY = newY + pageOrigin.y
 
         // Calculate scale
         let scaleX = newWidth / currentBounds.width

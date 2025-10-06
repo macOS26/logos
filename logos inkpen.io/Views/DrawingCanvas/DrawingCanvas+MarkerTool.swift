@@ -219,7 +219,7 @@ extension DrawingCanvas {
         }
         
         // Step 2: Apply improved Douglas-Peucker simplification with sharp corner preservation
-        let smoothingTolerance = document.currentMarkerSmoothingTolerance * 0.3  // Less aggressive for leaf shapes
+        let smoothingTolerance = document.currentMarkerSmoothingTolerance  // Use full tolerance for better point reduction
 
         markerSimplifiedPoints = document.advancedSmoothingEnabled ?
             CurveSmoothing.improvedDouglassPeucker(
@@ -330,10 +330,10 @@ extension DrawingCanvas {
             }
 
             // Step 5: Remove duplicate/coincident points after expansion
-            finalShape.path = removeCoincidentPointsFromPath(finalShape.path, tolerance: 0.5)
+            finalShape.path = removeCoincidentPointsFromPath(finalShape.path, tolerance: 1.0)
         } else {
             // Even without remove overlap, clean up coincident points
-            finalShape.path = removeCoincidentPointsFromPath(finalShape.path, tolerance: 0.5)
+            finalShape.path = removeCoincidentPointsFromPath(finalShape.path, tolerance: 1.0)
         }
 
         // VECTOR APP OPTIMIZATION: Add shape only once at the end, not during drawing
@@ -413,10 +413,10 @@ extension DrawingCanvas {
             }
 
             // Step 5: Remove duplicate/coincident points after expansion
-            finalPath = removeCoincidentPointsFromPath(finalPath, tolerance: 0.5)
+            finalPath = removeCoincidentPointsFromPath(finalPath, tolerance: 1.0)
         } else {
             // Even without remove overlap, clean up coincident points
-            finalPath = removeCoincidentPointsFromPath(finalPath, tolerance: 0.5)
+            finalPath = removeCoincidentPointsFromPath(finalPath, tolerance: 1.0)
         }
 
         let shape = VectorShape(name: "Marker Stroke", path: finalPath, strokeStyle: finalStrokeStyle, fillStyle: fillStyle)
