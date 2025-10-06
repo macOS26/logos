@@ -440,7 +440,7 @@ class VectorDocument: ObservableObject, Codable {
         self.freehandClosePath = UserDefaults.standard.object(forKey: "freehandClosePath") as? Bool ?? false
 
         // Initialize marker settings from UserDefaults BEFORE any method calls
-        self.currentMarkerSmoothingTolerance = UserDefaults.standard.object(forKey: "markerSmoothingTolerance") as? Double ?? 2.0
+        self.currentMarkerSmoothingTolerance = UserDefaults.standard.object(forKey: "markerSmoothingTolerance") as? Double ?? 20.0
         self.currentMarkerTipSize = UserDefaults.standard.object(forKey: "markerTipSize") as? Double ?? 31.0
         self.currentMarkerOpacity = UserDefaults.standard.object(forKey: "markerOpacity") as? Double ?? 1.0
         self.currentMarkerFeathering = UserDefaults.standard.object(forKey: "markerFeathering") as? Double ?? 0.3
@@ -811,7 +811,7 @@ class VectorDocument: ObservableObject, Codable {
         freehandClosePath = UserDefaults.standard.object(forKey: "freehandClosePath") as? Bool ?? false
 
         // Initialize marker settings from UserDefaults (properties with didSet)
-        currentMarkerSmoothingTolerance = UserDefaults.standard.object(forKey: "markerSmoothingTolerance") as? Double ?? 2.0
+        currentMarkerSmoothingTolerance = UserDefaults.standard.object(forKey: "markerSmoothingTolerance") as? Double ?? 20.0
         currentMarkerTipSize = UserDefaults.standard.object(forKey: "markerTipSize") as? Double ?? 31.0
         currentMarkerOpacity = UserDefaults.standard.object(forKey: "markerOpacity") as? Double ?? 1.0
         currentMarkerFeathering = UserDefaults.standard.object(forKey: "markerFeathering") as? Double ?? 0.3

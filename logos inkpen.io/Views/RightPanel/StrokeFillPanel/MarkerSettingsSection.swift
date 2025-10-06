@@ -110,7 +110,7 @@ struct MarkerSettingsSection: View {
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("\(formatNumberForDisplay(document.currentMarkerSmoothingTolerance))")
+                    Text("\(Int(document.currentMarkerSmoothingTolerance))%")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.primaryText)
                         .monospacedDigit()
@@ -119,19 +119,19 @@ struct MarkerSettingsSection: View {
                 Slider(value: Binding(
                     get: { document.currentMarkerSmoothingTolerance },
                     set: { document.currentMarkerSmoothingTolerance = $0 }
-                ), in: 0.5...10) {
+                ), in: 0...100) {
                     Text("Smoothing")
                 } minimumValueLabel: {
-                    Text("0.5")
+                    Text("0%")
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                 } maximumValueLabel: {
-                    Text("10")
+                    Text("100%")
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                 }
                 .controlSize(.regular)
-                .help("Curve fitting tolerance - lower values preserve more detail, higher values create smoother curves")
+                .help("Smoothing amount - 0% = no smoothing (preserves exact shape), 100% = maximum smoothing")
             }
 
             // Feathering

@@ -76,8 +76,6 @@ extension PDFCommandParser {
             return
         }
         
-        // Debug: List all keys in Resources dictionary
-        listDictionaryKeys(resourcesDict, prefix: "  Resources")
         
         var extGStateDict: CGPDFDictionaryRef? = nil
         if !CGPDFDictionaryGetDictionary(resourcesDict, "ExtGState", &extGStateDict) {
@@ -88,37 +86,27 @@ extension PDFCommandParser {
             return
         }
         
-        // Debug: List all ExtGState entries
-        listDictionaryKeys(extGState, prefix: "  ExtGState")
-        
         var stateDict: CGPDFDictionaryRef? = nil
-        if !CGPDFDictionaryGetDictionary(extGState, name, &stateDict) {
+        guard CGPDFDictionaryGetDictionary(extGState, name, &stateDict),
+              let state = stateDict else {
             return
         }
-        
-        guard let state = stateDict else {
-            return
-        }
-        
-        // Debug: List all entries in the specific ExtGState
-        listDictionaryKeys(state, prefix: "  \(name)")
         
         // Parse opacity values from the ExtGState dictionary
-        //var fillOpacity: CGFloat = 1.0
-       // var strokeOpacity: CGFloat = 1.0
+        var fillOpacity: CGFloat = 1.0
+        var strokeOpacity: CGFloat = 1.0
         
-      //  if CGPDFDictionaryGetNumber(state, "ca", &fillOpacity) {
-        //    currentFillOpacity = Double(fillOpacity)
-       // } else {
+        if CGPDFDictionaryGetNumber(state, "ca", &fillOpacity) {
+            currentFillOpacity = Double(fillOpacity)
+        } else {
             currentFillOpacity = 1.0  // Reset to full opacity when no 'ca' entry
-        //}
+        }
         
-        //if CGPDFDictionaryGetNumber(state, "CA", &strokeOpacity) {
-        //    currentStrokeOpacity = Double(strokeOpacity)
-        //} else {
+        if CGPDFDictionaryGetNumber(state, "CA", &strokeOpacity) {
+            currentStrokeOpacity = Double(strokeOpacity)
+        } else {
             currentStrokeOpacity = 1.0  // Reset to full opacity when no 'CA' entry
-        //}
-        
+        }
         
         // CRITICAL FIX: Store specific graphics state opacity values for XObject inheritance
         if name == "Gs1" {
@@ -130,45 +118,12 @@ extension PDFCommandParser {
         }
     }
     
-    // Helper function to debug dictionary contents
-    private func listDictionaryKeys(_ dictionary: CGPDFDictionaryRef, prefix: String) {
-        var keys: [String] = []
-        
-        // Callback to collect all keys
-        let callback: CGPDFDictionaryApplierFunction = { (key, object, info) in
-            let keyString = String(cString: key)
-            if let keysArray = info?.assumingMemoryBound(to: [String].self) {
-                keysArray.pointee.append(keyString)
-            }
-        }
-        
-        withUnsafeMutablePointer(to: &keys) { keysPtr in
-            CGPDFDictionaryApplyFunction(dictionary, callback, keysPtr)
-        }
-        
-    }
     
     func handleXObject(scanner: CGPDFScannerRef) {
-        var namePtr: UnsafePointer<CChar>?
-        
-        guard CGPDFScannerPopName(scanner, &namePtr) else {
-            Log.error("PDF: Failed to read XObject name", category: .error)
-            return
-        }
-
-        _ = String(cString: namePtr!)
-
-        // CRITICAL FIX: Save graphics state BEFORE processing XObject
+        // Save graphics state for XObject processing
         // At this point we have the correct outer scope opacity values
-        let savedFillOpacity = currentFillOpacity
-        let savedStrokeOpacity = currentStrokeOpacity
-        
-        // Store these values for the PDF17 XObject handler to use
-        xObjectSavedFillOpacity = savedFillOpacity
-        xObjectSavedStrokeOpacity = savedStrokeOpacity
-        
-        // TODO: Parse XObject content streams - this is where PDF 1.4 actual drawing operations likely are
-        // For now, just log that we encountered it
+        xObjectSavedFillOpacity = currentFillOpacity
+        xObjectSavedStrokeOpacity = currentStrokeOpacity
     }
     
     func handleXObjectWithOpacitySaving(scanner: CGPDFScannerRef) {

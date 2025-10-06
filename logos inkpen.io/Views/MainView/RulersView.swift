@@ -1027,16 +1027,17 @@ struct CrosshairIcon: View {
                 Rectangle()
                     .fill(Color.ui.controlBackground)
 
-                // Crosshair extending to edges
+                // Crosshair extending to edges with 1px padding and dashed pattern
                 Path { path in
-                    // Horizontal line (full width)
-                    path.move(to: CGPoint(x: 0, y: geometry.size.height / 2))
-                    path.addLine(to: CGPoint(x: geometry.size.width, y: geometry.size.height / 2))
-                    // Vertical line (full height)
-                    path.move(to: CGPoint(x: geometry.size.width / 2, y: 0))
-                    path.addLine(to: CGPoint(x: geometry.size.width / 2, y: geometry.size.height))
+                    let padding: CGFloat = 1
+                    // Horizontal line (full width with padding)
+                    path.move(to: CGPoint(x: padding, y: geometry.size.height / 2))
+                    path.addLine(to: CGPoint(x: geometry.size.width - padding, y: geometry.size.height / 2))
+                    // Vertical line (full height with padding)
+                    path.move(to: CGPoint(x: geometry.size.width / 2, y: padding))
+                    path.addLine(to: CGPoint(x: geometry.size.width / 2, y: geometry.size.height - padding))
                 }
-                .stroke(Color.gray, lineWidth: 1.5)
+                .stroke(Color.gray, style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [1, 1]))
 
                 // Border
                 Rectangle()

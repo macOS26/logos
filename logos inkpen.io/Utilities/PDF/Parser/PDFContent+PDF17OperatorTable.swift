@@ -143,9 +143,9 @@ extension PDFCommandParser {
         }
         
         // Graphics state operators
+        // "q" - Save graphics state (no-op for now)
         CGPDFOperatorTableSetCallback(operatorTable, "q") { (scanner, info) in
-            guard let info = info else { return }
-            _ = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            // Intentionally empty - graphics state saving not yet implemented
         }
         
         CGPDFOperatorTableSetCallback(operatorTable, "Q") { (scanner, info) in
@@ -167,10 +167,9 @@ extension PDFCommandParser {
             parser.handleXObjectWithImageSupport(scanner: scanner)
         }
         
-        // Path construction no-op
+        // "n" - End path without filling or stroking (no-op)
         CGPDFOperatorTableSetCallback(operatorTable, "n") { (scanner, info) in
-            guard let info = info else { return }
-            _ = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            // Intentionally empty - path is discarded
         }
 
         // MARK: - Text Object Operators

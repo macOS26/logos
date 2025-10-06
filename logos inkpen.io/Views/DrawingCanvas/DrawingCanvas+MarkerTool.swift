@@ -219,7 +219,8 @@ extension DrawingCanvas {
         }
         
         // Step 2: Apply improved Douglas-Peucker simplification with sharp corner preservation
-        let smoothingTolerance = document.currentMarkerSmoothingTolerance  // Use full tolerance for better point reduction
+        // Convert 0-100% slider to tolerance range 0.0-3.0 (gradual linear mapping)
+        let smoothingTolerance = (document.currentMarkerSmoothingTolerance / 100.0) * 3.0
 
         markerSimplifiedPoints = document.advancedSmoothingEnabled ?
             CurveSmoothing.improvedDouglassPeucker(
