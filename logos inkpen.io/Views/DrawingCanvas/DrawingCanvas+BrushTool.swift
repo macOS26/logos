@@ -94,12 +94,8 @@ extension DrawingCanvas {
     internal func handleBrushDragEnd() {
         guard isBrushDrawing else { return }
 
-        // Log the point count at drag end
-        // Log.info("🖌️ BRUSH DRAG END: \(brushRawPoints.count) points captured", category: .general)
-
         // For straight lines (only 2 points), add intermediate points to ensure proper leaf shape generation
         if brushRawPoints.count == 2 {
-            // Log.info("🖌️ BRUSH DRAG END: Interpolating 2-point line in handleBrushDragEnd", category: .general)
             let startPoint = brushRawPoints[0]
             let endPoint = brushRawPoints[1]
 
@@ -132,7 +128,6 @@ extension DrawingCanvas {
             finalizeFromPreview(preview)
         } else {
             // Fallback: generate the path if no preview exists (shouldn't happen)
-            // Log.info("⚠️ BRUSH: No preview path, generating final path", category: .general)
             processBrushStroke()
         }
         
@@ -144,8 +139,6 @@ extension DrawingCanvas {
         // This allows user to immediately change colors for the next stroke
         document.selectedShapeIDs.removeAll()
         // Logging disabled in hot path to reduce CPU overhead
-        
-        // Log.info("✅ BRUSH: Stroke completed and converted to variable width path", category: .fileOperations)
     }
     
     // MARK: - Pressure Simulation
@@ -292,8 +285,6 @@ extension DrawingCanvas {
                     tolerance: finalTolerance
                 )
             }
-
-           // Log.info("🖌️ PREVIEW: Simplified from \(pointsToProcess.count) to \(simplifiedPoints.count) points", category: .general)
         }
 
         if simplifiedPoints.count >= 2 {
@@ -405,21 +396,17 @@ extension DrawingCanvas {
         guard brushRawPoints.count >= 2,  // Allow 2 points for straight lines
               activeBrushShape != nil,
               document.selectedLayerIndex != nil else {
-            // Log.info("🖌️ BRUSH: Too few points (\(brushRawPoints.count)) - keeping as simple shape", category: .general)
             return
         }
-        
+
         // SPECIAL CASE: For 4 points or less (straight lines that auto-close), skip - they're invalid
         if brushRawPoints.count <= 4 {
-            // Log.info("🖌️ BRUSH: Skipping stroke with \(brushRawPoints.count) points (too few for variable width)", category: .general)
             return
         }
 
         // USE RAW POINTS DIRECTLY - NO SIMPLIFICATION OR SMOOTHING
         // Accept the curve exactly as drawn by the user
         brushSimplifiedPoints = brushRawPoints.map { $0.location }
-
-        // Log.info("🖌️ PROCESS: Using \(brushSimplifiedPoints.count) raw points (no simplification)", category: .general)
 
         // Step 3: Generate variable width brush stroke path using the SIMPLIFIED POINTS with pressure data
         // The smoothness comes from the final bezier path creation, not from over-sampling
@@ -458,9 +445,7 @@ extension DrawingCanvas {
             if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .evenOdd) }
             if let cleanedPath = cleaned, !cleanedPath.isEmpty, isPathBoundsFinite(cleanedPath.boundingBox) {
                 finalShape.path = VectorPath(cgPath: cleanedPath)
-                // Log.info("🖌️ BRUSH: Removed self-overlap (normalize/union)", category: .general)
             } else {
-                // Log.info("🖌️ BRUSH: Overlap removal produced no change; keeping original", category: .general)
             }
         }
         
@@ -520,7 +505,6 @@ extension DrawingCanvas {
                         fillStyle: FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
                     )
                     document.addShape(finalShape)
-                    // Log.info("🖌️ BRUSH: Created artificial leaf shape for straight line (deviation: \(maxDeviation), length: \(lineLength))", category: .general)
                     return
                 }
             }
@@ -600,7 +584,6 @@ extension DrawingCanvas {
                             fillStyle: FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
                         )
                         document.addShape(finalShape)
-                        // Log.info("🖌️ BRUSH: Replaced no-thickness path (coincident ends) with artificial leaf shape", category: .general)
                         return
                     }
                 }
@@ -631,7 +614,6 @@ extension DrawingCanvas {
 
             if let cleanedPath = cleaned, !cleanedPath.isEmpty, isPathBoundsFinite(cleanedPath.boundingBox) {
                 finalPath = VectorPath(cgPath: cleanedPath, fillRule: .winding)
-                // Log.info("🖌️ BRUSH: Removed self-overlap using WINDING rule (preview)", category: .general)
             }
         }
         let shape = VectorShape(name: "Brush Stroke", path: finalPath, strokeStyle: strokeStyle, fillStyle: fillStyle)
@@ -697,10 +679,7 @@ extension DrawingCanvas {
             
             // CRITICAL FIX: Sync unified objects system to ensure the updated shape is rendered
             document.updateUnifiedObjectsOptimized()
-            
-            // Log.info("🖌️ BRUSH: Applied self-union to remove overlapping areas within brush stroke", category: .general)
         } else {
-            // Log.info("🖌️ BRUSH: Self-union operation failed, keeping original path", category: .general)
 
         }
     }
@@ -742,17 +721,7 @@ extension DrawingCanvas {
                 // Apply pressure curve mapping like marker tool
                 let curve = appState.pressureCurve
 
-                // LOG CURVE DATA
-                if index == 0 {
-                    // Log.info("📊 BRUSH CURVE: [\(curveStr)]", category: .pressure)
-                }
-
                 mappedPressure = getThicknessFromPressureCurve(pressure: closestPressure, curve: curve)
-
-                // LOG PRESSURE VALUES
-                if index % 5 == 0 {  // Log every 5th point to reduce spam
-                    // Log.info("📊 BRUSH PRESSURE: raw=\(String(format: "%.3f", closestPressure)) → mapped=\(String(format: "%.3f", mappedPressure)) | thickness before pressure=\(String(format: "%.2f", finalThickness))", category: .pressure)
-                }
             }
 
             // Apply taper to ends - BLEND with pressure for smoother transitions
@@ -886,17 +855,7 @@ extension DrawingCanvas {
             // Apply pressure curve mapping like marker tool
             let curve = appState.pressureCurve
 
-            // LOG CURVE DATA
-            if index == 0 {
-                // Log.info("📊 BRUSH SMOOTH CURVE: [\(curveStr)]", category: .pressure)
-            }
-
             let mappedPressure = getThicknessFromPressureCurve(pressure: interpolatedPressure, curve: curve)
-
-            // LOG PRESSURE VALUES
-            if index % 5 == 0 {  // Log every 5th point to reduce spam
-                // Log.info("📊 BRUSH SMOOTH PRESSURE: raw=\(String(format: "%.3f", interpolatedPressure)) → mapped=\(String(format: "%.3f", mappedPressure)) | thickness before pressure=\(String(format: "%.2f", finalThickness))", category: .pressure)
-            }
 
             // Apply taper to ends - BLEND with pressure for smoother transitions
             let taperZone = 0.15 // Taper over first/last 15% of stroke
