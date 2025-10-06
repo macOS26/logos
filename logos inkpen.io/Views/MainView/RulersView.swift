@@ -887,7 +887,7 @@ struct PageOriginCrosshair: View {
                         .position(point)
                 }
 
-                // Vertical guide line - black/white dashed
+                // Vertical guide line - dark gray/white dashed
                 Path { path in
                     path.move(to: CGPoint(x: snappedLocation.x, y: 0))
                     path.addLine(to: CGPoint(x: snappedLocation.x, y: geometry.size.height))
@@ -898,9 +898,9 @@ struct PageOriginCrosshair: View {
                     path.move(to: CGPoint(x: snappedLocation.x, y: 0))
                     path.addLine(to: CGPoint(x: snappedLocation.x, y: geometry.size.height))
                 }
-                .stroke(Color.black, style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5], dashPhase: 5))
+                .stroke(Color(white: 0.3), style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5], dashPhase: 5))
 
-                // Horizontal guide line - black/white dashed
+                // Horizontal guide line - dark gray/white dashed
                 Path { path in
                     path.move(to: CGPoint(x: 0, y: snappedLocation.y))
                     path.addLine(to: CGPoint(x: geometry.size.width, y: snappedLocation.y))
@@ -911,7 +911,7 @@ struct PageOriginCrosshair: View {
                     path.move(to: CGPoint(x: 0, y: snappedLocation.y))
                     path.addLine(to: CGPoint(x: geometry.size.width, y: snappedLocation.y))
                 }
-                .stroke(Color.black, style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5], dashPhase: 5))
+                .stroke(Color(white: 0.3), style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5], dashPhase: 5))
             }
         }
     }
