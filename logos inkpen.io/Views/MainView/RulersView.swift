@@ -912,10 +912,8 @@ struct PageOriginCrosshair: View {
         )
     }
 
-    // Get snapped screen location - 9 snap points total (4 corners, 4 edge midpoints, 1 center)
-    private func getSnappedScreenLocation(_ screenPoint: CGPoint) -> CGPoint {
-        var canvasPoint = screenToCanvasPosition(screenPoint)
-
+    // Apply 9-point snap logic to a canvas point
+    private func applySnapToCanvasPoint(_ canvasPoint: CGPoint) -> CGPoint {
         let pageWidth = document.settings.sizeInPoints.width
         let pageHeight = document.settings.sizeInPoints.height
         let snapThreshold: CGFloat = 10 / document.zoomLevel // 10 pixels in canvas space
@@ -950,33 +948,22 @@ struct PageOriginCrosshair: View {
             }
         }
 
-        // Snap to closest point if found
-        if let snapPoint = closestPoint {
-            canvasPoint = snapPoint
-        }
+        // Return snapped point or original if no snap found
+        return closestPoint ?? canvasPoint
+    }
 
-        return canvasToScreenPosition(canvasPoint)
+    // Get snapped screen location - 9 snap points total (4 corners, 4 edge midpoints, 1 center)
+    private func getSnappedScreenLocation(_ screenPoint: CGPoint) -> CGPoint {
+        let canvasPoint = screenToCanvasPosition(screenPoint)
+        let snappedCanvasPoint = applySnapToCanvasPoint(canvasPoint)
+        return canvasToScreenPosition(snappedCanvasPoint)
     }
 
     private func updatePageOrigin(screenLocation: CGPoint) {
-        var canvasPoint = screenToCanvasPosition(screenLocation)
+        let canvasPoint = screenToCanvasPosition(screenLocation)
+        let snappedCanvasPoint = applySnapToCanvasPoint(canvasPoint)
 
-        // Snap to page center if close
-        let pageCenter = CGPoint(
-            x: document.settings.sizeInPoints.width / 2,
-            y: document.settings.sizeInPoints.height / 2
-        )
-
-        let snapThreshold: CGFloat = 10 / document.zoomLevel // 10 pixels in canvas space
-
-        if abs(canvasPoint.x - pageCenter.x) < snapThreshold {
-            canvasPoint.x = pageCenter.x
-        }
-        if abs(canvasPoint.y - pageCenter.y) < snapThreshold {
-            canvasPoint.y = pageCenter.y
-        }
-
-        document.settings.pageOrigin = canvasPoint
+        document.settings.pageOrigin = snappedCanvasPoint
         document.onSettingsChanged()
     }
 }
