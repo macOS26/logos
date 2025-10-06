@@ -236,26 +236,7 @@ extension DrawingCanvas {
                         height: shape.bounds.height
                     )
                     
-                    let exactBounds = CGRect(
-                        x: CGPoint(x: shape.transform.tx, y: shape.transform.ty).x + shape.bounds.minX,
-                        y: CGPoint(x: shape.transform.tx, y: shape.transform.ty).y + shape.bounds.minY,
-                        width: shape.bounds.width,
-                        height: shape.bounds.height
-                    )
-                    
-                    let expandedBounds = exactBounds.insetBy(dx: 0, dy: 0)
-                    
-                    // Log.info("  - Content area: \(textContentArea)", category: .selection)
-                    // Log.info("  - Exact bounds: \(exactBounds)", category: .selection)
-                    // Log.info("  - Expanded bounds: \(expandedBounds)", category: .selection)
-                    
                     let contentHit = textContentArea.contains(validatedLocation)
-                    let exactHit = exactBounds.contains(validatedLocation)
-                    let expandedHit = expandedBounds.contains(validatedLocation)
-                    
-                    // Log.info("  - Content hit: \(contentHit)", category: .selection)
-                    // Log.info("  - Exact hit: \(exactHit)", category: .selection)
-                    // Log.info("  - Expanded hit: \(expandedHit)", category: .selection)
                     
                     // CRITICAL FIX: For green text boxes, only use content hit (no bounding box)
                     // This prevents the bounding box from interfering with text movement
@@ -270,11 +251,9 @@ extension DrawingCanvas {
                     // Check if this shape is clipped by a clipping path
                     // If so, don't allow selection - the clipping path should be selected instead
                     if shape.clippedByShapeID != nil {
-                        // Log.info("🎭 SELECTION TAP: Shape '\(shape.name)' has clipping path - skipping", category: .selection)
                         isHit = false
                     } else if shape.isClippingPath {
                         // For clipping paths, ONLY use path-based hit testing, never bounds
-                        // Log.info("🎭 SELECTION TAP: Testing clipping path '\(shape.name)' - using path-only hit test", category: .selection)
                         let baseTolerance: CGFloat = 8.0
                         let tolerance = max(2.0, baseTolerance / document.zoomLevel)
                         isHit = PathOperations.hitTest(shape.transformedPath, point: validatedLocation, tolerance: tolerance)

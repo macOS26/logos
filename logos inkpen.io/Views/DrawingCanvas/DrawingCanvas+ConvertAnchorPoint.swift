@@ -83,7 +83,7 @@ extension DrawingCanvas {
                     var hasCollapsedHandles = false
                     
                     // Check ALL elements for handles that belong to this anchor point
-                    for (checkIndex, checkElement) in shape.path.elements.enumerated() {
+                    for (_, checkElement) in shape.path.elements.enumerated() {
                         switch checkElement {
                         case .curve(_, let control1, let control2):
                             // Check if this element's handles belong to the clicked anchor point
@@ -714,7 +714,7 @@ extension DrawingCanvas {
                 if isHit {
                     // IMPROVED LOCKED BEHAVIOR: Handle locked layers/objects properly
                     if layer.isLocked || shape.isLocked {
-                        let lockType = layer.isLocked ? "locked layer" : "locked object"
+                        
                         // Log.info("🚫 Convert Point Tool clicked on \(lockType) '\(shape.name)' - deselecting current selection", category: .general)
                         selectedPoints.removeAll()
                         selectedHandles.removeAll()

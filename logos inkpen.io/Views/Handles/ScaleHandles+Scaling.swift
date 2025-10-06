@@ -104,11 +104,6 @@ extension ScaleHandles {
             // Apply the final transform to coordinates and reset transform to identity
             applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
 
-            if let finalShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                // Log.info("🔴 FINAL SHAPE BOUNDS AFTER SCALING: \(finalShape.bounds)", category: .general)
-                // Log.info("🔴 FINAL SHAPE WIDTH: \(finalShape.bounds.width), HEIGHT: \(finalShape.bounds.height)", category: .general)
-            }
-
             // Reset preview transform and marquee bounds
             previewTransform = .identity
             finalMarqueeBounds = .zero // Hide marquee

@@ -23,7 +23,7 @@ extension DrawingCanvas {
                     
                     // IMPROVED LOCKED BEHAVIOR: Instead of preventing interaction, deselect current selection
                     if layer.isLocked || shape.isLocked {
-                        let lockType = layer.isLocked ? "locked layer" : "locked object"
+                        
                         // Log.info("🚫 Clicked on points/handles of \(lockType) '\(shape.name)' - deselecting current selection", category: .general)
                         directSelectedShapeIDs.removeAll()
                         selectedPoints.removeAll()
@@ -316,7 +316,7 @@ extension DrawingCanvas {
                 if isHit {
                     // IMPROVED LOCKED BEHAVIOR: Instead of preventing interaction, deselect current selection
                     if layer.isLocked || shape.isLocked {
-                        let lockType = layer.isLocked ? "locked layer" : "locked object"
+                        
                         // Log.info("🚫 Direct-clicked on \(lockType) '\(shape.name)' - deselecting current selection", category: .general)
                         directSelectedShapeIDs.removeAll()
                         selectedPoints.removeAll()

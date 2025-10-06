@@ -271,10 +271,7 @@ extension VectorDocument {
         isUndoRedoOperation = false
         
         defer { isUndoRedoOperation = wasUndoRedoOperation }
-        
-        // Debug: Log the current order state
-        logCurrentOrderState("BEFORE FIX")
-        
+   
         // CRITICAL FIX: Special handling for text objects to ensure they maintain their proper order
         fixTextObjectOrderingAfterUndo()
         
@@ -324,13 +321,9 @@ extension VectorDocument {
                         }
                     }
                 }
-                
-                // Log.info("🔧 UNDO FIX: Fixed orderIDs for layer \(layerIndex) - maintained visual order", category: .general)
             }
         }
-        
-        // Debug: Log the order state after fixing
-        logCurrentOrderState("AFTER FIX")
+
     }
     
     /// CRITICAL FIX: Special handling for text objects to ensure they maintain their proper order during undo/redo
@@ -383,31 +376,24 @@ extension VectorDocument {
     }
     
     /// Debug function to log the current order state
-    private func logCurrentOrderState(_ stage: String) {
-        // Log.info("🔍 ORDER DEBUG [\(stage)]: Unified objects order state", category: .general)
-        
-        for layerIndex in layers.indices {
-            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
-            guard !layerObjects.isEmpty else { continue }
-            
-            let sortedObjects = layerObjects.sorted { $0.orderID < $1.orderID }
-            let orderIDs = sortedObjects.map { $0.orderID }
-        }
-    }
+//    private func logCurrentOrderState(_ stage: String) {
+//        // Log.info("🔍 ORDER DEBUG [\(stage)]: Unified objects order state", category: .general)
+//        
+//        for layerIndex in layers.indices {
+//            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
+//            guard !layerObjects.isEmpty else { continue }
+//            
+//            let sortedObjects = layerObjects.sorted { $0.orderID < $1.orderID }
+//            let orderIDs = sortedObjects.map { $0.orderID }
+//        }
+//    }
     
     /// CRITICAL FIX: Sync legacy arrays after undo/redo operations to ensure consistency
     private func syncLegacyArraysAfterUndo() {
         // Temporarily disable the undo/redo flag to allow this specific operation
         let wasUndoRedoOperation = isUndoRedoOperation
         isUndoRedoOperation = false
-        
-        defer { isUndoRedoOperation = wasUndoRedoOperation }
-        
-        // CRITICAL FIX: Since shapes array has been removed from VectorLayer and unified objects
-        // is the single source of truth, we don't need to sync anything!
-        // The unified objects already contain the correct state from undo/redo.
-        // This function is now a no-op but kept for compatibility.
-        
-        // Log.info("🔧 UNDO SYNC: Unified objects already contain correct state from undo/redo", category: .general)
+    
+        isUndoRedoOperation = wasUndoRedoOperation
     }
 }

@@ -23,7 +23,7 @@ extension VectorDocument {
         }
         
         // Log.info("📚 STACKING ORDER: Processing \(selectedShapes.count) shapes", category: .general)
-        for (index, shape) in selectedShapes.enumerated() {
+        for (_, _) in selectedShapes.enumerated() {
             // Log.info("  \(index): \(shape.name) (bottom→top)", category: .general)
         }
         
@@ -313,7 +313,7 @@ extension VectorDocument {
             // SEPARATE: Break compound paths into individual components
             var separatedShapes: [VectorShape] = []
             
-            for (shapeIndex, shape) in selectedShapes.enumerated() {
+            for (_, shape) in selectedShapes.enumerated() {
                 let components = CoreGraphicsPathOperations.componentsSeparated(shape.path.cgPath, using: .winding)
                 
                 if components.count <= 1 {

@@ -172,7 +172,7 @@ extension PDFCommandParser {
         // Path construction no-op
         CGPDFOperatorTableSetCallback(operatorTable, "n") { (scanner, info) in
             guard let info = info else { return }
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            _ = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
             // Log.info("\(parser.detectedPDFVersion): XObject path construction no-op 'n'", category: .general)
         }
 

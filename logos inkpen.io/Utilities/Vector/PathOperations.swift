@@ -950,19 +950,11 @@ extension ProfessionalPathOperations {
         let testPath = VectorPath(elements: testElements, isClosed: true)
         
         // Log.info("Original path: \(testElements.count) elements", category: .general)
-        for (index, element) in testElements.enumerated() {
-            // Log.info("  [\(index)] \(element)", category: .general)
-        }
-        
+
         // Run the merger
-        let cleanedPath = mergeDuplicatePoints(in: testPath, tolerance: 5.0)
-        
+        _ = mergeDuplicatePoints(in: testPath, tolerance: 5.0)
+
         // Log.info("\nCleaned path: \(cleanedPath.elements.count) elements", category: .general)
-        for (index, element) in cleanedPath.elements.enumerated() {
-            // Log.info("  [\(index)] \(element)", category: .general)
-        }
-        
-        let duplicatesRemoved = testElements.count - cleanedPath.elements.count
         // Log.info("\n✅ Test completed - removed \(duplicatesRemoved) duplicate points", category: .general)
         // Log.info("   Should have removed 2 consecutive duplicates: line(100,0) and line(200,100)", category: .general)
         // Log.info("   Should have preserved the closing structure and curve handles", category: .general)

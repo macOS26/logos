@@ -813,7 +813,7 @@ extension DrawingCanvas {
         
         // CRITICAL FIX: Also check if we're dragging ON TOP of an existing text box
         // This prevents creating overlapping text boxes
-        if let existingTextID = findTextAt(location: startLocation) {
+        if findTextAt(location: startLocation) != nil {
             // Log.info("🚫 TYPE TOOL: Blocked - drag started on existing text box \(existingTextID.uuidString.prefix(8))", category: .general)
             // Log.info("🚫 BLUE OUTLINE: Will NOT appear - would overlap existing text", category: .general)
             return
@@ -957,10 +957,9 @@ extension DrawingCanvas {
             ]
             
             // Check if location is near any resize handle
-            for (index, handle) in handles.enumerated() {
+            for (_, handle) in handles.enumerated() {
                 let distance = sqrt(pow(location.x - handle.x, 2) + pow(location.y - handle.y, 2))
                 if distance <= totalTolerance {
-                    // Log.info("✅ RESIZE HANDLE HIT: Handle \(index) at \(handle), distance: \(String(format: "%.1f", distance))", category: .general)
                     return true
                 }
             }

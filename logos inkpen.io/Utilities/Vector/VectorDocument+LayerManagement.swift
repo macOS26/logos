@@ -22,7 +22,7 @@ extension VectorDocument {
             return
         }
         
-        let oldName = layers[index].name
+        
         layers[index].name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
 
         // Update settings if this is the selected layer

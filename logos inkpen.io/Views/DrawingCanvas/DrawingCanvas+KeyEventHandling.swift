@@ -18,11 +18,11 @@ extension DrawingCanvas {
 
             // DEBUG: Log EVERY keyDown event to see what's happening
             if event.type == .keyDown {
-                let chars = event.charactersIgnoringModifiers ?? "nil"
-                let keyCode = event.keyCode
+                
+                
                 // Check both document.currentTool and AppState default tool
-                let appTool = AppState.shared.defaultTool.rawValue
-                let docTool = self.document.currentTool.rawValue
+                
+                
                 // Log.info("🔑 RAW KEY EVENT: chars='\(chars)' keyCode=\(keyCode) docTool=\(docTool) appTool=\(appTool)", category: .input)
             }
 

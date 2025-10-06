@@ -59,7 +59,6 @@ struct UnifiedObjectContentView: View {
                 // Render text using existing StableProfessionalTextCanvas
                 // Convert VectorShape back to VectorText for the text canvas
                 if shape.textContent != nil, shape.typography != nil {
-                    let position = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
                     
                     StableProfessionalTextCanvas(
                         document: document,
@@ -68,10 +67,6 @@ struct UnifiedObjectContentView: View {
                         dragPreviewTrigger: dragPreviewTrigger
                     )
                     .allowsHitTesting(true)
-                    .onAppear {
-                        // Log.info("📝 UnifiedObjectView: Rendering text '\((shape.textContent ?? "").prefix(20))' at position \(position)", category: .general)
-                        // Log.info("   Shape bounds: \(shape.bounds), areaSize: \(shape.areaSize ?? .zero)", category: .general)
-                    }
                 } else {
                     EmptyView()
                 }

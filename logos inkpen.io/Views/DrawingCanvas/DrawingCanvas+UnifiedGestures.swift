@@ -50,22 +50,6 @@ extension DrawingCanvas {
             // 3. Activate I-beam cursor and enter text editing mode
             isTextEditingMode = true
             NSCursor.iBeam.set()
-            // Log.info("🎯 DOUBLE CLICK: Set I-beam cursor at location (\(String(format: "%.1f", canvasLocation.x)), \(String(format: "%.1f", canvasLocation.y)))", category: .selection)
-            // Log.info("🎯 DOUBLE CLICK: Entered text editing mode - I-beam cursor will be maintained", category: .selection)
-            
-            // Additional: Position cursor in text at click location
-            if let textObj = document.findText(by: textID) {
-                
-                // Calculate relative position within the text box
-                let relativeX = canvasLocation.x - textObj.position.x
-                let relativeY = canvasLocation.y - textObj.position.y
-                
-                // Log.info("🎯 DOUBLE CLICK: Text cursor positioned at relative coordinates (\(String(format: "%.1f", relativeX)), \(String(format: "%.1f", relativeY)))", category: .selection)
-                // Log.info("🎯 DOUBLE CLICK: Text content: '\(textObj.content)'", category: .selection)
-            }
-        } else {
-            // If not clicking on text, just log the double-click
-            // Log.info("🎯 DOUBLE CLICK: No text box at location (\(String(format: "%.1f", canvasLocation.x)), \(String(format: "%.1f", canvasLocation.y)))", category: .selection)
         }
     }
     
@@ -379,12 +363,10 @@ extension DrawingCanvas {
     // MARK: - State Reset Helpers
     
     private func finishPanGesture() {
-        let finalOffset = document.canvasOffset
         initialCanvasOffset = CGPoint.zero
         handToolDragStart = CGPoint.zero
         isPanGestureActive = false
-        // Log.info("✋ UNIFIED: Hand tool completed - final position: (\(String(format: "%.1f", finalOffset.x)), \(String(format: "%.1f", finalOffset.y)))", category: .general)
-        // After pan ends, show open hand if still hovering and tool is still hand, else arrow
+        
         if isCanvasHovering && document.currentTool == .hand {
             NSCursor.openHand.set()
         } else {

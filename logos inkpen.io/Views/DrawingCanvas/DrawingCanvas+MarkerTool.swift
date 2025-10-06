@@ -553,7 +553,6 @@ extension DrawingCanvas {
 
                 // LOG CURVE DATA
                 if index == 0 {
-                    let curveStr = curve.map { "(\(String(format: "%.2f", $0.x)),\(String(format: "%.2f", $0.y)))" }.joined(separator: " ")
                     // Log.info("📊 MARKER CURVE: [\(curveStr)]", category: .pressure)
                 }
 

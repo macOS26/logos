@@ -220,7 +220,7 @@ extension PDFCommandParser {
         // Convert all parts to VectorPath elements
         var combinedElements: [PathElement] = []
         
-        for (partIndex, part) in allParts.enumerated() {
+        for (_, part) in allParts.enumerated() {
             // Log.info("PDF: Processing compound part #\(partIndex + 1) with \(part.count) commands", category: .general)
             
             for command in part {
@@ -273,7 +273,6 @@ extension PDFCommandParser {
         var strokeStyle: StrokeStyle? = nil
         
         if filled {
-            let shapeName = "PDF Compound Shape \(shapes.count + 1)"
             // Log.info("PDF: 🔍 Compound shape creation - filled=true, activeGradient=\(activeGradient != nil)", category: .debug)
             
             if let gradient = activeGradient {
@@ -334,7 +333,6 @@ extension PDFCommandParser {
         var vectorElements: [PathElement] = []
 
         // Check if CTM already includes Y-flip (d component is negative)
-        let ctmHasYFlip = currentTransformMatrix.d < 0
         // Log.info("PDF: CTM analysis - d=\(currentTransformMatrix.d), has Y-flip: \(ctmHasYFlip)", category: .general)
 
         // Apply Y-flip based on combination of fill/stroke and CTM state
@@ -419,7 +417,6 @@ extension PDFCommandParser {
         var strokeStyle: StrokeStyle? = nil
         
         if filled {
-            let shapeName = "PDF Shape \(shapes.count + 1)"
             // Log.info("PDF: 🔍 OLD Shape creation - filled=true, activeGradient=\(activeGradient != nil), currentFillGradient=\(currentFillGradient != nil)", category: .debug)
             // Log.info("PDF: 🎨 OPACITY DEBUG - currentFillOpacity=\(currentFillOpacity), currentStrokeOpacity=\(currentStrokeOpacity)", category: .debug)
             // Check if this is a white shape first

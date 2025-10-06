@@ -306,11 +306,6 @@ struct PathOperationsPanel: View {
             return
         }
         
-        // Log.info("📚 STACKING ORDER: Processing \(selectedShapes.count) shapes", category: .general)
-        for (index, shape) in selectedShapes.enumerated() {
-            // Log.info("  \(index): \(shape.name) (bottom→top)", category: .general)
-        }
-        
         // Convert shapes to CGPaths
         let paths = selectedShapes.map { $0.path.cgPath }
         
@@ -587,13 +582,12 @@ struct PathOperationsPanel: View {
             // SEPARATE: Break compound paths into individual components
             var separatedShapes: [VectorShape] = []
             
-            for (shapeIndex, shape) in selectedShapes.enumerated() {
+            for (_, shape) in selectedShapes.enumerated() {
                 let components = CoreGraphicsPathOperations.componentsSeparated(shape.path.cgPath, using: .winding)
                 
                 if components.count <= 1 {
                     // No separation needed, keep original
                     separatedShapes.append(shape)
-                    // Log.info("   Shape \(shapeIndex + 1): No components to separate", category: .general)
                 } else {
                     // Create separate shapes for each component
                     for (componentIndex, component) in components.enumerated() {
@@ -607,12 +601,10 @@ struct PathOperationsPanel: View {
                         )
                         separatedShapes.append(separatedShape)
                     }
-                    // Log.info("   Shape \(shapeIndex + 1): Separated into \(components.count) components", category: .general)
                 }
             }
             
             resultShapes = separatedShapes
-            // Log.info("✅ SEPARATE: Created \(resultShapes.count) individual shapes from \(selectedShapes.count) compound paths", category: .fileOperations)
             
         case .kick:
             // KICK: Back objects subtract from front object, result takes color of FRONT object

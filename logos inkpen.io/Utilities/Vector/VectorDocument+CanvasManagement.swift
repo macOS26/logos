@@ -141,11 +141,7 @@ extension VectorDocument {
 
         // Log.info("   Total layers: \(layers.count)", category: .general)
         // Log.info("   Selected layer index: \(selectedLayerIndex ?? -1)", category: .general)
-        for (index, layer) in layers.enumerated() {
-            let marker = (selectedLayerIndex == index) ? "👈" : "  "
-            let shapeCount = getShapesForLayer(index).count
-            // Log.info("   \(marker) Layer \(index): '\(layer.name)' - locked: \(layer.isLocked), visible: \(layer.isVisible), shapes: \(shapeCount)", category: .general)
-        }
+        // Log.info("   \(marker) Layer \(index): '\(layer.name)' - locked: \(layer.isLocked), visible: \(layer.isVisible), shapes: \(shapeCount)", category: .general)
         // Log.info("   Selected shapes: \(selectedShapeIDs.count)", category: .general)
         // Log.info("   Current tool: \(currentTool)", category: .general)
     }

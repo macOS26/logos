@@ -126,12 +126,10 @@ class PressureManager: ObservableObject {
 
         // Debug output for pressure changes (only log significant changes to avoid spam)
         if let lastPressure = lastRecordedPressure, abs(pressure - lastPressure) > 0.1 {
-            let eventType = isTabletEvent ? "TABLET" : "TRACKPAD"
             // Log.info("🎨 \(eventType): \(String(format: "%.3f", pressure)) at (\(Int(location.x)), \(Int(location.y)))", category: .pressure)
             lastRecordedPressure = pressure
         } else if lastRecordedPressure == nil {
             lastRecordedPressure = pressure
-            let eventType = isTabletEvent ? "TABLET" : "TRACKPAD"
             // Log.info("🎨 \(eventType): First pressure reading: \(String(format: "%.3f", pressure))", category: .pressure)
         }
     }
@@ -258,23 +256,12 @@ class PressureManager: ObservableObject {
             self.calibrationMinPressure = 0.0
             self.calibrationMaxPressure = 0.0
             self.calibrationSampleCount = 0
-            // Log.info("🎨 CALIBRATION: Reset calibration data to 0.0", category: .pressure)
         }
     }
     
     /// Updates calibration tracking with new pressure value
     private func updateCalibrationData(pressure: Double, isTabletEvent: Bool = false) {
         DispatchQueue.main.async {
-            if pressure < self.calibrationMinPressure {
-                self.calibrationMinPressure = pressure
-                let eventType = isTabletEvent ? "TABLET" : "TRACKPAD"
-                // Log.info("🎨 CALIBRATION (\(eventType)): New minimum pressure: \(String(format: "%.3f", pressure))", category: .pressure)
-            }
-            if pressure > self.calibrationMaxPressure {
-                self.calibrationMaxPressure = pressure
-                let eventType = isTabletEvent ? "TABLET" : "TRACKPAD"
-                // Log.info("🎨 CALIBRATION (\(eventType)): New maximum pressure: \(String(format: "%.3f", pressure))", category: .pressure)
-            }
             self.calibrationSampleCount += 1
         }
     }

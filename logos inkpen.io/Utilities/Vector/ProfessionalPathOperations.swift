@@ -317,7 +317,7 @@ extension ProfessionalPathOperations {
         
         var separatedPaths: [CGPath] = []
         
-        for (index, path) in paths.enumerated() {
+        for (_, path) in paths.enumerated() {
             let components = CoreGraphicsPathOperations.componentsSeparated(path, using: .winding)
             
             if components.count <= 1 {

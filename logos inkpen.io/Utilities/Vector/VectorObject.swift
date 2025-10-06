@@ -96,16 +96,16 @@ extension VectorObject: Codable {
                 Log.error("❌ Failed to decode VectorShape - Error: \(shapeError)", category: .error)
                 if let decodingError = shapeError as? DecodingError {
                     switch decodingError {
-                    case .typeMismatch(let type, let context):
+                    case .typeMismatch(_, _):
                         // Log.info("   Type mismatch: expected \(type), context: \(context)", category: .general)
                         break
-                    case .valueNotFound(let type, let context):
+                    case .valueNotFound(_, _):
                         // Log.info("   Value not found: type \(type), context: \(context)", category: .general)
                         break
-                    case .keyNotFound(let key, let context):
+                    case .keyNotFound(_, _):
                         // Log.info("   Key not found: \(key), context: \(context)", category: .general)
                         break
-                    case .dataCorrupted(let context):
+                    case .dataCorrupted(_):
                         // Log.info("   Data corrupted: \(context)", category: .general)
                         break
                     @unknown default:

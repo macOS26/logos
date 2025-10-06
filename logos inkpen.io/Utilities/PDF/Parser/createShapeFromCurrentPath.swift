@@ -64,7 +64,6 @@ extension PDFCommandParser {
         var strokeStyle: StrokeStyle? = nil
         
         if filled {
-            let shapeName = "PDF Shape \(shapes.count + 1)"
             // Log.info("PDF: 🔍 Shape creation - filled=true, activeGradient=\(activeGradient != nil), customFillStyle=\(customFillStyle != nil)", category: .debug)
             // Priority order: custom fill style, active gradient, current fill color
             if let custom = customFillStyle {

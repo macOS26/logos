@@ -222,10 +222,10 @@ extension DrawingCanvas {
                     
                     if !coincidentPoints.isEmpty {
                         totalCoincidentGroups += 1
-                        if let position = getPointPosition(pointID) {
+                        if getPointPosition(pointID) != nil {
                             // Log.info("   🔗 Coincident Group \(totalCoincidentGroups) at (\(position.x), \(position.y)):", category: .general)
                             // Log.info("      Primary: Element \(elementIndex)", category: .general)
-                            for coincidentPoint in coincidentPoints {
+                            for _ in coincidentPoints {
                                 // Log.info("      Coincident: Element \(coincidentPoint.elementIndex) in shape \(coincidentPoint.shapeID)", category: .general)
                             }
                             
