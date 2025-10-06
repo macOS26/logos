@@ -192,7 +192,6 @@ extension VectorDocument {
     internal func setupSettingsObservation() {
         // Since settings is a struct, we can't directly observe individual properties
         // Instead, we'll provide a method that should be called when settings change
-        Log.fileOperation("🔧 Settings observation setup complete", level: .debug)
     }
     
     /// Call this method whenever document settings change to update pasteboard

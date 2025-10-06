@@ -9,8 +9,6 @@ import SwiftUI
 
 // MARK: - PDF Vector Extraction using Working Parser
 func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
-    Log.fileOperation("🔧 Extracting PDF vector content using working parser...", level: .info)
-
     // Extract inkpen metadata from PDF XMP metadata stream
     var inkpenMetadata: String? = nil
 

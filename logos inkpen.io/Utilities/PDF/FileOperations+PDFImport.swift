@@ -13,20 +13,16 @@ extension FileOperations {
     
     /// Import PDF from data for FileDocument protocol
     static func importFromPDFData(_ data: Data) throws -> VectorDocument {
-        Log.fileOperation("🎨 Importing document from PDF data", level: .info)
-        
         // Create a temporary file to use with the existing PDF import infrastructure
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("pdf")
-        
+
         do {
             try data.write(to: tempURL)
             let document = try importFromPDFSync(url: tempURL)
-            
+
             // Clean up temporary file
             try? FileManager.default.removeItem(at: tempURL)
-            
-            Log.fileOperation("✅ PDF data import completed", level: .info)
-            
+
             return document
         } catch {
             // Clean up temporary file on error
@@ -34,10 +30,9 @@ extension FileOperations {
             throw error
         }
     }
-    
+
     /// Synchronous version of PDF import for FileDocument protocol
     static func importFromPDFSync(url: URL) throws -> VectorDocument {
-        Log.fileOperation("🎨 Importing document from PDF (sync): \(url.path)", level: .info)
         
         // Use a semaphore to make the async call synchronous
         let semaphore = DispatchSemaphore(value: 0)
@@ -68,8 +63,6 @@ extension FileOperations {
     
     /// Async PDF import method
     static func importFromPDF(url: URL) async throws -> VectorDocument {
-        Log.fileOperation("🎨 Importing document from PDF: \(url.path)", level: .info)
-        
         let result = await VectorImportManager.shared.importVectorFile(from: url)
 
         if !result.success {
@@ -108,8 +101,6 @@ extension FileOperations {
         document.settings.height = canvasHeight / 72.0
         document.settings.unit = .inches
 
-        Log.fileOperation("🎯 PDF IMPORT USING DOCUMENT DIMENSIONS:", level: .info)
-
         // CRITICAL FIX: Update the canvas background to match the PDF dimensions
         // VectorDocument init already created Pasteboard, Canvas and Working layers with default 8.5x11 size
         // We need to update them to match the actual PDF size
@@ -147,8 +138,7 @@ extension FileOperations {
         for warning in result.warnings {
             Log.fileOperation("⚠️ PDF Import Warning: \(warning)", level: .info)
         }
-        
-        Log.fileOperation("📐 Canvas sized to document dimensions: \(canvasWidth) × \(canvasHeight) pts", level: .info)
+
         return document
     }
 }

@@ -183,7 +183,6 @@ class PDFOperatorInterpreter {
         CGPDFOperatorTableSetCallback(operatorTable, "q") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
-            Log.fileOperation("PDF: 'q' (save graphics state) operator encountered")
             parser.saveGraphicsState()  // Save CTM and all state
         }
 
