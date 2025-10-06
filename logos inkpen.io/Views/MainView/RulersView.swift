@@ -875,9 +875,17 @@ struct PageOriginCrosshair: View {
                         }
                 )
 
-            // Guide lines when dragging - show where the new origin will be
+            // Guide lines and snap points when dragging
             if isDragging, let dragLocation = currentDragLocation {
                 let snappedLocation = getSnappedScreenLocation(dragLocation)
+
+                // Show all snap points in blue
+                ForEach(getSnapPointsInScreenSpace(), id: \.debugDescription) { point in
+                    Circle()
+                        .fill(Color.blue.opacity(0.7))
+                        .frame(width: 8, height: 8)
+                        .position(point)
+                }
 
                 // Vertical line
                 Path { path in
@@ -970,6 +978,26 @@ struct PageOriginCrosshair: View {
         return canvasToScreenPosition(snappedCanvasPoint)
     }
 
+    // Get all snap points in screen space for visualization
+    private func getSnapPointsInScreenSpace() -> [CGPoint] {
+        let canvasWidth = document.settings.sizeInPoints.width
+        let canvasHeight = document.settings.sizeInPoints.height
+
+        let canvasSnapPoints: [CGPoint] = [
+            CGPoint(x: 0, y: 0),                           // Top-left
+            CGPoint(x: canvasWidth, y: 0),                 // Top-right
+            CGPoint(x: 0, y: canvasHeight),                // Bottom-left
+            CGPoint(x: canvasWidth, y: canvasHeight),      // Bottom-right
+            CGPoint(x: canvasWidth / 2, y: 0),             // Top mid
+            CGPoint(x: canvasWidth / 2, y: canvasHeight),  // Bottom mid
+            CGPoint(x: 0, y: canvasHeight / 2),            // Left mid
+            CGPoint(x: canvasWidth, y: canvasHeight / 2),  // Right mid
+            CGPoint(x: canvasWidth / 2, y: canvasHeight / 2)  // Center
+        ]
+
+        return canvasSnapPoints.map { canvasToScreenPosition($0) }
+    }
+
     private func updatePageOrigin(screenLocation: CGPoint) {
         let canvasPoint = screenToCanvasPosition(screenLocation)
         let snappedCanvasPoint = applySnapToCanvasPoint(canvasPoint)
@@ -986,7 +1014,7 @@ struct CrosshairIcon: View {
             Rectangle()
                 .fill(Color.ui.controlBackground)
 
-            // Crosshair symbol
+            // Crosshair symbol with white halo
             Path { path in
                 // Horizontal line
                 path.move(to: CGPoint(x: 4, y: 10))
@@ -995,7 +1023,18 @@ struct CrosshairIcon: View {
                 path.move(to: CGPoint(x: 10, y: 4))
                 path.addLine(to: CGPoint(x: 10, y: 16))
             }
-            .stroke(Color.primary.opacity(0.7), lineWidth: 1.5)
+            .stroke(Color.white.opacity(0.5), lineWidth: 2.5)  // 1px halo at 50% white
+
+            // Blue crosshair on top
+            Path { path in
+                // Horizontal line
+                path.move(to: CGPoint(x: 4, y: 10))
+                path.addLine(to: CGPoint(x: 16, y: 10))
+                // Vertical line
+                path.move(to: CGPoint(x: 10, y: 4))
+                path.addLine(to: CGPoint(x: 10, y: 16))
+            }
+            .stroke(Color.blue, lineWidth: 1.5)
 
             // Border
             Rectangle()
