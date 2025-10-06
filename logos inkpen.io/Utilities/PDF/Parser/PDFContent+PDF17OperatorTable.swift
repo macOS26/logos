@@ -160,20 +160,7 @@ extension PDFCommandParser {
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
             parser.handleGraphicsState(scanner: scanner)
         }
-
-        // Opacity operators (silence CoreGraphics warnings)
-        CGPDFOperatorTableSetCallback(operatorTable, "ca") { (scanner, info) in
-            guard let info = info else { return }
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
-            parser.handleFillOpacity(scanner: scanner)
-        }
-
-        CGPDFOperatorTableSetCallback(operatorTable, "CA") { (scanner, info) in
-            guard let info = info else { return }
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
-            parser.handleStrokeOpacity(scanner: scanner)
-        }
-
+        
         // Nested XObject support (with Image XObject support)
         CGPDFOperatorTableSetCallback(operatorTable, "Do") { (scanner, info) in
             guard let info = info else { return }
