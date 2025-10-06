@@ -325,7 +325,7 @@ extension DrawingCanvas {
             }
             .onTapGesture { location in
                 // CRITICAL: Single-click selection (was missing!)
-                Log.info("🎯 SINGLE CLICK DETECTED at: \(location)", category: .selection)
+                // Log.info("🎯 SINGLE CLICK DETECTED at: \(location)", category: .selection)
                 handleUnifiedTap(at: location, geometry: geometry)
             }
             .simultaneousGesture(
@@ -417,40 +417,40 @@ extension DrawingCanvas {
     }
     
     private func handlePressureDrawingStart(at location: CGPoint) {
-        Log.info("🎨 PRESSURE DRAWING START: Called for tool: \(document.currentTool)", category: .pressure)
-        Log.info("🎨 PRESSURE DRAWING START: Is brush drawing: \(isBrushDrawing)", category: .pressure)
+        // Log.info("🎨 PRESSURE DRAWING START: Called for tool: \(document.currentTool)", category: .pressure)
+        // Log.info("🎨 PRESSURE DRAWING START: Is brush drawing: \(isBrushDrawing)", category: .pressure)
 
         switch document.currentTool {
         case .brush:
             if !isBrushDrawing {
-                Log.info("🎨 PRESSURE DRAWING START: Starting brush drawing", category: .pressure)
+                // Log.info("🎨 PRESSURE DRAWING START: Starting brush drawing", category: .pressure)
                 handleBrushDragStart(at: location)
             } else {
-                Log.info("🎨 PRESSURE DRAWING START: Brush already drawing, skipping start", category: .pressure)
+                // Log.info("🎨 PRESSURE DRAWING START: Brush already drawing, skipping start", category: .pressure)
             }
         case .freehand:
             if !isFreehandDrawing {
-                Log.info("🎨 PRESSURE DRAWING START: Starting freehand drawing", category: .pressure)
+                // Log.info("🎨 PRESSURE DRAWING START: Starting freehand drawing", category: .pressure)
                 handleFreehandDragStart(at: location)
             } else {
-                Log.info("🎨 PRESSURE DRAWING START: Freehand already drawing, skipping start", category: .pressure)
+                // Log.info("🎨 PRESSURE DRAWING START: Freehand already drawing, skipping start", category: .pressure)
             }
         case .marker:
             if !isMarkerDrawing {
-                Log.info("🎨 PRESSURE DRAWING START: Starting marker drawing", category: .pressure)
+                // Log.info("🎨 PRESSURE DRAWING START: Starting marker drawing", category: .pressure)
                 handleMarkerDragStart(at: location)
             } else {
-                Log.info("🎨 PRESSURE DRAWING START: Marker already drawing, skipping start", category: .pressure)
+                // Log.info("🎨 PRESSURE DRAWING START: Marker already drawing, skipping start", category: .pressure)
             }
         default:
-            Log.info("🎨 PRESSURE DRAWING START: Unknown tool, skipping", category: .pressure)
+            // Log.info("🎨 PRESSURE DRAWING START: Unknown tool, skipping", category: .pressure)
             break
         }
     }
     
     private func handlePressureDrawingUpdate(at location: CGPoint) {
-        Log.info("🎨 PRESSURE DRAWING UPDATE: Called for tool: \(document.currentTool)", category: .pressure)
-        Log.info("🎨 PRESSURE DRAWING UPDATE: Is brush drawing: \(isBrushDrawing)", category: .pressure)
+        // Log.info("🎨 PRESSURE DRAWING UPDATE: Called for tool: \(document.currentTool)", category: .pressure)
+        // Log.info("🎨 PRESSURE DRAWING UPDATE: Is brush drawing: \(isBrushDrawing)", category: .pressure)
 
         // Get the current pressure that was just updated by the pressure event
         let currentPressure = PressureManager.shared.currentPressure
@@ -461,24 +461,24 @@ extension DrawingCanvas {
                 // Brush drag update - logging removed for performance
                 handleBrushDragUpdate(at: location)
             } else {
-                Log.info("🎨 PRESSURE DRAWING UPDATE: Brush not drawing, skipping update", category: .pressure)
+                // Log.info("🎨 PRESSURE DRAWING UPDATE: Brush not drawing, skipping update", category: .pressure)
             }
         case .freehand:
             if isFreehandDrawing {
                 // Freehand drag update - logging removed for performance
                 handleFreehandDragUpdate(at: location)
             } else {
-                Log.info("🎨 PRESSURE DRAWING UPDATE: Freehand not drawing, skipping update", category: .pressure)
+                // Log.info("🎨 PRESSURE DRAWING UPDATE: Freehand not drawing, skipping update", category: .pressure)
             }
         case .marker:
             if isMarkerDrawing {
                 // Marker drag update - pass pressure directly to avoid delay
                 handleMarkerDragUpdate(at: location, pressure: currentPressure)
             } else {
-                Log.info("🎨 PRESSURE DRAWING UPDATE: Marker not drawing, skipping update", category: .pressure)
+                // Log.info("🎨 PRESSURE DRAWING UPDATE: Marker not drawing, skipping update", category: .pressure)
             }
         default:
-            Log.info("🎨 PRESSURE DRAWING UPDATE: Unknown tool, skipping", category: .pressure)
+            // Log.info("🎨 PRESSURE DRAWING UPDATE: Unknown tool, skipping", category: .pressure)
             break
         }
     }

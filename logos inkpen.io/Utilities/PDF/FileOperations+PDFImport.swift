@@ -79,7 +79,7 @@ extension FileOperations {
 
         // Check if PDF contains embedded inkpen metadata
         if let inkpenMetadata = result.metadata.inkpenMetadata {
-            Log.info("📦 Found embedded inkpen document in PDF, using native data", category: .fileOperations)
+            // Log.info("📦 Found embedded inkpen document in PDF, using native data", category: .fileOperations)
 
             // Decode base64 and parse as JSON
             guard let inkpenData = Data(base64Encoded: inkpenMetadata) else {
@@ -93,7 +93,7 @@ extension FileOperations {
             let inkpenDocument = try decoder.decode(VectorDocument.self, from: inkpenData)
 
             // Return the original inkpen document
-            Log.info("✅ Successfully restored inkpen document from PDF metadata", category: .fileOperations)
+            // Log.info("✅ Successfully restored inkpen document from PDF metadata", category: .fileOperations)
             return inkpenDocument
         }
 
@@ -111,8 +111,8 @@ extension FileOperations {
         document.settings.unit = .inches
 
         Log.fileOperation("🎯 PDF IMPORT USING DOCUMENT DIMENSIONS:", level: .info)
-        Log.info("   PDF document size: \(pdfDocumentSize)", category: .general)
-        Log.info("   Canvas size: \(canvasWidth) × \(canvasHeight) pts", category: .general)
+        // Log.info("   PDF document size: \(pdfDocumentSize)", category: .general)
+        // Log.info("   Canvas size: \(canvasWidth) × \(canvasHeight) pts", category: .general)
 
         // CRITICAL FIX: Update the canvas background to match the PDF dimensions
         // VectorDocument init already created Pasteboard, Canvas and Working layers with default 8.5x11 size
@@ -130,25 +130,25 @@ extension FileOperations {
 
             // Register embedded images in ImageContentRegistry
             if let imageData = importedShape.embeddedImageData {
-                Log.info("PDF IMPORT: 🔍 Found embedded image data for '\(importedShape.name)' - \(imageData.count) bytes", category: .debug)
+                // Log.info("PDF IMPORT: 🔍 Found embedded image data for '\(importedShape.name)' - \(imageData.count) bytes", category: .debug)
                 if let nsImage = NSImage(data: imageData) {
                     ImageContentRegistry.register(image: nsImage, for: importedShape.id)
-                    Log.info("📸 REGISTERED image '\(importedShape.name)' ID: \(importedShape.id) - Size: \(nsImage.size)", category: .fileOperations)
-                    Log.info("PDF IMPORT: ✅ Successfully registered image in ImageContentRegistry", category: .general)
+                    // Log.info("📸 REGISTERED image '\(importedShape.name)' ID: \(importedShape.id) - Size: \(nsImage.size)", category: .fileOperations)
+                    // Log.info("PDF IMPORT: ✅ Successfully registered image in ImageContentRegistry", category: .general)
                 } else {
                     Log.error("PDF IMPORT: ❌ Failed to create NSImage from \(imageData.count) bytes of data", category: .error)
                     Log.error("❌ Could not create NSImage from embedded data for '\(importedShape.name)'", category: .error)
                 }
             } else {
-                Log.info("PDF IMPORT: ℹ️ Shape '\(importedShape.name)' has no embedded image data", category: .general)
+                // Log.info("PDF IMPORT: ℹ️ Shape '\(importedShape.name)' has no embedded image data", category: .general)
             }
 
             // Add shape to unified system (layer index 2 for working layer)
             if importedShape.isTextObject {
-                Log.info("📝 PDF Import: Adding text shape '\(importedShape.name)' to layer 2", category: .general)
-                Log.info("   Text content: '\((importedShape.textContent ?? "").prefix(30))'", category: .general)
-                Log.info("   Position: \(importedShape.textPosition ?? .zero)", category: .general)
-                Log.info("   Bounds: \(importedShape.bounds), Area: \(importedShape.areaSize ?? .zero)", category: .general)
+                // Log.info("📝 PDF Import: Adding text shape '\(importedShape.name)' to layer 2", category: .general)
+                // Log.info("   Text content: '\((importedShape.textContent ?? "").prefix(30))'", category: .general)
+                // Log.info("   Position: \(importedShape.textPosition ?? .zero)", category: .general)
+                // Log.info("   Bounds: \(importedShape.bounds), Area: \(importedShape.areaSize ?? .zero)", category: .general)
             }
             document.addShapeToUnifiedSystem(importedShape, layerIndex: 2)
         }
@@ -161,7 +161,7 @@ extension FileOperations {
             Log.fileOperation("⚠️ PDF Import Warning: \(warning)", level: .info)
         }
         
-        Log.info("✅ Successfully imported PDF document with \(result.shapes.count) shapes", category: .fileOperations)
+        // Log.info("✅ Successfully imported PDF document with \(result.shapes.count) shapes", category: .fileOperations)
         Log.fileOperation("📐 Canvas sized to document dimensions: \(canvasWidth) × \(canvasHeight) pts", level: .info)
         return document
     }

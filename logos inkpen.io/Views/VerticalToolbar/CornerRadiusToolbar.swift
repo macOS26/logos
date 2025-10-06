@@ -282,7 +282,7 @@ struct CornerRadiusToolbar: View {
                 // Use unified helper to update shape
                 document.updateShapeCornerRadiiInUnified(id: shape.id, cornerRadii: updatedRadii, path: newPath)
                 
-                Log.info("🔄 Updated corner \(index + 1) radius to \(String(format: "%.1f", value))pt", category: .general)
+                // Log.info("🔄 Updated corner \(index + 1) radius to \(String(format: "%.1f", value))pt", category: .general)
                 break
             }
         }

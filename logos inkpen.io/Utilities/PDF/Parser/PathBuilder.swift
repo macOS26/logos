@@ -26,7 +26,7 @@ func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
                 var format: CGPDFDataFormat = .raw
                 if let data = CGPDFStreamCopyData(metadataStream, &format) {
                     if let xmpString = String(data: data as Data, encoding: .utf8) {
-                        Log.info("📦 Found XMP metadata in PDF (\(xmpString.count) chars)", category: .fileOperations)
+                        // Log.info("📦 Found XMP metadata in PDF (\(xmpString.count) chars)", category: .fileOperations)
 
                         // Parse XMP to extract inkpen:document element
                         if let range = xmpString.range(of: "<inkpen:document>"),
@@ -36,7 +36,7 @@ func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
                             // Don't trim - preserve exact base64 content
                             let base64Data = String(xmpString[startIndex..<endIndex])
                             inkpenMetadata = base64Data
-                            Log.info("✅ Extracted inkpen document from XMP metadata (\(base64Data.count) base64 chars)", category: .fileOperations)
+                            // Log.info("✅ Extracted inkpen document from XMP metadata (\(base64Data.count) base64 chars)", category: .fileOperations)
                         }
                     }
                 }
@@ -62,7 +62,7 @@ func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
     let parser = PDFCommandParser()
     let shapes = parser.parseDocument(at: tempURL)
 
-    Log.info("✅ Extracted \(shapes.count) vector shapes with individual colors", category: .fileOperations)
+    // Log.info("✅ Extracted \(shapes.count) vector shapes with individual colors", category: .fileOperations)
 
     // Clean up temp file
     try? FileManager.default.removeItem(at: tempURL)

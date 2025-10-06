@@ -190,7 +190,7 @@ class PDFOperatorInterpreter {
         CGPDFOperatorTableSetCallback(operatorTable, "Q") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
-            Log.info("PDF: 'Q' (restore graphics state) - FINALIZING clipping group", category: .general)
+            // Log.info("PDF: 'Q' (restore graphics state) - FINALIZING clipping group", category: .general)
             parser.restoreGraphicsState()  // Restore CTM and finalize clipping group
         }
         
@@ -235,7 +235,7 @@ class PDFOperatorInterpreter {
             var width: CGFloat = 1.0
             if CGPDFScannerPopNumber(scanner, &width) {
                 parser.currentLineWidth = Double(width)
-                Log.info("PDF: Set line width to \(width)", category: .general)
+                // Log.info("PDF: Set line width to \(width)", category: .general)
             }
         }
 
@@ -246,7 +246,7 @@ class PDFOperatorInterpreter {
             var cap: CGPDFInteger = 0
             if CGPDFScannerPopInteger(scanner, &cap) {
                 parser.currentLineCap = CGLineCap(rawValue: Int32(cap)) ?? .butt
-                Log.info("PDF: Set line cap to \(cap)", category: .general)
+                // Log.info("PDF: Set line cap to \(cap)", category: .general)
             }
         }
 
@@ -257,7 +257,7 @@ class PDFOperatorInterpreter {
             var join: CGPDFInteger = 0
             if CGPDFScannerPopInteger(scanner, &join) {
                 parser.currentLineJoin = CGLineJoin(rawValue: Int32(join)) ?? .miter
-                Log.info("PDF: Set line join to \(join)", category: .general)
+                // Log.info("PDF: Set line join to \(join)", category: .general)
             }
         }
 
@@ -268,7 +268,7 @@ class PDFOperatorInterpreter {
             var limit: CGFloat = 10.0
             if CGPDFScannerPopNumber(scanner, &limit) {
                 parser.currentMiterLimit = Double(limit)
-                Log.info("PDF: Set miter limit to \(limit)", category: .general)
+                // Log.info("PDF: Set miter limit to \(limit)", category: .general)
             }
         }
 
@@ -278,23 +278,23 @@ class PDFOperatorInterpreter {
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
             // For now, just clear dash pattern - full implementation would parse array
             parser.currentLineDashPattern = []
-            Log.info("PDF: Set dash pattern (simplified)", category: .general)
+            // Log.info("PDF: Set dash pattern (simplified)", category: .general)
         }
 
         // MARK: - Specialty Operators
 
         // Path no-op
         CGPDFOperatorTableSetCallback(operatorTable, "n") { (scanner, info) in
-            Log.info("PDF: Path construction (no-op) operator 'n' encountered", category: .general)
+            // Log.info("PDF: Path construction (no-op) operator 'n' encountered", category: .general)
         }
         
         // Color space operators
         CGPDFOperatorTableSetCallback(operatorTable, "cs") { (scanner, info) in
-            Log.info("PDF: Color space operator 'cs' (non-stroking)", category: .general)
+            // Log.info("PDF: Color space operator 'cs' (non-stroking)", category: .general)
         }
         
         CGPDFOperatorTableSetCallback(operatorTable, "CS") { (scanner, info) in
-            Log.info("PDF: Color space operator 'CS' (stroking)", category: .general)
+            // Log.info("PDF: Color space operator 'CS' (stroking)", category: .general)
         }
         
         // Setup text operators for text extraction

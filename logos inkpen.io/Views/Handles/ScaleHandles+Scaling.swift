@@ -22,9 +22,9 @@ extension ScaleHandles {
 
             // NEW: Use selected scaling anchor mode from toolbar
             scalingAnchorPoint = getAnchorPoint(for: document.scalingAnchor, in: bounds, cornerIndex: index)
-            Log.info("🔄 SCALING START: Corner \(index) → Anchor mode: \(document.scalingAnchor.displayName) at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))", category: .general)
-            Log.info("   📐 Initial bounds: (\(String(format: "%.1f", bounds.minX)), \(String(format: "%.1f", bounds.minY))) → (\(String(format: "%.1f", bounds.maxX)), \(String(format: "%.1f", bounds.maxY)))", category: .general)
-            Log.info("   🖱️ Start cursor: screen(\(String(format: "%.1f", startLocation.x)), \(String(format: "%.1f", startLocation.y)))", category: .general)
+            // Log.info("🔄 SCALING START: Corner \(index) → Anchor mode: \(document.scalingAnchor.displayName) at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))", category: .general)
+            // Log.info("   📐 Initial bounds: (\(String(format: "%.1f", bounds.minX)), \(String(format: "%.1f", bounds.minY))) → (\(String(format: "%.1f", bounds.maxX)), \(String(format: "%.1f", bounds.maxY)))", category: .general)
+            // Log.info("   🖱️ Start cursor: screen(\(String(format: "%.1f", startLocation.x)), \(String(format: "%.1f", startLocation.y)))", category: .general)
         }
 
         // PROFESSIONAL SCALING: Calculate scale from anchor point to current cursor position
@@ -105,22 +105,22 @@ extension ScaleHandles {
             applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
 
             if let finalShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                Log.info("🔴 FINAL SHAPE BOUNDS AFTER SCALING: \(finalShape.bounds)", category: .general)
-                Log.info("🔴 FINAL SHAPE WIDTH: \(finalShape.bounds.width), HEIGHT: \(finalShape.bounds.height)", category: .general)
+                // Log.info("🔴 FINAL SHAPE BOUNDS AFTER SCALING: \(finalShape.bounds)", category: .general)
+                // Log.info("🔴 FINAL SHAPE WIDTH: \(finalShape.bounds.width), HEIGHT: \(finalShape.bounds.height)", category: .general)
             }
 
             // Reset preview transform and marquee bounds
             previewTransform = .identity
             finalMarqueeBounds = .zero // Hide marquee
 
-            Log.info("✅ SCALING FINISHED: Applied final transform to coordinates and reset transform to identity", category: .fileOperations)
+            // Log.info("✅ SCALING FINISHED: Applied final transform to coordinates and reset transform to identity", category: .fileOperations)
 
             // Use common update function for transform panel (same as dragging)
             // CRITICAL: Update AFTER a delay to ensure bounds are recalculated
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                Log.info("🔴 CALLING updateTransformPanelValues AFTER SCALING", category: .general)
+                // Log.info("🔴 CALLING updateTransformPanelValues AFTER SCALING", category: .general)
                 self.document.updateTransformPanelValues()
-                Log.info("🔴 CALLED updateTransformPanelValues - CHECK IF X Y W H UPDATED", category: .general)
+                // Log.info("🔴 CALLED updateTransformPanelValues - CHECK IF X Y W H UPDATED", category: .general)
             }
 
             // CRITICAL FIX: Force refresh of point selection system (same as rotate/shear tools)
@@ -143,7 +143,7 @@ extension ScaleHandles {
         // CRITICAL: Check if caps-lock is pressed to prevent changing the locked pin point
         if isCapsLockPressed && draggedPointIndex != lockedPinPointIndex {
             // Caps-lock is active: locked pin point cannot be changed, only scale away from it
-            Log.info("🔒 CAPS-LOCK ACTIVE: Pin point locked, scaling away from locked point", category: .general)
+            // Log.info("🔒 CAPS-LOCK ACTIVE: Pin point locked, scaling away from locked point", category: .general)
         }
 
         // PROFESSIONAL SCALING: Scale away from the LOCKED PIN POINT (not the dragged point)

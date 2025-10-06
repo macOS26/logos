@@ -344,7 +344,7 @@ extension DrawingCanvas {
         }
         .onTapGesture { location in
             // Single-click selection
-            Log.info("🎯 SINGLE CLICK DETECTED at: \(location)", category: .selection)
+            // Log.info("🎯 SINGLE CLICK DETECTED at: \(location)", category: .selection)
             handleUnifiedTap(at: location, geometry: geometry)
         }
         .simultaneousGesture(

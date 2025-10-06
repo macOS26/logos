@@ -94,7 +94,7 @@ extension ScaleHandles {
             shape.updateBounds()
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
 
-            Log.info("✅ Flattened group coordinates updated - transformed \(transformedGroupedShapes.count) individual shapes", category: .fileOperations)
+            // Log.info("✅ Flattened group coordinates updated - transformed \(transformedGroupedShapes.count) individual shapes", category: .fileOperations)
             return
         }
 
@@ -155,7 +155,7 @@ extension ScaleHandles {
             document.updateShapeTransformAndPathInUnified(id: currentShape.id, path: transformedPath, transform: .identity)
         }
 
-        Log.info("✅ Shape coordinates updated after scaling - object origin stays with object", category: .fileOperations)
+        // Log.info("✅ Shape coordinates updated after scaling - object origin stays with object", category: .fileOperations)
     }
 
     func cornerPosition(for index: Int, in bounds: CGRect, center: CGPoint) -> CGPoint {

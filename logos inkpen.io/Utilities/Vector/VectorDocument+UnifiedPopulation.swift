@@ -28,19 +28,19 @@ extension VectorDocument {
     internal func populateUnifiedObjectsFromLayersPreservingOrder() {
         // CRITICAL FIX: Skip reordering during undo/redo operations to preserve exact order
         if isUndoRedoOperation {
-            Log.info("🔧 POPULATE: Skipping unified objects population during undo/redo operation to preserve order", category: .general)
+            // Log.info("🔧 POPULATE: Skipping unified objects population during undo/redo operation to preserve order", category: .general)
             return
         }
         
         // Unified objects is now the primary storage - this function is mostly a no-op
-        Log.info("🔧 UNIFIED OBJECTS: Check complete with \(unifiedObjects.count) objects", category: .general)
+        // Log.info("🔧 UNIFIED OBJECTS: Check complete with \(unifiedObjects.count) objects", category: .general)
     }
     
     /// Sync selection arrays to maintain compatibility with existing code
     func syncSelectionArrays() {
         // CRITICAL LOGGING: Track when this is called
-        Log.info("⚠️ syncSelectionArrays CALLED - This CLEARS all selections!", category: .general)
-        Log.info("⚠️ BEFORE CLEAR: selectedShapeIDs = \(selectedShapeIDs), selectedTextIDs = \(selectedTextIDs), selectedObjectIDs = \(selectedObjectIDs)", category: .general)
+        // Log.info("⚠️ syncSelectionArrays CALLED - This CLEARS all selections!", category: .general)
+        // Log.info("⚠️ BEFORE CLEAR: selectedShapeIDs = \(selectedShapeIDs), selectedTextIDs = \(selectedTextIDs), selectedObjectIDs = \(selectedObjectIDs)", category: .general)
 
         // Update selectedShapeIDs and selectedTextIDs based on selectedObjectIDs
         selectedShapeIDs.removeAll()
@@ -107,10 +107,10 @@ extension VectorDocument {
     func forceResyncUnifiedObjects() {
         // CRITICAL FIX: Skip reordering during undo/redo operations to preserve exact order
         if isUndoRedoOperation {
-            Log.info("🔧 FORCE RESYNC: Skipping unified objects resync during undo/redo operation to preserve order", category: .general)
+            // Log.info("🔧 FORCE RESYNC: Skipping unified objects resync during undo/redo operation to preserve order", category: .general)
             return
         }
         
-        Log.info("🔧 FORCE RESYNC: Unified objects system check with \(unifiedObjects.count) objects", category: .general)
+        // Log.info("🔧 FORCE RESYNC: Unified objects system check with \(unifiedObjects.count) objects", category: .general)
     }
 }

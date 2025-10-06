@@ -38,7 +38,7 @@ extension VectorDocument {
         // CRITICAL FIX: Update unified selection to use the new group
         selectedObjectIDs = [groupShape.id]
         
-        Log.info("📦 Grouped \(selectedShapes.count) objects into group '\(groupShape.name)'", category: .general)
+        // Log.info("📦 Grouped \(selectedShapes.count) objects into group '\(groupShape.name)'", category: .general)
     }
     
     /// Flatten selected objects (preserves individual colors, enables transform tools)
@@ -120,7 +120,7 @@ extension VectorDocument {
                     // Mark group for removal
                     shapesToRemove.append(shapeID)
                     
-                    Log.info("📦 Ungrouped '\(shape.name)' containing \(shape.groupedShapes.count) objects", category: .general)
+                    // Log.info("📦 Ungrouped '\(shape.name)' containing \(shape.groupedShapes.count) objects", category: .general)
                 } else {
                     // Not a group, keep it selected
                     newSelectedShapeIDs.insert(shapeID)
@@ -146,9 +146,9 @@ extension VectorDocument {
         selectedObjectIDs = newSelectedShapeIDs
         
         if !shapesToRemove.isEmpty {
-            Log.info("📦 Ungrouped \(shapesToRemove.count) groups, added \(shapesToAdd.count) objects", category: .general)
+            // Log.info("📦 Ungrouped \(shapesToRemove.count) groups, added \(shapesToAdd.count) objects", category: .general)
         } else {
-            Log.info("📦 No groups found in selection", category: .general)
+            // Log.info("📦 No groups found in selection", category: .general)
         }
     }
     
@@ -240,7 +240,7 @@ extension VectorDocument {
         // CRITICAL FIX: Update unified selection to use the new compound path
         selectedObjectIDs = [compoundShape.id]
         
-        Log.info("🔗 Made compound path from \(selectedShapes.count) objects", category: .general)
+        // Log.info("🔗 Made compound path from \(selectedShapes.count) objects", category: .general)
     }
     
     /// Make looping path from selected objects (uses winding fill rule instead of even-odd)
@@ -333,7 +333,7 @@ extension VectorDocument {
         // CRITICAL FIX: Update unified selection to use the released paths
         selectedObjectIDs = newSelectedIDs
         
-        Log.info("🔗 Released compound path into \(newShapes.count) individual paths", category: .general)
+        // Log.info("🔗 Released compound path into \(newShapes.count) individual paths", category: .general)
     }
     
     /// Release looping path back to individual paths

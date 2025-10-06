@@ -237,7 +237,7 @@ struct PreferencesView: View {
         // ALSO update AppState directly so tools get the change immediately
         appState.pressureCurve = pressureCurve
 
-        Log.info("💾 SAVED PRESSURE CURVE TO USERDEFAULTS AND APPSTATE", category: .pressure)
+        // Log.info("💾 SAVED PRESSURE CURVE TO USERDEFAULTS AND APPSTATE", category: .pressure)
     }
 
     // Helper functions

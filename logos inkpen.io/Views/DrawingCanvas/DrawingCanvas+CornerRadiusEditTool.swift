@@ -329,7 +329,7 @@ extension DrawingCanvas {
                         allRadii[i] = constrainedRadius
                     }
                     
-                    Log.info("🔄 PROPORTIONAL CORNER RADIUS: Ratio mode - scaling by \(String(format: "%.3f", ratio))", category: .general)
+                    // Log.info("🔄 PROPORTIONAL CORNER RADIUS: Ratio mode - scaling by \(String(format: "%.3f", ratio))", category: .general)
                 } else {
                     // UNIFORM MODE: When starting from 0, set ALL corners to the same radius as the dragged corner
                     // This ensures all corners move together when shift is held on a sharp rectangle
@@ -339,7 +339,7 @@ extension DrawingCanvas {
                         allRadii[i] = constrainedRadius
                     }
                     
-                    Log.info("🔄 PROPORTIONAL CORNER RADIUS: Uniform mode - setting all corners to \(String(format: "%.1f", newRadius))pt", category: .general)
+                    // Log.info("🔄 PROPORTIONAL CORNER RADIUS: Uniform mode - setting all corners to \(String(format: "%.1f", newRadius))pt", category: .general)
                 }
                 
                 // Update all corner radii proportionally
@@ -378,7 +378,7 @@ extension DrawingCanvas {
                         allRadii[i] = max(0.0, originalCornerRadius * ratio)
                     }
                     
-                    Log.info("🔄 PROPORTIONAL CORNER RADIUS (fallback): Ratio mode - scaling by \(String(format: "%.3f", ratio))", category: .general)
+                    // Log.info("🔄 PROPORTIONAL CORNER RADIUS (fallback): Ratio mode - scaling by \(String(format: "%.3f", ratio))", category: .general)
                 } else {
                     // UNIFORM MODE: When starting from 0, set ALL corners to the same radius as the dragged corner
                     // This ensures all corners move together when shift is held on a sharp rectangle
@@ -387,7 +387,7 @@ extension DrawingCanvas {
                         allRadii[i] = max(0.0, newRadius)
                     }
                     
-                    Log.info("🔄 PROPORTIONAL CORNER RADIUS (fallback): Uniform mode - setting all corners to \(String(format: "%.1f", newRadius))pt", category: .general)
+                    // Log.info("🔄 PROPORTIONAL CORNER RADIUS (fallback): Uniform mode - setting all corners to \(String(format: "%.1f", newRadius))pt", category: .general)
                 }
                 
                 updateAllCornerRadiiToValues(
@@ -436,7 +436,7 @@ extension DrawingCanvas {
                                 allRadii[i] = round(originalCornerRadius * ratio)
                             }
                             
-                            Log.info("🔄 PROPORTIONAL ROUNDING: Ratio mode - scaling by \(String(format: "%.3f", ratio))", category: .general)
+                            // Log.info("🔄 PROPORTIONAL ROUNDING: Ratio mode - scaling by \(String(format: "%.3f", ratio))", category: .general)
                         } else {
                             // UNIFORM MODE: When starting from 0, set ALL corners to the same radius as the dragged corner
                             // This ensures all corners round to the same value when shift is held on a sharp rectangle
@@ -445,7 +445,7 @@ extension DrawingCanvas {
                                 allRadii[i] = round(max(0.0, roundedRadius))
                             }
                             
-                            Log.info("🔄 PROPORTIONAL ROUNDING: Uniform mode - setting all corners to \(String(format: "%.1f", roundedRadius))pt", category: .general)
+                            // Log.info("🔄 PROPORTIONAL ROUNDING: Uniform mode - setting all corners to \(String(format: "%.1f", roundedRadius))pt", category: .general)
                         }
                         
                         updateAllCornerRadiiToValues(

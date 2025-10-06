@@ -85,7 +85,7 @@ struct StableProfessionalTextCanvas: View {
                     width: width,
                     height: height
                 )
-                Log.info("⚡️ LAZY INIT: Initialized text '\(currentTextObject.content.prefix(20))' on demand", category: .general)
+                // Log.info("⚡️ LAZY INIT: Initialized text '\(currentTextObject.content.prefix(20))' on demand", category: .general)
             } else {
                 // Already initialized - just sync position/properties (no re-init)
                 viewModel.syncFromDocument(currentTextObject)

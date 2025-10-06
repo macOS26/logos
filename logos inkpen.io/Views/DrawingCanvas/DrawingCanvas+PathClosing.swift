@@ -38,7 +38,7 @@ extension DrawingCanvas {
                         // Update using unified setter
                         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
                         
-                        Log.info("Closed path for shape \(shape.name)", category: .general)
+                        // Log.info("Closed path for shape \(shape.name)", category: .general)
                     }
                 }
             }

@@ -65,8 +65,8 @@ class PDFMetalProcessor {
             }
 
             isInitialized = true
-            Log.info("✅ PDF Metal GPU acceleration initialized successfully", category: .general)
-            Log.info("   GPU: \(device.name)", category: .general)
+            // Log.info("✅ PDF Metal GPU acceleration initialized successfully", category: .general)
+            // Log.info("   GPU: \(device.name)", category: .general)
 
         } catch {
             Log.error("❌ Failed to create Metal compute pipelines: \(error)", category: .error)
@@ -142,7 +142,7 @@ class PDFMetalProcessor {
         // Extract result
         let resultData = Data(bytes: rgbaBuffer.contents(), count: rgbaSize)
 
-        Log.info("✅ GPU: Converted \(width)×\(height) RGB image to RGBA", category: .general)
+        // Log.info("✅ GPU: Converted \(width)×\(height) RGB image to RGBA", category: .general)
 
         return resultData
     }
@@ -222,7 +222,7 @@ class PDFMetalProcessor {
         // Extract result
         let resultData = Data(bytes: rgbaBuffer.contents(), count: rgbaSize)
 
-        Log.info("✅ GPU: Converted \(width)×\(height) indexed image to RGBA (\(paletteEntries) colors)", category: .general)
+        // Log.info("✅ GPU: Converted \(width)×\(height) indexed image to RGBA (\(paletteEntries) colors)", category: .general)
 
         return resultData
     }
@@ -303,7 +303,7 @@ class PDFMetalProcessor {
             colors.append(.rgb(RGBColor(red: r, green: g, blue: b)))
         }
 
-        Log.info("✅ GPU: Extracted \(totalSamples) gradient colors", category: .general)
+        // Log.info("✅ GPU: Extracted \(totalSamples) gradient colors", category: .general)
 
         return colors
     }

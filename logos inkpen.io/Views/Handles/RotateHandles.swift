@@ -236,7 +236,7 @@ struct RotateHandles: View {
                 .onTapGesture {
                     if !isRotating {
                         selectedAnchorPointIndex = index
-                        Log.info("🎯 ANCHOR SELECTED: Path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))", category: .general)
+                        // Log.info("🎯 ANCHOR SELECTED: Path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))", category: .general)
                     }
                 }
                 .highPriorityGesture(
@@ -331,7 +331,7 @@ struct RotateHandles: View {
         pointsRefreshTrigger += 1
         
         // Removed excessive logging during drag operations
-        Log.info("   🔄 View refresh trigger: \(pointsRefreshTrigger)", category: .general)
+        // Log.info("   🔄 View refresh trigger: \(pointsRefreshTrigger)", category: .general)
     }
     
     // MARK: - Rotation Anchor Point Calculation (Rotation-specific versions)
@@ -460,7 +460,7 @@ struct RotateHandles: View {
             document.updateShapeTransformAndPathInUnified(id: currentShape.id, path: transformedPath, transform: .identity)
         }
         
-        Log.info("✅ Shape coordinates updated after rotation - object origin stays with object", category: .fileOperations)
+        // Log.info("✅ Shape coordinates updated after rotation - object origin stays with object", category: .fileOperations)
     }
     
     // MARK: - Rotation Key Event Monitoring
@@ -547,7 +547,7 @@ struct RotateHandles: View {
             // Reset preview transform
             previewTransform = .identity
             
-            Log.info("✅ ROTATION FINISHED: Applied final transform to coordinates and reset transform to identity", category: .fileOperations)
+            // Log.info("✅ ROTATION FINISHED: Applied final transform to coordinates and reset transform to identity", category: .fileOperations)
             
             // CRITICAL FIX: Sync unified objects after rotation to ensure UI updates
             document.updateUnifiedObjectsOptimized()
@@ -668,7 +668,7 @@ struct RotateHandles: View {
         updatedShape.updateBounds()
         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
         
-        Log.info("✅ Shape coordinates updated after rotation - object origin stays with object", category: .fileOperations)
+        // Log.info("✅ Shape coordinates updated after rotation - object origin stays with object", category: .fileOperations)
     }
     
     // MARK: - Key Event Monitoring

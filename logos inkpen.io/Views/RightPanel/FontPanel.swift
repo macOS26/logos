@@ -148,7 +148,7 @@ struct FontPanel: View {
         }
         .onChange(of: document.currentTool) { oldTool, newTool in
             Log.fileOperation("🔧 TYPE PANEL: Tool changed from \(oldTool.rawValue) to \(newTool.rawValue)", level: .info)
-            Log.info("🔒 PROTECTION: Type settings remain isolated per text box UUID - no syncing", category: .general)
+            // Log.info("🔒 PROTECTION: Type settings remain isolated per text box UUID - no syncing", category: .general)
             
             if let editingText = editingText {
                 Log.fileOperation("🎯 EDITING UUID: \(editingText.id.uuidString.prefix(8)) - BLUE state maintained", level: .info)

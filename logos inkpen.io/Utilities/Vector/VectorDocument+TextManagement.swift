@@ -104,7 +104,7 @@ extension VectorDocument {
         
         // Select the duplicated text objects
         selectedTextIDs = newTextIDs
-        Log.info("✅ Duplicated \(newTextIDs.count) text objects", category: .fileOperations)
+        // Log.info("✅ Duplicated \(newTextIDs.count) text objects", category: .fileOperations)
     }
     
     // MARK: - Helper method for updating text in unified system
@@ -183,7 +183,7 @@ extension VectorDocument {
             selectedTextIDs.removeAll()
             selectedShapeIDs = newShapeIDs
 
-            Log.info("✅ TEXT TO OUTLINES: Converted \(selectedTexts.count) text object(s) into \(newShapeIDs.count) shape(s)", category: .fileOperations)
+            // Log.info("✅ TEXT TO OUTLINES: Converted \(selectedTexts.count) text object(s) into \(newShapeIDs.count) shape(s)", category: .fileOperations)
         } else {
             Log.error("❌ TEXT TO OUTLINES FAILED: No new shapes were created", category: .error)
         }

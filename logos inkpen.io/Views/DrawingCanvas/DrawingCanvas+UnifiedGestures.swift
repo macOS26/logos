@@ -41,17 +41,17 @@ extension DrawingCanvas {
         if let textID = findTextAt(location: canvasLocation) {
             // 1. Switch to Font tool (Aa)
             document.currentTool = .font
-            Log.info("🎯 DOUBLE CLICK: Switched to Type tool", category: .selection)
+            // Log.info("🎯 DOUBLE CLICK: Switched to Type tool", category: .selection)
             
             // 2. Turn text box to blue edit mode
             startEditingText(textID: textID, at: canvasLocation)
-            Log.info("🎯 DOUBLE CLICK: Activated blue edit mode for text", category: .selection)
+            // Log.info("🎯 DOUBLE CLICK: Activated blue edit mode for text", category: .selection)
             
             // 3. Activate I-beam cursor and enter text editing mode
             isTextEditingMode = true
             NSCursor.iBeam.set()
-            Log.info("🎯 DOUBLE CLICK: Set I-beam cursor at location (\(String(format: "%.1f", canvasLocation.x)), \(String(format: "%.1f", canvasLocation.y)))", category: .selection)
-            Log.info("🎯 DOUBLE CLICK: Entered text editing mode - I-beam cursor will be maintained", category: .selection)
+            // Log.info("🎯 DOUBLE CLICK: Set I-beam cursor at location (\(String(format: "%.1f", canvasLocation.x)), \(String(format: "%.1f", canvasLocation.y)))", category: .selection)
+            // Log.info("🎯 DOUBLE CLICK: Entered text editing mode - I-beam cursor will be maintained", category: .selection)
             
             // Additional: Position cursor in text at click location
             if let textObj = document.findText(by: textID) {
@@ -60,12 +60,12 @@ extension DrawingCanvas {
                 let relativeX = canvasLocation.x - textObj.position.x
                 let relativeY = canvasLocation.y - textObj.position.y
                 
-                Log.info("🎯 DOUBLE CLICK: Text cursor positioned at relative coordinates (\(String(format: "%.1f", relativeX)), \(String(format: "%.1f", relativeY)))", category: .selection)
-                Log.info("🎯 DOUBLE CLICK: Text content: '\(textObj.content)'", category: .selection)
+                // Log.info("🎯 DOUBLE CLICK: Text cursor positioned at relative coordinates (\(String(format: "%.1f", relativeX)), \(String(format: "%.1f", relativeY)))", category: .selection)
+                // Log.info("🎯 DOUBLE CLICK: Text content: '\(textObj.content)'", category: .selection)
             }
         } else {
             // If not clicking on text, just log the double-click
-            Log.info("🎯 DOUBLE CLICK: No text box at location (\(String(format: "%.1f", canvasLocation.x)), \(String(format: "%.1f", canvasLocation.y)))", category: .selection)
+            // Log.info("🎯 DOUBLE CLICK: No text box at location (\(String(format: "%.1f", canvasLocation.x)), \(String(format: "%.1f", canvasLocation.y)))", category: .selection)
         }
     }
     
@@ -80,7 +80,7 @@ extension DrawingCanvas {
         // Validate coordinates to catch any sync issues
         let validatedCanvasLocation = validateCanvasLocation(canvasLocation)
         if validatedCanvasLocation != canvasLocation {
-            Log.info("🎯 COORDINATE VALIDATION: Adjusted canvas location from \(canvasLocation) to \(validatedCanvasLocation)", category: .selection)
+            // Log.info("🎯 COORDINATE VALIDATION: Adjusted canvas location from \(canvasLocation) to \(validatedCanvasLocation)", category: .selection)
         }
         
         // DOUBLE-CLICK DETECTION
@@ -107,7 +107,7 @@ extension DrawingCanvas {
             }
             
             // Handle double-click immediately
-            Log.info("🎯 DOUBLE CLICK DETECTED at: \(location)", category: .selection)
+            // Log.info("🎯 DOUBLE CLICK DETECTED at: \(location)", category: .selection)
             handleDoubleClick(at: location, geometry: geometry)
             return // Exit early for double-clicks
         } else {
@@ -383,7 +383,7 @@ extension DrawingCanvas {
         initialCanvasOffset = CGPoint.zero
         handToolDragStart = CGPoint.zero
         isPanGestureActive = false
-        Log.info("✋ UNIFIED: Hand tool completed - final position: (\(String(format: "%.1f", finalOffset.x)), \(String(format: "%.1f", finalOffset.y)))", category: .general)
+        // Log.info("✋ UNIFIED: Hand tool completed - final position: (\(String(format: "%.1f", finalOffset.x)), \(String(format: "%.1f", finalOffset.y)))", category: .general)
         // After pan ends, show open hand if still hovering and tool is still hand, else arrow
         if isCanvasHovering && document.currentTool == .hand {
             NSCursor.openHand.set()

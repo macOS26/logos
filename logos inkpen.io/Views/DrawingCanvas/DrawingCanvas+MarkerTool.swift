@@ -138,7 +138,7 @@ extension DrawingCanvas {
         document.selectedObjectIDs.removeAll()
         Log.fileOperation("🎨 MARKER: Auto-deselected shape to enable color changes for next stroke", level: .info)
         
-        Log.info("✅ MARKER: Stroke completed and converted to smooth felt-tip stroke", category: .fileOperations)
+        // Log.info("✅ MARKER: Stroke completed and converted to smooth felt-tip stroke", category: .fileOperations)
     }
     
     // MARK: - Pressure Simulation for Felt-Tip Marker
@@ -169,7 +169,7 @@ extension DrawingCanvas {
         
         // Reduced logging frequency for performance
         if markerRawPoints.count % 20 == 0 {
-            Log.info("Marker pressure: \(String(format: "%.2f", finalPressure)) [speed: \(String(format: "%.1f", normalizedSpeed * 100))%]", category: .pressure)
+            // Log.info("Marker pressure: \(String(format: "%.2f", finalPressure)) [speed: \(String(format: "%.1f", normalizedSpeed * 100))%]", category: .pressure)
         }
         
         return finalPressure
@@ -251,7 +251,7 @@ extension DrawingCanvas {
             ) :
             DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
 
-        Log.info("Douglas-Peucker: Simplified to \(markerSimplifiedPoints.count) points (simplify: \(Int(simplifyAmount))%)", category: .general)
+        // Log.info("Douglas-Peucker: Simplified to \(markerSimplifiedPoints.count) points (simplify: \(Int(simplifyAmount))%)", category: .general)
 
         // CRITICAL: Ensure we have enough points for smooth tapers
         // Need MORE points when pressure sensitivity is off since taper is the only variation
@@ -326,7 +326,7 @@ extension DrawingCanvas {
             if let cleaned = cleanedFillPath, !cleaned.isEmpty, isPathBoundsFinite(cleaned.boundingBox) {
                 currentPath = cleaned
                 finalShape.path = VectorPath(cgPath: cleaned)
-                Log.info("🖊️ MARKER: Removed fill path overlap first", category: .general)
+                // Log.info("🖊️ MARKER: Removed fill path overlap first", category: .general)
             }
 
             // Step 2: Expand the stroke outline if stroke exists and union with cleaned fill
@@ -350,7 +350,7 @@ extension DrawingCanvas {
                     if let mergedPath = merged, !mergedPath.isEmpty, isPathBoundsFinite(mergedPath.boundingBox) {
                         finalShape.path = VectorPath(cgPath: mergedPath)
                         finalShape.strokeStyle = nil // Convert to fill-only shape
-                        Log.info("🖊️ MARKER: Expanded stroke and unioned with cleaned fill", category: .general)
+                        // Log.info("🖊️ MARKER: Expanded stroke and unioned with cleaned fill", category: .general)
                     }
                 }
             }
@@ -406,7 +406,7 @@ extension DrawingCanvas {
             if let cleaned = cleanedFillPath, !cleaned.isEmpty, isPathBoundsFinite(cleaned.boundingBox) {
                 currentPath = cleaned
                 finalPath = VectorPath(cgPath: cleaned)
-                Log.info("🖊️ MARKER: Removed fill path overlap first (preview)", category: .general)
+                // Log.info("🖊️ MARKER: Removed fill path overlap first (preview)", category: .general)
             }
 
             // Step 2: Expand the stroke outline if stroke exists and union with cleaned fill
@@ -430,7 +430,7 @@ extension DrawingCanvas {
                     if let mergedPath = merged, !mergedPath.isEmpty, isPathBoundsFinite(mergedPath.boundingBox) {
                         finalPath = VectorPath(cgPath: mergedPath)
                         finalStrokeStyle = nil // Convert to fill-only shape
-                        Log.info("🖊️ MARKER: Expanded stroke and unioned with cleaned fill (preview)", category: .general)
+                        // Log.info("🖊️ MARKER: Expanded stroke and unioned with cleaned fill (preview)", category: .general)
                     }
                 }
             }
@@ -554,14 +554,14 @@ extension DrawingCanvas {
                 // LOG CURVE DATA
                 if index == 0 {
                     let curveStr = curve.map { "(\(String(format: "%.2f", $0.x)),\(String(format: "%.2f", $0.y)))" }.joined(separator: " ")
-                    Log.info("📊 MARKER CURVE: [\(curveStr)]", category: .pressure)
+                    // Log.info("📊 MARKER CURVE: [\(curveStr)]", category: .pressure)
                 }
 
                 let mappedPressure = getThicknessFromPressureCurve(pressure: pressure, curve: curve)
 
                 // LOG PRESSURE VALUES
                 if index % 5 == 0 {  // Log every 5th point to reduce spam
-                    Log.info("📊 MARKER PRESSURE: raw=\(String(format: "%.3f", pressure)) → mapped=\(String(format: "%.3f", mappedPressure)) | thickness before=\(String(format: "%.2f", finalThickness)) after=\(String(format: "%.2f", finalThickness * mappedPressure))", category: .pressure)
+                    // Log.info("📊 MARKER PRESSURE: raw=\(String(format: "%.3f", pressure)) → mapped=\(String(format: "%.3f", mappedPressure)) | thickness before=\(String(format: "%.2f", finalThickness)) after=\(String(format: "%.2f", finalThickness * mappedPressure))", category: .pressure)
                 }
 
                 finalThickness *= mappedPressure

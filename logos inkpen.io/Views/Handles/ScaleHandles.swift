@@ -328,7 +328,7 @@ struct ScaleHandles: View {
             // Set default locked pin point to center if none is set
             if lockedPinPointIndex == nil && scalingAnchorPoint == .zero {
                 setLockedPinPoint(nil) // nil = center point
-                Log.info("🔴 SCALE TOOL: Default locked pin set to center", category: .general)
+                // Log.info("🔴 SCALE TOOL: Default locked pin set to center", category: .general)
             }
         }
         .onChange(of: shape.bounds) { oldBounds, newBounds in

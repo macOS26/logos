@@ -18,10 +18,10 @@ extension ProfessionalPathOperations {
         let validPaths = paths.filter { !$0.isEmpty }
         guard validPaths.count == 2 else { return nil }
         
-        Log.info("🔨 PROFESSIONAL UNION (2 paths): Using CoreGraphics...", category: .general)
+        // Log.info("🔨 PROFESSIONAL UNION (2 paths): Using CoreGraphics...", category: .general)
         
         if let coreGraphicsResult = CoreGraphicsPathOperations.union(validPaths[0], validPaths[1], using: .winding) {
-            Log.info("✅ PROFESSIONAL UNION: CoreGraphics success (preserves smooth curves)", category: .fileOperations)
+            // Log.info("✅ PROFESSIONAL UNION: CoreGraphics success (preserves smooth curves)", category: .fileOperations)
             return coreGraphicsResult
         } else {
             Log.error("❌ PROFESSIONAL UNION: CoreGraphics operation failed", category: .error)
@@ -35,11 +35,11 @@ extension ProfessionalPathOperations {
     static func professionalMinusFront(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
         guard !frontPath.isEmpty && !backPath.isEmpty else { return backPath }
         
-        Log.info("🔨 PROFESSIONAL PUNCH: Using CoreGraphics...", category: .general)
+        // Log.info("🔨 PROFESSIONAL PUNCH: Using CoreGraphics...", category: .general)
         
         // Use CoreGraphics (much faster and preserves curves)
         if let coreGraphicsResult = CoreGraphicsPathOperations.subtract(frontPath, from: backPath, using: .winding) {
-            Log.info("✅ PROFESSIONAL PUNCH: CoreGraphics success (preserves smooth curves)", category: .fileOperations)
+            // Log.info("✅ PROFESSIONAL PUNCH: CoreGraphics success (preserves smooth curves)", category: .fileOperations)
             return coreGraphicsResult
         }
         
@@ -51,11 +51,11 @@ extension ProfessionalPathOperations {
     static func professionalIntersect(_ path1: CGPath, _ path2: CGPath) -> CGPath? {
         guard !path1.isEmpty && !path2.isEmpty else { return nil }
         
-        Log.info("🔨 PROFESSIONAL INTERSECT: Using CoreGraphics...", category: .general)
+        // Log.info("🔨 PROFESSIONAL INTERSECT: Using CoreGraphics...", category: .general)
         
         // Use CoreGraphics (much faster and preserves curves)
         if let coreGraphicsResult = CoreGraphicsPathOperations.intersection(path1, path2, using: .winding) {
-            Log.info("✅ PROFESSIONAL INTERSECT: CoreGraphics success (preserves smooth curves)", category: .fileOperations)
+            // Log.info("✅ PROFESSIONAL INTERSECT: CoreGraphics success (preserves smooth curves)", category: .fileOperations)
             return coreGraphicsResult
         }
         
@@ -72,17 +72,17 @@ extension ProfessionalPathOperations {
             return nonEmptyPath.isEmpty ? [] : [nonEmptyPath]
         }
         
-        Log.info("🔨 PROFESSIONAL EXCLUDE: Using CoreGraphics...", category: .general)
+        // Log.info("🔨 PROFESSIONAL EXCLUDE: Using CoreGraphics...", category: .general)
         
         // Use CoreGraphics Symmetric Difference (exactly what Exclude does!)
         if let coreGraphicsResult = CoreGraphicsPathOperations.symmetricDifference(path1, path2, using: .winding) {
-            Log.info("✅ PROFESSIONAL EXCLUDE: CoreGraphics success (preserves smooth curves)", category: .fileOperations)
+            // Log.info("✅ PROFESSIONAL EXCLUDE: CoreGraphics success (preserves smooth curves)", category: .fileOperations)
             
             // CoreGraphics returns a single path, but we need to return as array
             // Check if result has multiple components and separate them
             let components = CoreGraphicsPathOperations.componentsSeparated(coreGraphicsResult, using: .winding)
             if !components.isEmpty {
-                Log.info("   → Separated into \(components.count) components", category: .general)
+                // Log.info("   → Separated into \(components.count) components", category: .general)
                 return components
             } else {
                 // Single path result
@@ -103,13 +103,13 @@ extension ProfessionalPathOperations {
     static func professionalMosaic(_ paths: [CGPath]) -> [CGPath] {
         guard paths.count >= 2 else { return paths }
         
-        Log.info("🔨 PROFESSIONAL MOSAIC: True stained glass - preserving ALL visible areas...", category: .general)
+        // Log.info("🔨 PROFESSIONAL MOSAIC: True stained glass - preserving ALL visible areas...", category: .general)
         
         // Use the new CoreGraphics split operation
         let result = CoreGraphicsPathOperations.split(paths, using: .winding)
         
         if !result.isEmpty {
-            Log.info("✅ PROFESSIONAL MOSAIC: SUCCESS - \(result.count) pieces (ALL areas preserved)", category: .fileOperations)
+            // Log.info("✅ PROFESSIONAL MOSAIC: SUCCESS - \(result.count) pieces (ALL areas preserved)", category: .fileOperations)
             return result
         } else {
             Log.fileOperation("⚠️ CoreGraphics mosaic returned empty result", level: .info)
@@ -122,13 +122,13 @@ extension ProfessionalPathOperations {
     static func professionalCut(_ paths: [CGPath]) -> [CGPath] {
         guard paths.count >= 2 else { return paths }
         
-        Log.info("🔨 PROFESSIONAL CUT: Using CoreGraphics with curve preservation...", category: .general)
+        // Log.info("🔨 PROFESSIONAL CUT: Using CoreGraphics with curve preservation...", category: .general)
         
         // Use the new CoreGraphics cut operation  
         let result = CoreGraphicsPathOperations.cut(paths, using: .winding)
         
         if !result.isEmpty {
-            Log.info("✅ PROFESSIONAL CUT: CoreGraphics success - \(result.count) pieces (curves preserved)", category: .fileOperations)
+            // Log.info("✅ PROFESSIONAL CUT: CoreGraphics success - \(result.count) pieces (curves preserved)", category: .fileOperations)
             return result
                 } else {
             Log.fileOperation("⚠️ CoreGraphics cut returned empty result", level: .info)
@@ -233,13 +233,13 @@ extension ProfessionalPathOperations {
             return paths.enumerated().map { (index, path) in (path, index) }
         }
         
-        Log.info("🔨 PROFESSIONAL MERGE: Using CoreGraphics with cut-first, merge-colors approach...", category: .general)
+        // Log.info("🔨 PROFESSIONAL MERGE: Using CoreGraphics with cut-first, merge-colors approach...", category: .general)
         
         // Use the new CoreGraphics merge operation with color tracking
         let result = CoreGraphicsPathOperations.mergeWithShapeTracking(paths, colors: colors, using: .winding)
         
         if !result.isEmpty {
-            Log.info("✅ PROFESSIONAL MERGE: CoreGraphics success - \(result.count) color-unified shapes", category: .fileOperations)
+            // Log.info("✅ PROFESSIONAL MERGE: CoreGraphics success - \(result.count) color-unified shapes", category: .fileOperations)
             return result
         } else {
             Log.fileOperation("⚠️ CoreGraphics merge returned empty result", level: .info)
@@ -276,13 +276,13 @@ extension ProfessionalPathOperations {
             return paths.enumerated().map { (index, path) in (path, index, false) }
         }
         
-        Log.info("🔨 PROFESSIONAL CROP: Using CoreGraphics with curve preservation...", category: .general)
+        // Log.info("🔨 PROFESSIONAL CROP: Using CoreGraphics with curve preservation...", category: .general)
         
         // Use the new CoreGraphics crop operation
         let result = CoreGraphicsPathOperations.cropWithShapeTracking(paths, using: .winding)
         
         if !result.isEmpty {
-            Log.info("✅ PROFESSIONAL CROP: CoreGraphics success - \(result.count) shapes (curves preserved)", category: .fileOperations)
+            // Log.info("✅ PROFESSIONAL CROP: CoreGraphics success - \(result.count) shapes (curves preserved)", category: .fileOperations)
             return result
         } else {
             Log.fileOperation("⚠️ CoreGraphics crop returned empty result", level: .info)
@@ -300,12 +300,12 @@ extension ProfessionalPathOperations {
     static func professionalDieline(_ paths: [CGPath]) -> [CGPath] {
         guard !paths.isEmpty else { return [] }
         
-        Log.info("🔨 PROFESSIONAL DIELINE: Processing \(paths.count) paths", category: .general)
+        // Log.info("🔨 PROFESSIONAL DIELINE: Processing \(paths.count) paths", category: .general)
         
         // Step 1: Apply Mosaic operation to cut everything at intersections (with curve preservation)
         let splitPaths = professionalMosaic(paths)
         
-        Log.info("✅ PROFESSIONAL DIELINE: Created \(splitPaths.count) mosaic shapes ready for dieline conversion", category: .fileOperations)
+        // Log.info("✅ PROFESSIONAL DIELINE: Created \(splitPaths.count) mosaic shapes ready for dieline conversion", category: .fileOperations)
         return splitPaths
     }
     
@@ -313,7 +313,7 @@ extension ProfessionalPathOperations {
     static func professionalSeparate(_ paths: [CGPath]) -> [CGPath] {
         guard !paths.isEmpty else { return [] }
         
-        Log.info("🔨 PROFESSIONAL SEPARATE: Processing \(paths.count) paths", category: .general)
+        // Log.info("🔨 PROFESSIONAL SEPARATE: Processing \(paths.count) paths", category: .general)
         
         var separatedPaths: [CGPath] = []
         
@@ -323,15 +323,15 @@ extension ProfessionalPathOperations {
             if components.count <= 1 {
                 // No separation needed, keep original
                 separatedPaths.append(path)
-                Log.info("   Path \(index + 1): No components to separate", category: .general)
+                // Log.info("   Path \(index + 1): No components to separate", category: .general)
             } else {
                 // Add all components
                 separatedPaths.append(contentsOf: components.filter { !$0.isEmpty })
-                Log.info("   Path \(index + 1): Separated into \(components.count) components", category: .general)
+                // Log.info("   Path \(index + 1): Separated into \(components.count) components", category: .general)
             }
         }
         
-        Log.info("✅ PROFESSIONAL SEPARATE: Created \(separatedPaths.count) individual paths from \(paths.count) compound paths", category: .fileOperations)
+        // Log.info("✅ PROFESSIONAL SEPARATE: Created \(separatedPaths.count) individual paths from \(paths.count) compound paths", category: .fileOperations)
         return separatedPaths
     }
 } 

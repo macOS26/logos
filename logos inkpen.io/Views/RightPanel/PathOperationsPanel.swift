@@ -306,9 +306,9 @@ struct PathOperationsPanel: View {
             return
         }
         
-        Log.info("📚 STACKING ORDER: Processing \(selectedShapes.count) shapes", category: .general)
+        // Log.info("📚 STACKING ORDER: Processing \(selectedShapes.count) shapes", category: .general)
         for (index, shape) in selectedShapes.enumerated() {
-            Log.info("  \(index): \(shape.name) (bottom→top)", category: .general)
+            // Log.info("  \(index): \(shape.name) (bottom→top)", category: .general)
         }
         
         // Convert shapes to CGPaths
@@ -344,7 +344,7 @@ struct PathOperationsPanel: View {
                     opacity: topmostShape.opacity
                 )
                 resultShapes = [unionShape]
-                Log.info("✅ UNION: Created unified shape with topmost object's color", category: .fileOperations)
+                // Log.info("✅ UNION: Created unified shape with topmost object's color", category: .fileOperations)
             }
             
         case .minusFront:
@@ -360,7 +360,7 @@ struct PathOperationsPanel: View {
             }    // First in array = bottommost = back
             let frontShapes = Array(selectedShapes.dropFirst()) // All others = front
             
-            Log.info("🔪 PUNCH: Back shape '\(backShape.name)' - Front shapes: \(frontShapes.map { $0.name })", category: .general)
+            // Log.info("🔪 PUNCH: Back shape '\(backShape.name)' - Front shapes: \(frontShapes.map { $0.name })", category: .general)
             
             var resultPath = backShape.path.cgPath
             
@@ -368,7 +368,7 @@ struct PathOperationsPanel: View {
             for frontShape in frontShapes {
                 if let subtractedPath = ProfessionalPathOperations.minusFront(frontShape.path.cgPath, from: resultPath) {
                     resultPath = subtractedPath
-                    Log.info("  ⚡ Subtracted '\(frontShape.name)' from result", category: .general)
+                    // Log.info("  ⚡ Subtracted '\(frontShape.name)' from result", category: .general)
                 }
             }
             
@@ -382,7 +382,7 @@ struct PathOperationsPanel: View {
                 opacity: backShape.opacity
             )
             resultShapes = [resultShape]
-            Log.info("✅ PUNCH: Result takes back object's color (\(backShape.name))", category: .fileOperations)
+            // Log.info("✅ PUNCH: Result takes back object's color (\(backShape.name))", category: .fileOperations)
             
         case .intersect:
             // INTERSECT: Keep only overlapping areas, result takes color of TOPMOST object
@@ -405,7 +405,7 @@ struct PathOperationsPanel: View {
                     opacity: topmostShape.opacity
                 )
                 resultShapes = [intersectedShape]
-                Log.info("✅ INTERSECT: Result takes topmost object's color (\(topmostShape.name))", category: .fileOperations)
+                // Log.info("✅ INTERSECT: Result takes topmost object's color (\(topmostShape.name))", category: .fileOperations)
             }
             
         case .exclude:
@@ -432,7 +432,7 @@ struct PathOperationsPanel: View {
                 )
                 resultShapes.append(excludedShape)
             }
-            Log.info("✅ EXCLUDE: Created \(resultShapes.count) pieces with topmost object's color (\(topmostShape.name))", category: .fileOperations)
+            // Log.info("✅ EXCLUDE: Created \(resultShapes.count) pieces with topmost object's color (\(topmostShape.name))", category: .fileOperations)
         
                     // PATHFINDER EFFECTS (Professional) - These retain original colors
         case .mosaic:
@@ -453,7 +453,7 @@ struct PathOperationsPanel: View {
                 )
                 resultShapes.append(mosaicShape)
             }
-            Log.info("✅ MOSAIC: Created \(resultShapes.count) pieces - TRUE stained glass effect (ALL visible areas preserved)", category: .fileOperations)
+            // Log.info("✅ MOSAIC: Created \(resultShapes.count) pieces - TRUE stained glass effect (ALL visible areas preserved)", category: .fileOperations)
             
         case .cut:
             // CUT: CoreGraphics-based alternative to Trim with curve preservation
@@ -481,7 +481,7 @@ struct PathOperationsPanel: View {
                 )
                 resultShapes.append(cutShape)
             }
-            Log.info("✅ CUT: Created \(resultShapes.count) cut shapes with curves preserved, removed strokes", category: .fileOperations)
+            // Log.info("✅ CUT: Created \(resultShapes.count) cut shapes with curves preserved, removed strokes", category: .fileOperations)
             
         case .merge:
                             // MERGE: Professional Merge - cut all shapes first (maintain appearance), then merge same colors
@@ -516,7 +516,7 @@ struct PathOperationsPanel: View {
                 )
                 resultShapes.append(mergedShape)
             }
-            Log.info("✅ MERGE: Created \(resultShapes.count) color-unified shapes with maintained appearance, removed strokes", category: .fileOperations)
+            // Log.info("✅ MERGE: Created \(resultShapes.count) color-unified shapes with maintained appearance, removed strokes", category: .fileOperations)
             
         case .crop:
             // CROP: Use topmost shape to crop others, then trim. Top shape becomes invisible.
@@ -541,7 +541,7 @@ struct PathOperationsPanel: View {
                         opacity: originalShape.opacity
                     )
                     resultShapes.append(invisibleCropShape)
-                    Log.info("   ✅ Created invisible crop boundary from \(originalShape.name)", category: .general)
+                    // Log.info("   ✅ Created invisible crop boundary from \(originalShape.name)", category: .general)
                 } else {
                     // Track how many pieces we've created from this original shape
                     shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
@@ -559,7 +559,7 @@ struct PathOperationsPanel: View {
                 }
             }
             
-            Log.info("✅ CROP: Created \(resultShapes.count) shapes (includes invisible crop boundary), removed strokes", category: .fileOperations)
+            // Log.info("✅ CROP: Created \(resultShapes.count) shapes (includes invisible crop boundary), removed strokes", category: .fileOperations)
             
         case .dieline:
             // DIELINE: Apply Divide then convert all results to 1px black strokes with no fill
@@ -581,7 +581,7 @@ struct PathOperationsPanel: View {
                 )
                 resultShapes.append(dielineShape)
             }
-            Log.info("✅ DIELINE: Created \(resultShapes.count) dieline shapes", category: .fileOperations)
+            // Log.info("✅ DIELINE: Created \(resultShapes.count) dieline shapes", category: .fileOperations)
             
         case .separate:
             // SEPARATE: Break compound paths into individual components
@@ -593,7 +593,7 @@ struct PathOperationsPanel: View {
                 if components.count <= 1 {
                     // No separation needed, keep original
                     separatedShapes.append(shape)
-                    Log.info("   Shape \(shapeIndex + 1): No components to separate", category: .general)
+                    // Log.info("   Shape \(shapeIndex + 1): No components to separate", category: .general)
                 } else {
                     // Create separate shapes for each component
                     for (componentIndex, component) in components.enumerated() {
@@ -607,12 +607,12 @@ struct PathOperationsPanel: View {
                         )
                         separatedShapes.append(separatedShape)
                     }
-                    Log.info("   Shape \(shapeIndex + 1): Separated into \(components.count) components", category: .general)
+                    // Log.info("   Shape \(shapeIndex + 1): Separated into \(components.count) components", category: .general)
                 }
             }
             
             resultShapes = separatedShapes
-            Log.info("✅ SEPARATE: Created \(resultShapes.count) individual shapes from \(selectedShapes.count) compound paths", category: .fileOperations)
+            // Log.info("✅ SEPARATE: Created \(resultShapes.count) individual shapes from \(selectedShapes.count) compound paths", category: .fileOperations)
             
         case .kick:
             // KICK: Back objects subtract from front object, result takes color of FRONT object
@@ -627,7 +627,7 @@ struct PathOperationsPanel: View {
             }     // Last in array = topmost = front
             let backShapes = Array(selectedShapes.dropLast()) // All others = back
             
-            Log.info("🔪 KICK: Front shape '\(frontShape.name)' - Back shapes: \(backShapes.map { $0.name })", category: .general)
+            // Log.info("🔪 KICK: Front shape '\(frontShape.name)' - Back shapes: \(backShapes.map { $0.name })", category: .general)
             
             var resultPath = frontShape.path.cgPath
             
@@ -635,7 +635,7 @@ struct PathOperationsPanel: View {
             for backShape in backShapes {
                 if let subtractedPath = ProfessionalPathOperations.kick(resultPath, from: backShape.path.cgPath) {
                     resultPath = subtractedPath
-                    Log.info("  ⚡ Subtracted '\(backShape.name)' from result", category: .general)
+                    // Log.info("  ⚡ Subtracted '\(backShape.name)' from result", category: .general)
                 }
             }
             
@@ -649,7 +649,7 @@ struct PathOperationsPanel: View {
                 opacity: frontShape.opacity
             )
             resultShapes = [resultShape]
-            Log.info("✅ KICK: Result takes front object's color (\(frontShape.name))", category: .fileOperations)
+            // Log.info("✅ KICK: Result takes front object's color (\(frontShape.name))", category: .fileOperations)
         }
         
         guard !resultShapes.isEmpty else {
@@ -666,7 +666,7 @@ struct PathOperationsPanel: View {
             document.selectShape(resultShape.id)
         }
         
-                        Log.info("✅ PROFESSIONAL pathfinder operation \(operation.rawValue) completed - created \(resultShapes.count) result shape(s)", category: .fileOperations)
+                        // Log.info("✅ PROFESSIONAL pathfinder operation \(operation.rawValue) completed - created \(resultShapes.count) result shape(s)", category: .fileOperations)
     }
     
     // MARK: - Remove Overlap Functions
@@ -684,7 +684,7 @@ struct PathOperationsPanel: View {
             }
         }
         
-        Log.info("✅ REMOVE OVERLAP: Processed \(processedCount) of \(selectedShapes.count) selected shapes", category: .fileOperations)
+        // Log.info("✅ REMOVE OVERLAP: Processed \(processedCount) of \(selectedShapes.count) selected shapes", category: .fileOperations)
     }
     
     /// Remove overlapping areas from all shapes in the document
@@ -705,7 +705,7 @@ struct PathOperationsPanel: View {
             }
         }
         
-        Log.info("✅ REMOVE ALL OVERLAPS: Processed \(processedCount) of \(allShapes.count) shapes", category: .fileOperations)
+        // Log.info("✅ REMOVE ALL OVERLAPS: Processed \(processedCount) of \(allShapes.count) shapes", category: .fileOperations)
     }
     
     /// Remove overlapping areas from a single shape using self-union
@@ -736,7 +736,7 @@ struct PathOperationsPanel: View {
                 // Use unified helper to update shape path
                 document.updateShapePathUnified(id: shape.id, path: VectorPath(cgPath: cleanedPath))
                 
-                Log.info("✅ REMOVE OVERLAP: Successfully cleaned shape: \(shape.name)", category: .fileOperations)
+                // Log.info("✅ REMOVE OVERLAP: Successfully cleaned shape: \(shape.name)", category: .fileOperations)
                 return true
             }
         }

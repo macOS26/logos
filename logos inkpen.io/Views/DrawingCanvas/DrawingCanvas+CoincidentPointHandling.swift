@@ -67,8 +67,8 @@ extension DrawingCanvas {
                         let distance = sqrt(pow(targetPoint.x - checkPoint.x, 2) + pow(targetPoint.y - checkPoint.y, 2))
                         if distance <= tolerance {
                             coincidentPoints.insert(pointID)
-                            Log.info("🔗 COINCIDENT POINT: Found point at element \(elementIndex) in shape \(shape.name) coincident with target", category: .general)
-                            Log.info("   Target: (\(targetPoint.x), \(targetPoint.y)), Found: (\(checkPoint.x), \(checkPoint.y)), Distance: \(distance)", category: .general)
+                            // Log.info("🔗 COINCIDENT POINT: Found point at element \(elementIndex) in shape \(shape.name) coincident with target", category: .general)
+                            // Log.info("   Target: (\(targetPoint.x), \(targetPoint.y)), Found: (\(checkPoint.x), \(checkPoint.y)), Distance: \(distance)", category: .general)
                         }
                     }
                 }
@@ -101,15 +101,15 @@ extension DrawingCanvas {
         let closedPathEndpoints = findClosedPathEndpoints(for: pointID)
         for endpointID in closedPathEndpoints {
             selectedPoints.insert(endpointID)
-            Log.info("🔗 CLOSED PATH ENDPOINT: Added endpoint \(endpointID) to selection", category: .general)
+            // Log.info("🔗 CLOSED PATH ENDPOINT: Added endpoint \(endpointID) to selection", category: .general)
         }
         
         let totalCoincident = coincidentPoints.count + closedPathEndpoints.count
         if totalCoincident > 0 {
-            Log.info("🔗 COINCIDENT SELECTION: Selected \(totalCoincident + 1) total points", category: .general)
-            Log.info("   Primary point: \(pointID)", category: .general)
-            Log.info("   Coordinate coincident points: \(coincidentPoints.count)", category: .general)
-            Log.info("   Closed path endpoints: \(closedPathEndpoints.count)", category: .general)
+            // Log.info("🔗 COINCIDENT SELECTION: Selected \(totalCoincident + 1) total points", category: .general)
+            // Log.info("   Primary point: \(pointID)", category: .general)
+            // Log.info("   Coordinate coincident points: \(coincidentPoints.count)", category: .general)
+            // Log.info("   Closed path endpoints: \(closedPathEndpoints.count)", category: .general)
         }
     }
     
@@ -164,13 +164,13 @@ extension DrawingCanvas {
                             // Points are actually coincident - include the pair
                             if pointID.elementIndex == moveIndex {
                                 endpointPairs.insert(PointID(shapeID: pointID.shapeID, pathIndex: pointID.pathIndex, elementIndex: lastIndex))
-                                Log.info("🔗 CLOSED PATH COINCIDENT: First point links to last point (distance: \(String(format: "%.3f", distance)))", category: .general)
+                                // Log.info("🔗 CLOSED PATH COINCIDENT: First point links to last point (distance: \(String(format: "%.3f", distance)))", category: .general)
                             } else if pointID.elementIndex == lastIndex {
                                 endpointPairs.insert(PointID(shapeID: pointID.shapeID, pathIndex: pointID.pathIndex, elementIndex: moveIndex))
-                                Log.info("🔗 CLOSED PATH COINCIDENT: Last point links to first point (distance: \(String(format: "%.3f", distance)))", category: .general)
+                                // Log.info("🔗 CLOSED PATH COINCIDENT: Last point links to first point (distance: \(String(format: "%.3f", distance)))", category: .general)
                             }
                         } else {
-                            Log.info("🔍 CLOSED PATH CHECK: First/last points not coincident (distance: \(String(format: "%.3f", distance)) > \(tolerance))", category: .general)
+                            // Log.info("🔍 CLOSED PATH CHECK: First/last points not coincident (distance: \(String(format: "%.3f", distance)) > \(tolerance))", category: .general)
                         }
                     }
                 }
@@ -182,8 +182,8 @@ extension DrawingCanvas {
     /// Analyzes and reports all coincident points in the current document
     /// Useful for debugging and understanding path structure
     func analyzeCoincidentPoints() {
-        Log.info("🔍 COINCIDENT POINT ANALYSIS:", category: .general)
-        Log.info("Using tolerance: \(coincidentPointTolerance) pixels", category: .general)
+        // Log.info("🔍 COINCIDENT POINT ANALYSIS:", category: .general)
+        // Log.info("Using tolerance: \(coincidentPointTolerance) pixels", category: .general)
         
         var totalCoincidentGroups = 0
         var processedPoints: Set<PointID> = []
@@ -197,7 +197,7 @@ extension DrawingCanvas {
             for shape in shapes {
                 if !shape.isVisible { continue }
                 
-                Log.info("\n📋 Analyzing shape: \(shape.name)", category: .general)
+                // Log.info("\n📋 Analyzing shape: \(shape.name)", category: .general)
                 
                 for (elementIndex, element) in shape.path.elements.enumerated() {
                     let pointID = PointID(
@@ -223,10 +223,10 @@ extension DrawingCanvas {
                     if !coincidentPoints.isEmpty {
                         totalCoincidentGroups += 1
                         if let position = getPointPosition(pointID) {
-                            Log.info("   🔗 Coincident Group \(totalCoincidentGroups) at (\(position.x), \(position.y)):", category: .general)
-                            Log.info("      Primary: Element \(elementIndex)", category: .general)
+                            // Log.info("   🔗 Coincident Group \(totalCoincidentGroups) at (\(position.x), \(position.y)):", category: .general)
+                            // Log.info("      Primary: Element \(elementIndex)", category: .general)
                             for coincidentPoint in coincidentPoints {
-                                Log.info("      Coincident: Element \(coincidentPoint.elementIndex) in shape \(coincidentPoint.shapeID)", category: .general)
+                                // Log.info("      Coincident: Element \(coincidentPoint.elementIndex) in shape \(coincidentPoint.shapeID)", category: .general)
                             }
                             
                             // Mark all points in this group as processed
@@ -241,9 +241,9 @@ extension DrawingCanvas {
         }
         
         if totalCoincidentGroups == 0 {
-            Log.info("✅ No coincident points found in document", category: .fileOperations)
+            // Log.info("✅ No coincident points found in document", category: .fileOperations)
         } else {
-            Log.info("\n📊 SUMMARY: Found \(totalCoincidentGroups) coincident point groups", category: .general)
+            // Log.info("\n📊 SUMMARY: Found \(totalCoincidentGroups) coincident point groups", category: .general)
             Log.fileOperation("💡 TIP: These points will move together when selected to maintain path continuity", level: .info)
         }
     }
@@ -287,7 +287,7 @@ extension DrawingCanvas {
                     // Apply smooth curve logic if this coincident point is a smooth curve point
                     if isSmoothCurvePoint(elements: elements, elementIndex: coincidentPointID.elementIndex) {
                         moveSmoothCurveHandles(elements: &elements, elementIndex: coincidentPointID.elementIndex, delta: delta)
-                        Log.info("🔗 COINCIDENT SMOOTH: Applied smooth curve logic to coincident point at element \(coincidentPointID.elementIndex) in shape \(coincidentPointID.shapeID)", category: .general)
+                        // Log.info("🔗 COINCIDENT SMOOTH: Applied smooth curve logic to coincident point at element \(coincidentPointID.elementIndex) in shape \(coincidentPointID.shapeID)", category: .general)
                     }
                     
                     // Update the shape
@@ -443,7 +443,7 @@ extension DrawingCanvas {
                     )
                     visibleHandles.insert(oppositeHandleID)
                     
-                    Log.info("🔗 COINCIDENT TANGENT: Updated incoming handle of coincident point at index \(coincidentIndex)", category: .general)
+                    // Log.info("🔗 COINCIDENT TANGENT: Updated incoming handle of coincident point at index \(coincidentIndex)", category: .general)
                 }
             } else if draggedHandleID.handleType == .control2 {
                 // We're dragging an incoming handle, update the outgoing handle of the coincident point
@@ -474,7 +474,7 @@ extension DrawingCanvas {
                         )
                         visibleHandles.insert(oppositeHandleID)
                         
-                        Log.info("🔗 COINCIDENT TANGENT: Updated outgoing handle of coincident point at index \(coincidentIndex)", category: .general)
+                        // Log.info("🔗 COINCIDENT TANGENT: Updated outgoing handle of coincident point at index \(coincidentIndex)", category: .general)
                     }
                 }
             }
@@ -599,7 +599,7 @@ extension DrawingCanvas {
                 )
                 selectedHandles.insert(oppositeHandleID)
                 
-                Log.info("🔗 COINCIDENT SMOOTH: Updated first→last handles", category: .general)
+                // Log.info("🔗 COINCIDENT SMOOTH: Updated first→last handles", category: .general)
                 return true
             }
             
@@ -627,7 +627,7 @@ extension DrawingCanvas {
                 )
                 selectedHandles.insert(oppositeHandleID)
                 
-                Log.info("🔗 COINCIDENT SMOOTH: Updated last→first handles", category: .general)
+                // Log.info("🔗 COINCIDENT SMOOTH: Updated last→first handles", category: .general)
                 return true
             }
         }

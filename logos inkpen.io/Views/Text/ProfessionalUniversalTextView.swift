@@ -217,7 +217,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         let newHeight = viewModel.textBoxFrame.height
         
         if abs(currentContainerWidth - newWidth) > 1.0 { // Only update if significantly different
-            Log.info("📏 UPDATING TEXT CONTAINER WIDTH: \(String(format: "%.1f", currentContainerWidth))pt → \(String(format: "%.1f", newWidth))pt", category: .general)
+            // Log.info("📏 UPDATING TEXT CONTAINER WIDTH: \(String(format: "%.1f", currentContainerWidth))pt → \(String(format: "%.1f", newWidth))pt", category: .general)
             
             // Update text container size for proper text reflow
             nsView.textContainer?.containerSize = NSSize(
@@ -241,7 +241,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                 nsView.layoutManager?.ensureLayout(for: textContainer)
             }
             
-            Log.info("📏 TEXT REFLOW: Container updated, text should now wrap to new width", category: .general)
+            // Log.info("📏 TEXT REFLOW: Container updated, text should now wrap to new width", category: .general)
         }
         
         // CRITICAL: Keep NSTextView COMPLETELY STATIC to prevent ANY layout shifts
@@ -339,7 +339,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             // SIMPLIFIED: Trust NSTextView's isEditable property instead of double-checking
             // The NSTextView isEditable is already set correctly based on editing mode
             guard textView.isEditable else {
-                Log.info("🚫 TEXT VIEW NOT EDITABLE: Change ignored", category: .general)
+                // Log.info("🚫 TEXT VIEW NOT EDITABLE: Change ignored", category: .general)
                 return
             }
             
@@ -377,7 +377,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         func textViewDidChangeSelection(_ notification: Notification) {
             // CRITICAL: Do not save selection changes that happen during programmatic updates
             guard !isRestoringSelection else {
-                Log.info("🚫 COORDINATOR BLOCKED SAVE: Programmatic restore in progress", category: .general)
+                // Log.info("🚫 COORDINATOR BLOCKED SAVE: Programmatic restore in progress", category: .general)
                 return
             }
             guard let textView = notification.object as? NSTextView else { return }
@@ -388,16 +388,16 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
                 self.parent.viewModel.userInitiatedCursorPosition = selectedRange.location
-                Log.info("💾 COORDINATOR SAVED CURSOR: position=\(selectedRange.location) length=\(selectedRange.length)", category: .general)
+                // Log.info("💾 COORDINATOR SAVED CURSOR: position=\(selectedRange.location) length=\(selectedRange.length)", category: .general)
             }
         }
 
         func textDidBeginEditing(_ notification: Notification) {
-            Log.info("✅ TEXT EDITING BEGAN", category: .fileOperations)
+            // Log.info("✅ TEXT EDITING BEGAN", category: .fileOperations)
         }
         
         func textDidEndEditing(_ notification: Notification) {
-            Log.info("✅ TEXT EDITING ENDED", category: .fileOperations)
+            // Log.info("✅ TEXT EDITING ENDED", category: .fileOperations)
 
             // VECTOR APP OPTIMIZATION: Save to document ONLY when editing ends
             let finalText = parent.viewModel.text

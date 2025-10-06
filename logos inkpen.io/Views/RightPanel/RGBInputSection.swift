@@ -350,7 +350,7 @@ struct RGBInputSection: View {
         // CRITICAL FIX: Don't update shared color when displaying a gradient
         // This preserves gradients when the Ink panel is opened
         if isDisplayingGradient {
-            Log.info("🎨 RGB INPUT: Preserving gradient - not updating to solid color", category: .general)
+            // Log.info("🎨 RGB INPUT: Preserving gradient - not updating to solid color", category: .general)
             return
         }
 

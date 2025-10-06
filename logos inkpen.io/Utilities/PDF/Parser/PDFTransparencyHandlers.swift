@@ -22,7 +22,7 @@ extension PDFCommandParser {
         }
         
         currentFillOpacity = Double(opacity)
-        Log.info("PDF: Fill opacity set to \(currentFillOpacity)", category: .general)
+        // Log.info("PDF: Fill opacity set to \(currentFillOpacity)", category: .general)
     }
     
     func handleStrokeOpacity(scanner: CGPDFScannerRef) {
@@ -34,7 +34,7 @@ extension PDFCommandParser {
         }
         
         currentStrokeOpacity = Double(opacity)
-        Log.info("PDF: Stroke opacity set to \(currentStrokeOpacity)", category: .general)
+        // Log.info("PDF: Stroke opacity set to \(currentStrokeOpacity)", category: .general)
     }
     
     func handleGraphicsState(scanner: CGPDFScannerRef) {
@@ -46,7 +46,7 @@ extension PDFCommandParser {
         if CGPDFScannerPopName(scanner, &namePtr), let namePtrUnwrapped = namePtr {
             // PDF 1.4+ format - name
             name = String(cString: namePtrUnwrapped)
-            Log.info("PDF: Graphics state '\(name)' (as name) - attempting to parse ExtGState...", category: .general)
+            // Log.info("PDF: Graphics state '\(name)' (as name) - attempting to parse ExtGState...", category: .general)
         } else if CGPDFScannerPopString(scanner, &nameRef) {
             // PDF 1.3 format - string
             guard let nameRefUnwrapped = nameRef,
@@ -55,7 +55,7 @@ extension PDFCommandParser {
                 return
             }
             name = textString as String
-            Log.info("PDF: Graphics state '\(name)' (as string) - attempting to parse ExtGState...", category: .general)
+            // Log.info("PDF: Graphics state '\(name)' (as string) - attempting to parse ExtGState...", category: .general)
         } else {
             Log.error("PDF: Failed to read graphics state name (tried both name and string formats)", category: .error)
             return
@@ -63,59 +63,59 @@ extension PDFCommandParser {
         
         // Enhanced ExtGState parsing with better error handling
         guard let page = currentPage else {
-            Log.info("PDF: No current page available for ExtGState lookup", category: .general)
+            // Log.info("PDF: No current page available for ExtGState lookup", category: .general)
             return
         }
         
         guard let resourceDict = page.dictionary else {
-            Log.info("PDF: Page dictionary not available", category: .general)
+            // Log.info("PDF: Page dictionary not available", category: .general)
             return
         }
         
         // Try to get Resources dictionary - could be directly on page or inherited
         var resourcesRef: CGPDFDictionaryRef? = nil
         if !CGPDFDictionaryGetDictionary(resourceDict, "Resources", &resourcesRef) {
-            Log.info("PDF: No Resources dictionary found on page", category: .general)
+            // Log.info("PDF: No Resources dictionary found on page", category: .general)
             return
         }
         
         guard let resourcesDict = resourcesRef else {
-            Log.info("PDF: Resources dictionary is nil", category: .general)
+            // Log.info("PDF: Resources dictionary is nil", category: .general)
             return
         }
         
         // Debug: List all keys in Resources dictionary
-        Log.info("PDF: 🔍 DEBUG - Listing Resources dictionary contents:", category: .debug)
+        // Log.info("PDF: 🔍 DEBUG - Listing Resources dictionary contents:", category: .debug)
         listDictionaryKeys(resourcesDict, prefix: "  Resources")
         
         var extGStateDict: CGPDFDictionaryRef? = nil
         if !CGPDFDictionaryGetDictionary(resourcesDict, "ExtGState", &extGStateDict) {
-            Log.info("PDF: No ExtGState dictionary found in Resources", category: .general)
+            // Log.info("PDF: No ExtGState dictionary found in Resources", category: .general)
             return
         }
         
         guard let extGState = extGStateDict else {
-            Log.info("PDF: ExtGState dictionary is nil", category: .general)
+            // Log.info("PDF: ExtGState dictionary is nil", category: .general)
             return
         }
         
         // Debug: List all ExtGState entries
-        Log.info("PDF: 🔍 DEBUG - Listing ExtGState dictionary contents:", category: .debug)
+        // Log.info("PDF: 🔍 DEBUG - Listing ExtGState dictionary contents:", category: .debug)
         listDictionaryKeys(extGState, prefix: "  ExtGState")
         
         var stateDict: CGPDFDictionaryRef? = nil
         if !CGPDFDictionaryGetDictionary(extGState, name, &stateDict) {
-            Log.info("PDF: ExtGState '\(name)' not found in ExtGState dictionary", category: .general)
+            // Log.info("PDF: ExtGState '\(name)' not found in ExtGState dictionary", category: .general)
             return
         }
         
         guard let state = stateDict else {
-            Log.info("PDF: ExtGState '\(name)' dictionary is nil", category: .general)
+            // Log.info("PDF: ExtGState '\(name)' dictionary is nil", category: .general)
             return
         }
         
         // Debug: List all entries in the specific ExtGState
-        Log.info("PDF: 🔍 DEBUG - ExtGState '\(name)' contents:", category: .debug)
+        // Log.info("PDF: 🔍 DEBUG - ExtGState '\(name)' contents:", category: .debug)
         listDictionaryKeys(state, prefix: "  \(name)")
         
         // Parse opacity values from the ExtGState dictionary
@@ -124,21 +124,21 @@ extension PDFCommandParser {
         
         if CGPDFDictionaryGetNumber(state, "ca", &fillOpacity) {
             currentFillOpacity = Double(fillOpacity)
-            Log.info("PDF: ✅ ExtGState '\(name)' - Fill opacity (ca): \(currentFillOpacity)", category: .general)
+            // Log.info("PDF: ✅ ExtGState '\(name)' - Fill opacity (ca): \(currentFillOpacity)", category: .general)
         } else {
             currentFillOpacity = 1.0  // Reset to full opacity when no 'ca' entry
-            Log.info("PDF: ExtGState '\(name)' - No 'ca' (fill opacity) entry found, reset to 1.0", category: .general)
+            // Log.info("PDF: ExtGState '\(name)' - No 'ca' (fill opacity) entry found, reset to 1.0", category: .general)
         }
         
         if CGPDFDictionaryGetNumber(state, "CA", &strokeOpacity) {
             currentStrokeOpacity = Double(strokeOpacity)
-            Log.info("PDF: ✅ ExtGState '\(name)' - Stroke opacity (CA): \(currentStrokeOpacity)", category: .general)
+            // Log.info("PDF: ✅ ExtGState '\(name)' - Stroke opacity (CA): \(currentStrokeOpacity)", category: .general)
         } else {
             currentStrokeOpacity = 1.0  // Reset to full opacity when no 'CA' entry
-            Log.info("PDF: ExtGState '\(name)' - No 'CA' (stroke opacity) entry found, reset to 1.0", category: .general)
+            // Log.info("PDF: ExtGState '\(name)' - No 'CA' (stroke opacity) entry found, reset to 1.0", category: .general)
         }
         
-        Log.info("PDF: 🎯 ExtGState '\(name)' final opacity - fill: \(currentFillOpacity), stroke: \(currentStrokeOpacity)", category: .general)
+        // Log.info("PDF: 🎯 ExtGState '\(name)' final opacity - fill: \(currentFillOpacity), stroke: \(currentStrokeOpacity)", category: .general)
         
         // CRITICAL FIX: Store specific graphics state opacity values for XObject inheritance
         if name == "Gs1" {
@@ -168,7 +168,7 @@ extension PDFCommandParser {
             CGPDFDictionaryApplyFunction(dictionary, callback, keysPtr)
         }
         
-        Log.info("\(prefix): Found \(keys.count) keys: \(keys.joined(separator: ", "))", category: .general)
+        // Log.info("\(prefix): Found \(keys.count) keys: \(keys.joined(separator: ", "))", category: .general)
     }
     
     func handleXObject(scanner: CGPDFScannerRef) {
@@ -180,7 +180,7 @@ extension PDFCommandParser {
         }
         
         let name = String(cString: namePtr!)
-        Log.info("PDF: 🚨 'Do' XObject '\(name)' encountered with current opacity - fill: \(currentFillOpacity), stroke: \(currentStrokeOpacity)", category: .general)
+        // Log.info("PDF: 🚨 'Do' XObject '\(name)' encountered with current opacity - fill: \(currentFillOpacity), stroke: \(currentStrokeOpacity)", category: .general)
         
         // CRITICAL FIX: Save graphics state BEFORE processing XObject
         // At this point we have the correct outer scope opacity values
@@ -206,7 +206,7 @@ extension PDFCommandParser {
         }
         
         let name = String(cString: namePtr!)
-        Log.info("PDF: 🚨 'Do' XObject '\(name)' encountered with current opacity - fill: \(currentFillOpacity), stroke: \(currentStrokeOpacity)", category: .general)
+        // Log.info("PDF: 🚨 'Do' XObject '\(name)' encountered with current opacity - fill: \(currentFillOpacity), stroke: \(currentStrokeOpacity)", category: .general)
         
         // CRITICAL FIX: Use the correct graphics state opacity based on XObject name
         var savedFillOpacity: Double

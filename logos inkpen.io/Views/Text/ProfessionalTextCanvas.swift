@@ -125,7 +125,7 @@ struct ProfessionalTextCanvas: View {
 
             // CRITICAL FIX: Force immediate state update and sync
             textBoxState = .blue
-            Log.info("🔵 FORCED STATE CHANGE: → BLUE due to type tool selection", category: .general)
+            // Log.info("🔵 FORCED STATE CHANGE: → BLUE due to type tool selection", category: .general)
 
             // Update state immediately
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
@@ -158,7 +158,7 @@ struct ProfessionalTextCanvas: View {
         // PERFORMANCE: Use UUID lookup instead of looping
         guard let currentTextObject = document.findText(by: textObjectID) else {
             textBoxState = .gray
-            Log.info("  → GRAY (text object not found in document)", category: .general)
+            // Log.info("  → GRAY (text object not found in document)", category: .general)
             return
         }
 
@@ -172,35 +172,35 @@ struct ProfessionalTextCanvas: View {
         // FIXED: Prioritize editing state correctly
         if currentTextObject.isEditing {
             textBoxState = .blue
-            Log.info("  → BLUE (editing mode) - isEditing=\(currentTextObject.isEditing), typeTool=\(isTextToolActive)", category: .general)
+            // Log.info("  → BLUE (editing mode) - isEditing=\(currentTextObject.isEditing), typeTool=\(isTextToolActive)", category: .general)
         } else if hasTextViewFocus && isTextToolActive {
             textBoxState = .blue
-            Log.info("  → BLUE (NSTextView focus) - focus=\(hasTextViewFocus), typeTool=\(isTextToolActive)", category: .general)
+            // Log.info("  → BLUE (NSTextView focus) - focus=\(hasTextViewFocus), typeTool=\(isTextToolActive)", category: .general)
         } else if isThisTextSelected && isTextToolActive {
             // FIXED: When text is selected AND font tool is active, go to BLUE (editing) mode, not GREEN!
             textBoxState = .blue
-            Log.info("  → BLUE (selected with type tool active) - selected=\(isThisTextSelected), typeTool=\(isTextToolActive)", category: .general)
+            // Log.info("  → BLUE (selected with type tool active) - selected=\(isThisTextSelected), typeTool=\(isTextToolActive)", category: .general)
         } else if isThisTextSelected {
             textBoxState = .green
-            Log.info("  → GREEN (selected) - selected=\(isThisTextSelected)", category: .general)
+            // Log.info("  → GREEN (selected) - selected=\(isThisTextSelected)", category: .general)
         } else {
             textBoxState = .gray
-            Log.info("  → GRAY (unselected)", category: .general)
+            // Log.info("  → GRAY (unselected)", category: .general)
         }
 
         if oldState != textBoxState {
             // LOG TEXT POSITION ON STATE CHANGE
-            Log.info("📍 TEXT POSITION - State change: \(oldState) → \(textBoxState)", category: .general)
-            Log.info("📍 TEXT FRAME: x=\(viewModel.textBoxFrame.minX), y=\(viewModel.textBoxFrame.minY), w=\(viewModel.textBoxFrame.width), h=\(viewModel.textBoxFrame.height)", category: .general)
-            Log.info("📍 TEXT BOUNDS: \(viewModel.textObject.bounds)", category: .general)
-            Log.info("📍 TEXT POSITION: \(viewModel.textObject.position)", category: .general)
+            // Log.info("📍 TEXT POSITION - State change: \(oldState) → \(textBoxState)", category: .general)
+            // Log.info("📍 TEXT FRAME: x=\(viewModel.textBoxFrame.minX), y=\(viewModel.textBoxFrame.minY), w=\(viewModel.textBoxFrame.width), h=\(viewModel.textBoxFrame.height)", category: .general)
+            // Log.info("📍 TEXT BOUNDS: \(viewModel.textObject.bounds)", category: .general)
+            // Log.info("📍 TEXT POSITION: \(viewModel.textObject.position)", category: .general)
 
             // VECTOR APP OPTIMIZATION: Save text to document when exiting editing mode
             if oldState == .blue && (textBoxState == .green || textBoxState == .gray) {
                 // Save final text content and bounds to document
                 viewModel.document.updateTextContent(viewModel.textObject.id, content: viewModel.text)
                 viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
-                Log.info("💾 SAVED TEXT TO DOCUMENT: Blue → \(textBoxState == .green ? "Green" : "Gray")", category: .fileOperations)
+                // Log.info("💾 SAVED TEXT TO DOCUMENT: Blue → \(textBoxState == .green ? "Green" : "Gray")", category: .fileOperations)
 
             }
         }
@@ -216,15 +216,17 @@ struct ProfessionalTextCanvas: View {
             textBoxState = .green
             document.selectedTextIDs = [viewModel.textObject.id]
             document.selectedShapeIDs.removeAll()
-            Log.info("🎯 TEXT BOX SELECT: GRAY → GREEN", category: .general)
+            // Log.info("🎯 TEXT BOX SELECT: GRAY → GREEN", category: .general)
 
         case .green:
             // Already selected - no change needed
-            Log.info("🎯 TEXT BOX SELECT: Already GREEN", category: .general)
+            // Log.info("🎯 TEXT BOX SELECT: Already GREEN", category: .general)
+            break
 
         case .blue:
             // In editing mode - let NSTextView handle the click for text editing
-            Log.info("🎯 TEXT BOX SELECT: BLUE mode - letting NSTextView handle click", category: .general)
+            // Log.info("🎯 TEXT BOX SELECT: BLUE mode - letting NSTextView handle click", category: .general)
+            break
         }
     }
 
@@ -233,13 +235,13 @@ struct ProfessionalTextCanvas: View {
     // NEW: Track when resize starts
     private func handleResizeStarted() {
         isResizeHandleActive = true
-        Log.info("🔵 RESIZE HANDLE ACTIVATED", category: .general)
+        // Log.info("🔵 RESIZE HANDLE ACTIVATED", category: .general)
     }
 
     private func handleResizeChanged(value: DragGesture.Value) {
         // Begin resize
         resizeOffset = value.translation
-        Log.info("🔵 TEXT BOX RESIZE: \(value.translation)", category: .general)
+        // Log.info("🔵 TEXT BOX RESIZE: \(value.translation)", category: .general)
     }
 
     private func handleResizeEnded() {
@@ -256,7 +258,7 @@ struct ProfessionalTextCanvas: View {
         resizeOffset = .zero
         dragOffset = .zero
         isResizeHandleActive = false  // NEW: Reset resize handle state
-        Log.info("✅ TEXT BOX RESIZE COMPLETED", category: .fileOperations)
+        // Log.info("✅ TEXT BOX RESIZE COMPLETED", category: .fileOperations)
     }
 
     private func handleKeyPress(_ keyPress: KeyPress) -> KeyPress.Result {
@@ -267,7 +269,7 @@ struct ProfessionalTextCanvas: View {
             // VECTOR APP OPTIMIZATION: Save text to document before exiting editing mode
             viewModel.document.updateTextContent(viewModel.textObject.id, content: viewModel.text)
             viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
-            Log.info("💾 SAVED TEXT TO DOCUMENT: ESC key pressed", category: .fileOperations)
+            // Log.info("💾 SAVED TEXT TO DOCUMENT: ESC key pressed", category: .fileOperations)
 
             textBoxState = .green
             viewModel.stopEditing()

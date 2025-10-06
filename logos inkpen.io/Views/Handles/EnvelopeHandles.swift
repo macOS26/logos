@@ -317,13 +317,13 @@ struct EnvelopeHandles: View {
             warpedCorners = shape.warpEnvelope  // Current warp envelope
 
             Log.fileOperation("🔧 WARP OBJECT: Using saved warp envelope", level: .info)
-            Log.info("   Current Warp Envelope: [\(shape.warpEnvelope.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]", category: .general)
+            // Log.info("   Current Warp Envelope: [\(shape.warpEnvelope.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]", category: .general)
 
-            Log.info("   🎯 Continuous warping enabled - can warp from current state", category: .general)
+            // Log.info("   🎯 Continuous warping enabled - can warp from current state", category: .general)
 
             // REACTIVATION: Set preview to current warped shape for immediate visual feedback
             previewPath = shape.path  // Show current warped state immediately
-            Log.info("   🔄 REACTIVATION: Set preview to current warped shape (\(shape.path.elements.count) elements)", category: .general)
+            // Log.info("   🔄 REACTIVATION: Set preview to current warped shape (\(shape.path.elements.count) elements)", category: .general)
 
             return
         }
@@ -335,7 +335,7 @@ struct EnvelopeHandles: View {
             originalCorners = storedCorners
             warpedCorners = storedCorners
             Log.fileOperation("🔧 SESSION WARP RESTORED: Using stored envelope from current session", level: .info)
-            Log.info("📍 USING SESSION WARP BOUNDS: \(storedBounds)", category: .general)
+            // Log.info("📍 USING SESSION WARP BOUNDS: \(storedBounds)", category: .general)
             return
         }
         
@@ -358,7 +358,7 @@ struct EnvelopeHandles: View {
                 document.warpEnvelopeCorners[shape.id] = newOriginalCorners
             } else {
                 if let warpBounds = document.warpBounds[shape.id] {
-                    Log.info("✅ KEEPING EXISTING WARP BOUNDS (4-point shape): \(warpBounds)", category: .general)
+                    // Log.info("✅ KEEPING EXISTING WARP BOUNDS (4-point shape): \(warpBounds)", category: .general)
                 }
             }
         } else {
@@ -379,7 +379,7 @@ struct EnvelopeHandles: View {
                 document.warpEnvelopeCorners[shape.id] = newOriginalCorners
             } else {
                 if let warpBounds = document.warpBounds[shape.id] {
-                    Log.info("✅ KEEPING EXISTING WARP BOUNDS (regular shape): \(warpBounds)", category: .general)
+                    // Log.info("✅ KEEPING EXISTING WARP BOUNDS (regular shape): \(warpBounds)", category: .general)
                 }
             }
         }
@@ -446,7 +446,7 @@ struct EnvelopeHandles: View {
             let minY = min(originalCorners[0].y, originalCorners[1].y, originalCorners[2].y, originalCorners[3].y)
             let maxY = max(originalCorners[0].y, originalCorners[1].y, originalCorners[2].y, originalCorners[3].y)
             initialBounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-            Log.info("🔧 WARP OBJECT: Using original bounds for reference: (\(String(format: "%.1f", minX)), \(String(format: "%.1f", minY))) → (\(String(format: "%.1f", maxX)), \(String(format: "%.1f", maxY)))", category: .general)
+            // Log.info("🔧 WARP OBJECT: Using original bounds for reference: (\(String(format: "%.1f", minX)), \(String(format: "%.1f", minY))) → (\(String(format: "%.1f", maxX)), \(String(format: "%.1f", maxY)))", category: .general)
         } else if shape.isWarpObject, let originalPath = shape.originalPath {
             // Fallback: Use original path bounds if corners aren't available
             initialBounds = originalPath.cgPath.boundingBoxOfPath
@@ -490,7 +490,7 @@ struct EnvelopeHandles: View {
             }
             
             previewPath = VectorPath(elements: allWarpedElements, isClosed: false)
-            Log.info("   🔧 Warping \(shape.groupedShapes.count) grouped shapes (flattened/group object)", category: .general)
+            // Log.info("   🔧 Warping \(shape.groupedShapes.count) grouped shapes (flattened/group object)", category: .general)
         } else {
             // REGULAR SHAPE: Use current path
             let warpedElements = warpPathElements(shape.path.elements)
@@ -654,7 +654,7 @@ struct EnvelopeHandles: View {
             document.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
             document.warpEnvelopeCorners[shape.id] = warpedCorners
             if let warpBounds = document.warpBounds[shape.id] {
-                Log.info("📍 WARP FINISH: Stored final bounds: \(warpBounds)", category: .general)
+                // Log.info("📍 WARP FINISH: Stored final bounds: \(warpBounds)", category: .general)
             }
         }
         
@@ -665,7 +665,7 @@ struct EnvelopeHandles: View {
         
         // Note: Bounds update happens automatically when the warp object is created and stored
         
-        Log.info("   Current envelope: TL(\(String(format: "%.1f", warpedCorners[0].x)), \(String(format: "%.1f", warpedCorners[0].y))), TR(\(String(format: "%.1f", warpedCorners[1].x)), \(String(format: "%.1f", warpedCorners[1].y))), BR(\(String(format: "%.1f", warpedCorners[2].x)), \(String(format: "%.1f", warpedCorners[2].y))), BL(\(String(format: "%.1f", warpedCorners[3].x)), \(String(format: "%.1f", warpedCorners[3].y)))", category: .general)
+        // Log.info("   Current envelope: TL(\(String(format: "%.1f", warpedCorners[0].x)), \(String(format: "%.1f", warpedCorners[0].y))), TR(\(String(format: "%.1f", warpedCorners[1].x)), \(String(format: "%.1f", warpedCorners[1].y))), BR(\(String(format: "%.1f", warpedCorners[2].x)), \(String(format: "%.1f", warpedCorners[2].y))), BL(\(String(format: "%.1f", warpedCorners[3].x)), \(String(format: "%.1f", warpedCorners[3].y)))", category: .general)
         
         // Keep preview for visual feedback but refresh it for next transformation
         calculateEnvelopeWarpPreview()
@@ -704,11 +704,11 @@ struct EnvelopeHandles: View {
                 }
                 
                 updatedWarpObject.groupedShapes = warpedGroupedShapes
-                Log.info("   🔄 Updated warp object with \(warpedGroupedShapes.count) warped grouped shapes", category: .general)
+                // Log.info("   🔄 Updated warp object with \(warpedGroupedShapes.count) warped grouped shapes", category: .general)
             } else if let finalWarpedPath = previewPath {
                 // WARP OBJECT + SINGLE SHAPE: Update the main path
                 updatedWarpObject.path = finalWarpedPath
-                Log.info("   🔄 Updated warp object with single warped path", category: .general)
+                // Log.info("   🔄 Updated warp object with single warped path", category: .general)
             }
             
             updatedWarpObject.warpEnvelope = warpedCorners
@@ -730,7 +730,7 @@ struct EnvelopeHandles: View {
                 // Sync to layers
                 document.syncShapeToLayer(updatedWarpObject, at: document.unifiedObjects[objectIndex].layerIndex)
             }
-            Log.info("   ✅ Updated existing warp object coordinates in real-time", category: .general)
+            // Log.info("   ✅ Updated existing warp object coordinates in real-time", category: .general)
         } else {
             // First-time warp: create warp object
             var warpObject = currentShape
@@ -759,12 +759,12 @@ struct EnvelopeHandles: View {
                 }
                 
                 warpObject.groupedShapes = warpedGroupedShapes
-                Log.info("   ✅ Created warp object from group with \(warpedGroupedShapes.count) warped shapes", category: .general)
+                // Log.info("   ✅ Created warp object from group with \(warpedGroupedShapes.count) warped shapes", category: .general)
             } else if let finalWarpedPath = previewPath {
                 // SINGLE SHAPE: Store original path and use warped path
                 warpObject.originalPath = currentShape.path
                 warpObject.path = finalWarpedPath
-                Log.info("   ✅ Created warp object from single shape", category: .general)
+                // Log.info("   ✅ Created warp object from single shape", category: .general)
             }
             
             // Update bounds after warping is complete
@@ -791,24 +791,24 @@ struct EnvelopeHandles: View {
                 layerIndex: unifiedObject.layerIndex,
                 orderID: unifiedObject.orderID
             )
-            Log.info("   🔧 UNIFIED OBJECTS: Replaced original shape with warp object", category: .general)
+            // Log.info("   🔧 UNIFIED OBJECTS: Replaced original shape with warp object", category: .general)
         } else {
             // Fallback: Add the warp object to unified system if not found
             document.addShapeToUnifiedSystem(warpObject, layerIndex: layerIndex)
-            Log.info("   🔧 UNIFIED OBJECTS: Added warp object to unified system", category: .general)
+            // Log.info("   🔧 UNIFIED OBJECTS: Added warp object to unified system", category: .general)
         }
 
-        Log.info("   🎯 First-time warp completed - created new warp object", category: .general)
+        // Log.info("   🎯 First-time warp completed - created new warp object", category: .general)
     }
     
     // Log final warp state
-    Log.info("🏁 WARP COMPLETED: Final envelope TL(\(String(format: "%.1f", warpedCorners[0].x)), \(String(format: "%.1f", warpedCorners[0].y))), TR(\(String(format: "%.1f", warpedCorners[1].x)), \(String(format: "%.1f", warpedCorners[1].y))), BR(\(String(format: "%.1f", warpedCorners[2].x)), \(String(format: "%.1f", warpedCorners[2].y))), BL(\(String(format: "%.1f", warpedCorners[3].x)), \(String(format: "%.1f", warpedCorners[3].y)))", category: .general)
+    // Log.info("🏁 WARP COMPLETED: Final envelope TL(\(String(format: "%.1f", warpedCorners[0].x)), \(String(format: "%.1f", warpedCorners[0].y))), TR(\(String(format: "%.1f", warpedCorners[1].x)), \(String(format: "%.1f", warpedCorners[1].y))), BR(\(String(format: "%.1f", warpedCorners[2].x)), \(String(format: "%.1f", warpedCorners[2].y))), BL(\(String(format: "%.1f", warpedCorners[3].x)), \(String(format: "%.1f", warpedCorners[3].y)))", category: .general)
     
     document.objectWillChange.send()
     }
     
     private func commitEnvelopeWarp() {
-        Log.info("🏁 ENVELOPE WARP COMMIT: Finalizing envelope editing session", category: .general)
+        // Log.info("🏁 ENVELOPE WARP COMMIT: Finalizing envelope editing session", category: .general)
 
         // CRITICAL: Store final warp bounds when committing
         if warpedCorners.count == 4 {
@@ -819,7 +819,7 @@ struct EnvelopeHandles: View {
             document.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
             document.warpEnvelopeCorners[shape.id] = warpedCorners
             if let warpBounds = document.warpBounds[shape.id] {
-                Log.info("📍 WARP COMMIT: Stored final bounds: \(warpBounds)", category: .general)
+                // Log.info("📍 WARP COMMIT: Stored final bounds: \(warpBounds)", category: .general)
             }
         }
 
@@ -827,10 +827,10 @@ struct EnvelopeHandles: View {
         // PRESERVE PREVIEW: Keep the preview when switching away so it shows correctly when returning
         // Don't clear previewPath - this maintains the warped shape preview for reactivation
         
-        Log.info("📍 ENVELOPE SESSION COMPLETE: Warp object finalized", category: .general)
+        // Log.info("📍 ENVELOPE SESSION COMPLETE: Warp object finalized", category: .general)
         Log.fileOperation("🔄 REACTIVATABLE: Select envelope tool again to continue editing", level: .info)
         Log.fileOperation("📋 UNWRAP VIA MENU: Use Object menu to unwrap back to original", level: .info)
-        Log.info("   🎯 PREVIEW PRESERVED: Will show correct state when reactivating", category: .general)
+        // Log.info("   🎯 PREVIEW PRESERVED: Will show correct state when reactivating", category: .general)
     }
     
     // MARK: - Key Event Monitoring

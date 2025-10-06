@@ -14,19 +14,19 @@ extension DrawingCanvas {
     internal func handleSelectionTap(at location: CGPoint) {
         // Clean up excessive logging per user request
         
-        Log.info("🎯 SELECTION TAP: Starting selection at location \(location)", category: .selection)
-        Log.info("🎯 SELECTION TAP: Current tool is \(document.currentTool.rawValue)", category: .selection)
+        // Log.info("🎯 SELECTION TAP: Starting selection at location \(location)", category: .selection)
+        // Log.info("🎯 SELECTION TAP: Current tool is \(document.currentTool.rawValue)", category: .selection)
         
         // FIXED: Ensure coordinate system is properly synchronized
         // Add coordinate validation to catch any sync issues
         let validatedLocation = validateAndCorrectLocation(location)
         if validatedLocation != location {
-            Log.info("🎯 COORDINATE CORRECTION: Adjusted from \(location) to \(validatedLocation)", category: .selection)
+            // Log.info("🎯 COORDINATE CORRECTION: Adjusted from \(location) to \(validatedLocation)", category: .selection)
         }
         
         // OPTION+CLICK WITH ARROW TOOL: Switch to Direct Selection mode (professional behavior)
         if isOptionPressed && document.currentTool == .selection {
-            Log.info("🎯 OPTION+CLICK: Switching to Direct Selection tool and performing direct selection", category: .selection)
+            // Log.info("🎯 OPTION+CLICK: Switching to Direct Selection tool and performing direct selection", category: .selection)
             document.currentTool = .directSelection
             // Perform direct selection at the click location
             handleDirectSelectionTap(at: validatedLocation)
@@ -79,7 +79,7 @@ extension DrawingCanvas {
                     syncDirectSelectionWithDocument()
                     document.selectedLayerIndex = layerIndex
                     document.objectWillChange.send()
-                    Log.info("⌘ COMMAND+CLICK: Temporarily switched to Direct Selection for shape \(shape.name)", category: .selection)
+                    // Log.info("⌘ COMMAND+CLICK: Temporarily switched to Direct Selection for shape \(shape.name)", category: .selection)
                 } else {
                     // If not yet selected, toggle/add selection strictly by object hit
                     document.selectedTextIDs.removeAll()
@@ -99,7 +99,7 @@ extension DrawingCanvas {
         
         // CONTROL+CLICK WITH ARROW TOOL: Enter corner radius editing mode (professional style)
         if isControlPressed && document.currentTool == .selection {
-            Log.info("🎯 CONTROL+CLICK: Checking for corner radius editing...", category: .selection)
+            // Log.info("🎯 CONTROL+CLICK: Checking for corner radius editing...", category: .selection)
             
             // Find the clicked shape using improved hit detection
             var clickedShape: VectorShape?
@@ -125,12 +125,12 @@ extension DrawingCanvas {
             
             // Check if the clicked shape is a rectangle-based shape that can have corner radius
             if let shape = clickedShape, isRectangleBasedShape(shape) {
-                Log.info("🎯 CONTROL+CLICK: Entering corner radius edit mode for rectangle-based shape: \(shape.name)", category: .selection)
+                // Log.info("🎯 CONTROL+CLICK: Entering corner radius edit mode for rectangle-based shape: \(shape.name)", category: .selection)
                 
                 // Enable corner radius support if not already enabled
                 if !shape.isRoundedRectangle {
                     // This will be handled by the toolbar when it updates the shape
-                    Log.info("🎯 CONTROL+CLICK: Shape will be converted to corner-radius-enabled when editing begins", category: .selection)
+                    // Log.info("🎯 CONTROL+CLICK: Shape will be converted to corner-radius-enabled when editing begins", category: .selection)
                 }
                 
                 // Select the shape and enter corner radius mode
@@ -144,9 +144,9 @@ extension DrawingCanvas {
                 
                 return
             } else if clickedShape != nil {
-                Log.info("🎯 CONTROL+CLICK: Clicked shape (\(clickedShape?.name ?? "unknown")) is not a rectangle-based shape", category: .selection)
+                // Log.info("🎯 CONTROL+CLICK: Clicked shape (\(clickedShape?.name ?? "unknown")) is not a rectangle-based shape", category: .selection)
             } else {
-                Log.info("🎯 CONTROL+CLICK: No shape found at click location", category: .selection)
+                // Log.info("🎯 CONTROL+CLICK: No shape found at click location", category: .selection)
             }
         }
         
@@ -164,34 +164,34 @@ extension DrawingCanvas {
               document.currentTool == .rotate || 
               document.currentTool == .shear || 
               document.currentTool == .warp else { 
-            Log.info("🚫 SELECTION TAP: Wrong tool - early return", category: .selection)
+            // Log.info("🚫 SELECTION TAP: Wrong tool - early return", category: .selection)
             return 
         }
         
-        Log.info("🔍 SELECTION TAP: Tool check passed, looking for objects...", category: .selection)
+        // Log.info("🔍 SELECTION TAP: Tool check passed, looking for objects...", category: .selection)
         
         // REMOVED: Old text selection path - now using unified objects system only
         
         // Find object at location across all visible layers using unified system
         var hitObject: VectorObject?
         
-        Log.info("🎯 SELECTION TAP: Looking for objects at location \(validatedLocation)", category: .selection)
+        // Log.info("🎯 SELECTION TAP: Looking for objects at location \(validatedLocation)", category: .selection)
         
         // Search through unified objects from top to bottom (reverse order for proper stacking)
         let objectsInOrder = document.getObjectsInStackingOrder()
-        Log.info("🎯 SELECTION TAP: Found \(objectsInOrder.count) objects in stacking order", category: .selection)
+        // Log.info("🎯 SELECTION TAP: Found \(objectsInOrder.count) objects in stacking order", category: .selection)
         
         for unifiedObject in objectsInOrder.reversed() {
             // Check if the layer is visible
             if unifiedObject.layerIndex < document.layers.count {
                 let layer = document.layers[unifiedObject.layerIndex]
                 if !layer.isVisible { 
-                    Log.info("🎯 SELECTION TAP: Skipping object '\(unifiedObject.id)' - layer \(unifiedObject.layerIndex) not visible", category: .selection)
+                    // Log.info("🎯 SELECTION TAP: Skipping object '\(unifiedObject.id)' - layer \(unifiedObject.layerIndex) not visible", category: .selection)
                     continue 
                 }
             }
             
-            Log.info("🎯 SELECTION TAP: Testing object '\(unifiedObject.id)' on layer \(unifiedObject.layerIndex)", category: .selection)
+            // Log.info("🎯 SELECTION TAP: Testing object '\(unifiedObject.id)' on layer \(unifiedObject.layerIndex)", category: .selection)
             
             var isHit = false
             
@@ -199,28 +199,28 @@ extension DrawingCanvas {
             case .shape(let shape):
                 if !shape.isVisible { continue }
                 
-                Log.info("🎯 SELECTION TAP: Testing shape '\(shape.name)'", category: .selection)
+                // Log.info("🎯 SELECTION TAP: Testing shape '\(shape.name)'", category: .selection)
                 
                 // Skip background shapes
                 let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
                 if isBackgroundShape {
-                    Log.info("🎯 SELECTION TAP: Skipping background shape", category: .selection)
+                    // Log.info("🎯 SELECTION TAP: Skipping background shape", category: .selection)
                     continue
                 }
                 
                 // Check if this is actually a text object
                 if shape.isTextObject {
                     // TEXT OBJECT HANDLING - preserve existing logic
-                    Log.info("🎯 SELECTION TAP: Testing text object '\(String((shape.textContent ?? "").prefix(20)))'", category: .selection)
-                    Log.info("  - Text ID: \(shape.id)", category: .selection)
-                    Log.info("  - Text position: \(CGPoint(x: shape.transform.tx, y: shape.transform.ty))", category: .selection)
-                    Log.info("  - Text bounds: \(shape.bounds)", category: .selection)
-                    Log.info("  - Text isVisible: \(shape.isVisible)", category: .selection)
-                    Log.info("  - Text isLocked: \(shape.isLocked)", category: .selection)
-                    Log.info("  - Click location: \(validatedLocation)", category: .selection)
+                    // Log.info("🎯 SELECTION TAP: Testing text object '\(String((shape.textContent ?? "").prefix(20)))'", category: .selection)
+                    // Log.info("  - Text ID: \(shape.id)", category: .selection)
+                    // Log.info("  - Text position: \(CGPoint(x: shape.transform.tx, y: shape.transform.ty))", category: .selection)
+                    // Log.info("  - Text bounds: \(shape.bounds)", category: .selection)
+                    // Log.info("  - Text isVisible: \(shape.isVisible)", category: .selection)
+                    // Log.info("  - Text isLocked: \(shape.isLocked)", category: .selection)
+                    // Log.info("  - Click location: \(validatedLocation)", category: .selection)
                     
                     if !shape.isVisible || shape.isLocked { 
-                        Log.info("🎯 SELECTION TAP: Skipping text object - not visible or locked", category: .selection)
+                        // Log.info("🎯 SELECTION TAP: Skipping text object - not visible or locked", category: .selection)
                         continue 
                     }
                     
@@ -245,40 +245,40 @@ extension DrawingCanvas {
                     
                     let expandedBounds = exactBounds.insetBy(dx: 0, dy: 0)
                     
-                    Log.info("  - Content area: \(textContentArea)", category: .selection)
-                    Log.info("  - Exact bounds: \(exactBounds)", category: .selection)
-                    Log.info("  - Expanded bounds: \(expandedBounds)", category: .selection)
+                    // Log.info("  - Content area: \(textContentArea)", category: .selection)
+                    // Log.info("  - Exact bounds: \(exactBounds)", category: .selection)
+                    // Log.info("  - Expanded bounds: \(expandedBounds)", category: .selection)
                     
                     let contentHit = textContentArea.contains(validatedLocation)
                     let exactHit = exactBounds.contains(validatedLocation)
                     let expandedHit = expandedBounds.contains(validatedLocation)
                     
-                    Log.info("  - Content hit: \(contentHit)", category: .selection)
-                    Log.info("  - Exact hit: \(exactHit)", category: .selection)
-                    Log.info("  - Expanded hit: \(expandedHit)", category: .selection)
+                    // Log.info("  - Content hit: \(contentHit)", category: .selection)
+                    // Log.info("  - Exact hit: \(exactHit)", category: .selection)
+                    // Log.info("  - Expanded hit: \(expandedHit)", category: .selection)
                     
                     // CRITICAL FIX: For green text boxes, only use content hit (no bounding box)
                     // This prevents the bounding box from interfering with text movement
                     isHit = contentHit  // Only content-based selection for text objects
                     
                     if isHit {
-                        Log.info("✅ TEXT HIT: Text object selected (content-only)", category: .selection)
+                        // Log.info("✅ TEXT HIT: Text object selected (content-only)", category: .selection)
                     } else {
-                        Log.info("❌ TEXT MISS: Text object not selected", category: .selection)
+                        // Log.info("❌ TEXT MISS: Text object not selected", category: .selection)
                     }
                 } else {
                     // Check if this shape is clipped by a clipping path
                     // If so, don't allow selection - the clipping path should be selected instead
                     if shape.clippedByShapeID != nil {
-                        Log.info("🎭 SELECTION TAP: Shape '\(shape.name)' has clipping path - skipping", category: .selection)
+                        // Log.info("🎭 SELECTION TAP: Shape '\(shape.name)' has clipping path - skipping", category: .selection)
                         isHit = false
                     } else if shape.isClippingPath {
                         // For clipping paths, ONLY use path-based hit testing, never bounds
-                        Log.info("🎭 SELECTION TAP: Testing clipping path '\(shape.name)' - using path-only hit test", category: .selection)
+                        // Log.info("🎭 SELECTION TAP: Testing clipping path '\(shape.name)' - using path-only hit test", category: .selection)
                         let baseTolerance: CGFloat = 8.0
                         let tolerance = max(2.0, baseTolerance / document.zoomLevel)
                         isHit = PathOperations.hitTest(shape.transformedPath, point: validatedLocation, tolerance: tolerance)
-                        Log.info("  - Clipping path hit: \(isHit)", category: .selection)
+                        // Log.info("  - Clipping path hit: \(isHit)", category: .selection)
                     } else {
                         // REGULAR SHAPE - use direct selection hit detection logic
                         isHit = performShapeHitTest(shape: shape, at: validatedLocation)
@@ -288,13 +288,13 @@ extension DrawingCanvas {
             
             if isHit {
                 hitObject = unifiedObject
-                Log.info("✅ SELECTION TAP: Hit object '\(unifiedObject.id)' on layer \(unifiedObject.layerIndex)", category: .selection)
+                // Log.info("✅ SELECTION TAP: Hit object '\(unifiedObject.id)' on layer \(unifiedObject.layerIndex)", category: .selection)
                 break
             }
         }
         
         if let hitObject = hitObject {
-            Log.info("✅ SELECTION SUCCESS: Selected object '\(hitObject.id)' on layer \(hitObject.layerIndex)", category: .selection)
+            // Log.info("✅ SELECTION SUCCESS: Selected object '\(hitObject.id)' on layer \(hitObject.layerIndex)", category: .selection)
 
             // No need to redirect to clipping mask anymore - we already prevent selection of clipped shapes
             let objectToSelect = hitObject
@@ -337,7 +337,7 @@ extension DrawingCanvas {
             // Force UI update
             document.objectWillChange.send()
         } else {
-            Log.info("❌ NO HIT: No objects found at location \(validatedLocation)", category: .selection)
+            // Log.info("❌ NO HIT: No objects found at location \(validatedLocation)", category: .selection)
             
             // CRITICAL FIX: If no objects found and we have text objects, try to force resync
             let hasTextObjects = document.unifiedObjects.contains { obj in
@@ -345,7 +345,7 @@ extension DrawingCanvas {
                 return false
             }
             if hasTextObjects {
-                Log.info("🔧 SELECTION FIX: No objects found but text objects exist - attempting force resync", category: .selection)
+                // Log.info("🔧 SELECTION FIX: No objects found but text objects exist - attempting force resync", category: .selection)
                 document.forceResyncUnifiedObjects()
             }
             
@@ -356,7 +356,7 @@ extension DrawingCanvas {
                 let wasSelected = !document.selectedObjectIDs.isEmpty
                 
                 if isWithinSelectionBox {
-                    Log.info("🎯 CLICKED WITHIN SELECTION BOX: Keeping current selection", category: .selection)
+                    // Log.info("🎯 CLICKED WITHIN SELECTION BOX: Keeping current selection", category: .selection)
                 } else {
                     // Clicked outside all selection boxes - deselect everything
                     document.selectedObjectIDs.removeAll()
@@ -372,7 +372,7 @@ extension DrawingCanvas {
                     isCornerRadiusEditMode = false
                     
                     if wasSelected {
-                        Log.info("🎯 DESELECTED: Cleared all selections - clicked outside selection boxes", category: .selection)
+                        // Log.info("🎯 DESELECTED: Cleared all selections - clicked outside selection boxes", category: .selection)
                     }
                 }
                 document.objectWillChange.send()
@@ -395,7 +395,7 @@ extension DrawingCanvas {
                 height: shape.bounds.height
             )
             let isHit = textBounds.contains(location)
-            Log.info("  - Text object bounds hit: \(isHit) (bounds: \(textBounds))", category: .selection)
+            // Log.info("  - Text object bounds hit: \(isHit) (bounds: \(textBounds))", category: .selection)
             return isHit
         }
         
@@ -405,7 +405,7 @@ extension DrawingCanvas {
             let baseTolerance: CGFloat = 8.0
             let tolerance = max(2.0, baseTolerance / document.zoomLevel)
             let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
-            Log.info("  - ⌥ Option path-only hit test: \(isHit)", category: .selection)
+            // Log.info("  - ⌥ Option path-only hit test: \(isHit)", category: .selection)
             return isHit
         } else {
             // FIXED: More precise selection behavior - only select when clicking exactly on objects
@@ -417,14 +417,14 @@ extension DrawingCanvas {
                 let transformedBounds = shape.bounds.applying(shape.transform)
                 // FIXED: Use exact bounds, not expanded bounds for precise selection
                 if transformedBounds.contains(location) {
-                    Log.info("  - Image exact bounds hit: YES", category: .selection)
+                    // Log.info("  - Image exact bounds hit: YES", category: .selection)
                     return true
                 } else {
                     // Fallback to path hit test for edge cases
                     let baseTolerance: CGFloat = 4.0 // Reduced tolerance for more precision
                     let tolerance = max(1.0, baseTolerance / document.zoomLevel)
                     let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
-                    Log.info("  - Image path hit: \(isHit)", category: .selection)
+                    // Log.info("  - Image path hit: \(isHit)", category: .selection)
                     return isHit
                 }
             } else if isStrokeOnly && shape.strokeStyle != nil {
@@ -434,7 +434,7 @@ extension DrawingCanvas {
                 let strokeTolerance = max(12.0, strokeWidth + 8.0) // Increased tolerance for better UX
                 
                 let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
-                Log.info("  - Stroke hit test: \(isHit) (stroke width: \(strokeWidth), tolerance: \(strokeTolerance))", category: .selection)
+                // Log.info("  - Stroke hit test: \(isHit) (stroke width: \(strokeWidth), tolerance: \(strokeTolerance))", category: .selection)
                 return isHit
             } else {
                 // Filled shapes: Use exact bounds first, then precise path hit test
@@ -442,14 +442,14 @@ extension DrawingCanvas {
                 
                 // FIXED: Use exact bounds for primary hit test, not expanded bounds
                 if transformedBounds.contains(location) {
-                    Log.info("  - Exact bounds hit: YES", category: .selection)
+                    // Log.info("  - Exact bounds hit: YES", category: .selection)
                     return true
                 } else {
                     // Fallback: precise path hit test with reduced tolerance
                     let baseTolerance: CGFloat = 4.0 // Reduced from 8.0 to 4.0 for more precision
                     let tolerance = max(1.0, baseTolerance / document.zoomLevel)
                     let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
-                    Log.info("  - Precise path hit test: \(isHit) (tolerance: \(tolerance))", category: .selection)
+                    // Log.info("  - Precise path hit test: \(isHit) (tolerance: \(tolerance))", category: .selection)
                     return isHit
                 }
             }

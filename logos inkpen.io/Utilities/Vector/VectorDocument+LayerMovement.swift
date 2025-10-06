@@ -23,13 +23,13 @@ extension VectorDocument {
         
         // Don't allow moving to locked layers
         if layers[toLayerIndex].isLocked {
-            Log.info("🚫 Cannot move objects to locked layer '\(layers[toLayerIndex].name)'", category: .general)
+            // Log.info("🚫 Cannot move objects to locked layer '\(layers[toLayerIndex].name)'", category: .general)
             return
         }
         
         // Don't allow moving from locked layers unless it's a selection operation
         if layers[fromLayerIndex].isLocked {
-            Log.info("🚫 Cannot move objects from locked layer '\(layers[fromLayerIndex].name)'", category: .general)
+            // Log.info("🚫 Cannot move objects from locked layer '\(layers[fromLayerIndex].name)'", category: .general)
             return
         }
         
@@ -56,7 +56,7 @@ extension VectorDocument {
         selectedShapeIDs = [shapeId]
         selectedLayerIndex = toLayerIndex
         
-        Log.info("✅ Moved shape '\(shape.name)' from layer '\(layers[fromLayerIndex].name)' to '\(layers[toLayerIndex].name)'", category: .fileOperations)
+        // Log.info("✅ Moved shape '\(shape.name)' from layer '\(layers[fromLayerIndex].name)' to '\(layers[toLayerIndex].name)'", category: .fileOperations)
     }
     
     /// Move a text object to a specific layer (conceptually)
@@ -68,7 +68,7 @@ extension VectorDocument {
         
         // Don't allow moving to locked layers
         if layers[toLayerIndex].isLocked {
-            Log.info("🚫 Cannot move text to locked layer '\(layers[toLayerIndex].name)'", category: .general)
+            // Log.info("🚫 Cannot move text to locked layer '\(layers[toLayerIndex].name)'", category: .general)
             return
         }
         
@@ -88,7 +88,7 @@ extension VectorDocument {
         selectedShapeIDs.removeAll()
         selectedLayerIndex = toLayerIndex
         
-        Log.info("✅ Moved text object to layer '\(layers[toLayerIndex].name)'", category: .fileOperations)
+        // Log.info("✅ Moved text object to layer '\(layers[toLayerIndex].name)'", category: .fileOperations)
     }
     
     /// Handle dropping a draggable object onto a layer

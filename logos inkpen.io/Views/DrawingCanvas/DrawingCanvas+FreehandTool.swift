@@ -108,7 +108,7 @@ extension DrawingCanvas {
         document.selectedObjectIDs.removeAll()
         Log.fileOperation("🎨 FREEHAND: Auto-deselected shape to enable color changes for next stroke", level: .info)
 
-        Log.info("✅ FREEHAND: Path completed and converted to smooth curves", category: .fileOperations)
+        // Log.info("✅ FREEHAND: Path completed and converted to smooth curves", category: .fileOperations)
     }
     
     // MARK: - Real-time Preview
@@ -160,7 +160,7 @@ extension DrawingCanvas {
         let optimizedCGPoints = MetalDrawingOptimizer.shared.optimizeFreehandDrawing(points: cgPoints, tolerance: tolerance)
         let simplifiedPoints = optimizedCGPoints.map { VectorPoint($0) }
         
-        Log.info("Douglas-Peucker: Simplified to \(simplifiedPoints.count) points", category: .general)
+        // Log.info("Douglas-Peucker: Simplified to \(simplifiedPoints.count) points", category: .general)
         
         // STEP 3: Convert to smooth bezier curves with adaptive tension
         let finalCGPoints = simplifiedPoints.map { CGPoint(x: $0.x, y: $0.y) }
@@ -171,7 +171,7 @@ extension DrawingCanvas {
         // STEP 4: Update the final shape with professionally smooth curves
         updateFinalFreehandShape(with: smoothPath)
         
-        Log.info("✅ FREEHAND: Advanced smoothing completed - much smoother curves!", category: .fileOperations)
+        // Log.info("✅ FREEHAND: Advanced smoothing completed - much smoother curves!", category: .fileOperations)
     }
     
     // MARK: - Douglas-Peucker Line Simplification Algorithm
@@ -291,6 +291,6 @@ extension DrawingCanvas {
             document.addShapeToFront(finalShape)
         }
         
-        Log.info("✅ FREEHAND: Applied smooth bezier curves to final shape", category: .fileOperations)
+        // Log.info("✅ FREEHAND: Applied smooth bezier curves to final shape", category: .fileOperations)
     }
 }

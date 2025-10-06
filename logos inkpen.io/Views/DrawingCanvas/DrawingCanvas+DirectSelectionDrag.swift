@@ -66,7 +66,7 @@ extension DrawingCanvas {
             if let unifiedObject = document.findObject(by: pointID.shapeID) {
                 let layerIndex = unifiedObject.layerIndex
                 if document.layers[layerIndex].isLocked {
-                    Log.info("🚫 Cannot edit points on locked layer '\(document.layers[layerIndex].name)'", category: .general)
+                    // Log.info("🚫 Cannot edit points on locked layer '\(document.layers[layerIndex].name)'", category: .general)
                     return
                 }
             }
@@ -76,7 +76,7 @@ extension DrawingCanvas {
             if let unifiedObject = document.findObject(by: handleID.shapeID) {
                 let layerIndex = unifiedObject.layerIndex
                 if document.layers[layerIndex].isLocked {
-                    Log.info("🚫 Cannot edit handles on locked layer '\(document.layers[layerIndex].name)'", category: .general)
+                    // Log.info("🚫 Cannot edit handles on locked layer '\(document.layers[layerIndex].name)'", category: .general)
                     return
                 }
             }

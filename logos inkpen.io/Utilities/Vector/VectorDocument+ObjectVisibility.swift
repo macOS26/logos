@@ -35,7 +35,7 @@ extension VectorDocument {
             lockTextInUnified(id: textID)
         }
         
-        Log.info("🔒 Locked \(selectedShapeIDs.count) shapes and \(selectedTextIDs.count) text objects", category: .general)
+        // Log.info("🔒 Locked \(selectedShapeIDs.count) shapes and \(selectedTextIDs.count) text objects", category: .general)
         
         // Clear selection since locked objects can't be selected
         selectedShapeIDs.removeAll()
@@ -69,7 +69,7 @@ extension VectorDocument {
             }
         }
         
-        Log.info("🔓 Unlocked \(unlockedCount) objects", category: .general)
+        // Log.info("🔓 Unlocked \(unlockedCount) objects", category: .general)
     }
     
     // MARK: - Hide/Show Methods
@@ -97,7 +97,7 @@ extension VectorDocument {
             hideTextInUnified(id: textID)
         }
         
-        Log.info("👁️‍🗨️ Hidden \(selectedShapeIDs.count) shapes and \(selectedTextIDs.count) text objects", category: .general)
+        // Log.info("👁️‍🗨️ Hidden \(selectedShapeIDs.count) shapes and \(selectedTextIDs.count) text objects", category: .general)
         
         // Clear selection since hidden objects can't be selected
         selectedShapeIDs.removeAll()
@@ -131,6 +131,6 @@ extension VectorDocument {
             }
         }
         
-        Log.info("👁️ Shown \(shownCount) objects", category: .general)
+        // Log.info("👁️ Shown \(shownCount) objects", category: .general)
     }
 }

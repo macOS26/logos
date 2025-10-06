@@ -35,19 +35,19 @@ struct ProfessionalResizeHandleView: View {
                         if !hasResizeStarted {
                             hasResizeStarted = true
                             onResizeStarted()
-                            Log.info("🔵 RESIZE HANDLE STARTED", category: .general)
+                            // Log.info("🔵 RESIZE HANDLE STARTED", category: .general)
                         }
                         // RESIZE HANDLE DRAG: \(value.translation)
                         onResizeChanged(value)
                     }
                     .onEnded { _ in
-                        Log.info("🔵 RESIZE HANDLE ENDED", category: .general)
+                        // Log.info("🔵 RESIZE HANDLE ENDED", category: .general)
                         hasResizeStarted = false  // Reset for next resize operation
                         onResizeEnded()
                     }
             )
             .onAppear {
-                Log.info("🔵 RESIZE HANDLE VISIBLE at: \(viewModel.textBoxFrame.maxX), \(viewModel.textBoxFrame.maxY)", category: .general)
+                // Log.info("🔵 RESIZE HANDLE VISIBLE at: \(viewModel.textBoxFrame.maxX), \(viewModel.textBoxFrame.maxY)", category: .general)
             }
     }
 }

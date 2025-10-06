@@ -116,13 +116,13 @@ class PDFCommandParser {
         
         // Detect PDF version
         detectedPDFVersion = detectPDFVersion(document: document)
-        Log.info("PDF: Document version detected as \(detectedPDFVersion)", category: .general)
+        // Log.info("PDF: Document version detected as \(detectedPDFVersion)", category: .general)
         
         // Get page size from first page
         if let firstPage = document.page(at: 1) {
             let mediaBox = firstPage.getBoxRect(.mediaBox)
             pageSize = mediaBox.size
-            Log.info("PDF: Page size detected as \(pageSize)", category: .general)
+            // Log.info("PDF: Page size detected as \(pageSize)", category: .general)
         }
         
         // Parse all pages
@@ -132,7 +132,7 @@ class PDFCommandParser {
         
         // Finalize any remaining path
         if !currentPath.isEmpty {
-            Log.info("PDF: End of document - finalizing remaining path as default filled shape", category: .general)
+            // Log.info("PDF: End of document - finalizing remaining path as default filled shape", category: .general)
             createShapeFromCurrentPath(filled: true, stroked: false)
         }
 
@@ -140,26 +140,26 @@ class PDFCommandParser {
         if let pendingClip = pendingClippingPath {
             shapes.append(pendingClip)
             pendingClippingPath = nil
-            Log.info("PDF: Added final pending clipping path at document end", category: .general)
+            // Log.info("PDF: Added final pending clipping path at document end", category: .general)
         }
 
         // Remove duplicate shapes that match clipping paths
         removeDuplicateClippingShapes()
 
         // Final gradient processing (handled by specialized gradient modules)
-        Log.info("PDF: 🔍 Final check - activeGradient: \(activeGradient != nil), gradientShapes count: \(gradientShapes.count)", category: .debug)
+        // Log.info("PDF: 🔍 Final check - activeGradient: \(activeGradient != nil), gradientShapes count: \(gradientShapes.count)", category: .debug)
         // TODO: Implement createCompoundPathWithGradient in gradient handling module
         if activeGradient != nil || !gradientShapes.isEmpty {
-            Log.info("PDF: 📋 Final gradient processing would occur here", category: .general)
+            // Log.info("PDF: 📋 Final gradient processing would occur here", category: .general)
         }
 
-        Log.info("PDF: Finished parsing. Total shapes created: \(shapes.count)", category: .general)
+        // Log.info("PDF: Finished parsing. Total shapes created: \(shapes.count)", category: .general)
         
         // Calculate actual artwork bounds and update pageSize
         if !shapes.isEmpty {
             let artworkBounds = calculateArtworkBounds()
             pageSize = artworkBounds.size
-            Log.info("PDF: 🎯 Updated page size to artwork bounds: \(pageSize)", category: .general)
+            // Log.info("PDF: 🎯 Updated page size to artwork bounds: \(pageSize)", category: .general)
         }
         
         return shapes
@@ -169,7 +169,7 @@ class PDFCommandParser {
         // CGPDFDocument doesn't directly expose version, but we can check its capabilities
         // For now, assume PDF 1.4+ since we're dealing with transparency features
         let versionString = "PDF1.7"  // Shorter format for logging
-        Log.info("PDF: Version \(versionString) (Acrobat 8 compatible) supports transparency (introduced in PDF 1.4)", category: .general)
+        // Log.info("PDF: Version \(versionString) (Acrobat 8 compatible) supports transparency (introduced in PDF 1.4)", category: .general)
         return versionString
     }
     
@@ -224,7 +224,7 @@ class PDFCommandParser {
             // Remove the duplicates
             for duplicate in duplicates {
                 if let index = shapes.firstIndex(where: { $0.id == duplicate.id }) {
-                    Log.info("PDF: 🗑️ Removing duplicate shape '\(duplicate.name)' that matches clipping path", category: .general)
+                    // Log.info("PDF: 🗑️ Removing duplicate shape '\(duplicate.name)' that matches clipping path", category: .general)
                     shapes.remove(at: index)
                 }
             }
@@ -249,7 +249,7 @@ class PDFCommandParser {
                     // Check if it matches the outer boundary of any compound path
                     for compound in compoundPaths {
                         if shapeMatchesOuterBoundary(shape, of: compound) {
-                            Log.info("PDF: 🗑️ Removing duplicate outer boundary '\(shape.name)'", category: .general)
+                            // Log.info("PDF: 🗑️ Removing duplicate outer boundary '\(shape.name)'", category: .general)
                             indicesToRemove.insert(index)
                             break
                         }

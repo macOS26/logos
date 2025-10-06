@@ -24,7 +24,7 @@ extension DrawingCanvas {
             switch unifiedObject.objectType {
             case .shape(let shape):
                 if shape.isLocked {
-                    Log.info("🚫 Cannot move locked shape '\(shape.name)'", category: .general)
+                    // Log.info("🚫 Cannot move locked shape '\(shape.name)'", category: .general)
                     return
                 }
             }
@@ -166,7 +166,7 @@ extension DrawingCanvas {
                 // CLIPPING MASK PREVIEW: Use same preview system as regular objects
                 // Don't modify actual document during drag - use currentDragDelta for preview
                 if shape.isClippingPath {
-                    Log.info("🎭 CLIPPING MASK PREVIEW: Using preview system for mask '\(shape.name)'", category: .selection)
+                    // Log.info("🎭 CLIPPING MASK PREVIEW: Using preview system for mask '\(shape.name)'", category: .selection)
                     // Continue with normal preview system - don't return early
                 }
             }
@@ -305,7 +305,7 @@ extension DrawingCanvas {
                 // This preserves all existing scaling, rotation, and skew while adding movement
                 updatedShape.transform = currentTransform.concatenating(translationTransform)
                 
-                Log.info("🖼️ IMAGE TRANSFORM: Applied delta (\(String(format: "%.2f", delta.x)), \(String(format: "%.2f", delta.y))) to existing transform", category: .fileOperations)
+                // Log.info("🖼️ IMAGE TRANSFORM: Applied delta (\(String(format: "%.2f", delta.x)), \(String(format: "%.2f", delta.y))) to existing transform", category: .fileOperations)
             }
             
             // Bounds for images are their rectangular path; keep as-is (transform applied at render time)
@@ -524,7 +524,7 @@ extension DrawingCanvas {
             shape.updateBounds()
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
             
-            Log.info("✅ Flattened group coordinates updated - transformed \(transformedGroupedShapes.count) individual shapes", category: .fileOperations)
+            // Log.info("✅ Flattened group coordinates updated - transformed \(transformedGroupedShapes.count) individual shapes", category: .fileOperations)
             return
         }
         
@@ -580,7 +580,7 @@ extension DrawingCanvas {
             document.updateShapeCornerRadiiInUnified(id: updatedShape.id, cornerRadii: updatedShape.cornerRadii, path: updatedShape.path)
         }
         
-        Log.info("✅ Shape coordinates updated after movement - object origin stays with object", category: .fileOperations)
+        // Log.info("✅ Shape coordinates updated after movement - object origin stays with object", category: .fileOperations)
     }
     
     /// CRITICAL FIX: Sync unified objects array after shapes/text have been moved
@@ -622,7 +622,7 @@ extension DrawingCanvas {
                     if let updatedShape = document.findShape(by: oldShape.id) {
                         // DEBUG: Check clipping properties before and after sync
                         if oldShape.clippedByShapeID != nil || updatedShape.clippedByShapeID != nil {
-                            Log.info("🎭 DRAG SYNC DEBUG: Shape '\(oldShape.name)' - old clippedByShapeID: \(oldShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil"), new clippedByShapeID: \(updatedShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .general)
+                            // Log.info("🎭 DRAG SYNC DEBUG: Shape '\(oldShape.name)' - old clippedByShapeID: \(oldShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil"), new clippedByShapeID: \(updatedShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .general)
                         }
                         // CRITICAL FIX: Preserve original orderID - DO NOT reorder during drag
                         document.unifiedObjects[i] = VectorObject(
@@ -635,6 +635,6 @@ extension DrawingCanvas {
             }
         }
 
-        Log.info("🔧 DRAG SYNC: Updated \(document.selectedObjectIDs.count) moved object(s) without reordering", category: .general)
+        // Log.info("🔧 DRAG SYNC: Updated \(document.selectedObjectIDs.count) moved object(s) without reordering", category: .general)
     }
 } 

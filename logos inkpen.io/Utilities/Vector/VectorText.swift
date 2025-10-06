@@ -292,7 +292,7 @@ struct VectorText: Identifiable, Codable, Hashable {
         // This preserves user-drawn text box dimensions during copy/paste
         if let userAreaSize = areaSize {
             bounds = CGRect(x: 0, y: 0, width: userAreaSize.width, height: userAreaSize.height)
-            Log.info("📦 BOUNDS FROM AREA SIZE: Using user-set areaSize \(userAreaSize) for bounds", category: .general)
+            // Log.info("📦 BOUNDS FROM AREA SIZE: Using user-set areaSize \(userAreaSize) for bounds", category: .general)
             return
         }
         
@@ -303,7 +303,7 @@ struct VectorText: Identifiable, Codable, Hashable {
         
         // If we already have proper bounds from ProfessionalTextCanvas, don't override them
         if hasProperBounds && !isSingleLineText {
-            Log.info("📦 BOUNDS PRESERVED: Multi-line text bounds managed by ProfessionalTextCanvas (\(bounds))", category: .general)
+            // Log.info("📦 BOUNDS PRESERVED: Multi-line text bounds managed by ProfessionalTextCanvas (\(bounds))", category: .general)
             return
         }
         
@@ -333,7 +333,7 @@ struct VectorText: Identifiable, Codable, Hashable {
                 height: ascent + descent + leading
             )
             
-            Log.info("📦 SINGLE-LINE BOUNDS: \(bounds)", category: .general)
+            // Log.info("📦 SINGLE-LINE BOUNDS: \(bounds)", category: .general)
         } else {
             // Multi-line text: Use CTFramesetter for proper wrapping calculation
             let paragraphStyle = NSMutableParagraphStyle()
@@ -372,7 +372,7 @@ struct VectorText: Identifiable, Codable, Hashable {
                 height: max(suggestedSize.height + 20, typography.lineHeight) // Add padding for proper rendering
             )
             
-            Log.info("📦 MULTI-LINE BOUNDS (FALLBACK): \(bounds) for text: '\(content.prefix(30))...'", category: .general)
+            // Log.info("📦 MULTI-LINE BOUNDS (FALLBACK): \(bounds) for text: '\(content.prefix(30))...'", category: .general)
         }
     }
     

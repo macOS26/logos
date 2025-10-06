@@ -45,7 +45,7 @@ struct ProfessionalTextBoxView: View {
                 }
                 .onTapGesture(count: 2) { location in
                     // Double-click: call the proper interaction handler
-                    Log.info("🔧 DOUBLE-CLICK DETECTED on text box", category: .general)
+                    // Log.info("🔧 DOUBLE-CLICK DETECTED on text box", category: .general)
                     viewModel.handleTextBoxInteraction(textID: viewModel.textObject.id, isDoubleClick: true)
                 }
                 // REMOVED: Explicit drag gesture - let arrow tool handle all dragging naturally

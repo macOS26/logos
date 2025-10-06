@@ -697,7 +697,7 @@ class VectorDocument: ObservableObject, Codable {
         shape.updateBounds()
         setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
         
-        Log.info("✅ Shape coordinates updated - object origin now follows object position", category: .fileOperations)
+        // Log.info("✅ Shape coordinates updated - object origin now follows object position", category: .fileOperations)
     }
 
 
