@@ -75,9 +75,6 @@ struct UnifiedObjectContentView: View {
             else if shape.isClippingPath {
                 // Do not render clipping path shapes themselves
                 EmptyView()
-                    .onAppear {
-                        // Log.info("🎭 UNIFIED OBJECT: Skipping clipping path shape '\(shape.name)' - should be invisible", category: .general)
-                    }
             } else if let clipID = shape.clippedByShapeID {
                 // This shape is clipped by another shape - find the mask shape
                 // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
@@ -106,24 +103,13 @@ struct UnifiedObjectContentView: View {
                         viewMode: viewMode
                     )
                     .id("\(shape.id)-\(shape.path.isClosed)-\(maskShape.id)-\(maskShape.path.isClosed)-\(shape.clippedByShapeID?.uuidString ?? "none")")  // CRITICAL FIX: Include clipping mask ID
-                    .onAppear {
-                        // Log.info("🎭 UNIFIED OBJECT: Rendering clipped shape '\(shape.name)' clipped by '\(maskShape.name)'", category: .general)
-                        // Log.info("   🎯 Selection state: clipped=\(isClippedShapeSelected), mask=\(isMaskShapeSelected)", category: .general)
-                    }
                 } else {
                     // Mask shape not found - render as regular shape
                     renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(unifiedObject.id))
-                        .onAppear {
-                            // Log.info("🎭 UNIFIED OBJECT: Mask shape not found for '\(shape.name)' - rendering as regular shape", category: .general)
-                        }
                 }
             } else {
                 // Regular shape - render normally
                 renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(unifiedObject.id))
-                    .onAppear {
-                        // Log.info("🎭 UNIFIED OBJECT: Rendering regular shape '\(shape.name)'", category: .general)
-                        // Log.info("🎭 UNIFIED OBJECT DEBUG: Shape '\(shape.name)' - isClippingPath: \(shape.isClippingPath), clippedByShapeID: \(shape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .debug)
-                    }
             }
             
         }
