@@ -334,6 +334,9 @@ extension DrawingCanvas {
                     }
                 }
             }
+
+            // Step 5: Remove duplicate/coincident points after expansion
+            finalShape.path = removeCoincidentPointsFromPath(finalShape.path, tolerance: 0.5)
         }
         
         // VECTOR APP OPTIMIZATION: Add shape only once at the end, not during drawing
@@ -411,6 +414,9 @@ extension DrawingCanvas {
                     }
                 }
             }
+
+            // Step 5: Remove duplicate/coincident points after expansion
+            finalPath = removeCoincidentPointsFromPath(finalPath, tolerance: 0.5)
         }
 
         let shape = VectorShape(name: "Marker Stroke", path: finalPath, strokeStyle: finalStrokeStyle, fillStyle: fillStyle)
@@ -1032,4 +1038,67 @@ extension DrawingCanvas {
     // MARK: - Helper Functions (Same as Brush Tool)
 
     // Color helper functions are now provided by DrawingCanvasStyleHelpers extension
+
+    // MARK: - Point Deduplication
+
+    /// Remove coincident/duplicate points from a path that contribute no shape information
+    private func removeCoincidentPointsFromPath(_ path: VectorPath, tolerance: Double = 0.5) -> VectorPath {
+        let elements = path.elements
+        guard elements.count > 2 else { return path }
+
+        var cleanedElements: [PathElement] = []
+        var lastPosition: CGPoint? = nil
+
+        for element in elements {
+            switch element {
+            case .move(let to):
+                cleanedElements.append(element)
+                lastPosition = CGPoint(x: to.x, y: to.y)
+
+            case .line(let to):
+                let currentPos = CGPoint(x: to.x, y: to.y)
+                if let last = lastPosition {
+                    let distance = sqrt(pow(currentPos.x - last.x, 2) + pow(currentPos.y - last.y, 2))
+                    if distance > tolerance {
+                        cleanedElements.append(element)
+                        lastPosition = currentPos
+                    }
+                } else {
+                    cleanedElements.append(element)
+                    lastPosition = currentPos
+                }
+
+            case .curve(let to, _, _):
+                let currentPos = CGPoint(x: to.x, y: to.y)
+                if let last = lastPosition {
+                    let distance = sqrt(pow(currentPos.x - last.x, 2) + pow(currentPos.y - last.y, 2))
+                    if distance > tolerance {
+                        cleanedElements.append(element)
+                        lastPosition = currentPos
+                    }
+                } else {
+                    cleanedElements.append(element)
+                    lastPosition = currentPos
+                }
+
+            case .quadCurve(let to, _):
+                let currentPos = CGPoint(x: to.x, y: to.y)
+                if let last = lastPosition {
+                    let distance = sqrt(pow(currentPos.x - last.x, 2) + pow(currentPos.y - last.y, 2))
+                    if distance > tolerance {
+                        cleanedElements.append(element)
+                        lastPosition = currentPos
+                    }
+                } else {
+                    cleanedElements.append(element)
+                    lastPosition = currentPos
+                }
+
+            case .close:
+                cleanedElements.append(element)
+            }
+        }
+
+        return VectorPath(elements: cleanedElements)
+    }
 } 
