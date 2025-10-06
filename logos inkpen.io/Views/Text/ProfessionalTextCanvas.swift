@@ -195,6 +195,18 @@ struct ProfessionalTextCanvas: View {
     // MARK: - Event Handlers (Exact from Working Code)
 
     private func handleTextBoxSelect(location: CGPoint) {
+        // CRITICAL FIX: When clicking on ANY text box, stop editing all OTHER text boxes first
+        // This ensures only ONE text box can be in blue edit mode at a time
+        for unifiedObj in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObj.objectType,
+               shape.isTextObject,
+               shape.id != viewModel.textObject.id,
+               shape.isEditing == true {
+                document.setTextEditingInUnified(id: shape.id, isEditing: false)
+                Log.fileOperation("🔄 CLICK ANOTHER BOX: Stopping edit on text box \(shape.id.uuidString.prefix(8))", level: .info)
+            }
+        }
+
         // SINGLE CLICK: Handle different states appropriately
         switch textBoxState {
         case .gray:
