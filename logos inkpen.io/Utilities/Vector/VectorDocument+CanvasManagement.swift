@@ -138,12 +138,6 @@ extension VectorDocument {
     
     /// Debug function to print current document state
     func debugCurrentState() {
-
-        // Log.info("   Total layers: \(layers.count)", category: .general)
-        // Log.info("   Selected layer index: \(selectedLayerIndex ?? -1)", category: .general)
-        // Log.info("   \(marker) Layer \(index): '\(layer.name)' - locked: \(layer.isLocked), visible: \(layer.isVisible), shapes: \(shapeCount)", category: .general)
-        // Log.info("   Selected shapes: \(selectedShapeIDs.count)", category: .general)
-        // Log.info("   Current tool: \(currentTool)", category: .general)
     }
     
     /// Update canvas layer rectangle to match current `settings.sizeInPoints`
