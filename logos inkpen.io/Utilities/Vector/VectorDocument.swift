@@ -506,7 +506,6 @@ class VectorDocument: ObservableObject, Codable {
             self.settings.selectedLayerId = workingLayer.id
             self.settings.selectedLayerName = workingLayer.name
         }
-        // Logging removed
         
         // Set up settings change observation
         setupSettingsObservation()

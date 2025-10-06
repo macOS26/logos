@@ -17,11 +17,8 @@ extension ProfessionalPathOperations {
         
         let validPaths = paths.filter { !$0.isEmpty }
         guard validPaths.count == 2 else { return nil }
-        
-        // Log.info("🔨 PROFESSIONAL UNION (2 paths): Using CoreGraphics...", category: .general)
-        
+
         if let coreGraphicsResult = CoreGraphicsPathOperations.union(validPaths[0], validPaths[1], using: .winding) {
-            // Log.info("✅ PROFESSIONAL UNION: CoreGraphics success (preserves smooth curves)", category: .fileOperations)
             return coreGraphicsResult
         } else {
             Log.error("❌ PROFESSIONAL UNION: CoreGraphics operation failed", category: .error)
@@ -34,12 +31,9 @@ extension ProfessionalPathOperations {
     /// PROFESSIONAL PUNCH: Front subtracts from back (Professional "Punch", formerly "Minus Front")
     static func professionalMinusFront(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
         guard !frontPath.isEmpty && !backPath.isEmpty else { return backPath }
-        
-        // Log.info("🔨 PROFESSIONAL PUNCH: Using CoreGraphics...", category: .general)
-        
+
         // Use CoreGraphics (much faster and preserves curves)
         if let coreGraphicsResult = CoreGraphicsPathOperations.subtract(frontPath, from: backPath, using: .winding) {
-            // Log.info("✅ PROFESSIONAL PUNCH: CoreGraphics success (preserves smooth curves)", category: .fileOperations)
             return coreGraphicsResult
         }
         
@@ -50,12 +44,9 @@ extension ProfessionalPathOperations {
     /// PROFESSIONAL INTERSECT: Only overlapping areas (Professional "Intersect")
     static func professionalIntersect(_ path1: CGPath, _ path2: CGPath) -> CGPath? {
         guard !path1.isEmpty && !path2.isEmpty else { return nil }
-        
-        // Log.info("🔨 PROFESSIONAL INTERSECT: Using CoreGraphics...", category: .general)
-        
+
         // Use CoreGraphics (much faster and preserves curves)
         if let coreGraphicsResult = CoreGraphicsPathOperations.intersection(path1, path2, using: .winding) {
-            // Log.info("✅ PROFESSIONAL INTERSECT: CoreGraphics success (preserves smooth curves)", category: .fileOperations)
             return coreGraphicsResult
         }
         
@@ -71,18 +62,13 @@ extension ProfessionalPathOperations {
             let nonEmptyPath = path1.isEmpty ? path2 : path1
             return nonEmptyPath.isEmpty ? [] : [nonEmptyPath]
         }
-        
-        // Log.info("🔨 PROFESSIONAL EXCLUDE: Using CoreGraphics...", category: .general)
-        
+
         // Use CoreGraphics Symmetric Difference (exactly what Exclude does!)
         if let coreGraphicsResult = CoreGraphicsPathOperations.symmetricDifference(path1, path2, using: .winding) {
-            // Log.info("✅ PROFESSIONAL EXCLUDE: CoreGraphics success (preserves smooth curves)", category: .fileOperations)
-            
             // CoreGraphics returns a single path, but we need to return as array
             // Check if result has multiple components and separate them
             let components = CoreGraphicsPathOperations.componentsSeparated(coreGraphicsResult, using: .winding)
             if !components.isEmpty {
-                // Log.info("   → Separated into \(components.count) components", category: .general)
                 return components
             } else {
                 // Single path result

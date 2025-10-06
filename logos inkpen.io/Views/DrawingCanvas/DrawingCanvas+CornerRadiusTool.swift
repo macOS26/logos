@@ -89,7 +89,6 @@ extension DrawingCanvas {
             draggedCornerIndex = cornerIndex
             cornerDragStart = value.startLocation
             initialCornerRadius = shape.cornerRadii[safe: cornerIndex] ?? 0.0
-            // Logging removed
         }
         
         // Perfect mouse tracking: Handle follows mouse exactly
@@ -132,7 +131,6 @@ extension DrawingCanvas {
             // Proportional corner radius: When shift is held, make all corners proportional
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
-                // Logging removed
                 
                 // Get all current corner radii
                 var allRadii = shape.cornerRadii
@@ -154,7 +152,6 @@ extension DrawingCanvas {
                         allRadii[i] = constrainedRadius
                     }
                     
-                    // Logging removed
                 } else {
                     // Uniform mode: When starting from 0, set ALL corners to the same radius
                     for i in 0..<4 {
@@ -162,7 +159,6 @@ extension DrawingCanvas {
                         allRadii[i] = constrainedRadius
                     }
                     
-                    // Logging removed
                 }
                 
                 // Update all corner radii proportionally
@@ -193,7 +189,6 @@ extension DrawingCanvas {
                 if abs(currentRadius - roundedRadius) > 0.01 {
                     let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
                     if isShiftCurrentlyPressed {
-                        // Logging removed
                         // Proportional rounding: Round all corners proportionally when shift is held
                         var allRadii = selectedShape.cornerRadii
                         while allRadii.count < 4 {
@@ -211,7 +206,6 @@ extension DrawingCanvas {
                                 allRadii[i] = round(originalCornerRadius * ratio)
                             }
                             
-                            // Logging removed
                         } else {
                             // Uniform mode: When starting from 0, set ALL corners to the same radius
                             for i in 0..<4 {

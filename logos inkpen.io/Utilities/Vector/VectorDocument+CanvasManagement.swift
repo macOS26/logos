@@ -40,7 +40,6 @@ extension VectorDocument {
         layers.append(pasteboardLayer)
         // Add pasteboard background directly to unified objects
         addShapeToUnifiedSystem(pasteboardShape, layerIndex: 0)
-        // Logging removed
         
         // Create Canvas layer SECOND (index 1) - canvas layer, LOCKED by default
         var canvasLayer = VectorLayer(name: "Canvas")
@@ -56,11 +55,9 @@ extension VectorDocument {
         layers.append(canvasLayer)
         // Add canvas background directly to unified objects
         addShapeToUnifiedSystem(backgroundShape, layerIndex: 1)
-        // Logging removed
         
         // Create working layer THIRD (index 2) - for actual drawing
         layers.append(VectorLayer(name: "Layer 1"))
-        // Logging removed
         
         // DEBUG: Print actual layer order to verify
         debugLayerOrder()
@@ -68,14 +65,12 @@ extension VectorDocument {
     
     /// Debug function to print current layer order
     func debugLayerOrder() {
-        // Logging removed
     }
     
     /// Update pasteboard layer to match canvas size and center it
     func updatePasteboardLayer() {
         guard layers.count > 0,
               layers[0].name == "Pasteboard" else {
-            // Logging removed
             return
         }
 
@@ -92,7 +87,6 @@ extension VectorDocument {
             .first
 
         guard let pasteboardShape = pasteboardShape else {
-            // Logging removed
             return
         }
 

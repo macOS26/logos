@@ -41,12 +41,10 @@ extension DrawingCanvas {
         if let textID = findTextAt(location: canvasLocation) {
             // 1. Switch to Font tool (Aa)
             document.currentTool = .font
-            // Log.info("🎯 DOUBLE CLICK: Switched to Type tool", category: .selection)
-            
+
             // 2. Turn text box to blue edit mode
             startEditingText(textID: textID, at: canvasLocation)
-            // Log.info("🎯 DOUBLE CLICK: Activated blue edit mode for text", category: .selection)
-            
+
             // 3. Activate I-beam cursor and enter text editing mode
             isTextEditingMode = true
             NSCursor.iBeam.set()
@@ -60,13 +58,7 @@ extension DrawingCanvas {
     internal func handleUnifiedTap(at location: CGPoint, geometry: GeometryProxy) {
         // FIXED: Ensure coordinate system is properly synchronized
         let canvasLocation = screenToCanvas(location, geometry: geometry)
-        
-        // Validate coordinates to catch any sync issues
-        let validatedCanvasLocation = validateCanvasLocation(canvasLocation)
-        if validatedCanvasLocation != canvasLocation {
-            // Log.info("🎯 COORDINATE VALIDATION: Adjusted canvas location from \(canvasLocation) to \(validatedCanvasLocation)", category: .selection)
-        }
-        
+
         // DOUBLE-CLICK DETECTION
         let currentTime = Date()
         let timeSinceLastClick = currentTime.timeIntervalSince(lastClickTime)

@@ -23,7 +23,6 @@ class SystemErrorHandler {
             errorDescription.contains("/private/var/db/") ||
             errorDescription.contains("no such file or directory") {
             
-            // Logging removed
             return true // Error handled
         }
         
@@ -31,7 +30,6 @@ class SystemErrorHandler {
         if errorDescription.contains("renderbox") ||
             errorDescription.contains("metallib") ||
             errorDescription.contains("mach-o") {
-            // Logging removed
             return true // Error handled
         }
         
@@ -39,21 +37,18 @@ class SystemErrorHandler {
         if errorDescription.contains("personaattributes") ||
             errorDescription.contains("persona type") ||
             errorDescription.contains("operation not permitted") {
-            // Logging removed
             return true // Error handled
         }
         
         // Check for other common system-level errors that shouldn't block the app
         if errorDomain == "NSCocoaErrorDomain" &&
             (errorDescription.contains("file system") || errorDescription.contains("permission")) {
-            // Logging removed
             return true // Error handled
         }
         
         // Check for NSPOSIXErrorDomain errors with specific codes
         if errorDomain == "NSPOSIXErrorDomain" &&
             (errorCode == 1 || errorCode == 2) { // Operation not permitted, No such file or directory
-            // Logging removed
             return true // Error handled
         }
         
