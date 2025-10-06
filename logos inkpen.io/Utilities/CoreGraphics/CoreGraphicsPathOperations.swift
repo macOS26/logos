@@ -82,6 +82,23 @@ class CoreGraphicsPathOperations {
     
     /// Helper function to check if two paths could potentially be unioned
     /// (i.e., they're close enough that a union operation might connect them)
+    private static func pathsCanPotentiallyUnion(_ pathA: CGPath, _ pathB: CGPath) -> Bool {
+        let boundsA = pathA.boundingBox
+        let boundsB = pathB.boundingBox
+        
+        // Check if bounding boxes are valid
+        guard !boundsA.isNull && !boundsB.isNull && 
+              !boundsA.isInfinite && !boundsB.isInfinite else {
+            return false
+        }
+        
+        // Check if bounding boxes overlap or are very close (within 1 point)
+        let tolerance: CGFloat = 1.0
+        let expandedBoundsA = boundsA.insetBy(dx: -tolerance, dy: -tolerance)
+        
+        return expandedBoundsA.intersects(boundsB)
+    }
+    
     /// Find connected components of paths, respecting stacking order
     /// Paths that touch/overlap AND are adjacent in stacking order get grouped together
     /// - Parameters:
@@ -136,6 +153,34 @@ class CoreGraphicsPathOperations {
     
     /// Check if two paths are actually connected (not just close bounding boxes)
     /// Uses intersection testing to determine if paths overlap or touch
+    private static func pathsAreConnected(_ pathA: CGPath, _ pathB: CGPath, using fillRule: CGPathFillRule = .winding) -> Bool {
+        // First check if bounding boxes are close enough
+        if !pathsCanPotentiallyUnion(pathA, pathB) {
+            return false
+        }
+        
+        // Try actual intersection to see if paths overlap
+        let intersection = pathA.intersection(pathB, using: fillRule)
+        if !intersection.isEmpty {
+            return true // Paths overlap
+        }
+        
+        // Check if paths are touching by testing union
+        let union = pathA.union(pathB, using: fillRule)
+        if !union.isEmpty {
+            // If union area is less than sum of individual areas, they're touching/overlapping
+            let areaA = pathA.boundingBox.width * pathA.boundingBox.height
+            let areaB = pathB.boundingBox.width * pathB.boundingBox.height
+            let unionArea = union.boundingBox.width * union.boundingBox.height
+            
+            // If union is significantly smaller than sum, paths are connected
+            let tolerance: CGFloat = 0.1
+            return unionArea < (areaA + areaB) * (1.0 - tolerance)
+        }
+        
+        return false
+    }
+    
     /// Performs an intersection operation on two paths using CoreGraphics
     /// - Parameters:
     ///   - pathA: First path
@@ -476,6 +521,10 @@ class CoreGraphicsPathOperations {
     ///   - paths: Array of paths in stacking order (first = back, last = front)
     ///   - fillRule: Fill rule to use (.winding or .evenOdd)
     /// - Returns: Array of cut paths with hidden parts removed
+    static func cut(_ paths: [CGPath], using fillRule: CGPathFillRule = .winding) -> [CGPath] {
+        return cutWithShapeTracking(paths, using: fillRule).map { $0.0 }
+    }
+
     // MARK: - Merge Operations (CoreGraphics Alternative for Color-Based Merging)
     
     /// Merge operation: Applies Cut to all shapes first, keeps all pieces separate (no joining)
