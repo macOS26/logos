@@ -100,7 +100,8 @@
       "Bash(\"logos inkpen.io/Utilities/Vector/VectorDocument+ClippingMasks.swift\" )",
       "Bash(\"logos inkpen.io/Utilities/Vector/VectorObject.swift\" )",
       "Bash(\"logos inkpen.io/Utilities/Vector/PathOperations.swift\" )",
-      "Bash(\"logos inkpen.io/Views/DrawingCanvas/DrawingCanvas+CoincidentPointHandling.swift\")"
+      "Bash(\"logos inkpen.io/Views/DrawingCanvas/DrawingCanvas+CoincidentPointHandling.swift\")",
+      "Bash(git revert:*)"
     ],
     "deny": [],
     "ask": []

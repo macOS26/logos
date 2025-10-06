@@ -20,6 +20,7 @@ class PDFCommandParser {
     var currentPath: [PathCommand] = []
     var pathStartPoint = CGPoint.zero
     var pageSize = CGSize.zero
+    var pageOrigin = CGPoint.zero  // MediaBox origin offset
     
     // For gradient tracking
     var activeGradient: VectorGradient?
@@ -117,10 +118,11 @@ class PDFCommandParser {
         // Detect PDF version
         detectedPDFVersion = detectPDFVersion(document: document)
         
-        // Get page size from first page
+        // Get page size and origin from first page
         if let firstPage = document.page(at: 1) {
             let mediaBox = firstPage.getBoxRect(.mediaBox)
             pageSize = mediaBox.size
+            pageOrigin = mediaBox.origin
         }
         
         // Parse all pages

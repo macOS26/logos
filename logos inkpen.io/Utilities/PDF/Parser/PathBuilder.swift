@@ -7,6 +7,35 @@
 
 import SwiftUI
 
+// MARK: - Helper Functions
+
+/// Offset all points in a path by a given amount
+private func offsetPath(_ path: VectorPath, by offset: CGPoint) -> VectorPath {
+    let offsetElements = path.elements.map { element -> PathElement in
+        switch element {
+        case .move(let to):
+            return .move(to: VectorPoint(x: to.x + offset.x, y: to.y + offset.y))
+        case .line(let to):
+            return .line(to: VectorPoint(x: to.x + offset.x, y: to.y + offset.y))
+        case .quadCurve(let to, let control):
+            return .quadCurve(
+                to: VectorPoint(x: to.x + offset.x, y: to.y + offset.y),
+                control: VectorPoint(x: control.x + offset.x, y: control.y + offset.y)
+            )
+        case .cubicCurve(let to, let control1, let control2):
+            return .cubicCurve(
+                to: VectorPoint(x: to.x + offset.x, y: to.y + offset.y),
+                control1: VectorPoint(x: control1.x + offset.x, y: control1.y + offset.y),
+                control2: VectorPoint(x: control2.x + offset.x, y: control2.y + offset.y)
+            )
+        case .close:
+            return .close
+        }
+    }
+
+    return VectorPath(elements: offsetElements, isClosed: path.isClosed)
+}
+
 // MARK: - PDF Vector Extraction using Working Parser
 func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
     // Extract inkpen metadata from PDF XMP metadata stream
@@ -56,8 +85,18 @@ func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
 
     // Now parse with the working parser
     let parser = PDFCommandParser()
-    let shapes = parser.parseDocument(at: tempURL)
+    var shapes = parser.parseDocument(at: tempURL)
 
+    // Apply mediaBox origin offset if needed
+    // PDFs can have mediaBox with non-zero origin - we need to shift all shapes
+    if mediaBox.origin != .zero {
+        let offset = CGPoint(x: -mediaBox.origin.x, y: -mediaBox.origin.y)
+        shapes = shapes.map { shape in
+            var offsetShape = shape
+            offsetShape.path = offsetPath(shape.path, by: offset)
+            return offsetShape
+        }
+    }
 
     // Clean up temp file
     try? FileManager.default.removeItem(at: tempURL)
