@@ -337,8 +337,16 @@ extension DrawingCanvas {
 
             // Step 5: Remove duplicate/coincident points after expansion
             finalShape.path = removeCoincidentPointsFromPath(finalShape.path, tolerance: 0.5)
+
+            // Step 6: Apply additional simplification if simplify is at high values
+            if document.currentMarkerSimplify >= 50 {
+                finalShape.path = applyAdditionalSimplification(finalShape.path, simplifyAmount: document.currentMarkerSimplify)
+            }
+        } else {
+            // Even without remove overlap, clean up coincident points
+            finalShape.path = removeCoincidentPointsFromPath(finalShape.path, tolerance: 0.5)
         }
-        
+
         // VECTOR APP OPTIMIZATION: Add shape only once at the end, not during drawing
         guard let layerIndex = document.selectedLayerIndex else { return }
         document.addShapeToFrontOfUnifiedSystem(finalShape, layerIndex: layerIndex)
@@ -416,6 +424,14 @@ extension DrawingCanvas {
             }
 
             // Step 5: Remove duplicate/coincident points after expansion
+            finalPath = removeCoincidentPointsFromPath(finalPath, tolerance: 0.5)
+
+            // Step 6: Apply additional simplification if simplify is at high values
+            if document.currentMarkerSimplify >= 50 {
+                finalPath = applyAdditionalSimplification(finalPath, simplifyAmount: document.currentMarkerSimplify)
+            }
+        } else {
+            // Even without remove overlap, clean up coincident points
             finalPath = removeCoincidentPointsFromPath(finalPath, tolerance: 0.5)
         }
 
@@ -1100,5 +1116,62 @@ extension DrawingCanvas {
         }
 
         return VectorPath(elements: cleanedElements)
+    }
+
+    /// Apply additional simplification to reduce points after expansion
+    /// This is particularly important when simplify parameter is at high values (50-100%)
+    private func applyAdditionalSimplification(_ path: VectorPath, simplifyAmount: Double) -> VectorPath {
+        let elements = path.elements
+        guard elements.count > 3 else { return path }
+
+        // Extract points from path
+        var points: [CGPoint] = []
+        for element in elements {
+            switch element {
+            case .move(let to), .line(let to):
+                points.append(CGPoint(x: to.x, y: to.y))
+            case .curve(let to, _, _), .quadCurve(let to, _):
+                points.append(CGPoint(x: to.x, y: to.y))
+            case .close:
+                break
+            }
+        }
+
+        guard points.count > 2 else { return path }
+
+        // Calculate tolerance based on simplify amount (50-100% maps to tolerance 2.0-10.0)
+        let normalizedAmount = (simplifyAmount - 50.0) / 50.0 // 0.0 to 1.0
+        let tolerance = 2.0 + (normalizedAmount * 8.0) // 2.0 to 10.0
+
+        // Apply Douglas-Peucker simplification
+        let simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
+            points: points,
+            tolerance: tolerance
+        )
+
+        // Rebuild path with simplified points
+        guard simplifiedPoints.count > 1 else { return path }
+
+        var newElements: [PathElement] = []
+        newElements.append(.move(to: VectorPoint(simplifiedPoints[0])))
+
+        for i in 1..<simplifiedPoints.count {
+            newElements.append(.line(to: VectorPoint(simplifiedPoints[i])))
+        }
+
+        // Preserve close element if original had one
+        if elements.last?.isClose ?? false {
+            newElements.append(.close)
+        }
+
+        return VectorPath(elements: newElements)
+    }
+}
+
+// Helper extension for PathElement
+private extension PathElement {
+    var isClose: Bool {
+        if case .close = self { return true }
+        return false
     }
 } 
