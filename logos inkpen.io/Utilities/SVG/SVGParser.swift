@@ -38,6 +38,14 @@ class SVGParser: NSObject, XMLParserDelegate {
     // Multi-line text support
     internal var currentTextSpans: [(content: String, attributes: [String: String], x: Double, y: Double)] = []
     internal var isInMultiLineText: Bool = false
+
+    // Track maximum text width for consistent sizing
+    internal var maxTextWidth: CGFloat = 0
+
+    // Track text box bounds from invisible rect elements
+    internal var currentGroupId: String? = nil
+    internal var textBoxBounds: [String: CGRect] = [:]  // Group ID -> rect bounds
+    internal var pendingTextBoxRect: CGRect? = nil
     
     // MARK: - Gradient Support
     internal var gradientDefinitions: [String: VectorGradient] = [:]
@@ -512,6 +520,9 @@ class SVGParser: NSObject, XMLParserDelegate {
     private func parseGroup(attributes: [String: String]) {
         // Save current transform and apply group transform
         transformStack.append(currentTransform)
+
+        // Capture group ID for text box bounds tracking
+        currentGroupId = attributes["id"]
 
         // Push current clip path to stack for nested groups
         clipPathStack.append(pendingClipPathId)

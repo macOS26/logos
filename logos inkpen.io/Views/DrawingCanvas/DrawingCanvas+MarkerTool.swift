@@ -235,8 +235,14 @@ extension DrawingCanvas {
         }
         
         // Step 2: Apply improved Douglas-Peucker simplification with sharp corner preservation
-        // Reduce tolerance to preserve more points for proper leaf shapes
-        let smoothingTolerance = document.currentMarkerSmoothingTolerance * 0.3  // Less aggressive for leaf shapes
+        // Combine smoothing tolerance with simplify parameter
+        let baseSmoothing = document.currentMarkerSmoothingTolerance * 0.3  // Less aggressive for leaf shapes
+        let simplifyAmount = document.currentMarkerSimplify // 0-100
+
+        // Add additional simplification based on simplify parameter
+        // 0% = base tolerance only, 100% = base + 10.0 additional tolerance
+        let smoothingTolerance = baseSmoothing + (simplifyAmount / 100.0) * 10.0
+
         markerSimplifiedPoints = document.advancedSmoothingEnabled ?
             CurveSmoothing.improvedDouglassPeucker(
                 points: processedPoints,
@@ -245,7 +251,7 @@ extension DrawingCanvas {
             ) :
             DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
 
-        Log.info("Douglas-Peucker: Simplified to \(markerSimplifiedPoints.count) points", category: .general)
+        Log.info("Douglas-Peucker: Simplified to \(markerSimplifiedPoints.count) points (simplify: \(Int(simplifyAmount))%)", category: .general)
 
         // CRITICAL: Ensure we have enough points for smooth tapers
         // Need MORE points when pressure sensitivity is off since taper is the only variation

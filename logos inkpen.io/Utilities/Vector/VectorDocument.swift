@@ -225,6 +225,9 @@ class VectorDocument: ObservableObject, Codable {
     @Published var currentBrushMinTaperThickness: Double = 0.5 {  // Minimum thickness at taper ends (0-15 pts)
         didSet { UserDefaults.standard.set(currentBrushMinTaperThickness, forKey: "brushMinTaperThickness") }
     }
+    @Published var currentBrushSimplify: Double = 0.0 {  // 0-100: 0 = no simplification, 100 = maximum simplification
+        didSet { UserDefaults.standard.set(currentBrushSimplify, forKey: "brushSimplify") }
+    }
     @Published var hasPressureInput: Bool = false // Whether pressure-sensitive input is detected
     @Published var brushApplyNoStroke: Bool = true {
         didSet { UserDefaults.standard.set(brushApplyNoStroke, forKey: "brushApplyNoStroke") }
@@ -375,6 +378,9 @@ class VectorDocument: ObservableObject, Codable {
     @Published var currentMarkerMinTaperThickness: Double {  // Minimum thickness at taper ends (0-60 pts, 4x brush)
         didSet { UserDefaults.standard.set(currentMarkerMinTaperThickness, forKey: "markerMinTaperThickness") }
     }
+    @Published var currentMarkerSimplify: Double {  // 0-100: 0 = no simplification, 100 = maximum simplification
+        didSet { UserDefaults.standard.set(currentMarkerSimplify, forKey: "markerSimplify") }
+    }
     @Published var markerUseFillAsStroke: Bool {
         didSet { UserDefaults.standard.set(markerUseFillAsStroke, forKey: "markerUseFillAsStroke") }
     }
@@ -447,6 +453,7 @@ class VectorDocument: ObservableObject, Codable {
         self.currentMarkerTaperStart = UserDefaults.standard.object(forKey: "markerTaperStart") as? Double ?? 0.1
         self.currentMarkerTaperEnd = UserDefaults.standard.object(forKey: "markerTaperEnd") as? Double ?? 0.1
         self.currentMarkerMinTaperThickness = UserDefaults.standard.object(forKey: "markerMinTaperThickness") as? Double ?? 2.0
+        self.currentMarkerSimplify = UserDefaults.standard.object(forKey: "markerSimplify") as? Double ?? 0.0
         self.markerUseFillAsStroke = UserDefaults.standard.object(forKey: "markerUseFillAsStroke") as? Bool ?? true
         self.markerApplyNoStroke = UserDefaults.standard.object(forKey: "markerApplyNoStroke") as? Bool ?? false
         self.markerRemoveOverlap = UserDefaults.standard.object(forKey: "markerRemoveOverlap") as? Bool ?? true
@@ -821,6 +828,7 @@ class VectorDocument: ObservableObject, Codable {
         currentMarkerTaperStart = UserDefaults.standard.object(forKey: "markerTaperStart") as? Double ?? 0.1
         currentMarkerTaperEnd = UserDefaults.standard.object(forKey: "markerTaperEnd") as? Double ?? 0.1
         currentMarkerMinTaperThickness = UserDefaults.standard.object(forKey: "markerMinTaperThickness") as? Double ?? 2.0
+        currentMarkerSimplify = UserDefaults.standard.object(forKey: "markerSimplify") as? Double ?? 0.0
         markerUseFillAsStroke = UserDefaults.standard.object(forKey: "markerUseFillAsStroke") as? Bool ?? true
         markerApplyNoStroke = UserDefaults.standard.object(forKey: "markerApplyNoStroke") as? Bool ?? false
         markerRemoveOverlap = UserDefaults.standard.object(forKey: "markerRemoveOverlap") as? Bool ?? true

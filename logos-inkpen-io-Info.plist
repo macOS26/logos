@@ -43,6 +43,8 @@
 		<dict>
 			<key>CFBundleTypeIconFile</key>
 			<string>apple</string>
+			<key>CFBundleTypeIconSystemGenerated</key>
+			<true/>
 			<key>CFBundleTypeName</key>
 			<string>PDF Document</string>
 			<key>CFBundleTypeRole</key>
@@ -72,7 +74,10 @@
 			<key>UTTypeDescription</key>
 			<string>Ink Pen Document</string>
 			<key>UTTypeIcons</key>
-			<dict/>
+			<dict>
+				<key>UTTypeIconText</key>
+				<string>INKPEN</string>
+			</dict>
 			<key>UTTypeIdentifier</key>
 			<string>io.logos.logos-inkpen-io.document</string>
 			<key>UTTypeTagSpecification</key>
@@ -88,10 +93,18 @@
 			</dict>
 		</dict>
 		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
 			<key>UTTypeDescription</key>
 			<string>Draggable Vector Object</string>
 			<key>UTTypeIcons</key>
-			<dict/>
+			<dict>
+				<key>UTTypeIconText</key>
+				<string>DVO</string>
+			</dict>
 			<key>UTTypeIdentifier</key>
 			<string>io.logos.logos-inkpen-io.draggableVectorObject</string>
 			<key>UTTypeTagSpecification</key>
@@ -99,6 +112,52 @@
 				<key>public.filename-extension</key>
 				<array>
 					<string>dvo</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>SVG Ink Pen Document</string>
+			<key>UTTypeIcons</key>
+			<dict>
+				<key>UTTypeIconText</key>
+				<string>SVG</string>
+			</dict>
+			<key>UTTypeIdentifier</key>
+			<string>io.logos.logos-inkpen-io.svg</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>svg</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>PDF Ink Pen Document</string>
+			<key>UTTypeIcons</key>
+			<dict>
+				<key>UTTypeIconText</key>
+				<string>PDF</string>
+			</dict>
+			<key>UTTypeIdentifier</key>
+			<string>io.logos.logos-inkpen-io.pdf</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>pdf</string>
 				</array>
 			</dict>
 		</dict>

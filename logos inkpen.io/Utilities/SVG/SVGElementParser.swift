@@ -19,7 +19,21 @@ extension SVGParser {
         let height = parseLength(attributes["height"]) ?? 0
         let rx = parseLength(attributes["rx"]) ?? 0
         let ry = parseLength(attributes["ry"]) ?? 0
-        
+
+        // CRITICAL: Check if this is an invisible text box bounds rect
+        let fill = attributes["fill"] ?? ""
+        let opacity = parseLength(attributes["opacity"]) ?? 1.0
+        if (fill == "none" || fill.isEmpty) && opacity == 0 && width > 0 && height > 0 {
+            // This is an invisible bounding rect for text box - store it
+            let rect = CGRect(x: x, y: y, width: width, height: height)
+            if let groupId = currentGroupId {
+                textBoxBounds[groupId] = rect
+                Log.fileOperation("📦 Detected text box bounds: \(rect) for group: \(groupId)", level: .debug)
+            }
+            pendingTextBoxRect = rect
+            return  // Don't create a shape for this invisible rect
+        }
+
         let elements: [PathElement]
         
         if rx > 0 || ry > 0 {

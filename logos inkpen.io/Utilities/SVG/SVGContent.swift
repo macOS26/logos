@@ -42,14 +42,28 @@ func parseSVGContent(_ data: Data, useExtremeValueHandling: Bool = false) throws
     // CRITICAL FIX: Convert textObjects to VectorShapes (same as PDF import)
     var allShapes = result.shapes
 
+    // CRITICAL: Apply uniform width to all text objects (widest + 2 chars)
+    let maxWidth = parser.maxTextWidth
+
     // Reverse text objects to fix stacking order (last letter should be last, not first)
-    for textObject in result.textObjects.reversed() {
+    for var textObject in result.textObjects.reversed() {
+        // Update text object to use maximum width for consistency
+        if maxWidth > 0 {
+            let height = textObject.areaSize?.height ?? CGFloat(textObject.typography.lineHeight)
+            textObject.areaSize = CGSize(width: maxWidth, height: height)
+            textObject.bounds = CGRect(
+                x: textObject.bounds.origin.x,
+                y: textObject.bounds.origin.y,
+                width: maxWidth,
+                height: textObject.bounds.height
+            )
+        }
         let textShape = textObject.toVectorShape()
         allShapes.append(textShape)
-        Log.fileOperation("📝 Converted SVG text to shape: '\(textObject.content.prefix(30))...' (id: \(textShape.id))", level: .debug)
+        Log.fileOperation("📝 Converted SVG text to shape: '\(textObject.content.prefix(30))...' (id: \(textShape.id)), width: \(maxWidth)", level: .debug)
     }
 
-    Log.fileOperation("✅ SVG parsing complete: \(result.shapes.count) shapes + \(result.textObjects.count) text objects = \(allShapes.count) total", level: .info)
+    Log.fileOperation("✅ SVG parsing complete: \(result.shapes.count) shapes + \(result.textObjects.count) text objects = \(allShapes.count) total, max text width: \(maxWidth)", level: .info)
 
     return SVGContent(
         shapes: allShapes,

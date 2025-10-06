@@ -261,6 +261,19 @@ class SVGExporter {
         var svg = ""
         var skippedGlyphCount = 0
 
+        // CRITICAL: Export text box as invisible rectangle to define text bounds
+        // This allows re-import to preserve text box width for proper wrapping
+        if let areaSize = vectorText.areaSize, areaSize.width > 0, areaSize.height > 0 {
+            let boxX = vectorText.position.x * dpiScale
+            let boxY = vectorText.position.y * dpiScale
+            let boxWidth = areaSize.width * dpiScale
+            let boxHeight = areaSize.height * dpiScale
+
+            // Wrap text in a group with the bounding rect
+            svg += "<g id=\"textbox_\(vectorText.id.uuidString)\">\n"
+            svg += "  <rect x=\"\(boxX)\" y=\"\(boxY)\" width=\"\(boxWidth)\" height=\"\(boxHeight)\" fill=\"none\" opacity=\"0\"/>\n"
+        }
+
         // Common text attributes for SVG
         let fillColor = vectorText.typography.fillColor.svgColor
         let fillOpacity = vectorText.typography.fillOpacity
@@ -360,6 +373,11 @@ class SVGExporter {
         if skippedGlyphCount > 0 {
         }
 
+        // Close the group if we opened one for text box bounds
+        if vectorText.areaSize != nil && vectorText.areaSize!.width > 0 && vectorText.areaSize!.height > 0 {
+            svg += "</g>\n"
+        }
+
         return svg
     }
 
@@ -400,6 +418,19 @@ class SVGExporter {
         layoutManager.ensureLayout(for: textContainer)
 
         var svg = ""
+
+        // CRITICAL: Export text box as invisible rectangle to define text bounds
+        // This allows re-import to preserve text box width for proper wrapping
+        if let areaSize = vectorText.areaSize, areaSize.width > 0, areaSize.height > 0 {
+            let boxX = vectorText.position.x * dpiScale
+            let boxY = vectorText.position.y * dpiScale
+            let boxWidth = areaSize.width * dpiScale
+            let boxHeight = areaSize.height * dpiScale
+
+            // Wrap text in a group with the bounding rect
+            svg += "<g id=\"textbox_\(vectorText.id.uuidString)\">\n"
+            svg += "  <rect x=\"\(boxX)\" y=\"\(boxY)\" width=\"\(boxWidth)\" height=\"\(boxHeight)\" fill=\"none\" opacity=\"0\"/>\n"
+        }
 
         // Common text attributes for SVG
         let fillColor = vectorText.typography.fillColor.svgColor
@@ -644,6 +675,11 @@ class SVGExporter {
 
                 svg += ">\(escapedLine)</text>\n"
             }
+        }
+
+        // Close the group if we opened one for text box bounds
+        if vectorText.areaSize != nil && vectorText.areaSize!.width > 0 && vectorText.areaSize!.height > 0 {
+            svg += "</g>\n"
         }
 
         return svg

@@ -145,13 +145,12 @@ extension VectorDocument {
             textPreviewTypography[id] = previewTypography
 
             // Trigger lightweight update notification for text views only
-            TextPreviewNotify(id, previewTypography)
+            NotificationCenter.default.post(
+                name: Notification.Name("TextPreviewUpdate"),
+                object: nil,
+                userInfo: ["textID": id, "typography": previewTypography]
+            )
         }
-    }
-
-    fileprivate func TextPreviewNotify(_ id: UUID, _ previewTypography: TypographyProperties) {
-        // Trigger lightweight update notification for text views only
-        TextPreviewNotify(id, previewTypography)
     }
     
     /// FAST O(1) preview update - change ONLY the line height for live preview
@@ -165,7 +164,11 @@ extension VectorDocument {
             // Store in preview dictionary instead of updating unified objects
             textPreviewTypography[id] = previewTypography
             
-            TextPreviewNotify(id, previewTypography)
+            NotificationCenter.default.post(
+                name: Notification.Name("TextPreviewUpdate"),
+                object: nil,
+                userInfo: ["textID": id, "typography": previewTypography]
+            )
         }
     }
 

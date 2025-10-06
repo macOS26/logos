@@ -164,15 +164,15 @@ class VectorImportManager {
             // CRITICAL OPTIMIZATION: Check for embedded inkpen metadata FIRST
             // This avoids parsing the entire SVG if it's a native inkpen document
             if let svgString = String(data: data, encoding: .utf8) {
-                // Quick check for inkpen metadata before full parsing
+                // Quick check for inkpen metadata before full parsing (handle namespace attribute)
                 if let range = svgString.range(of: "<inkpen:document"),
                    let endRange = svgString.range(of: "</inkpen:document>") {
 
-                    // Extract the base64 content
-                    if let contentStart = svgString.range(of: ">", range: range.upperBound..<endRange.lowerBound),
-                       let contentEnd = svgString.range(of: "<", options: .backwards, range: contentStart.upperBound..<endRange.lowerBound) {
+                    // Extract the base64 content - find the closing > of the opening tag first
+                    if let openTagEnd = svgString.range(of: ">", range: range.upperBound..<endRange.lowerBound) {
 
-                        let base64Data = String(svgString[contentStart.upperBound..<contentEnd.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+                        // Extract everything between > and </inkpen:document>
+                        let base64Data = String(svgString[openTagEnd.upperBound..<endRange.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
 
                         Log.info("✅ Found embedded inkpen document (\(base64Data.count) base64 chars) - SKIPPING SVG parsing!", category: .fileOperations)
 

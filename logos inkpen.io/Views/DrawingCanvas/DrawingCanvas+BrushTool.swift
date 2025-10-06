@@ -249,27 +249,47 @@ extension DrawingCanvas {
 
         // Only simplify if NOT using pressure device
         if appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput {
-            // PRESSURE DEVICE: Use all raw points, no simplification
-            simplifiedPoints = rawPointLocations
-        } else {
-            // MOUSE/TRACKPAD: Apply liquid smoothing
-            let liquidValue = document.currentBrushLiquid
-
-            if abs(liquidValue - 50.0) < 0.01 {
+            // PRESSURE DEVICE: Apply simplification based on simplify parameter only
+            let simplifyAmount = document.currentBrushSimplify // 0-100
+            if simplifyAmount < 1.0 {
+                // No simplification
                 simplifiedPoints = rawPointLocations
-            } else if liquidValue < 50.0 {
-                let smoothFactor = (50.0 - liquidValue) / 50.0
-                let tolerance = 0.5 + (2.0 * smoothFactor)
+            } else {
+                // Apply Douglas-Peucker with tolerance based on simplify amount
+                // 0% = 0.5 tolerance, 100% = 10.0 tolerance
+                let tolerance = 0.5 + (simplifyAmount / 100.0) * 9.5
                 simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
                     points: rawPointLocations,
                     tolerance: tolerance
                 )
+            }
+        } else {
+            // MOUSE/TRACKPAD: Combine liquid smoothing with simplification
+            let liquidValue = document.currentBrushLiquid
+            let simplifyAmount = document.currentBrushSimplify // 0-100
+
+            // Calculate base tolerance from liquid setting
+            let baseTolerance: Double
+            if abs(liquidValue - 50.0) < 0.01 {
+                baseTolerance = 0.5
+            } else if liquidValue < 50.0 {
+                let smoothFactor = (50.0 - liquidValue) / 50.0
+                baseTolerance = 0.5 + (2.0 * smoothFactor)
             } else {
                 let smoothFactor = (liquidValue - 50.0) / 50.0
-                let tolerance = 2.5 + (7.5 * smoothFactor)
+                baseTolerance = 2.5 + (7.5 * smoothFactor)
+            }
+
+            // Add simplification on top of liquid smoothing
+            // Simplify adds 0-10 additional tolerance
+            let finalTolerance = baseTolerance + (simplifyAmount / 100.0) * 10.0
+
+            if finalTolerance < 0.6 {
+                simplifiedPoints = rawPointLocations
+            } else {
                 simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
                     points: rawPointLocations,
-                    tolerance: tolerance
+                    tolerance: finalTolerance
                 )
             }
 

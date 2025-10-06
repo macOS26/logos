@@ -45,6 +45,19 @@ extension SVGParser {
         return ceil(boundingRect.width)
     }
 
+    // Calculate the width of the longest line in multi-line text
+    internal func calculateMaxLineWidth(for text: String, font: NSFont, alignment: TextAlignment) -> CGFloat {
+        let lines = text.components(separatedBy: "\n")
+        var maxWidth: CGFloat = 0
+
+        for line in lines {
+            let lineWidth = calculateTextWidth(for: line, font: font, alignment: alignment)
+            maxWidth = max(maxWidth, lineWidth)
+        }
+
+        return maxWidth
+    }
+
     // Extract a font-family from either the explicit attribute or inline style
     func extractFontFamily(from attributes: [String: String]) -> String? {
         if let explicit = attributes["font-family"], !explicit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -236,12 +249,15 @@ extension SVGParser {
                 let fontWeight = parseFontWeight(from: currentTextSpans.first?.attributes ?? currentTextAttributes)
                 let textAlignment = detectTextAlignment(from: currentTextSpans)
 
+                // Calculate line height as fontSize * 1.2
+                let lineHeight = firstFontSize * 1.2
+
                 let typography = TypographyProperties(
                     fontFamily: firstFontFamily,
                     fontWeight: fontWeight,  // FIXED: Use parsed font weight
                     fontStyle: .normal,
                     fontSize: firstFontSize,
-                    lineHeight: firstFontSize * 1.2, // Standard line spacing
+                    lineHeight: lineHeight,
                     lineSpacing: 0.0,
                     letterSpacing: 0.0,
                     alignment: textAlignment,  // FIXED: Use detected alignment
@@ -263,7 +279,7 @@ extension SVGParser {
                 if textAnchor == "middle" || textAnchor == "end" {
                     // PERFORMANCE: Use cached font and shared layout manager
                     let nsFont = getCachedFont(family: firstFontFamily, size: firstFontSize, weight: fontWeight)
-                    let maxLineWidth = calculateTextWidth(for: multiLineContent, font: nsFont, alignment: textAlignment)
+                    let maxLineWidth = calculateMaxLineWidth(for: multiLineContent, font: nsFont, alignment: textAlignment)
 
                     // Adjust x position based on anchor and widest line
                     if textAnchor == "middle" {
@@ -275,16 +291,37 @@ extension SVGParser {
                     }
                 }
 
-                // PERFORMANCE: Calculate ACTUAL text width using cached components
+                // PERFORMANCE: Calculate ACTUAL text width using cached components (widest line + 2 characters)
                 let nsFont = getCachedFont(family: firstFontFamily, size: firstFontSize, weight: fontWeight)
-                let actualWidth = calculateTextWidth(for: multiLineContent, font: nsFont, alignment: textAlignment)
-                // Use fontSize for height to prevent boxes from overlapping stacked text
-                let actualHeight = firstFontSize
+                let maxLineWidth = calculateMaxLineWidth(for: multiLineContent, font: nsFont, alignment: textAlignment)
+
+                // CRITICAL: Check if we have a text box bounds rect from parent group
+                let actualWidth: CGFloat
+                if let pendingRect = pendingTextBoxRect, pendingRect.width > 0 {
+                    // Use the invisible rect's width as the text box width
+                    actualWidth = pendingRect.width
+                    Log.fileOperation("📦 Using text box rect width: \(actualWidth) for multi-line text", level: .debug)
+                    pendingTextBoxRect = nil  // Clear after use
+                } else {
+                    // Fallback: Add width of 2 characters to prevent word wrapping
+                    let twoCharWidth = calculateTextWidth(for: "  ", font: nsFont, alignment: textAlignment)
+                    actualWidth = maxLineWidth + twoCharWidth
+                }
+
+                // Track maximum width across all text objects
+                maxTextWidth = max(maxTextWidth, actualWidth)
+                // Use lineHeight for height to accommodate descenders
+                let actualHeight = lineHeight
+
+
+                // CRITICAL FIX: SVG Y position is at text BASELINE
+                // Adjust Y to account for line height: Y - (lineHeight - fontSize)
+                let finalY = baseY - (firstFontSize)
 
                 var textObject = VectorText(
                     content: multiLineContent,
                     typography: typography,
-                    position: CGPoint(x: adjustedX, y: baseY),
+                    position: CGPoint(x: adjustedX, y: finalY),
                     transform: finalTextTransform,
                     areaSize: CGSize(width: actualWidth, height: actualHeight)
                 )
@@ -292,7 +329,7 @@ extension SVGParser {
                 // Set bounds explicitly using actual dimensions
                 textObject.bounds = CGRect(
                     x: adjustedX,
-                    y: baseY,
+                    y: finalY,
                     width: actualWidth,
                     height: actualHeight
                 )
@@ -326,12 +363,15 @@ extension SVGParser {
             default: textAlignment = .left
             }
 
+            // Calculate line height as fontSize * 1.2
+            let lineHeight = fontSize * 1.2
+
             let typography = TypographyProperties(
                 fontFamily: fontFamily,
                 fontWeight: fontWeight,  // FIXED: Use parsed font weight
                 fontStyle: .normal,
                 fontSize: fontSize,
-                lineHeight: fontSize,
+                lineHeight: lineHeight,
                 lineSpacing: 0.0,
                 letterSpacing: 0.0,
                 alignment: textAlignment,
@@ -352,27 +392,47 @@ extension SVGParser {
 
             // PERFORMANCE: Calculate text width once using cached components
             let nsFont = getCachedFont(family: fontFamily, size: fontSize, weight: fontWeight)
-            let actualWidth = calculateTextWidth(for: trimmedContent, font: nsFont, alignment: textAlignment)
+            let textWidth = calculateTextWidth(for: trimmedContent, font: nsFont, alignment: textAlignment)
+
+            // CRITICAL: Check if we have a text box bounds rect from parent group
+            let actualWidth: CGFloat
+            if let pendingRect = pendingTextBoxRect, pendingRect.width > 0 {
+                // Use the invisible rect's width as the text box width
+                actualWidth = pendingRect.width
+                Log.fileOperation("📦 Using text box rect width: \(actualWidth) for single-line text", level: .debug)
+                pendingTextBoxRect = nil  // Clear after use
+            } else {
+                // Fallback: Add width of 2 characters to prevent word wrapping
+                let twoCharWidth = calculateTextWidth(for: "  ", font: nsFont, alignment: textAlignment)
+                actualWidth = textWidth + twoCharWidth
+            }
+
+            // Track maximum width across all text objects
+            maxTextWidth = max(maxTextWidth, actualWidth)
 
             var adjustedX = x
             if textAnchor == "middle" || textAnchor == "end" {
-                // Adjust x position based on anchor
+                // Adjust x position based on anchor (use text width, not padded width)
                 if textAnchor == "middle" {
-                    adjustedX -= actualWidth / 2.0
-                    Log.fileOperation("📝 SVG Import: Adjusted center-aligned text x from \(x) to \(adjustedX) (width: \(actualWidth))", level: .debug)
+                    adjustedX -= textWidth / 2.0
+                    Log.fileOperation("📝 SVG Import: Adjusted center-aligned text x from \(x) to \(adjustedX) (width: \(textWidth))", level: .debug)
                 } else if textAnchor == "end" {
-                    adjustedX -= actualWidth
-                    Log.fileOperation("📝 SVG Import: Adjusted right-aligned text x from \(x) to \(adjustedX) (width: \(actualWidth))", level: .debug)
+                    adjustedX -= textWidth
+                    Log.fileOperation("📝 SVG Import: Adjusted right-aligned text x from \(x) to \(adjustedX) (width: \(textWidth))", level: .debug)
                 }
             }
 
-            // Use fontSize for height to prevent boxes from overlapping stacked text
-            let actualHeight = fontSize
+            // Use lineHeight for height to accommodate descenders
+            let actualHeight = lineHeight
+
+            // CRITICAL FIX: SVG Y position is at text BASELINE
+            // Adjust Y to account for line height: Y - (lineHeight - fontSize)
+            let finalY = y - (fontSize)
 
             var textObject = VectorText(
                 content: trimmedContent,
                 typography: typography,
-                position: CGPoint(x: adjustedX, y: y),
+                position: CGPoint(x: adjustedX, y: finalY),
                 transform: finalTextTransform,
                 areaSize: CGSize(width: actualWidth, height: actualHeight)
             )
@@ -380,7 +440,7 @@ extension SVGParser {
             // Set bounds explicitly using actual dimensions
             textObject.bounds = CGRect(
                 x: adjustedX,
-                y: y,
+                y: finalY,
                 width: actualWidth,
                 height: actualHeight
             )
