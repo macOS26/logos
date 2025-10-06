@@ -40,6 +40,27 @@ struct InkpenDocument: FileDocument {
                 // For SVG imports, we want to preserve the original stacking order from the SVG
                 self.document.populateUnifiedObjectsFromLayersPreservingOrder()
 
+                // SVG IMPORT: Find leftmost and topmost coordinates
+                var minX: CGFloat = .infinity
+                var minY: CGFloat = .infinity
+
+                for unifiedObj in self.document.unifiedObjects {
+                    if case .shape(let shape) = unifiedObj.objectType {
+                        if let textPos = shape.textPosition {
+                            minX = min(minX, textPos.x)
+                            minY = min(minY, textPos.y)
+                        } else {
+                            minX = min(minX, shape.bounds.minX)
+                            minY = min(minY, shape.bounds.minY)
+                        }
+                    }
+                }
+
+                // Pan canvas to move content's top-left to viewport 0,0
+                if minX != .infinity && minY != .infinity {
+                    self.document.canvasOffset = CGPoint(x: -minX, y: -minY)
+                }
+
                 // CRITICAL FIX: Reset all text objects' editing state when loading a document
                 // This prevents text fields from incorrectly entering i-beam edit mode on document open
                 for unifiedObj in self.document.unifiedObjects {
