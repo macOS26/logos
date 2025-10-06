@@ -29,7 +29,6 @@ extension VectorDocument {
         // Use topmost as mask (last in array = topmost due to stacking order)
         guard let maskID = selectedShapes.last?.id else { return }
         
-        // Log clipping mask creation for debugging
         let shapesForLogging = getShapesForLayer(layerIndex)
         if shapesForLogging.first(where: { $0.id == maskID }) != nil {
         }

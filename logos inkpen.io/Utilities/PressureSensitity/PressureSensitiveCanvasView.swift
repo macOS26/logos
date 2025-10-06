@@ -57,10 +57,8 @@ class PressureSensitiveCanvasView: NSView {
         Log.fileOperation("🎨 PRESSURE: Will detect pressure support from actual events", level: .debug)
     }
     
-    // MARK: - Comprehensive Event Logging
 
     private func logEvent(_ event: NSEvent, context: String) {
-        // Logging disabled to prevent excessive console spam during drawing
     }
     
     // MARK: - Mouse/Touch Event Handling
@@ -177,7 +175,6 @@ class PressureSensitiveCanvasView: NSView {
         super.tabletProximity(with: event)
     }
     
-    // MARK: - Additional Event Overrides for Comprehensive Logging
     
     override func rightMouseDown(with event: NSEvent) {
         logEvent(event, context: "RIGHT_MOUSE_DOWN")

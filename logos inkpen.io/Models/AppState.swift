@@ -7,7 +7,6 @@ class AppState {
     
     var selectedPanelTab: PanelTab = .layers
 
-    // MARK: - Logging Preferences
     /// Master switch for verbose console logging
     var enableVerboseLogging: Bool = false {
         didSet { UserDefaults.standard.set(enableVerboseLogging, forKey: "enableVerboseLogging") }

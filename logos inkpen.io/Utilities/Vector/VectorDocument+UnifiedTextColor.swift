@@ -38,7 +38,6 @@ extension VectorDocument {
                 // FORCE UPDATE BY TRIGGERING WILL CHANGE
                 objectWillChange.send()
 
-                // Log the change
                 Log.fileOperation("🎯 TYPE DIRECT UPDATE: \(oldFont) → \(fontFamily) for ID: \(id.uuidString.prefix(8))", level: .info)
             }
         }
@@ -71,7 +70,6 @@ extension VectorDocument {
                 // FORCE UPDATE BY TRIGGERING WILL CHANGE
                 objectWillChange.send()
 
-                // Log the change
                 Log.fileOperation("🎯 WEIGHT DIRECT UPDATE: \(oldWeight.rawValue) → \(fontWeight.rawValue) for ID: \(id.uuidString.prefix(8))", level: .info)
             }
         }
@@ -104,7 +102,6 @@ extension VectorDocument {
                 // FORCE UPDATE BY TRIGGERING WILL CHANGE
                 objectWillChange.send()
 
-                // Log the change
                 Log.fileOperation("🎯 STYLE DIRECT UPDATE: \(oldStyle.rawValue) → \(fontStyle.rawValue) for ID: \(id.uuidString.prefix(8))", level: .info)
             }
         }

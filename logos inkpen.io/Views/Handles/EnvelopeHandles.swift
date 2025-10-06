@@ -300,7 +300,6 @@ struct EnvelopeHandles: View {
         }
     }
     
-    // MARK: - Envelope Warping Logic
     
     private func initializeEnvelopeCorners() {
         // WARP OBJECT HANDLING: Check if shape is already a warp object FIRST

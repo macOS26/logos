@@ -296,7 +296,6 @@ struct PressureCalibrationView: View {
                             Log.fileOperation("🎨 CALIBRATION CANVAS: Updating calibration with pressure: \(pressure)", level: .info)
                         }
                         
-                        // Log all pressure events regardless of calibration state
                         Log.fileOperation("🎨 CALIBRATION CANVAS: ALL PRESSURE EVENTS DETECTED:", level: .info)
                         
                         // Add to event log for real-time display
@@ -658,7 +657,6 @@ struct PressureCalibrationView: View {
         .cornerRadius(8)
     }
     
-    // MARK: - Event Log Section
     
     private var eventLogSection: some View {
         VStack(spacing: 8) {

@@ -20,7 +20,6 @@ struct VectorObject: Identifiable, Hashable {
     }
     
     init(shape: VectorShape, layerIndex: Int, orderID: Int) {
-        // DEBUG: Log clipping properties during VectorObject creation
         if shape.isClippingPath || shape.clippedByShapeID != nil {
         }
         

@@ -717,7 +717,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         // CRITICAL FIX: Validate the clip path exists before applying
         // This prevents race conditions where wrong clip paths are applied
         if let clipId = clipPathId {
-            // Log detailed information about the clip path resolution
 
             if let clipPath = clipPathDefinitions[clipId] {
                 // Ensure the clip path is closed
@@ -765,7 +764,6 @@ class SVGParser: NSObject, XMLParserDelegate {
 
                 return // Don't add the original unmasked image
             } else {
-                // CRITICAL: Log warning if clip path is referenced but not found
                 Log.warning("⚠️ Clip path '\(clipId)' referenced but not found in definitions. Available: \(clipPathDefinitions.keys.joined(separator: ", "))", category: .fileOperations)
                 Log.warning("⚠️ Falling back to no clipping for this image", category: .fileOperations)
             }

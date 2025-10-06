@@ -144,7 +144,6 @@ extension FileOperations {
         // Select the working layer which contains imported shapes
         document.selectedLayerIndex = 2 // Working layer is at index 2
         
-        // Log warnings if any
         for warning in result.warnings {
             Log.fileOperation("⚠️ PDF Import Warning: \(warning)", level: .info)
         }

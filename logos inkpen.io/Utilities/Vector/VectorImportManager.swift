@@ -298,7 +298,6 @@ class VectorImportManager {
         // The bounds should be exactly the same as the image size
         rectShape.bounds = CGRect(origin: .zero, size: size)
         
-        // DEBUG: Log the image import details
         // Default behavior: store a linked path (relative to chosen base later on save)
         rectShape.linkedImagePath = url.path
         // Also store a security-scoped bookmark when possible (DocumentGroup sandbox)

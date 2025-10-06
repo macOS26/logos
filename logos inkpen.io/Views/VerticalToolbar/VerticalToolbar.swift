@@ -89,7 +89,6 @@ struct VerticalToolbar: View {
         }
     }
     
-    // MARK: - Flexible Toolbar Display Logic
     
     private func getToolsToDisplayByGroup() -> [[ToolItem]] {
         var toolGroups: [[ToolItem]] = []

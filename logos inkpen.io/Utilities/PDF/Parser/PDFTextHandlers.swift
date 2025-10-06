@@ -349,7 +349,6 @@ extension PDFCommandParser {
         if let cfString = CGPDFStringCopyTextString(pdfString) {
             let result = cfString as String
 
-            // Log if we found any ligatures or special characters
             if result.contains("\u{FB00}") || result.contains("\u{FB01}") ||
                result.contains("\u{FB02}") || result.contains("\u{FB03}") || result.contains("\u{FB04}") {
             }

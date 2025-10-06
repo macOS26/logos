@@ -16,7 +16,6 @@ extension DrawingCanvas {
     internal func runRealDrawingTest(geometry: GeometryProxy) {
         Log.fileOperation("🔥 REAL DRAWING TEST - TRACKING COORDINATE SYSTEM CHANGES", level: .info)
         
-        // Log initial state
         Log.fileOperation("📊 INITIAL STATE:", level: .info)
         
         // Clear any existing shapes
@@ -34,13 +33,11 @@ extension DrawingCanvas {
         )
         
         
-        // Log state before adding shape
         Log.fileOperation("📊 BEFORE ADDING SHAPE:", level: .info)
         
         // Add the shape
         document.addShape(testShape)
         
-        // Log state after adding shape
         Log.fileOperation("📊 AFTER ADDING SHAPE:", level: .info)
         
         // Verify the shape's actual position
@@ -77,7 +74,6 @@ extension DrawingCanvas {
         ])
         
         
-        // Log state with drawing preview
         Log.fileOperation("📊 WITH DRAWING PREVIEW:", level: .info)
         
         // Simulate end drawing

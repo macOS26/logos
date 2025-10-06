@@ -72,7 +72,6 @@ extension DrawingCanvas {
         // VECTOR APP OPTIMIZATION: Don't add to document during drawing - use overlay system
         // Shape will be added only when drawing is complete
         
-        // Logging disabled in hot path to reduce CPU overhead
     }
     
     internal func handleBrushDragUpdate(at location: CGPoint, pressure: Double? = nil) {
@@ -138,7 +137,6 @@ extension DrawingCanvas {
         // AUTO-DESELECT: Clear selection after completing brush stroke
         // This allows user to immediately change colors for the next stroke
         document.selectedShapeIDs.removeAll()
-        // Logging disabled in hot path to reduce CPU overhead
     }
     
     // MARK: - Pressure Simulation
@@ -168,7 +166,6 @@ extension DrawingCanvas {
         let finalPressure = max(0.1, min(1.0, 0.5 + pressureVariation))
         
         // Print pressure value during drawing
-        // Logging disabled in hot path to reduce CPU overhead
         
         return finalPressure
     }
@@ -452,7 +449,6 @@ extension DrawingCanvas {
         // VECTOR APP OPTIMIZATION: Add shape only once at the end, not during drawing
         document.addShapeToFront(finalShape)
         
-        // Logging disabled in hot path to reduce CPU overhead
     }
 
     // MARK: - Finalize From Preview (no recompute)

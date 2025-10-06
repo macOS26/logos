@@ -96,14 +96,11 @@ extension DrawingCanvas {
         // Use pressure passed directly from event, or fall back to PressureManager
         let actualPressure = pressure ?? PressureManager.shared.currentPressure
 
-        // Logging disabled in hot path to reduce CPU overhead
 
         // Add point to raw path with RAW pressure data (0.0-1.0)
         let markerPoint = MarkerPoint(location: location, pressure: actualPressure)
-        // Logging disabled in hot path to reduce CPU overhead
 
         markerRawPoints.append(markerPoint)
-        // Logging disabled in hot path to reduce CPU overhead
 
         // Update real-time preview
         updateMarkerPreview()
@@ -563,7 +560,6 @@ extension DrawingCanvas {
     /// Get pressure at a specific point by interpolating from raw points
     private func getPressureAtPoint(_ point: CGPoint, rawPoints: [MarkerPoint]) -> Double {
         guard rawPoints.count > 0 else {
-            // Logging disabled in hot path to reduce CPU overhead
             return 1.0
         }
 
@@ -597,12 +593,10 @@ extension DrawingCanvas {
                 let weight1 = closestDistance2 / totalDistance
                 let weight2 = closestDistance1 / totalDistance
                 let interpolatedPressure = closestPressure1 * weight1 + closestPressure2 * weight2
-                // Logging disabled in hot path to reduce CPU overhead
                 return interpolatedPressure
             }
         }
 
-        // Logging disabled in hot path to reduce CPU overhead
         return closestPressure1
     }
     

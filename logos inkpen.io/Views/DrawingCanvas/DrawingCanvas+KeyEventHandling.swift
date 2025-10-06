@@ -16,7 +16,6 @@ extension DrawingCanvas {
         // ENHANCED: Now also tracks flagsChanged for shift key constraints in transform tools
         keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { (event: NSEvent) -> NSEvent? in
 
-            // DEBUG: Log EVERY keyDown event to see what's happening
             if event.type == .keyDown {
                 
                 
@@ -105,7 +104,6 @@ extension DrawingCanvas {
 
                 // Check if it's an arrow key
                 if [arrowUp, arrowDown, arrowLeft, arrowRight].contains(characters) {
-                    // Debug: Log the actual tool value
 
                     // Only nudge with arrow/selection tool and no modifiers
                     if !event.modifierFlags.contains(.control) &&

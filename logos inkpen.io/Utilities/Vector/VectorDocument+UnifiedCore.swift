@@ -207,7 +207,6 @@ extension VectorDocument {
         textWithLayer.layerIndex = layerIndex
         let textShape = VectorShape.from(textWithLayer)
         
-        // DEBUG: Log the editing state
         Log.fileOperation("🔍 addTextToUnifiedSystem: text.isEditing=\(text.isEditing), textShape.isEditing=\(textShape.isEditing ?? false)", level: .info)
         
         // Text shape is now only in unified objects
