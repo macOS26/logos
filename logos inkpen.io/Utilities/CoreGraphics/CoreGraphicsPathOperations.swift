@@ -506,7 +506,6 @@ class CoreGraphicsPathOperations {
                             resultPaths.append((component, i))
                         }
                     }
-                } else {
                 }
             } else {
                 // No shapes in front, so keep the entire shape (nothing to cut)
@@ -622,9 +621,7 @@ class CoreGraphicsPathOperations {
                 if !croppedPath.isEmpty && !croppedPath.boundingBoxOfPath.isEmpty {
                     croppedPaths.append(croppedPath)
                     originalIndices.append(index)
-                } else {
                 }
-            } else {
             }
         }
         
