@@ -128,21 +128,14 @@ extension DrawingCanvas {
         document.saveToUndoStack()
         
         // CRITICAL: Ensure only one text box can be in edit mode at a time
-        var editingCount = 0
+        // OPTIMIZATION: Only stop editing on text boxes that are actually editing
         for unifiedObj in document.unifiedObjects {
             guard case .shape(let shape) = unifiedObj.objectType,
                   shape.isTextObject,
-                  var textObject = VectorText.from(shape) else { continue }
-            textObject.layerIndex = unifiedObj.layerIndex
-            if textObject.isEditing {
-                editingCount += 1
-                Log.fileOperation("🔄 STOPPING EDIT: Text box \(textObject.id.uuidString.prefix(8)) was in edit mode", level: .info)
-            }
-            document.setTextEditingInUnified(id: textObject.id, isEditing: false)
-        }
-        
-        if editingCount > 0 {
-            Log.fileOperation("🔄 STOPPED \(editingCount) text box(es) that were in edit mode", level: .info)
+                  shape.id != textID, // Skip the text box we're about to edit
+                  shape.isEditing == true else { continue } // Only process if actually editing
+
+            document.setTextEditingInUnified(id: shape.id, isEditing: false)
         }
         
         // Find and start editing the target text using UUID lookup

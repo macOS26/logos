@@ -106,15 +106,14 @@ struct ProfessionalTextCanvas: View {
             Log.fileOperation("   Current state: \(textBoxState), isSelected: \(isThisTextSelected)", level: .info)
 
             // CRITICAL: Ensure only one text box can be edited at a time
-            // Stop editing on all other text boxes first
+            // OPTIMIZATION: Only stop editing on text boxes that are actually editing
             for unifiedObj in document.unifiedObjects {
-                if case .shape(let shape) = unifiedObj.objectType,
-                   shape.isTextObject,
-                   shape.id != viewModel.textObject.id,
-                   shape.isEditing == true {
-                    document.setTextEditingInUnified(id: shape.id, isEditing: false)
-                    Log.fileOperation("🔄 STOPPING EDIT: Text box \(shape.id.uuidString.prefix(8)) was in edit mode", level: .info)
-                }
+                guard case .shape(let shape) = unifiedObj.objectType,
+                      shape.isTextObject,
+                      shape.id != viewModel.textObject.id,
+                      shape.isEditing == true else { continue }
+
+                document.setTextEditingInUnified(id: shape.id, isEditing: false)
             }
 
             // Start editing this text box
@@ -190,15 +189,14 @@ struct ProfessionalTextCanvas: View {
 
     private func handleTextBoxSelect(location: CGPoint) {
         // CRITICAL FIX: When clicking on ANY text box, stop editing all OTHER text boxes first
-        // This ensures only ONE text box can be in blue edit mode at a time
+        // OPTIMIZATION: Only stop editing on text boxes that are actually editing
         for unifiedObj in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObj.objectType,
-               shape.isTextObject,
-               shape.id != viewModel.textObject.id,
-               shape.isEditing == true {
-                document.setTextEditingInUnified(id: shape.id, isEditing: false)
-                Log.fileOperation("🔄 CLICK ANOTHER BOX: Stopping edit on text box \(shape.id.uuidString.prefix(8))", level: .info)
-            }
+            guard case .shape(let shape) = unifiedObj.objectType,
+                  shape.isTextObject,
+                  shape.id != viewModel.textObject.id,
+                  shape.isEditing == true else { continue }
+
+            document.setTextEditingInUnified(id: shape.id, isEditing: false)
         }
 
         // SINGLE CLICK: Handle different states appropriately
