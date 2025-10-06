@@ -83,10 +83,17 @@ extension PDFCommandParser {
             // GPU failed or unavailable - fall back to CPU
             Log.warning("⚠️ Using CPU fallback for gradient color extraction", category: .general)
 
+            // CRITICAL: Limit maximum samples to prevent memory issues
+            let maxSamples = 1024
+            let samplingStep = max(1, totalSamples / maxSamples)
+            let actualSamples = min(totalSamples, maxSamples)
+
             // Extract color samples
             var colors: [VectorColor] = []
+            colors.reserveCapacity(actualSamples)
 
-            for sampleIndex in 0..<totalSamples {
+            for i in 0..<actualSamples {
+                let sampleIndex = i * samplingStep
                 let baseOffset = sampleIndex * outputComponents * bytesPerSample
 
                 if baseOffset + (outputComponents * bytesPerSample) <= dataLength {
