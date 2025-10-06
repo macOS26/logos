@@ -204,6 +204,17 @@ class ProfessionalTextViewModel: ObservableObject {
     // MARK: - Working Methods from Original
 
     func startEditing() {
+        // CRITICAL: Ensure only ONE text box can be in editing mode at a time
+        // Stop all other text boxes from editing first
+        for unifiedObj in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObj.objectType,
+               shape.isTextObject,
+               shape.id != textObject.id,
+               shape.isEditing == true {
+                document.setTextEditingInUnified(id: shape.id, isEditing: false)
+            }
+        }
+
         isEditing = true
     }
 

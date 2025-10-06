@@ -160,19 +160,19 @@ struct ProfessionalTextCanvas: View {
             return
         }
 
-        // PROFESSIONAL UX: Keep editing active while font tool is selected
+        // CRITICAL RULE: NO blue text boxes can exist unless font tool is selected
         let isTextToolActive = document.currentTool == .font
         let hasTextViewFocus = NSApp.keyWindow?.firstResponder is NSTextView
         let isThisTextSelected = selectedIDs.contains(currentTextObject.id) // Use current document object
 
         // State check - reduced logging for performance
 
-        // FIXED: Prioritize editing state correctly
-        if currentTextObject.isEditing {
+        // CRITICAL FIX: Only allow blue (editing) mode when font tool is active
+        if isTextToolActive && currentTextObject.isEditing {
             textBoxState = .blue
-        } else if hasTextViewFocus && isTextToolActive {
+        } else if isTextToolActive && hasTextViewFocus {
             textBoxState = .blue
-        } else if isThisTextSelected && isTextToolActive {
+        } else if isTextToolActive && isThisTextSelected {
             // FIXED: When text is selected AND font tool is active, go to BLUE (editing) mode, not GREEN!
             textBoxState = .blue
         } else if isThisTextSelected {
