@@ -135,24 +135,6 @@ class AppState {
         case cmyk = "cmyk"              // CMYK color space (was deviceN)
         case blend = "blend"            // Blend mode with discrete steps (Illustrator-style)
         case mesh = "mesh"              // Gradient mesh (future implementation)
-
-        var displayName: String {
-            switch self {
-            case .cgGradient: return "Gradient"
-            case .cgShading: return "Shading"
-            case .cmyk: return "CMYK"
-            case .blend: return "Blend"
-            case .mesh: return "Grid"
-            }
-        }
-
-        static var availableCases: [PDFGradientMethod] {
-            #if DEBUG
-            return allCases
-            #else
-            return [.cgGradient, .cgShading]
-            #endif
-        }
     }
 
     var pdfGradientMethod: PDFGradientMethod = .cgGradient {
@@ -165,20 +147,6 @@ class AppState {
     enum PDFTextRenderingMode: String, CaseIterable {
         case glyphs = "glyphs"      // Individual glyphs (most accurate)
         case lines = "lines"         // By lines (CTLine)
-
-        var displayName: String {
-            switch self {
-            case .glyphs: return "Individual Glyphs (most accurate)"
-            case .lines: return "By Lines (faster)"
-            }
-        }
-
-        var description: String {
-            switch self {
-            case .glyphs: return "Render each glyph individually for maximum precision"
-            case .lines: return "Render text line-by-line for better performance"
-            }
-        }
     }
 
     var pdfTextRenderingMode: PDFTextRenderingMode = .glyphs {
