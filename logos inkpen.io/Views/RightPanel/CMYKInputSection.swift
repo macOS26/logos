@@ -374,7 +374,6 @@ struct CMYKInputSection: View {
         // CRITICAL FIX: Don't update shared color when displaying a gradient
         // This preserves gradients when the Ink panel is opened
         if isDisplayingGradient {
-            // Log.info("🎨 CMYK INPUT: Preserving gradient - not updating to solid color", category: .general)
             return
         }
 

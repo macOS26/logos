@@ -39,7 +39,6 @@ extension DrawingCanvas {
         
         // Only proceed with shape creation if user has dragged significantly
         if Double(dragDistance) < minimumDragThreshold {
-            // Log.info("🎨 SHAPE TOOL: Drag distance (\(String(format: "%.1f", dragDistance))px) below threshold - CLICK IGNORED (shapes are drag-only)", category: .shapes)
             return
         }
         
@@ -66,8 +65,6 @@ extension DrawingCanvas {
             shapeStartPoint = initialPoint
             drawingStartPoint = shapeStartPoint
             
-            // Log.info("🎨 SHAPE DRAWING: Started at cursor position (\(String(format: "%.1f", shapeDragStart.x)), \(String(format: "%.1f", shapeDragStart.y)))", category: .shapes)
-            // Log.info("🎨 SHAPE TOOL: Drag distance (\(String(format: "%.1f", dragDistance))px) above threshold - starting shape creation", category: .shapes)
         }
         
         // Calculate cursor movement from reference location (perfect 1:1 tracking)
@@ -1081,7 +1078,6 @@ extension DrawingCanvas {
                     width: dragDeltaX >= 0 ? size : -size,
                     height: dragDeltaY >= 0 ? size : -size
                 )
-                // Log.info("🔍 SQUARE CREATION: Square originalBounds: \(originalBounds)", category: .general)
             } else {
                 // For rectangles and other shapes, use rectangular drag bounds
                 originalBounds = CGRect(
@@ -1126,7 +1122,6 @@ extension DrawingCanvas {
             )
             
             document.addShape(shape)
-            // Log.info("✅ Created shape with corner radius support: \(document.currentTool.rawValue), bounds=\(originalBounds), radii=\(cornerRadii)pt", category: .fileOperations)
         } else {
             // Standard shape creation for non-rectangle shapes
             let shape = VectorShape(
@@ -1137,9 +1132,7 @@ extension DrawingCanvas {
             )
             
             document.addShape(shape)
-        // Log.info("✅ Created standard shape: \(document.currentTool.rawValue)", category: .shapes)
         }
-        // Log.info("✅ Created shape with default colors: fill=\(document.defaultFillColor), stroke=\(document.defaultStrokeColor)", category: .shapes)
         
         // PROFESSIONAL SHAPE DRAWING: Clean state reset for next drawing operation
         // This ensures each new shape starts with fresh reference points
@@ -1147,6 +1140,5 @@ extension DrawingCanvas {
         shapeStartPoint = CGPoint.zero
         drawingStartPoint = nil
         
-        // Log.info("🎨 SHAPE DRAWING: Completed successfully - state reset for next operation", category: .shapes)
     }
 } 

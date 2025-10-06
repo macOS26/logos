@@ -83,7 +83,6 @@ extension FileOperations {
             to: url
         )
 
-        // Log.info("✅ Exported \(pixelSize)×\(pixelSize) icon", category: .fileOperations)
     }
 
     // MARK: - Icon Set Export
@@ -167,10 +166,8 @@ extension FileOperations {
                 to: fileURL
             )
 
-            // Log.info("✅ Exported icon: \(filename)", category: .fileOperations)
         }
 
-        // Log.info("✅ Successfully exported icon set with \(iconSizes.count) sizes", category: .fileOperations)
     }
 
     // Helper function to calculate artwork bounds (excluding background)
@@ -290,7 +287,6 @@ extension FileOperations {
             to: url
         )
 
-        // Log.info("✅ Successfully exported PNG document", category: .fileOperations)
     }
     
     

@@ -101,7 +101,6 @@ struct MainToolbarContent: ToolbarContent {
                                 
                                 let newPath = VectorPath(elements: newElements, isClosed: true)
                                 document.updateShapePathUnified(id: shape.id, path: newPath)
-                                // Log.info("🎯 Closed selected path for shape \(shape.name)", category: .shapes)
                             }
                         }
                     }
@@ -395,7 +394,6 @@ struct MainToolbarContent: ToolbarContent {
         // Clear selection (locked objects can't be selected)
         document.selectedObjectIDs.removeAll()
         
-        // Log.info("🔒 Locked selected objects", category: .shapes)
     }
     
     private func unlockAllObjects() {
@@ -415,7 +413,6 @@ struct MainToolbarContent: ToolbarContent {
             }
         }
         
-        // Log.info("🔓 Unlocked all objects", category: .shapes)
     }
     
     private func hideSelectedObjects() {
@@ -445,7 +442,6 @@ struct MainToolbarContent: ToolbarContent {
         // Clear selection (hidden objects can't be selected)
         document.selectedObjectIDs.removeAll()
         
-        // Log.info("👁️‍🗨️ Hidden selected objects", category: .shapes)
     }
     
     private func showAllObjects() {
@@ -465,6 +461,5 @@ struct MainToolbarContent: ToolbarContent {
             }
         }
         
-        // Log.info("👁️ Showed all objects", category: .shapes)
     }
 }

@@ -23,7 +23,6 @@ extension DrawingCanvas {
                 // Check both document.currentTool and AppState default tool
                 
                 
-                // Log.info("🔑 RAW KEY EVENT: chars='\(chars)' keyCode=\(keyCode) docTool=\(docTool) appTool=\(appTool)", category: .input)
             }
 
             // CRITICAL FIX: If we're editing text, let ALL keyboard events pass through naturally
@@ -107,7 +106,6 @@ extension DrawingCanvas {
                 // Check if it's an arrow key
                 if [arrowUp, arrowDown, arrowLeft, arrowRight].contains(characters) {
                     // Debug: Log the actual tool value
-                    // Log.info("🔑 ARROW KEY CHECK: Tool is '\(self.document.currentTool.rawValue)' (raw: \(self.document.currentTool))", category: .input)
 
                     // Only nudge with arrow/selection tool and no modifiers
                     if !event.modifierFlags.contains(.control) &&
@@ -134,11 +132,9 @@ extension DrawingCanvas {
                             let gridSpacing = self.document.gridSpacing
                             let nudgeAmount = CGVector(dx: direction.dx * gridSpacing, dy: direction.dy * gridSpacing)
                             self.nudgeSelectedObjects(by: nudgeAmount)
-                            // Log.info("⬆️ ARROW KEY: Nudged objects by grid spacing (\(gridSpacing))", category: .input)
                             return nil // Consume the event
                         }
                     } else {
-                        // Log.info("❌ ARROW KEY: Not nudging - tool check failed or modifiers present", category: .input)
                     }
                 }
             }
@@ -189,14 +185,12 @@ extension DrawingCanvas {
 
                 // CRITICAL FIX: Finish bezier drawing when using bezier pen tool (create unclosed object)
                 if self.document.currentTool == .bezierPen && self.isBezierDrawing {
-                    // Log.info("🎯 TAB KEY: Finished bezier drawing (unclosed object)", category: .selection)
                     self.finishBezierPath()
                 }
 
                 // Force UI update
                 self.document.objectWillChange.send()
 
-                // Log.info("🎯 TAB KEY: Deselected all objects", category: .selection)
                 return nil // Consume the event to prevent system handling
             }
             
@@ -248,7 +242,6 @@ extension DrawingCanvas {
         // Switch to hand tool
         document.currentTool = .hand
         
-        // Log.info("✋ SPACEBAR: Temporary Hand Tool activated from \(temporaryToolPreviousTool?.rawValue ?? "unknown")", category: .input)
     }
     
     /// Deactivate temporary hand tool when spacebar is released
@@ -261,7 +254,6 @@ extension DrawingCanvas {
         isTemporaryHandToolActive = false
         temporaryToolPreviousTool = nil
         
-        // Log.info("✋ SPACEBAR: Temporary Hand Tool deactivated, restored to \(previousTool.rawValue)", category: .input)
     }
 
     // MARK: - Object Nudging with Arrow Keys

@@ -826,7 +826,6 @@ extension VectorShape: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         // Debug logging disabled to reduce noise
-        // Log.info("🔍 VectorShape DECODE: Available keys: \(container.allKeys.map { $0.stringValue })", category: .debug)
 
         // Decode each field with detailed error handling
         do {

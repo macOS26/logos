@@ -12,11 +12,9 @@ extension PDFCommandParser {
     // Modified createShapeFromCurrentPath to accept custom fill style
     func createShapeFromCurrentPath(filled: Bool, stroked: Bool, customFillStyle: FillStyle? = nil) {
         guard !currentPath.isEmpty else {
-            // Log.info("PDF: Cannot create shape - current path is empty", category: .general)
             return
         }
         
-        // Log.info("PDF: Creating shape with \(currentPath.count) path commands, filled: \(filled), stroked: \(stroked)", category: .general)
         
         // Convert to VectorPath elements with coordinate system fix
         var vectorElements: [PathElement] = []
@@ -64,11 +62,9 @@ extension PDFCommandParser {
         var strokeStyle: StrokeStyle? = nil
         
         if filled {
-            // Log.info("PDF: 🔍 Shape creation - filled=true, activeGradient=\(activeGradient != nil), customFillStyle=\(customFillStyle != nil)", category: .debug)
             // Priority order: custom fill style, active gradient, current fill color
             if let custom = customFillStyle {
                 fillStyle = custom
-                // Log.info("PDF: ✅ CUSTOM STYLE ASSIGNED: '\(shapeName)' will get custom fill style", category: .general)
             } else if let gradient = activeGradient {
                 // IMPROVED: Apply same smart gradient detection logic
                 let r = Double(currentFillColor.components?[0] ?? 0.0)
@@ -80,15 +76,12 @@ extension PDFCommandParser {
                     // White shape + compound context = track for compound path
                     gradientShapes.append(shapes.count) // Will be the index after we add this shape
                     fillStyle = FillStyle(gradient: gradient)
-                    // Log.info("PDF: ✅ COMPOUND GRADIENT: '\(shapeName)' (WHITE) tracked for compound path", category: .general)
                 } else {
                     // Direct gradient application
                     fillStyle = FillStyle(gradient: gradient)
-                    // Log.info("PDF: ✅ DIRECT GRADIENT: '\(shapeName)' gets gradient directly (not compound)", category: .general)
                     // Note: Don't clear activeGradient here - will be cleared after shape creation
                 }
             } else {
-                // Log.info("PDF: No active gradient, using current fill color for '\(shapeName)'", category: .general)
                 let r = Double(currentFillColor.components?[0] ?? 0.0)
                 let g = Double(currentFillColor.components?[1] ?? 0.0)
                 let b = Double(currentFillColor.components?[2] ?? 1.0)
@@ -96,7 +89,6 @@ extension PDFCommandParser {
                 
                 let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: a))
                 fillStyle = FillStyle(color: vectorColor)
-                // Log.info("PDF: 🎨 SOLID COLOR ASSIGNED: '\(shapeName)' will get fill color RGBA(\(r), \(g), \(b), \(a))", category: .general)
             }
         }
         
@@ -121,7 +113,6 @@ extension PDFCommandParser {
         let isGradientShape = fillStyle?.isGradient ?? false
 
         if isGradientShape {
-            // Log.info("PDF: 🌈 Creating GRADIENT COMPOUND PATH - marking as compound for editor compatibility", category: .general)
         }
 
         let shape = VectorShape(
@@ -137,7 +128,6 @@ extension PDFCommandParser {
         // Clear activeGradient if it was used for direct application (not compound)
         if activeGradient != nil && gradientShapes.isEmpty {
             activeGradient = nil
-            // Log.info("PDF: 🔄 Cleared activeGradient after direct application", category: .general)
         }
         
         currentPath.removeAll()

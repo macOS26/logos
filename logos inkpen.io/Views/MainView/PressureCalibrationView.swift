@@ -298,15 +298,6 @@ struct PressureCalibrationView: View {
                         
                         // Log all pressure events regardless of calibration state
                         Log.fileOperation("🎨 CALIBRATION CANVAS: ALL PRESSURE EVENTS DETECTED:", level: .info)
-                        // Log.info("   - Event Type: \(eventType)", category: .general)
-                        // Log.info("   - Pressure Value: \(pressure)", category: .general)
-                        // Log.info("   - Is Tablet Event: \(isTabletEvent)", category: .general)
-                        // Log.info("   - Location: (\(location.x), \(location.y))", category: .general)
-                        // Log.info("   - Calibration Active: \(pressureManager.isCalibrating)", category: .general)
-                        // Log.info("   - Current Min: \(pressureManager.calibrationMinPressure)", category: .general)
-                        // Log.info("   - Current Max: \(pressureManager.calibrationMaxPressure)", category: .general)
-                        // Log.info("   - Sample Count: \(pressureManager.calibrationSampleCount)", category: .general)
-                        // Log.info("   ---", category: .general)
                         
                         // Add to event log for real-time display
                         let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)

@@ -23,7 +23,6 @@ extension PDFCommandParser {
             sampledColors.append(colors[clampedIndex])
         }
         
-        // Log.info("PDF: 🎨 Sub-sampled \(colors.count) colors down to \(sampledColors.count) colors", category: .general)
         return sampledColors
     }
 }

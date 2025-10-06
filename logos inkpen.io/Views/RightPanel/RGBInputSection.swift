@@ -350,7 +350,6 @@ struct RGBInputSection: View {
         // CRITICAL FIX: Don't update shared color when displaying a gradient
         // This preserves gradients when the Ink panel is opened
         if isDisplayingGradient {
-            // Log.info("🎨 RGB INPUT: Preserving gradient - not updating to solid color", category: .general)
             return
         }
 
@@ -485,14 +484,10 @@ struct RGBInputSection: View {
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.rgb(currentColor)
 
-        // Log.fileOperation("🎨 RGB INPUT: applyColorToActiveSelection called", level: .info)
-        // Log.fileOperation("🎨 RGB INPUT: showGradientEditing = \(showGradientEditing)", level: .info)
-        // Log.fileOperation("🎨 RGB INPUT: Gradient editing state: \(appState.gradientEditingState != nil)", level: .info)
 
         // 🔥 CRITICAL FIX: Only use gradient callback if THIS section allows gradient editing
         // Priority 1: If we're in gradient editing mode AND this section supports it, use gradient callback
         if showGradientEditing, let gradientCallback = appState.gradientEditingState?.onColorSelected {
-            // Log.fileOperation("🎨 RGB INPUT: Using gradient callback (gradient mode section)", level: .info)
             gradientCallback(vectorColor)
             // Also add to swatches when ink well is clicked
             document.addColorSwatch(vectorColor)
@@ -500,7 +495,6 @@ struct RGBInputSection: View {
         }
 
         // Priority 2: Otherwise, apply to document's active selection
-        // Log.fileOperation("🎨 RGB INPUT: Using document setActiveColor (fill/stroke mode)", level: .info)
         document.setActiveColor(vectorColor)
         // Also add to swatches when ink well is clicked
         document.addColorSwatch(vectorColor)

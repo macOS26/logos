@@ -26,9 +26,6 @@ extension DrawingCanvas {
             isPanGestureActive = true  // PROFESSIONAL GESTURE COORDINATION
             
             if enableHandToolLogging {
-                // Log.info("✋ HAND TOOL: Established reference location (Professional Standard), UI responsive", category: .general)
-                // Log.info("   Reference canvas offset: (\(String(format: "%.1f", initialCanvasOffset.x)), \(String(format: "%.1f", initialCanvasOffset.y)))", category: .general)
-                // Log.info("   Reference cursor location: (\(String(format: "%.1f", handToolDragStart.x)), \(String(format: "%.1f", handToolDragStart.y)))", category: .general)
             }
 
             // Show closed hand when panning begins
@@ -56,7 +53,6 @@ extension DrawingCanvas {
         
         // Professional verification logging (only for significant movements)
         if enableHandToolLogging && (abs(cursorDelta.x) > 10 || abs(cursorDelta.y) > 10) {
-            // Log.info("Hand tool: Perfect sync maintained - delta: (\(String(format: "%.1f", cursorDelta.x)), \(String(format: "%.1f", cursorDelta.y)))", category: .debug)
         }
     }
 } 

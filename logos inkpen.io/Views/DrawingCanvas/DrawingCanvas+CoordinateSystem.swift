@@ -177,18 +177,6 @@ extension DrawingCanvas {
         initialZoomLevel = document.zoomLevel
         
         Log.fileOperation("🎯 DOCUMENT SCALING (Standard Approach - NO PADDING):", level: .info)
-        // Log.info("   Document Bounds: \(documentBounds)", category: .general)
-        // Log.info("   Document Aspect Ratio: \(String(format: "%.3f", documentBounds.width / documentBounds.height))", category: .general)
-        // Log.info("   View Size: \(String(format: "%.1f", viewSize.width)) × \(String(format: "%.1f", viewSize.height))", category: .general)
-        // Log.info("   View Aspect Ratio: \(String(format: "%.3f", viewSize.width / viewSize.height))", category: .general)
-        // Log.info("   Available Space: \(String(format: "%.1f", availableWidth)) × \(String(format: "%.1f", availableHeight))", category: .general)
-        // Log.info("   Scale X: \(String(format: "%.3f", scaleX)) (width fit)", category: .general)
-        // Log.info("   Scale Y: \(String(format: "%.3f", scaleY)) (height fit)", category: .general)
-        // Log.info("   Uniform Scale: \(String(format: "%.3f", uniformScale)) (min of above - maintains aspect ratio)", category: .general)
-        // Log.info("   Final Zoom: \(String(format: "%.1f", defaultZoom * 100))% (capped for usability)", category: .general)
-        // Log.info("   Visible Center: (\(String(format: "%.1f", visibleCenter.x)), \(String(format: "%.1f", visibleCenter.y)))", category: .general)
-        // Log.info("   Canvas Offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))", category: .general)
-        // Log.info("   ✅ CANVAS LAYER AUTO-SYNCS WITH ALL GRAPHICS!", category: .general)
     }
     
     /// Fit canvas to page view
@@ -235,12 +223,6 @@ extension DrawingCanvas {
         // Update initial zoom level for gesture handling
         initialZoomLevel = document.zoomLevel
         
-        // Log.info("🔍 FIT TO PAGE: Using standard document bounds with ruler awareness", category: .zoom)
-        // Log.info("   Document Bounds: \(documentBounds)", category: .general)
-        // Log.info("   Rulers visible: \(document.showRulers) (offset: \(rulerOffset))", category: .general)
-        // Log.info("   Fit Zoom: \(String(format: "%.1f", fitZoom * 100))% (minimum scale to fit)", category: .general)
-        // Log.info("   Available space: \(String(format: "%.1f", availableWidth)) × \(String(format: "%.1f", availableHeight))", category: .general)
-        // Log.info("   Visible center (ruler-aware): (\(String(format: "%.1f", visibleCenter.x)), \(String(format: "%.1f", visibleCenter.y)))", category: .general)
     }
     
             /// Set to actual size (100%) with proper centering (professional standard)
@@ -280,10 +262,6 @@ extension DrawingCanvas {
         initialZoomLevel = CGFloat(newZoomLevel)
         
         Log.fileOperation("🎯 ACTUAL SIZE: Set to 100% and centered document with ruler awareness", level: .info)
-        // Log.info("   Document center: (\(String(format: "%.1f", documentCenter.x)), \(String(format: "%.1f", documentCenter.y)))", category: .general)
-        // Log.info("   Visible center (ruler-aware): (\(String(format: "%.1f", visibleCenter.x)), \(String(format: "%.1f", visibleCenter.y)))", category: .general)
-        // Log.info("   Rulers visible: \(document.showRulers) (offset: \(rulerOffset))", category: .general)
-        // Log.info("   New offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))", category: .general)
     }
     
     /// Zoom at a specific point (stable version to prevent drift)
@@ -318,10 +296,6 @@ extension DrawingCanvas {
         
         document.canvasOffset = newOffset
         
-        // Log.info("🔍 FOCAL POINT ZOOM: \(String(format: "%.3f", oldZoomLevel))x → \(String(format: "%.3f", newZoomLevel))x", category: .debug)
-        // Log.info("   Focal point: (\(String(format: "%.1f", focalPoint.x)), \(String(format: "%.1f", focalPoint.y)))", category: .general)
-        // Log.info("   Canvas point at focus: (\(String(format: "%.1f", canvasPointAtFocus.x)), \(String(format: "%.1f", canvasPointAtFocus.y)))", category: .general)
-        // Log.info("   Stable offset: (\(String(format: "%.1f", newOffset.x)), \(String(format: "%.1f", newOffset.y)))", category: .general)
     }
     
     /// Handle simplified zoom
@@ -357,9 +331,5 @@ extension DrawingCanvas {
         
         document.canvasOffset = newOffset
         
-        // Log.info("🔍 STABLE ZOOM: \(String(format: "%.3f", oldZoomLevel))x → \(String(format: "%.3f", newZoomLevel))x", category: .debug)
-        // Log.info("   Document center: (\(String(format: "%.1f", documentCenter.x)), \(String(format: "%.1f", documentCenter.y)))", category: .general)
-        // Log.info("   View center: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))", category: .general)
-        // Log.info("   Fixed offset: (\(String(format: "%.1f", newOffset.x)), \(String(format: "%.1f", newOffset.y)))", category: .general)
     }
 } 

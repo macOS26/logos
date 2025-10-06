@@ -174,7 +174,6 @@ class VectorImportManager {
                         // Extract everything between > and </inkpen:document>
                         let base64Data = String(svgString[openTagEnd.upperBound..<endRange.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
 
-                        // Log.info("✅ Found embedded inkpen document (\(base64Data.count) base64 chars) - SKIPPING SVG parsing!", category: .fileOperations)
 
                         // Extract document size from SVG (we still need this for the metadata)
                         var documentSize = CGSize(width: 8.5 * 72, height: 11 * 72) // Default
@@ -189,7 +188,6 @@ class VectorImportManager {
                             documentSize.height = height
                         }
 
-                        // Log.info("🚀 FAST PATH: Using embedded inkpen metadata - SVG parsing completely skipped", category: .fileOperations)
 
                         let metadata = VectorImportMetadata(
                             originalFormat: .svg,
@@ -219,7 +217,6 @@ class VectorImportManager {
             }
 
             // No inkpen metadata found - parse as regular SVG
-            // Log.info("📄 No inkpen metadata found - parsing as regular SVG", category: .fileOperations)
 
             // Parse SVG using professional XML parser
             let svgContent = try parseSVGContent(data, useExtremeValueHandling: useExtremeValueHandling)
@@ -302,11 +299,6 @@ class VectorImportManager {
         rectShape.bounds = CGRect(origin: .zero, size: size)
         
         // DEBUG: Log the image import details
-        // Log.info("🖼️ IMAGE IMPORT DEBUG: \(url.lastPathComponent)", category: .general)
-        // Log.info("   📏 Image size: \(size)", category: .general)
-        // Log.info("   📊 Path bounds: \(rectShape.path.cgPath.boundingBoxOfPath)", category: .general)
-        // Log.info("   📊 Set bounds: \(rectShape.bounds)", category: .general)
-        // Log.info("   🔄 Transform: \(rectShape.transform)", category: .general)
         // Default behavior: store a linked path (relative to chosen base later on save)
         rectShape.linkedImagePath = url.path
         // Also store a security-scoped bookmark when possible (DocumentGroup sandbox)
@@ -378,7 +370,6 @@ class VectorImportManager {
                 var format: CGPDFDataFormat = .raw
                 if let data = CGPDFStreamCopyData(metadataStream, &format) {
                     if let xmpString = String(data: data as Data, encoding: .utf8) {
-                        // Log.info("📦 Found XMP metadata in PDF (\(xmpString.count) chars) - checking for inkpen data FIRST", category: .fileOperations)
 
                         // Parse XMP to extract inkpen:document element
                         if let range = xmpString.range(of: "<inkpen:document>"),
@@ -387,7 +378,6 @@ class VectorImportManager {
                             let endIndex = endRange.lowerBound
                             let base64Data = String(xmpString[startIndex..<endIndex])
                             inkpenMetadata = base64Data
-                            // Log.info("✅ Found embedded inkpen document (\(base64Data.count) base64 chars) - SKIPPING PDF vector parsing!", category: .fileOperations)
                         }
                     }
                 }
@@ -398,7 +388,6 @@ class VectorImportManager {
 
         // If we found inkpen metadata, return it immediately without parsing vector content
         if let metadata = inkpenMetadata {
-            // Log.info("🚀 FAST PATH: Using embedded inkpen metadata - PDF vector parsing completely skipped", category: .fileOperations)
 
             let importMetadata = VectorImportMetadata(
                 originalFormat: .pdf,
@@ -426,7 +415,6 @@ class VectorImportManager {
         }
 
         // No inkpen metadata found - parse as regular PDF
-        // Log.info("📄 No inkpen metadata found - parsing as regular PDF", category: .fileOperations)
 
         // Extract vector paths from PDF
         do {

@@ -31,12 +31,10 @@ extension DrawingCanvas {
                     if points.count >= pathPointCount || pathPointCount <= 2 {
                         // Delete entire shape using unified helper
                         document.removeShapeFromUnifiedSystem(id: shape.id)
-                        // Log.info("Deleted entire shape", category: .general)
                     } else {
                         // Delete specific points while maintaining path integrity
                         let updatedPath = deletePointsFromPath(shape.path, selectedPoints: points)
                         document.updateShapePathUnified(id: shape.id, path: updatedPath)
-                        // Log.info("Deleted \(points.count) points from path, \(updatedPath.elements.count) elements remain", category: .general)
                     }
                     break
                 }
@@ -56,7 +54,6 @@ extension DrawingCanvas {
         guard bezierPath != nil,
                 let activeShape = activeBezierShape,
               bezierPoints.count >= 3 else {
-            // Log.info("Cannot close bezier path - insufficient points or no path", category: .general)
             cancelBezierDrawing()
             return
         }
@@ -66,7 +63,6 @@ extension DrawingCanvas {
         
         // PROFESSIONAL PATH CLOSING: Connect last point to first with proper curve
         guard let updatedPath = bezierPath else {
-            // Log.info("Failed to update path with handles", category: .general)
             cancelBezierDrawing()
             return
         }
@@ -128,9 +124,6 @@ extension DrawingCanvas {
         }
         
 
-        // Log.info("✅ SUCCESSFULLY CLOSED BEZIER PATH with \(bezierPoints.count) points using document defaults", category: .fileOperations)
-        // Log.info("Path elements: \(closedPath.elements.count) (including close)", category: .general)
-        // Log.info("Curve data preserved: \(closedPath.elements.compactMap { if case .curve = $0 { return 1 } else { return nil } }.count) curves", category: .general)
         Log.fileOperation("🎨 PEN TOOL CLOSED PATH COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)", level: .info)
         
         // CRITICAL FIX: Force UI update to ensure the closed shape is immediately visible
@@ -154,6 +147,5 @@ extension DrawingCanvas {
         // Users can manually switch tools when they're ready to edit points
         // This enables uninterrupted tracing workflows
         
-        // Log.info("✅ CLOSED PATH: Pen tool remains active for continuous tracing", category: .fileOperations)
     }
 } 

@@ -377,7 +377,6 @@ extension DrawingCanvas {
             document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
             
-            // Log.info("✅ COLLAPSED NEXT ELEMENT CONTROL1 HANDLE: Handle collapsed to source anchor point", category: .fileOperations)
             
         default:
             break

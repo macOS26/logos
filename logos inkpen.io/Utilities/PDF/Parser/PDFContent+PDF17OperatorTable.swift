@@ -152,7 +152,6 @@ extension PDFCommandParser {
         CGPDFOperatorTableSetCallback(operatorTable, "Q") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
-            // Log.info("\(parser.detectedPDFVersion): XObject 'Q' (restore graphics state) - FINALIZING clipping group", category: .general)
             parser.finalizeClippingGroup()  // Finalize the clipping group (separate clipping mask)
         }
         
@@ -173,7 +172,6 @@ extension PDFCommandParser {
         CGPDFOperatorTableSetCallback(operatorTable, "n") { (scanner, info) in
             guard let info = info else { return }
             _ = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
-            // Log.info("\(parser.detectedPDFVersion): XObject path construction no-op 'n'", category: .general)
         }
 
         // MARK: - Text Object Operators

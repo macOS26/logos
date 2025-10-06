@@ -373,7 +373,6 @@ struct StrokeFillPanel: View {
     private func updateFillOpacity(_ opacity: Double) {
         // ALWAYS update the default opacity for new shapes
         document.defaultFillOpacity = opacity
-        //Log.fileOperation("🎨 Set default fill opacity: \(Int(opacity * 100))%", level: .info)
 
         // REFACTORED: Use unified objects system for opacity application
         var hasChanges = false
@@ -413,7 +412,6 @@ struct StrokeFillPanel: View {
     private func updateStrokeWidth(_ width: Double) {
         // ALWAYS update the default stroke width - NO RESTRICTIONS, NO CHECKS
         document.defaultStrokeWidth = width
-        //Log.fileOperation("🎨 Set default stroke width: \(width)pt", level: .info)
 
         // REFACTORED: Use unified objects system for stroke width application
         var hasChanges = false
@@ -503,7 +501,6 @@ struct StrokeFillPanel: View {
     private func updateStrokeOpacity(_ opacity: Double) {
         // ALWAYS update the default opacity for new shapes
         document.defaultStrokeOpacity = opacity
-        //Log.fileOperation("🎨 Set default stroke opacity: \(Int(opacity * 100))%", level: .info)
 
         // If there are active shapes (regular or direct selection), update them too
         let activeShapeIDs = document.getActiveShapeIDs()
@@ -554,7 +551,6 @@ struct StrokeFillPanel: View {
     private func updateStrokeLineJoin(_ lineJoin: CGLineJoin) {
         // ALWAYS update the default line join for new shapes
         document.defaultStrokeLineJoin = lineJoin
-        //Log.fileOperation("🎨 Set default stroke line join: \(lineJoin.displayName)", level: .info)
 
         // If there are active shapes (regular or direct selection), update them too
         let activeShapeIDs = document.getActiveShapeIDs()
@@ -601,7 +597,6 @@ struct StrokeFillPanel: View {
     private func updateStrokeLineCap(_ lineCap: CGLineCap) {
         // ALWAYS update the default line cap for new shapes
         document.defaultStrokeLineCap = lineCap
-        //Log.fileOperation("🎨 Set default stroke line cap: \(lineCap.displayName)", level: .info)
 
         // If there are active shapes (regular or direct selection), update them too
         let activeShapeIDs = document.getActiveShapeIDs()

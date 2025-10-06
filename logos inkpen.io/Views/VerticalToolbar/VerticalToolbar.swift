@@ -262,12 +262,10 @@ struct VerticalToolbar: View {
                                                 document.currentTool = .star
                                                 toolGroupManager.currentToolInGroup = .star
                                                 toolGroupManager.setSelectedToolInGroup(.star)
-                                                // Log.info("⭐ Selected star variant: \(starVariant.rawValue)", category: .general)
                                             } else {
                                                 document.currentTool = toolItem.tool
                                                 toolGroupManager.currentToolInGroup = toolItem.tool
                                                 toolGroupManager.setSelectedToolInGroup(toolItem.tool)
-                                                // Log.info("🛠️ Switched to tool: \(toolItem.tool.rawValue)", category: .general)
                                             }
                                         },
                                         onLongPress: {
@@ -444,7 +442,6 @@ struct VerticalToolbarButton: View {
 
     fileprivate func FreeHandMXLongPress() {
         inc += 0.1
-        // Log.info("\(inc)", category: .general)
         
         // always handle tap
         lastTappedTool = toolItem.tool.rawValue

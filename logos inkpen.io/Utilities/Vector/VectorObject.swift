@@ -22,7 +22,6 @@ struct VectorObject: Identifiable, Hashable {
     init(shape: VectorShape, layerIndex: Int, orderID: Int) {
         // DEBUG: Log clipping properties during VectorObject creation
         if shape.isClippingPath || shape.clippedByShapeID != nil {
-            // Log.info("🎭 VECTOROBJECT INIT DEBUG: Input shape '\(shape.name)' - isClippingPath: \(shape.isClippingPath), clippedByShapeID: \(shape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .debug)
         }
         
         self.id = shape.id
@@ -33,7 +32,6 @@ struct VectorObject: Identifiable, Hashable {
         // DEBUG: Check if properties are preserved after storing in enum
         if case .shape(let storedShape) = self.objectType {
             if storedShape.isClippingPath || storedShape.clippedByShapeID != nil {
-                // Log.info("🎭 VECTOROBJECT INIT DEBUG: Stored shape '\(storedShape.name)' - isClippingPath: \(storedShape.isClippingPath), clippedByShapeID: \(storedShape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .debug)
             }
         }
     }
@@ -97,16 +95,12 @@ extension VectorObject: Codable {
                 if let decodingError = shapeError as? DecodingError {
                     switch decodingError {
                     case .typeMismatch(_, _):
-                        // Log.info("   Type mismatch: expected \(type), context: \(context)", category: .general)
                         break
                     case .valueNotFound(_, _):
-                        // Log.info("   Value not found: type \(type), context: \(context)", category: .general)
                         break
                     case .keyNotFound(_, _):
-                        // Log.info("   Key not found: \(key), context: \(context)", category: .general)
                         break
                     case .dataCorrupted(_):
-                        // Log.info("   Data corrupted: \(context)", category: .general)
                         break
                     @unknown default:
                         Log.error("   Unknown decoding error", category: .error)

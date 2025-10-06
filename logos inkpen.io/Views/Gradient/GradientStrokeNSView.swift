@@ -103,14 +103,12 @@ class GradientStrokeNSView: NSView {
     
     /// Calculate TRUE AXIS DETECTION for ANY shape on ANY axis/plane
     func calculateOrientedBoundingBox(for shape: VectorShape) -> [CGPoint] {
-        // Log.info("📐 TRUE AXIS DETECTION for \(shape.geometricType?.rawValue ?? "unknown")", category: .general)
         
         // NOTE: Warp objects are handled in initializeEnvelopeCorners() 
         // This function only handles fresh objects for TRUE AXIS DETECTION
         
         // Special handling for groups and compound shapes
         if shape.isGroup || shape.isGroupContainer {
-            // Log.info("   👥 GROUP/COMPOUND SHAPE: Using composite bounds", category: .general)
             let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
             
             // For groups, use the overall bounds (already computed across all grouped shapes)
@@ -126,8 +124,6 @@ class GradientStrokeNSView: NSView {
                 corner.applying(shape.transform)
             }
             
-            // Log.info("   📍 Group Bounds: (\(String(format: "%.1f", bounds.origin.x)), \(String(format: "%.1f", bounds.origin.y))) size (\(String(format: "%.1f", bounds.width)) × \(String(format: "%.1f", bounds.height)))", category: .general)
-            // Log.info("   📐 World Corners: [\(worldSpaceCorners.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]", category: .general)
             
             return worldSpaceCorners
         }
@@ -136,25 +132,19 @@ class GradientStrokeNSView: NSView {
         let pathElements = shape.path.elements
         var actualCorners: [CGPoint] = []
         
-        // Log.info("   🔍 EXTRACTING ACTUAL PATH CORNERS from \(pathElements.count) elements", category: .general)
         
         // Try to extract the actual corner points from the path
         for element in pathElements {
             switch element {
             case .move(let to):
                 actualCorners.append(to.cgPoint)
-                // Log.info("     ➤ Move to: (\(String(format: "%.1f", to.cgPoint.x)), \(String(format: "%.1f", to.cgPoint.y)))", category: .general)
             case .line(let to):
                 actualCorners.append(to.cgPoint)
-                // Log.info("     ➤ Line to: (\(String(format: "%.1f", to.cgPoint.x)), \(String(format: "%.1f", to.cgPoint.y)))", category: .general)
             case .curve(let to, _, _):
                 actualCorners.append(to.cgPoint)
-                // Log.info("     ➤ Curve to: (\(String(format: "%.1f", to.cgPoint.x)), \(String(format: "%.1f", to.cgPoint.y)))", category: .general)
             case .quadCurve(let to, _):
                 actualCorners.append(to.cgPoint)
-                // Log.info("     ➤ Quad curve to: (\(String(format: "%.1f", to.cgPoint.x)), \(String(format: "%.1f", to.cgPoint.y)))", category: .general)
             case .close:
-                // Log.info("     ➤ Close path", category: .general)
                 break
             }
             
@@ -167,13 +157,10 @@ class GradientStrokeNSView: NSView {
         // TRUE AXIS DETECTION: Use actual path corners if we found them
         if actualCorners.count >= 4 && (shape.geometricType == .rectangle || shape.geometricType == .star || pathElements.count <= 8) {
             let detectedCorners = Array(actualCorners.prefix(4))
-            // Log.info("   ✅ TRUE AXIS DETECTION: Using ACTUAL PATH CORNERS", category: .general)
-            // Log.info("   📐 Detected Corners: [\(detectedCorners.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]", category: .general)
             return detectedCorners
         }
         
         // FALLBACK: Use transformed bounds for complex shapes
-        // Log.info("   ⚠️ FALLBACK: Using transformed bounds for complex shape", category: .general)
         let objectSpaceBounds = shape.path.cgPath.boundingBoxOfPath
         
         // Create the 4 corners of the bounding box in object space
@@ -189,8 +176,5 @@ class GradientStrokeNSView: NSView {
             corner.applying(shape.transform)
         }
         
-        // Log.info("   📍 Object Bounds: (\(String(format: "%.1f", objectSpaceBounds.origin.x)), \(String(format: "%.1f", objectSpaceBounds.origin.y))) size (\(String(format: "%.1f", objectSpaceBounds.width)) × \(String(format: "%.1f", objectSpaceBounds.height)))", category: .general)
-        // Log.info("   🔄 Transform: [\(String(format: "%.3f", shape.transform.a)), \(String(format: "%.3f", shape.transform.b)), \(String(format: "%.3f", shape.transform.c)), \(String(format: "%.3f", shape.transform.d)), \(String(format: "%.1f", shape.transform.tx)), \(String(format: "%.1f", shape.transform.ty))]", category: .general)
-        // Log.info("   📐 World Corners: [\(worldSpaceCorners.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]", category: .general)
         return worldSpaceCorners
     }

@@ -54,7 +54,6 @@ extension DrawingCanvas {
         
         if !isZoomGestureActive {
             isZoomGestureActive = true
-            // Log.info("🔍 ZOOM GESTURE STARTED: UI remains fully responsive", category: .general)
         }
         // Do not override the cursor during pinch-to-zoom to avoid interfering with other tools
         
@@ -81,7 +80,6 @@ extension DrawingCanvas {
         // PROFESSIONAL GESTURE COORDINATION: Only finalize zoom when appropriate
         guard !isDrawing && !isBezierDrawing && !isPanGestureActive else {
             // Gesture ended but we weren't processing it - UI remains responsive
-            // Log.info("🔍 ZOOM GESTURE IGNORED: Drawing/Pan in progress, UI remains responsive", category: .general)
             return
         }
         
@@ -100,7 +98,6 @@ extension DrawingCanvas {
         
         // Update the initial zoom level for next gesture
         initialZoomLevel = finalZoomLevel
-        // Log.info("Professional zoom completed: \(String(format: "%.3f", finalZoomLevel))x at focal point: \(currentMousePosition)", category: .debug)
 
         // After pinch ends, if still over canvas and zoom tool active, restore cursor now and next runloop
         if isCanvasHovering && document.currentTool == .zoom {
@@ -116,29 +113,24 @@ extension DrawingCanvas {
         case .fitToPage:
             // Fit to page: Calculate optimal zoom and center
             fitToPage(geometry: geometry)
-            // Log.info("🔍 HANDLED ZOOM REQUEST: Fit to Page", category: .zoom)
             
         case .actualSize:
             // Actual size: Set to 100% and center properly
             actualSize(geometry: geometry)
-            // Log.info("🔍 HANDLED ZOOM REQUEST: Actual Size (100%)", category: .zoom)
             
         case .zoomIn, .zoomOut:
             // Zoom in/out: Use mouse position as focal point for professional behavior
             if currentMousePosition != .zero {
                 handleZoomAtPoint(newZoomLevel: request.targetZoom, focalPoint: currentMousePosition, geometry: geometry)
-                // Log.info("🔍 HANDLED ZOOM REQUEST: \(request.mode) to \(String(format: "%.1f", request.targetZoom * 100))% at mouse position \(currentMousePosition)", category: .zoom)
             } else {
                 // Fallback to view center if no mouse position tracked
                 let viewCenter = CGPoint(x: geometry.size.width / 2.0, y: geometry.size.height / 2.0)
                 handleZoomAtPoint(newZoomLevel: request.targetZoom, focalPoint: viewCenter, geometry: geometry)
-                // Log.info("🔍 HANDLED ZOOM REQUEST: \(request.mode) to \(String(format: "%.1f", request.targetZoom * 100))% at view center (no mouse position)", category: .zoom)
             }
             
         case .custom(let focalPoint):
             // Custom zoom with specific focal point
             handleZoomAtPoint(newZoomLevel: request.targetZoom, focalPoint: focalPoint, geometry: geometry)
-            // Log.info("🔍 HANDLED ZOOM REQUEST: Custom zoom to \(String(format: "%.1f", request.targetZoom * 100))% at \(focalPoint)", category: .zoom)
         }
         
         // Clear the request after processing

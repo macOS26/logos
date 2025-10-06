@@ -83,7 +83,6 @@ extension DrawingCanvas {
             }
             
             // Handle double-click immediately
-            // Log.info("🎯 DOUBLE CLICK DETECTED at: \(location)", category: .selection)
             handleDoubleClick(at: location, geometry: geometry)
             return // Exit early for double-clicks
         } else {

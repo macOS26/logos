@@ -31,7 +31,6 @@ extension PDFCommandParser {
             return
         }
         currentFillColor = color
-        // Log.info("PDF: Set fill color to RGB(\(r), \(g), \(b))", category: .general)
     }
     
     func handleRGBStrokeColor(scanner: CGPDFScannerRef) {
@@ -49,7 +48,6 @@ extension PDFCommandParser {
             return
         }
         currentStrokeColor = color
-        // Log.info("PDF: Set stroke color to RGB(\(r), \(g), \(b))", category: .general)
     }
     
     func handleGrayFillColor(scanner: CGPDFScannerRef) {
@@ -80,7 +78,6 @@ extension PDFCommandParser {
             return
         }
         currentStrokeColor = color
-        // Log.info("PDF: Set stroke color to Gray(\(gray))", category: .general)
     }
     
     func handleCMYKFillColor(scanner: CGPDFScannerRef) {
@@ -107,7 +104,6 @@ extension PDFCommandParser {
             return
         }
         currentFillColor = color
-        // Log.info("PDF: Set fill color to CMYK(\(c), \(m), \(y), \(k)) -> RGB(\(r), \(g), \(b))", category: .general)
     }
     
     func handleCMYKStrokeColor(scanner: CGPDFScannerRef) {
@@ -134,7 +130,6 @@ extension PDFCommandParser {
             return
         }
         currentStrokeColor = color
-        // Log.info("PDF: Set stroke color to CMYK(\(c), \(m), \(y), \(k)) -> RGB(\(r), \(g), \(b))", category: .general)
     }
     
     func handleGenericFillColor(scanner: CGPDFScannerRef) {
@@ -147,7 +142,6 @@ extension PDFCommandParser {
             values.insert(value, at: 0) // Insert at beginning to reverse stack order
         }
         
-        // Log.info("PDF: Generic fill color - found \(values.count) values: \(values)", category: .general)
         
         if values.count >= 3 {
             let r = values[0]
@@ -169,9 +163,7 @@ extension PDFCommandParser {
                 return
             }
             currentFillColor = color
-            // Log.info("PDF: Generic fill color - RGB(\(r), \(g), \(b)) with potential alpha: \(a)", category: .general)
         } else {
-            // Log.info("PDF: Generic fill color - could not parse parameters, got \(values.count) values", category: .general)
         }
     }
     
@@ -190,9 +182,7 @@ extension PDFCommandParser {
                 return
             }
             currentStrokeColor = color
-            // Log.info("PDF: Generic stroke color - assuming RGB(\(r), \(g), \(b))", category: .general)
         } else {
-            // Log.info("PDF: Generic stroke color - could not parse parameters", category: .general)
         }
     }
 }

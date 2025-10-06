@@ -317,7 +317,6 @@ extension DrawingCanvas {
             if let cleaned = cleanedFillPath, !cleaned.isEmpty, isPathBoundsFinite(cleaned.boundingBox) {
                 currentPath = cleaned
                 finalShape.path = VectorPath(cgPath: cleaned)
-                // Log.info("🖊️ MARKER: Removed fill path overlap first", category: .general)
             }
 
             // Step 2: Expand the stroke outline if stroke exists and union with cleaned fill

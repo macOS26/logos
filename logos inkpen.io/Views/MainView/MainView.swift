@@ -152,12 +152,10 @@ struct MainView: View {
                     // Set the suggested URL as current document URL
                     currentDocumentURL = suggestedURL
                     
-                    // Log.info("✅ Created new document with custom settings", category: .general)
                     
                     // MICRO DELAY: Just enough for geometry to be established
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                         document.requestZoom(to: 0.0, mode: .fitToPage)
-                        // Log.info("🔍 PROPER FIT TO PAGE: Applied for new document after geometry established", category: .zoom)
                     }
                 }
             )
@@ -214,7 +212,6 @@ struct MainView: View {
         .onAppear {
             // Apply the user's default tool setting to the document
             document.currentTool = appState.defaultTool
-            // Log.info("🛠️ Applied default tool \(appState.defaultTool.rawValue) to new document", category: .general)
             
             // SOLUTION: Connect document to menu system using NEW approach
             documentState.setDocument(document)
@@ -239,14 +236,12 @@ struct MainView: View {
         
         await MainActor.run {
             document.requestZoom(to: 0.0, mode: .fitToPage)
-            // Log.info("🔍 PROPER FIT TO PAGE: Applied after geometry established", category: .zoom)
         }
     }
     
     private func fitToPage() {
         // Fit the entire page to the view (professional standard)
         document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
-        // Log.info("🔍 FIT TO PAGE: Calculated optimal zoom to fit page in view", category: .zoom)
     }
     
     // MARK: - Document Save/Load Functionality
@@ -299,7 +294,6 @@ struct MainView: View {
     private func saveDocumentToURL(_ url: URL) {
         do {
             try FileOperations.exportToJSON(document, url: url)
-            // Log.info("✅ Successfully saved document to: \(url.path)", category: .fileOperations)
             
         } catch {
             Log.error("❌ Save failed: \(error)", category: .error)
@@ -344,7 +338,6 @@ struct MainView: View {
         // Clear the current document URL (imported document needs to be saved)
         currentDocumentURL = nil
         
-        // Log.info("✅ Loaded imported SVG document into Ink Pen - \(document.layers.count) layers, \(document.unifiedObjects.count) objects", category: .fileOperations)
         
         // Defer fit to page operation to prevent blocking
         Task {
@@ -358,7 +351,6 @@ struct MainView: View {
         
         await MainActor.run {
             document.requestZoom(to: 0.0, mode: .fitToPage)
-            // Log.info("🔍 PROPER FIT TO PAGE: Applied for imported document after geometry established", category: .zoom)
         }
     }
     
@@ -368,7 +360,6 @@ struct MainView: View {
         
         await MainActor.run {
             document.requestZoom(to: 0.0, mode: .fitToPage)
-            // Log.info("🔍 PROPER FIT TO PAGE: Applied for opened document after geometry established", category: .zoom)
         }
     }
         
@@ -401,12 +392,10 @@ struct MainView: View {
                     document.selectedObjectIDs = newShapeIDs
                     document.syncSelectionArrays()
                     
-                    // Log.info("✅ Import successful: \(result.shapes.count) shapes imported and added to undo stack", category: .fileOperations)
                     
                     // MICRO DELAY: Just enough for geometry to be established (like professional applications)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                         document.requestZoom(to: 0.0, mode: .fitToPage)
-                        // Log.info("🔍 PROPER FIT TO PAGE: Applied after vector import with geometry established", category: .zoom)
                     }
                 } else {
                     Log.error("❌ Import failed: \(result.errors.map { $0.localizedDescription }.joined(separator: ", "))", category: .error)
@@ -459,7 +448,6 @@ struct MainView: View {
                 try svgContent.write(to: saveAsURL, atomically: true, encoding: .utf8)
 
                 await MainActor.run {
-                    // Log.info("✅ Saved As SVG: \(saveAsURL.path) (background: \(includeBackground))", category: .fileOperations)
                 }
             } catch {
                 await MainActor.run {
@@ -573,7 +561,6 @@ struct MainView: View {
 
                     // Convert all text to outlines
                     await MainActor.run {
-                        // Log.info("📝 Converting all text to outlines for Save As PDF...", category: .fileOperations)
                         DocumentState.convertAllTextToOutlinesForExport(document)
                     }
 
@@ -582,7 +569,6 @@ struct MainView: View {
 
                     // Restore original document state
                     await MainActor.run {
-                        // Log.info("↩️ Restoring original document state after Save As PDF", category: .fileOperations)
                         document.unifiedObjects = savedState.unifiedObjects
                         document.layers = savedState.layers
                         document.selectedObjectIDs = savedState.selectedObjectIDs
@@ -599,7 +585,6 @@ struct MainView: View {
                 try pdfData.write(to: saveAsURL)
 
                 await MainActor.run {
-                    // Log.info("✅ Saved As PDF: \(saveAsURL.path) (text to outlines: \(convertTextToOutlines), mode: \(textRenderingMode.displayName))", category: .fileOperations)
                 }
             } catch {
                 await MainActor.run {
@@ -617,7 +602,6 @@ struct MainView: View {
 
     // MARK: - Debug Functions
     private func runPasteboardDiagnostics() {
-        // Log.info("🚀 STARTING PASTEBOARD DIAGNOSTICS FROM UI", category: .general)
         let report = PasteboardDiagnostics.shared.runDiagnostics(on: document)
         report.printSummary()
         

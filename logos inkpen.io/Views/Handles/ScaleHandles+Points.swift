@@ -93,7 +93,6 @@ extension ScaleHandles {
                 // Path point
                 let point = pathPoints[index]
                 scalingAnchorPoint = CGPoint(x: point.x, y: point.y)
-                // Log.info("🔴 LOCKED PIN: Set to path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))", category: .general)
             } else {
                 // Bounds corner point
                 let cornerIndex = index - pathPoints.count
@@ -109,12 +108,10 @@ extension ScaleHandles {
                 }
                 let center = CGPoint(x: bounds.midX, y: bounds.midY)
                 scalingAnchorPoint = cornerPosition(for: cornerIndex, in: bounds, center: center)
-                // Log.info("🔴 LOCKED PIN: Set to bounds corner \(cornerIndex) at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))", category: .general)
             }
         } else {
             // Center point
             scalingAnchorPoint = shape.calculateCentroid()
-            // Log.info("🔴 LOCKED PIN: Set to center point at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))", category: .general)
         }
     }
 
