@@ -86,11 +86,12 @@ struct HorizontalRuler: View {
         let pointsPerUnit = unit.pointsPerUnit
         let zoomLevel = document.zoomLevel
         let canvasOffset = document.canvasOffset
-        
+        let pageOrigin = document.settings.pageOrigin ?? .zero
+
         // CORRECTED RULER ALIGNMENT: Match exactly how canvas content is positioned
         // Canvas content position: x * zoomLevel + canvasOffset.x (in canvas coordinate space)
         // Canvas now fills the full view with no padding offset
-        
+
         // Calculate what canvas coordinates are visible in the ruler
         let startX = (-canvasOffset.x) / zoomLevel
         let endX = (size.width - canvasOffset.x) / zoomLevel
@@ -277,11 +278,13 @@ struct HorizontalRuler: View {
                     if unit == .millimeters {
                         // Show 10, 20, 30 ... where each major is 10 mm
                         // Ensure we never render "-0" by converting to Int after rounding
-                        let mmValue = (x / MeasurementUnit.millimeters.pointsPerUnit).rounded()
+                        // Offset by pageOrigin to show values relative to the origin point
+                        let mmValue = ((x - pageOrigin.x) / MeasurementUnit.millimeters.pointsPerUnit).rounded()
                         let mmInt = Int(mmValue)
                         labelText = String(mmInt)
                     } else {
-                        let value = x / pointsPerUnit
+                        // Offset by pageOrigin to show values relative to the origin point
+                        let value = (x - pageOrigin.x) / pointsPerUnit
                         labelText = formatRulerValue(value, unit: unit)
                     }
 
@@ -353,10 +356,11 @@ struct VerticalRuler: View {
         let pointsPerUnit = unit.pointsPerUnit
         let zoomLevel = document.zoomLevel
         let canvasOffset = document.canvasOffset
-        
+        let pageOrigin = document.settings.pageOrigin ?? .zero
+
         // FIXED: Vertical ruler alignment - coordinate system now properly aligned
         // Canvas now fills the full view with no padding offset
-        
+
         // Calculate what canvas coordinates are visible in the ruler
         let startY = (-canvasOffset.y) / zoomLevel
         let endY = (size.height - canvasOffset.y) / zoomLevel
@@ -536,11 +540,13 @@ struct VerticalRuler: View {
                 if labelUsesMajor {
                     var labelText: String
                     if unit == .millimeters {
-                        let mmValue = (y / MeasurementUnit.millimeters.pointsPerUnit).rounded()
+                        // Offset by pageOrigin to show values relative to the origin point
+                        let mmValue = ((y - pageOrigin.y) / MeasurementUnit.millimeters.pointsPerUnit).rounded()
                         let mmInt = Int(mmValue)
                         labelText = String(mmInt)
                     } else {
-                        let value = y / pointsPerUnit
+                        // Offset by pageOrigin to show values relative to the origin point
+                        let value = (y - pageOrigin.y) / pointsPerUnit
                         labelText = formatRulerValue(value, unit: unit)
                     }
 
@@ -847,44 +853,43 @@ struct PageOriginCrosshair: View {
     let rulerThickness: CGFloat
 
     @State private var isDragging = false
-    @State private var dragOffset: CGSize = .zero
+    @State private var currentDragLocation: CGPoint?
 
     var body: some View {
         let origin = effectiveOrigin
+        let crosshairScreenPos = originToScreenPosition(origin)
 
         ZStack {
-            // Crosshair icon at ruler intersection
+            // Crosshair icon - positioned based on current origin
             CrosshairIcon()
                 .frame(width: rulerThickness, height: rulerThickness)
-                .position(x: rulerThickness / 2, y: rulerThickness / 2)
+                .position(x: crosshairScreenPos.x, y: crosshairScreenPos.y)
                 .gesture(
-                    DragGesture(coordinateSpace: .named("canvas"))
+                    DragGesture(minimumDistance: 0)
                         .onChanged { value in
                             isDragging = true
-                            dragOffset = value.translation
-                            updatePageOrigin(translation: value.translation)
+                            currentDragLocation = value.location
+                            updatePageOrigin(screenLocation: value.location)
                         }
                         .onEnded { _ in
                             isDragging = false
-                            dragOffset = .zero
+                            currentDragLocation = nil
                         }
                 )
 
             // Crosshair lines when dragging
-            if isDragging {
-                let screenPos = originToScreenPosition(origin + dragOffset.asCGPoint)
-
+            if isDragging, let dragLocation = currentDragLocation {
                 // Vertical line
                 Path { path in
-                    path.move(to: CGPoint(x: screenPos.x, y: 0))
-                    path.addLine(to: CGPoint(x: screenPos.x, y: geometry.size.height))
+                    path.move(to: CGPoint(x: dragLocation.x, y: 0))
+                    path.addLine(to: CGPoint(x: dragLocation.x, y: geometry.size.height))
                 }
                 .stroke(Color.blue.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5]))
 
                 // Horizontal line
                 Path { path in
-                    path.move(to: CGPoint(x: 0, y: screenPos.y))
-                    path.addLine(to: CGPoint(x: geometry.size.width, y: screenPos.y))
+                    path.move(to: CGPoint(x: 0, y: dragLocation.y))
+                    path.addLine(to: CGPoint(x: geometry.size.width, y: dragLocation.y))
                 }
                 .stroke(Color.blue.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5]))
             }
@@ -895,6 +900,7 @@ struct PageOriginCrosshair: View {
         document.settings.pageOrigin ?? .zero
     }
 
+    // Convert canvas coordinates to screen position (accounting for zoom and offset)
     private func originToScreenPosition(_ canvasPoint: CGPoint) -> CGPoint {
         CGPoint(
             x: canvasPoint.x * document.zoomLevel + document.canvasOffset.x + rulerThickness,
@@ -902,16 +908,16 @@ struct PageOriginCrosshair: View {
         )
     }
 
-    private func screenToOriginPosition(_ screenPoint: CGPoint) -> CGPoint {
+    // Convert screen coordinates to canvas coordinates
+    private func screenToCanvasPosition(_ screenPoint: CGPoint) -> CGPoint {
         CGPoint(
             x: (screenPoint.x - rulerThickness - document.canvasOffset.x) / document.zoomLevel,
             y: (screenPoint.y - rulerThickness - document.canvasOffset.y) / document.zoomLevel
         )
     }
 
-    private func updatePageOrigin(translation: CGSize) {
-        let screenPoint = CGPoint(x: translation.width + rulerThickness, y: translation.height + rulerThickness)
-        var canvasPoint = screenToOriginPosition(screenPoint)
+    private func updatePageOrigin(screenLocation: CGPoint) {
+        var canvasPoint = screenToCanvasPosition(screenLocation)
 
         // Snap to page center if close
         let pageCenter = CGPoint(
