@@ -43,9 +43,6 @@ class PersistentGradientHUDManager {
         
         // Remember if window was already visible to avoid reopening
         let wasAlreadyVisible = isVisible
-        Log.fileOperation("🎨 GRADIENT HUD: show() called - wasAlreadyVisible: \(wasAlreadyVisible)", level: .info)
-        Log.fileOperation("🎨 GRADIENT HUD: stopId = \(stopId.uuidString.prefix(8))", level: .info)
-        Log.fileOperation("🎨 GRADIENT HUD: current isVisible = \(isVisible)", level: .info)
         
         // Update state WITHOUT recreating anything
         self.editingStopId = stopId
@@ -68,7 +65,6 @@ class PersistentGradientHUDManager {
         
         for window in NSApplication.shared.windows {
             if let identifier = window.identifier?.rawValue, identifier.starts(with: "gradient-hud") {
-                Log.fileOperation("🎨 GRADIENT HUD: Found existing window: \(identifier)", level: .info)
                 
                 if !window.isVisible {
                     // 🔥 NEW: Safe window positioning
@@ -81,11 +77,9 @@ class PersistentGradientHUDManager {
         
         // Only open a new window if we didn't find an existing one
         if !foundExistingWindow {
-            Log.fileOperation("🎨 GRADIENT HUD: No existing window found, opening new one", level: .info)
             appState?.openWindowAction?("gradient-hud")
         }
         
-        Log.fileOperation("🎨 GRADIENT HUD: show() completed - isVisible = \(isVisible)", level: .info)
         // If already visible, the WindowGroup will automatically update the content
     }
     
@@ -101,7 +95,6 @@ class PersistentGradientHUDManager {
     
     // 🔥 NEW: Stop editing when window is closed with X button
     func stopEditing() {
-        Log.fileOperation("🎨 GRADIENT HUD: Stopping editing state", level: .info)
         isVisible = false
         editingStopId = nil
         editingStopColor = .black
@@ -117,13 +110,11 @@ class PersistentGradientHUDManager {
         // Call the onClose callback if it exists
         onClose?()
         
-        Log.fileOperation("🎨 GRADIENT HUD: Editing state cleared", level: .info)
     }
     
     // 🔥 EMERGENCY RESET: Force reset hiding flag
     func forceResetHidingFlag() {
         isHiding = false
-        Log.fileOperation("🎨 GRADIENT HUD: Force reset hiding flag", level: .info)
     }
     
     // 🔥 DEBUG: Count gradient windows
@@ -131,7 +122,6 @@ class PersistentGradientHUDManager {
         let count = NSApplication.shared.windows.filter { window in
             window.title.contains("Gradient Color Picker")
         }.count
-        Log.fileOperation("🎨 GRADIENT HUD: Found \(count) gradient windows", level: .info)
         return count
     }
     

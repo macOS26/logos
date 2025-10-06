@@ -83,7 +83,6 @@ extension VectorDocument {
     /// CRITICAL FIX: Update unified objects ordering to match layer ordering
     private func updateUnifiedObjectsOrdering() {
         // Since unified objects is primary storage, just log the action
-        Log.fileOperation("🔧 UNIFIED OBJECTS: Ordering check complete", level: .info)
     }
     
     /// OPTIMIZED: Update unified objects without full sync - preserves text object order and IDs

@@ -17,7 +17,6 @@ class MetalDrawingOptimizer {
         
         if isMetalAvailable {
         } else {
-            Log.fileOperation("⚠️ Metal Drawing Optimizer: Falling back to CPU-based optimizations", level: .info)
         }
     }
     

@@ -146,7 +146,6 @@ extension PDFCommandParser {
         CGPDFOperatorTableSetCallback(operatorTable, "q") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
-            Log.fileOperation("\(parser.detectedPDFVersion): XObject 'q' (save graphics state)")
         }
         
         CGPDFOperatorTableSetCallback(operatorTable, "Q") { (scanner, info) in

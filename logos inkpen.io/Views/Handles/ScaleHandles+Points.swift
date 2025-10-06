@@ -45,7 +45,6 @@ extension ScaleHandles {
         // Update center point based on current bounds
         centerPoint = VectorPoint(shape.calculateCentroid())
 
-        Log.fileOperation("🎯 EXTRACTED \(pathPoints.count) path points + center for scale anchor selection", level: .info)
     }
 
     /// Display all path points with correct colors: GREEN = scalable, RED = locked pin

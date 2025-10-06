@@ -491,7 +491,6 @@ struct HSBInputSection: View {
         // CRITICAL FIX: Don't update gradients during programmatic changes OR when just browsing
         // Only update gradients when user explicitly applies/selects colors
         if isProgrammaticallyUpdating {
-            Log.fileOperation("🎨 HSB INPUT: BLOCKED gradient update - programmatic change", level: .info)
             return
         }
 
@@ -568,8 +567,6 @@ struct HSBInputSection: View {
     }
     
     private func setHSBValues(hue: Double, saturation: Double, brightness: Double) {
-        Log.fileOperation("🎨 HSB INPUT: setHSBValues called with H=\(hue), S=\(saturation), B=\(brightness)", level: .info)
-        Log.fileOperation("🎨 HSB INPUT: Gradient editing state: \(appState.gradientEditingState != nil)", level: .info)
         
         isProgrammaticallyUpdating = true
         hueValue = String(Int(hue))
@@ -581,7 +578,6 @@ struct HSBInputSection: View {
         updateHexFromHSB()
         isProgrammaticallyUpdating = false
         
-        Log.fileOperation("🎨 HSB INPUT: setHSBValues completed", level: .info)
     }
     
     private func applyColorToActiveSelection() {
@@ -612,7 +608,6 @@ struct HSBInputSection: View {
         document.addColorToSwatches(vectorColor)
         
         // Debug: Confirm HSB format is being added
-        Log.fileOperation("🎨 HSB: Added color as HSB format - H:\(exactHSBColor.hue)° S:\(Int(exactHSBColor.saturation * 100))% B:\(Int(exactHSBColor.brightness * 100))%", level: .info)
     }
     
     // MARK: - Live PMS Search

@@ -610,7 +610,6 @@ struct VectorShape: Hashable, Identifiable {
             // Instead, we just remove the warp object status and keep current shapes
             unwrappedShape.originalPath = nil
             // Keep the current grouped shapes (they are already warped permanently)
-            Log.fileOperation("⚠️ GROUP UNWRAP: Cannot restore original - keeping warped shapes as permanent", level: .info)
         } else if let originalPath = originalPath {
             // SINGLE SHAPE WARP OBJECT: Restore original path
             unwrappedShape.originalPath = nil

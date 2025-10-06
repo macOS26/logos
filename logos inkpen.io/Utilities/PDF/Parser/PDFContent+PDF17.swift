@@ -124,7 +124,6 @@ extension PDFCommandParser {
         // CRITICAL FIX: Use the saved outer scope opacity values from when XObject was referenced
         let savedFillOpacity = xObjectSavedFillOpacity
         let savedStrokeOpacity = xObjectSavedStrokeOpacity
-        Log.fileOperation("\(detectedPDFVersion): XObject '\(name)' - USING saved outer opacity - fill: \(savedFillOpacity), stroke: \(savedStrokeOpacity)")
         
         // Get the raw stream data to see what's inside
         var format = CGPDFDataFormat.raw

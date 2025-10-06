@@ -124,11 +124,9 @@ extension PDFCommandParser {
         if name == "Gs1" {
             gs1FillOpacity = currentFillOpacity
             gs1StrokeOpacity = currentStrokeOpacity
-            Log.fileOperation("PDF: 🎯 SAVED Gs1 opacity for XObject Fm1 - fill: \(gs1FillOpacity), stroke: \(gs1StrokeOpacity)")
         } else if name == "Gs3" {
             gs3FillOpacity = currentFillOpacity
             gs3StrokeOpacity = currentStrokeOpacity
-            Log.fileOperation("PDF: 🎯 SAVED Gs3 opacity for XObject Fm2 - fill: \(gs3FillOpacity), stroke: \(gs3StrokeOpacity)")
         }
     }
     
@@ -164,7 +162,6 @@ extension PDFCommandParser {
         // At this point we have the correct outer scope opacity values
         let savedFillOpacity = currentFillOpacity
         let savedStrokeOpacity = currentStrokeOpacity
-        Log.fileOperation("PDF: 🎯 XObject '\(name)' - SAVING outer state - fill: \(savedFillOpacity), stroke: \(savedStrokeOpacity)")
         
         // Store these values for the PDF17 XObject handler to use
         xObjectSavedFillOpacity = savedFillOpacity
@@ -193,17 +190,14 @@ extension PDFCommandParser {
             // Fm1 should use Gs1 opacity (0.5)
             savedFillOpacity = gs1FillOpacity
             savedStrokeOpacity = gs1StrokeOpacity
-            Log.fileOperation("PDF: 🎯 XObject '\(name)' - Using Gs1 opacity - fill: \(savedFillOpacity), stroke: \(savedStrokeOpacity)")
         } else if name == "Fm2" {
             // Fm2 should use Gs3 opacity (0.75)
             savedFillOpacity = gs3FillOpacity
             savedStrokeOpacity = gs3StrokeOpacity
-            Log.fileOperation("PDF: 🎯 XObject '\(name)' - Using Gs3 opacity - fill: \(savedFillOpacity), stroke: \(savedStrokeOpacity)")
         } else {
             // Default to current opacity for other XObjects
             savedFillOpacity = currentFillOpacity
             savedStrokeOpacity = currentStrokeOpacity
-            Log.fileOperation("PDF: 🎯 XObject '\(name)' - Using current opacity - fill: \(savedFillOpacity), stroke: \(savedStrokeOpacity)")
         }
         
         // Store these values for the PDF17 XObject handler to use

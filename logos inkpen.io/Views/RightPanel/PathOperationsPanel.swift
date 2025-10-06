@@ -297,7 +297,6 @@ struct PathOperationsPanel: View {
     }
     
     private func performPathfinderOperation(_ operation: PathfinderOperation) {
-                        Log.fileOperation("🎨 PROFESSIONAL pathfinder operation: \(operation.rawValue)", level: .info)
         
                         // Get selected shapes in correct STACKING ORDER (professional standard)
         let selectedShapes = document.getSelectedShapesInStackingOrder()
@@ -689,7 +688,6 @@ struct PathOperationsPanel: View {
         
         // Skip if path is empty or invalid
         guard !originalPath.isEmpty && !originalPath.boundingBox.isNull && !originalPath.boundingBox.isInfinite else {
-            Log.fileOperation("⚠️ REMOVE OVERLAP: Skipping shape with invalid path: \(shape.name)", level: .info)
             return false
         }
         
@@ -697,7 +695,6 @@ struct PathOperationsPanel: View {
         if let cleanedPath = CoreGraphicsPathOperations.union(originalPath, originalPath) {
             // Verify the cleaned path is valid
             guard !cleanedPath.isEmpty && !cleanedPath.boundingBox.isNull && !cleanedPath.boundingBox.isInfinite else {
-                Log.fileOperation("⚠️ REMOVE OVERLAP: Union produced invalid path for: \(shape.name)", level: .info)
                 return false
             }
             

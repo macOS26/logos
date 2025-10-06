@@ -50,7 +50,6 @@ class CoreGraphicsPathOperations {
         let boundsA = pathA.boundingBox
         let boundsB = pathB.boundingBox
         guard isFinite(boundsA) && !boundsA.isNull && isFinite(boundsB) && !boundsB.isNull else {
-            Log.fileOperation("⚠️ CoreGraphics: Invalid path bounds for union operation", level: .info)
             return nil
         }
         
@@ -72,7 +71,6 @@ class CoreGraphicsPathOperations {
         var result = validPaths[0]
         for i in 1..<validPaths.count {
             guard let unionResult = union(result, validPaths[i], using: fillRule) else {
-                Log.fileOperation("⚠️ CoreGraphics: Union failed at path \(i), falling back to partial result", level: .info)
                 return result
             }
             result = unionResult
@@ -299,7 +297,6 @@ class CoreGraphicsPathOperations {
         // Mosaic operation has exponential complexity (2^n combinations)
         // Limit to reasonable number of shapes to prevent crash
         guard shapeCount <= 20 else {
-            Log.fileOperation("⚠️ MOSAIC: Too many shapes (\(shapeCount)) - limited to 20 shapes max to prevent exponential explosion", level: .info)
             // Return original paths as fallback
             return paths.enumerated().map { (index, path) in (path, index) }
         }

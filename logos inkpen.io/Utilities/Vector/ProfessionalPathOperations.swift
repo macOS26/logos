@@ -37,7 +37,6 @@ extension ProfessionalPathOperations {
             return coreGraphicsResult
         }
         
-        Log.fileOperation("⚠️ PROFESSIONAL PUNCH: CoreGraphics operation failed", level: .info)
         return nil
     }
     
@@ -50,7 +49,6 @@ extension ProfessionalPathOperations {
             return coreGraphicsResult
         }
         
-        Log.fileOperation("⚠️ PROFESSIONAL INTERSECT: CoreGraphics operation failed", level: .info)
         return nil
     }
     
@@ -76,7 +74,6 @@ extension ProfessionalPathOperations {
             }
         }
         
-        Log.fileOperation("⚠️ PROFESSIONAL EXCLUDE: CoreGraphics operation failed", level: .info)
         return []
     }
     
@@ -96,7 +93,6 @@ extension ProfessionalPathOperations {
         if !result.isEmpty {
             return result
         } else {
-            Log.fileOperation("⚠️ CoreGraphics mosaic returned empty result", level: .info)
             return []
             }
         }
@@ -113,7 +109,6 @@ extension ProfessionalPathOperations {
         if !result.isEmpty {
             return result
                 } else {
-            Log.fileOperation("⚠️ CoreGraphics cut returned empty result", level: .info)
             return []
             }
         }
@@ -222,7 +217,6 @@ extension ProfessionalPathOperations {
         if !result.isEmpty {
             return result
         } else {
-            Log.fileOperation("⚠️ CoreGraphics merge returned empty result", level: .info)
             return paths.enumerated().map { (index, path) in (path, index) }
         }
     }
@@ -236,7 +230,6 @@ extension ProfessionalPathOperations {
         let validPaths = paths.filter { !$0.isEmpty }
         guard validPaths.count >= 2 else { return paths }
         
-        Log.fileOperation("⚠️ PROFESSIONAL MERGE: Legacy mode - no color information, merging all paths", level: .info)
         
         var result = validPaths[0]
         for i in 1..<validPaths.count {
@@ -263,7 +256,6 @@ extension ProfessionalPathOperations {
         if !result.isEmpty {
             return result
         } else {
-            Log.fileOperation("⚠️ CoreGraphics crop returned empty result", level: .info)
             return []
         }
     }

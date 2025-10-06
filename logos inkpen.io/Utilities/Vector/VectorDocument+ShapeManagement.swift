@@ -75,7 +75,6 @@ extension VectorDocument {
         
         selectedShapeIDs.removeAll()
         
-        Log.fileOperation("🗑️ SHAPES: Deleted \(shapesToRemove.count) shapes (protected background shapes)", level: .info)
     }
     
     // CRITICAL FIX: Unified deletion method that works with unified objects system
@@ -125,7 +124,6 @@ extension VectorDocument {
         // Sync legacy selection arrays
         syncSelectionArrays()
         
-        Log.fileOperation("🗑️ UNIFIED: Deleted \(protectedObjects.count) objects (protected \(objectsToDelete.count - protectedObjects.count) background shapes)", level: .info)
     }
     
     /// Gets all currently selected shapes across all layers
@@ -250,9 +248,7 @@ extension VectorDocument {
         if !layerObjects.isEmpty {
             selectedObjectIDs = Set(layerObjects.map { $0.id })
             syncSelectionArrays() // Keep legacy arrays in sync
-            Log.fileOperation("🎯 SELECT ALL: Selected \(layerObjects.count) objects", level: .info)
         } else {
-            Log.fileOperation("🎯 SELECT ALL: No selectable objects found", level: .info)
         }
     }
     

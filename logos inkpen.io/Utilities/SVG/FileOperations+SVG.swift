@@ -10,7 +10,6 @@ import SwiftUI
 extension FileOperations {
     /// Export VectorDocument to SVG format
     static func exportToSVG(_ document: VectorDocument, url: URL, includeBackground: Bool = true, textRenderingMode: AppState.SVGTextRenderingMode = .glyphs) throws {
-        Log.fileOperation("🎨 Exporting document to SVG: \(url.path) (Text: \(textRenderingMode.displayName))", level: .info)
 
         do {
             // Use the proper SVG exporter with text rendering mode

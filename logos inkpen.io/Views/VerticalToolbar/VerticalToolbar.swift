@@ -17,7 +17,6 @@ struct VerticalToolbar: View {
     
     private func handleToolLongPress(_ tool: DrawingTool, variantIndex: Int? = nil) {
         toolGroupManager.longPressedTool(tool, variantIndex: variantIndex)
-        Log.fileOperation("🔧 Long press on tool: \(tool.rawValue)", level: .info)
     }
     
     // MARK: - Icon Display Functions

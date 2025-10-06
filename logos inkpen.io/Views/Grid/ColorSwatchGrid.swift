@@ -239,11 +239,9 @@ struct ColorSwatchGrid: View {
                         if document.activeColorTarget == .stroke {
                             selectedStrokeColor = color
                             document.setActiveColor(color)
-                            Log.fileOperation("🎨 SWATCH CLICK: Set stroke color: \(color)", level: .debug)
                         } else {
                             selectedFillColor = color
                             document.setActiveColor(color)
-                            Log.fileOperation("🎨 SWATCH CLICK: Set fill color: \(color)", level: .debug)
                         }
                     } label: {
                         ZStack {

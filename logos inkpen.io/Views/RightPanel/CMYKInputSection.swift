@@ -383,7 +383,6 @@ struct CMYKInputSection: View {
         // CRITICAL FIX: Don't update gradients during programmatic changes OR when just browsing
         // Only update gradients when user explicitly applies/selects colors
         if isProgrammaticallyUpdating {
-            Log.fileOperation("🎨 CMYK INPUT: BLOCKED gradient update - programmatic change", level: .info)
             return
         }
 
@@ -499,8 +498,6 @@ struct CMYKInputSection: View {
     }
     
     private func setCMYKValues(cyan: Int, magenta: Int, yellow: Int, black: Int) {
-        Log.fileOperation("🎨 CMYK INPUT: setCMYKValues called with C=\(cyan), M=\(magenta), Y=\(yellow), K=\(black)", level: .info)
-        Log.fileOperation("🎨 CMYK INPUT: Gradient editing state: \(appState.gradientEditingState != nil)", level: .info)
         
         isProgrammaticallyUpdating = true
         cyanValue = String(cyan)
@@ -513,7 +510,6 @@ struct CMYKInputSection: View {
         blackSlider = Double(black)
         isProgrammaticallyUpdating = false
         
-        Log.fileOperation("🎨 CMYK INPUT: setCMYKValues completed", level: .info)
     }
     
     private func applyColorToActiveSelection() {

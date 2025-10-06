@@ -245,7 +245,6 @@ extension DrawingCanvas {
                 }
             }
             
-            Log.fileOperation("🎨 GRADIENT TOOL: Updated shape gradient for \(shape.id.uuidString.prefix(8)) (liveDrag: \(isLiveDrag))", level: .info)
         }
     }
     

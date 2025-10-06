@@ -169,7 +169,6 @@ struct RotateHandles: View {
                 .onTapGesture {
                     if !isRotating {
                         selectedAnchorPointIndex = nil // Select center
-                        Log.fileOperation("🎯 ANCHOR SELECTED: Center point", level: .info)
                     }
                 }
                 .highPriorityGesture(
@@ -214,7 +213,6 @@ struct RotateHandles: View {
         // Update center point based on current bounds
         centerPoint = VectorPoint(shape.calculateCentroid())
         
-        Log.fileOperation("🎯 EXTRACTED \(pathPoints.count) path points + center for rotation anchor selection", level: .info)
     }
     
     /// Display all path points as selectable anchors
@@ -400,7 +398,6 @@ struct RotateHandles: View {
             return
         }
         
-        Log.fileOperation("🔧 Applying rotation transform to shape coordinates: \(shape.name)", level: .info)
         
         // Transform all path elements
         var transformedElements: [PathElement] = []
@@ -616,7 +613,6 @@ struct RotateHandles: View {
             return
         }
         
-        Log.fileOperation("🔧 Applying rotation transform to shape coordinates: \(shape.name)", level: .info)
         
         // Transform all path elements
         var transformedElements: [PathElement] = []

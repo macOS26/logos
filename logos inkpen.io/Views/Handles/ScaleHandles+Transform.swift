@@ -36,7 +36,6 @@ extension ScaleHandles {
             return
         }
 
-        Log.fileOperation("🔧 Applying scaling transform to shape coordinates: \(shape.name)", level: .info)
 
         // FLATTENED SHAPE FIX: Apply transform to individual grouped shapes, not container
         if shape.isGroup && !shape.groupedShapes.isEmpty {

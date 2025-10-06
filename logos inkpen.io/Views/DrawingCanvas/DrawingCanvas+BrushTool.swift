@@ -623,19 +623,15 @@ extension DrawingCanvas {
         
         let shapes = document.getShapesForLayer(layerIndex)
         guard shapeIndex < shapes.count else { 
-            Log.fileOperation("🚨 BRUSH ERROR: Shape index \(shapeIndex) out of bounds! Layer has \(shapes.count) shapes", level: .info)
             return 
         }
         
         guard let brushStroke = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else {
-            Log.fileOperation("🚨 BRUSH ERROR: Could not get shape at index \(shapeIndex)", level: .info)
             return
         }
         
         // VERIFY: Make sure we're operating on the correct shape
         guard brushStroke.id == activeBrushShape?.id else {
-            Log.fileOperation("🚨 BRUSH ERROR: Shape ID mismatch! Expected \(activeBrushShape?.id ?? UUID()), got \(brushStroke.id)", level: .info)
-            Log.fileOperation("🚨 BRUSH ERROR: This would affect the WRONG shape - ABORTING self-union", level: .info)
             return
         }
         
@@ -646,14 +642,12 @@ extension DrawingCanvas {
         
         // SAFETY CHECK: Ensure path is valid before union operation
         guard !originalPath.isEmpty else {
-            Log.fileOperation("🚨 BRUSH ERROR: Original path is empty - ABORTING self-union", level: .info)
             return
         }
         
         // SAFETY CHECK: Verify path has valid bounds
         let pathBounds = originalPath.boundingBox
         guard isPathBoundsFinite(pathBounds) && !pathBounds.isNull else {
-            Log.fileOperation("🚨 BRUSH ERROR: Path has invalid bounds - ABORTING self-union", level: .info)
             return
         }
         
@@ -662,7 +656,6 @@ extension DrawingCanvas {
         if let cleanedPath = CoreGraphicsPathOperations.normalized(originalPath) {
             // SAFETY CHECK: Verify the result path is valid
             guard !cleanedPath.isEmpty && isPathBoundsFinite(cleanedPath.boundingBox) else {
-                Log.fileOperation("🚨 BRUSH ERROR: Union operation produced invalid path - keeping original", level: .info)
                 return
             }
             

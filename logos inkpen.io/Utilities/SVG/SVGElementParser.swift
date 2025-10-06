@@ -28,7 +28,6 @@ extension SVGParser {
             let rect = CGRect(x: x, y: y, width: width, height: height)
             if let groupId = currentGroupId {
                 textBoxBounds[groupId] = rect
-                Log.fileOperation("📦 Detected text box bounds: \(rect) for group: \(groupId)", level: .debug)
             }
             pendingTextBoxRect = rect
             return  // Don't create a shape for this invisible rect

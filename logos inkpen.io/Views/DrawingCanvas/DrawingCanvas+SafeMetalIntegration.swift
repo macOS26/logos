@@ -302,7 +302,6 @@ extension DrawingCanvas {
             }
         }
         .onTapGesture { location in
-            Log.fileOperation("🎯 SINGLE CLICK DETECTED at: \(location)", level: .info)
             handleUnifiedTap(at: location, geometry: geometry)
             // After tap, restore appropriate cursor immediately
             // Note: During mouseDown, SwiftUI may temporarily drop hover. Use hit test

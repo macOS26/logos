@@ -81,7 +81,6 @@ extension VectorDocument {
         settings.selectedLayerName = duplicatedLayer.name
         onSettingsChanged()
         
-        Log.fileOperation("📋 Duplicated layer '\(originalLayer.name)' to '\(duplicatedLayer.name)'", level: .info)
     }
     
     /// Move a layer from one index to another
@@ -144,7 +143,6 @@ extension VectorDocument {
             }
         }
         
-        Log.fileOperation("🔄 Moved layer '\(movingLayer.name)' from index \(sourceIndex) to \(adjustedTargetIndex)", level: .info)
     }
     
     func addLayer(name: String = "New Layer") {
@@ -161,7 +159,6 @@ extension VectorDocument {
     func removeLayer(at index: Int) {
         // Allow deletion of any layer, just prevent deleting the last layer
         guard index >= 0 && index < layers.count && layers.count > 1 else {
-            Log.fileOperation("⚠️ Cannot remove last remaining layer", level: .info)
             return
         }
 

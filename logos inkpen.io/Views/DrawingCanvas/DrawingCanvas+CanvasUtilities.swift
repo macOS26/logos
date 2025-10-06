@@ -15,6 +15,5 @@ extension DrawingCanvas {
         // SKIP INITIAL POSITIONING: Don't call setupDefaultView to avoid transition
         // The MainView will handle fit-to-page directly without intermediate positioning
         initialZoomLevel = document.zoomLevel // Initialize for zoom gestures
-        Log.fileOperation("🎯 STREAMLINED CANVAS SETUP: Skipping intermediate positioning for direct fit-to-page", level: .info)
     }
 } 

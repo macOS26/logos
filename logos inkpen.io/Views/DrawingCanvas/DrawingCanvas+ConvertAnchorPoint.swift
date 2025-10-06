@@ -18,7 +18,6 @@ extension DrawingCanvas {
         
         // FIRST: Check if clicking on an anchor point with collapsed handles to restore them
         if let restoreResult = restoreCollapsedHandlesIfClicked(at: location, tolerance: tolerance) {
-            Log.fileOperation("🎯 CONVERT POINT TOOL: Restored handles - \(restoreResult)", level: .info)
             
             // Enable direct selection UI to show the result
             enableDirectSelectionForConvertedPoint(shapeID: restoreResult.shapeID, elementIndex: restoreResult.elementIndex)
@@ -27,7 +26,6 @@ extension DrawingCanvas {
         
         // SECOND: Check for handle clicks to collapse them
         if let collapseResult = collapseHandleIfClicked(at: location, tolerance: tolerance) {
-            Log.fileOperation("🎯 CONVERT POINT TOOL: Collapsed handle - \(collapseResult)", level: .info)
             
             // Enable direct selection UI to show the result
             enableDirectSelectionForConvertedPoint(shapeID: collapseResult.shapeID, elementIndex: collapseResult.elementIndex)
@@ -709,7 +707,6 @@ extension DrawingCanvas {
                     // Force UI update
                     document.objectWillChange.send()
                     
-                    Log.fileOperation("🎯 CONVERT POINT TOOL: Selected shape \(shape.name) for direct selection UI", level: .info)
                     return
                 }
             }
@@ -750,6 +747,5 @@ extension DrawingCanvas {
         // Force UI update to show the changes
         document.objectWillChange.send()
         
-        Log.fileOperation("🎯 CONVERT POINT TOOL: Enabled direct selection UI (tool stays active)", level: .info)
     }
 }

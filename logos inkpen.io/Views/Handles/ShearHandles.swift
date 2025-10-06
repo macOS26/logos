@@ -230,7 +230,6 @@ struct ShearHandles: View {
             if !isShearing && oldBounds != newBounds {
                 extractPathPoints()
                 pointsRefreshTrigger += 1
-                Log.fileOperation("🔄 SHEAR TOOL: Shape bounds changed, refreshed points", level: .info)
             }
         }
         .id("shear-handles-\(pointsRefreshTrigger)") // Force view rebuild when points update
@@ -347,7 +346,6 @@ struct ShearHandles: View {
         let centroid = shape.calculateCentroid()
         centerPoint = VectorPoint(centroid)
         
-        Log.fileOperation("🎯 EXTRACTED \(pathPoints.count) path points + center for shear anchor selection", level: .info)
     }
     
     /// Display all path points with correct colors: GREEN = shearable, RED = locked pin
@@ -510,7 +508,6 @@ struct ShearHandles: View {
         if lockedPinPointIndex == nil && shearAnchorPoint == .zero {
             // Default to center if no pin point was explicitly set
             setLockedPinPoint(nil) // nil = center
-            Log.fileOperation("🔄 SHEAR START: No pin point set, defaulting to center", level: .info)
         }
         
         // SHEAR START: Minimal logging for performance
@@ -591,7 +588,6 @@ struct ShearHandles: View {
             return
         }
         
-        Log.fileOperation("🔧 Applying shear transform to shape coordinates: \(shape.name)", level: .info)
         
         // Transform all path elements
         var transformedElements: [PathElement] = []

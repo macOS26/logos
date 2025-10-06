@@ -529,7 +529,6 @@ class ProfessionalTextViewModel: ObservableObject {
             return
         }
 
-        Log.fileOperation("🎯 CONVERTING TO OUTLINES: Creating compound paths per line", level: .info)
 
         // NOTE: saveToUndoStack is called once in convertSelectedTextToOutlines() for atomic undo
         // DO NOT call it here to avoid duplicate undo entries
@@ -645,12 +644,10 @@ class ProfessionalTextViewModel: ObservableObject {
                 // First select the text
                 document.selectedTextIDs = [textID]
                 document.selectedShapeIDs.removeAll()
-                Log.fileOperation("🎯 SELECTED TEXT: GRAY → GREEN", level: .info)
 
                 // If font tool is active and this is a corner click, also start editing
                 if document.currentTool == .font && isCornerClick {
                     startEditingText(textID: textID)
-                    Log.fileOperation("🎯 CORNER CLICK WITH TYPE TOOL: GRAY → GREEN → BLUE", level: .info)
                 }
 
             case .selected: // GREEN
@@ -658,22 +655,17 @@ class ProfessionalTextViewModel: ObservableObject {
                 if isDoubleClick {
                     // Switch to font tool
                     document.currentTool = .font
-                    Log.fileOperation("🔧 DOUBLE-CLICK: Switched to type tool", level: .info)
 
                     // Start editing the text
                     startEditingText(textID: textID)
-                    Log.fileOperation("🎯 DOUBLE-CLICK: GREEN → BLUE (switched to type tool)", level: .info)
                 } else if document.currentTool == .font {
                     // Single click with font tool active - start editing
                     startEditingText(textID: textID)
-                    Log.fileOperation("🎯 START EDITING: GREEN → BLUE", level: .info)
-                } else {
-                    Log.fileOperation("🎯 TYPE TOOL NOT ACTIVE: Staying GREEN", level: .info)
                 }
 
             case .editing: // BLUE
                 // Already editing - do nothing
-                Log.fileOperation("🎯 ALREADY EDITING: Staying BLUE", level: .info)
+                break
             }
         } else {
             // Single click behavior
@@ -682,22 +674,20 @@ class ProfessionalTextViewModel: ObservableObject {
                 // Select the text
                 document.selectedTextIDs = [textID]
                 document.selectedShapeIDs.removeAll()
-                Log.fileOperation("🎯 SINGLE CLICK: GRAY → GREEN", level: .info)
 
             case .selected: // GREEN
                 // Already selected - no change on single click
-                Log.fileOperation("🎯 SINGLE CLICK: Staying GREEN", level: .info)
+                break
 
             case .editing: // BLUE
                 // Let NSTextView handle clicks during editing
-                Log.fileOperation("🎯 SINGLE CLICK: Staying BLUE (NSTextView handles)", level: .info)
+                break
             }
         }
     }
 
     // MARK: - Start Editing Helper
     private func startEditingText(textID: UUID, at location: CGPoint = .zero) {
-        Log.fileOperation("✏️ STARTING EDIT MODE for textID: \(textID.uuidString.prefix(8)) at location: \(location)", level: .info)
 
         // Stop editing any other text boxes first
         var editingCount = 0
@@ -706,10 +696,6 @@ class ProfessionalTextViewModel: ObservableObject {
                 document.setTextEditingInUnified(id: shape.id, isEditing: false)
                 editingCount += 1
             }
-        }
-
-        if editingCount > 0 {
-            Log.fileOperation("🔄 STOPPED \(editingCount) text box(es) that were in edit mode", level: .info)
         }
 
         // Find and start editing the target text

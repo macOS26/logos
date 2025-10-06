@@ -13,11 +13,9 @@ extension FileOperations {
     /// Generate PDF data from VectorDocument with proper clipping path and image support
     static func generatePDFDataWithClippingSupport(from document: VectorDocument, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, includeInkpenData: Bool = false, includeBackground: Bool = true) throws -> Data {
         let operation = isExport ? "export" : "save"
-        Log.fileOperation("📄 Generating PDF data from document for \(operation) (CMYK: \(useCMYK), Text: \(textRenderingMode.displayName))", level: .info)
 
         // Get document dimensions - use sizeInPoints which is already in points
         let documentSize = document.settings.sizeInPoints
-        Log.fileOperation("📐 PDF document size: \(documentSize.width) × \(documentSize.height) pts", level: .info)
 
         // Create PDF context with correct media box size
         let pdfData = NSMutableData()
@@ -112,13 +110,11 @@ extension FileOperations {
         pdfContext.endPDFPage()
         pdfContext.closePDF()
 
-        Log.fileOperation("✅ PDF data generation completed with clipping support", level: .info)
         return pdfData as Data
     }
 
     /// Render VectorDocument to PDF context with clipping path support
     static func renderDocumentToPDFWithClipping(document: VectorDocument, context: CGContext, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, includeBackground: Bool = true) throws {
-        Log.fileOperation("🎨 Rendering document to PDF context with clipping support", level: .info)
 
         // Save graphics state
         context.saveGState()
@@ -159,14 +155,12 @@ extension FileOperations {
             guard index >= 2, !layer.isLocked, layer.isVisible else { continue }
 
             try autoreleasepool {
-                Log.fileOperation("🎨 Rendering layer: \(layer.name)", level: .info)
 
                 // Render shapes in layer using unified objects
                 let shapesInLayer = document.getShapesForLayer(index)
                 for shape in shapesInLayer where shape.isVisible {
                     // Skip Canvas Background if not including background
                     if !includeBackground && shape.name == "Canvas Background" {
-                        Log.fileOperation("📋 PDF EXPORT: Skipping Canvas Background (includeBackground=false)", level: .debug)
                         continue
                     }
 
@@ -203,12 +197,10 @@ extension FileOperations {
         // Restore graphics state
         context.restoreGState()
 
-        Log.fileOperation("✅ Document rendered to PDF context with clipping support", level: .info)
     }
 
     /// Render a clipping group (mask and clipped shapes)
     static func renderClippingGroup(clippingMask: VectorShape, clippedShapes: [VectorShape], context: CGContext, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs) throws {
-        Log.fileOperation("🎭 Rendering clipping group with mask: \(clippingMask.name)", level: .debug)
 
         // Save graphics state for clipping
         context.saveGState()
@@ -226,7 +218,6 @@ extension FileOperations {
 
         // Render all clipped shapes
         for shape in clippedShapes {
-            Log.fileOperation("   📎 Rendering clipped shape: \(shape.name)", level: .debug)
             try renderShapeToPDFWithImageSupport(shape: shape, context: context, isExport: isExport, useCMYK: useCMYK, textRenderingMode: textRenderingMode)
         }
 
@@ -247,7 +238,6 @@ extension FileOperations {
             // IMPORTANT: Create a PDF transparency group (Form XObject)
             // This will be recognized as a group in Illustrator and other PDF editors
             
-            Log.fileOperation("📦 Rendering PDF transparency group: \(shape.name) with \(shape.groupedShapes.count) shapes", level: .info)
             
             // Save graphics state for group
             context.saveGState()
@@ -286,7 +276,6 @@ extension FileOperations {
             // Restore graphics state
             context.restoreGState()
             
-            Log.fileOperation("   ✅ PDF transparency group rendered: \(shape.name)", level: .debug)
             return
         }
 
@@ -345,10 +334,8 @@ extension FileOperations {
             // DO NOT EXPORT STROKE IF COLOR IS CLEAR!
             if case .clear = strokeStyle.color {
                 // Skip stroke completely - this is the "none" stroke (checkerboard)
-                Log.fileOperation("PDF EXPORT: SKIPPING stroke for \(shape.name) - stroke is NONE/CLEAR", level: .debug)
             } else if strokeStyle.width > 0 && strokeStyle.opacity > 0 {
                 // Only export stroke if it has a real color, width, and opacity
-                Log.fileOperation("PDF EXPORT: Drawing stroke for \(shape.name)", level: .debug)
                 context.addPath(cgPath)
                 setStrokeStyle(strokeStyle, context: context)
                 context.strokePath()
@@ -361,7 +348,6 @@ extension FileOperations {
 
     /// Render image to PDF context
     static func renderImageToPDF(shape: VectorShape, imageData: Data, context: CGContext) throws {
-        Log.fileOperation("🖼️ Rendering image shape: \(shape.name)", level: .debug)
 
         // Create NSImage from data
         guard let nsImage = NSImage(data: imageData) else {
@@ -405,13 +391,11 @@ extension FileOperations {
         // Restore graphics state
         context.restoreGState()
 
-        Log.fileOperation("   ✅ Image rendered at: \(bounds.origin) size: \(bounds.size)", level: .debug)
     }
 
     /// Render text to PDF context using actual PDF text (searchable/selectable)
     /// Uses the SAME NSLayoutManager logic as text-to-outlines for precise positioning
     static func renderTextToPDF(vectorText: VectorText, context: CGContext, renderingMode: AppState.PDFTextRenderingMode = .glyphs) throws {
-        Log.fileOperation("📝 Rendering PDF text (\(renderingMode.displayName)): '\(vectorText.content)'", level: .debug)
 
         guard !vectorText.content.isEmpty else { return }
 
@@ -427,7 +411,6 @@ extension FileOperations {
     /// Render text by individual glyphs (most accurate)
     /// Uses the SAME NSLayoutManager logic as text-to-outlines for precise positioning
     private static func renderTextToPDF_Glyphs(vectorText: VectorText, context: CGContext) throws {
-        Log.fileOperation("   📝 Rendering as individual glyphs", level: .debug)
 
         guard !vectorText.content.isEmpty else { return }
 
@@ -560,7 +543,6 @@ extension FileOperations {
         if skippedGlyphCount > 0 {
         }
 
-        Log.fileOperation("   ✅ PDF text rendered at: \(vectorText.position)", level: .debug)
     }
 
     /// Helper method to detect if a glyph path is a rectangle (missing character placeholder)
@@ -686,7 +668,6 @@ extension FileOperations {
 
     /// Render text by lines using CTLine (better performance, maintains placement accuracy)
     private static func renderTextToPDF_Lines(vectorText: VectorText, context: CGContext) throws {
-        Log.fileOperation("   📝 Rendering as text lines (CTLine)", level: .debug)
 
         guard !vectorText.content.isEmpty else { return }
 
@@ -794,6 +775,5 @@ extension FileOperations {
 
         context.restoreGState()
 
-        Log.fileOperation("   ✅ PDF text rendered by lines at: \(vectorText.position)", level: .debug)
     }
 }

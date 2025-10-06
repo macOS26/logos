@@ -12,43 +12,36 @@ extension DrawingCanvas {
     internal func handleToolChange(oldTool: DrawingTool, newTool: DrawingTool) {
         // EXIT CORNER RADIUS MODE when switching tools (any tool change clears this mode)
         if isCornerRadiusEditMode {
-            Log.fileOperation("🔧 TOOL SWITCH: Exiting corner radius edit mode", level: .info)
             isCornerRadiusEditMode = false
         }
 
         // CRITICAL: Stop all text editing when switching away from font tool or to arrow tool
         // This ensures text boxes don't get stuck in editing mode
         if (previousTool == .font || oldTool == .font) && newTool != .font {
-            Log.fileOperation("🔧 TOOL SWITCH: Exiting text editing mode when switching away from type tool", level: .info)
             stopAllTextEditing()
         } else if newTool == .selection {
             // Also stop text editing when switching to arrow tool from any tool
-            Log.fileOperation("🔧 TOOL SWITCH: Exiting text editing mode when switching to arrow tool", level: .info)
             stopAllTextEditing()
         }
 
         // ✅ EXPLICIT USER ACTION: Auto-finish bezier path when user switches away from pen tool
         // This is standard professional behavior and represents explicit user intent to stop drawing
         if previousTool == .bezierPen && newTool != .bezierPen && isBezierDrawing {
-            Log.fileOperation("🔧 USER SWITCHED TOOLS: Auto-finishing current bezier path (explicit user action)", level: .info)
             finishBezierPath()
         }
 
         // ✅ EXPLICIT USER ACTION: Auto-finish freehand path when user switches away from freehand tool
         if previousTool == .freehand && newTool != .freehand && isFreehandDrawing {
-            Log.fileOperation("🔧 USER SWITCHED TOOLS: Auto-finishing current freehand path (explicit user action)", level: .info)
             handleFreehandDragEnd()
         }
 
         // CRITICAL FIX: Preserve text box font settings when switching tools
         // This prevents font settings from changing when switching between font tool and arrow tool
         if previousTool == .font && newTool == .selection {
-            Log.fileOperation("🔧 TOOL SWITCH: Type → Arrow: Preserving all text box type settings", level: .info)
             // Font settings remain unchanged per text box UUID
         }
 
         if previousTool == .selection && newTool == .font {
-            Log.fileOperation("🔧 TOOL SWITCH: Arrow → Type: Preserving all text box type settings", level: .info)
             // Keep selected text boxes selected (GREEN stays GREEN)
             // Font settings remain unchanged per text box UUID
         }

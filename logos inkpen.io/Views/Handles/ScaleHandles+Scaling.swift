@@ -197,7 +197,6 @@ extension ScaleHandles {
         if lockedPinPointIndex == nil && scalingAnchorPoint == .zero {
             // Default to center if no pin point was explicitly set
             setLockedPinPoint(nil) // nil = center
-            Log.fileOperation("🔄 SCALING START: No pin point set, defaulting to center", level: .info)
         }
 
         // SCALING START: Minimal logging for performance

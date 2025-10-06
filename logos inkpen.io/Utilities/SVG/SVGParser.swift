@@ -186,7 +186,6 @@ class SVGParser: NSObject, XMLParserDelegate {
     /// Use this for SVGs with extreme coordinate values that cause rendering issues
     func enableExtremeValueHandling() {
         useExtremeValueHandling = true
-        Log.fileOperation("🔧 Enabled extreme value handling for radial gradients", level: .info)
     }
     // MARK: - XMLParserDelegate
     
@@ -399,7 +398,6 @@ class SVGParser: NSObject, XMLParserDelegate {
     // MARK: - CSS Style Parsing
     
     private func parseCSSStyles(_ cssContent: String) {
-        Log.fileOperation("🎨 Parsing CSS styles", level: .info)
         
         // Parse CSS rules from style content
         let rules = cssContent.components(separatedBy: "}")
@@ -425,7 +423,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                 }
                 
                 cssStyles[selector] = styles
-                Log.fileOperation("📋 Added CSS rule: \(selector) -> \(styles)", level: .info)
             }
         }
         
@@ -478,7 +475,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                 viewBoxHeight = parts[3]
                 hasViewBox = true
                 
-                Log.fileOperation("🔧 ViewBox parsed: x=\(viewBoxX), y=\(viewBoxY), width=\(viewBoxWidth), height=\(viewBoxHeight)", level: .info)
                 
                 // If no explicit width/height, use viewBox dimensions
                 if attributes["width"] == nil && attributes["height"] == nil {
@@ -497,7 +493,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                     // For 96 DPI SVGs, only apply translation, no scaling
                     currentTransform = CGAffineTransform.identity
                         .translatedBy(x: -viewBoxX, y: -viewBoxY)
-                    Log.fileOperation("🔍 Detected 96 DPI SVG - skipping scale transform, only translating", level: .info)
                 } else {
                     // Apply full viewBox transform for normal SVGs
                     currentTransform = CGAffineTransform.identity
@@ -505,7 +500,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                         .scaledBy(x: scaleX, y: scaleY)
                 }
 
-                Log.fileOperation("🔄 ViewBox transform: scale=(\(scaleX), \(scaleY)), translate=(\(-viewBoxX), \(-viewBoxY))", level: .info)
             }
         } else {
             // No viewBox, use document size
@@ -530,7 +524,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         if let transform = attributes["transform"] {
             let groupTransform = parseTransform(transform)
             currentTransform = currentTransform.concatenating(groupTransform)
-            Log.fileOperation("🔄 Group transform applied: \(transform)", level: .info)
         }
         
         // First check if group has a class that might define clip-path
@@ -584,9 +577,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         let hasCloseElement = pathData.contains { if case .close = $0 { return true }; return false }
         let vectorPath = VectorPath(elements: pathData, isClosed: hasCloseElement)
 
-        Log.fileOperation("📐 Created path with \(pathData.count) elements, isClosed: \(hasCloseElement)", level: .info)
-        Log.fileOperation("🔍 DEBUG: Path d attribute: \(d.prefix(100))...", level: .info)
-        Log.fileOperation("🔍 DEBUG: hasCloseElement = \(hasCloseElement), vectorPath.isClosed = \(vectorPath.isClosed)", level: .info)
         
         // Check if this path should be clipped
         let (shouldClip, clipPathId) = checkForClipPath(attributes)
@@ -598,14 +588,10 @@ class SVGParser: NSObject, XMLParserDelegate {
         )
         
         if let fill = shape.fillStyle {
-            Log.fileOperation("🎨 Shape has fill style: \(fill)", level: .info)
         } else {
-            Log.fileOperation("⚪ Shape has no fill", level: .info)
         }
         if let stroke = shape.strokeStyle {
-            Log.fileOperation("🖊️ Shape has stroke style: \(stroke)", level: .info)
         } else {
-            Log.fileOperation("📝 Shape has no stroke", level: .info)
         }
         
         // Apply clipping if needed
@@ -627,7 +613,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         var mergedAttributes = attributes
         
         if let className = attributes["class"] {
-            Log.fileOperation("🏷️ Processing image classes: \(className)", level: .info)
             // Handle multiple classes separated by spaces
             let classNames = className.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
             for cls in classNames {
@@ -893,7 +878,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         var mergedAttributes = attributes
         
         if let className = attributes["class"] {
-            Log.fileOperation("🏷️ Processing classes: \(className)", level: .info)
             // Handle multiple classes separated by spaces
             let classNames = className.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
             for cls in classNames {
@@ -944,7 +928,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             // CRITICAL: Apply viewBox transform AFTER shape transform to ensure objects stay within bounds
             let shapeTransform = parseTransform(mergedAttributes["transform"] ?? "")
             transform = currentTransform.concatenating(shapeTransform)
-            Log.fileOperation("🔄 Applied external SVG transform (viewBox → shape transform)", level: .info)
         } else {
             // Our own exported SVG (no transform attribute) - coordinates are already correct
             transform = currentTransform.isIdentity ? .identity : currentTransform

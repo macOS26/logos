@@ -91,7 +91,6 @@ extension DrawingCanvas {
         
         let shapeCount = selectedObjects.filter { if case .shape = $0.objectType { return true } else { return false } }.count
         let textCount = selectedObjects.filter { if case .shape(let shape) = $0.objectType, shape.isTextObject { return true } else { return false } }.count
-        Log.fileOperation("🎯 SELECTION DRAG: Established reference positions for \(shapeCount) shapes and \(textCount) text objects", level: .info)
     }
     
     internal func handleSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
@@ -373,7 +372,6 @@ extension DrawingCanvas {
                 groupShape.warpEnvelope = updatedWarpEnvelope
                 
                 // CRITICAL FIX: DO NOT move originalEnvelope - it must stay as reference coordinate system
-                Log.fileOperation("🔧 GROUP WARP ENVELOPE MOVED: Updated \(updatedWarpEnvelope.count) current coordinates (original envelope preserved)", level: .info)
             }
             
             groupShape.updateBounds()
@@ -435,7 +433,6 @@ extension DrawingCanvas {
             
             // CRITICAL FIX: DO NOT move originalEnvelope - it must stay as reference coordinate system
             // The originalEnvelope represents the coordinate system before ANY transformations
-            Log.fileOperation("🔧 WARP ENVELOPE MOVED: Updated \(updatedWarpEnvelope.count) current coordinates (original envelope preserved)", level: .info)
         }
         
         // CLIPPING MASK: If this is a mask shape, also move all its clipped content
@@ -463,7 +460,6 @@ extension DrawingCanvas {
             return
         }
         
-        Log.fileOperation("🔧 Applying transform to shape coordinates: \(shape.name)", level: .info)
         
         // FLATTENED SHAPE FIX: Handle groups correctly
         if shape.isGroupContainer && !shape.groupedShapes.isEmpty {

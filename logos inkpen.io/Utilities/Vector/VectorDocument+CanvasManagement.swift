@@ -121,7 +121,6 @@ extension VectorDocument {
 
             setShapeAtIndex(layerIndex: 0, shapeIndex: pasteboardIndex, shape: updatedPasteboardShape)
 
-            Log.fileOperation("📐 Updated pasteboard: \(pasteboardSize) at \(pasteboardOrigin)", level: .info)
         }
     }
     
@@ -138,14 +137,12 @@ extension VectorDocument {
     func updateCanvasLayer() {
         guard layers.count > 1,
               layers[1].name == "Canvas" else {
-            Log.fileOperation("⚠️ Cannot update canvas - canvas layer not found", level: .info)
             return
         }
         
         // Use unified objects to find canvas shape index
         let shapesInLayer = getShapesForLayer(1)
         guard let canvasIndex = shapesInLayer.firstIndex(where: { $0.name == "Canvas Background" }) else {
-            Log.fileOperation("⚠️ Cannot update canvas - canvas background not found", level: .info)
             return
         }
         let newCanvasRect = VectorShape.rectangle(
@@ -159,7 +156,6 @@ extension VectorDocument {
         guard let existingCanvas = getShapeAtIndex(layerIndex: 1, shapeIndex: canvasIndex) else { return }
         updatedCanvasShape.id = existingCanvas.id
         setShapeAtIndex(layerIndex: 1, shapeIndex: canvasIndex, shape: updatedCanvasShape)
-        Log.fileOperation("📐 Updated canvas layer to size: \(settings.sizeInPoints)", level: .info)
     }
     
     /// Translate all content in the document by a delta. Skips background shapes by default.
@@ -204,6 +200,5 @@ extension VectorDocument {
         // Update any other dependent elements
         objectWillChange.send()
         
-        Log.fileOperation("🔄 Settings changed - updated pasteboard layer", level: .info)
     }
 }

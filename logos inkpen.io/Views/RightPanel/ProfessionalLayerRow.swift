@@ -188,6 +188,5 @@ struct ProfessionalLayerRow: View {
         // CRITICAL: Keep legacy arrays in sync with unified selection
         document.syncSelectionArrays()
         
-        Log.fileOperation("🎯 LAYERS: Selected object \(objectID.uuidString.prefix(8)) in layer \(layerIndex)", level: .info)
     }
 }

@@ -212,7 +212,6 @@ extension DrawingCanvas {
                                 allRadii[i] = round(max(0.0, roundedRadius))
                             }
                             
-                            Log.fileOperation("🔄 CORNER RADIUS TOOL: Proportional rounding uniform mode", level: .info)
                         }
                         
                         updateAllCornerRadiiToValues(
@@ -240,7 +239,6 @@ extension DrawingCanvas {
             initialCornerRadius = 0.0
             currentMousePosition = .zero
             
-            Log.fileOperation("🔧 CORNER RADIUS TOOL: Finished dragging corner \(draggedCornerIndex ?? -1)", level: .info)
         }
     }
 }

@@ -54,7 +54,6 @@ class PressureSensitiveCanvasView: NSView {
         // We'll detect pressure support dynamically when we receive actual pressure events
         // Starting with false and updating when real pressure is detected
         hasPressureSupport = false
-        Log.fileOperation("🎨 PRESSURE: Will detect pressure support from actual events", level: .debug)
     }
     
 
@@ -75,7 +74,6 @@ class PressureSensitiveCanvasView: NSView {
         let isTabletEvent = (event.subtype == .tabletPoint)
         onPressureEvent?(canvasLocation, pressure, .began, isTabletEvent)
         
-        Log.fileOperation("🎨 PRESSURE: Mouse down - pressure: \(pressure), subtype: \(event.subtype.rawValue), tablet: \(isTabletEvent)", level: .debug)
         super.mouseDown(with: event)
     }
     
@@ -107,7 +105,6 @@ class PressureSensitiveCanvasView: NSView {
         onPressureEvent?(canvasLocation, pressure, .ended, isTabletEvent)
         
         isDragging = false
-        Log.fileOperation("🎨 PRESSURE: Mouse up - final pressure: \(pressure)", level: .debug)
         super.mouseUp(with: event)
     }
     
@@ -123,7 +120,6 @@ class PressureSensitiveCanvasView: NSView {
         // This handles trackpad pressure changes (never tablet events)
         onPressureEvent?(canvasLocation, pressure, .changed, false)
         
-        Log.fileOperation("🎨 PRESSURE: Pressure change - pressure: \(pressure)", level: .debug)
         super.pressureChange(with: event)
     }
     
@@ -154,7 +150,6 @@ class PressureSensitiveCanvasView: NSView {
         
         onPressureEvent?(canvasLocation, pressure, eventType, true) // Always tablet event
         
-        Log.fileOperation("🎨 TABLET: Tablet point - pressure: \(pressure), type: \(eventType)", level: .info)
         super.tabletPoint(with: event)
     }
     
@@ -162,9 +157,7 @@ class PressureSensitiveCanvasView: NSView {
         logEvent(event, context: "TABLET_PROXIMITY")
         
         if event.isEnteringProximity {
-            Log.fileOperation("🎨 TABLET: Apple Pencil entering proximity", level: .info)
         } else {
-            Log.fileOperation("🎨 TABLET: Apple Pencil leaving proximity", level: .info)
             // End any current drawing when stylus leaves proximity
             if isDragging {
                 isDragging = false
@@ -253,7 +246,6 @@ class PressureSensitiveCanvasView: NSView {
             // Native tablet events (Apple Pencil, Wacom, etc.)
             pressure = Double(event.pressure)
             foundRealPressure = true
-            Log.fileOperation("🎨 PRESSURE: Tablet point pressure: \(pressure)", level: .debug)
             
         case .leftMouseDown, .leftMouseDragged, .leftMouseUp:
             // Check if this is a tablet event disguised as a mouse event
@@ -261,12 +253,10 @@ class PressureSensitiveCanvasView: NSView {
                 // Apple Pencil events often come as mouse events with tablet subtype
                 pressure = Double(event.pressure)
                 foundRealPressure = true
-                Log.fileOperation("🎨 PRESSURE: Tablet subtype pressure: \(pressure)", level: .debug)
             } else if event.pressure > 0.0 && event.pressure != 1.0 {
                 // Regular trackpad pressure
                 pressure = Double(event.pressure)
                 foundRealPressure = true
-                Log.fileOperation("🎨 PRESSURE: Mouse/trackpad pressure: \(pressure)", level: .debug)
             } else {
                 pressure = 1.0
             }
@@ -275,7 +265,6 @@ class PressureSensitiveCanvasView: NSView {
             // Trackpad pressure change events - use raw pressure directly
             pressure = Double(event.pressure)
             foundRealPressure = true
-            Log.fileOperation("🎨 PRESSURE: Trackpad pressure: \(pressure)", level: .debug)
             
         default:
             pressure = 1.0
@@ -284,7 +273,6 @@ class PressureSensitiveCanvasView: NSView {
         // Update pressure support status if we found real pressure
         if foundRealPressure && !hasPressureSupport {
             hasPressureSupport = true
-            Log.fileOperation("🎨 PRESSURE: Pressure support detected and enabled!", level: .debug)
         }
         
         // Return raw pressure without clamping

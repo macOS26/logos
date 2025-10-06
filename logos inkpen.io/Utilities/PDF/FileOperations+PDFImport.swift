@@ -136,7 +136,6 @@ extension FileOperations {
         document.selectedLayerIndex = 2 // Working layer is at index 2
         
         for warning in result.warnings {
-            Log.fileOperation("⚠️ PDF Import Warning: \(warning)", level: .info)
         }
 
         return document

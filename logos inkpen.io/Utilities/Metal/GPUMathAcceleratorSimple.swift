@@ -18,7 +18,6 @@ class GPUMathAcceleratorSimple {
         
         if isMetalAvailable {
         } else {
-            Log.fileOperation("⚠️ GPU Math Accelerator (Simple): Using CPU-only mode", level: .info)
         }
     }
     

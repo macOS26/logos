@@ -69,15 +69,12 @@ struct ProfessionalTextCanvas: View {
         .id(dragPreviewTrigger) // Force efficient re-render when trigger changes
         .onKeyPress(action: handleKeyPress)
         .onChange(of: document.selectedTextIDs) { _, selectedIDs in
-            Log.fileOperation("🔄 SELECTED TEXT IDs CHANGED: \(selectedIDs.map { $0.uuidString.prefix(8) }) for textID \(viewModel.textObject.id.uuidString.prefix(8))", level: .info)
             updateTextBoxState(selectedIDs: selectedIDs)
         }
         .onChange(of: viewModel.isEditing) { _, isEditing in
-            Log.fileOperation("🔧 VIEW MODEL EDITING CHANGED: \(isEditing) for text '\(viewModel.text)'", level: .info)
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
         }
         .onChange(of: viewModel.textObject.isEditing) { _, isEditing in
-            Log.fileOperation("🔧 DOCUMENT TEXT EDITING CHANGED: \(isEditing) for text '\(viewModel.text)'", level: .info)
             // Sync view model with document
             viewModel.isEditing = isEditing
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
@@ -102,8 +99,6 @@ struct ProfessionalTextCanvas: View {
         let isThisTextSelected = document.selectedTextIDs.contains(textObjectID)
 
         if oldTool != .font && newTool == .font && (textBoxState == .green || isThisTextSelected) {
-            Log.fileOperation("🔧 TOOL CHANGE: Type tool selected with selected text box - switching to BLUE (editing)", level: .info)
-            Log.fileOperation("   Current state: \(textBoxState), isSelected: \(isThisTextSelected)", level: .info)
 
             // CRITICAL: Ensure only one text box can be edited at a time
             // OPTIMIZATION: Only stop editing on text boxes that are actually editing
@@ -131,7 +126,6 @@ struct ProfessionalTextCanvas: View {
 
         // PROFESSIONAL UX: Stop editing when user switches away from font tool
         if oldTool == .font && newTool != .font && viewModel.isEditing {
-            Log.fileOperation("🔧 TOOL CHANGE: Stopping text editing (switched from \(oldTool.rawValue) to \(newTool.rawValue))", level: .info)
             viewModel.stopEditing()
 
             // Update document editing state
@@ -144,7 +138,6 @@ struct ProfessionalTextCanvas: View {
         // This ensures selection box is correct when using arrow tool
         if oldTool == .font && newTool != .font {
             viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
-            Log.fileOperation("🔧 TOOL CHANGE: Updated VectorText bounds for selection tool", level: .info)
         }
     }
 
@@ -237,7 +230,6 @@ struct ProfessionalTextCanvas: View {
             height: max(50, viewModel.textBoxFrame.height + resizeOffset.height)
         )
 
-        Log.fileOperation("🔄 RESIZE ENDED: Old frame: \(viewModel.textBoxFrame), New frame: \(newFrame)", level: .info)
 
         viewModel.updateTextBoxFrame(newFrame)
         resizeOffset = .zero

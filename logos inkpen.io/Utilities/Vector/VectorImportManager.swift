@@ -18,7 +18,6 @@ class VectorImportManager {
     
     /// Import file; routes to vector or raster import as appropriate
     func importVectorFile(from url: URL) async -> VectorImportResult {
-        Log.fileOperation("🔄 Importing vector file: \(url.lastPathComponent)", level: .info)
         
         // Detect vector or raster
         if let raster = detectRaster(from: url) {
@@ -36,7 +35,6 @@ class VectorImportManager {
             )
         }
         
-        Log.fileOperation("📋 Detected format: \(format.displayName)", level: .info)
         
         // Check if format is currently supported
         guard format.isCurrentlySupported else {
@@ -61,7 +59,6 @@ class VectorImportManager {
     /// Import SVG with extreme value handling for radial gradients that cannot be reproduced
     /// Use this for SVGs with extreme coordinate values that cause rendering issues
     func importSVGWithExtremeValueHandling(from url: URL) async -> VectorImportResult {
-        Log.fileOperation("🔄 Importing SVG with extreme value handling: \(url.lastPathComponent)", level: .info)
         
         // Detect file format
         guard let format = detectFormat(from: url) else {
@@ -74,7 +71,6 @@ class VectorImportManager {
             )
         }
         
-        Log.fileOperation("📋 Detected format: \(format.displayName)", level: .info)
         
         // Check if format is currently supported
         guard format.isCurrentlySupported else {
@@ -151,9 +147,7 @@ class VectorImportManager {
         var warnings: [String] = []
         var shapes: [VectorShape] = []
 
-        Log.fileOperation("📊 Importing SVG using professional SVG parser...", level: .info)
         if useExtremeValueHandling {
-            Log.fileOperation("🔧 Using extreme value handling for radial gradients", level: .info)
         }
 
         do {
@@ -243,7 +237,6 @@ class VectorImportManager {
                 inkpenMetadata: svgContent.inkpenMetadata
             )
             
-            Log.fileOperation("✅ SVG import successful: \(shapes.count) shapes", level: .info)
             
             return VectorImportResult(
                 success: true,
@@ -269,7 +262,6 @@ class VectorImportManager {
 
     // MARK: - Raster Import
     private func importRaster(from url: URL, raster: RasterFormat) async -> VectorImportResult {
-        Log.fileOperation("🖼️ Importing raster image: \(url.lastPathComponent)", level: .info)
         guard let nsImage = NSImage(contentsOf: url) else {
             return VectorImportResult(
                 success: false,
@@ -330,7 +322,6 @@ class VectorImportManager {
         let warnings: [String] = []
         var shapes: [VectorShape] = []
         
-        Log.fileOperation("📊 Importing PDF using CoreGraphics professional parser...", level: .info)
         
         guard let pdfDocument = CGPDFDocument(url as CFURL) else {
             errors.append(.corruptedFile)
@@ -436,7 +427,6 @@ class VectorImportManager {
                 inkpenMetadata: inkpenMetadata
             )
             
-            Log.fileOperation("✅ PDF import successful: \(shapes.count) vector shapes", level: .info)
             
             return VectorImportResult(
                 success: true,

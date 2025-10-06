@@ -12,7 +12,6 @@ extension FileOperations {
     // MARK: - Single Icon Export
 
     static func exportSingleIcon(_ document: VectorDocument, url: URL, pixelSize: Int) throws {
-        Log.fileOperation("🎯 Exporting \(pixelSize)×\(pixelSize) icon to: \(url.path)", level: .info)
 
         // Get artwork bounds for proper scaling
         let artworkBounds = calculateArtworkBounds(from: document)
@@ -88,7 +87,6 @@ extension FileOperations {
     // MARK: - Icon Set Export
 
     static func exportIconSet(_ document: VectorDocument, folderURL: URL) throws {
-        Log.fileOperation("🎯 Exporting icon set to folder: \(folderURL.path)", level: .info)
 
         // Icon sizes to export (in pixels)
         let iconSizes: [Int] = [1024, 512, 256, 128, 64, 32, 16]
@@ -205,7 +203,6 @@ extension FileOperations {
     // MARK: - PNG Export
 
     static func exportToPNG(_ document: VectorDocument, url: URL, scale: CGFloat, includeBackground: Bool = true) throws {
-        Log.fileOperation("🖼️ Exporting document to PNG: \(url.path) at \(scale)x scale", level: .info)
 
         // Calculate output size
         let pageSize = document.settings.sizeInPoints

@@ -14,9 +14,7 @@ extension DrawingCanvas {
     /// COMPREHENSIVE DRAWING TEST - Run this to debug coordinate system issues
     /// Use Cmd+Shift+R to run this test
     internal func runRealDrawingTest(geometry: GeometryProxy) {
-        Log.fileOperation("🔥 REAL DRAWING TEST - TRACKING COORDINATE SYSTEM CHANGES", level: .info)
         
-        Log.fileOperation("📊 INITIAL STATE:", level: .info)
         
         // Clear any existing shapes
         if !document.layers.isEmpty {
@@ -33,12 +31,10 @@ extension DrawingCanvas {
         )
         
         
-        Log.fileOperation("📊 BEFORE ADDING SHAPE:", level: .info)
         
         // Add the shape
         document.addShape(testShape)
         
-        Log.fileOperation("📊 AFTER ADDING SHAPE:", level: .info)
         
         // Verify the shape's actual position
         let shapes = document.getShapesForLayer(0)
@@ -59,11 +55,9 @@ extension DrawingCanvas {
         }
         
         // Now simulate drawing operations to see if coordinate system changes
-        Log.fileOperation("🎨 SIMULATING DRAWING OPERATIONS:", level: .info)
         
         // Simulate start drawing
         isDrawing = true
-        Log.fileOperation("📊 DURING DRAWING (isDrawing = true):", level: .info)
         
         // Create a drawing preview to see if coordinate system shifts
         let previewStart = CGPoint(x: 200, y: 200)
@@ -74,16 +68,13 @@ extension DrawingCanvas {
         ])
         
         
-        Log.fileOperation("📊 WITH DRAWING PREVIEW:", level: .info)
         
         // Simulate end drawing
         isDrawing = false
         currentPath = nil
         
-        Log.fileOperation("📊 AFTER DRAWING (isDrawing = false):", level: .info)
         
         // Test coordinate conversion consistency
-        Log.fileOperation("🔄 COORDINATE CONVERSION TEST:", level: .info)
         let testCanvasPoint = CGPoint(x: 300, y: 200)
         let screenPoint = canvasToScreen(testCanvasPoint, geometry: geometry)
         let backToCanvas = screenToCanvas(screenPoint, geometry: geometry)

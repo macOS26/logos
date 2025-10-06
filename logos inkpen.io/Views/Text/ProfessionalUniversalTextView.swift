@@ -162,7 +162,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                 nsView.font = newFont
             }
             needsFormatUpdate = true
-            Log.fileOperation("🔤 TYPE CHANGED: \(newFont.fontName) \(newFont.pointSize)pt", level: .info)
         }
         
         // FIXED: Proper color handling with opacity
@@ -175,7 +174,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             nsView.textColor = newTextColor
             nsView.insertionPointColor = newTextColor
             needsFormatUpdate = true
-            Log.fileOperation("🎨 COLOR CHANGED: \(currentColor) → \(newTextColor) (opacity: \(viewModel.textObject.typography.fillOpacity))", level: .info)
         }
         
         // CRITICAL FIX: ALWAYS update paragraph style consistently regardless of editing state

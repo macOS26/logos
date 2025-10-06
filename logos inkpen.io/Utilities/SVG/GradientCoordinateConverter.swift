@@ -344,11 +344,9 @@ extension GradientCoordinateConverter {
                             if normalizedValue < 0.0 {
                                 // Negative coordinates: map to 0.0-0.5 range
                                 finalValue = 0.5 + (normalizedValue * 0.5)
-                                Log.fileOperation("🚨 EXTREME NEGATIVE COORDINATE: \(absoluteValue) → \(normalizedValue) → \(finalValue)", level: .info)
                             } else {
                                 // Values > 1.0: map to 0.5-1.0 range
                                 finalValue = 0.5 + ((normalizedValue - 1.0) * 0.5)
-                                Log.fileOperation("🚨 EXTREME LARGE COORDINATE: \(absoluteValue) → \(normalizedValue) → \(finalValue)", level: .info)
                             }
                         } else {
                             // Coordinates within 0-1 range: use as-is
@@ -363,10 +361,8 @@ extension GradientCoordinateConverter {
                     let clampedValue = max(0.0, min(1.0, finalValue))
                     
                     let modeLabel = useExtremeValueHandling ? "EXTREME VALUE" : "STANDARD"
-                    Log.fileOperation("🔧 \(modeLabel) CONVERSION: \(absoluteValue) → \(normalizedValue) → \(finalValue) → \(clampedValue) (userSpaceOnUse → objectBoundingBox)", level: .info)
                     return clampedValue
                 } else {
-                    Log.fileOperation("⚠️ Invalid viewBox dimension, using absolute coordinate", level: .info)
                     return absoluteValue
                 }
             } else {

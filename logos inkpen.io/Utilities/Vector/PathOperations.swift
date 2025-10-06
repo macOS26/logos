@@ -748,7 +748,6 @@ extension ProfessionalPathOperations {
     /// Detects and merges duplicate points in a vector path
     /// This resolves issues when closing paths creates overlapping points
     static func mergeDuplicatePoints(in path: VectorPath, tolerance: Double = 5.0) -> VectorPath {
-        Log.fileOperation("🔧 DUPLICATE POINT MERGER: Analyzing path with \(path.elements.count) elements", level: .info)
 
         guard path.elements.count > 2 else {
             return path
@@ -872,7 +871,6 @@ extension ProfessionalPathOperations {
     /// Cleans up duplicate points in selected shapes only
     static func cleanupSelectedShapesDuplicates(_ document: VectorDocument, tolerance: Double = 5.0) {
         guard !document.selectedShapeIDs.isEmpty else {
-            Log.fileOperation("⚠️ No shapes selected for duplicate cleanup", level: .info)
             return
         }
 

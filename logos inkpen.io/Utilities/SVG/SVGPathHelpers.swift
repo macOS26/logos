@@ -129,7 +129,6 @@ extension SVGParser {
         
         // Professional SVG tokenization using proper regex patterns
         let tokens = tokenizeSVGPath(pathData)
-        Log.fileOperation("🎯 FIRST 15 TOKENS: \(tokens.prefix(15))", level: .info)
         
         // Check for basic parsing issues
         var coordinateCount = 0
@@ -141,7 +140,6 @@ extension SVGParser {
                 coordinateCount += 1
             }
         }
-        Log.fileOperation("📊 PARSED: \(commandCount) commands, \(coordinateCount) coordinates", level: .info)
         
         var i = 0
         var currentCommand: String = ""
@@ -153,7 +151,6 @@ extension SVGParser {
             if token.rangeOfCharacter(from: .letters) != nil {
                 // It's a command
                 currentCommand = token
-                Log.fileOperation("🔧 COMMAND: \(currentCommand)", level: .info)
                 i += 1
 
                 // Handle commands that don't take parameters immediately

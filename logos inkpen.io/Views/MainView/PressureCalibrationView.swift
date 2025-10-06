@@ -282,8 +282,6 @@ struct PressureCalibrationView: View {
                 // Pressure-sensitive canvas with comprehensive event detection
                 PressureSensitiveCanvasRepresentable(
                     onPressureEvent: { location, pressure, eventType, isTabletEvent in
-                        Log.fileOperation("🎨 CALIBRATION CANVAS: Event received - type: \(eventType), pressure: \(pressure), tablet: \(isTabletEvent)", level: .info)
-                        Log.fileOperation("🎨 CALIBRATION CANVAS: Location: (\(location.x), \(location.y))", level: .info)
                         
                         // Update pressure manager
                         pressureManager.processRealPressure(pressure, at: location, isTabletEvent: isTabletEvent)
@@ -293,10 +291,8 @@ struct PressureCalibrationView: View {
                         
                         // Update calibration if active
                         if pressureManager.isCalibrating {
-                            Log.fileOperation("🎨 CALIBRATION CANVAS: Updating calibration with pressure: \(pressure)", level: .info)
                         }
                         
-                        Log.fileOperation("🎨 CALIBRATION CANVAS: ALL PRESSURE EVENTS DETECTED:", level: .info)
                         
                         // Add to event log for real-time display
                         let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
@@ -770,17 +766,14 @@ struct PressureCalibrationView: View {
     // MARK: - Close Function
     
     private func closeCalibration() {
-        Log.fileOperation("🎨 CALIBRATION: Closing calibration window", level: .info)
         
         // Stop calibration if it's running
         if pressureManager.isCalibrating {
             pressureManager.stopCalibration()
-            Log.fileOperation("🎨 CALIBRATION: Stopped calibration before closing", level: .info)
         }
         
         // Dismiss the view
         presentationMode.wrappedValue.dismiss()
-        Log.fileOperation("🎨 CALIBRATION: Calibration window dismissed", level: .info)
     }
     
     // MARK: - Event Detection Helper

@@ -98,11 +98,9 @@ extension DrawingCanvas {
                     for endpointID in closedPathEndpoints {
                         selectedPoints.remove(endpointID)
                     }
-                    Log.fileOperation("🎯 Deselected anchor point", level: .info)
                 } else {
                     // Select point with all coincident points for unified movement
                     selectPointWithCoincidents(pointID, addToSelection: isShiftPressed)
-                    Log.fileOperation("🎯 Selected anchor point", level: .info)
                 }
                 return true
             }
@@ -120,7 +118,6 @@ extension DrawingCanvas {
                         let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex, handleType: .control2)
                         if isShiftPressed && selectedHandles.contains(handleID) {
                             selectedHandles.remove(handleID)
-                            Log.fileOperation("🎯 Deselected INCOMING handle", level: .info)
                         } else {
                             if !isShiftPressed {
                                 selectedHandles.removeAll()
@@ -132,7 +129,6 @@ extension DrawingCanvas {
                             // CRITICAL: Also select corresponding handles on coincident points
                             selectCoincidentHandles(for: handleID, shape: shape)
 
-                            Log.fileOperation("🎯 Selected INCOMING handle", level: .info)
                         }
                         return true
                     }
@@ -148,7 +144,6 @@ extension DrawingCanvas {
                                 let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex + 1, handleType: .control1)
                                 if isShiftPressed && selectedHandles.contains(handleID) {
                                     selectedHandles.remove(handleID)
-                                    Log.fileOperation("🎯 Deselected OUTGOING handle", level: .info)
                                 } else {
                                     if !isShiftPressed {
                                         selectedHandles.removeAll()
@@ -160,7 +155,6 @@ extension DrawingCanvas {
                                     // CRITICAL: Also select corresponding handles on coincident points
                                     selectCoincidentHandles(for: handleID, shape: shape)
 
-                                    Log.fileOperation("🎯 Selected OUTGOING handle", level: .info)
                                 }
                                 return true
                             }
@@ -177,7 +171,6 @@ extension DrawingCanvas {
                         let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex, handleType: .control1)
                         if isShiftPressed && selectedHandles.contains(handleID) {
                             selectedHandles.remove(handleID)
-                            Log.fileOperation("🎯 Deselected quad handle", level: .info)
                         } else {
                             if !isShiftPressed {
                                 selectedHandles.removeAll()
@@ -189,7 +182,6 @@ extension DrawingCanvas {
                             // CRITICAL: Also select corresponding handles on coincident points
                             selectCoincidentHandles(for: handleID, shape: shape)
 
-                            Log.fileOperation("🎯 Selected quad handle", level: .info)
                         }
                         return true
                     }
@@ -206,7 +198,6 @@ extension DrawingCanvas {
                                 let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: elementIndex + 1, handleType: .control1)
                                 if isShiftPressed && selectedHandles.contains(handleID) {
                                     selectedHandles.remove(handleID)
-                                    Log.fileOperation("🎯 Deselected OUTGOING handle from line/move", level: .info)
                                 } else {
                                     if !isShiftPressed {
                                         selectedHandles.removeAll()
@@ -218,7 +209,6 @@ extension DrawingCanvas {
                                     // CRITICAL: Also select corresponding handles on coincident points
                                     selectCoincidentHandles(for: handleID, shape: shape)
 
-                                    Log.fileOperation("🎯 Selected OUTGOING handle from line/move", level: .info)
                                 }
                                 return true
                             }
@@ -334,7 +324,6 @@ extension DrawingCanvas {
     
     // TEXT TOOL COMPLETELY REMOVED - Starting over with simple approach
     internal func handleDirectSelectionTap(at location: CGPoint) {
-        Log.fileOperation("🎯 PROFESSIONAL DIRECT SELECTION tap at: \(location)", level: .info)
         
         // TEXT EDITING REMOVED
         
@@ -348,13 +337,11 @@ extension DrawingCanvas {
         
         // STAGE 1: Check if clicking on individual anchor points/handles (for already direct-selected shapes)
         if !directSelectedShapeIDs.isEmpty {
-            Log.fileOperation("🔥 STAGE 1: Checking individual anchor points in direct-selected shapes...", level: .info)
             foundSelection = selectIndividualAnchorPointOrHandle(at: location, tolerance: tolerance)
         }
         
         // STAGE 2: If no anchor point selected, try to direct-select a whole shape (professional behavior)
         if !foundSelection {
-            Log.fileOperation("🔥 STAGE 2: Looking for shapes to direct-select...", level: .info)
             foundSelection = directSelectWholeShape(at: location)
         }
         
@@ -368,7 +355,6 @@ extension DrawingCanvas {
             syncDirectSelectionWithDocument()
         }
         
-        Log.fileOperation("🎯 DIRECT SELECTION RESULT:", level: .info)
         
         // Force UI update to show selections
         document.objectWillChange.send()

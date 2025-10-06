@@ -176,7 +176,6 @@ extension DrawingCanvas {
         // Update initial zoom level for gesture handling
         initialZoomLevel = document.zoomLevel
         
-        Log.fileOperation("🎯 DOCUMENT SCALING (Standard Approach - NO PADDING):", level: .info)
     }
     
     /// Fit canvas to page view
@@ -261,7 +260,6 @@ extension DrawingCanvas {
         // Update initial zoom level for gesture handling
         initialZoomLevel = CGFloat(newZoomLevel)
         
-        Log.fileOperation("🎯 ACTUAL SIZE: Set to 100% and centered document with ruler awareness", level: .info)
     }
     
     /// Zoom at a specific point (stable version to prevent drift)

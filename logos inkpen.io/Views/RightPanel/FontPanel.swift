@@ -147,16 +147,12 @@ struct FontPanel: View {
             // NO CACHE - always use fresh data
         }
         .onChange(of: document.currentTool) { oldTool, newTool in
-            Log.fileOperation("🔧 TYPE PANEL: Tool changed from \(oldTool.rawValue) to \(newTool.rawValue)", level: .info)
             
             if let editingText = editingText {
-                Log.fileOperation("🎯 EDITING UUID: \(editingText.id.uuidString.prefix(8)) - BLUE state maintained", level: .info)
             }
             if let selectedText = selectedText {
-                Log.fileOperation("🎯 SELECTED UUID: \(selectedText.id.uuidString.prefix(8)) - GREEN state maintained", level: .info)
             }
             if selectedText == nil && editingText == nil {
-                Log.fileOperation("🎯 NO TEXT SELECTED - showing document defaults for new text creation", level: .info)
             }
         }
         .onChange(of: document.selectedTextIDs) { oldIDs, newIDs in
@@ -164,21 +160,17 @@ struct FontPanel: View {
             let addedIDs = newIDs.subtracting(oldIDs)
 
             for removedID in removedIDs {
-                Log.fileOperation("🎯 TEXT DESELECTED: \(removedID.uuidString.prefix(8)) - type settings preserved", level: .info)
             }
             for addedID in addedIDs {
-                Log.fileOperation("🎯 TEXT SELECTED: \(addedID.uuidString.prefix(8)) - loading unique type settings", level: .info)
             }
 
             if let firstID = newIDs.first, let newSelectedText = document.findText(by: firstID) {
                 if newSelectedText.id != lastLoggedSelection {
                     lastLoggedSelection = newSelectedText.id
-                    Log.fileOperation("🎯 TYPE PANEL: Found selected text - UUID: \(newSelectedText.id.uuidString.prefix(8)), Line Spacing: \(newSelectedText.typography.lineSpacing)", level: .info)
                 }
             } else {
                 if lastLoggedSelection != nil {
                     lastLoggedSelection = nil
-                    Log.fileOperation("🎯 TYPE PANEL: No selected text found - selectedTextIDs count: \(document.selectedTextIDs.count)", level: .info)
                 }
             }
         }
@@ -199,12 +191,10 @@ struct FontPanel: View {
             if let newEditingText = freshEditingText {
                 if newEditingText.id != lastLoggedEditing {
                     lastLoggedEditing = newEditingText.id
-                    Log.fileOperation("🎯 TYPE PANEL: Found editing text - UUID: \(newEditingText.id.uuidString.prefix(8))", level: .info)
                 }
             } else {
                 if lastLoggedEditing != nil {
                     lastLoggedEditing = nil
-                    Log.fileOperation("🎯 TYPE PANEL: No editing text found", level: .info)
                 }
             }
         }

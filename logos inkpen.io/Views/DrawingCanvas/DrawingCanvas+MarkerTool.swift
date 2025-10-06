@@ -87,7 +87,6 @@ extension DrawingCanvas {
         // VECTOR APP OPTIMIZATION: Don't add to document during drawing - use overlay system
         // Shape will be added only when drawing is complete
         
-        Log.fileOperation("🖊️ MARKER: Started drawing at \(location)", level: .info)
     }
     
     internal func handleMarkerDragUpdate(at location: CGPoint, pressure: Double? = nil) {
@@ -115,7 +114,6 @@ extension DrawingCanvas {
     internal func handleMarkerDragEnd() {
         guard isMarkerDrawing else { return }
 
-        Log.fileOperation("🖊️ MARKER: Finishing drawing with \(markerRawPoints.count) raw points", level: .info)
 
         // Use the EXACT preview path as final - no recomputation
         if let preview = markerPreviewPath {
@@ -133,7 +131,6 @@ extension DrawingCanvas {
         // MUST happen after processMarkerStroke since that selects the shape
         document.selectedShapeIDs.removeAll()
         document.selectedObjectIDs.removeAll()
-        Log.fileOperation("🎨 MARKER: Auto-deselected shape to enable color changes for next stroke", level: .info)
     }
     
     // MARK: - Pressure Simulation for Felt-Tip Marker
@@ -202,14 +199,12 @@ extension DrawingCanvas {
         guard markerRawPoints.count >= 2,
               activeMarkerShape != nil,
               document.selectedLayerIndex != nil else {
-            Log.fileOperation("🖊️ MARKER: Too few points (\(markerRawPoints.count)) - keeping as simple stroke", level: .info)
             return
         }
 
         // We'll detect straight lines AFTER simplification, like brush tool does
         
         let rawPointLocations = markerRawPoints.map { $0.location }
-        Log.fileOperation("🖊️ ADVANCED SMOOTHING: Starting with \(rawPointLocations.count) raw marker points", level: .info)
         
         var processedPoints = rawPointLocations
         
@@ -221,7 +216,6 @@ extension DrawingCanvas {
                 ratio: 0.25
             )
             processedPoints = chaikinSmoothed
-            Log.fileOperation("🖊️ CHAIKIN: Smoothed to \(processedPoints.count) points (\(document.chaikinSmoothingIterations) iterations)", level: .info)
         }
         
         // Step 2: Apply improved Douglas-Peucker simplification with sharp corner preservation
@@ -346,7 +340,6 @@ extension DrawingCanvas {
         guard let layerIndex = document.selectedLayerIndex else { return }
         document.addShapeToFrontOfUnifiedSystem(finalShape, layerIndex: layerIndex)
 
-        Log.fileOperation("🖊️ MARKER: Generated smooth felt-tip stroke with \(markerSimplifiedPoints.count) control points", level: .info)
     }
 
     /// Finalize marker stroke from preview path (no recomputation)
@@ -851,19 +844,15 @@ extension DrawingCanvas {
         
         let shapes = document.getShapesForLayer(layerIndex)
         guard shapeIndex < shapes.count else { 
-            Log.fileOperation("🚨 MARKER ERROR: Shape index \(shapeIndex) out of bounds! Layer has \(shapes.count) shapes", level: .info)
             return 
         }
         
         guard let markerStroke = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else {
-            Log.fileOperation("🚨 MARKER ERROR: Could not get shape at index \(shapeIndex)", level: .info)
             return
         }
         
         // VERIFY: Make sure we're operating on the correct shape
         guard markerStroke.id == activeMarkerShape?.id else {
-            Log.fileOperation("🚨 MARKER ERROR: Shape ID mismatch! Expected \(activeMarkerShape?.id ?? UUID()), got \(markerStroke.id)", level: .info)
-            Log.fileOperation("🚨 MARKER ERROR: This would affect the WRONG shape - ABORTING self-union", level: .info)
             return
         }
         
@@ -893,7 +882,6 @@ extension DrawingCanvas {
     /// Apply union operation for markers with same stroke/fill color or single color
     private func applySingleUnionToMarkerStroke(shapeIndex: Int, layerIndex: Int) {
         guard let markerStroke = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else {
-            Log.fileOperation("🚨 MARKER ERROR: Could not get shape at index \(shapeIndex)", level: .info)
             return
         }
         
@@ -902,14 +890,12 @@ extension DrawingCanvas {
         
         // SAFETY CHECK: Ensure path is valid before union operation
         guard !originalPath.isEmpty else {
-            Log.fileOperation("🚨 MARKER ERROR: Original path is empty - ABORTING self-union", level: .info)
             return
         }
         
         // SAFETY CHECK: Verify path has valid bounds
         let pathBounds = originalPath.boundingBox
         guard isPathBoundsFinite(pathBounds) && !pathBounds.isNull else {
-            Log.fileOperation("🚨 MARKER ERROR: Path has invalid bounds - ABORTING self-union", level: .info)
             return
         }
         
@@ -917,7 +903,6 @@ extension DrawingCanvas {
         if let cleanedPath = CoreGraphicsPathOperations.union(originalPath, originalPath) {
             // SAFETY CHECK: Verify the result path is valid
             guard !cleanedPath.isEmpty && isPathBoundsFinite(cleanedPath.boundingBox) else {
-                Log.fileOperation("🚨 MARKER ERROR: Union operation produced invalid path - keeping original", level: .info)
                 return
             }
             
@@ -931,16 +916,13 @@ extension DrawingCanvas {
             // CRITICAL FIX: Sync unified objects system to ensure the updated shape is rendered
             document.updateUnifiedObjectsOptimized()
             
-            Log.fileOperation("🖊️ MARKER: Applied self-union to remove overlapping areas within marker stroke", level: .info)
         } else {
-            Log.fileOperation("🖊️ MARKER: Self-union operation failed, keeping original path", level: .info)
         }
     }
     
     /// Apply expanded stroke union for markers with same stroke/fill color
     private func applyExpandedStrokeUnionToMarkerStroke(shapeIndex: Int, layerIndex: Int) {
         guard let markerStroke = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else {
-            Log.fileOperation("🚨 MARKER ERROR: Could not get shape at index \(shapeIndex)", level: .info)
             return
         }
         
@@ -949,14 +931,12 @@ extension DrawingCanvas {
         
         // SAFETY CHECK: Ensure path is valid before union operation
         guard !originalPath.isEmpty else {
-            Log.fileOperation("🚨 MARKER ERROR: Original path is empty - ABORTING expanded stroke union", level: .info)
             return
         }
         
         // SAFETY CHECK: Verify path has valid bounds
         let pathBounds = originalPath.boundingBox
         guard isPathBoundsFinite(pathBounds) && !pathBounds.isNull else {
-            Log.fileOperation("🚨 MARKER ERROR: Path has invalid bounds - ABORTING expanded stroke union", level: .info)
             return
         }
         
@@ -972,7 +952,6 @@ extension DrawingCanvas {
                     
                     // SAFETY CHECK: Verify the result path is valid
                     guard !finalPath.isEmpty && isPathBoundsFinite(finalPath.boundingBox) else {
-                        Log.fileOperation("🚨 MARKER ERROR: Final union operation produced invalid path - keeping original", level: .info)
                         return
                     }
                     
@@ -996,15 +975,11 @@ extension DrawingCanvas {
                     // CRITICAL FIX: Sync unified objects system to ensure the updated shape is rendered
                     document.updateUnifiedObjectsOptimized()
                     
-                    Log.fileOperation("🖊️ MARKER: Applied expanded stroke union - stroke and fill combined as single shape", level: .info)
                 } else {
-                    Log.fileOperation("🖊️ MARKER: Final union operation failed, keeping original path", level: .info)
                 }
             } else {
-                Log.fileOperation("🖊️ MARKER: Expanded stroke union operation failed, keeping original path", level: .info)
             }
         } else {
-            Log.fileOperation("🖊️ MARKER: Stroke expansion failed, falling back to simple union", level: .info)
             applySingleUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
         }
     }
@@ -1012,7 +987,6 @@ extension DrawingCanvas {
     /// Apply separate union operations for markers with different stroke/fill colors
     private func applyDualUnionToMarkerStroke(shapeIndex: Int, layerIndex: Int) {
         guard let markerStroke = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else {
-            Log.fileOperation("🚨 MARKER ERROR: Could not get shape at index \(shapeIndex)", level: .info)
             return
         }
         
@@ -1046,13 +1020,10 @@ extension DrawingCanvas {
                     // Add the stroke shape using unified system
                     document.addShapeToUnifiedSystem(strokeShape, layerIndex: layerIndex)
                     
-                    Log.fileOperation("🖊️ MARKER: Applied dual union - separated stroke and fill with different colors", level: .info)
                 } else {
-                    Log.fileOperation("🖊️ MARKER: Stroke union operation failed", level: .info)
                     applySingleUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
                 }
             } else {
-                Log.fileOperation("🖊️ MARKER: Stroke expansion failed", level: .info)
                 applySingleUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
             }
         } else {

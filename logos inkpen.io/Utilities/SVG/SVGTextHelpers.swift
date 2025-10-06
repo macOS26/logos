@@ -95,7 +95,6 @@ extension SVGParser {
             }
         }
         // Nothing matched; fall back to Helvetica Neue
-        Log.fileOperation("⚠️ Type not found in system: \(raw). Falling back to Helvetica Neue.", level: .info)
         return "Helvetica Neue"
     }
     
@@ -207,7 +206,6 @@ extension SVGParser {
             for (k, v) in styleDict { merged[k] = v }
         }
         currentTextAttributes = merged
-        Log.fileOperation("🔤 Starting text element parsing", level: .info)
     }
     
     func finishTextElement() {
@@ -284,10 +282,8 @@ extension SVGParser {
                     // Adjust x position based on anchor and widest line
                     if textAnchor == "middle" {
                         adjustedX -= maxLineWidth / 2.0
-                        Log.fileOperation("📝 SVG Import: Adjusted center-aligned multi-line text x from \(baseX) to \(adjustedX) (max width: \(maxLineWidth))", level: .debug)
                     } else if textAnchor == "end" {
                         adjustedX -= maxLineWidth
-                        Log.fileOperation("📝 SVG Import: Adjusted right-aligned multi-line text x from \(baseX) to \(adjustedX) (max width: \(maxLineWidth))", level: .debug)
                     }
                 }
 
@@ -300,7 +296,6 @@ extension SVGParser {
                 if let pendingRect = pendingTextBoxRect, pendingRect.width > 0 {
                     // Use the invisible rect's width as the text box width
                     actualWidth = pendingRect.width
-                    Log.fileOperation("📦 Using text box rect width: \(actualWidth) for multi-line text", level: .debug)
                     pendingTextBoxRect = nil  // Clear after use
                 } else {
                     // Fallback: Add width of 2 characters to prevent word wrapping
@@ -335,8 +330,6 @@ extension SVGParser {
                 )
 
                 textObjects.append(textObject)
-                Log.fileOperation("📝 SVG Import: Text areaSize=\(textObject.areaSize ?? .zero), bounds=\(textObject.bounds)", level: .debug)
-                Log.fileOperation("📝 Created single multi-line text object with \(combinedContent.count) lines: '\(multiLineContent.prefix(50))'", level: .info)
             }
         } else {
             // Handle single-line text
@@ -399,7 +392,6 @@ extension SVGParser {
             if let pendingRect = pendingTextBoxRect, pendingRect.width > 0 {
                 // Use the invisible rect's width as the text box width
                 actualWidth = pendingRect.width
-                Log.fileOperation("📦 Using text box rect width: \(actualWidth) for single-line text", level: .debug)
                 pendingTextBoxRect = nil  // Clear after use
             } else {
                 // Fallback: Add width of 2 characters to prevent word wrapping
@@ -415,10 +407,8 @@ extension SVGParser {
                 // Adjust x position based on anchor (use text width, not padded width)
                 if textAnchor == "middle" {
                     adjustedX -= textWidth / 2.0
-                    Log.fileOperation("📝 SVG Import: Adjusted center-aligned text x from \(x) to \(adjustedX) (width: \(textWidth))", level: .debug)
                 } else if textAnchor == "end" {
                     adjustedX -= textWidth
-                    Log.fileOperation("📝 SVG Import: Adjusted right-aligned text x from \(x) to \(adjustedX) (width: \(textWidth))", level: .debug)
                 }
             }
 
@@ -446,8 +436,6 @@ extension SVGParser {
             )
 
             textObjects.append(textObject)
-            Log.fileOperation("📝 SVG Import: Text areaSize=\(textObject.areaSize ?? .zero), bounds=\(textObject.bounds)", level: .debug)
-            Log.fileOperation("📝 Created single-line text object: '\(textObject.content)'", level: .info)
         }
         
         // Reset state

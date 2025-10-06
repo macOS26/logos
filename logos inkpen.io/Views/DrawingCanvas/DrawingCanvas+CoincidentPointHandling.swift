@@ -221,7 +221,6 @@ extension DrawingCanvas {
 
         if totalCoincidentGroups == 0 {
         } else {
-            Log.fileOperation("💡 TIP: These points will move together when selected to maintain path continuity", level: .info)
         }
     }
     

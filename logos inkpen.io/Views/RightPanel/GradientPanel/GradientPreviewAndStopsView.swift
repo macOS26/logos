@@ -165,7 +165,6 @@ struct GradientPreviewAndStopsView: View {
                     ForEach(stops, id: \.id) { stop in
                         HStack(spacing: 8) {
                             Button(action: {
-                                Log.fileOperation("🎨 GRADIENT STOP: Clicked on stop \(stop.id.uuidString.prefix(8))", level: .info)
                                 // Always activate the clicked gradient stop, even if it was already set
                                 activateGradientStop(stop.id, stop.color)
                             }) {

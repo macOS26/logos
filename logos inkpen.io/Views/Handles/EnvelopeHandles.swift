@@ -119,7 +119,6 @@ struct EnvelopeHandles: View {
             // CRITICAL FIX: Don't recalculate axis during active warping or when warp handles are already established
             if !isWarping && !warpingStarted && warpedCorners.isEmpty && oldBounds != newBounds {
                 initializeEnvelopeCorners()
-                Log.fileOperation("🔄 ENVELOPE TOOL: Shape bounds changed, refreshed corners", level: .info)
             }
         }
         .onChange(of: document.currentTool) { oldTool, newTool in
@@ -132,7 +131,6 @@ struct EnvelopeHandles: View {
                 
                 // CRITICAL FIX: DON'T clear envelope state - preserve warp memory
                 // This allows continuous editing when switching back to envelope tool
-                Log.fileOperation("🔄 ENVELOPE TOOL: Switched away - committed warp and PRESERVED state", level: .info)
             }
             
             // ENVELOPE REACTIVATION: When switching back to envelope tool, reinitialize for current shape
@@ -140,7 +138,6 @@ struct EnvelopeHandles: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     self.initializeEnvelopeCorners()
                 }
-                Log.fileOperation("🔄 ENVELOPE TOOL: Reactivated - initializing for current shape", level: .info)
             }
         }
         .onChange(of: document.selectedShapeIDs) { oldSelection, newSelection in
@@ -163,7 +160,6 @@ struct EnvelopeHandles: View {
                     self.initializeEnvelopeCorners()
                 }
                 
-                Log.fileOperation("🔄 ENVELOPE TOOL: Shape selection changed - committed warp and reset for new shape", level: .info)
             }
         }
     }
@@ -315,7 +311,6 @@ struct EnvelopeHandles: View {
             ]
             warpedCorners = shape.warpEnvelope  // Current warp envelope
 
-            Log.fileOperation("🔧 WARP OBJECT: Using saved warp envelope", level: .info)
             // REACTIVATION: Set preview to current warped shape for immediate visual feedback
             previewPath = shape.path  // Show current warped state immediately
 
@@ -367,7 +362,6 @@ struct EnvelopeHandles: View {
             }
         }
         
-        Log.fileOperation("🔧 ENVELOPE INITIALIZED: Using \(originalCorners.count) corners", level: .info)
     }
     
     private func cornersHaveChangedSignificantly(from oldCorners: [CGPoint], to newCorners: [CGPoint]) -> Bool {
@@ -432,11 +426,9 @@ struct EnvelopeHandles: View {
         } else if shape.isWarpObject, let originalPath = shape.originalPath {
             // Fallback: Use original path bounds if corners aren't available
             initialBounds = originalPath.cgPath.boundingBoxOfPath
-            Log.fileOperation("🔧 WARP OBJECT: Using original path bounds for reference", level: .info)
         } else {
             // For regular shapes, use current bounds
             initialBounds = shape.bounds
-            Log.fileOperation("🔧 REGULAR SHAPE: Using current bounds for reference", level: .info)
         }
         
         initialTransform = shape.transform
@@ -444,7 +436,6 @@ struct EnvelopeHandles: View {
         draggingCornerIndex = cornerIndex
         document.saveToUndoStack()
         
-        Log.fileOperation("🔧 ENVELOPE WARP STARTED: Corner \(cornerIndex)", level: .info)
     }
     
     private func calculateEnvelopeWarpPreview() {
@@ -784,8 +775,6 @@ struct EnvelopeHandles: View {
         // PRESERVE PREVIEW: Keep the preview when switching away so it shows correctly when returning
         // Don't clear previewPath - this maintains the warped shape preview for reactivation
 
-        Log.fileOperation("🔄 REACTIVATABLE: Select envelope tool again to continue editing", level: .info)
-        Log.fileOperation("📋 UNWRAP VIA MENU: Use Object menu to unwrap back to original", level: .info)
     }
     
     // MARK: - Key Event Monitoring

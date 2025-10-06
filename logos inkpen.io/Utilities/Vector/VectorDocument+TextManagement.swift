@@ -50,7 +50,6 @@ extension VectorDocument {
         selectedLayerIndex = layerIndex // Select the layer we added text to
         syncSelectionArrays()
         
-        Log.fileOperation("📝 Added editable text to layer \(layerIndex) (\(layers[layerIndex].name))", level: .info)
     }
     
     func removeSelectedText() {

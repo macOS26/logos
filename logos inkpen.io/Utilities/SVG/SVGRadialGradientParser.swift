@@ -24,7 +24,6 @@ extension SVGParser {
     
     internal func parseRadialGradient(attributes: [String: String]) {
         guard let id = attributes["id"] else {
-            Log.fileOperation("⚠️ Radial gradient missing id attribute", level: .info)
             return
         }
         
@@ -43,10 +42,8 @@ extension SVGParser {
         if hasExtremeValues {
             detectedExtremeValues = true
             useExtremeValueHandling = true
-            Log.fileOperation("🚨 EXTREME VALUES DETECTED in radial gradient: \(id)", level: .info)
         }
         
-        Log.fileOperation("🎨 Parsing radial gradient: \(id) (extreme handling: \(useExtremeValueHandling))", level: .info)
     }
     
     internal func detectExtremeValuesInRadialGradient(cx: String, cy: String, r: String, fx: String?, fy: String?) -> Bool {
@@ -57,7 +54,6 @@ extension SVGParser {
             
             if let value = Double(coord) {
                 if value < -10000 || value > 10000 {
-                    Log.fileOperation("🚨 EXTREME VALUE DETECTED: \(coord) = \(value)", level: .info)
                     return true
                 }
                 
@@ -66,7 +62,6 @@ extension SVGParser {
                     let normalizedValue = value / normalizer
                     
                     if normalizedValue < 0.0 || normalizedValue > 1.0 {
-                        Log.fileOperation("🚨 NORMALIZED VALUE OUT OF RANGE: \(coord) = \(value) → \(normalizedValue) (not 0-1)", level: .info)
                         return true
                     }
                 }
@@ -83,7 +78,6 @@ extension SVGParser {
         
         let (cxRaw, cyRaw, rRaw, fxRaw, fyRaw) = parseRadialGradientCoordinates(from: attributes)
         
-        Log.fileOperation("🔧 Parsing radial coordinates: cx=\(cxRaw), cy=\(cyRaw), r=\(rRaw), units=\(gradientUnits)", level: .info)
         
         let useExtremeHandling = useExtremeValueHandling && detectedExtremeValues
         
@@ -94,7 +88,6 @@ extension SVGParser {
         let fx = fxRaw != nil ? parseGradientCoordinate(fxRaw!, gradientUnits: gradientUnits, isXCoordinate: true, useExtremeValueHandling: useExtremeHandling) : cx
         let fy = fyRaw != nil ? parseGradientCoordinate(fyRaw!, gradientUnits: gradientUnits, isXCoordinate: false, useExtremeValueHandling: useExtremeHandling) : cy
         
-        Log.fileOperation("🔧 Parsed radial coordinates: cx=\(cx), cy=\(cy), r=\(r), fx=\(fx), fy=\(fy)", level: .info)
         
         var centerPoint: CGPoint
         var focalPoint: CGPoint
@@ -102,23 +95,18 @@ extension SVGParser {
         if useExtremeHandling {
             centerPoint = CGPoint(x: 0.5, y: 0.5)
             focalPoint = CGPoint(x: 0.5, y: 0.5)
-            Log.fileOperation("🎯 AUTO-CENTERED RADIAL: center=(0.5,0.5), focal=(0.5,0.5) (extreme value mode)", level: .info)
         } else {
             centerPoint = CGPoint(x: cx, y: cy)
             focalPoint = CGPoint(x: fx, y: fy)
-            Log.fileOperation("🎯 STANDARD RADIAL: center=(\(cx),\(cy)), focal=(\(fx),\(fy))", level: .info)
         }
         
         let finalRadius: Double
         if useExtremeHandling {
             finalRadius = 0.5
-            Log.fileOperation("🎯 AUTO-CENTERED RADIAL: radius=0.5 (spans center to object edge)", level: .info)
         } else {
             finalRadius = r
-            Log.fileOperation("🎯 STANDARD RADIAL: radius=\(r)", level: .info)
         }
         
-        Log.fileOperation("🎯 GRADIENT COORDINATES: center=(\(centerPoint.x),\(centerPoint.y)), focal=(\(focalPoint.x),\(focalPoint.y)), radius=\(finalRadius)", level: .info)
         
         let spreadMethod = parseSpreadMethod(from: attributes)
         

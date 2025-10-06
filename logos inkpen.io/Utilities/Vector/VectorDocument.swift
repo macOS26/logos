@@ -649,7 +649,6 @@ class VectorDocument: ObservableObject, Codable {
             return
         }
         
-        Log.fileOperation("🔧 Applying transform to shape coordinates: \(shape.name)", level: .info)
         
         // Transform all path elements
         var transformedElements: [PathElement] = []
