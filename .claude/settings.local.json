@@ -85,7 +85,8 @@
       "Bash(pdftotext:*)",
       "Bash(mdls:*)",
       "Bash(/usr/libexec/PlistBuddy:*)",
-      "Bash(exiftool:*)"
+      "Bash(exiftool:*)",
+      "Bash(/tmp/comment_logs.sh:*)"
     ],
     "deny": [],
     "ask": []
