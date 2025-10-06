@@ -90,7 +90,8 @@
       "Bash(/tmp/fix_unused_vars.sh:*)",
       "Bash(xargs:*)",
       "Bash(xxd:*)",
-      "Bash(/tmp/remove_info_logs.sh:*)"
+      "Bash(/tmp/remove_info_logs.sh:*)",
+      "Bash(/tmp/process_all_noops.sh:*)"
     ],
     "deny": [],
     "ask": []

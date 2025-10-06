@@ -100,10 +100,6 @@ extension DrawingCanvas {
         for endpointID in closedPathEndpoints {
             selectedPoints.insert(endpointID)
         }
-
-        let totalCoincident = coincidentPoints.count + closedPathEndpoints.count
-        if totalCoincident > 0 {
-        }
     }
     
     /// Checks if a point is part of a closed path and finds its corresponding endpoint
@@ -160,7 +156,6 @@ extension DrawingCanvas {
                             } else if pointID.elementIndex == lastIndex {
                                 endpointPairs.insert(PointID(shapeID: pointID.shapeID, pathIndex: pointID.pathIndex, elementIndex: moveIndex))
                             }
-                        } else {
                         }
                     }
                 }
@@ -220,7 +215,6 @@ extension DrawingCanvas {
         }
 
         if totalCoincidentGroups == 0 {
-        } else {
         }
     }
     

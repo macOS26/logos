@@ -17,7 +17,6 @@ class GPUMathAcceleratorSimple {
         self.isMetalAvailable = (device != nil && commandQueue != nil)
         
         if isMetalAvailable {
-        } else {
         }
     }
     

@@ -25,8 +25,6 @@ extension DrawingCanvas {
             handToolDragStart = value.startLocation
             isPanGestureActive = true  // PROFESSIONAL GESTURE COORDINATION
             
-            if enableHandToolLogging {
-            }
 
             // Show closed hand when panning begins
             HandClosedCursor.set()
@@ -52,7 +50,5 @@ extension DrawingCanvas {
         )
         
         // Professional verification logging (only for significant movements)
-        if enableHandToolLogging && (abs(cursorDelta.x) > 10 || abs(cursorDelta.y) > 10) {
-        }
     }
 } 

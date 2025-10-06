@@ -916,7 +916,6 @@ extension DrawingCanvas {
             // CRITICAL FIX: Sync unified objects system to ensure the updated shape is rendered
             document.updateUnifiedObjectsOptimized()
             
-        } else {
         }
     }
     
@@ -975,9 +974,7 @@ extension DrawingCanvas {
                     // CRITICAL FIX: Sync unified objects system to ensure the updated shape is rendered
                     document.updateUnifiedObjectsOptimized()
                     
-                } else {
                 }
-            } else {
             }
         } else {
             applySingleUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)

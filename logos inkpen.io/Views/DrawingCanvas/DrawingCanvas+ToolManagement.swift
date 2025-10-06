@@ -77,8 +77,6 @@ extension DrawingCanvas {
         // Reset cursor to default arrow when exiting text editing
         NSCursor.arrow.set()
 
-        if stoppedCount > 0 {
-        }
     }
 
     // Helper function to finish text editing but keep text selected
@@ -142,8 +140,6 @@ extension DrawingCanvas {
                 syncDirectSelectionWithDocument() // This will keep selection visible in layers palette
             }
             // Keep existing direct selection if switching from direct selection tool
-            else if oldTool == .directSelection {
-            }
         }
         
         // CASE 4: Switching AWAY from direct selection tools to other tools (not arrow)

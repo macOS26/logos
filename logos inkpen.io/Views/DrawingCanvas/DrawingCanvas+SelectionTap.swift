@@ -17,8 +17,6 @@ extension DrawingCanvas {
         // FIXED: Ensure coordinate system is properly synchronized
         // Add coordinate validation to catch any sync issues
         let validatedLocation = validateAndCorrectLocation(location)
-        if validatedLocation != location {
-        }
         
         // OPTION+CLICK WITH ARROW TOOL: Switch to Direct Selection mode (professional behavior)
         if isOptionPressed && document.currentTool == .selection {
@@ -133,7 +131,6 @@ extension DrawingCanvas {
 
                 return
             } else if clickedShape != nil {
-            } else {
             }
         }
         
@@ -284,10 +281,9 @@ extension DrawingCanvas {
             
             // FIXED: Enhanced deselection logic - check if click is within any selection box
             let isWithinSelectionBox = isLocationWithinSelectionBox(validatedLocation)
-            
-            if !isShiftPressed && !isCommandPressed {
-                let wasSelected = !document.selectedObjectIDs.isEmpty
 
+
+            if !isShiftPressed && !isCommandPressed {
                 if isWithinSelectionBox {
                 } else {
                     // Clicked outside all selection boxes - deselect everything
@@ -303,8 +299,6 @@ extension DrawingCanvas {
                     syncDirectSelectionWithDocument()
                     isCornerRadiusEditMode = false
 
-                    if wasSelected {
-                    }
                 }
                 document.objectWillChange.send()
             }

@@ -248,7 +248,6 @@ extension VectorDocument {
         if !layerObjects.isEmpty {
             selectedObjectIDs = Set(layerObjects.map { $0.id })
             syncSelectionArrays() // Keep legacy arrays in sync
-        } else {
         }
     }
     

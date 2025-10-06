@@ -132,7 +132,6 @@ extension DrawingCanvas {
                             self.nudgeSelectedObjects(by: nudgeAmount)
                             return nil // Consume the event
                         }
-                    } else {
                     }
                 }
             }

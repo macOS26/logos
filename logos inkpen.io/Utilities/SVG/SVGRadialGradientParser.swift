@@ -135,9 +135,6 @@ extension SVGParser {
         
         let vectorGradient = VectorGradient.radial(radialGradient)
         if useExtremeHandling {
-        } else {
-        }
-        if fxRaw != nil || fyRaw != nil {
         }
         
         return vectorGradient

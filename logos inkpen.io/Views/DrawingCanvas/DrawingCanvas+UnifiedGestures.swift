@@ -128,7 +128,6 @@ extension DrawingCanvas {
             // Font tool: Only handle editing existing text on tap, new text requires drag
             if let existingTextID = findTextAt(location: canvasLocation) {
                 startEditingText(textID: existingTextID, at: canvasLocation)
-            } else {
             }
             // Keep background tap handling for font tool only (this makes sense for font tool)
             handleAggressiveBackgroundTap(at: canvasLocation)

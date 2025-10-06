@@ -22,8 +22,6 @@ extension VectorDocument {
             return false
         }
         
-        for (_, _) in selectedShapes.enumerated() {
-        }
         
         // Convert shapes to CGPaths
         let paths = selectedShapes.map { $0.path.cgPath }

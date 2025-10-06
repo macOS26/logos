@@ -370,8 +370,6 @@ class SVGExporter {
             }
         }
 
-        if skippedGlyphCount > 0 {
-        }
 
         // Close the group if we opened one for text box bounds
         if vectorText.areaSize != nil && vectorText.areaSize!.width > 0 && vectorText.areaSize!.height > 0 {

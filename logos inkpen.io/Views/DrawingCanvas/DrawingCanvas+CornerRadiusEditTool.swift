@@ -305,8 +305,6 @@ extension DrawingCanvas {
             // IMPROVED: Check shift key state directly as backup to prevent sporadic behavior
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
-            }
-            if isShiftCurrentlyPressed {
                 // Get all current corner radii
                 var allRadii = shape.cornerRadii
                 while allRadii.count < 4 {

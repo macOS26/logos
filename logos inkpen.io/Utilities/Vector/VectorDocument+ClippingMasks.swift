@@ -28,11 +28,7 @@ extension VectorDocument {
         
         // Use topmost as mask (last in array = topmost due to stacking order)
         guard let maskID = selectedShapes.last?.id else { return }
-        
-        let shapesForLogging = getShapesForLayer(layerIndex)
-        if shapesForLogging.first(where: { $0.id == maskID }) != nil {
-        }
-        
+
         // Mark mask
         let shapes = getShapesForLayer(layerIndex)
         if let idx = shapes.firstIndex(where: { $0.id == maskID }),
@@ -62,9 +58,7 @@ extension VectorDocument {
         // DEBUG: Check layers array before unified sync
         for (idx, _) in layers.enumerated() {
             let shapesInLayer = getShapesForLayer(idx)
-            for shape in shapesInLayer {
-                if shape.id == maskID || selectedShapes.dropLast().contains(where: { $0.id == shape.id }) {
-                }
+            for _ in shapesInLayer {
             }
         }
         

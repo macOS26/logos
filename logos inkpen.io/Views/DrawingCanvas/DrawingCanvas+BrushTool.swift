@@ -442,7 +442,6 @@ extension DrawingCanvas {
             if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .evenOdd) }
             if let cleanedPath = cleaned, !cleanedPath.isEmpty, isPathBoundsFinite(cleanedPath.boundingBox) {
                 finalShape.path = VectorPath(cgPath: cleanedPath)
-            } else {
             }
         }
         

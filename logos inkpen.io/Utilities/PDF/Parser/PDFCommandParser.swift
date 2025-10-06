@@ -144,8 +144,6 @@ class PDFCommandParser {
 
         // Final gradient processing (handled by specialized gradient modules)
         // TODO: Implement createCompoundPathWithGradient in gradient handling module
-        if activeGradient != nil || !gradientShapes.isEmpty {
-        }
 
         
         // Calculate actual artwork bounds and update pageSize

@@ -20,18 +20,14 @@ struct VectorObject: Identifiable, Hashable {
     }
     
     init(shape: VectorShape, layerIndex: Int, orderID: Int) {
-        if shape.isClippingPath || shape.clippedByShapeID != nil {
-        }
         
         self.id = shape.id
         self.orderID = orderID
         self.layerIndex = layerIndex
         self.objectType = .shape(shape)
-        
+
         // DEBUG: Check if properties are preserved after storing in enum
-        if case .shape(let storedShape) = self.objectType {
-            if storedShape.isClippingPath || storedShape.clippedByShapeID != nil {
-            }
+        if case .shape(_) = self.objectType {
         }
     }
     

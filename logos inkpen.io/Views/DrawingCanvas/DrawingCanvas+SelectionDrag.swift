@@ -609,8 +609,6 @@ extension DrawingCanvas {
                     // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
                     if let updatedShape = document.findShape(by: oldShape.id) {
                         // DEBUG: Check clipping properties before and after sync
-                        if oldShape.clippedByShapeID != nil || updatedShape.clippedByShapeID != nil {
-                        }
                         // CRITICAL FIX: Preserve original orderID - DO NOT reorder during drag
                         document.unifiedObjects[i] = VectorObject(
                             shape: updatedShape,

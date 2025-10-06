@@ -229,7 +229,6 @@ struct GradientFillSection: View {
                 gradientType = .radial
             }
             gradientId = UUID() // Generate new ID for loaded gradient
-        } else {
         }
     }
     
@@ -246,7 +245,6 @@ struct GradientFillSection: View {
                 gradientType = .radial
             }
             // DON'T generate new gradientId - preserve existing state
-        } else {
         }
     }
     

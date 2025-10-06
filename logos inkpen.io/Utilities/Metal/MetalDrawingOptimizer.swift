@@ -16,7 +16,6 @@ class MetalDrawingOptimizer {
         self.isMetalAvailable = (device != nil && commandQueue != nil)
         
         if isMetalAvailable {
-        } else {
         }
     }
     

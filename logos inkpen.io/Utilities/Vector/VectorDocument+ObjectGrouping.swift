@@ -143,7 +143,6 @@ extension VectorDocument {
         selectedObjectIDs = newSelectedShapeIDs
         
         if !shapesToRemove.isEmpty {
-        } else {
         }
     }
     

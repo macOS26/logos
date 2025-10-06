@@ -186,7 +186,6 @@ extension FileOperations {
 
                     if !shouldSkip {
                         standaloneShapes.append(shape)
-                    } else {
                     }
                 }
             }

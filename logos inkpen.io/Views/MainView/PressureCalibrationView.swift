@@ -290,8 +290,6 @@ struct PressureCalibrationView: View {
                         handlePressureDrawing(location: location, pressure: pressure, eventType: eventType, isTabletEvent: isTabletEvent)
                         
                         // Update calibration if active
-                        if pressureManager.isCalibrating {
-                        }
                         
                         
                         // Add to event log for real-time display

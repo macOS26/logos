@@ -112,8 +112,6 @@ extension PDFCommandParser {
         // Check if this is a gradient shape that should be marked as compound path
         let isGradientShape = fillStyle?.isGradient ?? false
 
-        if isGradientShape {
-        }
 
         let shape = VectorShape(
             name: "PDF Shape \(shapes.count + 1)",

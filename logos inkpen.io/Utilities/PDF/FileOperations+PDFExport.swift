@@ -538,8 +538,6 @@ extension FileOperations {
         context.restoreGState()
 
         // Report skipped glyphs if any
-        if skippedGlyphCount > 0 {
-        }
 
     }
 

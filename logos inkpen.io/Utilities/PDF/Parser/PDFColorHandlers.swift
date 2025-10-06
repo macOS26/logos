@@ -163,7 +163,6 @@ extension PDFCommandParser {
                 return
             }
             currentFillColor = color
-        } else {
         }
     }
     
@@ -182,7 +181,6 @@ extension PDFCommandParser {
                 return
             }
             currentStrokeColor = color
-        } else {
         }
     }
 }

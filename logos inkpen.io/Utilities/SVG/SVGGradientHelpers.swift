@@ -28,7 +28,6 @@ extension SVGParser {
             }
             inheritedGradient = gradientDefinitions[refId]
             if inheritedGradient != nil {
-            } else {
             }
         }
         

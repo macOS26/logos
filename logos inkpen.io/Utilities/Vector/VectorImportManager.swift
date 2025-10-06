@@ -147,8 +147,6 @@ class VectorImportManager {
         var warnings: [String] = []
         var shapes: [VectorShape] = []
 
-        if useExtremeValueHandling {
-        }
 
         do {
             guard let data = try? Data(contentsOf: url) else {
