@@ -22,8 +22,8 @@ private func offsetPath(_ path: VectorPath, by offset: CGPoint) -> VectorPath {
                 to: VectorPoint(to.x + offset.x, to.y + offset.y),
                 control: VectorPoint(control.x + offset.x, control.y + offset.y)
             )
-        case .cubicCurve(let to, let control1, let control2):
-            return .cubicCurve(
+        case .curve(let to, let control1, let control2):
+            return .curve(
                 to: VectorPoint(to.x + offset.x, to.y + offset.y),
                 control1: VectorPoint(control1.x + offset.x, control1.y + offset.y),
                 control2: VectorPoint(control2.x + offset.x, control2.y + offset.y)
