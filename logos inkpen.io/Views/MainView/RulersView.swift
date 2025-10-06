@@ -893,6 +893,14 @@ struct PageOriginCrosshair: View {
                 }
                 .stroke(Color.blue.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5]))
             }
+
+            // DEBUG: Show all snap points as red circles
+            ForEach(getSnapPointsInScreenSpace(), id: \.debugDescription) { point in
+                Circle()
+                    .fill(Color.red.opacity(0.5))
+                    .frame(width: 10, height: 10)
+                    .position(point)
+            }
         }
     }
 
@@ -975,6 +983,39 @@ struct PageOriginCrosshair: View {
         let canvasPoint = screenToCanvasPosition(screenPoint)
         let snappedCanvasPoint = applySnapToCanvasPoint(canvasPoint)
         return canvasToScreenPosition(snappedCanvasPoint)
+    }
+
+    // DEBUG: Get all snap points in screen space for visual debugging
+    private func getSnapPointsInScreenSpace() -> [CGPoint] {
+        // Get actual canvas background bounds
+        let canvasBackground = document.getObjectsInStackingOrder().first { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.name == "Canvas Background"
+            }
+            return false
+        }
+
+        var canvasBounds = CGRect(x: 0, y: 0, width: document.settings.sizeInPoints.width, height: document.settings.sizeInPoints.height)
+        if let canvasBackground = canvasBackground,
+           case .shape(let shape) = canvasBackground.objectType {
+            canvasBounds = shape.bounds
+        }
+
+        // Define 9 snap points in canvas space
+        let canvasSnapPoints: [CGPoint] = [
+            CGPoint(x: canvasBounds.minX, y: canvasBounds.minY),      // Top-left
+            CGPoint(x: canvasBounds.maxX, y: canvasBounds.minY),      // Top-right
+            CGPoint(x: canvasBounds.minX, y: canvasBounds.maxY),      // Bottom-left
+            CGPoint(x: canvasBounds.maxX, y: canvasBounds.maxY),      // Bottom-right
+            CGPoint(x: canvasBounds.midX, y: canvasBounds.minY),      // Top mid
+            CGPoint(x: canvasBounds.midX, y: canvasBounds.maxY),      // Bottom mid
+            CGPoint(x: canvasBounds.minX, y: canvasBounds.midY),      // Left mid
+            CGPoint(x: canvasBounds.maxX, y: canvasBounds.midY),      // Right mid
+            CGPoint(x: canvasBounds.midX, y: canvasBounds.midY)       // Center
+        ]
+
+        // Convert to screen space
+        return canvasSnapPoints.map { canvasToScreenPosition($0) }
     }
 
     private func updatePageOrigin(screenLocation: CGPoint) {
