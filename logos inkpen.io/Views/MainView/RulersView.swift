@@ -893,30 +893,30 @@ struct PageOriginCrosshair: View {
                 }
                 .stroke(Color.blue.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5]))
             }
-
-            // DEBUG: Show all snap points as red circles
-            ForEach(getSnapPointsInScreenSpace(), id: \.debugDescription) { point in
-                Circle()
-                    .fill(Color.red.opacity(0.5))
-                    .frame(width: 10, height: 10)
-                    .position(point)
-            }
         }
     }
 
     // Convert screen coordinates to canvas coordinates
+    // Screen point is in the RulersView coordinate space (includes rulers)
+    // Canvas starts at (rulerThickness, rulerThickness) in screen space
     private func screenToCanvasPosition(_ screenPoint: CGPoint) -> CGPoint {
-        CGPoint(
-            x: (screenPoint.x - rulerThickness - document.canvasOffset.x) / document.zoomLevel,
-            y: (screenPoint.y - rulerThickness - document.canvasOffset.y) / document.zoomLevel
+        let canvasScreenPoint = CGPoint(
+            x: screenPoint.x - rulerThickness,
+            y: screenPoint.y - rulerThickness
+        )
+        return CGPoint(
+            x: (canvasScreenPoint.x - document.canvasOffset.x) / document.zoomLevel,
+            y: (canvasScreenPoint.y - document.canvasOffset.y) / document.zoomLevel
         )
     }
 
     // Convert canvas coordinates to screen coordinates
+    // PageOriginCrosshair is rendered in canvas coordinate space, not RulersView space
+    // So we don't add rulerThickness offset here
     private func canvasToScreenPosition(_ canvasPoint: CGPoint) -> CGPoint {
-        CGPoint(
-            x: canvasPoint.x * document.zoomLevel + document.canvasOffset.x + rulerThickness,
-            y: canvasPoint.y * document.zoomLevel + document.canvasOffset.y + rulerThickness
+        return CGPoint(
+            x: canvasPoint.x * document.zoomLevel + document.canvasOffset.x,
+            y: canvasPoint.y * document.zoomLevel + document.canvasOffset.y
         )
     }
 
@@ -959,11 +959,6 @@ struct PageOriginCrosshair: View {
             }
         }
 
-        // Debug output
-        if let snapped = closestPoint {
-            print("SNAP: Input=(\(canvasPoint.x), \(canvasPoint.y)) → Snapped=(\(snapped.x), \(snapped.y)) Distance=\(closestDistance)")
-        }
-
         // Return snapped point or original if no snap found
         return closestPoint ?? canvasPoint
     }
@@ -973,28 +968,6 @@ struct PageOriginCrosshair: View {
         let canvasPoint = screenToCanvasPosition(screenPoint)
         let snappedCanvasPoint = applySnapToCanvasPoint(canvasPoint)
         return canvasToScreenPosition(snappedCanvasPoint)
-    }
-
-    // DEBUG: Get all snap points in screen space for visual debugging
-    private func getSnapPointsInScreenSpace() -> [CGPoint] {
-        let canvasWidth = document.settings.sizeInPoints.width
-        let canvasHeight = document.settings.sizeInPoints.height
-
-        // Define 9 snap points in canvas space
-        let canvasSnapPoints: [CGPoint] = [
-            CGPoint(x: 0, y: 0),                           // Top-left
-            CGPoint(x: canvasWidth, y: 0),                 // Top-right
-            CGPoint(x: 0, y: canvasHeight),                // Bottom-left
-            CGPoint(x: canvasWidth, y: canvasHeight),      // Bottom-right
-            CGPoint(x: canvasWidth / 2, y: 0),             // Top mid
-            CGPoint(x: canvasWidth / 2, y: canvasHeight),  // Bottom mid
-            CGPoint(x: 0, y: canvasHeight / 2),            // Left mid
-            CGPoint(x: canvasWidth, y: canvasHeight / 2),  // Right mid
-            CGPoint(x: canvasWidth / 2, y: canvasHeight / 2)  // Center
-        ]
-
-        // Convert to screen space
-        return canvasSnapPoints.map { canvasToScreenPosition($0) }
     }
 
     private func updatePageOrigin(screenLocation: CGPoint) {
