@@ -240,7 +240,11 @@ class PDFMetalProcessor {
             return nil
         }
 
-        let outputSize = totalSamples * 3 * MemoryLayout<Float>.size  // RGB float triplets
+        // CRITICAL: Limit maximum samples to prevent memory issues
+        let maxSamples = 1024
+        let actualSamples = min(totalSamples, maxSamples)
+
+        let outputSize = actualSamples * 3 * MemoryLayout<Float>.size  // RGB float triplets
 
         // Create Metal buffers
         guard let sampleBuffer = device.makeBuffer(bytes: sampleData.withUnsafeBytes { $0.baseAddress! },
@@ -275,9 +279,9 @@ class PDFMetalProcessor {
         encoder.setBuffer(rangeMinBuffer, offset: 0, index: 3)
         encoder.setBuffer(rangeMaxBuffer, offset: 0, index: 4)
 
-        // Calculate thread groups
+        // Calculate thread groups using actualSamples
         let threadGroupSize = MTLSize(width: pipeline.threadExecutionWidth, height: 1, depth: 1)
-        let threadGroups = MTLSize(width: (totalSamples + pipeline.threadExecutionWidth - 1) / pipeline.threadExecutionWidth,
+        let threadGroups = MTLSize(width: (actualSamples + pipeline.threadExecutionWidth - 1) / pipeline.threadExecutionWidth,
                                   height: 1,
                                   depth: 1)
 
@@ -291,14 +295,14 @@ class PDFMetalProcessor {
         // Extract result and convert to VectorColor
         let floatPointer = colorBuffer.contents().assumingMemoryBound(to: Float.self)
         var colors: [VectorColor] = []
+        colors.reserveCapacity(actualSamples)
 
-        for i in 0..<totalSamples {
+        for i in 0..<actualSamples {
             let r = Double(floatPointer[i * 3 + 0])
             let g = Double(floatPointer[i * 3 + 1])
             let b = Double(floatPointer[i * 3 + 2])
             colors.append(.rgb(RGBColor(red: r, green: g, blue: b)))
         }
-
 
         return colors
     }

@@ -104,20 +104,20 @@ extension PDFCommandParser {
         listDictionaryKeys(state, prefix: "  \(name)")
         
         // Parse opacity values from the ExtGState dictionary
-        var fillOpacity: CGFloat = 1.0
-        var strokeOpacity: CGFloat = 1.0
+        //var fillOpacity: CGFloat = 1.0
+       // var strokeOpacity: CGFloat = 1.0
         
-        if CGPDFDictionaryGetNumber(state, "ca", &fillOpacity) {
-            currentFillOpacity = Double(fillOpacity)
-        } else {
+      //  if CGPDFDictionaryGetNumber(state, "ca", &fillOpacity) {
+        //    currentFillOpacity = Double(fillOpacity)
+       // } else {
             currentFillOpacity = 1.0  // Reset to full opacity when no 'ca' entry
-        }
+        //}
         
-        if CGPDFDictionaryGetNumber(state, "CA", &strokeOpacity) {
-            currentStrokeOpacity = Double(strokeOpacity)
-        } else {
+        //if CGPDFDictionaryGetNumber(state, "CA", &strokeOpacity) {
+        //    currentStrokeOpacity = Double(strokeOpacity)
+        //} else {
             currentStrokeOpacity = 1.0  // Reset to full opacity when no 'CA' entry
-        }
+        //}
         
         
         // CRITICAL FIX: Store specific graphics state opacity values for XObject inheritance
