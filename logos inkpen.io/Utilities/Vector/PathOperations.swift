@@ -819,7 +819,6 @@ extension ProfessionalPathOperations {
         let cleanedPath = VectorPath(elements: cleanedElements, isClosed: path.isClosed)
 
         if duplicatesRemoved > 0 {
-        } else {
         }
 
         return cleanedPath
@@ -864,7 +863,6 @@ extension ProfessionalPathOperations {
 
         if totalCleaned > 0 {
             document.objectWillChange.send()
-        } else {
         }
     }
     
@@ -897,7 +895,6 @@ extension ProfessionalPathOperations {
 
         if totalCleaned > 0 {
             document.objectWillChange.send()
-        } else {
         }
     }
 }
