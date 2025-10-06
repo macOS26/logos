@@ -102,6 +102,133 @@ kernel void extractGradientColors8Bit(
     colorOutput[gid * 3 + 2] = b;
 }
 
+// MARK: - Point Selection Kernels (Direct Select Tool Acceleration)
+
+/// Find nearest point to tap location - ULTRA FAST parallel distance calculation
+/// Used by direct select tool for instant point/handle selection on objects with thousands of points
+kernel void find_nearest_point(
+    const device float2* points [[buffer(0)]],              // All point positions in canvas space
+    const device float2* tapLocation [[buffer(1)]],         // Tap location in canvas space
+    const device float* selectionRadius [[buffer(2)]],      // Selection radius (tolerance)
+    device float* distances [[buffer(3)]],                  // Output: distances from tap to each point
+    device uint* validIndices [[buffer(4)]],                // Output: indices of points within radius
+    uint gid [[thread_position_in_grid]])                   // Global thread ID = point index
+{
+    // Each thread processes one point in parallel
+    float2 point = points[gid];
+    float2 tap = *tapLocation;
+
+    // Calculate distance from tap to this point
+    float dx = point.x - tap.x;
+    float dy = point.y - tap.y;
+    float dist = sqrt(dx * dx + dy * dy);
+
+    // Store distance and mark if within selection radius
+    distances[gid] = dist;
+    validIndices[gid] = (dist <= *selectionRadius) ? gid : UINT_MAX;
+}
+
+/// Find minimum distance index from parallel distance results
+/// Two-stage reduction for finding closest point
+kernel void find_min_distance_index(
+    const device float* distances [[buffer(0)]],            // Distances computed by find_nearest_point
+    const device uint* validIndices [[buffer(1)]],          // Valid indices from find_nearest_point
+    device atomic_uint* minIndex [[buffer(2)]],             // Output: index of closest point
+    device atomic_float* minDistance [[buffer(3)]],         // Output: minimum distance found
+    constant uint& numPoints [[buffer(4)]],                 // Total number of points
+    uint gid [[thread_position_in_grid]])                   // Global thread ID
+{
+    // Each thread checks one point
+    if (gid < numPoints && validIndices[gid] != UINT_MAX) {
+        float dist = distances[gid];
+
+        // Atomic compare-and-swap to find minimum
+        // Read current minimum
+        float currentMin = atomic_load_explicit((device atomic_float*)minDistance, memory_order_relaxed);
+
+        // If this distance is smaller, try to update
+        while (dist < currentMin) {
+            float expected = currentMin;
+            if (atomic_compare_exchange_weak_explicit(
+                (device atomic_float*)minDistance,
+                &expected,
+                dist,
+                memory_order_relaxed,
+                memory_order_relaxed)) {
+                // Successfully updated minimum distance, also update index
+                atomic_store_explicit(minIndex, gid, memory_order_relaxed);
+                break;
+            }
+            currentMin = expected;
+        }
+    }
+}
+
+/// Find all points within selection radius (for multi-select scenarios)
+/// Returns count and indices of all points within tolerance
+kernel void find_points_in_radius(
+    const device float2* points [[buffer(0)]],              // All point positions
+    const device float2* tapLocation [[buffer(1)]],         // Tap location
+    const device float* selectionRadius [[buffer(2)]],      // Selection radius
+    device uint* matchingIndices [[buffer(3)]],             // Output: indices of points within radius
+    device atomic_uint* matchCount [[buffer(4)]],           // Output: count of matching points
+    constant uint& maxMatches [[buffer(5)]],                // Maximum matches to return
+    uint gid [[thread_position_in_grid]])                   // Global thread ID = point index
+{
+    // Calculate distance
+    float2 point = points[gid];
+    float2 tap = *tapLocation;
+    float dx = point.x - tap.x;
+    float dy = point.y - tap.y;
+    float dist = sqrt(dx * dx + dy * dy);
+
+    // If within radius, add to results atomically
+    if (dist <= *selectionRadius) {
+        uint index = atomic_fetch_add_explicit(matchCount, 1, memory_order_relaxed);
+        if (index < maxMatches) {
+            matchingIndices[index] = gid;
+        }
+    }
+}
+
+// MARK: - Handle Selection Kernels
+
+/// Find nearest handle to tap location with handle-specific parameters
+/// Handles use different selection radius than anchor points
+kernel void find_nearest_handle(
+    const device float2* handlePoints [[buffer(0)]],        // Handle positions
+    const device float2* anchorPoints [[buffer(1)]],        // Corresponding anchor positions
+    const device float2* tapLocation [[buffer(2)]],         // Tap location
+    const device float* handleRadius [[buffer(3)]],         // Handle selection radius (typically smaller)
+    device float* distances [[buffer(4)]],                  // Output: distances
+    device uint* validIndices [[buffer(5)]],                // Output: valid indices
+    uint gid [[thread_position_in_grid]])                   // Global thread ID = handle index
+{
+    float2 handle = handlePoints[gid];
+    float2 anchor = anchorPoints[gid];
+    float2 tap = *tapLocation;
+
+    // Check if handle is collapsed (too close to anchor point)
+    float2 handleToAnchor = handle - anchor;
+    float handleLength = sqrt(handleToAnchor.x * handleToAnchor.x + handleToAnchor.y * handleToAnchor.y);
+
+    // Skip collapsed handles (threshold: 0.1 canvas units)
+    if (handleLength < 0.1) {
+        distances[gid] = INFINITY;
+        validIndices[gid] = UINT_MAX;
+        return;
+    }
+
+    // Calculate distance from tap to handle
+    float dx = handle.x - tap.x;
+    float dy = handle.y - tap.y;
+    float dist = sqrt(dx * dx + dy * dy);
+
+    // Store distance and mark if within selection radius
+    distances[gid] = dist;
+    validIndices[gid] = (dist <= *handleRadius) ? gid : UINT_MAX;
+}
+
 // MARK: - Path Processing Kernels (Future Enhancement)
 
 /// Rasterize PDF path segments for faster hit testing

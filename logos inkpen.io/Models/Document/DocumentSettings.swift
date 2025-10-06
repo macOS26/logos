@@ -23,6 +23,9 @@ struct DocumentSettings: Codable, Hashable {
     var selectedLayerId: UUID?
     var selectedLayerName: String?
 
+    // Page origin (ruler 0,0 point) - optional, defaults to top-left
+    var pageOrigin: CGPoint?
+
     // Document-specific colors and custom swatches (only user-added swatches)
     var fillColor: VectorColor?
     var strokeColor: VectorColor?
@@ -73,6 +76,7 @@ struct DocumentSettings: Codable, Hashable {
     enum CodingKeys: String, CodingKey {
         case width, height, unit, colorMode, resolution, showRulers, showGrid, snapToGrid, snapToPoint, gridSpacing, backgroundColor, selectedLayerId, selectedLayerName
         case fillColor, strokeColor, customRgbSwatches, customCmykSwatches, customHsbSwatches
+        case pageOrigin
     }
     
     init(from decoder: Decoder) throws {
@@ -90,6 +94,7 @@ struct DocumentSettings: Codable, Hashable {
         backgroundColor = try container.decode(VectorColor.self, forKey: .backgroundColor)
         selectedLayerId = try container.decodeIfPresent(UUID.self, forKey: .selectedLayerId)
         selectedLayerName = try container.decodeIfPresent(String.self, forKey: .selectedLayerName) ?? "Layer 1"
+        pageOrigin = try container.decodeIfPresent(CGPoint.self, forKey: .pageOrigin)
 
         // Decode document-specific colors and custom swatches
         fillColor = try container.decodeIfPresent(VectorColor.self, forKey: .fillColor)
@@ -114,6 +119,7 @@ struct DocumentSettings: Codable, Hashable {
         try container.encode(backgroundColor, forKey: .backgroundColor)
         try container.encode(selectedLayerId, forKey: .selectedLayerId)
         try container.encode(selectedLayerName, forKey: .selectedLayerName)
+        try container.encodeIfPresent(pageOrigin, forKey: .pageOrigin)
 
         // Encode document-specific colors and custom swatches
         try container.encodeIfPresent(fillColor, forKey: .fillColor)

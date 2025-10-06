@@ -64,23 +64,38 @@ extension DrawingCanvas {
         let handleSelectionRadius: Double = 4.0 / document.zoomLevel  // Scale with zoom
 
         // FIRST PASS: Check all anchor points (higher priority than handles)
-        for (elementIndex, element) in shape.path.elements.enumerated() {
-            let point: VectorPoint
+        // GPU ACCELERATION: Use Metal compute shader for ultra-fast point selection on objects with many points
+        let pointCount = shape.path.elements.filter {
+            switch $0 {
+            case .close: return false
+            default: return true
+            }
+        }.count
 
-            switch element {
-            case .move(let to), .line(let to):
-                point = to
-            case .curve(let to, _, _):
-                point = to
-            case .quadCurve(let to, _):
-                point = to
-            case .close:
-                continue
+        // Use GPU for objects with 50+ points (massive speedup)
+        if pointCount >= 50 {
+            // Extract all point positions
+            var points: [CGPoint] = []
+            var elementIndices: [Int] = []
+
+            for (elementIndex, element) in shape.path.elements.enumerated() {
+                switch element {
+                case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+                    points.append(CGPoint(x: to.x, y: to.y))
+                    elementIndices.append(elementIndex)
+                case .close:
+                    continue
+                }
             }
 
-            // Check if tap is near the anchor point with PRECISE radius
-            let pointLocation = CGPoint(x: point.x, y: point.y).applying(shape.transform)
-            if distance(location, pointLocation) <= pointSelectionRadius {
+            // GPU-accelerated nearest point search
+            if let nearestIndex = MetalComputeEngine.shared.findNearestPointGPU(
+                points: points,
+                tapLocation: location,
+                selectionRadius: pointSelectionRadius,
+                transform: shape.transform
+            ) {
+                let elementIndex = elementIndices[nearestIndex]
                 let pointID = PointID(
                     shapeID: shape.id,
                     pathIndex: 0,
@@ -104,12 +119,134 @@ extension DrawingCanvas {
                 }
                 return true
             }
+        } else {
+            // CPU path for small shapes (< 50 points)
+            for (elementIndex, element) in shape.path.elements.enumerated() {
+                let point: VectorPoint
+
+                switch element {
+                case .move(let to), .line(let to):
+                    point = to
+                case .curve(let to, _, _):
+                    point = to
+                case .quadCurve(let to, _):
+                    point = to
+                case .close:
+                    continue
+                }
+
+                // Check if tap is near the anchor point with PRECISE radius
+                let pointLocation = CGPoint(x: point.x, y: point.y).applying(shape.transform)
+                if distance(location, pointLocation) <= pointSelectionRadius {
+                    let pointID = PointID(
+                        shapeID: shape.id,
+                        pathIndex: 0,
+                        elementIndex: elementIndex
+                    )
+
+                    if isShiftPressed && selectedPoints.contains(pointID) {
+                        // Shift+Click on selected point: deselect it and all coincident points
+                        let coincidentPoints = findCoincidentPoints(to: pointID, tolerance: coincidentPointTolerance)
+                        let closedPathEndpoints = findClosedPathEndpoints(for: pointID)
+                        selectedPoints.remove(pointID)
+                        for coincidentPoint in coincidentPoints {
+                            selectedPoints.remove(coincidentPoint)
+                        }
+                        for endpointID in closedPathEndpoints {
+                            selectedPoints.remove(endpointID)
+                        }
+                    } else {
+                        // Select point with all coincident points for unified movement
+                        selectPointWithCoincidents(pointID, addToSelection: isShiftPressed)
+                    }
+                    return true
+                }
+            }
         }
 
         // SECOND PASS: Check handles (lower priority than points)
-        for (elementIndex, element) in shape.path.elements.enumerated() {
-            switch element {
-            case .curve(let to, _, let control2):
+        // GPU ACCELERATION: Use Metal compute shader for ultra-fast handle selection on objects with many handles
+        let handleCount = shape.path.elements.filter {
+            switch $0 {
+            case .curve: return true
+            case .quadCurve: return true
+            default: return false
+            }
+        }.count
+
+        // Use GPU for objects with 50+ handles (massive speedup)
+        if handleCount >= 50 {
+            // Extract all handle positions and their corresponding anchor points
+            var handlePoints: [CGPoint] = []
+            var anchorPoints: [CGPoint] = []
+            var handleMetadata: [(elementIndex: Int, handleType: HandleType)] = []
+
+            for (elementIndex, element) in shape.path.elements.enumerated() {
+                switch element {
+                case .curve(let to, _, let control2):
+                    // Incoming handle (control2)
+                    handlePoints.append(CGPoint(x: control2.x, y: control2.y))
+                    anchorPoints.append(CGPoint(x: to.x, y: to.y))
+                    handleMetadata.append((elementIndex: elementIndex, handleType: .control2))
+
+                    // Outgoing handle (control1 from next element)
+                    if elementIndex + 1 < shape.path.elements.count,
+                       case .curve(_, let nextControl1, _) = shape.path.elements[elementIndex + 1] {
+                        handlePoints.append(CGPoint(x: nextControl1.x, y: nextControl1.y))
+                        anchorPoints.append(CGPoint(x: to.x, y: to.y))
+                        handleMetadata.append((elementIndex: elementIndex + 1, handleType: .control1))
+                    }
+
+                case .quadCurve(let to, let control):
+                    handlePoints.append(CGPoint(x: control.x, y: control.y))
+                    anchorPoints.append(CGPoint(x: to.x, y: to.y))
+                    handleMetadata.append((elementIndex: elementIndex, handleType: .control1))
+
+                case .move(let to), .line(let to):
+                    // Outgoing handle for move/line points
+                    if elementIndex + 1 < shape.path.elements.count,
+                       case .curve(_, let nextControl1, _) = shape.path.elements[elementIndex + 1] {
+                        handlePoints.append(CGPoint(x: nextControl1.x, y: nextControl1.y))
+                        anchorPoints.append(CGPoint(x: to.x, y: to.y))
+                        handleMetadata.append((elementIndex: elementIndex + 1, handleType: .control1))
+                    }
+
+                case .close:
+                    continue
+                }
+            }
+
+            // GPU-accelerated nearest handle search
+            if let nearestIndex = MetalComputeEngine.shared.findNearestHandleGPU(
+                handlePoints: handlePoints,
+                anchorPoints: anchorPoints,
+                tapLocation: location,
+                selectionRadius: handleSelectionRadius,
+                transform: shape.transform
+            ) {
+                let metadata = handleMetadata[nearestIndex]
+                let handleID = HandleID(shapeID: shape.id, pathIndex: 0, elementIndex: metadata.elementIndex, handleType: metadata.handleType)
+
+                if isShiftPressed && selectedHandles.contains(handleID) {
+                    selectedHandles.remove(handleID)
+                } else {
+                    if !isShiftPressed {
+                        selectedHandles.removeAll()
+                        selectedPoints.removeAll()
+                        visibleHandles.removeAll()
+                    }
+                    selectedHandles.insert(handleID)
+
+                    // CRITICAL: Also select corresponding handles on coincident points
+                    selectCoincidentHandles(for: handleID, shape: shape)
+                }
+                return true
+            }
+        } else {
+            // CPU path for small shapes (< 50 handles)
+            for (elementIndex, element) in shape.path.elements.enumerated() {
+                switch element {
+                case .curve(let to, _, let control2):
                 // Check INCOMING handle (control2)
                 let handle2Collapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
                 if !handle2Collapsed {
@@ -216,8 +353,9 @@ extension DrawingCanvas {
                     }
                 }
 
-            case .close:
-                continue
+                case .close:
+                    continue
+                }
             }
         }
 

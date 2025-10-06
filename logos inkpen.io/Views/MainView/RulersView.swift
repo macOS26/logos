@@ -26,23 +26,8 @@ struct RulersView: View {
                     .frame(width: rulerThickness)
                     .position(x: rulerThickness / 2, y: geometry.size.height / 2)
                 
-                // Corner Square
-                Rectangle()
-                    .fill(Color.ui.controlBackground)
-                    .frame(width: rulerThickness, height: rulerThickness)
-                    .position(x: rulerThickness / 2, y: rulerThickness / 2)
-                    .overlay(
-                        Rectangle()
-                            .stroke(Color.ui.lightGrayBorder, lineWidth: 0.5)
-                            .frame(width: rulerThickness, height: rulerThickness)
-                            .position(x: rulerThickness / 2, y: rulerThickness / 2)
-                    )
-                    .contentShape(Path { path in
-                        // Limit hit area strictly to the 20×20 corner square at origin
-                        path.addRect(CGRect(x: 0, y: 0, width: rulerThickness, height: rulerThickness))
-                    })
-                    .onTapGesture {
-                    }
+                // Page Origin Crosshair
+                PageOriginCrosshair(document: document, geometry: geometry, rulerThickness: rulerThickness)
             }
         }
     }
@@ -851,5 +836,137 @@ struct RulersView_Previews: PreviewProvider {
             RulersView(document: VectorDocument(), geometry: geometry)
         }
         .frame(width: 600, height: 400)
+    }
+}
+
+// MARK: - Page Origin Crosshair
+
+struct PageOriginCrosshair: View {
+    @ObservedObject var document: VectorDocument
+    let geometry: GeometryProxy
+    let rulerThickness: CGFloat
+
+    @State private var isDragging = false
+    @State private var dragOffset: CGSize = .zero
+
+    var body: some View {
+        let origin = effectiveOrigin
+
+        ZStack {
+            // Crosshair icon at ruler intersection
+            CrosshairIcon()
+                .frame(width: rulerThickness, height: rulerThickness)
+                .position(x: rulerThickness / 2, y: rulerThickness / 2)
+                .gesture(
+                    DragGesture(coordinateSpace: .named("canvas"))
+                        .onChanged { value in
+                            isDragging = true
+                            dragOffset = value.translation
+                            updatePageOrigin(translation: value.translation)
+                        }
+                        .onEnded { _ in
+                            isDragging = false
+                            dragOffset = .zero
+                        }
+                )
+
+            // Crosshair lines when dragging
+            if isDragging {
+                let screenPos = originToScreenPosition(origin + dragOffset.asCGPoint)
+
+                // Vertical line
+                Path { path in
+                    path.move(to: CGPoint(x: screenPos.x, y: 0))
+                    path.addLine(to: CGPoint(x: screenPos.x, y: geometry.size.height))
+                }
+                .stroke(Color.blue.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5]))
+
+                // Horizontal line
+                Path { path in
+                    path.move(to: CGPoint(x: 0, y: screenPos.y))
+                    path.addLine(to: CGPoint(x: geometry.size.width, y: screenPos.y))
+                }
+                .stroke(Color.blue.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [5, 5]))
+            }
+        }
+    }
+
+    private var effectiveOrigin: CGPoint {
+        document.settings.pageOrigin ?? .zero
+    }
+
+    private func originToScreenPosition(_ canvasPoint: CGPoint) -> CGPoint {
+        CGPoint(
+            x: canvasPoint.x * document.zoomLevel + document.canvasOffset.x + rulerThickness,
+            y: canvasPoint.y * document.zoomLevel + document.canvasOffset.y + rulerThickness
+        )
+    }
+
+    private func screenToOriginPosition(_ screenPoint: CGPoint) -> CGPoint {
+        CGPoint(
+            x: (screenPoint.x - rulerThickness - document.canvasOffset.x) / document.zoomLevel,
+            y: (screenPoint.y - rulerThickness - document.canvasOffset.y) / document.zoomLevel
+        )
+    }
+
+    private func updatePageOrigin(translation: CGSize) {
+        let screenPoint = CGPoint(x: translation.width + rulerThickness, y: translation.height + rulerThickness)
+        var canvasPoint = screenToOriginPosition(screenPoint)
+
+        // Snap to page center if close
+        let pageCenter = CGPoint(
+            x: document.settings.sizeInPoints.width / 2,
+            y: document.settings.sizeInPoints.height / 2
+        )
+
+        let snapThreshold: CGFloat = 10 / document.zoomLevel // 10 pixels in canvas space
+
+        if abs(canvasPoint.x - pageCenter.x) < snapThreshold {
+            canvasPoint.x = pageCenter.x
+        }
+        if abs(canvasPoint.y - pageCenter.y) < snapThreshold {
+            canvasPoint.y = pageCenter.y
+        }
+
+        document.settings.pageOrigin = canvasPoint
+        document.onSettingsChanged()
+    }
+}
+
+struct CrosshairIcon: View {
+    var body: some View {
+        ZStack {
+            // Background
+            Rectangle()
+                .fill(Color.ui.controlBackground)
+
+            // Crosshair symbol
+            Path { path in
+                // Horizontal line
+                path.move(to: CGPoint(x: 4, y: 10))
+                path.addLine(to: CGPoint(x: 16, y: 10))
+                // Vertical line
+                path.move(to: CGPoint(x: 10, y: 4))
+                path.addLine(to: CGPoint(x: 10, y: 16))
+            }
+            .stroke(Color.primary.opacity(0.7), lineWidth: 1.5)
+
+            // Border
+            Rectangle()
+                .stroke(Color.ui.lightGrayBorder, lineWidth: 0.5)
+        }
+        .contentShape(Rectangle())
+    }
+}
+
+extension CGSize {
+    var asCGPoint: CGPoint {
+        CGPoint(x: width, y: height)
+    }
+}
+
+extension CGPoint {
+    static func + (lhs: CGPoint, rhs: CGPoint) -> CGPoint {
+        CGPoint(x: lhs.x + rhs.x, y: lhs.y + rhs.y)
     }
 }
