@@ -247,8 +247,11 @@ struct TransformationControls: View {
             updateValuesFromSelection()
         }
         .onChange(of: document.objectPositionUpdateTrigger) { _, _ in
-            // Update X,Y coordinates when objects are moved/dragged
-            updateValuesFromSelection()
+            // PERFORMANCE: Skip full update during active handle scaling (W/H already updating live)
+            // This prevents unnecessary X/Y recalculation during scaling for better performance
+            if !document.isHandleScalingActive {
+                updateValuesFromSelection()
+            }
         }
         .onChange(of: document.currentDragOffset) { _, _ in
             // PERFORMANCE OPTIMIZATION: Only update X,Y during dragging, not W,H
@@ -256,10 +259,12 @@ struct TransformationControls: View {
             updatePositionOnly()
         }
         .onChange(of: document.scalePreviewDimensions) { _, _ in
-            // Live update W,H during scaling with handles
+            // PERFORMANCE: Only update W,H during scaling, skip X,Y for speed
             if document.isHandleScalingActive && document.scalePreviewDimensions != .zero {
+                // Only update width and height - X,Y don't broadcast during live preview
                 widthValue = String(format: "%.2f", document.scalePreviewDimensions.width)
                 heightValue = String(format: "%.2f", document.scalePreviewDimensions.height)
+                // X,Y will update at the end when scaling completes via updateValuesFromSelection
             }
         }
     }
