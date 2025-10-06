@@ -912,23 +912,47 @@ struct PageOriginCrosshair: View {
         )
     }
 
-    // Get snapped screen location with snap-to-center logic
+    // Get snapped screen location - 9 snap points total (4 corners, 4 edge midpoints, 1 center)
     private func getSnappedScreenLocation(_ screenPoint: CGPoint) -> CGPoint {
         var canvasPoint = screenToCanvasPosition(screenPoint)
 
-        // Snap to page center if close
-        let pageCenter = CGPoint(
-            x: document.settings.sizeInPoints.width / 2,
-            y: document.settings.sizeInPoints.height / 2
-        )
-
+        let pageWidth = document.settings.sizeInPoints.width
+        let pageHeight = document.settings.sizeInPoints.height
         let snapThreshold: CGFloat = 10 / document.zoomLevel // 10 pixels in canvas space
 
-        if abs(canvasPoint.x - pageCenter.x) < snapThreshold {
-            canvasPoint.x = pageCenter.x
+        // Define 9 snap points: 4 corners + 4 edge midpoints + 1 center
+        let snapPoints: [CGPoint] = [
+            // 4 Corners
+            CGPoint(x: 0, y: 0),                        // Top-left
+            CGPoint(x: pageWidth, y: 0),                // Top-right
+            CGPoint(x: 0, y: pageHeight),               // Bottom-left
+            CGPoint(x: pageWidth, y: pageHeight),       // Bottom-right
+
+            // 4 Edge midpoints
+            CGPoint(x: pageWidth / 2, y: 0),            // Top edge midpoint
+            CGPoint(x: pageWidth / 2, y: pageHeight),   // Bottom edge midpoint
+            CGPoint(x: 0, y: pageHeight / 2),           // Left edge midpoint
+            CGPoint(x: pageWidth, y: pageHeight / 2),   // Right edge midpoint
+
+            // 1 Center
+            CGPoint(x: pageWidth / 2, y: pageHeight / 2)
+        ]
+
+        // Find closest snap point within threshold
+        var closestPoint: CGPoint?
+        var closestDistance: CGFloat = snapThreshold
+
+        for snapPoint in snapPoints {
+            let distance = hypot(canvasPoint.x - snapPoint.x, canvasPoint.y - snapPoint.y)
+            if distance < closestDistance {
+                closestDistance = distance
+                closestPoint = snapPoint
+            }
         }
-        if abs(canvasPoint.y - pageCenter.y) < snapThreshold {
-            canvasPoint.y = pageCenter.y
+
+        // Snap to closest point if found
+        if let snapPoint = closestPoint {
+            canvasPoint = snapPoint
         }
 
         return canvasToScreenPosition(canvasPoint)
