@@ -258,37 +258,6 @@ struct MarkerSettingsSection: View {
                 .help("Minimum thickness at taper ends (0-60 points)")
             }
 
-            // Simplify (Point Reduction)
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Simplify")
-                        .font(.subheadline)
-                        .foregroundColor(Color.ui.secondaryText)
-                    Spacer()
-                    Text("\(Int(document.currentMarkerSimplify))%")
-                        .font(.subheadline)
-                        .foregroundColor(Color.ui.primaryText)
-                        .monospacedDigit()
-                }
-
-                Slider(value: Binding(
-                    get: { document.currentMarkerSimplify },
-                    set: { document.currentMarkerSimplify = $0 }
-                ), in: 0...100) {
-                    Text("Simplify")
-                } minimumValueLabel: {
-                    Text("0%")
-                        .font(.caption)
-                        .foregroundColor(Color.ui.secondaryText)
-                } maximumValueLabel: {
-                    Text("100%")
-                        .font(.caption)
-                        .foregroundColor(Color.ui.secondaryText)
-                }
-                .controlSize(.regular)
-                .help("Reduce number of points in stroke - 0% = native points, 100% = maximum simplification")
-            }
-
             // Marker Tool Options
             VStack(alignment: .leading, spacing: 12) {
                 Divider()

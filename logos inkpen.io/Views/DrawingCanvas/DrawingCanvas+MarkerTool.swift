@@ -219,13 +219,7 @@ extension DrawingCanvas {
         }
         
         // Step 2: Apply improved Douglas-Peucker simplification with sharp corner preservation
-        // Combine smoothing tolerance with simplify parameter
-        let baseSmoothing = document.currentMarkerSmoothingTolerance * 0.3  // Less aggressive for leaf shapes
-        let simplifyAmount = document.currentMarkerSimplify // 0-100
-
-        // Add additional simplification based on simplify parameter
-        // 0% = base tolerance only, 100% = base + 10.0 additional tolerance
-        let smoothingTolerance = baseSmoothing + (simplifyAmount / 100.0) * 10.0
+        let smoothingTolerance = document.currentMarkerSmoothingTolerance * 0.3  // Less aggressive for leaf shapes
 
         markerSimplifiedPoints = document.advancedSmoothingEnabled ?
             CurveSmoothing.improvedDouglassPeucker(
@@ -337,11 +331,6 @@ extension DrawingCanvas {
 
             // Step 5: Remove duplicate/coincident points after expansion
             finalShape.path = removeCoincidentPointsFromPath(finalShape.path, tolerance: 0.5)
-
-            // Step 6: Apply additional simplification if simplify is at high values
-            if document.currentMarkerSimplify >= 50 {
-                finalShape.path = applyAdditionalSimplification(finalShape.path, simplifyAmount: document.currentMarkerSimplify)
-            }
         } else {
             // Even without remove overlap, clean up coincident points
             finalShape.path = removeCoincidentPointsFromPath(finalShape.path, tolerance: 0.5)
@@ -425,11 +414,6 @@ extension DrawingCanvas {
 
             // Step 5: Remove duplicate/coincident points after expansion
             finalPath = removeCoincidentPointsFromPath(finalPath, tolerance: 0.5)
-
-            // Step 6: Apply additional simplification if simplify is at high values
-            if document.currentMarkerSimplify >= 50 {
-                finalPath = applyAdditionalSimplification(finalPath, simplifyAmount: document.currentMarkerSimplify)
-            }
         } else {
             // Even without remove overlap, clean up coincident points
             finalPath = removeCoincidentPointsFromPath(finalPath, tolerance: 0.5)
