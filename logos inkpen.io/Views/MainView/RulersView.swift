@@ -914,26 +914,39 @@ struct PageOriginCrosshair: View {
 
     // Apply 9-point snap logic to a canvas point
     private func applySnapToCanvasPoint(_ canvasPoint: CGPoint) -> CGPoint {
-        let pageWidth = document.settings.sizeInPoints.width
-        let pageHeight = document.settings.sizeInPoints.height
-        let snapThreshold: CGFloat = 10.0 // Fixed 10 point threshold in canvas space
+        // Get actual canvas background bounds
+        let canvasBackground = document.getObjectsInStackingOrder().first { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.name == "Canvas Background"
+            }
+            return false
+        }
 
-        // Define 9 snap points: 4 corners + 4 edge midpoints + 1 center
+        var canvasBounds = CGRect(x: 0, y: 0, width: document.settings.sizeInPoints.width, height: document.settings.sizeInPoints.height)
+        if let canvasBackground = canvasBackground,
+           case .shape(let shape) = canvasBackground.objectType {
+            canvasBounds = shape.bounds
+            print("Canvas Background bounds: \(canvasBounds)")
+        }
+
+        let snapThreshold: CGFloat = 50.0 // 50 point threshold in canvas space for easier snapping
+
+        // Define 9 snap points using actual canvas background bounds
         let snapPoints: [CGPoint] = [
-            // 4 Corners - canvas edges
-            CGPoint(x: 0, y: 0),                        // Top-left corner
-            CGPoint(x: pageWidth, y: 0),                // Top-right corner
-            CGPoint(x: 0, y: pageHeight),               // Bottom-left corner
-            CGPoint(x: pageWidth, y: pageHeight),       // Bottom-right corner
+            // 4 Corners - actual canvas edges
+            CGPoint(x: canvasBounds.minX, y: canvasBounds.minY),      // Top-left corner
+            CGPoint(x: canvasBounds.maxX, y: canvasBounds.minY),      // Top-right corner
+            CGPoint(x: canvasBounds.minX, y: canvasBounds.maxY),      // Bottom-left corner
+            CGPoint(x: canvasBounds.maxX, y: canvasBounds.maxY),      // Bottom-right corner
 
             // 4 Edge midpoints
-            CGPoint(x: pageWidth / 2, y: 0),            // Top edge midpoint
-            CGPoint(x: pageWidth / 2, y: pageHeight),   // Bottom edge midpoint
-            CGPoint(x: 0, y: pageHeight / 2),           // Left edge midpoint
-            CGPoint(x: pageWidth, y: pageHeight / 2),   // Right edge midpoint
+            CGPoint(x: canvasBounds.midX, y: canvasBounds.minY),      // Top edge midpoint
+            CGPoint(x: canvasBounds.midX, y: canvasBounds.maxY),      // Bottom edge midpoint
+            CGPoint(x: canvasBounds.minX, y: canvasBounds.midY),      // Left edge midpoint
+            CGPoint(x: canvasBounds.maxX, y: canvasBounds.midY),      // Right edge midpoint
 
             // 1 Center
-            CGPoint(x: pageWidth / 2, y: pageHeight / 2)
+            CGPoint(x: canvasBounds.midX, y: canvasBounds.midY)
         ]
 
         // Find closest snap point within threshold
@@ -946,6 +959,11 @@ struct PageOriginCrosshair: View {
                 closestDistance = distance
                 closestPoint = snapPoint
             }
+        }
+
+        // Debug output
+        if let snapped = closestPoint {
+            print("SNAP: Input=(\(canvasPoint.x), \(canvasPoint.y)) → Snapped=(\(snapped.x), \(snapped.y)) Distance=\(closestDistance)")
         }
 
         // Return snapped point or original if no snap found
