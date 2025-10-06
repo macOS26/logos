@@ -947,7 +947,7 @@ struct PageOriginCrosshair: View {
         let canvasWidth = document.settings.sizeInPoints.width
         let canvasHeight = document.settings.sizeInPoints.height
 
-        let snapThreshold: CGFloat = 25.0 // 25 point threshold in canvas space
+        let snapThreshold: CGFloat = 10.0 // 10 point threshold in canvas space
 
         // Define 9 snap points - canvas always starts at (0,0)
         let snapPoints: [CGPoint] = [
