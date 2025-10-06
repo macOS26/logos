@@ -47,7 +47,7 @@ struct SelectionHandlesView: View {
                                     isEnvelopeTool: false
                                 )
                             } else {
-                                // Show different handles based on tool for regular shapes
+                                // Show different handles based on tool for regular shapes AND text objects
                                 if document.currentTool == .selection {
                                     // Command key: show red with white outline instead of transform box
                                     if isCommandPressed {
@@ -58,6 +58,7 @@ struct SelectionHandlesView: View {
                                         )
                                     } else {
                                         // Arrow tool: Transform box with 8 handles + center (Illustrator-style)
+                                        // Works for BOTH regular shapes AND text objects (isTextObject = true)
                                         TransformBoxHandles(
                                             document: document,
                                             shape: shape,
@@ -100,8 +101,9 @@ struct SelectionHandlesView: View {
                                 }
                             }
                         }
-                        
-                        // Text objects are now handled as VectorShape with isTextObject = true
+
+                        // Text objects are handled as VectorShape with isTextObject = true
+                        // and use the same TransformBoxHandles as regular shapes
                     }
                 }
             }

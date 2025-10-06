@@ -364,8 +364,8 @@ struct TransformBoxHandles: View {
            let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
             
             var updatedShape = currentShape
-            // SPECIAL-CASE RASTER IMAGES: Keep transforms on transform property instead of baking into path
-            if ImageContentRegistry.containsImage(currentShape) {
+            // SPECIAL-CASE RASTER IMAGES AND TEXT: Keep transforms on transform property instead of baking into path
+            if ImageContentRegistry.containsImage(currentShape) || currentShape.isTextObject {
                 // Commit the preview transform as the shape.transform
                 updatedShape.transform = previewTransform
                 updatedShape.updateBounds()

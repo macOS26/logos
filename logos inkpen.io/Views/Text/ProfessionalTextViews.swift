@@ -37,8 +37,8 @@ struct ProfessionalTextBoxView: View {
                     height: viewModel.textBoxFrame.height + resizeOffset.height
                 )
                 .position(
-                    x: viewModel.textBoxFrame.minX + dragOffset.width + (viewModel.textBoxFrame.width + resizeOffset.width) / 2,
-                    y: viewModel.textBoxFrame.minY + dragOffset.height + (viewModel.textBoxFrame.height + resizeOffset.height) / 2
+                    x: viewModel.textBoxFrame.minX + dragOffset.width + viewModel.textBoxFrame.width / 2 + resizeOffset.width / 2,
+                    y: viewModel.textBoxFrame.minY + dragOffset.height + viewModel.textBoxFrame.height / 2 + resizeOffset.height / 2
                 )
                 .onTapGesture(count: 1) { location in
                     onTextBoxSelect(location)
