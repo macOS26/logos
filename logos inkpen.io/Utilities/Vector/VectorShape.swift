@@ -483,7 +483,22 @@ struct VectorShape: Hashable, Identifiable {
         if isTextObject {
             if let areaSize = areaSize {
                 // Use the user-defined area size for text boxes
-                bounds = CGRect(x: 0, y: 0, width: areaSize.width, height: areaSize.height)
+                var baseBounds = CGRect(x: 0, y: 0, width: areaSize.width, height: areaSize.height)
+
+                // CRITICAL FIX: Apply transform scale to bounds for text objects
+                // When text is scaled, the bounds must reflect the new size
+                if !transform.isIdentity {
+                    // Extract scale from transform
+                    let scaleX = sqrt(transform.a * transform.a + transform.c * transform.c)
+                    let scaleY = sqrt(transform.b * transform.b + transform.d * transform.d)
+                    baseBounds = CGRect(
+                        x: 0,
+                        y: 0,
+                        width: areaSize.width * scaleX,
+                        height: areaSize.height * scaleY
+                    )
+                }
+                bounds = baseBounds
             } else {
                 // Fallback to a default size for text without area size
                 // This prevents infinity bounds which make text unselectable
