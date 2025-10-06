@@ -13,7 +13,6 @@ extension PDFCommandParser {
         // DEBUG: Print all available keys in the gradient dictionary
         CGPDFDictionaryApplyFunction(dict, { key, value, info in
             let keyString = String(cString: key)
-            let valueType = CGPDFObjectGetType(value)
             
             // Check for transform matrices
             if keyString == "Matrix" || keyString == "Transform" {

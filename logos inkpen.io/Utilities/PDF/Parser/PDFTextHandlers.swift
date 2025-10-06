@@ -115,7 +115,6 @@ extension PDFCommandParser {
         var mode: CGPDFInteger = 0
         if CGPDFScannerPopInteger(scanner, &mode) {
             textRenderingMode = Int(mode)
-            let modeDesc = ["fill", "stroke", "fill+stroke", "invisible", "fill+clip", "stroke+clip", "fill+stroke+clip", "clip"][min(Int(mode), 7)]
         }
     }
 

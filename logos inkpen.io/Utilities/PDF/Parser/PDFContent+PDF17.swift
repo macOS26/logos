@@ -104,7 +104,6 @@ extension PDFCommandParser {
         guard CGPDFDictionaryGetName(xObjectStreamDict, "Subtype", &subtypeNamePtr),
               let subtypeName = subtypeNamePtr,
               String(cString: subtypeName) == "Form" else {
-            let subtypeStr = subtypeNamePtr != nil ? String(cString: subtypeNamePtr!) : "unknown"
             return
         }
         
@@ -140,17 +139,6 @@ extension PDFCommandParser {
             // Convert first 200 characters to string to see the PDF operations
             let previewLength = min(dataLength, 200)
             let previewData = Data(bytes: dataPtr, count: previewLength)
-            
-            if let previewString = String(data: previewData, encoding: .ascii) {
-            } else {
-            }
-            
-            // Also check if it's compressed
-            var compressionName: UnsafePointer<CChar>?
-            if CGPDFDictionaryGetName(dictionary, "Filter", &compressionName),
-               let compression = compressionName {
-            } else {
-            }
             
             // NOW ACTUALLY PARSE THE CONTENT STREAM!
             
