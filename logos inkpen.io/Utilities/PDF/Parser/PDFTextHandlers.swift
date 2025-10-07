@@ -673,20 +673,17 @@ extension PDFCommandParser {
             }
         }
 
-        // Detect if Y needs flipping by checking first text position
+        // For Pages PDFs, we need to check each text element individually
+        // Some might need flipping, others might not
         let finalY: CGFloat
-        if needsYFlip == nil && !shapes.isEmpty {
-            // Auto-detect: If Y is in upper half of page, likely needs flip
-            needsYFlip = pdfY > pageSize.height / 2
-            Log.info("PDF: Y-flip detection: \(needsYFlip ?? false) (Y=\(pdfY), pageHeight=\(pageSize.height))", category: .general)
-        }
 
-        if needsYFlip == true {
-            // Need to flip Y coordinate (Pages style - bottom-left origin)
+        // If position came from CTM (Pages style), always flip Y
+        if usesTextMatrixForPosition == false {
+            // Pages style with CTM positioning - needs Y flip
             let flippedY = pageSize.height - pdfY
             finalY = flippedY - actualFontSize
         } else {
-            // No flip needed (InkPen style - top-left origin)
+            // InkPen style or text matrix positioning - no flip needed
             // PDF Y position is at text BASELINE, subtract to get top of text box
             finalY = pdfY - actualFontSize
         }
