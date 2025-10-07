@@ -108,6 +108,10 @@ class PDFCommandParser {
     // PDF creator detection for proper coordinate handling
     var pdfCreator: String = ""
 
+    // Coordinate system auto-detection
+    var usesTextMatrixForPosition: Bool? = nil  // nil = unknown, true = Tm has position, false = CTM has position
+    var needsYFlip: Bool? = nil  // nil = unknown, true = needs flip, false = no flip needed
+
     func parseDocument(at url: URL) -> [VectorShape] {
         commands.removeAll()
         shapes.removeAll()

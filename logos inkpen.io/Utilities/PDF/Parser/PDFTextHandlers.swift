@@ -628,9 +628,39 @@ extension PDFCommandParser {
         currentTextMatrix = currentTextMatrix.concatenating(translation)
     }
 
+    /// Detect coordinate system pattern from current state
+    private func detectCoordinateSystem() {
+        // Check if text matrix has significant position values
+        let tmHasPosition = abs(currentTextStartPosition.x) > 1.0 || abs(currentTextStartPosition.y) > 1.0
+        // Check if CTM has significant position values
+        let ctmHasPosition = abs(currentTransformMatrix.tx) > 1.0 || abs(currentTransformMatrix.ty) > 1.0
+
+        // Determine position source
+        if tmHasPosition && !ctmHasPosition {
+            usesTextMatrixForPosition = true  // InkPen style
+            Log.info("PDF: Detected text position in Tm (InkPen style)", category: .general)
+        } else if ctmHasPosition && !tmHasPosition {
+            usesTextMatrixForPosition = false  // Pages style
+            Log.info("PDF: Detected text position in CTM (Pages style)", category: .general)
+        }
+
+        // Determine Y-flip need based on Y values and page height
+        let firstY = tmHasPosition ? currentTextStartPosition.y : currentTransformMatrix.ty
+        // If Y values are in the upper portion of the page, likely top-left origin (no flip)
+        // If Y values are in the lower portion, likely bottom-left origin (needs flip)
+        if firstY > 0 {
+            needsYFlip = firstY > pageSize.height * 0.7
+        }
+    }
+
     /// Create VectorText object from accumulated text
     private func createVectorTextFromAccumulated() {
         guard !currentTextContent.isEmpty else { return }
+
+        // Auto-detect coordinate system if not yet determined
+        if usesTextMatrixForPosition == nil {
+            detectCoordinateSystem()
+        }
 
         // CRITICAL FIX: Use the STARTING position captured when text matrix was set,
         // NOT the current text matrix which has been advanced by advanceTextPosition()
@@ -638,14 +668,20 @@ extension PDFCommandParser {
         var pdfX = currentTextStartPosition.x
         var pdfY = currentTextStartPosition.y
 
-        // CONDITIONAL: Pages PDFs apply transform matrix AFTER BT
-        // InkPen PDFs work correctly with existing logic
-        if !pdfCreator.lowercased().contains("inkpen") {
-            // For Pages and other PDFs: use ONLY the current transform matrix position
-            // The cm command has the actual position, Tm is just scaling
-            // DO NOT add text matrix position - it's (0,0) and causes offset issues
-            pdfX = currentTransformMatrix.tx
-            pdfY = currentTransformMatrix.ty
+        // Use detected coordinate system pattern
+        if let usesTextMatrix = usesTextMatrixForPosition {
+            if !usesTextMatrix {
+                // Pages-style: position is in CTM, text matrix is just scale
+                pdfX = currentTransformMatrix.tx
+                pdfY = currentTransformMatrix.ty
+            }
+            // else: InkPen-style: position is already in text matrix (currentTextStartPosition)
+        } else {
+            // Fallback to creator-based detection if auto-detection failed
+            if !pdfCreator.lowercased().contains("inkpen") {
+                pdfX = currentTransformMatrix.tx
+                pdfY = currentTransformMatrix.ty
+            }
         }
 
         // Get matrix scale for font size calculation
@@ -656,16 +692,25 @@ extension PDFCommandParser {
         let matrixFontSize = abs(tm.d)  // d is vertical scale (font height)
         let actualFontSize = currentFontSize * matrixFontSize
 
-        // CONDITIONAL Y-coordinate handling
+        // Use detected Y-flip pattern
         let finalY: CGFloat
-        if pdfCreator.lowercased().contains("inkpen") {
-            // InkPen.io PDFs: Keep existing logic - works correctly
-            finalY = pdfY - actualFontSize
+        if let needsFlip = needsYFlip {
+            if needsFlip {
+                // Need Y-flip (Pages style)
+                let flippedY = pageSize.height - pdfY
+                finalY = flippedY - actualFontSize
+            } else {
+                // No flip needed (InkPen style)
+                finalY = pdfY - actualFontSize
+            }
         } else {
-            // Pages and other PDFs: Need Y-flip for correct positioning
-            // Convert from PDF coordinates (bottom-left) to app coordinates (top-left)
-            let flippedY = pageSize.height - pdfY
-            finalY = flippedY - actualFontSize
+            // Fallback to creator-based detection
+            if pdfCreator.lowercased().contains("inkpen") {
+                finalY = pdfY - actualFontSize
+            } else {
+                let flippedY = pageSize.height - pdfY
+                finalY = flippedY - actualFontSize
+            }
         }
 
         let position = CGPoint(x: pdfX, y: finalY)
