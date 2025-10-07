@@ -635,8 +635,18 @@ extension PDFCommandParser {
         // CRITICAL FIX: Use the STARTING position captured when text matrix was set,
         // NOT the current text matrix which has been advanced by advanceTextPosition()
         // This prevents X position drift for multi-segment text on the same line
-        let pdfX = currentTextStartPosition.x
-        let pdfY = currentTextStartPosition.y
+        var pdfX = currentTextStartPosition.x
+        var pdfY = currentTextStartPosition.y
+
+        // CONDITIONAL: Pages PDFs apply transform matrix AFTER BT
+        // InkPen PDFs work correctly with existing logic
+        if !pdfCreator.lowercased().contains("inkpen") {
+            // For Pages and other PDFs: use ONLY the current transform matrix position
+            // The cm command has the actual position, Tm is just scaling
+            // DO NOT add text matrix position - it's (0,0) and causes offset issues
+            pdfX = currentTransformMatrix.tx
+            pdfY = currentTransformMatrix.ty
+        }
 
         // Get matrix scale for font size calculation
         let tm = currentTextMatrix
@@ -646,10 +656,18 @@ extension PDFCommandParser {
         let matrixFontSize = abs(tm.d)  // d is vertical scale (font height)
         let actualFontSize = currentFontSize * matrixFontSize
 
-        // CRITICAL FIX: PDF Y position is at text BASELINE
-        // We need Y at TOP of text box, so subtract text size (ascent)
-        // PDF baseline → Top of text box: subtract font size
-        let finalY = pdfY - actualFontSize
+        // CONDITIONAL Y-coordinate handling
+        let finalY: CGFloat
+        if pdfCreator.lowercased().contains("inkpen") {
+            // InkPen.io PDFs: Keep existing logic - works correctly
+            finalY = pdfY - actualFontSize
+        } else {
+            // Pages and other PDFs: Need Y-flip for correct positioning
+            // Convert from PDF coordinates (bottom-left) to app coordinates (top-left)
+            let flippedY = pageSize.height - pdfY
+            finalY = flippedY - actualFontSize
+        }
+
         let position = CGPoint(x: pdfX, y: finalY)
 
 

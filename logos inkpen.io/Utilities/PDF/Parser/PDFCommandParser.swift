@@ -105,6 +105,9 @@ class PDFCommandParser {
     // Font encoding support for ligatures and custom encodings
     var currentFontDict: CGPDFDictionaryRef? = nil  // Current font dictionary for ToUnicode CMap
 
+    // PDF creator detection for proper coordinate handling
+    var pdfCreator: String = ""
+
     func parseDocument(at url: URL) -> [VectorShape] {
         commands.removeAll()
         shapes.removeAll()
@@ -117,7 +120,10 @@ class PDFCommandParser {
         
         // Detect PDF version
         detectedPDFVersion = detectPDFVersion(document: document)
-        
+
+        // Detect PDF creator for conditional handling
+        detectPDFCreator(document: document)
+
         // Get page size and origin from first page
         if let firstPage = document.page(at: 1) {
             let mediaBox = firstPage.getBoxRect(.mediaBox)
@@ -162,6 +168,25 @@ class PDFCommandParser {
         // For now, assume PDF 1.4+ since we're dealing with transparency features
         let versionString = "PDF1.7"  // Shorter format for logging
         return versionString
+    }
+
+    func detectPDFCreator(document: CGPDFDocument) {
+        // Try to get the info dictionary from the PDF
+        guard let info = document.info else {
+            pdfCreator = ""
+            return
+        }
+
+        // Try to get Creator string from info dictionary
+        var creatorStringRef: CGPDFStringRef?
+        if CGPDFDictionaryGetString(info, "Creator", &creatorStringRef),
+           let creatorStringRef = creatorStringRef {
+            // Convert to Swift String
+            if let cfString = CGPDFStringCopyTextString(creatorStringRef) {
+                pdfCreator = cfString as String
+                Log.info("PDF Creator detected: \(pdfCreator)", category: .general)
+            }
+        }
     }
     
     func parsePage(document: CGPDFDocument, pageNumber: Int) {
