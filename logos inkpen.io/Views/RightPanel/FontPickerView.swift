@@ -30,6 +30,11 @@ struct FontPickerView: View {
         let family = currentFontFamily
         return document.fontManager.getAvailableWeights(for: family)
     }
+
+    private var availableFontVariantNames: [String] {
+        let family = currentFontFamily
+        return document.fontManager.getAvailableVariantNames(for: family)
+    }
     
     private var availableFontStyles: [FontStyle] {
         let family = currentFontFamily

@@ -461,7 +461,10 @@ class FontManager: ObservableObject {
     @Published var availableFonts: [String] = []
     @Published var systemFonts: [String] = []
     @Published var googleFonts: [String] = []
-    
+
+    // Cache for font variants to avoid expensive NSFontManager calls
+    private var fontVariantsCache: [String: [String]] = [:]
+
     // SELECTED FONT PROPERTIES for new text objects
     @Published var selectedFontFamily: String = "Helvetica Neue"
     @Published var selectedFontWeight: FontWeight = .regular
@@ -495,6 +498,35 @@ class FontManager: ObservableObject {
         availableFonts = orderedFonts
     }
     
+    // Get all font variant names for a family (for display in Weight picker)
+    func getAvailableVariantNames(for family: String) -> [String] {
+        // Check cache first
+        if let cached = fontVariantsCache[family] {
+            return cached
+        }
+
+        // Not in cache, calculate and store
+        let fontManager = NSFontManager.shared
+        let members = fontManager.availableMembers(ofFontFamily: family) ?? []
+
+        var variants: [(name: String, weight: Int)] = []
+
+        for member in members {
+            if let displayName = member[1] as? String,
+               let weightNumber = member[2] as? NSNumber {
+                variants.append((name: displayName, weight: weightNumber.intValue))
+            }
+        }
+
+        // Sort by weight (light to heavy)
+        let sortedVariants = variants.sorted { $0.weight < $1.weight }.map { $0.name }
+
+        // Store in cache
+        fontVariantsCache[family] = sortedVariants
+
+        return sortedVariants
+    }
+
     // Get font weights available for a family
     func getAvailableWeights(for family: String) -> [FontWeight] {
         let fontManager = NSFontManager.shared
