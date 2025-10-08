@@ -14,27 +14,38 @@ extension VectorDocument {
     
     /// Group selected objects
     func groupSelectedObjects() {
+        // CRITICAL FIX: Include BOTH selectedShapeIDs AND selectedTextIDs for grouping
+        let allSelectedIDs = selectedShapeIDs.union(selectedTextIDs)
+
         guard let layerIndex = selectedLayerIndex,
-              selectedShapeIDs.count > 1 else { return }
-        
+              allSelectedIDs.count > 1 else {
+            Log.info("❌ GROUPING FAILED: layerIndex=\(selectedLayerIndex?.description ?? "nil") total selected=\(allSelectedIDs.count) (shapes=\(selectedShapeIDs.count) + text=\(selectedTextIDs.count))", category: .general)
+            return
+        }
+
         saveToUndoStack()
-        
-        // Get selected shapes from unified objects
-        let selectedShapes = getShapesForLayer(layerIndex).filter { selectedShapeIDs.contains($0.id) }
-        
+
+        // Get ALL selected shapes (including text objects) from unified objects
+        let selectedShapes = getShapesForLayer(layerIndex).filter { allSelectedIDs.contains($0.id) }
+        Log.info("✅ GROUPING: Found \(selectedShapes.count) shapes to group. Text objects: \(selectedShapes.filter { $0.isTextObject }.count)", category: .general)
+
         // Create group from selected shapes
         let groupShape = VectorShape.group(from: selectedShapes, name: "Group")
+        Log.info("✅ CREATED GROUP: bounds=\(groupShape.bounds) groupBounds=\(groupShape.groupBounds)", category: .general)
         
-        // Remove individual shapes
-        removeShapesUnified(layerIndex: layerIndex, where: { selectedShapeIDs.contains($0.id) })
-        
+        // Remove individual shapes (including text objects)
+        removeShapesUnified(layerIndex: layerIndex, where: { allSelectedIDs.contains($0.id) })
+
         // Add group
         appendShapeToLayerUnified(layerIndex: layerIndex, shape: groupShape)
+
+        // Clear both selection sets and select only the new group
         selectedShapeIDs = [groupShape.id]
-        
+        selectedTextIDs.removeAll()
+
         // CRITICAL FIX: Update unified objects system after grouping
         populateUnifiedObjectsFromLayersPreservingOrder()
-        
+
         // CRITICAL FIX: Update unified selection to use the new group
         selectedObjectIDs = [groupShape.id]
         
