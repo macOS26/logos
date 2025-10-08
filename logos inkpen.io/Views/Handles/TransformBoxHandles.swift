@@ -33,13 +33,23 @@ struct TransformBoxHandles: View {
 
         ZStack {
             // Bounding rectangle (dashed)
-            // CRITICAL FIX: Use Path with CGRect to match ShapeView rendering exactly
-            // Path coordinates are in canvas space, just like shape.path
-            Path(transformedBounds)
-                .stroke(Color.black.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .allowsHitTesting(false)
+            // CRITICAL FIX: For text objects, use Rectangle with .position() to match text box rendering
+            // For other shapes, use Path(CGRect) to match ShapeView rendering
+            if shape.isTextObject {
+                Rectangle()
+                    .stroke(Color.black.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
+                    .frame(width: transformedBounds.width, height: transformedBounds.height)
+                    .position(x: transformedBounds.midX, y: transformedBounds.midY)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .allowsHitTesting(false)
+            } else {
+                Path(transformedBounds)
+                    .stroke(Color.black.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .allowsHitTesting(false)
+            }
 
             // Red preview outline when scaling
             if isScaling && !previewTransform.isIdentity {
@@ -146,8 +156,9 @@ struct TransformBoxHandles: View {
                         .frame(width: handleSize, height: handleSize)
                         .allowsHitTesting(false)  // Hit testing handled by larger area
                 }
-                .position(CGPoint(x: pt.x * zoomLevel + canvasOffset.x,
-                                  y: pt.y * zoomLevel + canvasOffset.y))
+                // CRITICAL FIX: Handles stay constant screen size - convert canvas position to screen position
+                // Canvas position * zoom + offset = screen position
+                .position(CGPoint(x: pt.x * zoomLevel + canvasOffset.x, y: pt.y * zoomLevel + canvasOffset.y))
                 .onTapGesture {
                     // Click to set this handle as the anchor point (red dot)
                     setAnchorPoint(forHandle: index)
