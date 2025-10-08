@@ -183,4 +183,20 @@ extension PDFCommandParser {
             currentStrokeColor = color
         }
     }
+
+    // MARK: - Alpha/Opacity Handlers
+
+    func handleFillAlpha(scanner: CGPDFScannerRef) {
+        var alpha: CGFloat = 0
+        if CGPDFScannerPopNumber(scanner, &alpha) {
+            currentFillOpacity = Double(alpha)
+        }
+    }
+
+    func handleStrokeAlpha(scanner: CGPDFScannerRef) {
+        var alpha: CGFloat = 0
+        if CGPDFScannerPopNumber(scanner, &alpha) {
+            currentStrokeOpacity = Double(alpha)
+        }
+    }
 }

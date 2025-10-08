@@ -194,10 +194,17 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
 
         // CRITICAL: Always apply paragraph style to ALL existing text
         // This ensures consistent rendering between editing and non-editing states
-        if nsView.string.count > 0 {
-            let range = NSRange(location: 0, length: nsView.string.count)
-            DispatchQueue.main.async {
-                nsView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
+        DispatchQueue.main.async {
+            // Calculate range inside async to avoid race conditions
+            guard nsView.string.count > 0 else { return }
+            let safeRange = NSRange(location: 0, length: nsView.string.count)
+
+            // Safely add attribute with bounds checking
+            if let textStorage = nsView.textStorage,
+               safeRange.location >= 0,
+               safeRange.location + safeRange.length <= textStorage.length {
+                textStorage.addAttribute(.paragraphStyle, value: paragraphStyle, range: safeRange)
+
                 // Force immediate layout update for consistent display
                 if let textContainer = nsView.textContainer {
                     nsView.layoutManager?.ensureLayout(for: textContainer)

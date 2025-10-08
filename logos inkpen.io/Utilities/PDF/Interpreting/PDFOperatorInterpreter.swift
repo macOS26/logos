@@ -119,7 +119,20 @@ class PDFOperatorInterpreter {
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
             parser.handleGenericStrokeColor(scanner: scanner)
         }
-        
+
+        // Alpha/Opacity operators
+        CGPDFOperatorTableSetCallback(operatorTable, "ca") { (scanner, info) in
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            parser.handleFillAlpha(scanner: scanner)
+        }
+
+        CGPDFOperatorTableSetCallback(operatorTable, "CA") { (scanner, info) in
+            guard let info = info else { return }
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
+            parser.handleStrokeAlpha(scanner: scanner)
+        }
+
         // MARK: - Paint Operators
         
         // Fill operators
