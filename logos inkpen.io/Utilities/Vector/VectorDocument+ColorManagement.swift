@@ -97,48 +97,41 @@ extension VectorDocument {
 
         // Apply to selected objects from unified system
         for objectID in selectedObjectIDs {
-            // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
-            if let unifiedObject = findObject(by: objectID) {
-                switch unifiedObject.objectType {
-                case .shape(let shape):
-                    if shape.isTextObject {
-                        // MIGRATION: Use unified helpers instead of direct assignment
-                        // FIX: Removed saveToUndoStack() - already saved once above
-                        switch activeColorTarget {
-                        case .fill:
-                            updateTextFillColorInUnified(id: shape.id, color: color)
-                        case .stroke:
-                            updateTextStrokeColorInUnified(id: shape.id, color: color)
+            // CRITICAL FIX: Use updateShapeByID to support grouped children
+            updateShapeByID(objectID) { shape in
+                if shape.isTextObject {
+                    // Handle text objects
+                    switch activeColorTarget {
+                    case .fill:
+                        if shape.typography != nil {
+                            shape.typography?.fillColor = color
+                            shape.typography?.fillOpacity = defaultFillOpacity
                         }
-                        hasChanges = true
-                    } else {
-                        // Handle regular shapes in layers array
-                        if let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil {
-                            let shapes = getShapesForLayer(layerIndex)
-                            if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }),
-                               var updatedShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                                // FIX: Removed saveToUndoStack() - already saved once above
-                                switch activeColorTarget {
-                                case .fill:
-                                    if updatedShape.fillStyle == nil {
-                                        updatedShape.fillStyle = FillStyle(color: color)
-                                    } else {
-                                        updatedShape.fillStyle?.color = color
-                                    }
-                                case .stroke:
-                                    if updatedShape.strokeStyle == nil {
-                                        updatedShape.strokeStyle = StrokeStyle(color: color, placement: .center)
-                                    } else {
-                                        updatedShape.strokeStyle?.color = color
-                                    }
-                                }
-                                setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-                                hasChanges = true
-                            }
+                    case .stroke:
+                        if shape.typography != nil {
+                            shape.typography?.hasStroke = true
+                            shape.typography?.strokeColor = color
+                        }
+                    }
+                } else {
+                    // Handle regular shapes
+                    switch activeColorTarget {
+                    case .fill:
+                        if shape.fillStyle == nil {
+                            shape.fillStyle = FillStyle(color: color)
+                        } else {
+                            shape.fillStyle?.color = color
+                        }
+                    case .stroke:
+                        if shape.strokeStyle == nil {
+                            shape.strokeStyle = StrokeStyle(color: color, placement: .center)
+                        } else {
+                            shape.strokeStyle?.color = color
                         }
                     }
                 }
             }
+            hasChanges = true
         }
         
         // CRITICAL FIX: Sync unified objects for live color updates

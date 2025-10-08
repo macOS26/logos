@@ -34,7 +34,7 @@ extension VectorDocument {
         let shapes = getShapesForLayer(layerIndex)
         guard shapeIndex >= 0 && shapeIndex < shapes.count else { return }
         let oldShape = shapes[shapeIndex]
-        
+
         // Find and update in unified objects
         if let index = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let s) = obj.objectType {
@@ -45,6 +45,44 @@ extension VectorDocument {
             let orderID = unifiedObjects[index].orderID
             unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
             // REMOVED: objectWillChange.send() - unifiedObjects is @Published
+        }
+    }
+
+    /// CRITICAL: Update a shape by ID, whether it's standalone or inside a group
+    func updateShapeByID(_ shapeID: UUID, update: (inout VectorShape) -> Void) {
+        // First check standalone objects
+        if let index = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let s) = obj.objectType {
+                return s.id == shapeID
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[index].objectType {
+                update(&shape)
+                let orderID = unifiedObjects[index].orderID
+                let layerIndex = unifiedObjects[index].layerIndex
+                unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+            }
+            return
+        }
+
+        // CRITICAL FIX: Check inside groups
+        for groupIndex in unifiedObjects.indices {
+            if case .shape(var groupShape) = unifiedObjects[groupIndex].objectType,
+               groupShape.isGroupContainer {
+                if let childIndex = groupShape.groupedShapes.firstIndex(where: { $0.id == shapeID }) {
+                    // Update the child shape
+                    var childShape = groupShape.groupedShapes[childIndex]
+                    update(&childShape)
+                    groupShape.groupedShapes[childIndex] = childShape
+
+                    // Update the group in unifiedObjects
+                    let orderID = unifiedObjects[groupIndex].orderID
+                    let layerIndex = unifiedObjects[groupIndex].layerIndex
+                    unifiedObjects[groupIndex] = VectorObject(shape: groupShape, layerIndex: layerIndex, orderID: orderID)
+                    return
+                }
+            }
         }
     }
     

@@ -105,77 +105,32 @@ extension VectorDocument {
     // MARK: - UNIFIED OPACITY AND STROKE HELPERS
     
     func updateTextFillOpacityInUnified(id: UUID, opacity: Double) {
-        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject && shape.id == id
-            }
-            return false
-        }) {
-            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
-                shape.typography?.fillOpacity = opacity
-                
-                unifiedObjects[objectIndex] = VectorObject(
-                    shape: shape,
-                    layerIndex: unifiedObjects[objectIndex].layerIndex,
-                    orderID: unifiedObjects[objectIndex].orderID
-                )
-                
-                // Sync to layers
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
-            }
+        // CRITICAL FIX: Use updateShapeByID to support grouped children
+        updateShapeByID(id) { shape in
+            shape.typography?.fillOpacity = opacity
         }
     }
     
     func updateTextStrokeWidthInUnified(id: UUID, width: Double) {
-        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject && shape.id == id
-            }
-            return false
-        }) {
-            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
-                shape.typography?.strokeWidth = width
-                shape.typography?.hasStroke = width > 0
-                
-                unifiedObjects[objectIndex] = VectorObject(
-                    shape: shape,
-                    layerIndex: unifiedObjects[objectIndex].layerIndex,
-                    orderID: unifiedObjects[objectIndex].orderID
-                )
-                
-                // Sync to layers
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
-            }
+        // CRITICAL FIX: Use updateShapeByID to support grouped children
+        updateShapeByID(id) { shape in
+            shape.typography?.strokeWidth = width
+            shape.typography?.hasStroke = width > 0
         }
     }
     
     // MARK: - UNIFIED POSITION HELPERS
     
     func translateTextInUnified(id: UUID, delta: CGPoint) {
-        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject && shape.id == id
-            }
-            return false
-        }) {
-            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
-                // Update position in transform
-                shape.transform.tx += delta.x
-                shape.transform.ty += delta.y
-                
-                // Also update textPosition if it exists
-                if let textPos = shape.textPosition {
-                    shape.textPosition = CGPoint(x: textPos.x + delta.x, y: textPos.y + delta.y)
-                }
-                
-                unifiedObjects[objectIndex] = VectorObject(
-                    shape: shape,
-                    layerIndex: unifiedObjects[objectIndex].layerIndex,
-                    orderID: unifiedObjects[objectIndex].orderID
-                )
-                
-                // Sync to layers
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
+        // CRITICAL FIX: Use updateShapeByID to support grouped children
+        updateShapeByID(id) { shape in
+            // Update position in transform
+            shape.transform.tx += delta.x
+            shape.transform.ty += delta.y
+
+            // Also update textPosition if it exists
+            if let textPos = shape.textPosition {
+                shape.textPosition = CGPoint(x: textPos.x + delta.x, y: textPos.y + delta.y)
             }
         }
     }

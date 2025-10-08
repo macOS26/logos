@@ -15,84 +15,50 @@ extension VectorDocument {
     func updateTextFontFamilyDirect(id: UUID, fontFamily: String) {
         saveToUndoStack()
 
-        guard let index = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.id == id
-            }
-            return false
-        }),
-        case .shape(var shape) = unifiedObjects[index].objectType else { return }
-
-        shape.typography?.fontFamily = fontFamily
-        unifiedObjects[index] = VectorObject(
-            shape: shape,
-            layerIndex: unifiedObjects[index].layerIndex,
-            orderID: unifiedObjects[index].orderID
-        )
-        objectWillChange.send()
+        // CRITICAL FIX: Use updateShapeByID to support grouped children
+        updateShapeByID(id) { shape in
+            shape.typography?.fontFamily = fontFamily
+        }
     }
 
     /// FAST O(1) update - change ONLY the font variant
     func updateTextFontVariantDirect(id: UUID, fontVariant: String) {
         saveToUndoStack()
 
-        guard let index = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.id == id
-            }
-            return false
-        }),
-        case .shape(var shape) = unifiedObjects[index].objectType else { return }
+        // CRITICAL FIX: Use updateShapeByID to support grouped children
+        updateShapeByID(id) { shape in
+            shape.typography?.fontVariant = fontVariant
 
-        shape.typography?.fontVariant = fontVariant
+            // Also derive weight and style from the variant
+            if let typography = shape.typography {
+                let fontManager = NSFontManager.shared
+                let members = fontManager.availableMembers(ofFontFamily: typography.fontFamily) ?? []
 
-        // Also derive weight and style from the variant
-        if let typography = shape.typography {
-            let fontManager = NSFontManager.shared
-            let members = fontManager.availableMembers(ofFontFamily: typography.fontFamily) ?? []
+                for member in members {
+                    if let displayName = member[1] as? String,
+                       displayName == fontVariant,
+                       let weightNumber = member[2] as? NSNumber {
 
-            for member in members {
-                if let displayName = member[1] as? String,
-                   displayName == fontVariant,
-                   let weightNumber = member[2] as? NSNumber {
+                        // Map weight
+                        let nsWeight = weightNumber.intValue
+                        shape.typography?.fontWeight = self.fontManager.mapNSWeightToFontWeight(nsWeight)
 
-                    // Map weight
-                    let nsWeight = weightNumber.intValue
-                    shape.typography?.fontWeight = self.fontManager.mapNSWeightToFontWeight(nsWeight)
-
-                    // Style is now in variant name, no need to set deprecated fontStyle
-                    break
+                        // Style is now in variant name, no need to set deprecated fontStyle
+                        break
+                    }
                 }
             }
         }
-
-        unifiedObjects[index] = VectorObject(
-            shape: shape,
-            layerIndex: unifiedObjects[index].layerIndex,
-            orderID: unifiedObjects[index].orderID
-        )
-        objectWillChange.send()
     }
 
     /// FAST O(1) update - change ONLY the font weight
     func updateTextFontWeightDirect(id: UUID, fontWeight: FontWeight) {
         saveToUndoStack()
 
-        guard let index = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.id == id
-            }
-            return false
-        }),
-        case .shape(var shape) = unifiedObjects[index].objectType else { return }
-
-        shape.typography?.fontWeight = fontWeight
-        unifiedObjects[index] = VectorObject(
-            shape: shape,
-            layerIndex: unifiedObjects[index].layerIndex,
-            orderID: unifiedObjects[index].orderID
-        )
-        objectWillChange.send()
+        // CRITICAL FIX: Use updateShapeByID to support grouped children
+        updateShapeByID(id) { shape in
+            shape.typography?.fontWeight = fontWeight
+        }
     }
 
     // DEPRECATED: fontStyle removed - style is now encoded in fontVariant name
@@ -167,28 +133,17 @@ extension VectorDocument {
     /// MIGRATED FROM ColorSwatchGrid - Update text fill color using unified system
     /// NO MORE DUPLICATES - USE THIS ONE HELPER EVERYWHERE
     func updateTextFillColorInUnified(id: UUID, color: VectorColor) {
-        guard let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject && shape.id == id
+        // CRITICAL FIX: Use updateShapeByID to support grouped children
+        updateShapeByID(id) { shape in
+            if shape.typography != nil {
+                shape.typography?.fillColor = color
+                shape.typography?.fillOpacity = defaultFillOpacity
+            } else if let textObject = findText(by: id) {
+                shape.typography = textObject.typography
+                shape.typography?.fillColor = color
+                shape.typography?.fillOpacity = defaultFillOpacity
             }
-            return false
-        }),
-        case .shape(var shape) = unifiedObjects[objectIndex].objectType else { return }
-
-        if shape.typography != nil {
-            shape.typography?.fillColor = color
-            shape.typography?.fillOpacity = defaultFillOpacity
-        } else if let textObject = findText(by: id) {
-            shape.typography = textObject.typography
-            shape.typography?.fillColor = color
-            shape.typography?.fillOpacity = defaultFillOpacity
         }
-
-        unifiedObjects[objectIndex] = VectorObject(
-            shape: shape,
-            layerIndex: unifiedObjects[objectIndex].layerIndex,
-            orderID: unifiedObjects[objectIndex].orderID
-        )
     }
     
     /// MIGRATED FROM ColorPanel - Update text stroke color using unified system
@@ -196,44 +151,23 @@ extension VectorDocument {
     /// CRITICAL FIX: Update text typography in unified objects and layers to keep them in sync
     /// This prevents typography from being reset when color changes
     func updateTextTypographyInUnified(id: UUID, typography: TypographyProperties) {
-        guard let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject && shape.id == id
-            }
-            return false
-        }),
-        case .shape(var shape) = unifiedObjects[objectIndex].objectType else { return }
-
-        shape.typography = typography
-        unifiedObjects[objectIndex] = VectorObject(
-            shape: shape,
-            layerIndex: unifiedObjects[objectIndex].layerIndex,
-            orderID: unifiedObjects[objectIndex].orderID
-        )
+        // CRITICAL FIX: Use updateShapeByID to support grouped children
+        updateShapeByID(id) { shape in
+            shape.typography = typography
+        }
     }
 
     func updateTextStrokeColorInUnified(id: UUID, color: VectorColor) {
-        guard let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject && shape.id == id
+        // CRITICAL FIX: Use updateShapeByID to support grouped children
+        updateShapeByID(id) { shape in
+            if shape.typography != nil {
+                shape.typography?.hasStroke = true
+                shape.typography?.strokeColor = color
+            } else if let textObject = findText(by: id) {
+                shape.typography = textObject.typography
+                shape.typography?.hasStroke = true
+                shape.typography?.strokeColor = color
             }
-            return false
-        }),
-        case .shape(var shape) = unifiedObjects[objectIndex].objectType else { return }
-
-        if shape.typography != nil {
-            shape.typography?.hasStroke = true
-            shape.typography?.strokeColor = color
-        } else if let textObject = findText(by: id) {
-            shape.typography = textObject.typography
-            shape.typography?.hasStroke = true
-            shape.typography?.strokeColor = color
         }
-
-        unifiedObjects[objectIndex] = VectorObject(
-            shape: shape,
-            layerIndex: unifiedObjects[objectIndex].layerIndex,
-            orderID: unifiedObjects[objectIndex].orderID
-        )
     }
 }
