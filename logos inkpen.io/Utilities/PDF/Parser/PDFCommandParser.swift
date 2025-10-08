@@ -172,16 +172,19 @@ class PDFCommandParser {
             // Copy shapes for return
             let result = shapes
 
-            // MEMORY FIX: Clear all temporary data after parsing completes
-            shapes.removeAll()
-            commands.removeAll()
-            currentPath.removeAll()
-            compoundPathParts.removeAll()
-            gradientShapes.removeAll()
-            activeGradient = nil
-            currentFillGradient = nil
-            currentStrokeGradient = nil
-            pendingClippingPath = nil
+            // MEMORY FIX: Defer cleanup until after document is displayed
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.shapes.removeAll()
+                self.commands.removeAll()
+                self.currentPath.removeAll()
+                self.compoundPathParts.removeAll()
+                self.gradientShapes.removeAll()
+                self.activeGradient = nil
+                self.currentFillGradient = nil
+                self.currentStrokeGradient = nil
+                self.pendingClippingPath = nil
+            }
 
             return result
         }
