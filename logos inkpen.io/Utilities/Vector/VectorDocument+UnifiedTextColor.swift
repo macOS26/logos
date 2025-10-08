@@ -54,17 +54,13 @@ extension VectorDocument {
             for member in members {
                 if let displayName = member[1] as? String,
                    displayName == fontVariant,
-                   let weightNumber = member[2] as? NSNumber,
-                   let traits = member[3] as? NSNumber {
-
-                    let traitMask = NSFontDescriptor.SymbolicTraits(rawValue: UInt32(traits.intValue))
+                   let weightNumber = member[2] as? NSNumber {
 
                     // Map weight
                     let nsWeight = weightNumber.intValue
                     shape.typography?.fontWeight = self.fontManager.mapNSWeightToFontWeight(nsWeight)
 
-                    // Map style
-                    shape.typography?.fontStyle = traitMask.contains(.italic) ? .italic : .normal
+                    // Style is now in variant name, no need to set deprecated fontStyle
                     break
                 }
             }
@@ -99,26 +95,7 @@ extension VectorDocument {
         objectWillChange.send()
     }
 
-    /// FAST O(1) update - change ONLY the font style
-    func updateTextFontStyleDirect(id: UUID, fontStyle: FontStyle) {
-        saveToUndoStack()
-
-        guard let index = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.id == id
-            }
-            return false
-        }),
-        case .shape(var shape) = unifiedObjects[index].objectType else { return }
-
-        shape.typography?.fontStyle = fontStyle
-        unifiedObjects[index] = VectorObject(
-            shape: shape,
-            layerIndex: unifiedObjects[index].layerIndex,
-            orderID: unifiedObjects[index].orderID
-        )
-        objectWillChange.send()
-    }
+    // DEPRECATED: fontStyle removed - style is now encoded in fontVariant name
 
     /// FAST O(1) preview update - change ONLY the font size for live preview
     /// Uses preview typography to avoid updating unified objects during drag

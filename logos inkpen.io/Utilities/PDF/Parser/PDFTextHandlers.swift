@@ -712,7 +712,6 @@ extension PDFCommandParser {
         let fullFontName = currentFontName ?? "Helvetica"
         var fontFamily = fullFontName
         var fontWeight: FontWeight = .regular
-        var fontStyle: FontStyle = .normal
         var fontVariant: String? = nil
 
         // Parse weight and style from font name (e.g. "Helvetica-Bold", "HelveticaNeue-LightItalic")
@@ -739,9 +738,8 @@ extension PDFCommandParser {
                     // Check if this PostScript name matches
                     if postScriptName == fullFontName {
                         fontVariant = displayName
-                        // Also extract weight and style for compatibility
-                        if let weightNumber = member[2] as? NSNumber,
-                           let traits = member[3] as? NSNumber {
+                        // Also extract weight for compatibility
+                        if let weightNumber = member[2] as? NSNumber {
                             let nsWeight = weightNumber.intValue
                             // Map weight from NSFont weight value
                             switch nsWeight {
@@ -756,8 +754,7 @@ extension PDFCommandParser {
                             default: fontWeight = .black
                             }
 
-                            let traitMask = NSFontDescriptor.SymbolicTraits(rawValue: UInt32(traits.intValue))
-                            fontStyle = traitMask.contains(.italic) ? .italic : .normal
+                            // Style is now encoded in variant name, no need to set deprecated fontStyle
                         }
                         break
                     }
@@ -785,10 +782,7 @@ extension PDFCommandParser {
                     fontWeight = .heavy
                 }
 
-                // Parse style
-                if lowerVariant.contains("italic") || lowerVariant.contains("oblique") {
-                    fontStyle = .italic
-                }
+                // Style will be detected from variant name later, no need to set deprecated fontStyle
             }
         }
 
@@ -820,7 +814,7 @@ extension PDFCommandParser {
             fontFamily: fontFamily,
             fontVariant: fontVariant,  // Include the variant if found
             fontWeight: fontWeight,    // Use parsed weight
-            fontStyle: fontStyle,      // Use parsed style
+            fontStyle: .normal,        // DEPRECATED: Will be migrated from variant on load
             fontSize: fontSize,
             lineHeight: fontSize * 1.2,  // Default line height
             lineSpacing: textLeading,

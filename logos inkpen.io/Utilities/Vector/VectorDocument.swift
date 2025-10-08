@@ -865,6 +865,9 @@ class VectorDocument: ObservableObject, Codable {
         
         // Load stroke style defaults
         loadStrokeStyleDefaults()
+
+        // MIGRATION: Fix legacy text objects with missing font properties
+        migrateLegacyTextObjects()
     }
     
 

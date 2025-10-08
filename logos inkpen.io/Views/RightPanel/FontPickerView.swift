@@ -26,21 +26,9 @@ struct FontPickerView: View {
         }
     }
     
-    // DEPRECATED - kept for compatibility but not used
-    private var availableFontWeights: [FontWeight] {
-        let family = currentFontFamily
-        return document.fontManager.getAvailableWeights(for: family)
-    }
-
     private var availableFontVariantNames: [String] {
         let family = currentFontFamily
         return document.fontManager.getAvailableVariantNames(for: family)
-    }
-
-    // DEPRECATED - Style is now part of variant selection
-    private var availableFontStyles: [FontStyle] {
-        let family = currentFontFamily
-        return document.fontManager.getAvailableStyles(for: family)
     }
     
     var body: some View {
@@ -107,10 +95,10 @@ struct FontPickerView: View {
 
                                 let memberWeight = mapNSWeightToFontWeight(weightNumber.intValue)
                                 let traitMask = NSFontDescriptor.SymbolicTraits(rawValue: UInt32(traits.intValue))
-                                let memberStyle: FontStyle = traitMask.contains(.italic) ? .italic : .normal
+                                let memberIsItalic = traitMask.contains(.italic)
 
                                 if memberWeight == selectedText.typography.fontWeight &&
-                                   memberStyle == selectedText.typography.fontStyle {
+                                   memberIsItalic == selectedText.typography.isItalic {
                                     return displayName
                                 }
                             }
@@ -146,43 +134,6 @@ struct FontPickerView: View {
 
             // Font Style - DEPRECATED: All variants are now in Weight picker
             // Keeping this hidden as style is now included in the variant selection
-        }
-    }
-    
-    private func createPreviewFont(family: String, weight: FontWeight, style: FontStyle) -> Font {
-        let fontManager = NSFontManager.shared
-        let members = fontManager.availableMembers(ofFontFamily: family) ?? []
-        
-        for member in members {
-            if let fontName = member[1] as? String,
-               let weightNumber = member[2] as? NSNumber,
-               let traits = member[3] as? NSNumber {
-                
-                let memberWeight = mapNSWeightToFontWeight(weightNumber.intValue)
-                let traitMask = NSFontDescriptor.SymbolicTraits(rawValue: UInt32(traits.intValue))
-                let memberStyle: FontStyle = traitMask.contains(.italic) ? .italic : .normal
-                
-                if memberWeight == weight && memberStyle == style {
-                    if NSFont(name: fontName, size: 12) != nil {
-                        return Font.custom(fontName, size: 12)
-                    }
-                }
-            }
-        }
-        
-        let descriptor = NSFontDescriptor(name: family, size: 12)
-        let traits: NSFontDescriptor.SymbolicTraits = style == .italic ? .italic : []
-        let weightedDescriptor = descriptor.addingAttributes([
-            .traits: [
-                NSFontDescriptor.TraitKey.weight: weight.nsWeight.rawValue,
-                NSFontDescriptor.TraitKey.symbolic: traits.rawValue
-            ]
-        ])
-        
-        if let nsFont = NSFont(descriptor: weightedDescriptor, size: 12) {
-            return Font.custom(nsFont.fontName, size: 12)
-        } else {
-            return Font.system(size: 12, weight: weight.systemWeight, design: .default)
         }
     }
     

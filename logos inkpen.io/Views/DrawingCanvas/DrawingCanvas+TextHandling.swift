@@ -310,8 +310,9 @@ extension DrawingCanvas {
         // Use current toolbar colors and font settings
         let typography = TypographyProperties(
             fontFamily: document.fontManager.selectedFontFamily,
+            fontVariant: document.fontManager.selectedFontVariant,
             fontWeight: document.fontManager.selectedFontWeight,
-            fontStyle: document.fontManager.selectedFontStyle,
+            fontStyle: .normal,  // DEPRECATED: Style is encoded in variant
             fontSize: document.fontManager.selectedFontSize,
             lineHeight: document.fontManager.selectedLineHeight, // FIXED: Use font manager's line height
             lineSpacing: document.fontManager.selectedLineSpacing, // FIXED: Use font manager's line spacing

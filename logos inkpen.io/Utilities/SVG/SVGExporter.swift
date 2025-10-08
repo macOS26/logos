@@ -341,8 +341,8 @@ class SVGExporter {
                         svg += " font-weight=\"\(svgWeight)\""
                     }
 
-                    // Add font style if italic
-                    if vectorText.typography.fontStyle == .italic {
+                    // Add font style if italic (check variant name)
+                    if vectorText.typography.isItalic {
                         svg += " font-style=\"italic\""
                     }
 
@@ -489,7 +489,7 @@ class SVGExporter {
                                 svg += " font-weight=\"\(svgWeight)\""
                             }
 
-                            if vectorText.typography.fontStyle == .italic {
+                            if vectorText.typography.isItalic {
                                 svg += " font-style=\"italic\""
                             }
 
@@ -580,7 +580,7 @@ class SVGExporter {
                         svg += " font-weight=\"\(svgWeight)\""
                     }
 
-                    if vectorText.typography.fontStyle == .italic {
+                    if vectorText.typography.isItalic {
                         svg += " font-style=\"italic\""
                     }
 
@@ -644,7 +644,7 @@ class SVGExporter {
                 }
 
                 // Add font style if italic
-                if vectorText.typography.fontStyle == .italic {
+                if vectorText.typography.isItalic {
                     svg += " font-style=\"italic\""
                 }
 
@@ -744,7 +744,7 @@ class SVGExporter {
             }
 
             // Add font style if italic
-            if typography.fontStyle == .italic {
+            if typography.isItalic {
                 svg += " font-style=\"italic\""
             }
 
@@ -818,7 +818,7 @@ class SVGExporter {
             }
 
             // Add font style if italic
-            if typography.fontStyle == .italic {
+            if typography.isItalic {
                 svg += " font-style=\"italic\""
             }
 

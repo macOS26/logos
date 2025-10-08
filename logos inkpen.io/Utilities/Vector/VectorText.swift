@@ -99,11 +99,14 @@ enum FontWeight: String, CaseIterable, Codable {
 }
 
 // MARK: - Professional Font Style (Adobe / FreeHand Standards)
+// DEPRECATED: Style is now encoded in fontVariant name (e.g. "Bold Italic")
+// Kept for backward compatibility with legacy files only
+@available(*, deprecated, message: "Use fontVariant instead - style is encoded in variant name")
 enum FontStyle: String, CaseIterable, Codable {
     case normal = "Normal"
     case italic = "Italic"
     case oblique = "Oblique"
-    
+
     var iconName: String {
         switch self {
         case .normal: return "textformat"
@@ -118,7 +121,8 @@ struct TypographyProperties: Codable, Hashable {
     var fontFamily: String
     var fontVariant: String?  // Store the actual variant name like "Condensed Bold"
     var fontWeight: FontWeight
-    var fontStyle: FontStyle
+    @available(*, deprecated, message: "Use fontVariant instead - style is encoded in variant name")
+    var fontStyle: FontStyle  // DEPRECATED: Kept for backward compatibility only
     var fontSize: Double // In points (professional standard)
     var lineHeight: Double // Leading in typography
     var lineSpacing: Double // Extra spacing between lines (0 to fontSize/2)
@@ -189,9 +193,9 @@ struct TypographyProperties: Codable, Hashable {
             }
         }
 
-        // Fallback to weight/style based creation
+        // Fallback to weight/style based creation (check variant for italic)
         let descriptor = NSFontDescriptor(name: fontFamily, size: fontSize)
-        let traits: NSFontDescriptor.SymbolicTraits = fontStyle == .italic ? .italic : []
+        let traits: NSFontDescriptor.SymbolicTraits = isItalic ? .italic : []
         let weightedDescriptor = descriptor.addingAttributes([
             .traits: [
                 NSFontDescriptor.TraitKey.weight: fontWeight.nsWeight.rawValue,
@@ -200,13 +204,13 @@ struct TypographyProperties: Codable, Hashable {
         ])
         return NSFont(descriptor: weightedDescriptor, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
     }
-    
+
     // Create SwiftUI Font for UI display
     var swiftUIFont: Font {
         let baseFont = Font.custom(fontFamily, size: fontSize)
             .weight(fontWeight.systemWeight)
-        
-        if fontStyle == .italic {
+
+        if isItalic {
             return baseFont.italic()
         } else {
             return baseFont
@@ -489,7 +493,6 @@ class FontManager: ObservableObject {
     @Published var selectedFontFamily: String = "Helvetica Neue"
     @Published var selectedFontVariant: String = "Regular"  // Store selected variant name
     @Published var selectedFontWeight: FontWeight = .regular
-    @Published var selectedFontStyle: FontStyle = .normal
     @Published var selectedFontSize: Double = 24.0
     
     // NEW: Line spacing and line height properties for new text creation
@@ -590,44 +593,7 @@ class FontManager: ObservableObject {
         }
     }
     
-    // Get font styles available for a family
-    func getAvailableStyles(for family: String) -> [FontStyle] {
-        let fontManager = NSFontManager.shared
-        let members = fontManager.availableMembers(ofFontFamily: family) ?? []
-        
-        var styles: Set<FontStyle> = []
-        for member in members {
-            if let traits = member[3] as? NSNumber {
-                let traitMask = NSFontDescriptor.SymbolicTraits(rawValue: UInt32(traits.intValue))
-                
-                if traitMask.contains(.italic) {
-                    styles.insert(.italic)
-                } else {
-                    styles.insert(.normal)
-                }
-                
-                // Check for oblique - this is harder to detect, but we can include it if the font name suggests it
-                if let fontName = member[1] as? String,
-                   fontName.lowercased().contains("oblique") {
-                    styles.insert(.oblique)
-                }
-            }
-        }
-        
-        // Fallback: if no styles found, provide defaults
-        if styles.isEmpty {
-            styles = [.normal, .italic]
-        } else if !styles.contains(.normal) {
-            // Always include normal as an option
-            styles.insert(.normal)
-        }
-        
-        return Array(styles).sorted { style1, style2 in
-            let index1 = FontStyle.allCases.firstIndex(of: style1) ?? 0
-            let index2 = FontStyle.allCases.firstIndex(of: style2) ?? 0
-            return index1 < index2
-        }
-    }
+    // DEPRECATED: getAvailableStyles removed - style is now encoded in fontVariant names
 }
 
 // MARK: - Extensions for NSBezierPath CGPath conversion
