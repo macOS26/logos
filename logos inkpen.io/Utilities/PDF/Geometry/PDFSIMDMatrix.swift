@@ -8,6 +8,7 @@
 
 import Foundation
 import CoreGraphics
+import Metal
 import simd
 
 /// High-performance matrix operations using SIMD for PDF parsing
@@ -102,6 +103,37 @@ struct PDFSIMDMatrix {
     var d: CGFloat {
         get { CGFloat(matrix[1][1]) }
         set { matrix[1][1] = Float(newValue) }
+    }
+
+    // MARK: - Metal GPU Interoperability
+
+    /// Convert to Metal buffer format (column-major array)
+    /// Ready for upload to GPU via MTLBuffer
+    var metalBufferArray: [Float] {
+        return [
+            matrix[0][0], matrix[0][1], matrix[0][2],
+            matrix[1][0], matrix[1][1], matrix[1][2],
+            matrix[2][0], matrix[2][1], matrix[2][2]
+        ]
+    }
+
+    /// Create from Metal buffer data (column-major)
+    init(metalBuffer: [Float]) {
+        precondition(metalBuffer.count >= 9, "Metal buffer must contain at least 9 floats for 3x3 matrix")
+        self.matrix = simd_float3x3(
+            simd_float3(metalBuffer[0], metalBuffer[1], metalBuffer[2]),
+            simd_float3(metalBuffer[3], metalBuffer[4], metalBuffer[5]),
+            simd_float3(metalBuffer[6], metalBuffer[7], metalBuffer[8])
+        )
+    }
+
+    /// Create Metal buffer containing this matrix
+    /// Can be directly used in Metal compute shaders
+    func createMetalBuffer(device: MTLDevice) -> MTLBuffer? {
+        let array = metalBufferArray
+        return device.makeBuffer(bytes: array,
+                                length: array.count * MemoryLayout<Float>.size,
+                                options: .storageModeShared)
     }
 
     // MARK: - SIMD Matrix Operations
