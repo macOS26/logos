@@ -22,8 +22,8 @@ struct ProfessionalResizeHandleView: View {
     var body: some View {
         Circle()
             .fill(Color.blue)
-            .stroke(Color.white, lineWidth: 1.0) // Fixed stroke width - does not scale with zoom
-            .frame(width: 8, height: 8) // Fixed UI size - does not scale with artwork (same as other handles)
+            .stroke(Color.white, lineWidth: 1.0 / zoomLevel) // Compensate for parent scaleEffect
+            .frame(width: 10 / zoomLevel, height: 10 / zoomLevel) // Compensate for parent scaleEffect (same size as transform box handles)
             .position(
                 x: viewModel.textBoxFrame.maxX + dragOffset.width + resizeOffset.width,
                 y: viewModel.textBoxFrame.maxY + dragOffset.height + resizeOffset.height
