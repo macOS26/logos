@@ -200,19 +200,31 @@ struct TransformBoxHandles: View {
             strokeExpandedBounds = baseBounds.insetBy(dx: -strokeExpansion, dy: -strokeExpansion)
         }
 
-        // Use corner transformation for ALL shape types (consistent with image rendering)
+        // PRECISION FIX: Apply transform directly to bounds rectangle for exact precision
+        // This matches how ShapeView renders shapes (applying transform to path)
+        // and avoids floating-point errors from corner-based min/max calculations
         let t = shape.transform
-        let corners = [
-            CGPoint(x: strokeExpandedBounds.minX, y: strokeExpandedBounds.minY).applying(t),
-            CGPoint(x: strokeExpandedBounds.maxX, y: strokeExpandedBounds.minY).applying(t),
-            CGPoint(x: strokeExpandedBounds.maxX, y: strokeExpandedBounds.maxY).applying(t),
-            CGPoint(x: strokeExpandedBounds.minX, y: strokeExpandedBounds.maxY).applying(t)
-        ]
-        let minX = corners.map { $0.x }.min() ?? strokeExpandedBounds.minX
-        let minY = corners.map { $0.y }.min() ?? strokeExpandedBounds.minY
-        let maxX = corners.map { $0.x }.max() ?? strokeExpandedBounds.maxX
-        let maxY = corners.map { $0.y }.max() ?? strokeExpandedBounds.maxY
-        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+
+        // For pure translation or identity transforms, apply directly to avoid any precision loss
+        if t.b == 0 && t.c == 0 && t.a == 1 && t.d == 1 {
+            // Pure translation - exact precision
+            return CGRect(x: strokeExpandedBounds.minX + t.tx,
+                         y: strokeExpandedBounds.minY + t.ty,
+                         width: strokeExpandedBounds.width,
+                         height: strokeExpandedBounds.height)
+        }
+
+        // For scale-only transforms (no rotation/shear), preserve exact dimensions
+        if t.b == 0 && t.c == 0 {
+            // Scale + translation only - preserve exact scaled dimensions
+            return CGRect(x: strokeExpandedBounds.minX * t.a + t.tx,
+                         y: strokeExpandedBounds.minY * t.d + t.ty,
+                         width: strokeExpandedBounds.width * t.a,
+                         height: strokeExpandedBounds.height * t.d)
+        }
+
+        // For rotation/shear, we need corner transformation (but use precise CGRect.applying)
+        return strokeExpandedBounds.applying(t)
     }
 
     private func handlePosition(index: Int, in rect: CGRect) -> CGPoint {
