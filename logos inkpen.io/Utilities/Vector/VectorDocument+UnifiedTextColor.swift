@@ -13,6 +13,8 @@ extension VectorDocument {
     
     /// FAST O(1) update - change ONLY the font family
     func updateTextFontFamilyDirect(id: UUID, fontFamily: String) {
+        saveToUndoStack()
+
         guard let index = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.id == id
@@ -32,6 +34,8 @@ extension VectorDocument {
 
     /// FAST O(1) update - change ONLY the font variant
     func updateTextFontVariantDirect(id: UUID, fontVariant: String) {
+        saveToUndoStack()
+
         guard let index = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.id == id
@@ -76,6 +80,8 @@ extension VectorDocument {
 
     /// FAST O(1) update - change ONLY the font weight
     func updateTextFontWeightDirect(id: UUID, fontWeight: FontWeight) {
+        saveToUndoStack()
+
         guard let index = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.id == id
@@ -95,6 +101,8 @@ extension VectorDocument {
 
     /// FAST O(1) update - change ONLY the font style
     func updateTextFontStyleDirect(id: UUID, fontStyle: FontStyle) {
+        saveToUndoStack()
+
         guard let index = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.id == id

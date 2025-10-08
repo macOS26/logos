@@ -127,13 +127,6 @@ extension VectorDocument {
     func convertSelectedTextToOutlines() {
         guard !selectedTextIDs.isEmpty else { return }
 
-        // CRITICAL FIX: Save state with text selection TWICE
-        // First save ensures we have a state with text selected to return to
-        if undoStack.isEmpty || undoStack.last?.selectedTextIDs.isEmpty == true {
-            // Previous state doesn't have text selected, save current state first
-            saveToUndoStack()
-        }
-
         saveToUndoStack()
 
         let selectedTexts = selectedTextIDs.compactMap { textID in findText(by: textID) }
