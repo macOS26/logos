@@ -33,12 +33,12 @@ struct TransformBoxHandles: View {
 
         ZStack {
             // Bounding rectangle (dashed)
-            // CRITICAL FIX: Use Rectangle().frame().position() to match text box rendering
+            // CRITICAL FIX: Match ShapeView coordinate system exactly
+            // Draw rectangle at origin, offset to bounds position, then apply zoom+offset
             Rectangle()
                 .stroke(Color.black.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
                 .frame(width: transformedBounds.width, height: transformedBounds.height)
-                .position(x: transformedBounds.minX + transformedBounds.width / 2,
-                         y: transformedBounds.minY + transformedBounds.height / 2)
+                .offset(x: transformedBounds.minX, y: transformedBounds.minY)
                 .scaleEffect(zoomLevel, anchor: .topLeading)
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
                 .allowsHitTesting(false)
