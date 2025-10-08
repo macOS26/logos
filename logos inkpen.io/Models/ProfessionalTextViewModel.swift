@@ -43,10 +43,10 @@ class ProfessionalTextViewModel: ObservableObject {
         self.selectedFont = textObject.typography.nsFont
         self.textAlignment = textObject.typography.alignment.nsTextAlignment
 
-        // CRITICAL FIX: Always use the text object's area size and position
-        // This ensures consistency between VectorText and text canvas
-        let width = textObject.areaSize?.width ?? 200.0
-        let height = textObject.areaSize?.height ?? calculateTextHeight(for: textObject.content)
+        // CRITICAL FIX: Always use the text object's bounds to match transform box exactly
+        // This ensures text canvas size matches the selection/transform box size
+        let width = textObject.bounds.width > 0 ? textObject.bounds.width : 200.0
+        let height = textObject.bounds.height > 0 ? textObject.bounds.height : 50.0
 
         self.textBoxFrame = CGRect(
             x: textObject.position.x,

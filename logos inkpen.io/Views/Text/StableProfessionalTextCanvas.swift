@@ -75,9 +75,9 @@ struct StableProfessionalTextCanvas: View {
                 viewModel.selectedFont = currentTextObject.typography.nsFont
                 viewModel.textAlignment = currentTextObject.typography.alignment.nsTextAlignment
 
-                // Use bounds from file if available
-                let width = currentTextObject.areaSize?.width ?? (currentTextObject.bounds.width > 1 ? currentTextObject.bounds.width : 200.0)
-                let height = currentTextObject.areaSize?.height ?? (currentTextObject.bounds.height > 1 ? currentTextObject.bounds.height : 50.0)
+                // CRITICAL FIX: Use bounds directly to match transform box exactly
+                let width = currentTextObject.bounds.width > 0 ? currentTextObject.bounds.width : 200.0
+                let height = currentTextObject.bounds.height > 0 ? currentTextObject.bounds.height : 50.0
 
                 viewModel.textBoxFrame = CGRect(
                     x: currentTextObject.position.x,
