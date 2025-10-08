@@ -527,7 +527,15 @@ struct VectorShape: Hashable, Identifiable {
         // Calculate group bounds
         var calculatedGroupBounds = CGRect.null
         for shape in shapes {
-            calculatedGroupBounds = calculatedGroupBounds.union(shape.bounds)
+            // CRITICAL FIX: For text objects, use textPosition + areaSize instead of shape.bounds
+            // Text objects store position separately from bounds
+            let shapeBounds: CGRect
+            if shape.isTextObject, let textPosition = shape.textPosition, let areaSize = shape.areaSize {
+                shapeBounds = CGRect(x: textPosition.x, y: textPosition.y, width: areaSize.width, height: areaSize.height)
+            } else {
+                shapeBounds = shape.bounds
+            }
+            calculatedGroupBounds = calculatedGroupBounds.union(shapeBounds)
         }
         
         // Create empty path for group container
