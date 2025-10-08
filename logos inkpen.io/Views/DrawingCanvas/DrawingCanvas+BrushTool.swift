@@ -133,13 +133,10 @@ extension DrawingCanvas {
         // Clean up state including clearing preview path for overlay system
         brushPreviewPath = nil
         cancelBrushDrawing()
-
-        // AUTO-DESELECT: Clear all selections after completing brush stroke
+        
+        // AUTO-DESELECT: Clear selection after completing brush stroke
         // This allows user to immediately change colors for the next stroke
         document.selectedShapeIDs.removeAll()
-        document.selectedObjectIDs.removeAll()
-        document.selectedTextIDs.removeAll()
-        document.syncSelectionArrays()
     }
     
     // MARK: - Pressure Simulation
@@ -177,54 +174,18 @@ extension DrawingCanvas {
     
     private func updateBrushPreview() {
         // VECTOR APP OPTIMIZATION: Direct overlay update - no throttling for 60fps
-        // CRITICAL FIX: Don't clear preview for single points - keep showing the path even with 1 point
-        guard brushRawPoints.count >= 1 else { return }
-
+        guard brushRawPoints.count >= 2 else { return }
+        
         // Generate preview path for overlay rendering - SwiftUI will handle 60fps updates
         let previewPath = generateLivePreviewPath()
         brushPreviewPath = previewPath
-
+        
         // No document updates during drawing - overlay handles all preview rendering
     }
     
     /// Generate live preview path for overlay rendering
     private func generateLivePreviewPath() -> VectorPath {
-        // CRITICAL FIX: Handle single point case by creating a small dot/circle
-        if brushRawPoints.count == 1 {
-            // Create a small circle at the single point to show something
-            let point = brushRawPoints[0].location
-            let radius = document.currentBrushThickness / 4.0 // Small visible dot
-
-            var elements: [PathElement] = []
-            // Create a small circle
-            elements.append(.move(to: VectorPoint(CGPoint(x: point.x + radius, y: point.y))))
-            elements.append(.curve(
-                to: VectorPoint(CGPoint(x: point.x, y: point.y + radius)),
-                control1: VectorPoint(CGPoint(x: point.x + radius, y: point.y + radius * 0.552)),
-                control2: VectorPoint(CGPoint(x: point.x + radius * 0.552, y: point.y + radius))
-            ))
-            elements.append(.curve(
-                to: VectorPoint(CGPoint(x: point.x - radius, y: point.y)),
-                control1: VectorPoint(CGPoint(x: point.x - radius * 0.552, y: point.y + radius)),
-                control2: VectorPoint(CGPoint(x: point.x - radius, y: point.y + radius * 0.552))
-            ))
-            elements.append(.curve(
-                to: VectorPoint(CGPoint(x: point.x, y: point.y - radius)),
-                control1: VectorPoint(CGPoint(x: point.x - radius, y: point.y - radius * 0.552)),
-                control2: VectorPoint(CGPoint(x: point.x - radius * 0.552, y: point.y - radius))
-            ))
-            elements.append(.curve(
-                to: VectorPoint(CGPoint(x: point.x + radius, y: point.y)),
-                control1: VectorPoint(CGPoint(x: point.x + radius * 0.552, y: point.y - radius)),
-                control2: VectorPoint(CGPoint(x: point.x + radius, y: point.y - radius * 0.552))
-            ))
-            elements.append(.close)
-
-            return VectorPath(elements: elements)
-        }
-
         guard brushRawPoints.count >= 2 else {
-            // Fallback - should not happen anymore
             return VectorPath(elements: [.move(to: VectorPoint(brushRawPoints[0].location))])
         }
 
@@ -276,55 +237,33 @@ extension DrawingCanvas {
 
         let simplifiedPoints: [CGPoint]
 
-        // CRITICAL FIX: When drawing slowly or with pressure, use raw points to prevent flashing
-        // The simplification algorithm causes visual instability when points are close together
-        let isSlowDrawing = rawPointLocations.count > 1 && {
-            // Check if recent points are very close (slow drawing)
-            let recentCount = min(5, rawPointLocations.count)
-            if recentCount < 2 { return false }
-            let recentPoints = Array(rawPointLocations.suffix(recentCount))
-            var totalDistance = 0.0
-            for i in 1..<recentPoints.count {
-                let dx = recentPoints[i].x - recentPoints[i-1].x
-                let dy = recentPoints[i].y - recentPoints[i-1].y
-                totalDistance += sqrt(dx * dx + dy * dy)
-            }
-            let avgDistance = totalDistance / Double(recentCount - 1)
-            return avgDistance < 3.0 // If points are less than 3 pixels apart on average, it's slow
-        }()
+        // Use liquid smoothing only (no separate simplify control)
+        let liquidValue = document.currentBrushLiquid
 
-        // Skip simplification when drawing slowly or with pressure to prevent flashing
-        if isSlowDrawing || (appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput) {
+        // Calculate tolerance from liquid setting
+        let tolerance: Double
+        if abs(liquidValue - 50.0) < 0.01 {
+            tolerance = 0.5
+        } else if liquidValue < 50.0 {
+            let smoothFactor = (50.0 - liquidValue) / 50.0
+            tolerance = 0.5 + (2.0 * smoothFactor)
+        } else {
+            let smoothFactor = (liquidValue - 50.0) / 50.0
+            tolerance = 2.5 + (7.5 * smoothFactor)
+        }
+
+        if tolerance < 0.6 {
             simplifiedPoints = rawPointLocations
         } else {
-            // Use liquid smoothing only for fast drawing
-            let liquidValue = document.currentBrushLiquid
-
-            // Calculate tolerance from liquid setting
-            let tolerance: Double
-            if abs(liquidValue - 50.0) < 0.01 {
-                tolerance = 0.5
-            } else if liquidValue < 50.0 {
-                let smoothFactor = (50.0 - liquidValue) / 50.0
-                tolerance = 0.5 + (2.0 * smoothFactor)
-            } else {
-                let smoothFactor = (liquidValue - 50.0) / 50.0
-                tolerance = 2.5 + (7.5 * smoothFactor)
-            }
-
-            if tolerance < 0.6 {
-                simplifiedPoints = rawPointLocations
-            } else {
-                simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
-                    points: rawPointLocations,
-                    tolerance: tolerance
-                )
-            }
+            simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
+                points: rawPointLocations,
+                tolerance: tolerance
+            )
         }
 
         if simplifiedPoints.count >= 2 {
             return generatePreviewVariableWidthPath(
-                centerPoints: simplifiedPoints, // Already using raw points when slow or with pressure
+                centerPoints: (appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput) ? rawPointLocations : simplifiedPoints,
                 recentRawPoints: pointsToProcess,
                 thickness: document.currentBrushThickness,
                 pressureSensitivity: 0.5,
