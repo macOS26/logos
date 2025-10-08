@@ -122,7 +122,10 @@ extension PDFCommandParser {
         )
 
         shapes.append(shape)
-        
+
+        // PROGRESSIVE RENDERING: Notify callback immediately
+        onShapeCreated?(shape)
+
         // Clear activeGradient if it was used for direct application (not compound)
         if activeGradient != nil && gradientShapes.isEmpty {
             activeGradient = nil

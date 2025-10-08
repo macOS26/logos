@@ -22,6 +22,9 @@ class PDFCommandParser {
     var pathStartPoint = CGPoint.zero
     var pageSize = CGSize.zero
     var pageOrigin = CGPoint.zero  // MediaBox origin offset
+
+    // PROGRESSIVE RENDERING: Callback for each shape as it's created
+    var onShapeCreated: ((VectorShape) -> Void)?
     
     // For gradient tracking
     var activeGradient: VectorGradient?

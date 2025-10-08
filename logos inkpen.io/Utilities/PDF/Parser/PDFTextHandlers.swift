@@ -814,5 +814,8 @@ extension PDFCommandParser {
         let shape = vectorText.toVectorShape()
         shapes.append(shape)
 
+        // PROGRESSIVE RENDERING: Notify callback immediately
+        onShapeCreated?(shape)
+
     }
 }
