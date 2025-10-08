@@ -156,9 +156,19 @@ struct TransformBoxHandles: View {
                         .frame(width: handleSize, height: handleSize)
                         .allowsHitTesting(false)  // Hit testing handled by larger area
                 }
-                // CRITICAL FIX: Handles stay constant screen size - convert canvas position to screen position
-                // Canvas position * zoom + offset = screen position
-                .position(CGPoint(x: pt.x * zoomLevel + canvasOffset.x, y: pt.y * zoomLevel + canvasOffset.y))
+                // SHAPES: Constant screen size handles (no scaling)
+                // TEXT BOX: Position from center to match text box .position() rendering
+                .position(
+                    shape.isTextObject ?
+                    // TEXT BOX ONLY: Calculate screen position from center
+                    CGPoint(
+                        x: (transformedBounds.midX + (pt.x - transformedBounds.midX)) * zoomLevel + canvasOffset.x,
+                        y: (transformedBounds.midY + (pt.y - transformedBounds.midY)) * zoomLevel + canvasOffset.y
+                    )
+                    :
+                    // SHAPES: Convert canvas position to screen position (no scaleEffect)
+                    CGPoint(x: pt.x * zoomLevel + canvasOffset.x, y: pt.y * zoomLevel + canvasOffset.y)
+                )
                 .onTapGesture {
                     // Click to set this handle as the anchor point (red dot)
                     setAnchorPoint(forHandle: index)
