@@ -12,16 +12,18 @@ extension VectorDocument {
     
     /// Remove shape from both layers array and unified system
     func removeShapeFromUnifiedSystem(id: UUID) {
-        // Remove from unified objects
+        // CRITICAL FIX: Remove from unified objects (handles BOTH regular shapes AND text objects)
+        // Previously this had !shape.isTextObject which prevented text removal
         unifiedObjects.removeAll { obj in
             if case .shape(let shape) = obj.objectType {
-                return shape.id == id && !shape.isTextObject
+                return shape.id == id
             }
             return false
         }
-        
-        // Remove from selection if selected
+
+        // Remove from appropriate selection set
         selectedShapeIDs.remove(id)
+        selectedTextIDs.remove(id) // Also try text IDs in case it's a text object
         // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
         if let unifiedObj = findObject(by: id) {
             selectedObjectIDs.remove(unifiedObj.id)
