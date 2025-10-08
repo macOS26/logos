@@ -49,6 +49,10 @@ struct FontPickerView: View {
                 .foregroundColor(.secondary)
             Picker("", selection: Binding(
                 get: {
+                    // Use selectedText first if available
+                    if let selectedText = selectedText {
+                        return selectedText.typography.fontFamily
+                    }
                     return selectedTextTypography?.fontFamily ?? document.fontManager.selectedFontFamily
                 },
                 set: { newFamily in
