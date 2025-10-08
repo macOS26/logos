@@ -29,50 +29,75 @@ extension DrawingCanvas {
     // MARK: - Professional Text Canvas Background Handler
     func handleAggressiveBackgroundTap(at location: CGPoint) {
         // AGGRESSIVE background tap - deselects ALL text boxes immediately
-        // BUT: Use the same improved hit testing as findTextAt to be consistent
-        
-        
-        // Use the same generous hit testing logic as findTextAt - check unified objects directly
-        let tapHitsText = document.unifiedObjects.contains { unifiedObj in
-            guard case .shape(let shape) = unifiedObj.objectType,
-                  shape.isTextObject,
-                  var textObj = VectorText.from(shape) else { return false }
-            textObj.layerIndex = unifiedObj.layerIndex
-            if !textObj.isVisible || textObj.isLocked { return false }
-            
-            // Use the same three hit testing methods as findTextAt
-            let textContentArea = CGRect(
-                x: textObj.position.x,
-                y: textObj.position.y,
-                width: textObj.bounds.width,
-                height: textObj.bounds.height
-            )
-            
-            let exactBounds = CGRect(
-                x: textObj.position.x + textObj.bounds.minX,
-                y: textObj.position.y + textObj.bounds.minY,
-                width: textObj.bounds.width,
-                height: textObj.bounds.height
-            )
-            
-            let expandedBounds = exactBounds.insetBy(dx: -30, dy: -20)
-            
-            let hits = textContentArea.contains(location) || 
-                      exactBounds.contains(location) || 
-                      expandedBounds.contains(location)
+        // CRITICAL FIX: Also check text objects inside groups
 
-            return hits
+        // Check if tap hits any text (standalone or grouped)
+        let tapHitsText = document.unifiedObjects.contains { unifiedObj in
+            guard case .shape(let shape) = unifiedObj.objectType else { return false }
+
+            // CRITICAL FIX: Check grouped text objects
+            if shape.isGroupContainer {
+                for childShape in shape.groupedShapes {
+                    if childShape.isTextObject, var textObj = VectorText.from(childShape) {
+                        textObj.layerIndex = unifiedObj.layerIndex
+                        if !textObj.isVisible || textObj.isLocked { continue }
+
+                        let exactBounds = CGRect(
+                            x: textObj.position.x + textObj.bounds.minX,
+                            y: textObj.position.y + textObj.bounds.minY,
+                            width: textObj.bounds.width,
+                            height: textObj.bounds.height
+                        )
+
+                        let expandedBounds = exactBounds.insetBy(dx: -30, dy: -20)
+
+                        if expandedBounds.contains(location) {
+                            return true
+                        }
+                    }
+                }
+            }
+
+            // Check standalone text objects
+            if shape.isTextObject, var textObj = VectorText.from(shape) {
+                textObj.layerIndex = unifiedObj.layerIndex
+                if !textObj.isVisible || textObj.isLocked { return false }
+
+                let exactBounds = CGRect(
+                    x: textObj.position.x + textObj.bounds.minX,
+                    y: textObj.position.y + textObj.bounds.minY,
+                    width: textObj.bounds.width,
+                    height: textObj.bounds.height
+                )
+
+                let expandedBounds = exactBounds.insetBy(dx: -30, dy: -20)
+
+                return expandedBounds.contains(location)
+            }
+
+            return false
         }
-        
+
         if !tapHitsText {
             // AGGRESSIVELY deselect everything
             document.selectedTextIDs.removeAll()
             document.selectedShapeIDs.removeAll()
-            
-            // Stop all editing
+
+            // Stop all editing (both standalone and grouped text)
             for unifiedObj in document.unifiedObjects {
-                if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject, shape.isEditing == true {
-                    document.setTextEditingInUnified(id: shape.id, isEditing: false)
+                if case .shape(let shape) = unifiedObj.objectType {
+                    // Stop editing on standalone text
+                    if shape.isTextObject && shape.isEditing == true {
+                        document.setTextEditingInUnified(id: shape.id, isEditing: false)
+                    }
+                    // CRITICAL FIX: Stop editing on grouped text
+                    if shape.isGroupContainer {
+                        for childShape in shape.groupedShapes {
+                            if childShape.isTextObject && childShape.isEditing == true {
+                                document.setTextEditingInUnified(id: childShape.id, isEditing: false)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -81,35 +106,60 @@ extension DrawingCanvas {
     }
     
     func findTextAt(location: CGPoint) -> UUID? {
-
+        // CRITICAL FIX: Search both standalone text objects AND text objects inside groups
         for unifiedObj in document.unifiedObjects {
-            guard case .shape(let shape) = unifiedObj.objectType,
-                  shape.isTextObject,
-                  var textObj = VectorText.from(shape) else { continue }
-            textObj.layerIndex = unifiedObj.layerIndex
-            if !textObj.isVisible || textObj.isLocked { continue }
-            
-            // ACCURATE HIT TESTING: Use precise text bounds with minimal tolerance
-            // This allows easy deselection by clicking outside the text
-            
-            // Calculate the actual text bounds in canvas coordinates
-            let textBounds = CGRect(
-                x: textObj.position.x + textObj.bounds.minX,
-                y: textObj.position.y + textObj.bounds.minY,
-                width: textObj.bounds.width,
-                height: textObj.bounds.height
-            )
-            
-            // Use exact bounds with zero tolerance for precise hit testing
-            let hitArea = textBounds
-            
-            
-            // Hit test using precise bounds with minimal tolerance
-            if hitArea.contains(location) {
-                return textObj.id
+            if case .shape(let shape) = unifiedObj.objectType {
+                // Check if this is a group - search its children
+                if shape.isGroupContainer {
+                    for childShape in shape.groupedShapes {
+                        if childShape.isTextObject, var textObj = VectorText.from(childShape) {
+                            textObj.layerIndex = unifiedObj.layerIndex
+                            if !textObj.isVisible || textObj.isLocked { continue }
+
+                            // Calculate the actual text bounds in canvas coordinates
+                            let textBounds = CGRect(
+                                x: textObj.position.x + textObj.bounds.minX,
+                                y: textObj.position.y + textObj.bounds.minY,
+                                width: textObj.bounds.width,
+                                height: textObj.bounds.height
+                            )
+
+                            // Hit test using precise bounds
+                            if textBounds.contains(location) {
+                                return textObj.id
+                            }
+                        }
+                    }
+                }
+
+                // Check standalone text objects
+                if shape.isTextObject, var textObj = VectorText.from(shape) {
+                    textObj.layerIndex = unifiedObj.layerIndex
+                    if !textObj.isVisible || textObj.isLocked { continue }
+
+                    // ACCURATE HIT TESTING: Use precise text bounds with minimal tolerance
+                    // This allows easy deselection by clicking outside the text
+
+                    // Calculate the actual text bounds in canvas coordinates
+                    let textBounds = CGRect(
+                        x: textObj.position.x + textObj.bounds.minX,
+                        y: textObj.position.y + textObj.bounds.minY,
+                        width: textObj.bounds.width,
+                        height: textObj.bounds.height
+                    )
+
+                    // Use exact bounds with zero tolerance for precise hit testing
+                    let hitArea = textBounds
+
+
+                    // Hit test using precise bounds with minimal tolerance
+                    if hitArea.contains(location) {
+                        return textObj.id
+                    }
+                }
             }
         }
-        
+
         return nil
     }
     
