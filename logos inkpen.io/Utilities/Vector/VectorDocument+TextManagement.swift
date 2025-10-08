@@ -128,11 +128,7 @@ extension VectorDocument {
     func convertSelectedTextToOutlines() {
         guard !selectedTextIDs.isEmpty else { return }
 
-        Log.info("🔄 CONVERT TO OUTLINES: Starting with selectedTextIDs=\(selectedTextIDs)", category: .general)
-
         saveToUndoStack()
-
-        Log.info("💾 UNDO: Saved state - undoStack.count=\(undoStack.count), selectedTextIDs=\(selectedTextIDs), selectedShapeIDs=\(selectedShapeIDs), unifiedObjects.count=\(unifiedObjects.count)", category: .general)
 
         let selectedTexts = selectedTextIDs.compactMap { textID in findText(by: textID) }
         var newShapeIDs: Set<UUID> = []
@@ -167,8 +163,6 @@ extension VectorDocument {
         newShapeIDs = shapesAfterSet.subtracting(shapesBeforeSet)
 
         if !newShapeIDs.isEmpty {
-            Log.info("🔄 CONVERT TO OUTLINES: Created \(newShapeIDs.count) new shapes", category: .general)
-
             // Remove the original text objects from unified system
             unifiedObjects.removeAll { obj in
                 if case .shape(let shape) = obj.objectType {
@@ -181,16 +175,11 @@ extension VectorDocument {
             selectedTextIDs.removeAll()
             selectedShapeIDs = newShapeIDs
 
-            Log.info("🔄 CONVERT TO OUTLINES: Updated selections - selectedShapeIDs=\(selectedShapeIDs), unifiedObjects.count=\(unifiedObjects.count)", category: .general)
-
             // Sync selectedObjectIDs to match selectedShapeIDs
             syncUnifiedSelectionFromLegacy()
 
             // Trigger UI update
             objectWillChange.send()
-
-            Log.info("🔄 CONVERT TO OUTLINES: Complete", category: .general)
-
         } else {
             Log.error("❌ TEXT TO OUTLINES FAILED: No new shapes were created", category: .error)
         }

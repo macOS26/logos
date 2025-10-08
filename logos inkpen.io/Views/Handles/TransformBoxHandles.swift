@@ -203,7 +203,6 @@ struct TransformBoxHandles: View {
             // Text canvas: .position(x: minX + width/2, y: minY + height/2)
             // Transform box should show bounds at (minX, minY, width, height)
             baseBounds = CGRect(x: textPosition.x, y: textPosition.y, width: areaSize.width, height: areaSize.height)
-            Log.info("🔍 TRANSFORM BOX: textPos=(\(textPosition.x), \(textPosition.y)) areaSize=(\(areaSize.width)x\(areaSize.height)) -> bounds=\(baseBounds)", category: .general)
         } else {
             baseBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         }

@@ -31,8 +31,6 @@ extension VectorDocument {
     func undo() {
         guard !undoStack.isEmpty else { return }
 
-        Log.info("⏪ UNDO: Starting - undoStack.count=\(undoStack.count), current selectedTextIDs=\(selectedTextIDs), selectedShapeIDs=\(selectedShapeIDs)", category: .general)
-
         // Save current state to redo stack
         do {
             let data = try JSONEncoder().encode(self)
@@ -44,8 +42,6 @@ extension VectorDocument {
 
         // Restore previous state
         let previousState = undoStack.removeLast()
-
-        Log.info("⏪ UNDO: Restoring state - previousState selectedTextIDs=\(previousState.selectedTextIDs), selectedShapeIDs=\(previousState.selectedShapeIDs), unifiedObjects.count=\(previousState.unifiedObjects.count)", category: .general)
 
         // CRITICAL: Set flags to prevent reordering and suppress intermediate updates
         isUndoRedoOperation = true
@@ -110,8 +106,6 @@ extension VectorDocument {
         // Reset flag and notify SwiftUI ONCE
         isUndoRedoOperation = false
         objectWillChange.send()
-
-        Log.info("⏪ UNDO: Complete - restored selectedTextIDs=\(selectedTextIDs), selectedShapeIDs=\(selectedShapeIDs), unifiedObjects.count=\(unifiedObjects.count)", category: .general)
     }
     
     func redo() {
