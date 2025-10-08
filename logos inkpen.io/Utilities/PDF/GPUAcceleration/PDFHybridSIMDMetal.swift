@@ -198,25 +198,6 @@ class PDFHybridProcessor {
         // Small datasets - overhead not worth it
         return .standard
     }
-
-    // MARK: - Performance Monitoring
-
-    /// Track which method is being used for optimization insights
-    private var gpuCallCount = 0
-    private var simdCallCount = 0
-    private var standardCallCount = 0
-
-    func logPerformanceStats() {
-        let total = gpuCallCount + simdCallCount + standardCallCount
-        guard total > 0 else { return }
-
-        Log.info("""
-            📊 PDF Processing Performance Stats:
-               GPU:      \(gpuCallCount) calls (\(gpuCallCount * 100 / total)%)
-               SIMD CPU: \(simdCallCount) calls (\(simdCallCount * 100 / total)%)
-               Standard: \(standardCallCount) calls (\(standardCallCount * 100 / total)%)
-            """, category: .general)
-    }
 }
 
 // MARK: - SIMD Vector Extensions for Metal Interoperability

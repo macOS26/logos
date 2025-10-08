@@ -359,19 +359,20 @@ struct PDFAdvancedSIMD {
             let batchSize = (points.count + coreCount - 1) / coreCount
 
             var results = [CGPoint](repeating: .zero, count: points.count)
-            let resultsPointer = UnsafeMutablePointer<CGPoint>(mutating: results)
 
-            DispatchQueue.concurrentPerform(iterations: coreCount) { coreIndex in
-                let startIndex = coreIndex * batchSize
-                guard startIndex < points.count else { return }
+            results.withUnsafeMutableBufferPointer { buffer in
+                DispatchQueue.concurrentPerform(iterations: coreCount) { coreIndex in
+                    let startIndex = coreIndex * batchSize
+                    guard startIndex < points.count else { return }
 
-                let endIndex = min(startIndex + batchSize, points.count)
-                let batch = Array(points[startIndex..<endIndex])
-                let processed = processor(batch)
+                    let endIndex = min(startIndex + batchSize, points.count)
+                    let batch = Array(points[startIndex..<endIndex])
+                    let processed = processor(batch)
 
-                // Write results back
-                for (i, point) in processed.enumerated() {
-                    resultsPointer[startIndex + i] = point
+                    // Write results back
+                    for (i, point) in processed.enumerated() {
+                        buffer[startIndex + i] = point
+                    }
                 }
             }
 
