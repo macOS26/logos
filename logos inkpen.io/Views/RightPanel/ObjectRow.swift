@@ -12,8 +12,9 @@ struct ObjectRow: View {
     enum ObjectType: String {
         case shape = "shape"
         case text = "text"
+        case group = "group"
     }
-    
+
     let objectType: ObjectType
     let objectId: UUID
     let name: String
@@ -23,56 +24,90 @@ struct ObjectRow: View {
     let onSelect: (_ isShiftPressed: Bool, _ isCommandPressed: Bool) -> Void
     let layerIndex: Int
     let document: VectorDocument
-    
+    let groupedShapes: [VectorShape]? // For groups, to show children
+
     @State private var isDragging = false
-    
+    @State private var isGroupExpanded = false
+
+    init(objectType: ObjectType, objectId: UUID, name: String, isSelected: Bool, isVisible: Bool, isLocked: Bool, onSelect: @escaping (_: Bool, _: Bool) -> Void, layerIndex: Int, document: VectorDocument, groupedShapes: [VectorShape]? = nil) {
+        self.objectType = objectType
+        self.objectId = objectId
+        self.name = name
+        self.isSelected = isSelected
+        self.isVisible = isVisible
+        self.isLocked = isLocked
+        self.onSelect = onSelect
+        self.layerIndex = layerIndex
+        self.document = document
+        self.groupedShapes = groupedShapes
+    }
+
     var body: some View {
-        HStack(spacing: 6) {
-            // Object Type Icon
-            Image(systemName: objectIcon)
-                    .font(.system(size: 10))
-                .foregroundColor(objectIconColor)
-                .frame(width: 12)
-            
-            // Selection Indicator
-            Circle()
-                .fill(isSelected ? Color.blue : Color.clear)
-                .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                .frame(width: 8, height: 8)
-            
-            // Object Name
-            Text(name)
-                .font(.system(size: 11))
-                .foregroundColor(isSelected ? .blue : .primary)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            // Visibility/Lock Indicators
-            HStack(spacing: 2) {
-                if !isVisible {
-                    Image(systemName: "eye.slash")
-                        .font(.system(size: 8))
-                        .foregroundColor(.secondary)
+        VStack(spacing: 0) {
+            HStack(spacing: 6) {
+                // Disclosure arrow for groups
+                if objectType == .group {
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            isGroupExpanded.toggle()
+                        }
+                    }) {
+                        Image(systemName: isGroupExpanded ? "chevron.down" : "chevron.right")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .frame(width: 10, height: 10)
+                    }
+                    .buttonStyle(BorderlessButtonStyle())
+                } else {
+                    // Spacer for non-group items to maintain alignment
+                    Color.clear.frame(width: 10, height: 10)
                 }
-                if isLocked {
-                    Image(systemName: "lock")
-                        .font(.system(size: 8))
-                        .foregroundColor(.secondary)
+
+                // Object Type Icon
+                Image(systemName: objectIcon)
+                        .font(.system(size: 10))
+                    .foregroundColor(objectIconColor)
+                    .frame(width: 12)
+
+                // Selection Indicator
+                Circle()
+                    .fill(isSelected ? Color.blue : Color.clear)
+                    .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                    .frame(width: 8, height: 8)
+            
+                // Object Name
+                Text(name)
+                    .font(.system(size: 11))
+                    .foregroundColor(isSelected ? .blue : .primary)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                // Visibility/Lock Indicators
+                HStack(spacing: 2) {
+                    if !isVisible {
+                        Image(systemName: "eye.slash")
+                            .font(.system(size: 8))
+                            .foregroundColor(.secondary)
+                    }
+                    if isLocked {
+                        Image(systemName: "lock")
+                            .font(.system(size: 8))
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 3)
-        .background(isSelected ? Color.blue.opacity(0.1) : Color.clear)
-        .opacity(isDragging ? 0.5 : 1.0)
-        .scaleEffect(isDragging ? 0.95 : 1.0)
-        .animation(.easeInOut(duration: 0.15), value: isDragging)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            let isShiftPressed = NSEvent.modifierFlags.contains(.shift)
-            let isCommandPressed = NSEvent.modifierFlags.contains(.command)
-            onSelect(isShiftPressed, isCommandPressed)
-        }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(isSelected ? Color.blue.opacity(0.1) : Color.clear)
+            .opacity(isDragging ? 0.5 : 1.0)
+            .scaleEffect(isDragging ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.15), value: isDragging)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                let isShiftPressed = NSEvent.modifierFlags.contains(.shift)
+                let isCommandPressed = NSEvent.modifierFlags.contains(.command)
+                onSelect(isShiftPressed, isCommandPressed)
+            }
         .draggable(DraggableVectorObject(
             objectType: objectType == .text ? .text : .shape,
             objectId: objectId,
@@ -134,19 +169,47 @@ struct ObjectRow: View {
                 // Toggle lock - future implementation
             }
         }
+
+            // CRITICAL: Render grouped shapes when expanded
+            if objectType == .group, isGroupExpanded, let shapes = groupedShapes {
+                ForEach(shapes, id: \.id) { childShape in
+                    HStack(spacing: 6) {
+                        // Indent for hierarchy
+                        Color.clear.frame(width: 20)
+
+                        // Child shape icon
+                        Image(systemName: childShape.isTextObject ? "textformat" : "square")
+                            .font(.system(size: 9))
+                            .foregroundColor(childShape.isTextObject ? .green : .blue)
+                            .frame(width: 12)
+
+                        // Child shape name
+                        Text(childShape.isTextObject ? (childShape.textContent ?? "Text") : childShape.name)
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                }
+            }
+        }
     }
-    
+
     private var objectIcon: String {
         switch objectType {
         case .shape: return "square"
         case .text: return "textformat"
+        case .group: return "square.stack"
         }
     }
-    
+
     private var objectIconColor: Color {
         switch objectType {
         case .shape: return .blue
         case .text: return .green
+        case .group: return .purple
         }
     }
 } 

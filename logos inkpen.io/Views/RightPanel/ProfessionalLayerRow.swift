@@ -133,6 +133,22 @@ struct ProfessionalLayerRow: View {
                                     layerIndex: layerIndex,
                                     document: document
                                 )
+                            } else if shape.isGroupContainer {
+                                // Handle groups
+                                ObjectRow(
+                                    objectType: .group,
+                                    objectId: shape.id,
+                                    name: shape.name,
+                                    isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
+                                    isVisible: shape.isVisible,
+                                    isLocked: shape.isLocked,
+                                    onSelect: { isShiftPressed, isCommandPressed in
+                                        handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
+                                    },
+                                    layerIndex: layerIndex,
+                                    document: document,
+                                    groupedShapes: shape.groupedShapes
+                                )
                             } else {
                                 // Handle regular shapes
                                 ObjectRow(
