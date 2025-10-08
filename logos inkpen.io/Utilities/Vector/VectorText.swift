@@ -123,33 +123,26 @@ enum FontStyle: String, CaseIterable, Codable {
 struct TypographyProperties: Codable, Hashable {
     var fontFamily: String
     var fontVariant: String?  // Store the actual variant name like "Condensed Bold Italic"
-    @available(*, deprecated, message: "Use fontVariant instead - weight is encoded in variant name")
-    var fontWeight: FontWeight  // DEPRECATED: Kept for backward compatibility only
-    @available(*, deprecated, message: "Use fontVariant instead - style is encoded in variant name")
-    var fontStyle: FontStyle  // DEPRECATED: Kept for backward compatibility only
     var fontSize: Double // In points (professional standard)
     var lineHeight: Double // Leading in typography
     var lineSpacing: Double // Extra spacing between lines (0 to fontSize/2)
     var letterSpacing: Double // Tracking
     var alignment: TextAlignment
-    
+
     // Professional stroke properties for outlined text
     var hasStroke: Bool
     var strokeColor: VectorColor
     var strokeWidth: Double
     var strokeOpacity: Double
-    
+
     // Professional fill properties for text
     var fillColor: VectorColor
     var fillOpacity: Double
-    
+
     // NO DEFAULT FONT COLORS - COLORS MUST BE EXPLICITLY PROVIDED
-    // NOTE: fontWeight and fontStyle params kept for Codable backward compatibility
     init(
         fontFamily: String = "Helvetica",
         fontVariant: String? = nil,
-        fontWeight: FontWeight = .regular,  // Deprecated but needed for Codable
-        fontStyle: FontStyle = .normal,     // Deprecated but needed for Codable
         fontSize: Double = 24.0,
         lineHeight: Double = 24.0,
         lineSpacing: Double = 0.0,
@@ -164,8 +157,6 @@ struct TypographyProperties: Codable, Hashable {
     ) {
         self.fontFamily = fontFamily
         self.fontVariant = fontVariant
-        self.fontWeight = fontWeight  // Assign for backward compatibility
-        self.fontStyle = fontStyle    // Assign for backward compatibility
         self.fontSize = fontSize
         self.lineHeight = lineHeight
         self.lineSpacing = lineSpacing
@@ -198,30 +189,57 @@ struct TypographyProperties: Codable, Hashable {
             }
         }
 
-        // Fallback to weight/style based creation (check variant for italic)
-        // NOTE: Deprecation warnings for fontWeight are expected here - used as fallback when fontVariant is nil
-        let descriptor = NSFontDescriptor(name: fontFamily, size: fontSize)
-        let traits: NSFontDescriptor.SymbolicTraits = isItalic ? .italic : []
-        let weightedDescriptor = descriptor.addingAttributes([
-            .traits: [
-                NSFontDescriptor.TraitKey.weight: fontWeight.nsWeight.rawValue,
-                NSFontDescriptor.TraitKey.symbolic: traits.rawValue
-            ]
-        ])
-        return NSFont(descriptor: weightedDescriptor, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
+        // Fallback to regular font
+        return NSFont(name: fontFamily, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
     }
 
     // Create SwiftUI Font for UI display
     var swiftUIFont: Font {
-        // NOTE: Deprecation warning for fontWeight is expected here - used as fallback
-        let baseFont = Font.custom(fontFamily, size: fontSize)
-            .weight(fontWeight.systemWeight)
+        return Font.custom(fontFamily, size: fontSize)
+    }
 
-        if isItalic {
-            return baseFont.italic()
-        } else {
-            return baseFont
-        }
+    // Custom Codable to handle old files with fontWeight/fontStyle
+    enum CodingKeys: String, CodingKey {
+        case fontFamily, fontVariant, fontSize, lineHeight, lineSpacing
+        case letterSpacing, alignment, hasStroke, strokeColor, strokeWidth
+        case strokeOpacity, fillColor, fillOpacity
+        case fontWeight, fontStyle  // Old deprecated keys
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        fontFamily = try container.decode(String.self, forKey: .fontFamily)
+        fontVariant = try container.decodeIfPresent(String.self, forKey: .fontVariant)
+        fontSize = try container.decode(Double.self, forKey: .fontSize)
+        lineHeight = try container.decode(Double.self, forKey: .lineHeight)
+        lineSpacing = try container.decode(Double.self, forKey: .lineSpacing)
+        letterSpacing = try container.decode(Double.self, forKey: .letterSpacing)
+        alignment = try container.decode(TextAlignment.self, forKey: .alignment)
+        hasStroke = try container.decode(Bool.self, forKey: .hasStroke)
+        strokeColor = try container.decode(VectorColor.self, forKey: .strokeColor)
+        strokeWidth = try container.decode(Double.self, forKey: .strokeWidth)
+        strokeOpacity = try container.decode(Double.self, forKey: .strokeOpacity)
+        fillColor = try container.decode(VectorColor.self, forKey: .fillColor)
+        fillOpacity = try container.decode(Double.self, forKey: .fillOpacity)
+        // Ignore old fontWeight/fontStyle - migration will populate fontVariant
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(fontFamily, forKey: .fontFamily)
+        try container.encodeIfPresent(fontVariant, forKey: .fontVariant)
+        try container.encode(fontSize, forKey: .fontSize)
+        try container.encode(lineHeight, forKey: .lineHeight)
+        try container.encode(lineSpacing, forKey: .lineSpacing)
+        try container.encode(letterSpacing, forKey: .letterSpacing)
+        try container.encode(alignment, forKey: .alignment)
+        try container.encode(hasStroke, forKey: .hasStroke)
+        try container.encode(strokeColor, forKey: .strokeColor)
+        try container.encode(strokeWidth, forKey: .strokeWidth)
+        try container.encode(strokeOpacity, forKey: .strokeOpacity)
+        try container.encode(fillColor, forKey: .fillColor)
+        try container.encode(fillOpacity, forKey: .fillOpacity)
+        // Don't encode fontWeight/fontStyle - they're deprecated
     }
 }
 

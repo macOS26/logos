@@ -48,38 +48,9 @@ extension VectorDocument {
                         }
                     }
 
-                    // FALLBACK: If we couldn't find exact match, construct variant from fontWeight + fontStyle
-                    // NOTE: Deprecation warnings below are expected - migration must read old properties
+                    // FALLBACK: Default to Regular
                     if fontVariant == nil {
-                        // Build variant name from weight and style
-                        var variantParts: [String] = []
-
-                        // Add weight if not regular (deprecated property access for migration)
-                        if typography.fontWeight != .regular {
-                            variantParts.append(typography.fontWeight.rawValue)
-                        }
-
-                        // Add style if italic/oblique (deprecated property access for migration)
-                        if typography.fontStyle == .italic {
-                            variantParts.append("Italic")
-                        } else if typography.fontStyle == .oblique {
-                            variantParts.append("Oblique")
-                        }
-
-                        // If we have parts, join them; otherwise use "Regular"
-                        fontVariant = variantParts.isEmpty ? "Regular" : variantParts.joined(separator: " ")
-
-                        // Try to match this constructed variant with actual available variants
-                        if let constructedVariant = fontVariant {
-                            for member in members {
-                                if let displayName = member[1] as? String,
-                                   displayName.lowercased().contains(constructedVariant.lowercased()) ||
-                                   constructedVariant.lowercased().contains(displayName.lowercased()) {
-                                    fontVariant = displayName
-                                    break
-                                }
-                            }
-                        }
+                        fontVariant = "Regular"
                     }
 
                     // Update typography with extracted variant
