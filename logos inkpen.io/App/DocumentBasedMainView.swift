@@ -183,11 +183,10 @@ struct DocumentBasedMainView: View {
                 loadImportedDocument(configured)
                 appState.pendingNewDocument = nil
             }
-            
-            // Defer fit to page operation to prevent blocking
-            Task {
-                await performDocumentGroupSetupAsync()
-            }
+
+            // PROFESSIONAL: Calculate fit-to-page zoom IMMEDIATELY to prevent flash
+            // Do NOT defer - native apps show the correct zoom from frame 1
+            calculateInitialZoom()
         }
         .onDisappear {
             // CRITICAL: Clean up DocumentState when view disappears to prevent retain cycles
@@ -197,24 +196,54 @@ struct DocumentBasedMainView: View {
         .focusedSceneObject(documentState)
     }
     
-    // MARK: - Async Initialization
-    
-    private func performDocumentGroupSetupAsync() async {
-        // Wait a brief moment for geometry to be established
-        try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
-        
-        await MainActor.run {
+    // MARK: - Initial Zoom Calculation
+
+    /// PROFESSIONAL: Calculate and apply fit-to-page zoom immediately on document open
+    /// Native apps don't flash - they show the correct zoom from the first frame
+    private func calculateInitialZoom() {
+        // Use document bounds to calculate optimal fit zoom
+        let documentBounds = document.documentBounds
+
+        // Estimate available view area (accounting for toolbar, panels, rulers)
+        // Left toolbar: 48px, Right panel: 280px, Status bar: 24px
+        // Rulers: 20px each if enabled
+        guard let window = NSApplication.shared.mainWindow else {
+            // Fallback: Use document's request system if window not available
             document.requestZoom(to: 0.0, mode: .fitToPage)
+            return
         }
+
+        let windowSize = window.frame.size
+        let rulerOffset: CGFloat = document.showRulers ? 20 : 0
+        let availableWidth = windowSize.width - 48 - 280 - rulerOffset
+        let availableHeight = windowSize.height - 24 - rulerOffset
+
+        // Calculate fit zoom
+        let scaleX = availableWidth / documentBounds.width
+        let scaleY = availableHeight / documentBounds.height
+        let fitZoom = max(0.1, min(16.0, min(scaleX, scaleY)))
+
+        // Apply zoom and center offset immediately
+        document.zoomLevel = fitZoom
+
+        // Calculate center offset
+        let visibleCenter = CGPoint(
+            x: (availableWidth + rulerOffset) / 2.0 + rulerOffset,
+            y: (availableHeight + rulerOffset) / 2.0 + rulerOffset
+        )
+        let documentCenter = CGPoint(
+            x: documentBounds.midX,
+            y: documentBounds.midY
+        )
+        document.canvasOffset = CGPoint(
+            x: visibleCenter.x - (documentCenter.x * fitZoom),
+            y: visibleCenter.y - (documentCenter.y * fitZoom)
+        )
     }
     
     // MARK: - Document Operations
 
     private func loadImportedDocument(_ importedDoc: VectorDocument) {
-        // Reset view state BEFORE loading document to prevent two-step process
-        document.zoomLevel = 1.0
-        document.canvasOffset = .zero
-        
         // Load the imported document into the current document
         document.settings = importedDoc.settings
         document.layers = importedDoc.layers
@@ -222,7 +251,7 @@ struct DocumentBasedMainView: View {
         document.customCmykSwatches = importedDoc.customCmykSwatches
         document.customHsbSwatches = importedDoc.customHsbSwatches
         document.documentColorDefaults = importedDoc.documentColorDefaults
-        
+
         document.selectedLayerIndex = importedDoc.selectedLayerIndex
         document.selectedShapeIDs = importedDoc.selectedShapeIDs
         document.selectedTextIDs = importedDoc.selectedTextIDs
@@ -231,20 +260,9 @@ struct DocumentBasedMainView: View {
         document.viewMode = .color
         document.showRulers = importedDoc.showRulers
         document.snapToGrid = importedDoc.snapToGrid
-        
-        // Defer fit to page operation to prevent blocking
-        Task {
-            await performImportedDocumentSetupAsync()
-        }
-    }
-    
-    private func performImportedDocumentSetupAsync() async {
-        // Wait a brief moment for geometry to be established
-        try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
-        
-        await MainActor.run {
-            document.requestZoom(to: 0.0, mode: .fitToPage)
-        }
+
+        // PROFESSIONAL: Calculate and apply zoom immediately - no flash
+        calculateInitialZoom()
     }
     
     // MARK: - Professional Vector Import
@@ -276,11 +294,9 @@ struct DocumentBasedMainView: View {
                     document.selectedShapeIDs = newShapeIDs
                     document.selectedObjectIDs = newShapeIDs
                     document.syncSelectionArrays()
-                    
-                    // Defer fit to page operation to prevent blocking
-                    Task {
-                        await performVectorImportSetupAsync()
-                    }
+
+                    // PROFESSIONAL: Calculate and apply zoom immediately - no flash
+                    calculateInitialZoom()
                 } else {
                     Log.error("❌ Import failed: \(result.errors.map { $0.localizedDescription }.joined(separator: ", "))", category: .error)
                 }
@@ -290,17 +306,6 @@ struct DocumentBasedMainView: View {
             }
         }
     }
-    
-    private func performVectorImportSetupAsync() async {
-        // Wait a brief moment for geometry to be established
-        try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
-        
-        await MainActor.run {
-            document.requestZoom(to: 0.0, mode: .fitToPage)
-        }
-    }
-    
-    
 
     private func runPasteboardDiagnostics() {
         let report = PasteboardDiagnostics.shared.runDiagnostics(on: document)
