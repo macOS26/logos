@@ -299,32 +299,27 @@ extension DrawingCanvas {
         if isSlowDrawing || (appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput) {
             simplifiedPoints = rawPointLocations
         } else {
-            // CRITICAL FIX: For non-pressure drawing, add extra simplification to prevent jagged taper
-            // The old code used currentBrushSimplify which added 0-10 tolerance. Since that's removed,
-            // we add a fixed amount to match the old behavior and prevent jagged ends.
+            // Use liquid smoothing only for fast drawing
             let liquidValue = document.currentBrushLiquid
 
-            // Calculate base tolerance from liquid setting
-            let baseTolerance: Double
+            // Calculate tolerance from liquid setting
+            let tolerance: Double
             if abs(liquidValue - 50.0) < 0.01 {
-                baseTolerance = 0.5
+                tolerance = 0.5
             } else if liquidValue < 50.0 {
                 let smoothFactor = (50.0 - liquidValue) / 50.0
-                baseTolerance = 0.5 + (2.0 * smoothFactor)
+                tolerance = 0.5 + (2.0 * smoothFactor)
             } else {
                 let smoothFactor = (liquidValue - 50.0) / 50.0
-                baseTolerance = 2.5 + (7.5 * smoothFactor)
+                tolerance = 2.5 + (7.5 * smoothFactor)
             }
 
-            // Add extra tolerance for non-pressure to prevent jagged tapers (simulates old simplify slider)
-            let finalTolerance = baseTolerance + 5.0  // Was 0-10, using middle value of 5
-
-            if finalTolerance < 0.6 {
+            if tolerance < 0.6 {
                 simplifiedPoints = rawPointLocations
             } else {
                 simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
                     points: rawPointLocations,
-                    tolerance: finalTolerance
+                    tolerance: tolerance
                 )
             }
         }
@@ -761,8 +756,7 @@ extension DrawingCanvas {
             }
 
             // Apply taper to ends - BLEND with pressure for smoother transitions
-            // CRITICAL: Use 30% taper for non-pressure to prevent jagged ends (was changed from 0.30 to 0.15)
-            let taperZone = (appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput) ? 0.15 : 0.30
+            let taperZone = 0.15 // Taper over first/last 15% of stroke
             var taperMultiplier = 1.0
 
             if progress < taperZone {
@@ -895,8 +889,7 @@ extension DrawingCanvas {
             let mappedPressure = getThicknessFromPressureCurve(pressure: interpolatedPressure, curve: curve)
 
             // Apply taper to ends - BLEND with pressure for smoother transitions
-            // CRITICAL: Use 30% taper for non-pressure to prevent jagged ends (was changed from 0.30 to 0.15)
-            let taperZone = (appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput) ? 0.15 : 0.30
+            let taperZone = 0.15 // Taper over first/last 15% of stroke
             var taperMultiplier = 1.0
 
             if progress < taperZone {
