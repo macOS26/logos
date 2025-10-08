@@ -197,30 +197,17 @@ extension DrawingCanvas {
 
             var interpolatedPoints: [BrushPoint] = [startPoint]
 
-            // Calculate perpendicular direction for jitter
-            let dx = endPoint.location.x - startPoint.location.x
-            let dy = endPoint.location.y - startPoint.location.y
-            let lineLength = sqrt(dx * dx + dy * dy)
-
-            // Perpendicular vector (normalized) - handle zero-length lines
-            let perpX = lineLength > 0 ? -dy / lineLength : 0
-            let perpY = lineLength > 0 ? dx / lineLength : 0
-
-            // Add intermediate points with subtle jitter for natural brush look
+            // Add intermediate points for smooth taper - NO JITTER for stable preview
             let numIntermediatePoints = 5
             for i in 1...numIntermediatePoints {
                 let t = Double(i) / Double(numIntermediatePoints + 1)
 
-                // Add subtle perpendicular jitter for organic feel
-                // Use sine wave for smooth variation
-                let jitterAmount = sin(t * .pi) * 2.0 // Max 2 pixels offset at middle
-
                 let interpolatedLocation = CGPoint(
-                    x: startPoint.location.x + (endPoint.location.x - startPoint.location.x) * t + perpX * jitterAmount,
-                    y: startPoint.location.y + (endPoint.location.y - startPoint.location.y) * t + perpY * jitterAmount
+                    x: startPoint.location.x + (endPoint.location.x - startPoint.location.x) * t,
+                    y: startPoint.location.y + (endPoint.location.y - startPoint.location.y) * t
                 )
 
-                // Linear pressure interpolation (no artificial bulge)
+                // Linear pressure interpolation
                 let interpolatedPressure = startPoint.pressure + (endPoint.pressure - startPoint.pressure) * t
 
                 interpolatedPoints.append(BrushPoint(
