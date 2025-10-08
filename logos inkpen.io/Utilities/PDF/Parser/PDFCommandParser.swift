@@ -117,19 +117,6 @@ class PDFCommandParser {
     var needsYFlip: Bool? = nil  // nil = unknown, true = needs flip, false = no flip needed
 
     func parseDocument(at url: URL) -> [VectorShape] {
-        // MEMORY FIX: Clear all temporary data when function exits
-        defer {
-            shapes.removeAll()
-            commands.removeAll()
-            currentPath.removeAll()
-            compoundPathParts.removeAll()
-            gradientShapes.removeAll()
-            activeGradient = nil
-            currentFillGradient = nil
-            currentStrokeGradient = nil
-            pendingClippingPath = nil
-        }
-
         commands.removeAll()
         shapes.removeAll()
 
