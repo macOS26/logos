@@ -230,6 +230,10 @@ class PDFCommandParser {
         // Restore stderr
         dup2(savedStderr, STDERR_FILENO)
         close(savedStderr)
+
+        // MEMORY FIX: Clear page reference to prevent retain cycle
+        currentPage = nil
+        pageResourcesDict = nil
     }
     
     func setupOperatorCallbacks(_ operatorTable: CGPDFOperatorTableRef) {
