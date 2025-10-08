@@ -33,14 +33,6 @@ extension VectorDocument {
 
         Log.info("⏪ UNDO: Starting - undoStack.count=\(undoStack.count), current selectedTextIDs=\(selectedTextIDs), selectedShapeIDs=\(selectedShapeIDs)", category: .general)
 
-        // Set flag to prevent reordering during undo operation
-        isUndoRedoOperation = true
-        defer {
-            isUndoRedoOperation = false
-            // Send ONE final update after all properties restored
-            objectWillChange.send()
-        }
-
         // Save current state to redo stack
         do {
             let data = try JSONEncoder().encode(self)
@@ -55,8 +47,16 @@ extension VectorDocument {
 
         Log.info("⏪ UNDO: Restoring state - previousState selectedTextIDs=\(previousState.selectedTextIDs), selectedShapeIDs=\(previousState.selectedShapeIDs), unifiedObjects.count=\(previousState.unifiedObjects.count)", category: .general)
 
-        // CRITICAL: Batch ALL property updates in ONE transaction to prevent flicker
-        withAnimation(.none) {
+        // CRITICAL: Set flags to prevent reordering and suppress intermediate updates
+        isUndoRedoOperation = true
+
+        // CRITICAL: Perform ALL updates in a single transaction WITHOUT notifying SwiftUI
+        // This prevents view recreation and flicker
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        transaction.animation = nil
+
+        withTransaction(transaction) {
             settings = previousState.settings
             layers = previousState.layers
             customRgbSwatches = previousState.customRgbSwatches
@@ -73,8 +73,6 @@ extension VectorDocument {
             currentTool = previousState.currentTool
             zoomLevel = previousState.zoomLevel
             canvasOffset = previousState.canvasOffset
-            // REMOVED: View-only properties (showRulers, snapToGrid, showGrid) should NOT be part of undo/redo
-            // These are UI preferences, not document content
             gridSpacing = previousState.gridSpacing
             backgroundColor = previousState.backgroundColor
             viewMode = previousState.viewMode
@@ -91,8 +89,6 @@ extension VectorDocument {
             colorChangeNotification = previousState.colorChangeNotification
             lastColorChangeType = previousState.lastColorChangeType
             currentBrushThickness = previousState.currentBrushThickness
-            // currentBrushPressureSensitivity removed - now using global pressure curve
-            // currentBrushTaper removed - tapering is now hardcoded in brush tool
             currentBrushSmoothingTolerance = previousState.currentBrushSmoothingTolerance
             hasPressureInput = previousState.hasPressureInput
             brushApplyNoStroke = previousState.brushApplyNoStroke
@@ -111,19 +107,15 @@ extension VectorDocument {
             rebuildLookupCache()
         }
 
+        // Reset flag and notify SwiftUI ONCE
+        isUndoRedoOperation = false
+        objectWillChange.send()
+
         Log.info("⏪ UNDO: Complete - restored selectedTextIDs=\(selectedTextIDs), selectedShapeIDs=\(selectedShapeIDs), unifiedObjects.count=\(unifiedObjects.count)", category: .general)
     }
     
     func redo() {
         guard !redoStack.isEmpty else { return }
-
-        // Set flag to prevent reordering during redo operation
-        isUndoRedoOperation = true
-        defer {
-            isUndoRedoOperation = false
-            // Send ONE final update after all properties restored
-            objectWillChange.send()
-        }
 
         // Save current state to undo stack WITHOUT clearing redo stack
         do {
@@ -144,8 +136,15 @@ extension VectorDocument {
         }
         let nextState = redoStack.removeLast()
 
-        // CRITICAL: Batch ALL property updates in ONE transaction to prevent flicker
-        withAnimation(.none) {
+        // CRITICAL: Set flags to prevent reordering and suppress intermediate updates
+        isUndoRedoOperation = true
+
+        // CRITICAL: Perform ALL updates in a single transaction WITHOUT notifying SwiftUI
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        transaction.animation = nil
+
+        withTransaction(transaction) {
             settings = nextState.settings
             layers = nextState.layers
             customRgbSwatches = nextState.customRgbSwatches
@@ -162,8 +161,6 @@ extension VectorDocument {
             currentTool = nextState.currentTool
             zoomLevel = nextState.zoomLevel
             canvasOffset = nextState.canvasOffset
-            // REMOVED: View-only properties (showRulers, snapToGrid, showGrid) should NOT be part of undo/redo
-            // These are UI preferences, not document content
             gridSpacing = nextState.gridSpacing
             backgroundColor = nextState.backgroundColor
             viewMode = nextState.viewMode
@@ -180,8 +177,6 @@ extension VectorDocument {
             colorChangeNotification = nextState.colorChangeNotification
             lastColorChangeType = nextState.lastColorChangeType
             currentBrushThickness = nextState.currentBrushThickness
-            // currentBrushPressureSensitivity removed - now using global pressure curve
-            // currentBrushTaper removed - tapering is now hardcoded in brush tool
             currentBrushSmoothingTolerance = nextState.currentBrushSmoothingTolerance
             hasPressureInput = nextState.hasPressureInput
             brushApplyNoStroke = nextState.brushApplyNoStroke
@@ -199,6 +194,10 @@ extension VectorDocument {
             // CRITICAL: Rebuild the lookup cache after restoring unified objects
             rebuildLookupCache()
         }
+
+        // Reset flag and notify SwiftUI ONCE
+        isUndoRedoOperation = false
+        objectWillChange.send()
     }
     
     /// CRITICAL FIX: Ensures unified objects are properly ordered after undo/redo operations
