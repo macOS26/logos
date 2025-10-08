@@ -64,8 +64,9 @@ struct ProfessionalTextCanvas: View {
         .scaleEffect(document.zoomLevel, anchor: .topLeading)
         .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
         // ULTRA FAST 60FPS: Apply drag preview offset for selected text objects
-        .offset(x: document.selectedTextIDs.contains(textObjectID) ? dragPreviewDelta.x * document.zoomLevel : 0,
-                y: document.selectedTextIDs.contains(textObjectID) ? dragPreviewDelta.y * document.zoomLevel : 0)
+        // CRITICAL FIX: Also check if this text object is part of a selected group
+        .offset(x: shouldApplyDragPreview() ? dragPreviewDelta.x * document.zoomLevel : 0,
+                y: shouldApplyDragPreview() ? dragPreviewDelta.y * document.zoomLevel : 0)
         .id(dragPreviewTrigger) // Force efficient re-render when trigger changes
         .onKeyPress(action: handleKeyPress)
         .onChange(of: document.selectedTextIDs) { _, selectedIDs in
@@ -89,6 +90,32 @@ struct ProfessionalTextCanvas: View {
         .onChange(of: document.currentTool) { oldTool, newTool in
             handleToolChange(oldTool: oldTool, newTool: newTool)
         }
+    }
+
+    // MARK: - Helper Functions
+
+    /// Check if this text object should have drag preview applied
+    /// Returns true if: 1) text is directly selected, OR 2) text is part of a selected group
+    private func shouldApplyDragPreview() -> Bool {
+        // Check if directly selected
+        if document.selectedTextIDs.contains(textObjectID) {
+            return true
+        }
+
+        // Check if this text object is part of a selected group
+        // Find all selected shapes that are groups
+        for selectedID in document.selectedShapeIDs {
+            if let selectedObject = document.findObject(by: selectedID),
+               case .shape(let selectedShape) = selectedObject.objectType,
+               selectedShape.isGroupContainer {
+                // Check if this text object is in the group
+                if selectedShape.groupedShapes.contains(where: { $0.id == textObjectID && $0.isTextObject }) {
+                    return true
+                }
+            }
+        }
+
+        return false
     }
 
     // MARK: - Tool Change Handler

@@ -32,32 +32,35 @@ struct ShapeView: View {
                 // CRITICAL FIX: Render grouped shapes WITHOUT zoom/offset (prevent double application)
                 ZStack {
                     ForEach(shape.groupedShapes, id: \.id) { groupedShape in
-                        // PERFORMANCE OPTIMIZATION: Create path only once per shape
-                        let cachedPath = Path { path in
-                            addPathElements(groupedShape.path.elements, to: &path)
-                        }
-                        
-                        // Render shapes directly - NO coordinate system nesting
-                        ZStack {
-                            // Fill - only show in color view mode (or always for Canvas)
-                            if effectiveViewMode == .color,
-                               let fillStyle = groupedShape.fillStyle,
-                                fillStyle.color != .clear {
-                                renderFill(fillStyle: fillStyle, path: cachedPath, shape: groupedShape)
+                        // CRITICAL FIX: Skip text objects - they are rendered by StableProfessionalTextCanvas
+                        if !groupedShape.isTextObject {
+                            // PERFORMANCE OPTIMIZATION: Create path only once per shape
+                            let cachedPath = Path { path in
+                                addPathElements(groupedShape.path.elements, to: &path)
                             }
-                            
-                            // Stroke rendering - reuse the same cached path
-                            if effectiveViewMode == .keyline {
-                                cachedPath.stroke(Color.black, lineWidth: 1.0 / zoomLevel)
-                            } else if let strokeStyle = groupedShape.strokeStyle, strokeStyle.color != .clear {
-                                renderStrokeWithPlacement(shape: groupedShape, strokeStyle: strokeStyle, viewMode: effectiveViewMode, path: cachedPath)
-                                    .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
-                                    .blendMode(strokeStyle.blendMode.swiftUIBlendMode)
+
+                            // Render shapes directly - NO coordinate system nesting
+                            ZStack {
+                                // Fill - only show in color view mode (or always for Canvas)
+                                if effectiveViewMode == .color,
+                                   let fillStyle = groupedShape.fillStyle,
+                                    fillStyle.color != .clear {
+                                    renderFill(fillStyle: fillStyle, path: cachedPath, shape: groupedShape)
+                                }
+
+                                // Stroke rendering - reuse the same cached path
+                                if effectiveViewMode == .keyline {
+                                    cachedPath.stroke(Color.black, lineWidth: 1.0 / zoomLevel)
+                                } else if let strokeStyle = groupedShape.strokeStyle, strokeStyle.color != .clear {
+                                    renderStrokeWithPlacement(shape: groupedShape, strokeStyle: strokeStyle, viewMode: effectiveViewMode, path: cachedPath)
+                                        .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
+                                        .blendMode(strokeStyle.blendMode.swiftUIBlendMode)
+                                }
                             }
+                            // CRITICAL: Only apply individual shape transform - NO zoom/offset here
+                            .transformEffect(groupedShape.transform)
+                            .opacity(groupedShape.opacity)
                         }
-                        // CRITICAL: Only apply individual shape transform - NO zoom/offset here
-                        .transformEffect(groupedShape.transform)
-                        .opacity(groupedShape.opacity)
                     }
                 }
                 // CRITICAL FIX: Let ShapeView handle zoom/offset - only apply group transform here

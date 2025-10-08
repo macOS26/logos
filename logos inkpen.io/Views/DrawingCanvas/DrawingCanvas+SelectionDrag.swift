@@ -326,21 +326,30 @@ extension DrawingCanvas {
         if shape.isGroupContainer && !shape.groupedShapes.isEmpty {
             // Apply delta to each individual shape within the flattened group
             var updatedGroupedShapes: [VectorShape] = []
-            
+
             for var groupedShape in shape.groupedShapes {
+                // CRITICAL FIX: For text objects in groups, update textPosition
+                if groupedShape.isTextObject {
+                    if let textPosition = groupedShape.textPosition {
+                        groupedShape.textPosition = CGPoint(x: textPosition.x + delta.x, y: textPosition.y + delta.y)
+                    }
+                    // Also update in the textObjects array
+                    document.translateTextInUnified(id: groupedShape.id, delta: delta)
+                }
+
                 // Apply delta to all path elements of this grouped shape
                 var updatedElements: [PathElement] = []
-                
+
                 for element in groupedShape.path.elements {
                     switch element {
                     case .move(let to):
                         let newPoint = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
                         updatedElements.append(.move(to: VectorPoint(newPoint)))
-                        
+
                     case .line(let to):
                         let newPoint = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
                         updatedElements.append(.line(to: VectorPoint(newPoint)))
-                        
+
                     case .curve(let to, let control1, let control2):
                         let newTo = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
                         let newControl1 = CGPoint(x: control1.x + delta.x, y: control1.y + delta.y)
@@ -350,7 +359,7 @@ extension DrawingCanvas {
                             control1: VectorPoint(newControl1),
                             control2: VectorPoint(newControl2)
                         ))
-                        
+
                     case .quadCurve(let to, let control):
                         let newTo = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
                         let newControl = CGPoint(x: control.x + delta.x, y: control.y + delta.y)
@@ -358,19 +367,19 @@ extension DrawingCanvas {
                             to: VectorPoint(newTo),
                             control: VectorPoint(newControl)
                         ))
-                        
+
                     case .close:
                         updatedElements.append(.close)
                     }
                 }
-                
+
                 // Update this grouped shape with moved coordinates
                 groupedShape.path = VectorPath(elements: updatedElements, isClosed: groupedShape.path.isClosed)
                 groupedShape.updateBounds()
-                
+
                 updatedGroupedShapes.append(groupedShape)
             }
-            
+
             // Update the flattened group with the moved individual shapes
             var groupShape = shape
             groupShape.groupedShapes = updatedGroupedShapes
