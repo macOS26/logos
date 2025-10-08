@@ -128,12 +128,28 @@ class VectorDocument: ObservableObject, Codable {
     }
     
     func findText(by id: UUID) -> VectorText? {
-        guard let object = unifiedObjectLookupCache[id],
-              case .shape(let shape) = object.objectType,
-              shape.isTextObject,
-              var vectorText = VectorText.from(shape) else { return nil }
-        vectorText.layerIndex = object.layerIndex
-        return vectorText
+        // First check in unified objects (standalone text)
+        if let object = unifiedObjectLookupCache[id],
+           case .shape(let shape) = object.objectType,
+           shape.isTextObject,
+           var vectorText = VectorText.from(shape) {
+            vectorText.layerIndex = object.layerIndex
+            return vectorText
+        }
+
+        // CRITICAL FIX: Also search in grouped shapes (text inside groups)
+        for object in unifiedObjects {
+            if case .shape(let shape) = object.objectType, shape.isGroupContainer {
+                // Search through grouped shapes
+                if let textShape = shape.groupedShapes.first(where: { $0.id == id && $0.isTextObject }),
+                   var vectorText = VectorText.from(textShape) {
+                    vectorText.layerIndex = object.layerIndex
+                    return vectorText
+                }
+            }
+        }
+
+        return nil
     }
     
     func getObjectsInLayer(_ layerIndex: Int) -> [VectorObject] {
