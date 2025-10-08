@@ -447,8 +447,10 @@ extension DrawingCanvas {
             let lastPoint = pathPoints[pathPoints.count - 1]
             let secondLastPoint = pathPoints[pathPoints.count - 2]
 
-            let startCoincident = sqrt(pow(firstPoint.x - secondPoint.x, 2) + pow(firstPoint.y - secondPoint.y, 2)) < 0.5
-            let endCoincident = sqrt(pow(lastPoint.x - secondLastPoint.x, 2) + pow(lastPoint.y - secondLastPoint.y, 2)) < 0.5
+            // Check if ends are nearly coincident (distance less than minTaperThickness means taper collapsed)
+            let minThickness = document.currentBrushMinTaperThickness
+            let startCoincident = sqrt(pow(firstPoint.x - secondPoint.x, 2) + pow(firstPoint.y - secondPoint.y, 2)) <= minThickness
+            let endCoincident = sqrt(pow(lastPoint.x - secondLastPoint.x, 2) + pow(lastPoint.y - secondLastPoint.y, 2)) <= minThickness
 
             // If BOTH ends are coincident (no thickness at both ends), use artificial leaf shape
             if startCoincident && endCoincident {
