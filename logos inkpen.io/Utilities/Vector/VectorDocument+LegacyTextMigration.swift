@@ -49,16 +49,17 @@ extension VectorDocument {
                     }
 
                     // FALLBACK: If we couldn't find exact match, construct variant from fontWeight + fontStyle
+                    // NOTE: Deprecation warnings below are expected - migration must read old properties
                     if fontVariant == nil {
                         // Build variant name from weight and style
                         var variantParts: [String] = []
 
-                        // Add weight if not regular
+                        // Add weight if not regular (deprecated property access for migration)
                         if typography.fontWeight != .regular {
                             variantParts.append(typography.fontWeight.rawValue)
                         }
 
-                        // Add style if italic/oblique (fontStyle is deprecated but still in old files)
+                        // Add style if italic/oblique (deprecated property access for migration)
                         if typography.fontStyle == .italic {
                             variantParts.append("Italic")
                         } else if typography.fontStyle == .oblique {

@@ -361,17 +361,15 @@ extension DrawingCanvas {
         let typography = TypographyProperties(
             fontFamily: document.fontManager.selectedFontFamily,
             fontVariant: document.fontManager.selectedFontVariant,
-            fontWeight: document.fontManager.selectedFontWeight,
-            fontStyle: .normal,  // DEPRECATED: Style is encoded in variant
             fontSize: document.fontManager.selectedFontSize,
-            lineHeight: document.fontManager.selectedLineHeight, // FIXED: Use font manager's line height
-            lineSpacing: document.fontManager.selectedLineSpacing, // FIXED: Use font manager's line spacing
+            lineHeight: document.fontManager.selectedLineHeight,
+            lineSpacing: document.fontManager.selectedLineSpacing,
             letterSpacing: 0.0,
-            alignment: document.fontManager.selectedTextAlignment, // FIXED: Use font manager's alignment
-            hasStroke: false, // NO STROKES - only fill colors
+            alignment: document.fontManager.selectedTextAlignment,
+            hasStroke: false,
             strokeColor: document.defaultStrokeColor,
             strokeOpacity: document.defaultStrokeOpacity,
-            fillColor: document.defaultFillColor, // Use current fill color
+            fillColor: document.defaultFillColor,
             fillOpacity: document.defaultFillOpacity
         )
         

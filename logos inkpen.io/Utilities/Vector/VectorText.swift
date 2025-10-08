@@ -144,11 +144,12 @@ struct TypographyProperties: Codable, Hashable {
     var fillOpacity: Double
     
     // NO DEFAULT FONT COLORS - COLORS MUST BE EXPLICITLY PROVIDED
+    // NOTE: fontWeight and fontStyle params kept for Codable backward compatibility
     init(
         fontFamily: String = "Helvetica",
         fontVariant: String? = nil,
-        fontWeight: FontWeight = .regular,
-        fontStyle: FontStyle = .normal,
+        fontWeight: FontWeight = .regular,  // Deprecated but needed for Codable
+        fontStyle: FontStyle = .normal,     // Deprecated but needed for Codable
         fontSize: Double = 24.0,
         lineHeight: Double = 24.0,
         lineSpacing: Double = 0.0,
@@ -163,8 +164,8 @@ struct TypographyProperties: Codable, Hashable {
     ) {
         self.fontFamily = fontFamily
         self.fontVariant = fontVariant
-        self.fontWeight = fontWeight
-        self.fontStyle = fontStyle
+        self.fontWeight = fontWeight  // Assign for backward compatibility
+        self.fontStyle = fontStyle    // Assign for backward compatibility
         self.fontSize = fontSize
         self.lineHeight = lineHeight
         self.lineSpacing = lineSpacing
@@ -198,6 +199,7 @@ struct TypographyProperties: Codable, Hashable {
         }
 
         // Fallback to weight/style based creation (check variant for italic)
+        // NOTE: Deprecation warnings for fontWeight are expected here - used as fallback when fontVariant is nil
         let descriptor = NSFontDescriptor(name: fontFamily, size: fontSize)
         let traits: NSFontDescriptor.SymbolicTraits = isItalic ? .italic : []
         let weightedDescriptor = descriptor.addingAttributes([
@@ -211,6 +213,7 @@ struct TypographyProperties: Codable, Hashable {
 
     // Create SwiftUI Font for UI display
     var swiftUIFont: Font {
+        // NOTE: Deprecation warning for fontWeight is expected here - used as fallback
         let baseFont = Font.custom(fontFamily, size: fontSize)
             .weight(fontWeight.systemWeight)
 
@@ -431,8 +434,6 @@ struct VectorText: Identifiable, Codable, Hashable {
 
             typography = TypographyProperties(
                 fontFamily: fontFamily,
-                fontWeight: .regular,
-                fontStyle: .normal,
                 fontSize: fontSize,
                 lineHeight: fontSize * 1.2,
                 lineSpacing: lineSpacing,
@@ -496,7 +497,6 @@ class FontManager: ObservableObject {
     // SELECTED FONT PROPERTIES for new text objects
     @Published var selectedFontFamily: String = "Helvetica Neue"
     @Published var selectedFontVariant: String = "Regular"  // Store selected variant name
-    @Published var selectedFontWeight: FontWeight = .regular
     @Published var selectedFontSize: Double = 24.0
     
     // NEW: Line spacing and line height properties for new text creation

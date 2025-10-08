@@ -419,18 +419,11 @@ extension DrawingCanvas {
     
     /// FIXED: Check if a location is within any existing selection box
     private func isLocationWithinSelectionBox(_ location: CGPoint) -> Bool {
-        Log.error("🚨 DEBUG SELECTION BOX CHECK: location=\(location)", category: .debug)
-        Log.error("🚨 DEBUG SELECTION BOX CHECK: selectedObjectIDs=\(document.selectedObjectIDs)", category: .debug)
-        
         // Check selected objects using unified system
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
-                    Log.error("🚨 DEBUG SHAPE: id=\(shape.id), isTextObject=\(shape.isTextObject)", category: .debug)
-                    Log.error("🚨 DEBUG TRANSFORM: tx=\(shape.transform.tx), ty=\(shape.transform.ty)", category: .debug)
-                    Log.error("🚨 DEBUG BOUNDS: \(shape.bounds)", category: .debug)
-                    
                     // CRITICAL FIX: For text objects, only check content area, not bounding box
                     if shape.isTextObject {
                         // Only use text content area for text objects (no bounding box)
@@ -440,32 +433,25 @@ extension DrawingCanvas {
                             width: shape.bounds.width,
                             height: shape.bounds.height
                         )
-                        Log.error("🚨 DEBUG TEXT CONTENT AREA: \(textContentArea)", category: .debug)
                         let contains = textContentArea.contains(location)
-                        Log.error("🚨 DEBUG TEXT CONTAINS: \(contains)", category: .debug)
-                        
+
                         if contains {
-                            Log.error("🚨 DEBUG SELECTION BOX: TEXT HIT - RETURNING TRUE", category: .debug)
                             return true
                         }
                     } else {
                         // For non-text shapes, use normal bounds checking
                         let transformedBounds = shape.bounds.applying(shape.transform)
                         let selectionBoxBounds = transformedBounds.insetBy(dx: 0, dy: 0)
-                        Log.error("🚨 DEBUG SHAPE BOUNDS: \(selectionBoxBounds)", category: .debug)
                         let contains = selectionBoxBounds.contains(location)
-                        Log.error("🚨 DEBUG SHAPE CONTAINS: \(contains)", category: .debug)
-                        
+
                         if contains {
-                            Log.error("🚨 DEBUG SELECTION BOX: SHAPE HIT - RETURNING TRUE", category: .debug)
                             return true
                         }
                     }
                 }
             }
         }
-        
-        Log.error("🚨 DEBUG SELECTION BOX: NO HIT - RETURNING FALSE", category: .debug)
+
         return false
     }
     

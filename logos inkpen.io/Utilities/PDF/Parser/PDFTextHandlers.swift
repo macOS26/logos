@@ -708,10 +708,9 @@ extension PDFCommandParser {
         let position = CGPoint(x: pdfX, y: finalY)
 
 
-        // Determine font attributes and parse weight from font name
+        // Determine font attributes and parse variant from font name
         let fullFontName = currentFontName ?? "Helvetica"
         var fontFamily = fullFontName
-        var fontWeight: FontWeight = .regular
         var fontVariant: String? = nil
 
         // Parse weight and style from font name (e.g. "Helvetica-Bold", "HelveticaNeue-LightItalic")
@@ -738,51 +737,14 @@ extension PDFCommandParser {
                     // Check if this PostScript name matches
                     if postScriptName == fullFontName {
                         fontVariant = displayName
-                        // Also extract weight for compatibility
-                        if let weightNumber = member[2] as? NSNumber {
-                            let nsWeight = weightNumber.intValue
-                            // Map weight from NSFont weight value
-                            switch nsWeight {
-                            case 0...2: fontWeight = .thin
-                            case 3: fontWeight = .ultraLight
-                            case 4: fontWeight = .light
-                            case 5: fontWeight = .regular
-                            case 6: fontWeight = .medium
-                            case 7...8: fontWeight = .semibold
-                            case 9: fontWeight = .bold
-                            case 10...11: fontWeight = .heavy
-                            default: fontWeight = .black
-                            }
-
-                            // Style is now encoded in variant name, no need to set deprecated fontStyle
-                        }
                         break
                     }
                 }
             }
 
-            // If no exact match, parse weight/style from variant part
+            // If no exact match, use variant part as-is (migration will handle old files)
             if fontVariant == nil {
-                let lowerVariant = variantPart.lowercased()
-
-                // Parse weight
-                if lowerVariant.contains("ultralight") || lowerVariant.contains("ultra-light") {
-                    fontWeight = .ultraLight
-                } else if lowerVariant.contains("thin") {
-                    fontWeight = .thin
-                } else if lowerVariant.contains("light") && !lowerVariant.contains("ultralight") {
-                    fontWeight = .light
-                } else if lowerVariant.contains("medium") {
-                    fontWeight = .medium
-                } else if lowerVariant.contains("semibold") || lowerVariant.contains("semi-bold") || lowerVariant.contains("demibold") {
-                    fontWeight = .semibold
-                } else if lowerVariant.contains("bold") && !lowerVariant.contains("semibold") {
-                    fontWeight = .bold
-                } else if lowerVariant.contains("heavy") || lowerVariant.contains("black") {
-                    fontWeight = .heavy
-                }
-
-                // Style will be detected from variant name later, no need to set deprecated fontStyle
+                fontVariant = variantPart
             }
         }
 
@@ -812,11 +774,9 @@ extension PDFCommandParser {
 
         let typography = TypographyProperties(
             fontFamily: fontFamily,
-            fontVariant: fontVariant,  // Include the variant if found
-            fontWeight: fontWeight,    // Use parsed weight
-            fontStyle: .normal,        // DEPRECATED: Will be migrated from variant on load
+            fontVariant: fontVariant,
             fontSize: fontSize,
-            lineHeight: fontSize * 1.2,  // Default line height
+            lineHeight: fontSize * 1.2,
             lineSpacing: textLeading,
             letterSpacing: textCharacterSpacing,
             alignment: .left,

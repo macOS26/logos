@@ -13,8 +13,8 @@ extension SVGParser {
     // MARK: - Text Processing Helper Methods
 
     // PERFORMANCE: Get or create cached NSFont to avoid repeated lookups
-    internal func getCachedFont(family: String, size: Double, weight: FontWeight) -> NSFont {
-        let cacheKey = "\(family)-\(size)-\(weight.rawValue)"
+    internal func getCachedFont(family: String, size: Double) -> NSFont {
+        let cacheKey = "\(family)-\(size)"
         if let cached = fontCache[cacheKey] {
             return cached
         }
@@ -98,49 +98,8 @@ extension SVGParser {
         return "Helvetica Neue"
     }
     
-    // MARK: - SVG Font Weight and Alignment Parsing
-    
-    func parseFontWeight(from attributes: [String: String]) -> FontWeight {
-        // Check explicit font-weight attribute first
-        if let weightValue = attributes["font-weight"] {
-            switch weightValue.lowercased() {
-            case "100": return .thin
-            case "200": return .ultraLight
-            case "300": return .light
-            case "400", "normal": return .regular
-            case "500": return .medium
-            case "600": return .semibold
-            case "700", "bold": return .bold
-            case "800": return .heavy  // CRITICAL FIX: 800 maps to Heavy
-            case "900", "black": return .black
-            case "thin": return .thin
-            case "ultralight": return .ultraLight
-            case "light": return .light
-            case "regular": return .regular
-            case "medium": return .medium
-            case "semibold": return .semibold
-            case "heavy": return .heavy
-            default: return .regular
-            }
-        }
-        
-        // Check font-family for embedded weight (e.g., "Avenir-Heavy")
-        if let fontFamily = attributes["font-family"] {
-            let lowerFamily = fontFamily.lowercased()
-            if lowerFamily.contains("-heavy") || lowerFamily.contains(" heavy") {
-                return .heavy
-            } else if lowerFamily.contains("-bold") || lowerFamily.contains(" bold") {
-                return .bold
-            } else if lowerFamily.contains("-medium") || lowerFamily.contains(" medium") {
-                return .medium
-            } else if lowerFamily.contains("-light") || lowerFamily.contains(" light") {
-                return .light
-            }
-        }
-        
-        return .regular  // Default
-    }
-    
+    // MARK: - SVG Alignment Parsing
+
     func detectTextAlignment(from tspans: [(content: String, attributes: [String: String], x: Double, y: Double)]) -> TextAlignment {
         guard tspans.count > 1 else { return .left }
         
@@ -243,8 +202,7 @@ extension SVGParser {
             if !combinedContent.isEmpty {
                 let multiLineContent = combinedContent.joined(separator: "\n")
 
-                // Parse font weight and alignment from the first tspan or CSS
-                let fontWeight = parseFontWeight(from: currentTextSpans.first?.attributes ?? currentTextAttributes)
+                // Parse alignment from the first tspan or CSS
                 let textAlignment = detectTextAlignment(from: currentTextSpans)
 
                 // Calculate line height as fontSize * 1.2
@@ -252,13 +210,11 @@ extension SVGParser {
 
                 let typography = TypographyProperties(
                     fontFamily: firstFontFamily,
-                    fontWeight: fontWeight,  // FIXED: Use parsed font weight
-                    fontStyle: .normal,
                     fontSize: firstFontSize,
                     lineHeight: lineHeight,
                     lineSpacing: 0.0,
                     letterSpacing: 0.0,
-                    alignment: textAlignment,  // FIXED: Use detected alignment
+                    alignment: textAlignment,
                     hasStroke: false,
                     strokeColor: .black,
                     strokeWidth: 0.0,
@@ -276,7 +232,7 @@ extension SVGParser {
 
                 if textAnchor == "middle" || textAnchor == "end" {
                     // PERFORMANCE: Use cached font and shared layout manager
-                    let nsFont = getCachedFont(family: firstFontFamily, size: firstFontSize, weight: fontWeight)
+                    let nsFont = getCachedFont(family: firstFontFamily, size: firstFontSize)
                     let maxLineWidth = calculateMaxLineWidth(for: multiLineContent, font: nsFont, alignment: textAlignment)
 
                     // Adjust x position based on anchor and widest line
@@ -288,7 +244,7 @@ extension SVGParser {
                 }
 
                 // PERFORMANCE: Calculate ACTUAL text width using cached components (widest line + 2 characters)
-                let nsFont = getCachedFont(family: firstFontFamily, size: firstFontSize, weight: fontWeight)
+                let nsFont = getCachedFont(family: firstFontFamily, size: firstFontSize)
                 let maxLineWidth = calculateMaxLineWidth(for: multiLineContent, font: nsFont, alignment: textAlignment)
 
                 // CRITICAL: Check if we have a text box bounds rect from parent group
@@ -344,9 +300,7 @@ extension SVGParser {
             let textOwnTransform = parseTransform(currentTextAttributes["transform"] ?? "")
             let finalTextTransform = currentTransform.concatenating(textOwnTransform)
             
-            // Parse font weight and alignment for single-line text
-            let fontWeight = parseFontWeight(from: currentTextAttributes)
-            // Check text-anchor attribute for alignment
+            // Parse alignment for single-line text
             let textAlignment: TextAlignment
             let textAnchor = currentTextAttributes["text-anchor"]?.lowercased() ?? "start"
             switch textAnchor {
@@ -361,8 +315,6 @@ extension SVGParser {
 
             let typography = TypographyProperties(
                 fontFamily: fontFamily,
-                fontWeight: fontWeight,  // FIXED: Use parsed font weight
-                fontStyle: .normal,
                 fontSize: fontSize,
                 lineHeight: lineHeight,
                 lineSpacing: 0.0,
@@ -384,7 +336,7 @@ extension SVGParser {
             let trimmedContent = currentTextContent.trimmingCharacters(in: .whitespacesAndNewlines)
 
             // PERFORMANCE: Calculate text width once using cached components
-            let nsFont = getCachedFont(family: fontFamily, size: fontSize, weight: fontWeight)
+            let nsFont = getCachedFont(family: fontFamily, size: fontSize)
             let textWidth = calculateTextWidth(for: trimmedContent, font: nsFont, alignment: textAlignment)
 
             // CRITICAL: Check if we have a text box bounds rect from parent group

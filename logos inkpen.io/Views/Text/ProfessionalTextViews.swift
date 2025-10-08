@@ -27,7 +27,6 @@ struct ProfessionalTextBoxView: View {
     }
 
     var body: some View {
-        let _ = Log.info("🔍 TEXT BOX: frame=\(viewModel.textBoxFrame) -> position at CENTER (\(viewModel.textBoxFrame.minX + viewModel.textBoxFrame.width/2), \(viewModel.textBoxFrame.minY + viewModel.textBoxFrame.height/2))", category: .general)
         ZStack {
             // Main text box rectangle with clear background
             Rectangle()
