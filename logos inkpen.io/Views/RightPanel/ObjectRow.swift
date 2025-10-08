@@ -173,6 +173,8 @@ struct ObjectRow: View {
             // CRITICAL: Render grouped shapes when expanded
             if objectType == .group, isGroupExpanded, let shapes = groupedShapes {
                 ForEach(shapes, id: \.id) { childShape in
+                    let isChildSelected = document.selectedObjectIDs.contains(childShape.id)
+
                     HStack(spacing: 6) {
                         // Indent for hierarchy
                         Color.clear.frame(width: 20)
@@ -183,15 +185,66 @@ struct ObjectRow: View {
                             .foregroundColor(childShape.isTextObject ? .green : .blue)
                             .frame(width: 12)
 
+                        // Selection indicator for child
+                        Circle()
+                            .fill(isChildSelected ? Color.blue : Color.clear)
+                            .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                            .frame(width: 7, height: 7)
+
                         // Child shape name
                         Text(childShape.isTextObject ? (childShape.textContent ?? "Text") : childShape.name)
                             .font(.system(size: 10))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(isChildSelected ? .blue : .secondary)
                             .lineLimit(1)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 2)
+                    .background(isChildSelected ? Color.blue.opacity(0.08) : Color.clear)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        // PROFESSIONAL: Select child object directly (like Illustrator/Figma)
+                        let isShiftPressed = NSEvent.modifierFlags.contains(.shift)
+                        let isCommandPressed = NSEvent.modifierFlags.contains(.command)
+
+                        if isCommandPressed {
+                            // Command-click: Toggle selection
+                            if document.selectedObjectIDs.contains(childShape.id) {
+                                document.selectedObjectIDs.remove(childShape.id)
+                                if childShape.isTextObject {
+                                    document.selectedTextIDs.remove(childShape.id)
+                                } else {
+                                    document.selectedShapeIDs.remove(childShape.id)
+                                }
+                            } else {
+                                document.selectedObjectIDs.insert(childShape.id)
+                                if childShape.isTextObject {
+                                    document.selectedTextIDs.insert(childShape.id)
+                                } else {
+                                    document.selectedShapeIDs.insert(childShape.id)
+                                }
+                            }
+                        } else if isShiftPressed {
+                            // Shift-click: Add to selection
+                            document.selectedObjectIDs.insert(childShape.id)
+                            if childShape.isTextObject {
+                                document.selectedTextIDs.insert(childShape.id)
+                            } else {
+                                document.selectedShapeIDs.insert(childShape.id)
+                            }
+                        } else {
+                            // Regular click: Select only this child
+                            document.selectedObjectIDs = [childShape.id]
+                            if childShape.isTextObject {
+                                document.selectedTextIDs = [childShape.id]
+                                document.selectedShapeIDs.removeAll()
+                            } else {
+                                document.selectedShapeIDs = [childShape.id]
+                                document.selectedTextIDs.removeAll()
+                            }
+                        }
+                        document.syncSelectionArrays()
+                    }
                 }
             }
         }
