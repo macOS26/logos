@@ -102,8 +102,7 @@
       "Bash(\"logos inkpen.io/Utilities/Vector/PathOperations.swift\" )",
       "Bash(\"logos inkpen.io/Views/DrawingCanvas/DrawingCanvas+CoincidentPointHandling.swift\")",
       "Bash(git revert:*)",
-      "Bash(git cat-file:*)",
-      "Bash(swift:*)"
+      "Bash(git cat-file:*)"
     ],
     "deny": [],
     "ask": []

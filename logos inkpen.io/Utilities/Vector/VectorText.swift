@@ -116,7 +116,6 @@ enum FontStyle: String, CaseIterable, Codable {
 // MARK: - Professional Typography Properties
 struct TypographyProperties: Codable, Hashable {
     var fontFamily: String
-    var fontVariant: String? // The actual variant name like "Condensed Bold" or "Light Italic"
     var fontWeight: FontWeight
     var fontStyle: FontStyle
     var fontSize: Double // In points (professional standard)
@@ -171,25 +170,6 @@ struct TypographyProperties: Codable, Hashable {
     
     // Create NSFont for text rendering
     var nsFont: NSFont {
-        // If we have a specific font variant, try to use it directly
-        if let variant = fontVariant {
-            // Get the PostScript name for this variant
-            let fontManager = NSFontManager.shared
-            let members = fontManager.availableMembers(ofFontFamily: fontFamily) ?? []
-
-            for member in members {
-                if let postScriptName = member[0] as? String,
-                   let displayName = member[1] as? String,
-                   displayName == variant {
-                    // Found the variant - use its PostScript name directly
-                    if let font = NSFont(name: postScriptName, size: fontSize) {
-                        return font
-                    }
-                }
-            }
-        }
-
-        // Fallback to the old method using weight and style
         let descriptor = NSFontDescriptor(name: fontFamily, size: fontSize)
         let traits: NSFontDescriptor.SymbolicTraits = fontStyle == .italic ? .italic : []
         let weightedDescriptor = descriptor.addingAttributes([
@@ -484,7 +464,6 @@ class FontManager: ObservableObject {
     
     // SELECTED FONT PROPERTIES for new text objects
     @Published var selectedFontFamily: String = "Helvetica Neue"
-    @Published var selectedFontVariant: String = "Regular" // The actual variant name like "Condensed Bold"
     @Published var selectedFontWeight: FontWeight = .regular
     @Published var selectedFontStyle: FontStyle = .normal
     @Published var selectedFontSize: Double = 24.0
@@ -516,108 +495,11 @@ class FontManager: ObservableObject {
         availableFonts = orderedFonts
     }
     
-    // Get all font variants available for a family (like Pages does)
-    func getAvailableVariants(for family: String) -> [(displayName: String, postScriptName: String)] {
-        let fontManager = NSFontManager.shared
-        let members = fontManager.availableMembers(ofFontFamily: family) ?? []
-
-        var variants: [(displayName: String, postScriptName: String, weight: Int, traits: UInt32)] = []
-
-        for member in members {
-            if let postScriptName = member[0] as? String,
-               let displayName = member[1] as? String,
-               let weightNumber = member[2] as? NSNumber,
-               let traitsNumber = member[3] as? NSNumber {
-                variants.append((
-                    displayName: displayName,
-                    postScriptName: postScriptName,
-                    weight: weightNumber.intValue,
-                    traits: UInt32(traitsNumber.intValue)
-                ))
-            }
-        }
-
-        // Sort variants by weight (lightest to heaviest) and then by style (normal before italic)
-        // This matches how Apple sorts them in Pages
-        return variants.sorted { v1, v2 in
-            // First sort by weight
-            if v1.weight != v2.weight {
-                return v1.weight < v2.weight
-            }
-
-            // Then by style traits (normal before italic)
-            let traits1 = NSFontDescriptor.SymbolicTraits(rawValue: v1.traits)
-            let traits2 = NSFontDescriptor.SymbolicTraits(rawValue: v2.traits)
-            let isItalic1 = traits1.contains(.italic)
-            let isItalic2 = traits2.contains(.italic)
-
-            if isItalic1 != isItalic2 {
-                return !isItalic1 // normal comes before italic
-            }
-
-            // Then by condensed trait (regular before condensed)
-            let isCondensed1 = traits1.contains(.condensed)
-            let isCondensed2 = traits2.contains(.condensed)
-
-            if isCondensed1 != isCondensed2 {
-                return !isCondensed1 // regular comes before condensed
-            }
-
-            // Finally alphabetically as last resort
-            return v1.displayName < v2.displayName
-        }.map { variant in
-            // Return only the fields we need
-            (displayName: variant.displayName, postScriptName: variant.postScriptName)
-        }
-    }
-
-    // Get the variant name that matches the given weight and style
-    func getVariantName(for family: String, weight: FontWeight, style: FontStyle) -> String? {
-        let fontManager = NSFontManager.shared
-        let members = fontManager.availableMembers(ofFontFamily: family) ?? []
-
-        // First try exact match by weight and style
-        for member in members {
-            if let displayName = member[1] as? String,
-               let weightNumber = member[2] as? NSNumber,
-               let traits = member[3] as? NSNumber {
-
-                let memberWeight = mapNSWeightToFontWeight(weightNumber.intValue)
-                let traitMask = NSFontDescriptor.SymbolicTraits(rawValue: UInt32(traits.intValue))
-                let memberStyle: FontStyle = traitMask.contains(.italic) ? .italic : .normal
-
-                if memberWeight == weight && memberStyle == style {
-                    return displayName
-                }
-            }
-        }
-
-        // If no exact match, try to find closest weight match
-        for member in members {
-            if let displayName = member[1] as? String,
-               let weightNumber = member[2] as? NSNumber {
-
-                let memberWeight = mapNSWeightToFontWeight(weightNumber.intValue)
-                if memberWeight == weight {
-                    return displayName
-                }
-            }
-        }
-
-        // Default fallback - return first available variant
-        if let firstMember = members.first,
-           let displayName = firstMember[1] as? String {
-            return displayName
-        }
-
-        return "Regular"
-    }
-
-    // Get font weights available for a family (keep for compatibility)
+    // Get font weights available for a family
     func getAvailableWeights(for family: String) -> [FontWeight] {
         let fontManager = NSFontManager.shared
         let members = fontManager.availableMembers(ofFontFamily: family) ?? []
-
+        
         var weights: Set<FontWeight> = []
         for member in members {
             if let weightNumber = member[2] as? NSNumber {
@@ -625,7 +507,7 @@ class FontManager: ObservableObject {
                 weights.insert(weight)
             }
         }
-
+        
         // Fallback: if no weights found, provide common defaults
         if weights.isEmpty {
             weights = [.regular, .bold]
@@ -633,7 +515,7 @@ class FontManager: ObservableObject {
             // Always include regular as an option
             weights.insert(.regular)
         }
-
+        
         return Array(weights).sorted { weight1, weight2 in
             let index1 = FontWeight.allCases.firstIndex(of: weight1) ?? 0
             let index2 = FontWeight.allCases.firstIndex(of: weight2) ?? 0
@@ -641,7 +523,7 @@ class FontManager: ObservableObject {
         }
     }
     
-    func mapNSWeightToFontWeight(_ nsWeight: Int) -> FontWeight {
+    private func mapNSWeightToFontWeight(_ nsWeight: Int) -> FontWeight {
         switch nsWeight {
         case 0...2: return .thin
         case 3: return .ultraLight
