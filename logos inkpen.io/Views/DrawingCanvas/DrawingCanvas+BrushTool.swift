@@ -418,42 +418,20 @@ extension DrawingCanvas {
     private func finalizeFromPreview(_ preview: VectorPath) {
         guard document.selectedLayerIndex != nil else { return }
 
-        // CHECK: If the path has coincident points at BOTH ends (no thickness), replace with artificial leaf shape
+        // CHECK: If the path has no width (collapsed to a line), replace with artificial leaf shape
         if brushRawPoints.count >= 2 {
             let cgPath = preview.cgPath
-            var pathPoints: [CGPoint] = []
-
-            // Extract all points from the path
-            cgPath.applyWithBlock { element in
-                switch element.pointee.type {
-                case .moveToPoint, .addLineToPoint:
-                    pathPoints.append(element.pointee.points[0])
-                case .addQuadCurveToPoint:
-                    pathPoints.append(element.pointee.points[1])
-                case .addCurveToPoint:
-                    pathPoints.append(element.pointee.points[2])
-                case .closeSubpath:
-                    break
-                @unknown default:
-                    break
-                }
-            }
-
-            guard pathPoints.count >= 2 else { return }
-
-            // Check if BOTH ends have coincident points (collapsed to a line)
-            let firstPoint = pathPoints[0]
-            let secondPoint = pathPoints[1]
-            let lastPoint = pathPoints[pathPoints.count - 1]
-            let secondLastPoint = pathPoints[pathPoints.count - 2]
-
-            // Check if ends are nearly coincident (distance less than minTaperThickness means taper collapsed)
+            let pathBounds = cgPath.boundingBox
             let minThickness = document.currentBrushMinTaperThickness
-            let startCoincident = sqrt(pow(firstPoint.x - secondPoint.x, 2) + pow(firstPoint.y - secondPoint.y, 2)) <= minThickness
-            let endCoincident = sqrt(pow(lastPoint.x - secondLastPoint.x, 2) + pow(lastPoint.y - secondLastPoint.y, 2)) <= minThickness
 
-            // If BOTH ends are coincident (no thickness at both ends), use artificial leaf shape
-            if startCoincident && endCoincident {
+            // Check if path is collapsed to a line (width OR height is less than minThickness * 2)
+            let pathWidth = pathBounds.width
+            let pathHeight = pathBounds.height
+            let minVisibleDimension = minThickness * 2.0  // Path needs at least 2x minThickness to have visible area
+
+            let isCollapsed = pathWidth < minVisibleDimension || pathHeight < minVisibleDimension
+
+            if isCollapsed {
                 let start = brushRawPoints.first!.location
                 let end = brushRawPoints.last!.location
 
