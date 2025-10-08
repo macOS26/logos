@@ -25,10 +25,10 @@ struct StableProfessionalTextCanvas: View {
         self.dragPreviewDelta = dragPreviewDelta
         self.dragPreviewTrigger = dragPreviewTrigger
 
-        // PERF: Defer view model creation until onAppear to prevent blocking during document load
-        // This allows the window to appear immediately even with 100+ text boxes
-        let fallbackText = VectorText(content: "", typography: TypographyProperties(strokeColor: .black, fillColor: .black))
-        self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: fallbackText, document: document))
+        // CRITICAL FIX: Initialize with ACTUAL text object to prevent flicker during undo
+        // Find the text object immediately so view appears with correct content from start
+        let actualText = document.findText(by: textObjectID) ?? VectorText(content: "", typography: TypographyProperties(strokeColor: .black, fillColor: .black))
+        self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: actualText, document: document))
     }
 
     var body: some View {
