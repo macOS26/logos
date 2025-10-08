@@ -157,16 +157,16 @@ struct TransformBoxHandles: View {
                         .allowsHitTesting(false)  // Hit testing handled by larger area
                 }
                 // SHAPES: Constant screen size handles (no scaling)
-                // TEXT BOX: Position from center to match text box .position() rendering
+                // TEXT BOX or GROUP WITH TEXT: Position from center to match text box .position() rendering
                 .position(
-                    shape.isTextObject ?
-                    // TEXT BOX ONLY: Calculate screen position from center
+                    (shape.isTextObject || containsTextBoxInGroup()) ?
+                    // TEXT BOX or GROUPS: Calculate screen position from center
                     CGPoint(
                         x: (transformedBounds.midX + (pt.x - transformedBounds.midX)) * zoomLevel + canvasOffset.x,
                         y: (transformedBounds.midY + (pt.y - transformedBounds.midY)) * zoomLevel + canvasOffset.y
                     )
                     :
-                    // SHAPES: Convert canvas position to screen position (no scaleEffect)
+                    // SHAPES ONLY: Convert canvas position to screen position (no scaleEffect)
                     CGPoint(x: pt.x * zoomLevel + canvasOffset.x, y: pt.y * zoomLevel + canvasOffset.y)
                 )
                 .onTapGesture {
@@ -235,6 +235,12 @@ struct TransformBoxHandles: View {
         // For non-identity transforms (groups, images), apply transform precisely
         // Use CGRect.applying() for exact CoreGraphics precision
         return strokeExpandedBounds.applying(t)
+    }
+
+    private func containsTextBoxInGroup() -> Bool {
+        // Check if this is a group containing any text boxes
+        guard shape.isGroupContainer else { return false }
+        return shape.groupedShapes.contains { $0.isTextObject }
     }
 
     private func handlePosition(index: Int, in rect: CGRect) -> CGPoint {
