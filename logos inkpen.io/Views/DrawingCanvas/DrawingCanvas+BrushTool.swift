@@ -94,8 +94,7 @@ extension DrawingCanvas {
         guard isBrushDrawing else { return }
 
         // For straight lines (only 2 points), add intermediate points to ensure proper leaf shape generation
-        // CRITICAL: Only do this when pressure sensitivity is NOT detected
-        if brushRawPoints.count == 2 && !(appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput) {
+        if brushRawPoints.count == 2 {
             let startPoint = brushRawPoints[0]
             let endPoint = brushRawPoints[1]
 
@@ -231,8 +230,7 @@ extension DrawingCanvas {
 
         // ALWAYS use ALL points - never delete the beginning
         var pointsToProcess = brushRawPoints
-        // CRITICAL: Only add interpolation for straight lines when pressure sensitivity is NOT detected
-        if brushRawPoints.count == 2 && !(appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput) {
+        if brushRawPoints.count == 2 {
             let startPoint = brushRawPoints[0]
             let endPoint = brushRawPoints[1]
 
@@ -350,9 +348,8 @@ extension DrawingCanvas {
         }
 
         // For straight lines (only 2 points), interpolate for proper leaf shape
-        // CRITICAL: Only do this when pressure sensitivity is NOT detected
         var pointsToProcess = rawPoints
-        if rawPoints.count == 2 && !(appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput) {
+        if rawPoints.count == 2 {
             let startPoint = rawPoints[0]
             let endPoint = rawPoints[1]
 
@@ -496,8 +493,7 @@ extension DrawingCanvas {
         guard document.selectedLayerIndex != nil else { return }
 
         // SPECIAL CASE: Detect if this is a straight line by checking path geometry
-        // CRITICAL: Only create artificial leaf shape when pressure sensitivity is NOT detected
-        if brushRawPoints.count >= 2 && !(appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput) {
+        if brushRawPoints.count >= 2 {
             let start = brushRawPoints.first!.location
             let end = brushRawPoints.last!.location
 
@@ -548,8 +544,7 @@ extension DrawingCanvas {
         }
 
         // CHECK: If the path has coincident points at BOTH ends (no thickness), replace with artificial leaf shape
-        // CRITICAL: Only do this when pressure sensitivity is NOT detected
-        if brushRawPoints.count >= 2 && !(appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput) {
+        if brushRawPoints.count >= 2 {
             let cgPath = preview.cgPath
             var pathPoints: [CGPoint] = []
 
