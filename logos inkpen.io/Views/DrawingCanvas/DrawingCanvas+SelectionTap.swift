@@ -34,6 +34,12 @@ extension DrawingCanvas {
             var hitLayerIndex: Int?
             // STRICT OBJECT-BASED hit test (no bounds fallback) when Command is held
             outerHit: for unifiedObject in document.unifiedObjects.reversed() {
+                // Check if layer is locked
+                if unifiedObject.layerIndex < document.layers.count {
+                    let layer = document.layers[unifiedObject.layerIndex]
+                    if layer.isLocked { continue }
+                }
+
                 if case .shape(let shape) = unifiedObject.objectType {
                     if !shape.isVisible { continue }
                     let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
@@ -96,9 +102,15 @@ extension DrawingCanvas {
             
             // Search through unified objects from top to bottom
             for unifiedObject in document.unifiedObjects.reversed() {
+                // Check if layer is locked
+                if unifiedObject.layerIndex < document.layers.count {
+                    let layer = document.layers[unifiedObject.layerIndex]
+                    if layer.isLocked { continue }
+                }
+
                 if case .shape(let shape) = unifiedObject.objectType {
                     if !shape.isVisible { continue }
-                    
+
                     // Skip background shapes
                     let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
                     if isBackgroundShape { continue }
@@ -160,10 +172,14 @@ extension DrawingCanvas {
         let objectsInOrder = document.getObjectsInStackingOrder()
         
         for unifiedObject in objectsInOrder.reversed() {
-            // Check if the layer is visible
+            // Check if the layer is visible and not locked
             if unifiedObject.layerIndex < document.layers.count {
                 let layer = document.layers[unifiedObject.layerIndex]
                 if !layer.isVisible {
+                    continue
+                }
+                // CRITICAL: Prevent selection on locked layers
+                if layer.isLocked {
                     continue
                 }
             }

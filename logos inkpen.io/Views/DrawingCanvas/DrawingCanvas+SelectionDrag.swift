@@ -18,9 +18,17 @@ extension DrawingCanvas {
 
         // REFACTORED: Use unified objects system for selection checking
         let selectedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
-        
-        // PROTECT LOCKED OBJECTS: Check all selected objects for locked state
+
+        // PROTECT LOCKED OBJECTS: Check all selected objects for locked state AND layer lock
         for unifiedObject in selectedObjects {
+            // Check if layer is locked
+            if unifiedObject.layerIndex < document.layers.count {
+                let layer = document.layers[unifiedObject.layerIndex]
+                if layer.isLocked {
+                    return  // Prevent drag if any selected object is on a locked layer
+                }
+            }
+
             switch unifiedObject.objectType {
             case .shape(let shape):
                 if shape.isLocked {
@@ -97,8 +105,16 @@ extension DrawingCanvas {
         // REFACTORED: Use unified objects system for selection checking
         let selectedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
 
-        // PROTECT LOCKED OBJECTS: Check all selected objects for locked state
+        // PROTECT LOCKED OBJECTS: Check all selected objects for locked state AND layer lock
         for unifiedObject in selectedObjects {
+            // Check if layer is locked
+            if unifiedObject.layerIndex < document.layers.count {
+                let layer = document.layers[unifiedObject.layerIndex]
+                if layer.isLocked {
+                    return  // Prevent drag if any selected object is on a locked layer
+                }
+            }
+
             switch unifiedObject.objectType {
             case .shape(let shape):
                 if shape.isLocked {

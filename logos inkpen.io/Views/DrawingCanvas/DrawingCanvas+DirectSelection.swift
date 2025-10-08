@@ -369,6 +369,8 @@ extension DrawingCanvas {
         for layerIndex in document.layers.indices.reversed() {
             let layer = document.layers[layerIndex]
             if !layer.isVisible { continue }
+            // CRITICAL: Prevent direct selection on locked layers
+            if layer.isLocked { continue }
             
             let shapes = document.getShapesForLayer(layerIndex)
             for shape in shapes.reversed() {
