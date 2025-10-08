@@ -227,18 +227,23 @@ struct TransformBoxHandles: View {
     }
 
     private func isHandleAdjacentToAnchor(index: Int) -> Bool {
-        // For each anchor point, return the two adjacent edge handles that cannot scale
-        // 0=TL, 1=Top, 2=TR, 3=Right, 4=BR, 5=Bottom, 6=BL, 7=Left
+        // For each anchor point, return the adjacent handles that cannot scale
+        // Handle indices: 0=TL, 1=Top, 2=TR, 3=Right, 4=BR, 5=Bottom, 6=BL, 7=Left, 8=Center
         switch transformOrigin {
-        case .topLeft:      return index == 1 || index == 7  // Top and Left
-        case .topCenter:    return index == 1                 // Top
-        case .topRight:     return index == 1 || index == 3  // Top and Right
-        case .middleRight:  return index == 3                 // Right
-        case .bottomRight:  return index == 3 || index == 5  // Right and Bottom
-        case .bottomCenter: return index == 5                 // Bottom
-        case .bottomLeft:   return index == 5 || index == 7  // Bottom and Left
-        case .middleLeft:   return index == 7                 // Left
-        case .center:       return false                      // No restrictions for center
+        // Corner anchors: disable adjacent side handles
+        case .topLeft:      return index == 1 || index == 7  // Top and Left sides
+        case .topRight:     return index == 1 || index == 3  // Top and Right sides
+        case .bottomRight:  return index == 3 || index == 5  // Right and Bottom sides
+        case .bottomLeft:   return index == 5 || index == 7  // Bottom and Left sides
+
+        // Side anchors: disable adjacent corner handles
+        case .topCenter:    return index == 0 || index == 2  // Top-left and Top-right corners
+        case .middleRight:  return index == 2 || index == 4  // Top-right and Bottom-right corners
+        case .bottomCenter: return index == 4 || index == 6  // Bottom-right and Bottom-left corners
+        case .middleLeft:   return index == 0 || index == 6  // Top-left and Bottom-left corners
+
+        // Center anchor: no restrictions
+        case .center:       return false
         }
     }
 
