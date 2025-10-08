@@ -537,10 +537,23 @@ struct VectorShape: Hashable, Identifiable {
             }
             calculatedGroupBounds = calculatedGroupBounds.union(shapeBounds)
         }
-        
+
+        // CRITICAL FIX: Preserve text object positions when grouping
+        // Text objects need to keep their absolute textPosition
+        var preservedShapes = shapes
+        for i in preservedShapes.indices {
+            if preservedShapes[i].isTextObject {
+                // Ensure textPosition is preserved (don't let it become nil or reset to 0,0)
+                if preservedShapes[i].textPosition == nil {
+                    // If textPosition is nil, use transform
+                    preservedShapes[i].textPosition = CGPoint(x: preservedShapes[i].transform.tx, y: preservedShapes[i].transform.ty)
+                }
+            }
+        }
+
         // Create empty path for group container
         let groupPath = VectorPath(elements: [], isClosed: false)
-        
+
         var groupShape = VectorShape(
             name: name,
             path: groupPath,
@@ -553,13 +566,13 @@ struct VectorShape: Hashable, Identifiable {
             opacity: 1.0,
             blendMode: .normal,
             isGroup: true,
-            groupedShapes: shapes,
+            groupedShapes: preservedShapes,
             groupTransform: .identity
         )
-        
+
         // Set the group bounds manually
         groupShape.bounds = calculatedGroupBounds
-        
+
         return groupShape
     }
     
