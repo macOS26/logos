@@ -153,27 +153,9 @@ extension VectorDocument {
     // MARK: - UNIFIED EDITING STATE HELPERS
     
     func setTextEditingInUnified(id: UUID, isEditing: Bool) {
-        // Update in unified objects
-        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject && shape.id == id
-            }
-            return false
-        }) {
-            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
-                // Update the isEditing state in the shape
-                shape.isEditing = isEditing
-                
-                // Update unified objects
-                unifiedObjects[objectIndex] = VectorObject(
-                    shape: shape,
-                    layerIndex: unifiedObjects[objectIndex].layerIndex,
-                    orderID: unifiedObjects[objectIndex].orderID
-                )
-                
-                // Sync to layers
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
-            }
+        // CRITICAL FIX: Use updateShapeByID to support grouped text
+        updateShapeByID(id) { shape in
+            shape.isEditing = isEditing
         }
     }
     
