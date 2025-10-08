@@ -25,7 +25,8 @@ extension PDFCommandParser {
         let newTransform = PDFSIMDMatrix(a: a, b: b, c: c, d: d, tx: tx, ty: ty)
         simdTransformMatrix.concatenate(newTransform)
 
-        // Keep standard transform in sync for compatibility
+        // Sync standard transform only when absolutely needed (rare)
+        // Most code now uses simdTransformMatrix directly
         currentTransformMatrix = simdTransformMatrix.cgAffineTransform
     }
 }

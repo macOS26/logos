@@ -54,7 +54,7 @@ struct PDFSIMDMatrix {
 
     // MARK: - Conversion
 
-    /// Convert back to CGAffineTransform
+    /// Convert back to CGAffineTransform (only when needed for external APIs)
     var cgAffineTransform: CGAffineTransform {
         return CGAffineTransform(
             a: CGFloat(matrix[0][0]),  // a
@@ -64,6 +64,44 @@ struct PDFSIMDMatrix {
             tx: CGFloat(matrix[2][0]), // tx
             ty: CGFloat(matrix[2][1])  // ty
         )
+    }
+
+    // MARK: - Direct Property Access (avoid CGAffineTransform conversion overhead)
+
+    /// Translation X component - direct access without conversion
+    var tx: CGFloat {
+        get { CGFloat(matrix[2][0]) }
+        set { matrix[2][0] = Float(newValue) }
+    }
+
+    /// Translation Y component - direct access without conversion
+    var ty: CGFloat {
+        get { CGFloat(matrix[2][1]) }
+        set { matrix[2][1] = Float(newValue) }
+    }
+
+    /// Scale/rotation component a - direct access without conversion
+    var a: CGFloat {
+        get { CGFloat(matrix[0][0]) }
+        set { matrix[0][0] = Float(newValue) }
+    }
+
+    /// Scale/rotation component b - direct access without conversion
+    var b: CGFloat {
+        get { CGFloat(matrix[0][1]) }
+        set { matrix[0][1] = Float(newValue) }
+    }
+
+    /// Scale/rotation component c - direct access without conversion
+    var c: CGFloat {
+        get { CGFloat(matrix[1][0]) }
+        set { matrix[1][0] = Float(newValue) }
+    }
+
+    /// Scale/rotation component d - direct access without conversion
+    var d: CGFloat {
+        get { CGFloat(matrix[1][1]) }
+        set { matrix[1][1] = Float(newValue) }
     }
 
     // MARK: - SIMD Matrix Operations
@@ -203,6 +241,70 @@ extension PDFSIMDMatrix {
     static func precomputeTextMatrix(fontSize: CGFloat, horizontalScaling: CGFloat) -> PDFSIMDMatrix {
         // Common text matrix: scale by font size and horizontal scaling
         return PDFSIMDMatrix.scale(sx: fontSize * horizontalScaling / 100.0, sy: fontSize)
+    }
+
+    /// Optimized text positioning with font scaling - combines translation and scale in one operation
+    /// Much faster than separate translate + scale operations
+    static func textMatrix(fontSize: CGFloat, horizontalScaling: CGFloat, tx: CGFloat, ty: CGFloat) -> PDFSIMDMatrix {
+        let scaleX = fontSize * horizontalScaling / 100.0
+        let scaleY = fontSize
+
+        var m = PDFSIMDMatrix()
+        m.matrix[0][0] = Float(scaleX)
+        m.matrix[1][1] = Float(scaleY)
+        m.matrix[2][0] = Float(tx)
+        m.matrix[2][1] = Float(ty)
+        return m
+    }
+
+    /// Batch transform text positions - optimized for PDF text rendering
+    /// Processes multiple text positions with the same transformation extremely fast
+    static func batchTransformTextPositions(positions: [(x: CGFloat, y: CGFloat)],
+                                           fontSize: CGFloat,
+                                           horizontalScaling: CGFloat,
+                                           baseTransform: PDFSIMDMatrix) -> [CGPoint] {
+        guard !positions.isEmpty else { return [] }
+
+        // Pre-compute text scaling matrix once
+        let textScale = PDFSIMDMatrix.scale(sx: fontSize * horizontalScaling / 100.0, sy: fontSize)
+        let combinedTransform = baseTransform.concatenating(textScale)
+
+        var results = [CGPoint]()
+        results.reserveCapacity(positions.count)
+
+        // Process in batches of 4 for SIMD efficiency
+        let stride = 4
+        let fullBatches = positions.count / stride
+
+        for batch in 0..<fullBatches {
+            let baseIndex = batch * stride
+
+            // Load 4 positions
+            let p0 = simd_float3(Float(positions[baseIndex + 0].x), Float(positions[baseIndex + 0].y), 1.0)
+            let p1 = simd_float3(Float(positions[baseIndex + 1].x), Float(positions[baseIndex + 1].y), 1.0)
+            let p2 = simd_float3(Float(positions[baseIndex + 2].x), Float(positions[baseIndex + 2].y), 1.0)
+            let p3 = simd_float3(Float(positions[baseIndex + 3].x), Float(positions[baseIndex + 3].y), 1.0)
+
+            // Transform all 4 in parallel
+            let t0 = combinedTransform.matrix * p0
+            let t1 = combinedTransform.matrix * p1
+            let t2 = combinedTransform.matrix * p2
+            let t3 = combinedTransform.matrix * p3
+
+            results.append(CGPoint(x: CGFloat(t0.x), y: CGFloat(t0.y)))
+            results.append(CGPoint(x: CGFloat(t1.x), y: CGFloat(t1.y)))
+            results.append(CGPoint(x: CGFloat(t2.x), y: CGFloat(t2.y)))
+            results.append(CGPoint(x: CGFloat(t3.x), y: CGFloat(t3.y)))
+        }
+
+        // Process remaining positions
+        for i in (fullBatches * stride)..<positions.count {
+            let p = simd_float3(Float(positions[i].x), Float(positions[i].y), 1.0)
+            let t = combinedTransform.matrix * p
+            results.append(CGPoint(x: CGFloat(t.x), y: CGFloat(t.y)))
+        }
+
+        return results
     }
 }
 
