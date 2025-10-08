@@ -21,7 +21,16 @@ struct SelectionHandlesView: View {
             // Show different handles based on current tool using unified objects system
             ForEach(document.unifiedObjects.indices, id: \.self) { unifiedObjectIndex in
                 let unifiedObject = document.unifiedObjects[unifiedObjectIndex]
-                
+
+                // CRITICAL FIX: Check for selected children inside groups
+                if case .shape(let groupShape) = unifiedObject.objectType, groupShape.isGroupContainer {
+                    ForEach(groupShape.groupedShapes, id: \.id) { childShape in
+                        if document.selectedObjectIDs.contains(childShape.id) {
+                            renderHandlesForShape(childShape)
+                        }
+                    }
+                }
+
                 // Only show handles for selected objects
                 if document.selectedObjectIDs.contains(unifiedObject.id) {
                     switch unifiedObject.objectType {
@@ -105,6 +114,75 @@ struct SelectionHandlesView: View {
                         // Text objects are handled as VectorShape with isTextObject = true
                         // and use the same TransformBoxHandles as regular shapes
                     }
+                }
+            }
+        }
+    }
+
+    // MARK: - Helper function to render handles for any shape (standalone or grouped child)
+    @ViewBuilder
+    private func renderHandlesForShape(_ shape: VectorShape) -> some View {
+        let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
+        if !isBackgroundShape {
+            if document.currentTool == .warp {
+                EnvelopeHandles(
+                    document: document,
+                    shape: shape,
+                    zoomLevel: document.zoomLevel,
+                    canvasOffset: document.canvasOffset
+                )
+            } else if shape.isWarpObject {
+                PersistentWarpMarquee(
+                    document: document,
+                    shape: shape,
+                    zoomLevel: document.zoomLevel,
+                    canvasOffset: document.canvasOffset,
+                    isEnvelopeTool: false
+                )
+            } else {
+                if document.currentTool == .selection {
+                    if isCommandPressed {
+                        PathOutline(
+                            shape: shape,
+                            zoomLevel: document.zoomLevel,
+                            canvasOffset: document.canvasOffset
+                        )
+                    } else {
+                        TransformBoxHandles(
+                            document: document,
+                            shape: shape,
+                            zoomLevel: document.zoomLevel,
+                            canvasOffset: document.canvasOffset,
+                            isShiftPressed: isShiftPressed,
+                            transformOrigin: document.transformOrigin
+                        )
+                        .offset(x: dragPreviewDelta.x * document.zoomLevel,
+                                y: dragPreviewDelta.y * document.zoomLevel)
+                    }
+                } else if document.currentTool == .scale {
+                    ScaleHandles(
+                        document: document,
+                        shape: shape,
+                        zoomLevel: document.zoomLevel,
+                        canvasOffset: document.canvasOffset,
+                        isShiftPressed: isShiftPressed
+                    )
+                } else if document.currentTool == .rotate {
+                    RotateHandles(
+                        document: document,
+                        shape: shape,
+                        zoomLevel: document.zoomLevel,
+                        canvasOffset: document.canvasOffset,
+                        isShiftPressed: isShiftPressed
+                    )
+                } else if document.currentTool == .shear {
+                    ShearHandles(
+                        document: document,
+                        shape: shape,
+                        zoomLevel: document.zoomLevel,
+                        canvasOffset: document.canvasOffset,
+                        isShiftPressed: isShiftPressed
+                    )
                 }
             }
         }
