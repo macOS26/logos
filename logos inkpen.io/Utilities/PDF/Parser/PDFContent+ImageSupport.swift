@@ -775,6 +775,7 @@ extension PDFCommandParser {
     func saveGraphicsState() {
         let state = PDFGraphicsState(
             transformMatrix: currentTransformMatrix,
+            simdTransformMatrix: simdTransformMatrix, // SIMD-accelerated matrix
             fillOpacity: currentFillOpacity,
             strokeOpacity: currentStrokeOpacity,
             clippingPathId: currentClippingPathId,
@@ -796,6 +797,7 @@ extension PDFCommandParser {
 
         let state = graphicsStateStack.removeLast()
         currentTransformMatrix = state.transformMatrix
+        simdTransformMatrix = state.simdTransformMatrix // Restore SIMD matrix
         currentFillOpacity = state.fillOpacity
         currentStrokeOpacity = state.strokeOpacity
         currentClippingPathId = state.clippingPathId

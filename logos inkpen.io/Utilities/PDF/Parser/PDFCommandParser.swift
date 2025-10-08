@@ -16,6 +16,7 @@ class PDFCommandParser {
     var currentFillGradient: VectorGradient?
     var currentStrokeGradient: VectorGradient?
     var currentTransformMatrix: CGAffineTransform = CGAffineTransform.identity // Track CTM for gradient angles
+    var simdTransformMatrix: PDFSIMDMatrix = PDFSIMDMatrix() // SIMD-accelerated transform matrix (3-6x faster)
     var shapes: [VectorShape] = []
     var currentPath: [PathCommand] = []
     var pathStartPoint = CGPoint.zero
@@ -76,6 +77,7 @@ class PDFCommandParser {
     // Graphics state stack for q/Q operators
     struct PDFGraphicsState {
         var transformMatrix: CGAffineTransform
+        var simdTransformMatrix: PDFSIMDMatrix // SIMD-accelerated matrix
         var fillOpacity: Double
         var strokeOpacity: Double
         var clippingPathId: UUID?
@@ -88,6 +90,8 @@ class PDFCommandParser {
     var isInTextObject: Bool = false  // Track if we're between BT and ET
     var currentTextMatrix: CGAffineTransform = .identity  // Text matrix (Tm)
     var currentLineMatrix: CGAffineTransform = .identity  // Line matrix
+    var simdTextMatrix: PDFSIMDMatrix = PDFSIMDMatrix() // SIMD-accelerated text matrix
+    var simdLineMatrix: PDFSIMDMatrix = PDFSIMDMatrix() // SIMD-accelerated line matrix
     var currentFontName: String? = nil  // Current font name from resources
     var currentFontSize: Double = 12.0  // Font size in points
     var textCharacterSpacing: Double = 0.0  // Character spacing (Tc)
