@@ -431,8 +431,13 @@ extension DrawingCanvas {
     private func finalizeFromPreview(_ preview: VectorPath) {
         guard document.selectedLayerIndex != nil else { return }
 
-        // SPECIAL CASE: Detect if this is a straight line by checking path geometry
-        if brushRawPoints.count >= 2 {
+        // SPECIAL CASE: Only apply artificial leaf shape if preview path has zero/minimal area
+        // Check if the path would be invisible before replacing with leaf shape
+        let previewBounds = preview.cgPath.boundingBox
+        let previewArea = previewBounds.width * previewBounds.height
+        let minimumVisibleArea: CGFloat = 1.0 // Paths smaller than 1 square pixel are invisible
+
+        if previewArea < minimumVisibleArea && brushRawPoints.count >= 2 {
             let start = brushRawPoints.first!.location
             let end = brushRawPoints.last!.location
 
