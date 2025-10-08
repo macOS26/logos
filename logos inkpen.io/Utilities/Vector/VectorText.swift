@@ -58,6 +58,9 @@ enum TextAlignment: String, CaseIterable, Codable {
 }
 
 // MARK: - Professional Font Weight (Adobe Standards)
+// DEPRECATED: Weight is now encoded in fontVariant name (e.g. "Bold", "Ultra Light")
+// Kept for backward compatibility with legacy files only
+@available(*, deprecated, message: "Use fontVariant instead - weight is encoded in variant name")
 enum FontWeight: String, CaseIterable, Codable {
     case thin = "Thin"
     case ultraLight = "UltraLight"
@@ -68,7 +71,7 @@ enum FontWeight: String, CaseIterable, Codable {
     case bold = "Bold"
     case heavy = "Heavy"
     case black = "Black"
-    
+
     var systemWeight: Font.Weight {
         switch self {
         case .thin: return .thin
@@ -82,7 +85,7 @@ enum FontWeight: String, CaseIterable, Codable {
         case .black: return .black
         }
     }
-    
+
     var nsWeight: NSFont.Weight {
         switch self {
         case .thin: return .thin
@@ -119,8 +122,9 @@ enum FontStyle: String, CaseIterable, Codable {
 // MARK: - Professional Typography Properties
 struct TypographyProperties: Codable, Hashable {
     var fontFamily: String
-    var fontVariant: String?  // Store the actual variant name like "Condensed Bold"
-    var fontWeight: FontWeight
+    var fontVariant: String?  // Store the actual variant name like "Condensed Bold Italic"
+    @available(*, deprecated, message: "Use fontVariant instead - weight is encoded in variant name")
+    var fontWeight: FontWeight  // DEPRECATED: Kept for backward compatibility only
     @available(*, deprecated, message: "Use fontVariant instead - style is encoded in variant name")
     var fontStyle: FontStyle  // DEPRECATED: Kept for backward compatibility only
     var fontSize: Double // In points (professional standard)
