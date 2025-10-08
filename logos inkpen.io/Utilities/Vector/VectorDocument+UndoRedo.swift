@@ -31,6 +31,8 @@ extension VectorDocument {
     func undo() {
         guard !undoStack.isEmpty else { return }
 
+        Log.info("⏪ UNDO: Starting - undoStack.count=\(undoStack.count), current selectedTextIDs=\(selectedTextIDs), selectedShapeIDs=\(selectedShapeIDs)", category: .general)
+
         // Set flag to prevent reordering during undo operation
         isUndoRedoOperation = true
         defer { isUndoRedoOperation = false }
@@ -41,10 +43,13 @@ extension VectorDocument {
             let copy = try JSONDecoder().decode(VectorDocument.self, from: data)
             redoStack.append(copy)
         } catch {
+            Log.error("❌ UNDO: Failed to save current state to redo - \(error)", category: .error)
         }
 
         // Restore previous state
         let previousState = undoStack.removeLast()
+
+        Log.info("⏪ UNDO: Restoring state - previousState selectedTextIDs=\(previousState.selectedTextIDs), selectedShapeIDs=\(previousState.selectedShapeIDs), unifiedObjects.count=\(previousState.unifiedObjects.count)", category: .general)
 
         settings = previousState.settings
         layers = previousState.layers
@@ -95,7 +100,10 @@ extension VectorDocument {
         pasteboard = previousState.pasteboard
         layerIndex = previousState.layerIndex
         directSelectedShapeIDs = previousState.directSelectedShapeIDs
-        
+
+        // CRITICAL: Rebuild the lookup cache after restoring unified objects
+        rebuildLookupCache()
+
         // No need to fix ordering - undo restored the exact state that was saved
         // CRITICAL FIX: Sync legacy arrays to ensure consistency
         //syncLegacyArraysAfterUndo()
@@ -104,6 +112,8 @@ extension VectorDocument {
         // The selection was already restored above (lines 67-69).
         // All this "validation" and "merging" logic is corrupting the restored selection.
         // If the selection was saved properly, it should be restored properly. Period.
+
+        Log.info("⏪ UNDO: Complete - restored selectedTextIDs=\(selectedTextIDs), selectedShapeIDs=\(selectedShapeIDs), unifiedObjects.count=\(unifiedObjects.count)", category: .general)
 
         objectWillChange.send()
     }

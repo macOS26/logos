@@ -92,7 +92,7 @@ class VectorDocument: ObservableObject, Codable {
     private var unifiedObjectLookupCache: [UUID: VectorObject] = [:]
 
     // PERFORMANCE: Rebuild cache when unifiedObjects changes
-    private func rebuildLookupCache() {
+    func rebuildLookupCache() {
         unifiedObjectLookupCache = Dictionary(uniqueKeysWithValues: unifiedObjects.map { ($0.id, $0) })
     }
 
