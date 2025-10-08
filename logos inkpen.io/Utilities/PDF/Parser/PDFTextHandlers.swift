@@ -703,6 +703,15 @@ extension PDFCommandParser {
             fontFamily = String(fullFontName[..<dashIndex])
             let variantPart = String(fullFontName[fullFontName.index(after: dashIndex)...])
 
+            // Map common PDF font names to system font families
+            if fontFamily == "HelveticaNeue" {
+                fontFamily = "Helvetica Neue"
+            } else if fontFamily == "TimesNewRomanPS" {
+                fontFamily = "Times New Roman"
+            } else if fontFamily == "ArialMT" {
+                fontFamily = "Arial"
+            }
+
             // Try to find exact variant match
             let fontManager = NSFontManager.shared
             let members = fontManager.availableMembers(ofFontFamily: fontFamily) ?? []
