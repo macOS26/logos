@@ -431,62 +431,6 @@ extension DrawingCanvas {
     private func finalizeFromPreview(_ preview: VectorPath) {
         guard document.selectedLayerIndex != nil else { return }
 
-        // SPECIAL CASE: Only apply artificial leaf shape if preview path has zero/minimal area
-        // Check if the path would be invisible before replacing with leaf shape
-        let previewBounds = preview.cgPath.boundingBox
-        let previewArea = previewBounds.width * previewBounds.height
-        let minimumVisibleArea: CGFloat = 1.0 // Paths smaller than 1 square pixel are invisible
-
-        if previewArea < minimumVisibleArea && brushRawPoints.count >= 2 {
-            let start = brushRawPoints.first!.location
-            let end = brushRawPoints.last!.location
-
-            // Calculate line length
-            let dx = end.x - start.x
-            let dy = end.y - start.y
-            let lineLength = sqrt(dx * dx + dy * dy)
-
-            // Check if all points are close to the straight line (< 5% deviation)
-            var maxDeviation = 0.0
-            for point in brushRawPoints {
-                let px = point.location.x - start.x
-                let py = point.location.y - start.y
-
-                // Distance from point to line
-                let deviation = abs(dy * px - dx * py) / lineLength
-                maxDeviation = max(maxDeviation, deviation)
-            }
-
-            let isStraightLine = maxDeviation < lineLength * 0.05
-
-            if isStraightLine {
-                let angle = atan2(dy, dx)
-
-                // Create leaf shape centered at origin
-                let width = document.currentBrushThickness
-                let leafPath = CGMutablePath()
-                leafPath.move(to: CGPoint(x: 0, y: 0))
-                leafPath.addQuadCurve(to: CGPoint(x: lineLength, y: 0), control: CGPoint(x: lineLength * 0.5, y: width * 0.5))
-                leafPath.addQuadCurve(to: CGPoint(x: 0, y: 0), control: CGPoint(x: lineLength * 0.5, y: -width * 0.5))
-                leafPath.closeSubpath()
-
-                // Transform: rotate and translate to match line
-                var transform = CGAffineTransform(translationX: start.x, y: start.y)
-                transform = transform.rotated(by: angle)
-
-                if let transformedPath = leafPath.copy(using: &transform) {
-                    let finalShape = VectorShape(
-                        name: "Brush Stroke",
-                        path: VectorPath(cgPath: transformedPath),
-                        strokeStyle: nil,
-                        fillStyle: FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
-                    )
-                    document.addShape(finalShape)
-                    return
-                }
-            }
-        }
-
         // CHECK: If the path has coincident points at BOTH ends (no thickness), replace with artificial leaf shape
         if brushRawPoints.count >= 2 {
             let cgPath = preview.cgPath
