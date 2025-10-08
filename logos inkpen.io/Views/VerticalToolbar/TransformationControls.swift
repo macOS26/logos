@@ -356,8 +356,25 @@ struct TransformationControls: View {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
-                    // Use group bounds for groups, regular bounds for other shapes
-                    let shapeBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+                    // CRITICAL FIX: For text objects, use position + bounds, not just bounds
+                    var shapeBounds: CGRect
+                    if shape.isTextObject {
+                        // Text objects store position separately from bounds
+                        // Use textPosition if available, otherwise use transform
+                        let position = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                        shapeBounds = CGRect(
+                            x: position.x,
+                            y: position.y,
+                            width: shape.bounds.width,
+                            height: shape.bounds.height
+                        )
+                    } else if shape.isGroupContainer {
+                        // Use group bounds for groups
+                        shapeBounds = shape.groupBounds
+                    } else {
+                        // Regular shapes - bounds already include position
+                        shapeBounds = shape.bounds
+                    }
                     combinedBounds = combinedBounds.map { $0.union(shapeBounds) } ?? shapeBounds
                 }
             }
@@ -454,6 +471,29 @@ struct TransformationControls: View {
                     }
                     shape.groupedShapes = transformedGroupedShapes
                     shape.updateBounds()
+                } else if shape.isTextObject {
+                    // CRITICAL FIX: Handle text objects differently - transform position, not path
+                    let currentPosition = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                    let newPosition = transformPoint(currentPosition,
+                                                    currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
+                                                    newOrigin: CGPoint(x: newOriginX, y: newOriginY),
+                                                    scaleX: scaleX, scaleY: scaleY)
+
+                    // Update both textPosition and transform
+                    shape.textPosition = newPosition
+                    shape.transform = CGAffineTransform(translationX: newPosition.x, y: newPosition.y)
+
+                    // Also update bounds size if scaled
+                    if scaleX != 1.0 || scaleY != 1.0 {
+                        let newWidth = shape.bounds.width * scaleX
+                        let newHeight = shape.bounds.height * scaleY
+                        shape.bounds = CGRect(x: 0, y: 0, width: newWidth, height: newHeight)
+
+                        // Update area size if text object has one
+                        if let areaSize = shape.areaSize {
+                            shape.areaSize = CGSize(width: areaSize.width * scaleX, height: areaSize.height * scaleY)
+                        }
+                    }
                 } else {
                     // Transform regular shape
                     var transformedElements: [PathElement] = []
@@ -511,6 +551,17 @@ struct TransformationControls: View {
                     let shapes = document.getShapesForLayer(layerIndex)
                     if let shapeIndex = shapes.firstIndex(where: { $0.id == objectID }) {
                         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
+
+                        // CRITICAL FIX: Also update text objects in unified system
+                        if shape.isTextObject {
+                            if let position = shape.textPosition {
+                                document.updateTextPositionInUnified(id: shape.id, position: position)
+                            }
+                            if let areaSize = shape.areaSize {
+                                document.updateTextAreaSizeInUnified(id: shape.id, areaSize: areaSize)
+                            }
+                            document.updateTextBoundsInUnified(id: shape.id, bounds: shape.bounds)
+                        }
                         break
                     }
                 }
