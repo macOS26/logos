@@ -175,12 +175,14 @@ struct TransformBoxHandles: View {
 
     // Compute transformed bounds in canvas coordinates (after shape.transform)
     private func computeTransformedBounds() -> CGRect {
-        // CRITICAL FIX: For text objects, use areaSize + textPosition (same as text canvas)
+        // CRITICAL FIX: For text objects, textPosition matches .position() CENTER coordinate
         let baseBounds: CGRect
         if shape.isTextObject, let areaSize = shape.areaSize, let textPosition = shape.textPosition {
-            // TEXT OBJECTS: Use areaSize + textPosition (matches StableProfessionalTextCanvas)
+            // TEXT OBJECTS: textPosition is stored as top-left (minX, minY)
+            // Text canvas: .position(x: minX + width/2, y: minY + height/2)
+            // Transform box should show bounds at (minX, minY, width, height)
             baseBounds = CGRect(x: textPosition.x, y: textPosition.y, width: areaSize.width, height: areaSize.height)
-            Log.info("🔍 TRANSFORM BOX: textPos=(\(textPosition.x), \(textPosition.y)) areaSize=(\(areaSize.width), \(areaSize.height)) bounds=\(baseBounds)", category: .general)
+            Log.info("🔍 TRANSFORM BOX: textPos=(\(textPosition.x), \(textPosition.y)) areaSize=(\(areaSize.width)x\(areaSize.height)) -> bounds=\(baseBounds)", category: .general)
         } else {
             baseBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         }
