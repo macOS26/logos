@@ -26,6 +26,7 @@ struct FontPickerView: View {
         }
     }
     
+    // DEPRECATED - kept for compatibility but not used
     private var availableFontWeights: [FontWeight] {
         let family = currentFontFamily
         return document.fontManager.getAvailableWeights(for: family)
@@ -35,7 +36,8 @@ struct FontPickerView: View {
         let family = currentFontFamily
         return document.fontManager.getAvailableVariantNames(for: family)
     }
-    
+
+    // DEPRECATED - Style is now part of variant selection
     private var availableFontStyles: [FontStyle] {
         let family = currentFontFamily
         return document.fontManager.getAvailableStyles(for: family)
@@ -142,40 +144,8 @@ struct FontPickerView: View {
             .padding(.vertical, 4)
             .id(fontFamilyUpdateTrigger)
 
-            // Font Style
-            Text("Style")
-                .font(.caption)
-                .foregroundColor(.secondary)
-            Picker("", selection: Binding(
-                get: {
-                    guard let selectedText = selectedText else {
-                        return availableFontStyles.contains(document.fontManager.selectedFontStyle) ? document.fontManager.selectedFontStyle : availableFontStyles.first ?? .normal
-                    }
-                    return availableFontStyles.contains(selectedText.typography.fontStyle) ? selectedText.typography.fontStyle : availableFontStyles.first ?? .normal
-                },
-                set: { newStyle in
-                    // ALWAYS update defaults first - NO RESTRICTIONS
-                    document.fontManager.selectedFontStyle = newStyle
-
-                    // Then update selected text if any - with immediate update
-                    if let textID = document.selectedTextIDs.first {
-                        document.updateTextFontStyleDirect(id: textID, fontStyle: newStyle)
-                    }
-
-                    // Force UI update after the change
-                    document.objectWillChange.send()
-                }
-            )) {
-                ForEach(availableFontStyles, id: \.self) { style in
-                    Text(style.rawValue)
-                        .font(createPreviewFont(family: currentFontFamily, weight: selectedText?.typography.fontWeight ?? document.fontManager.selectedFontWeight, style: style))
-                        .tag(style)
-                }
-            }
-            .pickerStyle(.menu)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 4)
-            .id(fontFamilyUpdateTrigger)
+            // Font Style - DEPRECATED: All variants are now in Weight picker
+            // Keeping this hidden as style is now included in the variant selection
         }
     }
     
