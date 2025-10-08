@@ -31,23 +31,23 @@ extension VectorDocument {
     /// Remove all shapes matching a condition through unified system
     func removeShapesUnified(layerIndex: Int, where condition: (VectorShape) -> Bool) {
         guard layerIndex >= 0 && layerIndex < layers.count else { return }
-        
-        // Find shapes to remove in unified objects
+
+        // CRITICAL FIX: Find ALL shapes to remove (including text objects)
+        // Previously this skipped text objects with !shape.isTextObject check
         let shapesToRemove = unifiedObjects.compactMap { obj -> UUID? in
             if obj.layerIndex == layerIndex,
                case .shape(let shape) = obj.objectType,
-               !shape.isTextObject,
                condition(shape) {
                 return shape.id
             }
             return nil
         }
-        
-        // Remove each shape
+
+        // Remove each shape (handles both regular shapes and text objects)
         for shapeID in shapesToRemove {
             removeShapeFromUnifiedSystem(id: shapeID)
         }
-        
+
         objectWillChange.send()
     }
     
