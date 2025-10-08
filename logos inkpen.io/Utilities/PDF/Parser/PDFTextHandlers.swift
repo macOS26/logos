@@ -691,8 +691,81 @@ extension PDFCommandParser {
         let position = CGPoint(x: pdfX, y: finalY)
 
 
-        // Determine font attributes
-        let fontFamily = currentFontName ?? "Helvetica"
+        // Determine font attributes and parse weight from font name
+        let fullFontName = currentFontName ?? "Helvetica"
+        var fontFamily = fullFontName
+        var fontWeight: FontWeight = .regular
+        var fontStyle: FontStyle = .normal
+        var fontVariant: String? = nil
+
+        // Parse weight and style from font name (e.g. "Helvetica-Bold", "HelveticaNeue-LightItalic")
+        if let dashIndex = fullFontName.lastIndex(of: "-") {
+            fontFamily = String(fullFontName[..<dashIndex])
+            let variantPart = String(fullFontName[fullFontName.index(after: dashIndex)...])
+
+            // Try to find exact variant match
+            let fontManager = NSFontManager.shared
+            let members = fontManager.availableMembers(ofFontFamily: fontFamily) ?? []
+
+            for member in members {
+                if let postScriptName = member[0] as? String,
+                   let displayName = member[1] as? String {
+                    // Check if this PostScript name matches
+                    if postScriptName == fullFontName {
+                        fontVariant = displayName
+                        // Also extract weight and style for compatibility
+                        if let weightNumber = member[2] as? NSNumber,
+                           let traits = member[3] as? NSNumber {
+                            let nsWeight = weightNumber.intValue
+                            // Map weight from NSFont weight value
+                            switch nsWeight {
+                            case 0...2: fontWeight = .thin
+                            case 3: fontWeight = .ultraLight
+                            case 4: fontWeight = .light
+                            case 5: fontWeight = .regular
+                            case 6: fontWeight = .medium
+                            case 7...8: fontWeight = .semibold
+                            case 9: fontWeight = .bold
+                            case 10...11: fontWeight = .heavy
+                            default: fontWeight = .black
+                            }
+
+                            let traitMask = NSFontDescriptor.SymbolicTraits(rawValue: UInt32(traits.intValue))
+                            fontStyle = traitMask.contains(.italic) ? .italic : .normal
+                        }
+                        break
+                    }
+                }
+            }
+
+            // If no exact match, parse weight/style from variant part
+            if fontVariant == nil {
+                let lowerVariant = variantPart.lowercased()
+
+                // Parse weight
+                if lowerVariant.contains("ultralight") || lowerVariant.contains("ultra-light") {
+                    fontWeight = .ultraLight
+                } else if lowerVariant.contains("thin") {
+                    fontWeight = .thin
+                } else if lowerVariant.contains("light") && !lowerVariant.contains("ultralight") {
+                    fontWeight = .light
+                } else if lowerVariant.contains("medium") {
+                    fontWeight = .medium
+                } else if lowerVariant.contains("semibold") || lowerVariant.contains("semi-bold") || lowerVariant.contains("demibold") {
+                    fontWeight = .semibold
+                } else if lowerVariant.contains("bold") && !lowerVariant.contains("semibold") {
+                    fontWeight = .bold
+                } else if lowerVariant.contains("heavy") || lowerVariant.contains("black") {
+                    fontWeight = .heavy
+                }
+
+                // Parse style
+                if lowerVariant.contains("italic") || lowerVariant.contains("oblique") {
+                    fontStyle = .italic
+                }
+            }
+        }
+
         let fontSize = actualFontSize
 
         // Determine fill/stroke based on rendering mode
@@ -719,8 +792,9 @@ extension PDFCommandParser {
 
         let typography = TypographyProperties(
             fontFamily: fontFamily,
-            fontWeight: .regular,
-            fontStyle: .normal,
+            fontVariant: fontVariant,  // Include the variant if found
+            fontWeight: fontWeight,    // Use parsed weight
+            fontStyle: fontStyle,      // Use parsed style
             fontSize: fontSize,
             lineHeight: fontSize * 1.2,  // Default line height
             lineSpacing: textLeading,

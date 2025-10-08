@@ -138,6 +138,7 @@ struct TypographyProperties: Codable, Hashable {
     // NO DEFAULT FONT COLORS - COLORS MUST BE EXPLICITLY PROVIDED
     init(
         fontFamily: String = "Helvetica",
+        fontVariant: String? = nil,
         fontWeight: FontWeight = .regular,
         fontStyle: FontStyle = .normal,
         fontSize: Double = 24.0,
@@ -153,6 +154,7 @@ struct TypographyProperties: Codable, Hashable {
         fillOpacity: Double = 1.0
     ) {
         self.fontFamily = fontFamily
+        self.fontVariant = fontVariant
         self.fontWeight = fontWeight
         self.fontStyle = fontStyle
         self.fontSize = fontSize
