@@ -78,30 +78,10 @@ struct FontPickerView: View {
                 get: {
                     // Get current variant name
                     if let selectedText = selectedText {
-                        // First check if variant is stored
+                        // Check if variant is stored (migration ensures this is populated)
                         if let variant = selectedText.typography.fontVariant,
                            availableFontVariantNames.contains(variant) {
                             return variant
-                        }
-
-                        // Otherwise, find variant that matches current weight/style
-                        let fontManager = NSFontManager.shared
-                        let members = fontManager.availableMembers(ofFontFamily: currentFontFamily) ?? []
-
-                        for member in members {
-                            if let displayName = member[1] as? String,
-                               let weightNumber = member[2] as? NSNumber,
-                               let traits = member[3] as? NSNumber {
-
-                                let memberWeight = mapNSWeightToFontWeight(weightNumber.intValue)
-                                let traitMask = NSFontDescriptor.SymbolicTraits(rawValue: UInt32(traits.intValue))
-                                let memberIsItalic = traitMask.contains(.italic)
-
-                                if memberWeight == selectedText.typography.fontWeight &&
-                                   memberIsItalic == selectedText.typography.isItalic {
-                                    return displayName
-                                }
-                            }
                         }
                     }
 
@@ -134,20 +114,6 @@ struct FontPickerView: View {
 
             // Font Style - DEPRECATED: All variants are now in Weight picker
             // Keeping this hidden as style is now included in the variant selection
-        }
-    }
-    
-    private func mapNSWeightToFontWeight(_ nsWeight: Int) -> FontWeight {
-        switch nsWeight {
-        case 0...2: return .thin
-        case 3: return .ultraLight
-        case 4: return .light
-        case 5: return .regular
-        case 6: return .medium
-        case 7...8: return .semibold
-        case 9: return .bold
-        case 10...11: return .heavy
-        default: return .black
         }
     }
 

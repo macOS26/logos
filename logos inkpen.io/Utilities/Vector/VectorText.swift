@@ -555,48 +555,6 @@ class FontManager: ObservableObject {
         return sortedVariants
     }
 
-    // Get font weights available for a family
-    func getAvailableWeights(for family: String) -> [FontWeight] {
-        let fontManager = NSFontManager.shared
-        let members = fontManager.availableMembers(ofFontFamily: family) ?? []
-        
-        var weights: Set<FontWeight> = []
-        for member in members {
-            if let weightNumber = member[2] as? NSNumber {
-                let weight = mapNSWeightToFontWeight(weightNumber.intValue)
-                weights.insert(weight)
-            }
-        }
-        
-        // Fallback: if no weights found, provide common defaults
-        if weights.isEmpty {
-            weights = [.regular, .bold]
-        } else if !weights.contains(.regular) {
-            // Always include regular as an option
-            weights.insert(.regular)
-        }
-        
-        return Array(weights).sorted { weight1, weight2 in
-            let index1 = FontWeight.allCases.firstIndex(of: weight1) ?? 0
-            let index2 = FontWeight.allCases.firstIndex(of: weight2) ?? 0
-            return index1 < index2
-        }
-    }
-    
-    func mapNSWeightToFontWeight(_ nsWeight: Int) -> FontWeight {
-        switch nsWeight {
-        case 0...2: return .thin
-        case 3: return .ultraLight
-        case 4: return .light
-        case 5: return .regular
-        case 6: return .medium
-        case 7...8: return .semibold
-        case 9: return .bold
-        case 10...11: return .heavy
-        default: return .black
-        }
-    }
-    
     // DEPRECATED: getAvailableStyles removed - style is now encoded in fontVariant names
 }
 

@@ -335,9 +335,8 @@ class SVGExporter {
                     svg += " font-family=\"\(vectorText.typography.fontFamily)\""
                     svg += " font-size=\"\(fontSize)\""
 
-                    // Add font weight if not regular
-                    if vectorText.typography.fontWeight != .regular {
-                        let svgWeight = self.getSVGFontWeight(vectorText.typography.fontWeight)
+                    // Add font weight if not regular (extracted from fontVariant)
+                    if let svgWeight = self.getSVGFontWeightFrom(variant: vectorText.typography.fontVariant) {
                         svg += " font-weight=\"\(svgWeight)\""
                     }
 
@@ -484,8 +483,7 @@ class SVGExporter {
                             svg += " font-family=\"\(vectorText.typography.fontFamily)\""
                             svg += " font-size=\"\(fontSize)\""
 
-                            if vectorText.typography.fontWeight != .regular {
-                                let svgWeight = self.getSVGFontWeight(vectorText.typography.fontWeight)
+                            if let svgWeight = self.getSVGFontWeightFrom(variant: vectorText.typography.fontVariant) {
                                 svg += " font-weight=\"\(svgWeight)\""
                             }
 
@@ -575,8 +573,7 @@ class SVGExporter {
                     svg += " font-family=\"\(vectorText.typography.fontFamily)\""
                     svg += " font-size=\"\(fontSize)\""
 
-                    if vectorText.typography.fontWeight != .regular {
-                        let svgWeight = self.getSVGFontWeight(vectorText.typography.fontWeight)
+                    if let svgWeight = self.getSVGFontWeightFrom(variant: vectorText.typography.fontVariant) {
                         svg += " font-weight=\"\(svgWeight)\""
                     }
 
@@ -637,9 +634,8 @@ class SVGExporter {
                 svg += " font-family=\"\(vectorText.typography.fontFamily)\""
                 svg += " font-size=\"\(fontSize)\""
 
-                // Add font weight if not regular
-                if vectorText.typography.fontWeight != .regular {
-                    let svgWeight = self.getSVGFontWeight(vectorText.typography.fontWeight)
+                // Add font weight if not regular (extracted from fontVariant)
+                if let svgWeight = self.getSVGFontWeightFrom(variant: vectorText.typography.fontVariant) {
                     svg += " font-weight=\"\(svgWeight)\""
                 }
 
@@ -737,9 +733,8 @@ class SVGExporter {
             svg += " font-family=\"\(typography.fontFamily)\""
             svg += " font-size=\"\(fontSize)\""
 
-            // Add font weight if not regular
-            if typography.fontWeight != .regular {
-                let svgWeight = getSVGFontWeight(typography.fontWeight)
+            // Add font weight if not regular (extracted from fontVariant)
+            if let svgWeight = getSVGFontWeightFrom(variant: typography.fontVariant) {
                 svg += " font-weight=\"\(svgWeight)\""
             }
 
@@ -811,9 +806,8 @@ class SVGExporter {
             svg += " font-family=\"\(typography.fontFamily)\""
             svg += " font-size=\"\(fontSize)\""
 
-            // Add font weight if not regular
-            if typography.fontWeight != .regular {
-                let svgWeight = getSVGFontWeight(typography.fontWeight)
+            // Add font weight if not regular (extracted from fontVariant)
+            if let svgWeight = getSVGFontWeightFrom(variant: typography.fontVariant) {
                 svg += " font-weight=\"\(svgWeight)\""
             }
 
@@ -975,18 +969,22 @@ class SVGExporter {
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
 
-    private func getSVGFontWeight(_ weight: FontWeight) -> String {
-        switch weight {
-        case .thin: return "100"
-        case .ultraLight: return "200"
-        case .light: return "300"
-        case .regular: return "400"
-        case .medium: return "500"
-        case .semibold: return "600"
-        case .bold: return "700"
-        case .heavy: return "800"
-        case .black: return "900"
-        }
+    /// Extract SVG font-weight from fontVariant string
+    private func getSVGFontWeightFrom(variant: String?) -> String? {
+        guard let variant = variant else { return nil }
+        let lowercased = variant.lowercased()
+
+        // Map variant names to SVG font-weight values
+        if lowercased.contains("thin") { return "100" }
+        if lowercased.contains("ultralight") || lowercased.contains("ultra light") { return "200" }
+        if lowercased.contains("light") && !lowercased.contains("ultralight") { return "300" }
+        if lowercased.contains("medium") { return "500" }
+        if lowercased.contains("semibold") || lowercased.contains("semi bold") { return "600" }
+        if lowercased.contains("bold") && !lowercased.contains("semibold") { return "700" }
+        if lowercased.contains("heavy") || lowercased.contains("black") { return "800" }
+
+        // If variant is just "Regular" or doesn't contain weight info, return nil (use default 400)
+        return nil
     }
     
     private func getSVGTextAnchor(_ alignment: TextAlignment) -> String {

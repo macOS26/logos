@@ -119,7 +119,6 @@ class ProfessionalTextViewModel: ObservableObject {
         let typographyChanged = (
             self.textObject.typography.alignment != textObject.typography.alignment ||
             self.textObject.typography.fontFamily != textObject.typography.fontFamily ||
-            self.textObject.typography.fontWeight != textObject.typography.fontWeight ||
             self.textObject.typography.fontVariant != textObject.typography.fontVariant ||
             abs(self.textObject.typography.lineHeight - textObject.typography.lineHeight) > 0.01 ||
             abs(self.textObject.typography.lineSpacing - textObject.typography.lineSpacing) > 0.01

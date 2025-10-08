@@ -28,36 +28,6 @@ extension VectorDocument {
         // CRITICAL FIX: Use updateShapeByID to support grouped children
         updateShapeByID(id) { shape in
             shape.typography?.fontVariant = fontVariant
-
-            // Also derive weight and style from the variant
-            if let typography = shape.typography {
-                let fontManager = NSFontManager.shared
-                let members = fontManager.availableMembers(ofFontFamily: typography.fontFamily) ?? []
-
-                for member in members {
-                    if let displayName = member[1] as? String,
-                       displayName == fontVariant,
-                       let weightNumber = member[2] as? NSNumber {
-
-                        // Map weight
-                        let nsWeight = weightNumber.intValue
-                        shape.typography?.fontWeight = self.fontManager.mapNSWeightToFontWeight(nsWeight)
-
-                        // Style is now in variant name, no need to set deprecated fontStyle
-                        break
-                    }
-                }
-            }
-        }
-    }
-
-    /// FAST O(1) update - change ONLY the font weight
-    func updateTextFontWeightDirect(id: UUID, fontWeight: FontWeight) {
-        saveToUndoStack()
-
-        // CRITICAL FIX: Use updateShapeByID to support grouped children
-        updateShapeByID(id) { shape in
-            shape.typography?.fontWeight = fontWeight
         }
     }
 
