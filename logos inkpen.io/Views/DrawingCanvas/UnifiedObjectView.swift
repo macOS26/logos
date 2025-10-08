@@ -109,9 +109,27 @@ struct UnifiedObjectContentView: View {
                 }
             } else {
                 // Regular shape - render normally
-                renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(unifiedObject.id))
+                // CRITICAL FIX: For groups, also render text objects inside
+                ZStack {
+                    renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(unifiedObject.id))
+
+                    // CRITICAL FIX: Render text objects inside groups
+                    if shape.isGroupContainer {
+                        ForEach(shape.groupedShapes.filter { $0.isTextObject }, id: \.id) { textShape in
+                            if textShape.textContent != nil, textShape.typography != nil {
+                                StableProfessionalTextCanvas(
+                                    document: document,
+                                    textObjectID: textShape.id,
+                                    dragPreviewDelta: dragPreviewDelta,
+                                    dragPreviewTrigger: dragPreviewTrigger
+                                )
+                                .allowsHitTesting(true)
+                            }
+                        }
+                    }
+                }
             }
-            
+
         }
     }
     
