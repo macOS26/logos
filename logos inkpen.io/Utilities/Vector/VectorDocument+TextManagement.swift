@@ -8,7 +8,6 @@
 import SwiftUI
 import CoreText
 import AppKit
-import Combine
 
 // MARK: - Text Management
 extension VectorDocument {
@@ -128,8 +127,6 @@ extension VectorDocument {
     func convertSelectedTextToOutlines() {
         guard !selectedTextIDs.isEmpty else { return }
 
-        Log.info("🔄 CONVERT TO OUTLINES: Starting with selectedTextIDs=\(selectedTextIDs)", category: .general)
-
         saveToUndoStack()
 
         let selectedTexts = selectedTextIDs.compactMap { textID in findText(by: textID) }
@@ -176,12 +173,6 @@ extension VectorDocument {
             // Clear text selection and select new shapes
             selectedTextIDs.removeAll()
             selectedShapeIDs = newShapeIDs
-
-            // Sync selectedObjectIDs to match selectedShapeIDs
-            syncUnifiedSelectionFromLegacy()
-
-            // Trigger UI update
-            objectWillChange.send()
 
         } else {
             Log.error("❌ TEXT TO OUTLINES FAILED: No new shapes were created", category: .error)
