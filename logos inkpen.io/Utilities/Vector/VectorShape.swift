@@ -568,10 +568,18 @@ struct VectorShape: Hashable, Identifiable {
     /// Get bounds of group (union of all child shapes)
     var groupBounds: CGRect {
         guard isGroupContainer else { return bounds }
-        
+
         var groupBounds = CGRect.null
         for shape in groupedShapes {
-            groupBounds = groupBounds.union(shape.bounds)
+            // CRITICAL FIX: For text objects, use textPosition + areaSize instead of shape.bounds
+            // Text objects store position separately from bounds
+            let shapeBounds: CGRect
+            if shape.isTextObject, let textPosition = shape.textPosition, let areaSize = shape.areaSize {
+                shapeBounds = CGRect(x: textPosition.x, y: textPosition.y, width: areaSize.width, height: areaSize.height)
+            } else {
+                shapeBounds = shape.bounds
+            }
+            groupBounds = groupBounds.union(shapeBounds)
         }
         return groupBounds
     }
