@@ -33,12 +33,10 @@ struct TransformBoxHandles: View {
 
         ZStack {
             // Bounding rectangle (dashed)
-            // CRITICAL FIX: Match ShapeView coordinate system exactly
-            // Draw rectangle at origin, offset to bounds position, then apply zoom+offset
-            Rectangle()
+            // CRITICAL FIX: Use Path with CGRect to match ShapeView rendering exactly
+            // Path coordinates are in canvas space, just like shape.path
+            Path(transformedBounds)
                 .stroke(Color.black.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
-                .frame(width: transformedBounds.width, height: transformedBounds.height)
-                .offset(x: transformedBounds.minX, y: transformedBounds.minY)
                 .scaleEffect(zoomLevel, anchor: .topLeading)
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
                 .allowsHitTesting(false)
