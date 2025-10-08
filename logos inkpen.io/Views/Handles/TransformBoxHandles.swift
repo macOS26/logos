@@ -138,11 +138,12 @@ struct TransformBoxHandles: View {
                         .allowsHitTesting(true)  // Allow clicking on all handles to set as anchor
 
                     // Visible handle - RED for anchor, ORANGE for disabled, BLUE for active
+                    // FIXED: All handles same size, same border width
+                    // Divide by zoomLevel to maintain constant canvas size (not screen size)
                     Circle()
                         .fill(isAnchorPoint ? Color.red : (isDisabled ? Color.orange : Color.blue))
-                        .overlay(Circle().stroke(Color.white, lineWidth: isAnchorPoint ? 2.0 : 1.0))
-                        .frame(width: isAnchorPoint ? handleSize * 1.2 : handleSize,
-                               height: isAnchorPoint ? handleSize * 1.2 : handleSize)
+                        .overlay(Circle().stroke(Color.white, lineWidth: 1.0 / zoomLevel))
+                        .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
                         .allowsHitTesting(false)  // Hit testing handled by larger area
                 }
                 .position(CGPoint(x: pt.x * zoomLevel + canvasOffset.x,
