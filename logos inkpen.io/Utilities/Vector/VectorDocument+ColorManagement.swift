@@ -78,6 +78,41 @@ extension VectorDocument {
         colorChangeNotification = UUID()
     }
     
+    /// Helper to apply color to a shape (text or regular)
+    private func applyColorToShape(_ shape: inout VectorShape, color: VectorColor) {
+        if shape.isTextObject {
+            // Handle text objects
+            switch activeColorTarget {
+            case .fill:
+                if shape.typography != nil {
+                    shape.typography?.fillColor = color
+                    shape.typography?.fillOpacity = defaultFillOpacity
+                }
+            case .stroke:
+                if shape.typography != nil {
+                    shape.typography?.hasStroke = true
+                    shape.typography?.strokeColor = color
+                }
+            }
+        } else {
+            // Handle regular shapes
+            switch activeColorTarget {
+            case .fill:
+                if shape.fillStyle == nil {
+                    shape.fillStyle = FillStyle(color: color)
+                } else {
+                    shape.fillStyle?.color = color
+                }
+            case .stroke:
+                if shape.strokeStyle == nil {
+                    shape.strokeStyle = StrokeStyle(color: color, placement: .center)
+                } else {
+                    shape.strokeStyle?.color = color
+                }
+            }
+        }
+    }
+
     func setActiveColor(_ color: VectorColor) {
         // FIX: Save undo state only once at the beginning, not for each object
         let shouldSaveUndo = !selectedObjectIDs.isEmpty
@@ -97,41 +132,24 @@ extension VectorDocument {
 
         // Apply to selected objects from unified system
         for objectID in selectedObjectIDs {
-            // CRITICAL FIX: Use updateShapeByID to support grouped children
-            updateShapeByID(objectID) { shape in
-                if shape.isTextObject {
-                    // Handle text objects
-                    switch activeColorTarget {
-                    case .fill:
-                        if shape.typography != nil {
-                            shape.typography?.fillColor = color
-                            shape.typography?.fillOpacity = defaultFillOpacity
-                        }
-                    case .stroke:
-                        if shape.typography != nil {
-                            shape.typography?.hasStroke = true
-                            shape.typography?.strokeColor = color
-                        }
+            // Check if this is a group container
+            if let unifiedObject = findObject(by: objectID),
+               case .shape(let groupShape) = unifiedObject.objectType,
+               groupShape.isGroupContainer {
+                // PROFESSIONAL: When group is selected, apply color to ALL children
+                for childShape in groupShape.groupedShapes {
+                    updateShapeByID(childShape.id) { shape in
+                        applyColorToShape(&shape, color: color)
                     }
-                } else {
-                    // Handle regular shapes
-                    switch activeColorTarget {
-                    case .fill:
-                        if shape.fillStyle == nil {
-                            shape.fillStyle = FillStyle(color: color)
-                        } else {
-                            shape.fillStyle?.color = color
-                        }
-                    case .stroke:
-                        if shape.strokeStyle == nil {
-                            shape.strokeStyle = StrokeStyle(color: color, placement: .center)
-                        } else {
-                            shape.strokeStyle?.color = color
-                        }
-                    }
+                    hasChanges = true
                 }
+            } else {
+                // CRITICAL FIX: Use updateShapeByID to support grouped children
+                updateShapeByID(objectID) { shape in
+                    applyColorToShape(&shape, color: color)
+                }
+                hasChanges = true
             }
-            hasChanges = true
         }
         
         // CRITICAL FIX: Sync unified objects for live color updates
