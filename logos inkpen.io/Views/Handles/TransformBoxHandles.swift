@@ -130,12 +130,12 @@ struct TransformBoxHandles: View {
                 let isDisabled = isAnchorPoint || isAdjacentToAnchor
 
                 ZStack {
-                    // Invisible expanded hit area for easier selection (disabled for adjacent handles)
+                    // Invisible expanded hit area for easier selection
                     Circle()
                         .fill(Color.clear)
                         .frame(width: handleHitAreaSize, height: handleHitAreaSize)
                         .contentShape(Circle())
-                        .allowsHitTesting(!isDisabled)  // Disable interaction for adjacent handles
+                        .allowsHitTesting(true)  // Allow clicking on all handles to set as anchor
 
                     // Visible handle - RED for anchor, ORANGE for disabled, BLUE for active
                     Circle()
@@ -152,6 +152,7 @@ struct TransformBoxHandles: View {
                     setAnchorPoint(forHandle: index)
                 }
                 .simultaneousGesture(
+                    isDisabled ? nil : // Only allow dragging for non-disabled handles
                     DragGesture(minimumDistance: 0.5) // Small threshold
                         .onChanged { value in
                             if !isScaling {
