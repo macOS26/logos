@@ -33,9 +33,16 @@ extension VectorDocument {
 
         Log.info("⏪ UNDO: Starting - undoStack.count=\(undoStack.count), current selectedTextIDs=\(selectedTextIDs), selectedShapeIDs=\(selectedShapeIDs)", category: .general)
 
+        // CRITICAL UX FIX: Disable ALL SwiftUI updates during restoration to prevent flicker
+        let publisher = self.objectWillChange
+
         // Set flag to prevent reordering during undo operation
         isUndoRedoOperation = true
-        defer { isUndoRedoOperation = false }
+        defer {
+            isUndoRedoOperation = false
+            // Re-enable updates and send ONE final notification
+            publisher.send()
+        }
 
         // Save current state to redo stack
         do {
@@ -51,7 +58,10 @@ extension VectorDocument {
 
         Log.info("⏪ UNDO: Restoring state - previousState selectedTextIDs=\(previousState.selectedTextIDs), selectedShapeIDs=\(previousState.selectedShapeIDs), unifiedObjects.count=\(previousState.unifiedObjects.count)", category: .general)
 
-        settings = previousState.settings
+        // CRITICAL UX FIX: Use withTransaction to batch ALL updates into ONE render
+        // This prevents flickering from multiple intermediate renders
+        withAnimation(.none) {
+            settings = previousState.settings
         layers = previousState.layers
         customRgbSwatches = previousState.customRgbSwatches
         customCmykSwatches = previousState.customCmykSwatches
@@ -101,21 +111,11 @@ extension VectorDocument {
         layerIndex = previousState.layerIndex
         directSelectedShapeIDs = previousState.directSelectedShapeIDs
 
-        // CRITICAL: Rebuild the lookup cache after restoring unified objects
-        rebuildLookupCache()
-
-        // No need to fix ordering - undo restored the exact state that was saved
-        // CRITICAL FIX: Sync legacy arrays to ensure consistency
-        //syncLegacyArraysAfterUndo()
-
-        // CRITICAL FIX: DON'T MESS WITH SELECTIONS - JUST RESTORE WHAT WAS SAVED!
-        // The selection was already restored above (lines 67-69).
-        // All this "validation" and "merging" logic is corrupting the restored selection.
-        // If the selection was saved properly, it should be restored properly. Period.
+            // CRITICAL: Rebuild the lookup cache after restoring unified objects
+            rebuildLookupCache()
+        }
 
         Log.info("⏪ UNDO: Complete - restored selectedTextIDs=\(selectedTextIDs), selectedShapeIDs=\(selectedShapeIDs), unifiedObjects.count=\(unifiedObjects.count)", category: .general)
-
-        objectWillChange.send()
     }
     
     func redo() {
@@ -143,7 +143,10 @@ extension VectorDocument {
             return
         }
         let nextState = redoStack.removeLast()
-        settings = nextState.settings
+
+        // CRITICAL UX FIX: Use withAnimation to batch ALL updates into ONE render
+        withAnimation(.none) {
+            settings = nextState.settings
         layers = nextState.layers
         customRgbSwatches = nextState.customRgbSwatches
         customCmykSwatches = nextState.customCmykSwatches
@@ -192,7 +195,11 @@ extension VectorDocument {
         pasteboard = nextState.pasteboard
         layerIndex = nextState.layerIndex
         directSelectedShapeIDs = nextState.directSelectedShapeIDs
-        
+
+            // CRITICAL: Rebuild the lookup cache after restoring unified objects
+            rebuildLookupCache()
+        }
+
         // No need to fix ordering - redo restored the exact state that was saved
         // CRITICAL FIX: Sync legacy arrays to ensure consistency
         //syncLegacyArraysAfterUndo()
@@ -227,8 +234,6 @@ extension VectorDocument {
                 selectedShapeIDs.removeAll()
             }
         }
-
-        objectWillChange.send()
     }
     
     /// CRITICAL FIX: Ensures unified objects are properly ordered after undo/redo operations
