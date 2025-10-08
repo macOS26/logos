@@ -94,7 +94,7 @@ class ProfessionalTextViewModel: ObservableObject {
     func syncFromDocument(_ textObject: VectorText) {
         // CRITICAL: Check if we should update at all
         guard self.textObject.id == textObject.id else {
-            Log.error("❌ SYNC ERROR: Mismatched text IDs", category: .error)
+            Log.error("❌ SYNC ERROR: Mismatched text IDs - viewModel.id=\(self.textObject.id) vs document.id=\(textObject.id)", category: .error)
             return
         }
 
@@ -570,11 +570,12 @@ class ProfessionalTextViewModel: ObservableObject {
         // DON'T modify selection here - let parent function handle it
         // This was corrupting the undo state by modifying selection after saveToUndoStack()
 
-        // Remove from unified system (which will also update textObjects array)
-        document.removeTextFromUnifiedSystem(id: textObject.id)
+        // Remove from unified system WITHOUT touching selections
+        // Parent function (convertSelectedTextToOutlines) manages selection state
+        document.removeTextFromUnifiedSystemWithoutSelection(id: textObject.id)
 
-        // Force UI update
-        document.objectWillChange.send()
+        // DON'T call objectWillChange.send() here - parent function will do it
+        // Calling it here corrupts undo state by triggering syncs after saveToUndoStack()
     }
 
     // MARK: - Core Graphics Path Conversion Helper

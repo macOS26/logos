@@ -28,12 +28,12 @@ extension VectorDocument {
         }
     }
     
-    /// Remove text from unified system
+    /// Remove text from unified system and clear from selections
     func removeTextFromUnifiedSystem(id: UUID) {
         // Text is now only in unified objects
-        
+
         // MIGRATION: textObjects is rebuilt from unified, no direct removal needed
-        
+
         // Remove from unified objects (text is stored as shape with isTextObject = true)
         unifiedObjects.removeAll { obj in
             if case .shape(let shape) = obj.objectType {
@@ -41,15 +41,27 @@ extension VectorDocument {
             }
             return false
         }
-        
+
         // Remove from selection if selected
         selectedTextIDs.remove(id)
         // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
         if let unifiedObj = findObject(by: id) {
             selectedObjectIDs.remove(unifiedObj.id)
         }
-        
+
         // Text is now fully managed in unified system
+    }
+
+    /// Remove text from unified system WITHOUT modifying selections
+    /// Use this when the parent function manages selections (e.g. convert to outlines)
+    func removeTextFromUnifiedSystemWithoutSelection(id: UUID) {
+        // Remove from unified objects only, don't touch selections
+        unifiedObjects.removeAll { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.id == id && shape.isTextObject
+            }
+            return false
+        }
     }
     
     /// Update entire text object in unified system
