@@ -32,16 +32,78 @@ struct TransformBoxHandles: View {
         let transformedBounds: CGRect = computeTransformedBounds()
 
         ZStack {
-            // Bounding rectangle (dashed)
-            // CRITICAL FIX: Use Rectangle().frame().position() to match text box rendering
-            Rectangle()
-                .stroke(Color.black.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
-                .frame(width: transformedBounds.width, height: transformedBounds.height)
-                .position(x: transformedBounds.minX + transformedBounds.width / 2,
-                         y: transformedBounds.minY + transformedBounds.height / 2)
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .allowsHitTesting(false)
+            // SHARED CONTAINER: Apply transform ONCE to both rectangle and handles
+            ZStack {
+                // Bounding rectangle (dashed) - BLACK stroke first
+                Rectangle()
+                    .stroke(Color.black, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
+                    .frame(width: transformedBounds.width, height: transformedBounds.height)
+                    .position(x: transformedBounds.minX + transformedBounds.width / 2,
+                             y: transformedBounds.minY + transformedBounds.height / 2)
+                    .allowsHitTesting(false)
+
+                // Bounding rectangle (dashed) - WHITE stroke offset to fill gaps
+                Rectangle()
+                    .stroke(Color.white, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel], dashPhase: 4.0 / zoomLevel))
+                    .frame(width: transformedBounds.width, height: transformedBounds.height)
+                    .position(x: transformedBounds.minX + transformedBounds.width / 2,
+                             y: transformedBounds.minY + transformedBounds.height / 2)
+                    .allowsHitTesting(false)
+
+            }
+            // Apply transform ONCE to the rectangle only
+            .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
+
+            // Handles OUTSIDE the transform - position individually in screen space
+            ForEach(0..<9) { index in
+                let pt = handlePosition(index: index, in: transformedBounds)
+                let isAnchorPoint = isHandleTheAnchor(index: index)
+                let isAdjacentToAnchor = isHandleAdjacentToAnchor(index: index)
+                let isDisabled = isAnchorPoint || isAdjacentToAnchor
+
+                // Calculate screen position by applying the same transform manually
+                let centerX = transformedBounds.minX + transformedBounds.width / 2
+                let centerY = transformedBounds.minY + transformedBounds.height / 2
+                let offsetX = pt.x - centerX
+                let offsetY = (pt.y - centerY) - (1.75 / zoomLevel)  // Apply correction in canvas space
+                let screenX = centerX * zoomLevel + offsetX * zoomLevel + canvasOffset.x
+                let screenY = centerY * zoomLevel + offsetY * zoomLevel + canvasOffset.y
+
+                ZStack {
+                    // Invisible expanded hit area for easier selection
+                    Circle()
+                        .fill(Color.clear)
+                        .frame(width: handleHitAreaSize, height: handleHitAreaSize)
+                        .contentShape(Circle())
+                        .allowsHitTesting(true)
+
+                    // Visible handle - CONSTANT SIZE (not scaled)
+                    Circle()
+                        .fill(isAnchorPoint ? Color.red : (isDisabled ? Color.orange : Color.blue))
+                        .overlay(Circle().stroke(Color.white, lineWidth: isAnchorPoint ? 2.0 : 1.0))
+                        .frame(width: isAnchorPoint ? handleSize * 1.2 : handleSize,
+                               height: isAnchorPoint ? handleSize * 1.2 : handleSize)
+                        .allowsHitTesting(false)
+                }
+                .position(x: screenX, y: screenY)
+                .onTapGesture {
+                    setAnchorPoint(forHandle: index)
+                }
+                .simultaneousGesture(
+                    isDisabled ? nil :
+                    DragGesture(minimumDistance: 0.5)
+                        .onChanged { value in
+                            if !isScaling {
+                                beginScaling(startValue: value)
+                            }
+                            updateScaling(forHandle: index, dragValue: value, bounds: transformedBounds)
+                        }
+                        .onEnded { _ in
+                            endScaling()
+                        }
+                )
+            }
 
             // Red preview outline when scaling
             if isScaling && !previewTransform.isIdentity {
@@ -123,50 +185,6 @@ struct TransformBoxHandles: View {
                     .allowsHitTesting(false)
                 }
             }
-
-            // Handles: 4 corners + 4 mids + center
-            ForEach(0..<9) { index in
-                let pt = handlePosition(index: index, in: transformedBounds)
-                let isAnchorPoint = isHandleTheAnchor(index: index)
-                let isAdjacentToAnchor = isHandleAdjacentToAnchor(index: index)
-                let isDisabled = isAnchorPoint || isAdjacentToAnchor
-
-                ZStack {
-                    // Invisible expanded hit area for easier selection
-                    Circle()
-                        .fill(Color.clear)
-                        .frame(width: handleHitAreaSize, height: handleHitAreaSize)
-                        .contentShape(Circle())
-                        .allowsHitTesting(true)  // Allow clicking on all handles to set as anchor
-
-                    // Visible handle - RED for anchor, ORANGE for disabled, BLUE for active
-                    Circle()
-                        .fill(isAnchorPoint ? Color.red : (isDisabled ? Color.orange : Color.blue))
-                        .overlay(Circle().stroke(Color.white, lineWidth: isAnchorPoint ? 2.0 : 1.0))
-                        .frame(width: isAnchorPoint ? handleSize * 1.2 : handleSize,
-                               height: isAnchorPoint ? handleSize * 1.2 : handleSize)
-                        .allowsHitTesting(false)  // Hit testing handled by larger area
-                }
-                .position(CGPoint(x: pt.x * zoomLevel + canvasOffset.x,
-                                  y: pt.y * zoomLevel + canvasOffset.y))
-                .onTapGesture {
-                    // Click to set this handle as the anchor point (red dot)
-                    setAnchorPoint(forHandle: index)
-                }
-                .simultaneousGesture(
-                    isDisabled ? nil : // Only allow dragging for non-disabled handles
-                    DragGesture(minimumDistance: 0.5) // Small threshold
-                        .onChanged { value in
-                            if !isScaling {
-                                beginScaling(startValue: value)
-                            }
-                            updateScaling(forHandle: index, dragValue: value, bounds: transformedBounds)
-                        }
-                        .onEnded { _ in
-                            endScaling()
-                        }
-                )
-            }
         }
         .onAppear {
         // Start with identity since we apply transforms to coordinates
@@ -181,7 +199,6 @@ struct TransformBoxHandles: View {
         if shape.isTextObject, let areaSize = shape.areaSize, let textPosition = shape.textPosition {
             // TEXT OBJECTS: Use areaSize + textPosition (matches StableProfessionalTextCanvas)
             baseBounds = CGRect(x: textPosition.x, y: textPosition.y, width: areaSize.width, height: areaSize.height)
-            Log.info("🔍 TRANSFORM BOX: textPos=(\(textPosition.x), \(textPosition.y)) areaSize=(\(areaSize.width), \(areaSize.height)) bounds=\(baseBounds)", category: .general)
         } else {
             baseBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         }
