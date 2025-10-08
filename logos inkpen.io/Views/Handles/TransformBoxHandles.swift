@@ -200,30 +200,18 @@ struct TransformBoxHandles: View {
             strokeExpandedBounds = baseBounds.insetBy(dx: -strokeExpansion, dy: -strokeExpansion)
         }
 
-        // PRECISION FIX: Apply transform directly to bounds rectangle for exact precision
-        // This matches how ShapeView renders shapes (applying transform to path)
-        // and avoids floating-point errors from corner-based min/max calculations
+        // PRECISION FIX: For regular shapes (non-groups, non-images), transforms are baked into path coords
+        // so shape.transform is ALWAYS identity. Return bounds directly for exact precision.
+        // For groups and images, transform is stored in shape.transform property.
         let t = shape.transform
 
-        // For pure translation or identity transforms, apply directly to avoid any precision loss
-        if t.b == 0 && t.c == 0 && t.a == 1 && t.d == 1 {
-            // Pure translation - exact precision
-            return CGRect(x: strokeExpandedBounds.minX + t.tx,
-                         y: strokeExpandedBounds.minY + t.ty,
-                         width: strokeExpandedBounds.width,
-                         height: strokeExpandedBounds.height)
+        // If transform is identity (regular shapes with baked transforms), return bounds directly
+        if t.isIdentity {
+            return strokeExpandedBounds
         }
 
-        // For scale-only transforms (no rotation/shear), preserve exact dimensions
-        if t.b == 0 && t.c == 0 {
-            // Scale + translation only - preserve exact scaled dimensions
-            return CGRect(x: strokeExpandedBounds.minX * t.a + t.tx,
-                         y: strokeExpandedBounds.minY * t.d + t.ty,
-                         width: strokeExpandedBounds.width * t.a,
-                         height: strokeExpandedBounds.height * t.d)
-        }
-
-        // For rotation/shear, we need corner transformation (but use precise CGRect.applying)
+        // For non-identity transforms (groups, images), apply transform precisely
+        // Use CGRect.applying() for exact CoreGraphics precision
         return strokeExpandedBounds.applying(t)
     }
 
