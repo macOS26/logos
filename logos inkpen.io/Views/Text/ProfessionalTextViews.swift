@@ -20,13 +20,14 @@ struct ProfessionalTextBoxView: View {
 
     private func getBorderColor() -> Color {
         switch textBoxState {
-        case .gray: return Color.clear
-        case .green: return Color.clear
+        case .gray: return Color.gray
+        case .green: return Color.green
         case .blue: return Color.blue
         }
     }
 
     var body: some View {
+        let _ = Log.info("🔍 TEXT BOX: frame=\(viewModel.textBoxFrame)", category: .general)
         ZStack {
             // Main text box rectangle with clear background
             Rectangle()
