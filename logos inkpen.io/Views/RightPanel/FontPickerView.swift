@@ -76,34 +76,61 @@ struct FontPickerView: View {
             .padding(.vertical, 4)
             .id(fontFamilyUpdateTrigger)
 
-            // Font Weight
+            // Font Weight (shows all variants)
             Text("Weight")
                 .font(.caption)
                 .foregroundColor(.secondary)
             Picker("", selection: Binding(
                 get: {
-                    guard let selectedText = selectedText else {
-                        return availableFontWeights.contains(document.fontManager.selectedFontWeight) ? document.fontManager.selectedFontWeight : availableFontWeights.first ?? .regular
-                    }
-                    return availableFontWeights.contains(selectedText.typography.fontWeight) ? selectedText.typography.fontWeight : availableFontWeights.first ?? .regular
-                },
-                set: { newWeight in
-                    // ALWAYS update defaults first - NO RESTRICTIONS
-                    document.fontManager.selectedFontWeight = newWeight
+                    // Get current variant name
+                    if let selectedText = selectedText {
+                        // First check if variant is stored
+                        if let variant = selectedText.typography.fontVariant,
+                           availableFontVariantNames.contains(variant) {
+                            return variant
+                        }
 
-                    // Then update selected text if any - with immediate update
+                        // Otherwise, find variant that matches current weight/style
+                        let fontManager = NSFontManager.shared
+                        let members = fontManager.availableMembers(ofFontFamily: currentFontFamily) ?? []
+
+                        for member in members {
+                            if let displayName = member[1] as? String,
+                               let weightNumber = member[2] as? NSNumber,
+                               let traits = member[3] as? NSNumber {
+
+                                let memberWeight = mapNSWeightToFontWeight(weightNumber.intValue)
+                                let traitMask = NSFontDescriptor.SymbolicTraits(rawValue: UInt32(traits.intValue))
+                                let memberStyle: FontStyle = traitMask.contains(.italic) ? .italic : .normal
+
+                                if memberWeight == selectedText.typography.fontWeight &&
+                                   memberStyle == selectedText.typography.fontStyle {
+                                    return displayName
+                                }
+                            }
+                        }
+                    }
+
+                    // Default to Regular or first available
+                    return availableFontVariantNames.first ?? "Regular"
+                },
+                set: { newVariant in
+                    // ALWAYS update defaults first
+                    document.fontManager.selectedFontVariant = newVariant
+
+                    // Then update selected text if any
                     if let textID = document.selectedTextIDs.first {
-                        document.updateTextFontWeightDirect(id: textID, fontWeight: newWeight)
+                        document.updateTextFontVariantDirect(id: textID, fontVariant: newVariant)
                     }
 
                     // Force UI update after the change
                     document.objectWillChange.send()
                 }
             )) {
-                ForEach(availableFontWeights, id: \.self) { weight in
-                    Text(weight.rawValue)
-                        .font(createPreviewFont(family: currentFontFamily, weight: weight, style: selectedText?.typography.fontStyle ?? document.fontManager.selectedFontStyle))
-                        .tag(weight)
+                ForEach(availableFontVariantNames, id: \.self) { variant in
+                    Text(variant)
+                        .font(getFontForVariant(family: currentFontFamily, variantName: variant))
+                        .tag(variant)
                 }
             }
             .pickerStyle(.menu)
@@ -197,5 +224,20 @@ struct FontPickerView: View {
         case 10...11: return .heavy
         default: return .black
         }
+    }
+
+    private func getFontForVariant(family: String, variantName: String) -> Font {
+        let fontManager = NSFontManager.shared
+        let members = fontManager.availableMembers(ofFontFamily: family) ?? []
+
+        for member in members {
+            if let postScriptName = member[0] as? String,
+               let displayName = member[1] as? String,
+               displayName == variantName {
+                return Font.custom(postScriptName, size: 12)
+            }
+        }
+
+        return Font.system(size: 12)
     }
 }

@@ -116,6 +116,7 @@ enum FontStyle: String, CaseIterable, Codable {
 // MARK: - Professional Typography Properties
 struct TypographyProperties: Codable, Hashable {
     var fontFamily: String
+    var fontVariant: String?  // Store the actual variant name like "Condensed Bold"
     var fontWeight: FontWeight
     var fontStyle: FontStyle
     var fontSize: Double // In points (professional standard)
@@ -170,6 +171,23 @@ struct TypographyProperties: Codable, Hashable {
     
     // Create NSFont for text rendering
     var nsFont: NSFont {
+        // If we have a variant name, try to use it to get exact font
+        if let variant = fontVariant {
+            let fontManager = NSFontManager.shared
+            let members = fontManager.availableMembers(ofFontFamily: fontFamily) ?? []
+
+            for member in members {
+                if let postScriptName = member[0] as? String,
+                   let displayName = member[1] as? String,
+                   displayName == variant {
+                    if let font = NSFont(name: postScriptName, size: fontSize) {
+                        return font
+                    }
+                }
+            }
+        }
+
+        // Fallback to weight/style based creation
         let descriptor = NSFontDescriptor(name: fontFamily, size: fontSize)
         let traits: NSFontDescriptor.SymbolicTraits = fontStyle == .italic ? .italic : []
         let weightedDescriptor = descriptor.addingAttributes([
@@ -467,6 +485,7 @@ class FontManager: ObservableObject {
 
     // SELECTED FONT PROPERTIES for new text objects
     @Published var selectedFontFamily: String = "Helvetica Neue"
+    @Published var selectedFontVariant: String = "Regular"  // Store selected variant name
     @Published var selectedFontWeight: FontWeight = .regular
     @Published var selectedFontStyle: FontStyle = .normal
     @Published var selectedFontSize: Double = 24.0
@@ -555,7 +574,7 @@ class FontManager: ObservableObject {
         }
     }
     
-    private func mapNSWeightToFontWeight(_ nsWeight: Int) -> FontWeight {
+    func mapNSWeightToFontWeight(_ nsWeight: Int) -> FontWeight {
         switch nsWeight {
         case 0...2: return .thin
         case 3: return .ultraLight
