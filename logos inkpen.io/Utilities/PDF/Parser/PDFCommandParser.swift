@@ -117,7 +117,20 @@ class PDFCommandParser {
     var needsYFlip: Bool? = nil  // nil = unknown, true = needs flip, false = no flip needed
 
     func parseDocument(at url: URL) -> [VectorShape] {
-        autoreleasepool {
+        // MEMORY FIX: Clear all temporary data when function exits
+        defer {
+            shapes.removeAll()
+            commands.removeAll()
+            currentPath.removeAll()
+            compoundPathParts.removeAll()
+            gradientShapes.removeAll()
+            activeGradient = nil
+            currentFillGradient = nil
+            currentStrokeGradient = nil
+            pendingClippingPath = nil
+        }
+
+        return autoreleasepool {
             commands.removeAll()
             shapes.removeAll()
 
@@ -169,24 +182,8 @@ class PDFCommandParser {
                 pageSize = artworkBounds.size
             }
 
-            // Copy shapes for return
-            let result = shapes
-
-            // MEMORY FIX: Defer cleanup until after document is displayed
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                self.shapes.removeAll()
-                self.commands.removeAll()
-                self.currentPath.removeAll()
-                self.compoundPathParts.removeAll()
-                self.gradientShapes.removeAll()
-                self.activeGradient = nil
-                self.currentFillGradient = nil
-                self.currentStrokeGradient = nil
-                self.pendingClippingPath = nil
-            }
-
-            return result
+            // Return shapes (defer will clean up after return)
+            return shapes
         }
     }
     
