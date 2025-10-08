@@ -117,58 +117,74 @@ class PDFCommandParser {
     var needsYFlip: Bool? = nil  // nil = unknown, true = needs flip, false = no flip needed
 
     func parseDocument(at url: URL) -> [VectorShape] {
-        commands.removeAll()
-        shapes.removeAll()
-        
-        guard let dataProvider = CGDataProvider(url: url as CFURL),
-              let document = CGPDFDocument(dataProvider) else {
-            Log.error("Failed to load PDF document", category: .error)
-            return []
-        }
-        
-        // Detect PDF version
-        detectedPDFVersion = detectPDFVersion(document: document)
+        autoreleasepool {
+            commands.removeAll()
+            shapes.removeAll()
 
-        // Detect PDF creator for conditional handling
-        detectPDFCreator(document: document)
+            guard let dataProvider = CGDataProvider(url: url as CFURL),
+                  let document = CGPDFDocument(dataProvider) else {
+                Log.error("Failed to load PDF document", category: .error)
+                return []
+            }
 
-        // Get page size and origin from first page
-        if let firstPage = document.page(at: 1) {
-            let mediaBox = firstPage.getBoxRect(.mediaBox)
-            pageSize = mediaBox.size
-            pageOrigin = mediaBox.origin
-        }
-        
-        // Parse all pages
-        for pageNumber in 1...document.numberOfPages {
-            parsePage(document: document, pageNumber: pageNumber)
-        }
-        
-        // Finalize any remaining path
-        if !currentPath.isEmpty {
-            createShapeFromCurrentPath(filled: true, stroked: false)
-        }
+            // Detect PDF version
+            detectedPDFVersion = detectPDFVersion(document: document)
 
-        // If we still have a pending clipping path at the end, add it now
-        if let pendingClip = pendingClippingPath {
-            shapes.append(pendingClip)
+            // Detect PDF creator for conditional handling
+            detectPDFCreator(document: document)
+
+            // Get page size and origin from first page
+            if let firstPage = document.page(at: 1) {
+                let mediaBox = firstPage.getBoxRect(.mediaBox)
+                pageSize = mediaBox.size
+                pageOrigin = mediaBox.origin
+            }
+
+            // Parse all pages
+            for pageNumber in 1...document.numberOfPages {
+                parsePage(document: document, pageNumber: pageNumber)
+            }
+
+            // Finalize any remaining path
+            if !currentPath.isEmpty {
+                createShapeFromCurrentPath(filled: true, stroked: false)
+            }
+
+            // If we still have a pending clipping path at the end, add it now
+            if let pendingClip = pendingClippingPath {
+                shapes.append(pendingClip)
+                pendingClippingPath = nil
+            }
+
+            // Remove duplicate shapes that match clipping paths
+            removeDuplicateClippingShapes()
+
+            // Final gradient processing (handled by specialized gradient modules)
+            // TODO: Implement createCompoundPathWithGradient in gradient handling module
+
+
+            // Calculate actual artwork bounds and update pageSize
+            if !shapes.isEmpty {
+                let artworkBounds = calculateArtworkBounds()
+                pageSize = artworkBounds.size
+            }
+
+            // Copy shapes for return
+            let result = shapes
+
+            // MEMORY FIX: Clear all temporary data after parsing completes
+            shapes.removeAll()
+            commands.removeAll()
+            currentPath.removeAll()
+            compoundPathParts.removeAll()
+            gradientShapes.removeAll()
+            activeGradient = nil
+            currentFillGradient = nil
+            currentStrokeGradient = nil
             pendingClippingPath = nil
+
+            return result
         }
-
-        // Remove duplicate shapes that match clipping paths
-        removeDuplicateClippingShapes()
-
-        // Final gradient processing (handled by specialized gradient modules)
-        // TODO: Implement createCompoundPathWithGradient in gradient handling module
-
-        
-        // Calculate actual artwork bounds and update pageSize
-        if !shapes.isEmpty {
-            let artworkBounds = calculateArtworkBounds()
-            pageSize = artworkBounds.size
-        }
-        
-        return shapes
     }
     
     func detectPDFVersion(document: CGPDFDocument) -> String {
@@ -198,42 +214,44 @@ class PDFCommandParser {
     }
     
     func parsePage(document: CGPDFDocument, pageNumber: Int) {
-        guard let page = document.page(at: pageNumber) else { return }
+        autoreleasepool {
+            guard let page = document.page(at: pageNumber) else { return }
 
-        // Store current page for resource access
-        currentPage = page
+            // Store current page for resource access
+            currentPage = page
 
-        // Get page resources dictionary for font resolution
-        if let pageDict = page.dictionary {
-            CGPDFDictionaryGetDictionary(pageDict, "Resources", &pageResourcesDict)
+            // Get page resources dictionary for font resolution
+            if let pageDict = page.dictionary {
+                CGPDFDictionaryGetDictionary(pageDict, "Resources", &pageResourcesDict)
+            }
+
+            // Create operator table
+            guard let operatorTable = CGPDFOperatorTableCreate() else { return }
+
+            // Setup operator callbacks
+            setupOperatorCallbacks(operatorTable)
+
+            // Suppress CoreGraphics stderr warnings - these are false positives from internal validation
+            let savedStderr = dup(STDERR_FILENO)
+            let devNull = open("/dev/null", O_WRONLY)
+            dup2(devNull, STDERR_FILENO)
+            close(devNull)
+
+            // Create scanner for page content
+            let contentStream = CGPDFContentStreamCreateWithPage(page)
+            let scanner = CGPDFScannerCreate(contentStream, operatorTable, Unmanaged.passUnretained(self).toOpaque())
+
+            // Scan the content stream
+            CGPDFScannerScan(scanner)
+
+            // Restore stderr
+            dup2(savedStderr, STDERR_FILENO)
+            close(savedStderr)
+
+            // MEMORY FIX: Clear page reference to prevent retain cycle
+            currentPage = nil
+            pageResourcesDict = nil
         }
-
-        // Create operator table
-        guard let operatorTable = CGPDFOperatorTableCreate() else { return }
-        
-        // Setup operator callbacks
-        setupOperatorCallbacks(operatorTable)
-
-        // Suppress CoreGraphics stderr warnings - these are false positives from internal validation
-        let savedStderr = dup(STDERR_FILENO)
-        let devNull = open("/dev/null", O_WRONLY)
-        dup2(devNull, STDERR_FILENO)
-        close(devNull)
-
-        // Create scanner for page content
-        let contentStream = CGPDFContentStreamCreateWithPage(page)
-        let scanner = CGPDFScannerCreate(contentStream, operatorTable, Unmanaged.passUnretained(self).toOpaque())
-
-        // Scan the content stream
-        CGPDFScannerScan(scanner)
-
-        // Restore stderr
-        dup2(savedStderr, STDERR_FILENO)
-        close(savedStderr)
-
-        // MEMORY FIX: Clear page reference to prevent retain cycle
-        currentPage = nil
-        pageResourcesDict = nil
     }
     
     func setupOperatorCallbacks(_ operatorTable: CGPDFOperatorTableRef) {
