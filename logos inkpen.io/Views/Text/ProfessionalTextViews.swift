@@ -27,6 +27,7 @@ struct ProfessionalTextBoxView: View {
     }
 
     var body: some View {
+        let _ = Log.info("🔍 TEXT BOX: frame=\(viewModel.textBoxFrame)", category: .general)
         ZStack {
             // Main text box rectangle with clear background
             Rectangle()

@@ -33,13 +33,15 @@ struct TransformBoxHandles: View {
 
         ZStack {
             // Bounding rectangle (dashed)
-            Path { path in
-                path.addRect(transformedBounds)
-            }
-            .stroke(Color.black.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
-            .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
-            .allowsHitTesting(false)
+            // CRITICAL FIX: Use Rectangle().frame().position() to match text box rendering
+            Rectangle()
+                .stroke(Color.black.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
+                .frame(width: transformedBounds.width, height: transformedBounds.height)
+                .position(x: transformedBounds.minX + transformedBounds.width / 2,
+                         y: transformedBounds.minY + transformedBounds.height / 2)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .allowsHitTesting(false)
 
             // Red preview outline when scaling
             if isScaling && !previewTransform.isIdentity {
@@ -174,8 +176,21 @@ struct TransformBoxHandles: View {
 
     // Compute transformed bounds in canvas coordinates (after shape.transform)
     private func computeTransformedBounds() -> CGRect {
-        let baseBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-        
+        // CRITICAL FIX: For text objects, use areaSize + textPosition (same as text canvas)
+        let baseBounds: CGRect
+        if shape.isTextObject, let areaSize = shape.areaSize, let textPosition = shape.textPosition {
+            // TEXT OBJECTS: Use areaSize + textPosition (matches StableProfessionalTextCanvas)
+            baseBounds = CGRect(x: textPosition.x, y: textPosition.y, width: areaSize.width, height: areaSize.height)
+            Log.info("🔍 TRANSFORM BOX: textPos=(\(textPosition.x), \(textPosition.y)) areaSize=(\(areaSize.width), \(areaSize.height)) bounds=\(baseBounds)", category: .general)
+        } else {
+            baseBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        }
+
+        // CRITICAL FIX: For text objects, position is already in world coords, no transform needed
+        if shape.isTextObject {
+            return baseBounds  // Already has correct position from textPosition
+        }
+
         // CRITICAL FIX: Account for stroke width in bounding box for stroke-only shapes
         var strokeExpandedBounds = baseBounds
         let isStrokeOnly = (shape.fillStyle?.color == .clear || shape.fillStyle == nil)
@@ -184,7 +199,7 @@ struct TransformBoxHandles: View {
             let strokeExpansion = strokeWidth / 2.0 // Half stroke width on each side
             strokeExpandedBounds = baseBounds.insetBy(dx: -strokeExpansion, dy: -strokeExpansion)
         }
-        
+
         // Use corner transformation for ALL shape types (consistent with image rendering)
         let t = shape.transform
         let corners = [
