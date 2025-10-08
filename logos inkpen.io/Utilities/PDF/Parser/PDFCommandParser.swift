@@ -130,61 +130,59 @@ class PDFCommandParser {
             pendingClippingPath = nil
         }
 
-        return autoreleasepool {
-            commands.removeAll()
-            shapes.removeAll()
+        commands.removeAll()
+        shapes.removeAll()
 
-            guard let dataProvider = CGDataProvider(url: url as CFURL),
-                  let document = CGPDFDocument(dataProvider) else {
-                Log.error("Failed to load PDF document", category: .error)
-                return []
-            }
-
-            // Detect PDF version
-            detectedPDFVersion = detectPDFVersion(document: document)
-
-            // Detect PDF creator for conditional handling
-            detectPDFCreator(document: document)
-
-            // Get page size and origin from first page
-            if let firstPage = document.page(at: 1) {
-                let mediaBox = firstPage.getBoxRect(.mediaBox)
-                pageSize = mediaBox.size
-                pageOrigin = mediaBox.origin
-            }
-
-            // Parse all pages
-            for pageNumber in 1...document.numberOfPages {
-                parsePage(document: document, pageNumber: pageNumber)
-            }
-
-            // Finalize any remaining path
-            if !currentPath.isEmpty {
-                createShapeFromCurrentPath(filled: true, stroked: false)
-            }
-
-            // If we still have a pending clipping path at the end, add it now
-            if let pendingClip = pendingClippingPath {
-                shapes.append(pendingClip)
-                pendingClippingPath = nil
-            }
-
-            // Remove duplicate shapes that match clipping paths
-            removeDuplicateClippingShapes()
-
-            // Final gradient processing (handled by specialized gradient modules)
-            // TODO: Implement createCompoundPathWithGradient in gradient handling module
-
-
-            // Calculate actual artwork bounds and update pageSize
-            if !shapes.isEmpty {
-                let artworkBounds = calculateArtworkBounds()
-                pageSize = artworkBounds.size
-            }
-
-            // Return shapes (defer will clean up after return)
-            return shapes
+        guard let dataProvider = CGDataProvider(url: url as CFURL),
+              let document = CGPDFDocument(dataProvider) else {
+            Log.error("Failed to load PDF document", category: .error)
+            return []
         }
+
+        // Detect PDF version
+        detectedPDFVersion = detectPDFVersion(document: document)
+
+        // Detect PDF creator for conditional handling
+        detectPDFCreator(document: document)
+
+        // Get page size and origin from first page
+        if let firstPage = document.page(at: 1) {
+            let mediaBox = firstPage.getBoxRect(.mediaBox)
+            pageSize = mediaBox.size
+            pageOrigin = mediaBox.origin
+        }
+
+        // Parse all pages (each page has its own autoreleasepool)
+        for pageNumber in 1...document.numberOfPages {
+            parsePage(document: document, pageNumber: pageNumber)
+        }
+
+        // Finalize any remaining path
+        if !currentPath.isEmpty {
+            createShapeFromCurrentPath(filled: true, stroked: false)
+        }
+
+        // If we still have a pending clipping path at the end, add it now
+        if let pendingClip = pendingClippingPath {
+            shapes.append(pendingClip)
+            pendingClippingPath = nil
+        }
+
+        // Remove duplicate shapes that match clipping paths
+        removeDuplicateClippingShapes()
+
+        // Final gradient processing (handled by specialized gradient modules)
+        // TODO: Implement createCompoundPathWithGradient in gradient handling module
+
+
+        // Calculate actual artwork bounds and update pageSize
+        if !shapes.isEmpty {
+            let artworkBounds = calculateArtworkBounds()
+            pageSize = artworkBounds.size
+        }
+
+        // Return shapes (defer will clean up after return)
+        return shapes
     }
     
     func detectPDFVersion(document: CGPDFDocument) -> String {
