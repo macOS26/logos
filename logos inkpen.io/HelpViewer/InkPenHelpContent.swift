@@ -138,64 +138,9 @@ struct InkPenHelpContent {
     static func getPage(_ name: String) -> HelpPage? {
         return pages[name]
     }
-    
-    static func searchPages(_ query: String) -> [String] {
-        let lowercaseQuery = query.lowercased()
-        return pages.compactMap { key, page in
-            if page.title.lowercased().contains(lowercaseQuery) ||
-               page.content.lowercased().contains(lowercaseQuery) {
-                return key
-            }
-            return nil
-        }
-    }
 }
 
 struct HelpPage {
     let title: String
     let content: String
-    
-    var fullHTML: String {
-        return """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <title>\(title)</title>
-            <style>
-                body {
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-                    padding: 20px;
-                    max-width: 800px;
-                    margin: 0 auto;
-                    line-height: 1.6;
-                }
-                h1 { color: #333; border-bottom: 2px solid #007AFF; padding-bottom: 10px; }
-                h2 { color: #555; margin-top: 30px; }
-                a { color: #007AFF; text-decoration: none; }
-                a:hover { text-decoration: underline; }
-                table { 
-                    border-collapse: collapse; 
-                    width: 100%;
-                    margin: 20px 0;
-                }
-                td { 
-                    padding: 8px 12px; 
-                    border-bottom: 1px solid #ddd;
-                }
-                td:first-child { font-weight: 500; }
-                td:last-child { 
-                    font-family: 'SF Mono', Monaco, monospace;
-                    background: #f5f5f5;
-                }
-                ul, ol { margin: 20px 0; }
-                li { margin: 8px 0; }
-            </style>
-        </head>
-        <body>
-            \(content)
-        </body>
-        </html>
-        """
-    }
 }
