@@ -157,22 +157,19 @@ extension FileOperations {
                 // Save graphics state for layer opacity and blend mode
                 context.saveGState()
 
-                // CRITICAL: Set blend mode and opacity BEFORE beginTransparencyLayer
-                // This applies them to the entire layer group, not to individual shapes inside
-
-                // Apply layer blend mode if not normal
+                // CRITICAL: Set blend mode and alpha BEFORE beginTransparencyLayer
+                // When endTransparencyLayer is called, the layer will composite with these settings
                 if layer.blendMode != .normal {
                     context.setBlendMode(layer.blendMode.cgBlendMode)
                 }
 
-                // Apply layer opacity
+                // Set alpha before transparency layer - this controls how the entire layer
+                // composites back when endTransparencyLayer is called
                 if layer.opacity < 1.0 {
                     context.setAlpha(CGFloat(layer.opacity))
                 }
 
-                // CRITICAL FIX: ALWAYS use transparency groups for ALL layers
-                // This ensures consistent rendering at all zoom levels in PDF viewers
-                // Even layers with normal blend mode and 100% opacity need this for proper isolation
+                // Begin transparency layer to create isolated compositing group
                 context.beginTransparencyLayer(auxiliaryInfo: nil)
 
                 // Render shapes in layer using unified objects - SAME AS SVG
