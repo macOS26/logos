@@ -11,7 +11,6 @@ import SwiftUI
 struct AppleSystemColor: Codable, Hashable {
     var name: String
     var lightMode: RGBColor
-    var darkMode: RGBColor
 
     var color: Color {
         // Use the system color directly which adapts to light/dark mode
