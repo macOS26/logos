@@ -59,6 +59,22 @@ struct UnifiedObjectContentView: View {
         return document.layers[unifiedObject.layerIndex].isVisible
     }
 
+    // Get layer opacity (default 1.0 if invalid)
+    private var layerOpacity: Double {
+        guard unifiedObject.layerIndex >= 0 && unifiedObject.layerIndex < document.layers.count else {
+            return 1.0
+        }
+        return document.layers[unifiedObject.layerIndex].opacity
+    }
+
+    // Get layer blend mode (default .normal if invalid)
+    private var layerBlendMode: BlendMode {
+        guard unifiedObject.layerIndex >= 0 && unifiedObject.layerIndex < document.layers.count else {
+            return .normal
+        }
+        return document.layers[unifiedObject.layerIndex].blendMode
+    }
+
     var body: some View {
         Group {
             switch unifiedObject.objectType {
@@ -141,6 +157,8 @@ struct UnifiedObjectContentView: View {
 
             }
         }
+        .opacity(layerOpacity)
+        .blendMode(layerBlendMode.swiftUIBlendMode)
     }
 
     // Helper function to render regular shapes

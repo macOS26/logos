@@ -26,6 +26,11 @@ enum BlendMode: String, CaseIterable, Codable {
     case color = "Color"
     case luminosity = "Luminosity"
 
+    /// Display name for UI
+    var displayName: String {
+        return rawValue
+    }
+
     /// Convert to CGBlendMode for PDF export
     var cgBlendMode: CGBlendMode {
         switch self {

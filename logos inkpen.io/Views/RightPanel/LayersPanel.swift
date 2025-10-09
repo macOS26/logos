@@ -19,6 +19,13 @@ struct LayersPanel: View {
         VStack(alignment: .leading, spacing: 0) {
             layersHeader
             Divider().padding(.horizontal, 8)
+
+            // Layer controls (opacity and blend mode) - shown when a layer is selected
+            if let selectedIndex = document.selectedLayerIndex, selectedIndex < document.layers.count {
+                layerControlsSection(for: selectedIndex)
+                Divider().padding(.horizontal, 8)
+            }
+
             layersScrollContent
             Spacer()
         }
@@ -42,6 +49,59 @@ struct LayersPanel: View {
         .padding(.horizontal, 12)
         .padding(.top, 8)
         .padding(.bottom, 8)
+    }
+
+    private func layerControlsSection(for layerIndex: Int) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Opacity slider
+            HStack(spacing: 8) {
+                Text("Opacity")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .frame(width: 50, alignment: .leading)
+
+                Slider(
+                    value: Binding(
+                        get: { document.layers[layerIndex].opacity },
+                        set: { newValue in
+                            document.saveToUndoStack()
+                            document.layers[layerIndex].opacity = newValue
+                        }
+                    ),
+                    in: 0...1
+                )
+                .frame(maxWidth: .infinity)
+
+                Text("\(Int(document.layers[layerIndex].opacity * 100))%")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .frame(width: 35, alignment: .trailing)
+            }
+
+            // Blend mode picker
+            HStack(spacing: 8) {
+                Text("Blend")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .frame(width: 50, alignment: .leading)
+
+                Picker("", selection: Binding(
+                    get: { document.layers[layerIndex].blendMode },
+                    set: { newValue in
+                        document.saveToUndoStack()
+                        document.layers[layerIndex].blendMode = newValue
+                    }
+                )) {
+                    ForEach(BlendMode.allCases, id: \.self) { mode in
+                        Text(mode.displayName).tag(mode)
+                    }
+                }
+                .labelsHidden()
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
     }
     
     private var layersScrollContent: some View {
