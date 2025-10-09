@@ -11,7 +11,7 @@ import SwiftUI
 extension FileOperations {
 
     /// Generate PDF data by capturing SwiftUI view directly (RECOMMENDED - matches screen exactly)
-    /// This uses the same approach as PNG export - capture SwiftUI rendering into PDF context
+    /// This uses NSBitmapImageRep + cacheDisplay pattern (same as working PNG export)
     static func generatePDFDataFromView(from document: VectorDocument, includeInkpenData: Bool = false, includeBackground: Bool = true) throws -> Data {
         // Get document dimensions - use sizeInPoints which is already in points
         let documentSize = document.settings.sizeInPoints
@@ -75,10 +75,16 @@ extension FileOperations {
         ] as [String : Any]
         pdfContext.beginPDFPage(pageInfo as CFDictionary)
 
-        // Create the SwiftUI view that matches screen rendering
+        // Set PDF compatibility features
+        pdfContext.setBlendMode(.normal)
+        pdfContext.setShouldAntialias(true)
+        pdfContext.setAllowsAntialiasing(true)
+        pdfContext.interpolationQuality = .high
+
+        // Create SwiftUI view at document size (1x)
         let contentView = UnifiedObjectView(
             document: document,
-            zoomLevel: 1.0,  // No zoom for PDF - use actual size
+            zoomLevel: 1.0,
             canvasOffset: .zero,
             selectedObjectIDs: [],
             viewMode: .color,
@@ -89,7 +95,7 @@ extension FileOperations {
         .frame(width: documentSize.width, height: documentSize.height)
         .background(includeBackground ? document.settings.backgroundColor.color : Color.clear)
 
-        // Create NSHostingView to render SwiftUI
+        // Create NSHostingView
         let hostingView = NSHostingView(rootView: contentView)
         hostingView.frame = CGRect(origin: .zero, size: documentSize)
 
@@ -97,24 +103,49 @@ extension FileOperations {
         hostingView.layoutSubtreeIfNeeded()
         hostingView.display()
 
-        // Flip coordinate system for PDF (Y increases upward in PDF)
+        // Create bitmap to capture the view (using NSBitmapImageRep for cacheDisplay)
+        guard let bitmapRep = NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: Int(documentSize.width),
+            pixelsHigh: Int(documentSize.height),
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: NSColorSpaceName.deviceRGB,  // Use deviceRGB (same as working PNG)
+            bytesPerRow: 0,
+            bitsPerPixel: 0
+        ) else {
+            throw VectorImportError.parsingError("Failed to create bitmap representation", line: nil)
+        }
+
+        // Render into bitmap using NSGraphicsContext
+        NSGraphicsContext.saveGraphicsState()
+        guard let nsContext = NSGraphicsContext(bitmapImageRep: bitmapRep) else {
+            throw VectorImportError.parsingError("Failed to create graphics context", line: nil)
+        }
+        NSGraphicsContext.current = nsContext
+
+        // CRITICAL: Use cacheDisplay - this is what makes NSViewRepresentable (images) work!
+        hostingView.cacheDisplay(in: hostingView.bounds, to: bitmapRep)
+
+        NSGraphicsContext.restoreGraphicsState()
+
+        // Convert bitmap to CGImage
+        guard let cgImage = bitmapRep.cgImage else {
+            throw VectorImportError.parsingError("Failed to create CGImage from bitmap", line: nil)
+        }
+
+        // Draw the captured image into the PDF context
+        // PDF coordinate system has Y=0 at bottom, so we need to flip
+        pdfContext.saveGState()
         pdfContext.translateBy(x: 0, y: documentSize.height)
         pdfContext.scaleBy(x: 1.0, y: -1.0)
 
-        // CRITICAL: Wrap PDF context in NSGraphicsContext and set as current
-        // This is required for NSViewRepresentable views (ImageNSView) to render properly
-        // Same pattern as PNG export
-        NSGraphicsContext.saveGraphicsState()
-        let nsContext = NSGraphicsContext(cgContext: pdfContext, flipped: false)
-        NSGraphicsContext.current = nsContext
+        // Draw the image
+        pdfContext.draw(cgImage, in: CGRect(origin: .zero, size: documentSize))
 
-        // Render the SwiftUI view's layer into the PDF context
-        hostingView.displayIfNeeded()
-        if let layer = hostingView.layer {
-            layer.render(in: pdfContext)
-        }
-
-        NSGraphicsContext.restoreGraphicsState()
+        pdfContext.restoreGState()
 
         // End PDF document
         pdfContext.endPDFPage()
