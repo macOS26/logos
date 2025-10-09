@@ -93,6 +93,8 @@ private final class CursorOverlayNSView: NSView {
                 return isPanActive ? HandClosedCursor : HandOpenCursor
             case .eyedropper:
                 return EyedropperCursor
+            case .selectSameColor:
+                return EyedropperCursor  // Use eyedropper cursor for now
             case .zoom:
                 return MagnifyingGlassCursor
             case .rectangle, .square, .circle,
@@ -148,7 +150,7 @@ private final class CursorOverlayNSView: NSView {
 
     private func shouldForceCustomCursor() -> Bool {
         switch currentTool {
-        case .hand, .eyedropper, .zoom,
+        case .hand, .eyedropper, .selectSameColor, .zoom,
              .rectangle, .square, .circle,
              .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle,
              .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon:
@@ -165,6 +167,8 @@ private final class CursorOverlayNSView: NSView {
                 return isPanActive ? HandClosedCursor : HandOpenCursor
             case .eyedropper:
                 return EyedropperCursor
+            case .selectSameColor:
+                return EyedropperCursor  // Use eyedropper cursor for now
             case .zoom:
                 return MagnifyingGlassCursor
             case .rectangle, .square, .circle,

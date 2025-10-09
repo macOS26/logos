@@ -164,7 +164,10 @@ extension DrawingCanvas {
             
         case .eyedropper:
             startEyedropperColorPick()
-            
+
+        case .selectSameColor:
+            selectSameColorAt(canvasLocation)
+
         default:
             break
         }
@@ -385,6 +388,75 @@ extension DrawingCanvas {
             let rgb = RGBColor(red: Double(r), green: Double(g), blue: Double(b), alpha: Double(a))
             let vectorColor = VectorColor.rgb(rgb)
             document.setActiveColor(vectorColor)
+        }
+    }
+
+    // MARK: - Select Same Color
+    /// Select all objects with the same fill or stroke color as the object at the tap location
+    private func selectSameColorAt(_ location: CGPoint) {
+        // Find the object at the tap location by iterating through unified objects
+        var tappedShape: VectorShape?
+
+        for unifiedObject in document.unifiedObjects.reversed() {
+            if case .shape(let shape) = unifiedObject.objectType {
+                if !shape.isVisible { continue }
+
+                // Skip background shapes
+                if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
+                    continue
+                }
+
+                // Check if this shape contains the location
+                let transformedBounds = shape.bounds.applying(shape.transform)
+                if transformedBounds.contains(location) {
+                    tappedShape = shape
+                    break
+                }
+            }
+        }
+
+        guard let tappedShape = tappedShape else {
+            return
+        }
+
+        // Get the color to match from the tapped object
+        let targetColor: VectorColor?
+
+        // Prefer fill color, fallback to stroke color
+        if let fillColor = tappedShape.fillStyle?.color {
+            targetColor = fillColor
+        } else if let strokeColor = tappedShape.strokeStyle?.color {
+            targetColor = strokeColor
+        } else {
+            return
+        }
+
+        guard let colorToMatch = targetColor else { return }
+
+        // Find all objects with the same color
+        var matchingObjectIDs = Set<UUID>()
+
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
+                // Skip background shapes
+                if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
+                    continue
+                }
+
+                // Check if fill or stroke color matches
+                let hasFillMatch = shape.fillStyle?.color == colorToMatch
+                let hasStrokeMatch = shape.strokeStyle?.color == colorToMatch
+
+                if hasFillMatch || hasStrokeMatch {
+                    matchingObjectIDs.insert(unifiedObject.id)
+                }
+            }
+        }
+
+        // Update selection
+        if !matchingObjectIDs.isEmpty {
+            document.selectedObjectIDs = matchingObjectIDs
+            document.syncSelectionArrays()
         }
     }
     

@@ -143,6 +143,8 @@ extension DrawingCanvas {
                 NSCursor.openHand.set()
             case .eyedropper:
                 EyedropperCursor.set()
+            case .selectSameColor:
+                EyedropperCursor.set()
             case .zoom:
                 MagnifyingGlassCursor.set()
             default:

@@ -394,6 +394,8 @@ struct VerticalToolbar: View {
             return "Nonagon Tool (9) - Draw 9-sided polygons"
         case .eyedropper:
             return "Eyedropper Tool (I) - Sample colors"
+        case .selectSameColor:
+            return "Select Same Color Tool - Select all objects with the same color"
         case .hand:
             return "Hand Tool (H) - Pan the canvas"
         case .zoom:

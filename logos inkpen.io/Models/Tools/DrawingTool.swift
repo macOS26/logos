@@ -44,6 +44,7 @@ enum DrawingTool: String, CaseIterable, Codable {
     case octagon = "Octagon"
     case nonagon = "Nonagon"
     case eyedropper = "Eyedropper"
+    case selectSameColor = "Select Same Color"
     case hand = "Hand"
     case zoom = "Zoom"
     case gradient = "Gradient"
@@ -86,6 +87,7 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .octagon: return "octagon"
         case .nonagon: return "octagon" // no SF symbol for nonagon; custom icon provided elsewhere
         case .eyedropper: return "eyedropper"
+        case .selectSameColor: return "paintpalette"
         case .hand: return "hand.raised"
         case .zoom: return "magnifyingglass"
         case .gradient: return "circle.lefthalf.striped.horizontal"

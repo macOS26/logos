@@ -268,6 +268,8 @@ extension DrawingCanvas {
                     HandOpenCursor.set()
                 } else if newTool == .eyedropper {
                     EyedropperCursor.set()
+                } else if newTool == .selectSameColor {
+                    EyedropperCursor.set()
                 } else if newTool == .zoom {
                     MagnifyingGlassCursor.set()
                 } else if newTool == .rectangle || newTool == .square || newTool == .circle || newTool == .equilateralTriangle || newTool == .isoscelesTriangle || newTool == .rightTriangle || newTool == .acuteTriangle || newTool == .cone || newTool == .polygon || newTool == .pentagon || newTool == .hexagon || newTool == .heptagon || newTool == .octagon || newTool == .nonagon {
@@ -284,6 +286,8 @@ extension DrawingCanvas {
                 if document.currentTool == .hand {
                     HandOpenCursor.set()
                 } else if document.currentTool == .eyedropper {
+                    EyedropperCursor.set()
+                } else if document.currentTool == .selectSameColor {
                     EyedropperCursor.set()
                 } else if document.currentTool == .zoom {
                     MagnifyingGlassCursor.set()
@@ -314,6 +318,8 @@ extension DrawingCanvas {
                 case .hand:
                     HandOpenCursor.set()
                 case .eyedropper:
+                    EyedropperCursor.set()
+                case .selectSameColor:
                     EyedropperCursor.set()
                 case .zoom:
                     MagnifyingGlassCursor.set()
@@ -378,6 +384,8 @@ extension DrawingCanvas {
                     HandOpenCursor.set()
                 case .eyedropper:
                     EyedropperCursor.set()
+                case .selectSameColor:
+                    EyedropperCursor.set()
                 case .zoom:
                     MagnifyingGlassCursor.set()
                 case .rectangle, .square, .circle, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .cone, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon:
@@ -411,6 +419,8 @@ extension DrawingCanvas {
                 case .hand:
                     HandOpenCursor.set()
                 case .eyedropper:
+                    EyedropperCursor.set()
+                case .selectSameColor:
                     EyedropperCursor.set()
                 case .zoom:
                     MagnifyingGlassCursor.set()
