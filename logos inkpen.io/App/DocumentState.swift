@@ -739,15 +739,15 @@ class DocumentState: ObservableObject {
                                 if case .shape(let shape) = obj.objectType { return shape.isTextObject }
                                 return false
                             }) {
-                                
+
                                 try await DocumentState.exportWithTextToOutlines(document) {
-                                    try FileOperations.exportToPNG(document, url: url, scale: scale,
+                                    try FileOperations.exportToPNGFromView(document, url: url, scale: scale,
                                                                    includeBackground: includeBackground)
                                     return Data() // PNG export doesn't return data
                                 }
                             } else {
-                                // No text conversion needed, export normally
-                                try FileOperations.exportToPNG(document, url: url, scale: scale,
+                                // No text conversion needed, export normally using SwiftUI view rendering
+                                try FileOperations.exportToPNGFromView(document, url: url, scale: scale,
                                                                includeBackground: includeBackground)
                             }
                         } catch {

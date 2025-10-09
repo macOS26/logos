@@ -85,22 +85,18 @@ func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
 
     // Now parse with the working parser
     let parser = PDFCommandParser()
+    var shapes = parser.parseDocument(at: tempURL)
 
-    // Collect shapes progressively
-    var shapes: [VectorShape] = []
-    parser.onShapeCreated = { shape in
-        // Apply mediaBox offset immediately if needed
-        if mediaBox.origin != .zero {
-            let offset = CGPoint(x: -mediaBox.origin.x, y: -mediaBox.origin.y)
+    // Apply mediaBox origin offset if needed
+    // PDFs can have mediaBox with non-zero origin - we need to shift all shapes
+    if mediaBox.origin != .zero {
+        let offset = CGPoint(x: -mediaBox.origin.x, y: -mediaBox.origin.y)
+        shapes = shapes.map { shape in
             var offsetShape = shape
             offsetShape.path = offsetPath(shape.path, by: offset)
-            shapes.append(offsetShape)
-        } else {
-            shapes.append(shape)
+            return offsetShape
         }
     }
-
-    _ = parser.parseDocument(at: tempURL)
 
     // Clean up temp file
     try? FileManager.default.removeItem(at: tempURL)

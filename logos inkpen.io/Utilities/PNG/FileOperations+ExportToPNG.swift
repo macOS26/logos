@@ -216,6 +216,57 @@ extension FileOperations {
 
     // MARK: - PNG Export
 
+    /// Export using SwiftUI view rendering for exact screen match
+    @available(macOS 12.0, *)
+    static func exportToPNGFromView(_ document: VectorDocument, url: URL, scale: CGFloat, includeBackground: Bool = true) throws {
+        // Calculate output size
+        let pageSize = document.settings.sizeInPoints
+        let outputSize = CGSize(width: pageSize.width * scale, height: pageSize.height * scale)
+
+        // CRITICAL FIX: Add size validation to prevent Core Image crashes
+        guard outputSize.width > 0 && outputSize.height > 0 &&
+              outputSize.width <= 16384 && outputSize.height <= 16384 else {
+            throw VectorImportError.parsingError("Invalid output size: \(outputSize)", line: nil)
+        }
+
+        // Create the SwiftUI view that matches screen rendering
+        let contentView = UnifiedObjectView(
+            document: document,
+            zoomLevel: 1.0,
+            canvasOffset: .zero,
+            selectedObjectIDs: [],
+            viewMode: .color,  // Use color view mode for export
+            isShiftPressed: false,
+            dragPreviewDelta: .zero,
+            dragPreviewTrigger: false
+        )
+        .frame(width: pageSize.width, height: pageSize.height)
+        .background(includeBackground ? Color.white : Color.clear)
+
+        // Use ImageRenderer for proper high-DPI rendering
+        let renderer = ImageRenderer(content: contentView)
+        renderer.scale = scale
+
+        // Render to NSImage
+        guard let nsImage = renderer.nsImage else {
+            throw VectorImportError.parsingError("Failed to render view to image", line: nil)
+        }
+
+        // Convert to PNG data with Display P3 color space
+        guard let tiffData = nsImage.tiffRepresentation,
+              let bitmapRep = NSBitmapImageRep(data: tiffData) else {
+            throw VectorImportError.parsingError("Failed to create bitmap representation", line: nil)
+        }
+
+        // Export as PNG with color profile
+        guard let pngData = bitmapRep.representation(using: NSBitmapImageRep.FileType.png, properties: [:]) else {
+            throw VectorImportError.parsingError("Failed to create PNG data", line: nil)
+        }
+
+        try pngData.write(to: url)
+    }
+
+    /// Legacy CoreGraphics-based PNG export (deprecated - use exportToPNGFromView instead)
     static func exportToPNG(_ document: VectorDocument, url: URL, scale: CGFloat, includeBackground: Bool = true) throws {
 
         // Calculate output size
