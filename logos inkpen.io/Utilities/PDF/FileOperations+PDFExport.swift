@@ -157,10 +157,8 @@ extension FileOperations {
                 // Save graphics state for layer opacity and blend mode
                 context.saveGState()
 
-                // CRITICAL FIX: ALWAYS use transparency groups for ALL layers
-                // This ensures consistent rendering at all zoom levels in PDF viewers
-                // Even layers with normal blend mode and 100% opacity need this for proper isolation
-                context.beginTransparencyLayer(auxiliaryInfo: nil)
+                // CRITICAL: Set blend mode and opacity BEFORE beginTransparencyLayer
+                // This applies them to the entire layer group, not to individual shapes inside
 
                 // Apply layer blend mode if not normal
                 if layer.blendMode != .normal {
@@ -171,6 +169,11 @@ extension FileOperations {
                 if layer.opacity < 1.0 {
                     context.setAlpha(CGFloat(layer.opacity))
                 }
+
+                // CRITICAL FIX: ALWAYS use transparency groups for ALL layers
+                // This ensures consistent rendering at all zoom levels in PDF viewers
+                // Even layers with normal blend mode and 100% opacity need this for proper isolation
+                context.beginTransparencyLayer(auxiliaryInfo: nil)
 
                 // Render shapes in layer using unified objects - SAME AS SVG
                 // Skip text objects here - they will be rendered on top in a second pass
