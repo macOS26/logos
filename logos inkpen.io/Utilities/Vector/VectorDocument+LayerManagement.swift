@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 // MARK: - Layer Management
 extension VectorDocument {
@@ -130,7 +131,49 @@ extension VectorDocument {
         }
         
         layers.insert(movingLayer, at: adjustedTargetIndex)
-        
+
+        // CRITICAL: Update all object layerIndex values to match the new layer positions
+        // This ensures objects move with their layers when reordering
+        var updatedObjects: [VectorObject] = []
+
+        for object in unifiedObjects {
+            var updatedObject = object
+            let currentLayerIndex = object.layerIndex
+
+            // Update layerIndex based on the layer move
+            if currentLayerIndex == sourceIndex {
+                // Objects in the moved layer get the new index
+                updatedObject = VectorObject(
+                    shape: extractShape(from: object),
+                    layerIndex: adjustedTargetIndex,
+                    orderID: object.orderID
+                )
+            } else if sourceIndex < adjustedTargetIndex {
+                // Moving layer forward - shift intermediate layers back
+                if currentLayerIndex > sourceIndex && currentLayerIndex <= adjustedTargetIndex {
+                    updatedObject = VectorObject(
+                        shape: extractShape(from: object),
+                        layerIndex: currentLayerIndex - 1,
+                        orderID: object.orderID
+                    )
+                }
+            } else if sourceIndex > adjustedTargetIndex {
+                // Moving layer backward - shift intermediate layers forward
+                if currentLayerIndex >= adjustedTargetIndex && currentLayerIndex < sourceIndex {
+                    updatedObject = VectorObject(
+                        shape: extractShape(from: object),
+                        layerIndex: currentLayerIndex + 1,
+                        orderID: object.orderID
+                    )
+                }
+            }
+
+            updatedObjects.append(updatedObject)
+        }
+
+        // Replace unified objects with updated ones
+        unifiedObjects = updatedObjects
+
         // Update selected layer index to follow the moved layer
         if selectedLayerIndex == sourceIndex {
             selectedLayerIndex = adjustedTargetIndex
@@ -142,7 +185,17 @@ extension VectorDocument {
                 selectedLayerIndex = selectedIndex + 1
             }
         }
-        
+
+        // Force update
+        objectWillChange.send()
+    }
+
+    // Helper to extract shape from VectorObject
+    private func extractShape(from object: VectorObject) -> VectorShape {
+        if case .shape(let shape) = object.objectType {
+            return shape
+        }
+        fatalError("VectorObject does not contain a shape")
     }
     
     func addLayer(name: String = "New Layer") {
