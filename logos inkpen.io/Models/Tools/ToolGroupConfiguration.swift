@@ -36,7 +36,7 @@ struct ToolGroupConfiguration {
         "transforms": [.scale, .rotate, .shear, .warp],
         "stars": [.star], // Star has variants handled separately
         "navigation": [.hand, .zoom], // Navigation tools group
-        "utilities": [.eyedropper, .gradient] // Utility tools group
+        "utilities": [.eyedropper, .selectSameColor, .gradient] // Utility tools group
     ]
     
     // MARK: - Helper Methods
