@@ -57,14 +57,12 @@ struct ClippingMaskNSViewRepresentable: NSViewRepresentable {
     
     func updateNSView(_ nsView: ClippingMaskNSView, context: Context) {
         nsView.clippedShape = clippedShape
-        nsView.maskShape = maskShape
         nsView.clippedPath = clippedPath
         nsView.maskPath = maskPath
         nsView.zoomLevel = zoomLevel
         nsView.canvasOffset = canvasOffset
         nsView.isSelected = isSelected
         nsView.dragPreviewDelta = dragPreviewDelta
-        nsView.dragPreviewTrigger = dragPreviewTrigger
         nsView.viewMode = viewMode
         nsView.needsDisplay = true
     }
@@ -72,19 +70,16 @@ struct ClippingMaskNSViewRepresentable: NSViewRepresentable {
 
 class ClippingMaskNSView: NSView {
     var clippedShape: VectorShape
-    var maskShape: VectorShape
     var clippedPath: CGPath
     var maskPath: CGPath
     var zoomLevel: Double = 1.0
     var canvasOffset: CGPoint = .zero
     var isSelected: Bool = false
     var dragPreviewDelta: CGPoint = .zero
-    var dragPreviewTrigger: Bool = false
     var viewMode: ViewMode = .color
     
     init(clippedShape: VectorShape, maskShape: VectorShape, clippedPath: CGPath, maskPath: CGPath, viewMode: ViewMode = .color) {
         self.clippedShape = clippedShape
-        self.maskShape = maskShape
         self.clippedPath = clippedPath
         self.maskPath = maskPath
         self.viewMode = viewMode
