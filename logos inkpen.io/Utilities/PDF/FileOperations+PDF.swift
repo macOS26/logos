@@ -18,8 +18,15 @@ extension FileOperations {
     /// Generate PDF data for Export with CMYK option and text rendering mode
     static func generatePDFDataForExport(from document: VectorDocument, useCMYK: Bool, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, includeInkpenData: Bool = false, includeBackground: Bool = true) throws -> Data {
 
-        // Use the new method with export flag, CMYK option, text rendering mode, inkpen data flag, and background option
-        return try generatePDFDataWithClippingSupport(from: document, isExport: true, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData, includeBackground: includeBackground)
+        // CRITICAL: Use SwiftUI-based PDF rendering by default for perfect screen-to-PDF consistency
+        // This captures the SwiftUI view directly into PDF, ensuring blend modes and opacity match exactly
+        // Only fall back to manual rendering if CMYK is needed (SwiftUI rendering is RGB only)
+        if !useCMYK {
+            return try generatePDFDataFromView(from: document, includeInkpenData: includeInkpenData, includeBackground: includeBackground)
+        } else {
+            // Use manual rendering for CMYK exports
+            return try generatePDFDataWithClippingSupport(from: document, isExport: true, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData, includeBackground: includeBackground)
+        }
     }
 
     /// Render VectorDocument to PDF context

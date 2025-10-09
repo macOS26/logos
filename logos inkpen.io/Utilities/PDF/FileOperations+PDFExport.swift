@@ -10,6 +10,109 @@ import SwiftUI
 // MARK: - PDF Export Extensions with Clipping Path and Image Support
 extension FileOperations {
 
+    /// Generate PDF data by capturing SwiftUI view directly (RECOMMENDED - matches screen exactly)
+    /// This uses the same approach as PNG export - capture SwiftUI rendering into PDF context
+    static func generatePDFDataFromView(from document: VectorDocument, includeInkpenData: Bool = false, includeBackground: Bool = true) throws -> Data {
+        // Get document dimensions - use sizeInPoints which is already in points
+        let documentSize = document.settings.sizeInPoints
+
+        // Create PDF data container
+        let pdfData = NSMutableData()
+
+        // Create media box
+        var mediaBox = CGRect(origin: .zero, size: documentSize)
+
+        // Create auxiliary dictionary for PDF options
+        let auxiliaryDict: [String: Any] = [
+            kCGPDFContextCreator as String: "Inkpen.io",
+            kCGPDFContextAuthor as String: NSFullUserName(),
+            kCGPDFContextTitle as String: "Inkpen Document",
+            kCGPDFContextSubject as String: "Vector Graphics",
+            kCGPDFContextKeywords as String: "vector, graphics, illustration"
+        ]
+
+        let auxiliaryInfo = auxiliaryDict as CFDictionary
+
+        // Create PDF context
+        guard let pdfConsumer = CGDataConsumer(data: pdfData),
+              let pdfContext = CGContext(consumer: pdfConsumer, mediaBox: &mediaBox, auxiliaryInfo) else {
+            throw VectorImportError.parsingError("Failed to create PDF context", line: nil)
+        }
+
+        // Embed inkpen document metadata if requested
+        if includeInkpenData {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+
+            if let jsonData = try? encoder.encode(document) {
+                let base64String = jsonData.base64EncodedString()
+
+                let xmpMetadata = """
+                <?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
+                <x:xmpmeta xmlns:x="adobe:ns:meta/">
+                    <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+                        <rdf:Description rdf:about=""
+                            xmlns:inkpen="https://inkpen.io/ns/1.0/">
+                            <inkpen:document>\(base64String)</inkpen:document>
+                        </rdf:Description>
+                    </rdf:RDF>
+                </x:xmpmeta>
+                <?xpacket end="w"?>
+                """
+
+                if let xmpData = xmpMetadata.data(using: .utf8) {
+                    pdfContext.addDocumentMetadata(xmpData as CFData)
+                }
+            }
+        }
+
+        // Begin PDF page
+        let pageInfo = [
+            kCGPDFContextMediaBox as String: mediaBox,
+            kCGPDFContextArtBox as String: mediaBox,
+            kCGPDFContextTrimBox as String: mediaBox,
+            kCGPDFContextBleedBox as String: mediaBox
+        ] as [String : Any]
+        pdfContext.beginPDFPage(pageInfo as CFDictionary)
+
+        // Create the SwiftUI view that matches screen rendering
+        let contentView = UnifiedObjectView(
+            document: document,
+            zoomLevel: 1.0,  // No zoom for PDF - use actual size
+            canvasOffset: .zero,
+            selectedObjectIDs: [],
+            viewMode: .color,
+            isShiftPressed: false,
+            dragPreviewDelta: .zero,
+            dragPreviewTrigger: false
+        )
+        .frame(width: documentSize.width, height: documentSize.height)
+        .background(includeBackground ? document.settings.backgroundColor.color : Color.clear)
+
+        // Create NSHostingView to render SwiftUI
+        let hostingView = NSHostingView(rootView: contentView)
+        hostingView.frame = CGRect(origin: .zero, size: documentSize)
+
+        // Force layout and display
+        hostingView.layoutSubtreeIfNeeded()
+        hostingView.display()
+
+        // Flip coordinate system for PDF (Y increases upward in PDF)
+        pdfContext.translateBy(x: 0, y: documentSize.height)
+        pdfContext.scaleBy(x: 1.0, y: -1.0)
+
+        // Render the SwiftUI view's layer into the PDF context
+        if let layer = hostingView.layer {
+            layer.render(in: pdfContext)
+        }
+
+        // End PDF document
+        pdfContext.endPDFPage()
+        pdfContext.closePDF()
+
+        return pdfData as Data
+    }
+
     /// Generate PDF data from VectorDocument with proper clipping path and image support
     static func generatePDFDataWithClippingSupport(from document: VectorDocument, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, includeInkpenData: Bool = false, includeBackground: Bool = true) throws -> Data {
         // Get document dimensions - use sizeInPoints which is already in points
