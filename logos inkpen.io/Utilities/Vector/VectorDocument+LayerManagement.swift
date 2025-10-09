@@ -400,4 +400,77 @@ extension VectorDocument {
 
         objectWillChange.send()
     }
+
+    /// Reorder an object by placing it just above the target object in stacking order
+    func reorderObject(objectId: UUID, targetObjectId: UUID) {
+        // Find both objects
+        guard let sourceIndex = unifiedObjects.firstIndex(where: { $0.id == objectId }),
+              let targetIndex = unifiedObjects.firstIndex(where: { $0.id == targetObjectId }) else {
+            Log.error("❌ Objects not found for reordering", category: .error)
+            return
+        }
+
+        let sourceObject = unifiedObjects[sourceIndex]
+        let targetObject = unifiedObjects[targetIndex]
+
+        // Only allow reordering within the same layer
+        guard sourceObject.layerIndex == targetObject.layerIndex else {
+            return
+        }
+
+        saveToUndoStack()
+
+        // Get the target object's orderID (we want to place source just above target)
+        let targetOrderID = targetObject.orderID
+        let sourceOrderID = sourceObject.orderID
+
+        // Determine new orderID for source object
+        // If moving down (to lower orderID), place source at target's position
+        // If moving up (to higher orderID), place source at target's position
+        let newOrderID: Int
+        if sourceOrderID < targetOrderID {
+            // Moving up - place at target position, shift others down
+            newOrderID = targetOrderID
+            // Shift all objects between source and target down by 1
+            for i in 0..<unifiedObjects.count {
+                let obj = unifiedObjects[i]
+                if obj.layerIndex == sourceObject.layerIndex &&
+                   obj.orderID > sourceOrderID &&
+                   obj.orderID <= targetOrderID &&
+                   obj.id != sourceObject.id {
+                    unifiedObjects[i] = VectorObject(
+                        shape: extractShape(from: obj),
+                        layerIndex: obj.layerIndex,
+                        orderID: obj.orderID - 1
+                    )
+                }
+            }
+        } else {
+            // Moving down - place at target position, shift others up by 1
+            newOrderID = targetOrderID
+            // Shift all objects between target and source up by 1
+            for i in 0..<unifiedObjects.count {
+                let obj = unifiedObjects[i]
+                if obj.layerIndex == sourceObject.layerIndex &&
+                   obj.orderID >= targetOrderID &&
+                   obj.orderID < sourceOrderID &&
+                   obj.id != sourceObject.id {
+                    unifiedObjects[i] = VectorObject(
+                        shape: extractShape(from: obj),
+                        layerIndex: obj.layerIndex,
+                        orderID: obj.orderID + 1
+                    )
+                }
+            }
+        }
+
+        // Update source object with new orderID
+        unifiedObjects[sourceIndex] = VectorObject(
+            shape: extractShape(from: sourceObject),
+            layerIndex: sourceObject.layerIndex,
+            orderID: newOrderID
+        )
+
+        objectWillChange.send()
+    }
 }

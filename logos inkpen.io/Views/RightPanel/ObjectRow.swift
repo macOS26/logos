@@ -28,6 +28,7 @@ struct ObjectRow: View {
 
     @State private var isDragging = false
     @State private var isGroupExpanded = false
+    @State private var isDropTarget = false
 
     init(objectType: ObjectType, objectId: UUID, name: String, isSelected: Bool, isVisible: Bool, isLocked: Bool, onSelect: @escaping (_: Bool, _: Bool) -> Void, layerIndex: Int, document: VectorDocument, groupedShapes: [VectorShape]? = nil) {
         self.objectType = objectType
@@ -138,9 +139,9 @@ struct ObjectRow: View {
             Button("Select") {
                 onSelect(false, false)
             }
-            
+
             Divider()
-            
+
             if objectType == .shape {
                 Button("Duplicate Shape") {
                     // Future implementation
@@ -158,15 +159,46 @@ struct ObjectRow: View {
                     document.removeSelectedText()
                 }
             }
-            
+
             Divider()
-            
+
             Button(isVisible ? "Hide" : "Show") {
                 // Toggle visibility - future implementation
             }
-            
+
             Button(isLocked ? "Unlock" : "Lock") {
                 // Toggle lock - future implementation
+            }
+        }
+        .dropDestination(for: DraggableVectorObject.self) { items, location in
+            // Handle dropping objects for reordering
+            guard let droppedObject = items.first else { return false }
+
+            // Only allow reordering within the same layer
+            if droppedObject.sourceLayerIndex != layerIndex {
+                return false
+            }
+
+            // Don't drop on self
+            if droppedObject.objectId == objectId {
+                return false
+            }
+
+            // Move the object to this position in the stacking order
+            document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectId)
+            return true
+        } isTargeted: { isTargeted in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isDropTarget = isTargeted
+            }
+        }
+        .overlay(alignment: .top) {
+            // Drop indicator line
+            if isDropTarget {
+                Rectangle()
+                    .fill(Color.blue)
+                    .frame(height: 2)
+                    .transition(.opacity)
             }
         }
 
