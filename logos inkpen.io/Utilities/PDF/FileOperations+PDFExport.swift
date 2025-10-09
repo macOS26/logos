@@ -172,8 +172,7 @@ extension FileOperations {
                     context.setAlpha(CGFloat(layer.opacity))
                 }
 
-                // Render shapes in layer using unified objects - SAME ORDER AS SVG
-                // In both SVG and PDF: first rendered = back, last rendered = front
+                // Render shapes in layer using unified objects - PRESERVE ORDER
                 let shapesInLayer = document.getShapesForLayer(index)
                 for shape in shapesInLayer where shape.isVisible {
                     // Skip Canvas Background if not including background
