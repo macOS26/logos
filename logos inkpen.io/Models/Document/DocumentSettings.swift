@@ -23,6 +23,9 @@ struct DocumentSettings: Codable, Hashable {
     var selectedLayerId: UUID?
     var selectedLayerName: String?
 
+    // Layer expansion state - keyed by layer UUID to handle reordering
+    var layerExpansionState: [UUID: Bool]
+
     // Page origin (ruler 0,0 point) - optional, defaults to top-left
     var pageOrigin: CGPoint?
 
@@ -36,7 +39,7 @@ struct DocumentSettings: Codable, Hashable {
     // FIX: Store actual document size in points to prevent coordinate system corruption
     private var _sizeInPoints: CGSize?
     
-    init(width: Double = 11.0, height: Double = 8.5, unit: MeasurementUnit = .inches, colorMode: ColorMode = .rgb, resolution: Double = 72.0, showRulers: Bool? = nil, showGrid: Bool? = nil, snapToGrid: Bool? = nil, snapToPoint: Bool? = nil, gridSpacing: Double = 0.125, backgroundColor: VectorColor = .white, selectedLayerId: UUID? = nil, selectedLayerName: String? = "Layer 1", fillColor: VectorColor? = nil, strokeColor: VectorColor? = nil, customRgbSwatches: [VectorColor]? = nil, customCmykSwatches: [VectorColor]? = nil, customHsbSwatches: [VectorColor]? = nil) {
+    init(width: Double = 11.0, height: Double = 8.5, unit: MeasurementUnit = .inches, colorMode: ColorMode = .rgb, resolution: Double = 72.0, showRulers: Bool? = nil, showGrid: Bool? = nil, snapToGrid: Bool? = nil, snapToPoint: Bool? = nil, gridSpacing: Double = 0.125, backgroundColor: VectorColor = .white, selectedLayerId: UUID? = nil, selectedLayerName: String? = "Layer 1", layerExpansionState: [UUID: Bool] = [:], fillColor: VectorColor? = nil, strokeColor: VectorColor? = nil, customRgbSwatches: [VectorColor]? = nil, customCmykSwatches: [VectorColor]? = nil, customHsbSwatches: [VectorColor]? = nil) {
         self.width = width
         self.height = height
         self.unit = unit
@@ -63,6 +66,7 @@ struct DocumentSettings: Codable, Hashable {
         self.backgroundColor = backgroundColor
         self.selectedLayerId = selectedLayerId
         self.selectedLayerName = selectedLayerName ?? "Layer 1"
+        self.layerExpansionState = layerExpansionState
 
         // Initialize document-specific colors and custom swatches
         self.fillColor = fillColor
@@ -75,6 +79,7 @@ struct DocumentSettings: Codable, Hashable {
     // MARK: - Custom Decoding for Backward Compatibility
     enum CodingKeys: String, CodingKey {
         case width, height, unit, colorMode, resolution, showRulers, showGrid, snapToGrid, snapToPoint, gridSpacing, backgroundColor, selectedLayerId, selectedLayerName
+        case layerExpansionState
         case fillColor, strokeColor, customRgbSwatches, customCmykSwatches, customHsbSwatches
         case pageOrigin
     }
@@ -94,6 +99,7 @@ struct DocumentSettings: Codable, Hashable {
         backgroundColor = try container.decode(VectorColor.self, forKey: .backgroundColor)
         selectedLayerId = try container.decodeIfPresent(UUID.self, forKey: .selectedLayerId)
         selectedLayerName = try container.decodeIfPresent(String.self, forKey: .selectedLayerName) ?? "Layer 1"
+        layerExpansionState = try container.decodeIfPresent([UUID: Bool].self, forKey: .layerExpansionState) ?? [:]
         pageOrigin = try container.decodeIfPresent(CGPoint.self, forKey: .pageOrigin)
 
         // Decode document-specific colors and custom swatches
@@ -119,6 +125,7 @@ struct DocumentSettings: Codable, Hashable {
         try container.encode(backgroundColor, forKey: .backgroundColor)
         try container.encode(selectedLayerId, forKey: .selectedLayerId)
         try container.encode(selectedLayerName, forKey: .selectedLayerName)
+        try container.encode(layerExpansionState, forKey: .layerExpansionState)
         try container.encodeIfPresent(pageOrigin, forKey: .pageOrigin)
 
         // Encode document-specific colors and custom swatches

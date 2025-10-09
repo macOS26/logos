@@ -11,10 +11,19 @@ struct ProfessionalLayerRow: View {
     let layerIndex: Int
     let layer: VectorLayer
     @ObservedObject var document: VectorDocument
-    @State private var isExpanded: Bool = true
     @State private var isEditingName: Bool = false
     @State private var editedName: String = ""
-    
+
+    // CRITICAL: Use document settings for layer expansion state (persists across tab switches)
+    private var isExpanded: Bool {
+        document.settings.layerExpansionState[layer.id] ?? true // Default to expanded
+    }
+
+    private func setExpanded(_ value: Bool) {
+        document.settings.layerExpansionState[layer.id] = value
+        document.onSettingsChanged()
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // Layer Header with Modern Design
@@ -22,7 +31,7 @@ struct ProfessionalLayerRow: View {
                 // Disclosure Triangle
                 Button(action: {
                     withAnimation(.easeInOut(duration: 0.2)) {
-                        isExpanded.toggle()
+                        setExpanded(!isExpanded)
                     }
                 }) {
                     Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
