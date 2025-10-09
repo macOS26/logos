@@ -12,6 +12,8 @@ struct ProfessionalLayerRow: View {
     let layer: VectorLayer
     @ObservedObject var document: VectorDocument
     @State private var isExpanded: Bool = true
+    @State private var isEditingName: Bool = false
+    @State private var editedName: String = ""
     
     var body: some View {
         VStack(spacing: 0) {
@@ -39,11 +41,32 @@ struct ProfessionalLayerRow: View {
                 
                 // Layer Name and Info
                 VStack(alignment: .leading, spacing: 1) {
-                    // Primary name
-                    Text(layer.name)
+                    // Primary name - editable on double-click
+                    if isEditingName {
+                        TextField("Layer Name", text: $editedName, onCommit: {
+                            // Save the new name
+                            if !editedName.isEmpty {
+                                document.saveToUndoStack()
+                                document.layers[layerIndex].name = editedName
+                            }
+                            isEditingName = false
+                        })
+                        .textFieldStyle(PlainTextFieldStyle())
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.primary)
-                    
+                        .onAppear {
+                            editedName = layer.name
+                        }
+                    } else {
+                        Text(layer.name)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.primary)
+                            .onTapGesture(count: 2) {
+                                isEditingName = true
+                                editedName = layer.name
+                            }
+                    }
+
                     // Object count info (Professional Detail)
                     let objectCount = document.unifiedObjects.filter { $0.layerIndex == layerIndex }.count
                     Text("\(objectCount) objects")

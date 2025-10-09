@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
         // PROFESSIONAL LAYERS PANEL (Professional Style)
 struct LayersPanel: View {
@@ -46,9 +47,21 @@ struct LayersPanel: View {
     private var layersScrollContent: some View {
         ScrollView(.vertical, showsIndicators: true) {
             LazyVStack(spacing: 0) {
-                // Layer rows
+                // Layer rows with drag and drop
                 ForEach(Array(document.layers.indices.reversed().enumerated()), id: \.element) { visualIndex, layerIndex in
                     layerRowContent(for: layerIndex)
+                        .onDrag {
+                            // Only allow dragging non-protected layers
+                            if layerIndex > 1 { // Protect Pasteboard (0) and Canvas (1)
+                                return NSItemProvider(object: String(layerIndex) as NSString)
+                            }
+                            return NSItemProvider()
+                        }
+                        .onDrop(of: [.text], delegate: LayerDropDelegate(
+                            document: document,
+                            targetLayerIndex: layerIndex,
+                            layers: document.layers
+                        ))
                 }
             }
             .padding(.horizontal, 4)
@@ -63,5 +76,42 @@ struct LayersPanel: View {
             layer: layerIndex < document.layers.count ? document.layers[layerIndex] : document.layers[0],
             document: document
         )
+    }
+}
+
+// MARK: - Layer Drop Delegate for Reordering
+struct LayerDropDelegate: DropDelegate {
+    let document: VectorDocument
+    let targetLayerIndex: Int
+    let layers: [VectorLayer]
+
+    func performDrop(info: DropInfo) -> Bool {
+        guard let item = info.itemProviders(for: [.text]).first else {
+            return false
+        }
+
+        item.loadItem(forTypeIdentifier: "public.text", options: nil) { (data, error) in
+            if let data = data as? Data,
+               let sourceIndexString = String(data: data, encoding: .utf8),
+               let sourceIndex = Int(sourceIndexString) {
+
+                DispatchQueue.main.async {
+                    // Don't allow moving protected layers
+                    if sourceIndex <= 1 || targetLayerIndex <= 1 {
+                        return
+                    }
+
+                    // Perform the layer move
+                    document.moveLayer(from: sourceIndex, to: targetLayerIndex)
+                }
+            }
+        }
+
+        return true
+    }
+
+    func validateDrop(info: DropInfo) -> Bool {
+        // Only allow dropping on non-protected layers
+        return targetLayerIndex > 1 && info.hasItemsConforming(to: [.text])
     }
 } 
