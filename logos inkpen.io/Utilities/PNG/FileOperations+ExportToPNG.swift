@@ -217,8 +217,75 @@ extension FileOperations {
     // MARK: - PNG Export
 
     static func exportToPNGFromView(_ document: VectorDocument, url: URL, scale: CGFloat, includeBackground: Bool = true) throws {
-        // Use the working CoreGraphics method with proper layer handling
-        try exportToPNG(document, url: url, scale: scale, includeBackground: includeBackground)
+        // Calculate output size
+        let pageSize = document.settings.sizeInPoints
+        let outputSize = CGSize(width: pageSize.width * scale, height: pageSize.height * scale)
+
+        // CRITICAL FIX: Add size validation to prevent Core Image crashes
+        guard outputSize.width > 0 && outputSize.height > 0 &&
+              outputSize.width <= 16384 && outputSize.height <= 16384 else {
+            throw VectorImportError.parsingError("Invalid output size: \(outputSize)", line: nil)
+        }
+
+        // Create the SwiftUI view that matches screen rendering
+        let contentView = UnifiedObjectView(
+            document: document,
+            zoomLevel: 1.0,
+            canvasOffset: .zero,
+            selectedObjectIDs: [],
+            viewMode: .color,
+            isShiftPressed: false,
+            dragPreviewDelta: .zero,
+            dragPreviewTrigger: false
+        )
+        .frame(width: pageSize.width, height: pageSize.height)
+        .background(includeBackground ? Color.white : Color.clear)
+
+        // Create NSHostingView to render SwiftUI
+        let hostingView = NSHostingView(rootView: contentView)
+        hostingView.frame = CGRect(origin: .zero, size: pageSize)
+
+        // Force layout and display
+        hostingView.layoutSubtreeIfNeeded()
+        hostingView.display()
+
+        // Create high-resolution bitmap
+        guard let bitmapRep = NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: Int(outputSize.width),
+            pixelsHigh: Int(outputSize.height),
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: NSColorSpaceName.deviceRGB,
+            bytesPerRow: 0,
+            bitsPerPixel: 0
+        ) else {
+            throw VectorImportError.parsingError("Failed to create bitmap representation", line: nil)
+        }
+
+        // Render into bitmap at the specified scale
+        NSGraphicsContext.saveGraphicsState()
+        guard let context = NSGraphicsContext(bitmapImageRep: bitmapRep) else {
+            throw VectorImportError.parsingError("Failed to create graphics context", line: nil)
+        }
+        NSGraphicsContext.current = context
+
+        // Scale the context for high-DPI rendering
+        context.cgContext.scaleBy(x: scale, y: scale)
+
+        // Capture the hosting view's display
+        hostingView.cacheDisplay(in: hostingView.bounds, to: bitmapRep)
+
+        NSGraphicsContext.restoreGraphicsState()
+
+        // Export as PNG
+        guard let pngData = bitmapRep.representation(using: NSBitmapImageRep.FileType.png, properties: [:]) else {
+            throw VectorImportError.parsingError("Failed to create PNG data", line: nil)
+        }
+
+        try pngData.write(to: url)
     }
 
     static func exportToPNG(_ document: VectorDocument, url: URL, scale: CGFloat, includeBackground: Bool = true) throws {
