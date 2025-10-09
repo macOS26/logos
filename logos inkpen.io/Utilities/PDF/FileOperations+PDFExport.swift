@@ -140,14 +140,8 @@ extension FileOperations {
         // First pass: organize shapes by clipping relationships
         for (index, layer) in document.layers.enumerated() {
             autoreleasepool {
-                // Always skip pasteboard (index 0)
-                if index == 0 { return }
-
-                // Skip canvas (index 1) only if not including background
-                if index == 1 && !includeBackground { return }
-
-                // Skip locked or invisible layers
-                guard !layer.isLocked, layer.isVisible else { return }
+                // Skip pasteboard (index 0) and canvas (index 1) for PDF export
+                guard index >= 2, !layer.isLocked, layer.isVisible else { return }
 
                 let shapesInLayer = document.getShapesForLayer(index)
                 for shape in shapesInLayer where shape.isVisible {
@@ -169,45 +163,33 @@ extension FileOperations {
         // Set to track already rendered shapes
         var renderedShapeIds = Set<UUID>()
 
-        // Render layers (skip pasteboard, conditionally skip canvas)
+        // Render layers (skip pasteboard and canvas background)
         for (index, layer) in document.layers.enumerated() {
-            // Always skip pasteboard (index 0)
-            if index == 0 { continue }
-
-            // Skip canvas (index 1) only if not including background
-            if index == 1 && !includeBackground { continue }
-
-            // Skip locked or invisible layers
-            guard !layer.isLocked, layer.isVisible else { continue }
+            // Skip pasteboard (index 0) and canvas (index 1) for PDF export
+            guard index >= 2, !layer.isLocked, layer.isVisible else { continue }
 
             try autoreleasepool {
 
                 // Save graphics state for layer opacity and blend mode
                 context.saveGState()
 
-                // Only use transparency layer if blend mode or opacity are non-default
-                // This ensures proper compositing for layers with special blend modes or opacity
-                let needsTransparencyLayer = (layer.blendMode != .normal || layer.opacity < 1.0)
-
-                if needsTransparencyLayer {
-                    // CRITICAL: Set blend mode and alpha BEFORE beginTransparencyLayer
-                    // These settings are captured and used when endTransparencyLayer composites back
-                    if layer.blendMode != .normal {
-                        context.setBlendMode(layer.blendMode.cgBlendMode)
-                    }
-
-                    // Set alpha before transparency layer
-                    if layer.opacity < 1.0 {
-                        context.setAlpha(CGFloat(layer.opacity))
-                    }
-
-                    // Begin transparency layer - this automatically:
-                    // 1. Saves the current alpha and blend mode
-                    // 2. Resets alpha to 1.0 inside the layer
-                    // 3. Resets blend mode to .normal inside the layer
-                    // 4. On endTransparencyLayer, composites using the saved values
-                    context.beginTransparencyLayer(auxiliaryInfo: nil)
+                // CRITICAL: Set blend mode and alpha BEFORE beginTransparencyLayer
+                // These settings are captured and used when endTransparencyLayer composites back
+                if layer.blendMode != .normal {
+                    context.setBlendMode(layer.blendMode.cgBlendMode)
                 }
+
+                // Set alpha before transparency layer
+                if layer.opacity < 1.0 {
+                    context.setAlpha(CGFloat(layer.opacity))
+                }
+
+                // Begin transparency layer - this automatically:
+                // 1. Saves the current alpha and blend mode
+                // 2. Resets alpha to 1.0 inside the layer
+                // 3. Resets blend mode to .normal inside the layer
+                // 4. On endTransparencyLayer, composites using the saved values
+                context.beginTransparencyLayer(auxiliaryInfo: nil)
 
                 // Render shapes in layer using unified objects - SAME AS SVG
                 // Skip text objects here - they will be rendered on top in a second pass
@@ -251,10 +233,8 @@ extension FileOperations {
                     }
                 }
 
-                // End transparency layer if we opened one
-                if needsTransparencyLayer {
-                    context.endTransparencyLayer()
-                }
+                // End transparency layer (always opened above)
+                context.endTransparencyLayer()
 
                 // Restore graphics state for layer
                 context.restoreGState()
