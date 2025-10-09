@@ -45,7 +45,7 @@ struct UnifiedObjectView: View {
                 }
                 .compositingGroup()
                 .opacity(layerIndex < document.layers.count ? document.layers[layerIndex].opacity : 1.0)
-                .cgBlendMode(layerIndex < document.layers.count ? document.layers[layerIndex].blendMode.cgBlendMode : .normal)
+                .blendMode(layerIndex < document.layers.count ? document.layers[layerIndex].blendMode.swiftUIBlendMode : .normal)
             }
        
         }
@@ -253,7 +253,7 @@ struct PasteboardBackgroundView: View {
         }
         .compositingGroup()
         .opacity(pasteboardBackground.map { $0.layerIndex < document.layers.count ? document.layers[$0.layerIndex].opacity : 1.0 } ?? 1.0)
-        .cgBlendMode(pasteboardBackground.map { $0.layerIndex < document.layers.count ? document.layers[$0.layerIndex].blendMode.cgBlendMode : .normal } ?? .normal)
+        .blendMode(pasteboardBackground.map { $0.layerIndex < document.layers.count ? document.layers[$0.layerIndex].blendMode.swiftUIBlendMode : .normal } ?? .normal)
         .onAppear {
             layerOpacities = document.layers.map { $0.opacity }
             layerBlendModes = document.layers.map { $0.blendMode }
@@ -307,7 +307,7 @@ struct CanvasBackgroundView: View {
         }
         .compositingGroup()
         .opacity(canvasBackground.map { $0.layerIndex < document.layers.count ? document.layers[$0.layerIndex].opacity : 1.0 } ?? 1.0)
-        .cgBlendMode(canvasBackground.map { $0.layerIndex < document.layers.count ? document.layers[$0.layerIndex].blendMode.cgBlendMode : .normal } ?? .normal)
+        .blendMode(canvasBackground.map { $0.layerIndex < document.layers.count ? document.layers[$0.layerIndex].blendMode.swiftUIBlendMode : .normal } ?? .normal)
         .onAppear {
             layerOpacities = document.layers.map { $0.opacity }
             layerBlendModes = document.layers.map { $0.blendMode }
@@ -365,7 +365,7 @@ struct NonBackgroundObjectsView: View {
                 }
                 .compositingGroup()
                 .opacity(layerIndex < document.layers.count ? document.layers[layerIndex].opacity : 1.0)
-                .cgBlendMode(layerIndex < document.layers.count ? document.layers[layerIndex].blendMode.cgBlendMode : .normal)
+                .blendMode(layerIndex < document.layers.count ? document.layers[layerIndex].blendMode.swiftUIBlendMode : .normal)
 
             }
         }
