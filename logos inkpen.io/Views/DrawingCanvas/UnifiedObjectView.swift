@@ -16,26 +16,48 @@ struct UnifiedObjectView: View {
     let isShiftPressed: Bool
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
-    
+
+    // State variables to track all layer opacities and blend modes for live updates
+    @State private var layerOpacities: [Double] = []
+    @State private var layerBlendModes: [BlendMode] = []
+
     private var objects: [VectorObject] {
         document.getObjectsInStackingOrder()
     }
 
     var body: some View {
         ZStack {
-            // Render all objects in proper layer stacking order
-            ForEach(objects, id: \.id) { unifiedObject in
-                UnifiedObjectContentView(
-                    unifiedObject: unifiedObject,
-                    document: document,
-                    zoomLevel: zoomLevel,
-                    canvasOffset: canvasOffset,
-                    selectedObjectIDs: selectedObjectIDs,
-                    viewMode: viewMode,
-                    dragPreviewDelta: dragPreviewDelta,
-                    dragPreviewTrigger: dragPreviewTrigger
-                )
+            // Group objects by layer and apply opacity/blend mode to each layer's ZStack
+            ForEach(Array(Set(objects.map { $0.layerIndex })).sorted(), id: \.self) { layerIndex in
+                ZStack {
+                    ForEach(objects.filter { $0.layerIndex == layerIndex }, id: \.id) { unifiedObject in
+                        UnifiedObjectContentView(
+                            unifiedObject: unifiedObject,
+                            document: document,
+                            zoomLevel: zoomLevel,
+                            canvasOffset: canvasOffset,
+                            selectedObjectIDs: selectedObjectIDs,
+                            viewMode: viewMode,
+                            dragPreviewDelta: dragPreviewDelta,
+                            dragPreviewTrigger: dragPreviewTrigger,
+                            layerOpacities: $layerOpacities,
+                            layerBlendModes: $layerBlendModes
+                        )
+                    }
+                }
+                .opacity(layerIndex < layerOpacities.count ? layerOpacities[layerIndex] : 1.0)
+                .blendMode(layerIndex < layerBlendModes.count ? layerBlendModes[layerIndex].swiftUIBlendMode : .normal)
             }
+        }
+        .onAppear {
+            layerOpacities = document.layers.map { $0.opacity }
+            layerBlendModes = document.layers.map { $0.blendMode }
+        }
+        .onChange(of: document.layers.map { $0.opacity }) {
+            layerOpacities = document.layers.map { $0.opacity }
+        }
+        .onChange(of: document.layers.map { $0.blendMode }) {
+            layerBlendModes = document.layers.map { $0.blendMode }
         }
     }
 }
@@ -50,6 +72,8 @@ struct UnifiedObjectContentView: View {
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
+    @Binding var layerOpacities: [Double]
+    @Binding var layerBlendModes: [BlendMode]
 
     // CRITICAL: Check if the layer this object is on is visible
     private var layerIsVisible: Bool {
@@ -157,9 +181,6 @@ struct UnifiedObjectContentView: View {
 
             }
         }
-        .opacity(layerOpacity)
-        .blendMode(layerBlendMode.swiftUIBlendMode)
-        .id("\(unifiedObject.id)-\(layerOpacity)-\(layerBlendMode.rawValue)")
     }
 
     // Helper function to render regular shapes
@@ -229,6 +250,9 @@ struct PasteboardBackgroundView: View {
         }
     }
 
+    @State private var layerOpacities: [Double] = []
+    @State private var layerBlendModes: [BlendMode] = []
+
     var body: some View {
         ZStack {
             // Render only the Pasteboard Background
@@ -241,9 +265,21 @@ struct PasteboardBackgroundView: View {
                     selectedObjectIDs: selectedObjectIDs,
                     viewMode: viewMode,
                     dragPreviewDelta: dragPreviewDelta,
-                    dragPreviewTrigger: dragPreviewTrigger
+                    dragPreviewTrigger: dragPreviewTrigger,
+                    layerOpacities: $layerOpacities,
+                    layerBlendModes: $layerBlendModes
                 )
             }
+        }
+        .onAppear {
+            layerOpacities = document.layers.map { $0.opacity }
+            layerBlendModes = document.layers.map { $0.blendMode }
+        }
+        .onChange(of: document.layers.map { $0.opacity }) {
+            layerOpacities = document.layers.map { $0.opacity }
+        }
+        .onChange(of: document.layers.map { $0.blendMode }) {
+            layerBlendModes = document.layers.map { $0.blendMode }
         }
     }
 }
@@ -267,6 +303,9 @@ struct CanvasBackgroundView: View {
         }
     }
 
+    @State private var layerOpacities: [Double] = []
+    @State private var layerBlendModes: [BlendMode] = []
+
     var body: some View {
         ZStack {
             // Render only the Canvas Background
@@ -279,9 +318,21 @@ struct CanvasBackgroundView: View {
                     selectedObjectIDs: selectedObjectIDs,
                     viewMode: viewMode,
                     dragPreviewDelta: dragPreviewDelta,
-                    dragPreviewTrigger: dragPreviewTrigger
+                    dragPreviewTrigger: dragPreviewTrigger,
+                    layerOpacities: $layerOpacities,
+                    layerBlendModes: $layerBlendModes
                 )
             }
+        }
+        .onAppear {
+            layerOpacities = document.layers.map { $0.opacity }
+            layerBlendModes = document.layers.map { $0.blendMode }
+        }
+        .onChange(of: document.layers.map { $0.opacity }) {
+            layerOpacities = document.layers.map { $0.opacity }
+        }
+        .onChange(of: document.layers.map { $0.blendMode }) {
+            layerBlendModes = document.layers.map { $0.blendMode }
         }
     }
 }
@@ -307,21 +358,64 @@ struct NonBackgroundObjectsView: View {
         }
     }
 
+    @State private var layerOpacities: [Double] = []
+    @State private var layerBlendModes: [BlendMode] = []
+
     var body: some View {
         ZStack {
-            // Render all objects except Canvas Background
-            ForEach(nonBackgroundObjects, id: \.id) { unifiedObject in
-                UnifiedObjectContentView(
-                    unifiedObject: unifiedObject,
-                    document: document,
-                    zoomLevel: zoomLevel,
-                    canvasOffset: canvasOffset,
-                    selectedObjectIDs: selectedObjectIDs,
-                    viewMode: viewMode,
-                    dragPreviewDelta: dragPreviewDelta,
-                    dragPreviewTrigger: dragPreviewTrigger
-                )
+            // Group objects by layer and apply opacity/blend mode to each layer's ZStack
+            ForEach(Array(Set(nonBackgroundObjects.map { $0.layerIndex })).sorted(), id: \.self) { layerIndex in
+                ZStack {
+                    ForEach(nonBackgroundObjects.filter { $0.layerIndex == layerIndex }, id: \.id) { unifiedObject in
+                        UnifiedObjectContentView(
+                            unifiedObject: unifiedObject,
+                            document: document,
+                            zoomLevel: zoomLevel,
+                            canvasOffset: canvasOffset,
+                            selectedObjectIDs: selectedObjectIDs,
+                            viewMode: viewMode,
+                            dragPreviewDelta: dragPreviewDelta,
+                            dragPreviewTrigger: dragPreviewTrigger,
+                            layerOpacities: $layerOpacities,
+                            layerBlendModes: $layerBlendModes
+                        )
+                    }
+                }
+                .opacity(layerIndex < layerOpacities.count ? layerOpacities[layerIndex] : 1.0)
+                .blendMode(layerIndex < layerBlendModes.count ? layerBlendModes[layerIndex].swiftUIBlendMode : .normal)
             }
         }
+        .onAppear {
+            layerOpacities = document.layers.map { $0.opacity }
+            layerBlendModes = document.layers.map { $0.blendMode }
+        }
+        .onChange(of: document.layers.map { $0.opacity }) {
+            layerOpacities = document.layers.map { $0.opacity }
+        }
+        .onChange(of: document.layers.map { $0.blendMode }) {
+            layerBlendModes = document.layers.map { $0.blendMode }
+        }
+    }
+}
+
+// MARK: - CG Opacity Modifier
+struct CGOpacityModifier: ViewModifier {
+    let opacity: CGFloat
+
+    func body(content: Content) -> some View {
+        content.overlay(
+            GeometryReader { _ in
+                Color.clear.preference(key: OpacityPreferenceKey.self, value: opacity)
+            }
+        )
+        .transformEffect(.identity)
+        .opacity(Double(opacity))
+    }
+}
+
+struct OpacityPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 1.0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
