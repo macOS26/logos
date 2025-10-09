@@ -20,8 +20,8 @@ struct ProfessionalTextBoxView: View {
 
     private func getBorderColor() -> Color {
         switch textBoxState {
-        case .gray: return Color.gray
-        case .green: return Color.green
+        case .gray: return Color.clear
+        case .green: return Color.clear
         case .blue: return Color.blue
         }
     }
