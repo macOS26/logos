@@ -134,9 +134,22 @@ struct ProfessionalLayerRow: View {
                 // Clear shape selection when selecting layer
                 document.selectedShapeIDs.removeAll()
                 document.selectedObjectIDs.removeAll()
-                // Clear text selection when selecting layer  
+                // Clear text selection when selecting layer
                 document.selectedTextIDs.removeAll()
                 document.syncSelectionArrays()
+            }
+            .dropDestination(for: DraggableVectorObject.self) { items, location in
+                // Handle dropping objects onto this layer
+                guard let droppedObject = items.first else { return false }
+
+                // Don't allow dropping on the same layer
+                if droppedObject.sourceLayerIndex == layerIndex {
+                    return false
+                }
+
+                // Move the object to this layer
+                document.moveObjectToLayer(objectId: droppedObject.objectId, targetLayerIndex: layerIndex)
+                return true
             }
             
             // Expanded Object List (Professional Style)

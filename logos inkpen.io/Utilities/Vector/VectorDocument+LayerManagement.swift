@@ -271,4 +271,41 @@ extension VectorDocument {
             addLayer(name: "Layer 1")
         }
     }
+
+    /// Move an object from its current layer to a target layer
+    func moveObjectToLayer(objectId: UUID, targetLayerIndex: Int) {
+        // Find the object in unified objects
+        guard let objectIndex = unifiedObjects.firstIndex(where: { $0.id == objectId }) else {
+            Log.error("❌ Object not found for layer move: \(objectId)", category: .error)
+            return
+        }
+
+        guard targetLayerIndex >= 0 && targetLayerIndex < layers.count else {
+            Log.error("❌ Invalid target layer index: \(targetLayerIndex)", category: .error)
+            return
+        }
+
+        let object = unifiedObjects[objectIndex]
+        let sourceLayerIndex = object.layerIndex
+
+        // Don't do anything if already on target layer
+        if sourceLayerIndex == targetLayerIndex {
+            return
+        }
+
+        saveToUndoStack()
+
+        // Create new object with updated layer index
+        let updatedObject = VectorObject(
+            shape: extractShape(from: object),
+            layerIndex: targetLayerIndex,
+            orderID: object.orderID
+        )
+
+        // Replace the object in unified objects
+        unifiedObjects[objectIndex] = updatedObject
+
+        // Force UI update
+        objectWillChange.send()
+    }
 }
