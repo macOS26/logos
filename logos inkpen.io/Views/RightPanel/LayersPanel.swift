@@ -18,6 +18,7 @@ struct LayersPanel: View {
     @State private var draggedLayerIndex: Int? = nil
     @State private var dragOffset: CGSize = .zero
     @State private var targetLayerIndex: Int? = nil
+    @State private var showColorPicker: Bool = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -64,24 +65,37 @@ struct LayersPanel: View {
                     .foregroundColor(.secondary)
                     .frame(width: 50, alignment: .leading)
 
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(document.layers[layerIndex].color) // Use persistent layer color
-                    .frame(width: 20, height: 16)
-                    .contextMenu {
+                Button(action: {
+                    showColorPicker = true
+                }) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(document.layers[layerIndex].color) // Use persistent layer color
+                        .frame(width: 20, height: 16)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .popover(isPresented: $showColorPicker) {
+                    VStack(alignment: .leading, spacing: 4) {
                         ForEach(availableLayerColors(), id: \.name) { colorOption in
                             Button(action: {
                                 document.saveToUndoStack()
                                 document.layers[layerIndex].color = colorOption.color
+                                showColorPicker = false
                             }) {
                                 HStack {
                                     RoundedRectangle(cornerRadius: 2)
                                         .fill(colorOption.color)
                                         .frame(width: 16, height: 16)
                                     Text(colorOption.name)
+                                        .font(.system(size: 11))
+                                    Spacer()
                                 }
                             }
+                            .buttonStyle(PlainButtonStyle())
                         }
                     }
+                    .padding(8)
+                    .frame(width: 150)
+                }
 
                 Spacer()
             }
@@ -208,9 +222,7 @@ struct LayersPanel: View {
 
     private func availableLayerColors() -> [(name: String, color: Color)] {
         return [
-            // Standard colors
-            ("Black", .black),
-            ("White", .white),
+            // Standard colors (no black/white)
             ("Gray", .gray),
             ("Red", .red),
             ("Orange", .orange),

@@ -14,6 +14,7 @@ struct ProfessionalLayerRow: View {
     @ObservedObject var document: VectorDocument
     @State private var isEditingName: Bool = false
     @State private var editedName: String = ""
+    @State private var showColorPicker: Bool = false
 
     // CRITICAL: Use document settings for layer expansion state (persists across tab switches)
     private var isExpanded: Bool {
@@ -45,24 +46,37 @@ struct ProfessionalLayerRow: View {
                 .buttonStyle(BorderlessButtonStyle())
                 
                 // Layer Color Indicator (Professional Color Strip) - Clickable with color picker
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(layer.color) // Use persistent layer color, not index-based
-                    .frame(width: 4, height: 16)
-                    .contextMenu {
+                Button(action: {
+                    showColorPicker = true
+                }) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(layer.color) // Use persistent layer color, not index-based
+                        .frame(width: 4, height: 16)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .popover(isPresented: $showColorPicker) {
+                    VStack(alignment: .leading, spacing: 4) {
                         ForEach(availableLayerColors(), id: \.name) { colorOption in
                             Button(action: {
                                 document.saveToUndoStack()
                                 document.layers[layerIndex].color = colorOption.color
+                                showColorPicker = false
                             }) {
                                 HStack {
                                     RoundedRectangle(cornerRadius: 2)
                                         .fill(colorOption.color)
                                         .frame(width: 16, height: 16)
                                     Text(colorOption.name)
+                                        .font(.system(size: 11))
+                                    Spacer()
                                 }
                             }
+                            .buttonStyle(PlainButtonStyle())
                         }
                     }
+                    .padding(8)
+                    .frame(width: 150)
+                }
                 
                 // Layer Name and Info
                 VStack(alignment: .leading, spacing: 1) {
@@ -242,9 +256,7 @@ struct ProfessionalLayerRow: View {
 
     private func availableLayerColors() -> [(name: String, color: Color)] {
         return [
-            // Standard colors
-            ("Black", .black),
-            ("White", .white),
+            // Standard colors (no black/white)
             ("Gray", .gray),
             ("Red", .red),
             ("Orange", .orange),
