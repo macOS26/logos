@@ -39,15 +39,15 @@ struct UnifiedObjectView: View {
                             selectedObjectIDs: selectedObjectIDs,
                             viewMode: viewMode,
                             dragPreviewDelta: dragPreviewDelta,
-                            dragPreviewTrigger: dragPreviewTrigger,
-                            layerOpacities: $layerOpacities,
-                            layerBlendModes: $layerBlendModes
+                            dragPreviewTrigger: dragPreviewTrigger
                         )
                     }
                 }
-                .opacity(layerIndex < layerOpacities.count ? layerOpacities[layerIndex] : 1.0)
-                .blendMode(layerIndex < layerBlendModes.count ? layerBlendModes[layerIndex].swiftUIBlendMode : .normal)
+                .compositingGroup()
+                .opacity(layerIndex < document.layers.count ? document.layers[layerIndex].opacity : 1.0)
+                .blendMode(layerIndex < document.layers.count ? document.layers[layerIndex].blendMode.swiftUIBlendMode : .normal)
             }
+       
         }
         .onAppear {
             layerOpacities = document.layers.map { $0.opacity }
@@ -72,8 +72,6 @@ struct UnifiedObjectContentView: View {
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
-    @Binding var layerOpacities: [Double]
-    @Binding var layerBlendModes: [BlendMode]
 
     // CRITICAL: Check if the layer this object is on is visible
     private var layerIsVisible: Bool {
@@ -81,22 +79,6 @@ struct UnifiedObjectContentView: View {
             return true
         }
         return document.layers[unifiedObject.layerIndex].isVisible
-    }
-
-    // Get layer opacity (default 1.0 if invalid)
-    private var layerOpacity: Double {
-        guard unifiedObject.layerIndex >= 0 && unifiedObject.layerIndex < document.layers.count else {
-            return 1.0
-        }
-        return document.layers[unifiedObject.layerIndex].opacity
-    }
-
-    // Get layer blend mode (default .normal if invalid)
-    private var layerBlendMode: BlendMode {
-        guard unifiedObject.layerIndex >= 0 && unifiedObject.layerIndex < document.layers.count else {
-            return .normal
-        }
-        return document.layers[unifiedObject.layerIndex].blendMode
     }
 
     var body: some View {
@@ -265,12 +247,13 @@ struct PasteboardBackgroundView: View {
                     selectedObjectIDs: selectedObjectIDs,
                     viewMode: viewMode,
                     dragPreviewDelta: dragPreviewDelta,
-                    dragPreviewTrigger: dragPreviewTrigger,
-                    layerOpacities: $layerOpacities,
-                    layerBlendModes: $layerBlendModes
+                    dragPreviewTrigger: dragPreviewTrigger
                 )
             }
         }
+        .compositingGroup()
+        .opacity(pasteboardBackground.map { $0.layerIndex < document.layers.count ? document.layers[$0.layerIndex].opacity : 1.0 } ?? 1.0)
+        .blendMode(pasteboardBackground.map { $0.layerIndex < document.layers.count ? document.layers[$0.layerIndex].blendMode.swiftUIBlendMode : .normal } ?? .normal)
         .onAppear {
             layerOpacities = document.layers.map { $0.opacity }
             layerBlendModes = document.layers.map { $0.blendMode }
@@ -318,12 +301,13 @@ struct CanvasBackgroundView: View {
                     selectedObjectIDs: selectedObjectIDs,
                     viewMode: viewMode,
                     dragPreviewDelta: dragPreviewDelta,
-                    dragPreviewTrigger: dragPreviewTrigger,
-                    layerOpacities: $layerOpacities,
-                    layerBlendModes: $layerBlendModes
+                    dragPreviewTrigger: dragPreviewTrigger
                 )
             }
         }
+        .compositingGroup()
+        .opacity(canvasBackground.map { $0.layerIndex < document.layers.count ? document.layers[$0.layerIndex].opacity : 1.0 } ?? 1.0)
+        .blendMode(canvasBackground.map { $0.layerIndex < document.layers.count ? document.layers[$0.layerIndex].blendMode.swiftUIBlendMode : .normal } ?? .normal)
         .onAppear {
             layerOpacities = document.layers.map { $0.opacity }
             layerBlendModes = document.layers.map { $0.blendMode }
@@ -375,14 +359,14 @@ struct NonBackgroundObjectsView: View {
                             selectedObjectIDs: selectedObjectIDs,
                             viewMode: viewMode,
                             dragPreviewDelta: dragPreviewDelta,
-                            dragPreviewTrigger: dragPreviewTrigger,
-                            layerOpacities: $layerOpacities,
-                            layerBlendModes: $layerBlendModes
+                            dragPreviewTrigger: dragPreviewTrigger
                         )
                     }
                 }
-                .opacity(layerIndex < layerOpacities.count ? layerOpacities[layerIndex] : 1.0)
-                .blendMode(layerIndex < layerBlendModes.count ? layerBlendModes[layerIndex].swiftUIBlendMode : .normal)
+                .compositingGroup()
+                .opacity(layerIndex < document.layers.count ? document.layers[layerIndex].opacity : 1.0)
+                .blendMode(layerIndex < document.layers.count ? document.layers[layerIndex].blendMode.swiftUIBlendMode : .normal)
+
             }
         }
         .onAppear {
