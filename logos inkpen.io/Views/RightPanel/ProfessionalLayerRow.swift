@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 struct ProfessionalLayerRow: View {
     let layerIndex: Int
@@ -212,6 +213,9 @@ struct ProfessionalLayerRow: View {
                             }
                         }
                     }
+
+                    // Drop zone at bottom of layer for reordering to the end
+                    BottomDropZone(layerIndex: layerIndex, document: document)
                 }
                 .padding(.leading, 20) // Indent objects under layer
             }
@@ -249,5 +253,64 @@ struct ProfessionalLayerRow: View {
         // CRITICAL: Keep legacy arrays in sync with unified selection
         document.syncSelectionArrays()
         
+    }
+}
+
+// MARK: - Bottom Drop Zone for Layer Object Reordering
+struct BottomDropZone: View {
+    let layerIndex: Int
+    @ObservedObject var document: VectorDocument
+    @State private var isDropTarget = false
+
+    var body: some View {
+        Rectangle()
+            .fill(Color.clear)
+            .frame(height: 20)
+            .dropDestination(for: DraggableVectorObject.self) { items, location in
+                // Handle dropping objects at the end of the layer
+                guard let droppedObject = items.first else { return false }
+
+                // Only allow reordering within the same layer
+                if droppedObject.sourceLayerIndex != layerIndex {
+                    return false
+                }
+
+                // Find the object with the lowest orderID in this layer
+                let layerObjects = document.unifiedObjects.filter { $0.layerIndex == layerIndex }
+                guard let lowestOrderID = layerObjects.map({ $0.orderID }).min() else { return false }
+
+                // Move the dropped object to the bottom (one below the current lowest)
+                if let objectIndex = document.unifiedObjects.firstIndex(where: { $0.id == droppedObject.objectId }) {
+                    let object = document.unifiedObjects[objectIndex]
+                    let newOrderID = lowestOrderID - 1
+
+                    // Update the object with new orderID
+                    if case .shape(let shape) = object.objectType {
+                        document.unifiedObjects[objectIndex] = VectorObject(
+                            shape: shape,
+                            layerIndex: layerIndex,
+                            orderID: newOrderID
+                        )
+                    }
+
+                    document.objectWillChange.send()
+                    return true
+                }
+
+                return false
+            } isTargeted: { isTargeted in
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    isDropTarget = isTargeted
+                }
+            }
+            .overlay(alignment: .top) {
+                // Drop indicator line
+                if isDropTarget {
+                    Rectangle()
+                        .fill(Color.blue)
+                        .frame(height: 2)
+                        .transition(.opacity)
+                }
+            }
     }
 }
