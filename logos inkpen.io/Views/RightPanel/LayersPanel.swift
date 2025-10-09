@@ -57,16 +57,34 @@ struct LayersPanel: View {
 
     private func layerControlsSection(for layerIndex: Int) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Layer Color Indicator - Static display
+            // Layer Color Indicator - Clickable with color picker
             HStack(spacing: 8) {
                 Text("Color")
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
                     .frame(width: 50, alignment: .leading)
 
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(document.layers[layerIndex].color) // Use persistent layer color
-                    .frame(width: 20, height: 16)
+                Menu {
+                    ForEach(availableLayerColors(), id: \.name) { colorOption in
+                        Button(action: {
+                            document.saveToUndoStack()
+                            document.layers[layerIndex].color = colorOption.color
+                        }) {
+                            HStack {
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(colorOption.color)
+                                    .frame(width: 16, height: 16)
+                                Text(colorOption.name)
+                            }
+                        }
+                    }
+                } label: {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(document.layers[layerIndex].color) // Use persistent layer color
+                        .frame(width: 20, height: 16)
+                }
+                .buttonStyle(BorderlessButtonStyle())
+                .help("Click to change layer color")
 
                 Spacer()
             }
@@ -191,8 +209,31 @@ struct LayersPanel: View {
 
     // REMOVED: layerColor function - now using persistent layer.color property
 
+    private func availableLayerColors() -> [(name: String, color: Color)] {
+        return [
+            // Standard colors
+            ("Black", .black),
+            ("White", .white),
+            ("Gray", .gray),
+            ("Red", .red),
+            ("Orange", .orange),
+            ("Yellow", .yellow),
+            ("Green", .green),
+            ("Mint", .mint),
+            ("Teal", .teal),
+            ("Cyan", .cyan),
+            ("Blue", .blue),
+            ("Indigo", .indigo),
+            ("Purple", .purple),
+            ("Pink", .pink),
+            ("Brown", .brown),
+            // Semantic colors
+            ("Primary", .primary),
+            ("Secondary", .secondary),
+            ("Accent", .accentColor)
+        ]
+    }
 
-    
     private func layerRowContent(for layerIndex: Int) -> some View {
         ProfessionalLayerRow(
             layerIndex: layerIndex,

@@ -44,10 +44,28 @@ struct ProfessionalLayerRow: View {
                 }
                 .buttonStyle(BorderlessButtonStyle())
                 
-                // Layer Color Indicator (Professional Color Strip)
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(layer.color) // Use persistent layer color, not index-based
-                    .frame(width: 4, height: 16)
+                // Layer Color Indicator (Professional Color Strip) - Clickable with color picker
+                Menu {
+                    ForEach(availableLayerColors(), id: \.name) { colorOption in
+                        Button(action: {
+                            document.saveToUndoStack()
+                            document.layers[layerIndex].color = colorOption.color
+                        }) {
+                            HStack {
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(colorOption.color)
+                                    .frame(width: 16, height: 16)
+                                Text(colorOption.name)
+                            }
+                        }
+                    }
+                } label: {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(layer.color) // Use persistent layer color, not index-based
+                        .frame(width: 4, height: 16)
+                }
+                .buttonStyle(BorderlessButtonStyle())
+                .help("Click to change layer color")
                 
                 // Layer Name and Info
                 VStack(alignment: .leading, spacing: 1) {
@@ -224,6 +242,31 @@ struct ProfessionalLayerRow: View {
     }
     
     // REMOVED: layerColor function - now using persistent layer.color property
+
+    private func availableLayerColors() -> [(name: String, color: Color)] {
+        return [
+            // Standard colors
+            ("Black", .black),
+            ("White", .white),
+            ("Gray", .gray),
+            ("Red", .red),
+            ("Orange", .orange),
+            ("Yellow", .yellow),
+            ("Green", .green),
+            ("Mint", .mint),
+            ("Teal", .teal),
+            ("Cyan", .cyan),
+            ("Blue", .blue),
+            ("Indigo", .indigo),
+            ("Purple", .purple),
+            ("Pink", .pink),
+            ("Brown", .brown),
+            // Semantic colors
+            ("Primary", .primary),
+            ("Secondary", .secondary),
+            ("Accent", .accentColor)
+        ]
+    }
 
     private func handleObjectSelection(_ objectID: UUID, layerIndex: Int, isShiftPressed: Bool, isCommandPressed: Bool) {
         // CRITICAL: Determine which unified object this is

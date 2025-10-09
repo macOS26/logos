@@ -16,7 +16,7 @@ extension VectorDocument {
         layers.removeAll()
         
         // Create Pasteboard layer FIRST (index 0) - working area behind everything
-        var pasteboardLayer = VectorLayer(name: "Pasteboard")
+        var pasteboardLayer = VectorLayer(name: "Pasteboard", color: .gray)
         pasteboardLayer.isLocked = true  // Pasteboard should be LOCKED to prevent interference
         
         // Calculate pasteboard size (10x larger than canvas, same aspect ratio)
@@ -42,7 +42,7 @@ extension VectorDocument {
         addShapeToUnifiedSystem(pasteboardShape, layerIndex: 0)
         
         // Create Canvas layer SECOND (index 1) - canvas layer, LOCKED by default
-        var canvasLayer = VectorLayer(name: "Canvas")
+        var canvasLayer = VectorLayer(name: "Canvas", color: .blue)
         canvasLayer.isLocked = true  // Canvas should be locked by default
         let canvasRect = VectorShape.rectangle(
             at: CGPoint(x: 0, y: 0),
@@ -57,7 +57,7 @@ extension VectorDocument {
         addShapeToUnifiedSystem(backgroundShape, layerIndex: 1)
         
         // Create working layer THIRD (index 2) - for actual drawing
-        layers.append(VectorLayer(name: "Layer 1"))
+        layers.append(VectorLayer(name: "Layer 1", color: .green))
         
         // DEBUG: Print actual layer order to verify
         debugLayerOrder()
