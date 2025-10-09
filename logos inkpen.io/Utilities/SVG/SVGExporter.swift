@@ -106,31 +106,22 @@ class SVGExporter {
                 layerAttrs += " style=\"mix-blend-mode: \(layer.blendMode.svgBlendMode)\""
             }
             svg += "<g \(layerAttrs)>\n"
-            
-            // Export shapes in this layer
+
+            // Export shapes in this layer - SAME ORDER AS PDF
+            // Text objects are now exported inline to maintain proper z-order
             let shapesInLayer = document.getShapesForLayer(layerIndex)
             for shape in shapesInLayer {
                 if !shape.isVisible { continue }
-                svg += exportShape(shape, dpiScale: 1.0)
+
+                // Check if this is a text object - export as text instead of path
+                if shape.isTextObject {
+                    svg += exportTextShape(shape, dpiScale: 1.0, renderingMode: textRenderingMode)
+                } else {
+                    svg += exportShape(shape, dpiScale: 1.0)
+                }
             }
-            
+
             svg += "</g>\n"
-        }
-        
-        // Export text objects
-        for unifiedObject in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType,
-               shape.isTextObject && shape.isVisible {
-                // Skip text objects on Pasteboard (always) or Canvas (if not including background)
-                let layer = document.layers[safe: unifiedObject.layerIndex]
-                if layer?.name == "Pasteboard" {
-                    continue // ALWAYS skip Pasteboard
-                }
-                if !includeBackground && layer?.name == "Canvas" {
-                    continue // Skip Canvas only if not including background
-                }
-                svg += exportTextShape(shape, dpiScale: 1.0, renderingMode: textRenderingMode)
-            }
         }
         
         // Close SVG
