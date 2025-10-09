@@ -54,7 +54,6 @@ struct ShapeView: View {
                                 } else if let strokeStyle = groupedShape.strokeStyle, strokeStyle.color != .clear {
                                     renderStrokeWithPlacement(shape: groupedShape, strokeStyle: strokeStyle, viewMode: effectiveViewMode, path: cachedPath)
                                         .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
-                                        .blendMode(strokeStyle.blendMode.swiftUIBlendMode)
                                 }
                             }
                             // CRITICAL: Only apply individual shape transform - NO zoom/offset here
@@ -145,7 +144,6 @@ struct ShapeView: View {
                     } else if let strokeStyle = shape.strokeStyle, strokeStyle.color != .clear {
                         renderStrokeWithPlacement(shape: shape, strokeStyle: strokeStyle, viewMode: effectiveViewMode, path: finalPath)
                             .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
-                            .blendMode(strokeStyle.blendMode.swiftUIBlendMode)
                     }
                 }
             }
@@ -294,12 +292,10 @@ struct ShapeView: View {
             // Use the new NSViewRepresentable view for correct gradient rendering
             GradientFillView(gradient: vectorGradient, path: path.cgPath)
                 .opacity(fillStyle.opacity)
-                .blendMode(fillStyle.blendMode.swiftUIBlendMode)
-            
+
         default:
             path.fill(fillStyle.color.color, style: SwiftUI.FillStyle(eoFill: shape.path.fillRule.cgPathFillRule == .evenOdd))
                 .opacity(fillStyle.opacity)
-                .blendMode(fillStyle.blendMode.swiftUIBlendMode)
         }
     }
     

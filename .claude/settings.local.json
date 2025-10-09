@@ -102,7 +102,9 @@
       "Bash(\"logos inkpen.io/Utilities/Vector/PathOperations.swift\" )",
       "Bash(\"logos inkpen.io/Views/DrawingCanvas/DrawingCanvas+CoincidentPointHandling.swift\")",
       "Bash(git revert:*)",
-      "Bash(git cat-file:*)"
+      "Bash(git cat-file:*)",
+      "WebFetch(domain:blog.idrsolutions.com)",
+      "WebFetch(domain:stackoverflow.com)"
     ],
     "deny": [],
     "ask": []
