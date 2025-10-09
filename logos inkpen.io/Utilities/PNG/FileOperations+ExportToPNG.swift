@@ -57,6 +57,13 @@ extension FileOperations {
             if index <= 1 { continue }  // Skip Pasteboard (0) and Canvas (1)
 
             context.saveGState()
+
+            // Apply layer blend mode if not normal
+            if layer.blendMode != .normal {
+                context.setBlendMode(layer.blendMode.cgBlendMode)
+            }
+
+            // Apply layer opacity
             context.setAlpha(layer.opacity)
 
             let shapesInLayer = document.getShapesForLayer(index)
@@ -139,6 +146,13 @@ extension FileOperations {
                 if index <= 1 { continue }  // Skip Pasteboard (0) and Canvas (1)
 
                 context.saveGState()
+
+                // Apply layer blend mode if not normal
+                if layer.blendMode != .normal {
+                    context.setBlendMode(layer.blendMode.cgBlendMode)
+                }
+
+                // Apply layer opacity
                 context.setAlpha(layer.opacity)
 
                 let shapesInLayer = document.getShapesForLayer(index)
@@ -254,8 +268,15 @@ extension FileOperations {
                 continue
             }
 
-            // Apply layer opacity
+            // Apply layer opacity and blend mode
             context.saveGState()
+
+            // Apply layer blend mode if not normal
+            if layer.blendMode != .normal {
+                context.setBlendMode(layer.blendMode.cgBlendMode)
+            }
+
+            // Apply layer opacity
             context.setAlpha(layer.opacity)
 
             // Draw shapes in layer

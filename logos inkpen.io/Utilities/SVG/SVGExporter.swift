@@ -100,7 +100,12 @@ class SVGExporter {
             }
 
             svg += "<!-- Layer: \(layer.name) -->\n"
-            svg += "<g id=\"layer_\(layerIndex)\" opacity=\"\(layer.opacity)\">\n"
+            // Build layer group with opacity and blend mode
+            var layerAttrs = "id=\"layer_\(layerIndex)\" opacity=\"\(layer.opacity)\""
+            if layer.blendMode != .normal {
+                layerAttrs += " style=\"mix-blend-mode: \(layer.blendMode.svgBlendMode)\""
+            }
+            svg += "<g \(layerAttrs)>\n"
             
             // Export shapes in this layer
             let shapesInLayer = document.getShapesForLayer(layerIndex)

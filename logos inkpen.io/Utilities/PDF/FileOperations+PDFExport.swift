@@ -154,6 +154,19 @@ extension FileOperations {
 
             try autoreleasepool {
 
+                // Save graphics state for layer opacity and blend mode
+                context.saveGState()
+
+                // Apply layer blend mode if not normal
+                if layer.blendMode != .normal {
+                    context.setBlendMode(layer.blendMode.cgBlendMode)
+                }
+
+                // Apply layer opacity
+                if layer.opacity < 1.0 {
+                    context.setAlpha(CGFloat(layer.opacity))
+                }
+
                 // Render shapes in layer using unified objects
                 let shapesInLayer = document.getShapesForLayer(index)
                 for shape in shapesInLayer where shape.isVisible {
@@ -189,6 +202,9 @@ extension FileOperations {
                         renderedShapeIds.insert(shape.id)
                     }
                 }
+
+                // Restore graphics state for layer
+                context.restoreGState()
             }
         }
 
