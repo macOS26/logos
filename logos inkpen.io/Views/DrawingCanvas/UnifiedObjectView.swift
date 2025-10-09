@@ -50,89 +50,108 @@ struct UnifiedObjectContentView: View {
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
-    
-    var body: some View {
-        switch unifiedObject.objectType {
-        case .shape(let shape):
-            // CRITICAL FIX: Handle text objects represented as VectorShape
-            if shape.isTextObject {
-                // Render text using existing StableProfessionalTextCanvas
-                // Convert VectorShape back to VectorText for the text canvas
-                if shape.textContent != nil, shape.typography != nil {
-                    
-                    StableProfessionalTextCanvas(
-                        document: document,
-                        textObjectID: shape.id, // Use shape ID
-                        dragPreviewDelta: dragPreviewDelta,
-                        dragPreviewTrigger: dragPreviewTrigger
-                    )
-                    .allowsHitTesting(true)
-                } else {
-                    EmptyView()
-                }
-            }
-            // CRITICAL FIX: Handle clipping masks in unified object system
-            else if shape.isClippingPath {
-                // Do not render clipping path shapes themselves
-                EmptyView()
-            } else if let clipID = shape.clippedByShapeID {
-                // This shape is clipped by another shape - find the mask shape
-                // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
-                if let maskUnifiedObject = document.findObject(by: clipID),
-                case .shape(let maskShape) = maskUnifiedObject.objectType {
-                    // Create pre-transformed paths for the clipping mask
-                    let clippedPath = createPreTransformedPath(for: shape)
-                    let maskPath = createPreTransformedPath(for: maskShape)
-                    
-                    // Determine selection state for both clipped shape and mask
-                    let isClippedShapeSelected = selectedObjectIDs.contains(unifiedObject.id)
-                    let isMaskShapeSelected = selectedObjectIDs.contains(maskUnifiedObject.id)
-                    let isSelected = isClippedShapeSelected || isMaskShapeSelected
-                    
-                    // Render the clipped shape using NSView-based clipping mask
-                    ClippingMaskShapeView(
-                        clippedShape: shape,
-                        maskShape: maskShape,
-                        clippedPath: clippedPath,
-                        maskPath: maskPath,
-                        zoomLevel: zoomLevel,
-                        canvasOffset: canvasOffset,
-                        isSelected: isSelected,
-                        dragPreviewDelta: isSelected ? dragPreviewDelta : .zero,
-                        dragPreviewTrigger: dragPreviewTrigger,
-                        viewMode: viewMode
-                    )
-                    .id("\(shape.id)-\(shape.path.isClosed)-\(maskShape.id)-\(maskShape.path.isClosed)-\(shape.clippedByShapeID?.uuidString ?? "none")")  // CRITICAL FIX: Include clipping mask ID
-                } else {
-                    // Mask shape not found - render as regular shape
-                    renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(unifiedObject.id))
-                }
-            } else {
-                // Regular shape - render normally
-                // CRITICAL FIX: For groups, also render text objects inside
-                ZStack {
-                    renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(unifiedObject.id))
 
-                    // CRITICAL FIX: Render text objects inside groups
-                    if shape.isGroupContainer {
-                        ForEach(shape.groupedShapes.filter { $0.isTextObject }, id: \.id) { textShape in
-                            if textShape.textContent != nil, textShape.typography != nil {
-                                StableProfessionalTextCanvas(
-                                    document: document,
-                                    textObjectID: textShape.id,
-                                    dragPreviewDelta: dragPreviewDelta,
-                                    dragPreviewTrigger: dragPreviewTrigger
-                                )
-                                .allowsHitTesting(true)
+    // CRITICAL: Check if the layer this object is on is visible and unlocked
+    private var layerIsVisible: Bool {
+        guard unifiedObject.layerIndex >= 0 && unifiedObject.layerIndex < document.layers.count else {
+            return true
+        }
+        return document.layers[unifiedObject.layerIndex].isVisible
+    }
+
+    private var layerIsLocked: Bool {
+        guard unifiedObject.layerIndex >= 0 && unifiedObject.layerIndex < document.layers.count else {
+            return false
+        }
+        return document.layers[unifiedObject.layerIndex].isLocked
+    }
+
+    var body: some View {
+        Group {
+            switch unifiedObject.objectType {
+            case .shape(let shape):
+                // CRITICAL FIX: Handle text objects represented as VectorShape
+                if shape.isTextObject {
+                    // Render text using existing StableProfessionalTextCanvas
+                    // Convert VectorShape back to VectorText for the text canvas
+                    if shape.textContent != nil, shape.typography != nil {
+
+                        StableProfessionalTextCanvas(
+                            document: document,
+                            textObjectID: shape.id, // Use shape ID
+                            dragPreviewDelta: dragPreviewDelta,
+                            dragPreviewTrigger: dragPreviewTrigger
+                        )
+                        .allowsHitTesting(true)
+                    } else {
+                        EmptyView()
+                    }
+                }
+                // CRITICAL FIX: Handle clipping masks in unified object system
+                else if shape.isClippingPath {
+                    // Do not render clipping path shapes themselves
+                    EmptyView()
+                } else if let clipID = shape.clippedByShapeID {
+                    // This shape is clipped by another shape - find the mask shape
+                    // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
+                    if let maskUnifiedObject = document.findObject(by: clipID),
+                    case .shape(let maskShape) = maskUnifiedObject.objectType {
+                        // Create pre-transformed paths for the clipping mask
+                        let clippedPath = createPreTransformedPath(for: shape)
+                        let maskPath = createPreTransformedPath(for: maskShape)
+
+                        // Determine selection state for both clipped shape and mask
+                        let isClippedShapeSelected = selectedObjectIDs.contains(unifiedObject.id)
+                        let isMaskShapeSelected = selectedObjectIDs.contains(maskUnifiedObject.id)
+                        let isSelected = isClippedShapeSelected || isMaskShapeSelected
+
+                        // Render the clipped shape using NSView-based clipping mask
+                        ClippingMaskShapeView(
+                            clippedShape: shape,
+                            maskShape: maskShape,
+                            clippedPath: clippedPath,
+                            maskPath: maskPath,
+                            zoomLevel: zoomLevel,
+                            canvasOffset: canvasOffset,
+                            isSelected: isSelected,
+                            dragPreviewDelta: isSelected ? dragPreviewDelta : .zero,
+                            dragPreviewTrigger: dragPreviewTrigger,
+                            viewMode: viewMode
+                        )
+                        .id("\(shape.id)-\(shape.path.isClosed)-\(maskShape.id)-\(maskShape.path.isClosed)-\(shape.clippedByShapeID?.uuidString ?? "none")")  // CRITICAL FIX: Include clipping mask ID
+                    } else {
+                        // Mask shape not found - render as regular shape
+                        renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(unifiedObject.id))
+                    }
+                } else {
+                    // Regular shape - render normally
+                    // CRITICAL FIX: For groups, also render text objects inside
+                    ZStack {
+                        renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(unifiedObject.id))
+
+                        // CRITICAL FIX: Render text objects inside groups
+                        if shape.isGroupContainer {
+                            ForEach(shape.groupedShapes.filter { $0.isTextObject }, id: \.id) { textShape in
+                                if textShape.textContent != nil, textShape.typography != nil {
+                                    StableProfessionalTextCanvas(
+                                        document: document,
+                                        textObjectID: textShape.id,
+                                        dragPreviewDelta: dragPreviewDelta,
+                                        dragPreviewTrigger: dragPreviewTrigger
+                                    )
+                                    .allowsHitTesting(true)
+                                }
                             }
                         }
                     }
                 }
-            }
 
+            }
         }
+        // CRITICAL: Dim objects when layer is hidden or locked
+        .opacity(layerIsVisible && !layerIsLocked ? 1.0 : 0.3)
     }
-    
+
     // Helper function to render regular shapes
     @ViewBuilder
     private func renderRegularShape(shape: VectorShape, isSelected: Bool) -> some View {

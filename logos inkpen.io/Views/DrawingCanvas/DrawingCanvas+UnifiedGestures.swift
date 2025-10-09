@@ -393,12 +393,23 @@ extension DrawingCanvas {
 
     // MARK: - Select Same Color
     /// Select all objects with the same fill or stroke color as the object at the tap location
+    /// CRITICAL: Only selects the topmost object at click location, and respects layer visibility/lock
     private func selectSameColorAt(_ location: CGPoint) {
-        // Find the object at the tap location by iterating through unified objects
+        // Find the topmost object at the tap location by iterating through unified objects
+        var tappedObject: VectorObject?
         var tappedShape: VectorShape?
 
         for unifiedObject in document.unifiedObjects.reversed() {
             if case .shape(let shape) = unifiedObject.objectType {
+                // CRITICAL: Check if layer is visible and unlocked
+                let layerIndex = unifiedObject.layerIndex
+                if layerIndex >= 0 && layerIndex < document.layers.count {
+                    let layer = document.layers[layerIndex]
+                    if !layer.isVisible || layer.isLocked {
+                        continue // Skip objects on hidden or locked layers
+                    }
+                }
+
                 if !shape.isVisible { continue }
 
                 // Skip background shapes
@@ -409,13 +420,14 @@ extension DrawingCanvas {
                 // Check if this shape contains the location
                 let transformedBounds = shape.bounds.applying(shape.transform)
                 if transformedBounds.contains(location) {
+                    tappedObject = unifiedObject
                     tappedShape = shape
-                    break
+                    break // CRITICAL: Only select the topmost object
                 }
             }
         }
 
-        guard let tappedShape = tappedShape else {
+        guard let _ = tappedObject, let tappedShape = tappedShape else {
             return
         }
 
@@ -433,11 +445,20 @@ extension DrawingCanvas {
 
         guard let colorToMatch = targetColor else { return }
 
-        // Find all objects with the same color
+        // Find all objects with the same color (respecting layer visibility/lock)
         var matchingObjectIDs = Set<UUID>()
 
         for unifiedObject in document.unifiedObjects {
             if case .shape(let shape) = unifiedObject.objectType {
+                // CRITICAL: Check if layer is visible and unlocked
+                let layerIndex = unifiedObject.layerIndex
+                if layerIndex >= 0 && layerIndex < document.layers.count {
+                    let layer = document.layers[layerIndex]
+                    if !layer.isVisible || layer.isLocked {
+                        continue // Skip objects on hidden or locked layers
+                    }
+                }
+
                 // Skip background shapes
                 if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
                     continue
