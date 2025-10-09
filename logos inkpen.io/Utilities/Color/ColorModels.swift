@@ -48,14 +48,12 @@ struct RGBColor: Codable, Hashable {
     var green: Double
     var blue: Double
     var alpha: Double
-    var colorSpace: ColorSpaceType
 
     init(red: Double, green: Double, blue: Double, alpha: Double = 1.0, colorSpace: ColorSpaceType = .displayP3) {
         self.red = red
         self.green = green
         self.blue = blue
         self.alpha = alpha
-        self.colorSpace = colorSpace
     }
 
     var color: Color {
