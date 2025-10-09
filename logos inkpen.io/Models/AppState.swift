@@ -164,6 +164,18 @@ class AppState {
         }
     }
 
+    /// Controls color space for export (SVG, PDF, PNG, etc.)
+    enum ExportColorSpace: String, CaseIterable {
+        case displayP3 = "displayP3"    // Wide gamut (25% wider than sRGB)
+        case sRGB = "sRGB"              // Standard RGB (maximum compatibility)
+    }
+
+    var exportColorSpace: ExportColorSpace = .displayP3 {
+        didSet {
+            UserDefaults.standard.set(exportColorSpace.rawValue, forKey: "exportColorSpace")
+        }
+    }
+
     /// Number of steps for blend mode (10-255)
     var pdfBlendSteps: Int = 20 {
         didSet {
@@ -299,6 +311,18 @@ class AppState {
         if let modeRaw = UserDefaults.standard.string(forKey: "pdfTextRenderingMode"),
            let mode = PDFTextRenderingMode(rawValue: modeRaw) {
             self.pdfTextRenderingMode = mode
+        }
+
+        // Load SVG text rendering mode
+        if let modeRaw = UserDefaults.standard.string(forKey: "svgTextRenderingMode"),
+           let mode = SVGTextRenderingMode(rawValue: modeRaw) {
+            self.svgTextRenderingMode = mode
+        }
+
+        // Load export color space preference
+        if let colorSpaceRaw = UserDefaults.standard.string(forKey: "exportColorSpace"),
+           let colorSpace = ExportColorSpace(rawValue: colorSpaceRaw) {
+            self.exportColorSpace = colorSpace
         }
     }
 

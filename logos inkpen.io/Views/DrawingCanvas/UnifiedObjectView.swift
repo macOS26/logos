@@ -356,7 +356,7 @@ struct NonBackgroundObjectsView: View {
                             document: document,
                             zoomLevel: zoomLevel,
                             canvasOffset: canvasOffset,
-                            selectedObjectIDs: selectedObjectIDs,
+    selectedObjectIDs: selectedObjectIDs,
                             viewMode: viewMode,
                             dragPreviewDelta: dragPreviewDelta,
                             dragPreviewTrigger: dragPreviewTrigger

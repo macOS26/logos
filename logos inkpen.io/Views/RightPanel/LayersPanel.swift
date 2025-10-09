@@ -120,24 +120,27 @@ struct LayersPanel: View {
     private var layersScrollContent: some View {
         ScrollView(.vertical, showsIndicators: true) {
             VStack(spacing: 2) {
-                ForEach(Array(document.layers.indices.reversed()), id: \.self) { layerIndex in
+                ForEach((0..<document.layers.count).reversed().map{$0}, id: \.self) { (layerIndex: Int) in
                     VStack(spacing: 0) {
-                        // Drop zone indicator ABOVE this layer
-                        // Show when target layer would be placed at this index
-                        if let target = targetLayerIndex, target == layerIndex && draggedLayerIndex != layerIndex {
-                            Rectangle()
-                                .fill(Color.blue)
-                                .frame(height: 3)
-                                .padding(.horizontal, 8)
+                        // Drop zone indicator - show EXACTLY where layer will land
+                        if let draggedIndex = draggedLayerIndex,
+                           let targetIndex = targetLayerIndex,
+                           layerIndex != draggedIndex {
+                            let adjustedTarget = draggedIndex < targetIndex ? targetIndex - 1 : targetIndex
+
+                            if layerIndex == adjustedTarget {
+                                Rectangle()
+                                    .fill(Color.blue)
+                                    .frame(height: 3)
+                                    .padding(.horizontal, 8)
+                            }
                         }
 
-                        // Layer row content (ProfessionalLayerRow already includes color indicator)
+                        // Layer row content
                         layerRowContent(for: layerIndex)
                         .offset(draggedLayerIndex == layerIndex ? dragOffset : .zero)
                         .opacity(draggedLayerIndex == layerIndex ? 0.8 : 1.0)
-                        .scaleEffect(draggedLayerIndex == layerIndex ? 0.98 : 1.0)
                         .zIndex(draggedLayerIndex == layerIndex ? 100 : 0)
-                        .animation(.interactiveSpring(response: 0.15, dampingFraction: 0.9), value: dragOffset)
                         .gesture(
                             layerIndex > 1 ? // Only draggable if not Canvas/Pasteboard
                             DragGesture(minimumDistance: 5)
@@ -149,40 +152,29 @@ struct LayersPanel: View {
                                         print("🎯 Started dragging layer \(layerIndex): \(document.layers[layerIndex].name)")
                                     }
 
-                                    withAnimation(.interactiveSpring(response: 0.1, dampingFraction: 0.95)) {
-                                        dragOffset = value.translation
-                                    }
+                                    dragOffset = value.translation
 
-                                    // Calculate which layer we're hovering over
-                                    let rowHeight: CGFloat = 45 // Actual row height
+                                    // Calculate landing position based on drag distance
+                                    let rowHeight: CGFloat = 45
                                     let dragDistance = value.translation.height
+                                    let slots = Int(abs(dragDistance) / rowHeight)
 
-                                    // Calculate target based on drag direction
-                                    // NOTE: Layers are displayed REVERSED, so visual up = higher index
                                     if dragDistance < -rowHeight/2 {
-                                        // Dragging up (visually toward front = higher index in reversed array)
-                                        let slots = Int((-dragDistance + rowHeight/2) / rowHeight)
-                                        let newTarget = min(document.layers.count - 1, layerIndex + slots)
-                                        targetLayerIndex = newTarget
+                                        // Dragging up = higher index (reversed display)
+                                        targetLayerIndex = min(document.layers.count - 1, layerIndex + slots)
                                     } else if dragDistance > rowHeight/2 {
-                                        // Dragging down (visually toward back = lower index in reversed array)
-                                        let slots = Int((dragDistance + rowHeight/2) / rowHeight)
-                                        let newTarget = max(2, layerIndex - slots)
-                                        targetLayerIndex = newTarget
+                                        // Dragging down = lower index (reversed display)
+                                        targetLayerIndex = max(2, layerIndex - slots)
                                     } else {
                                         targetLayerIndex = nil
                                     }
                                 }
                                 .onEnded { value in
-                                    withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.8)) {
-                                        dragOffset = .zero
-                                    }
+                                    dragOffset = .zero
 
-                                    // Use the targetLayerIndex that was calculated during drag
                                     if let target = targetLayerIndex,
                                        let source = draggedLayerIndex,
                                        target != source && target >= 2 {
-                                        print("✅ Moving layer from \(source) to \(target)")
                                         document.moveLayer(from: source, to: target)
                                     }
 

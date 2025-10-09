@@ -86,55 +86,90 @@ enum VectorColor: Hashable {
     ]
     
     var svgColor: String {
+        // Check user preference for export color space
+        let useDisplayP3 = AppState.shared.exportColorSpace == .displayP3
+
         switch self {
         case .clear:
             return "none"
         case .black:
-            return "color(display-p3 0 0 0)"
+            return "#000000"
         case .white:
-            return "color(display-p3 1 1 1)"
+            return "#FFFFFF"
         case .rgb(let rgbColor):
-            // Export as Display P3 for maximum color vibrancy in modern browsers
-            // Uses CSS Color Module Level 4 syntax: color(display-p3 r g b)
-            return String(format: "color(display-p3 %.4f %.4f %.4f)",
-                         rgbColor.red, rgbColor.green, rgbColor.blue)
-        case .cmyk(let cmykColor):
-            // Convert CMYK to RGB in Display P3 space
-            let r = (1 - cmykColor.cyan) * (1 - cmykColor.black)
-            let g = (1 - cmykColor.magenta) * (1 - cmykColor.black)
-            let b = (1 - cmykColor.yellow) * (1 - cmykColor.black)
-            return String(format: "color(display-p3 %.4f %.4f %.4f)", r, g, b)
-        case .hsb(let hsbColor):
-            // Convert HSB to RGB in Display P3 space
-            let color = Color(hue: hsbColor.hue / 360.0, saturation: hsbColor.saturation, brightness: hsbColor.brightness)
-            let nsColor = NSColor(color)
-            // Get P3 components directly
-            if let p3Color = nsColor.usingColorSpace(.displayP3) {
-                let r = p3Color.redComponent
-                let g = p3Color.greenComponent
-                let b = p3Color.blueComponent
-                return String(format: "color(display-p3 %.4f %.4f %.4f)", r, g, b)
+            if useDisplayP3 {
+                // Export as hex in Display P3 space (not converted to sRGB)
+                // SVG viewers will interpret these values in their native color space
+                let r = Int(rgbColor.red * 255)
+                let g = Int(rgbColor.green * 255)
+                let b = Int(rgbColor.blue * 255)
+                return String(format: "#%02X%02X%02X", r, g, b)
+            } else {
+                // Convert Display P3 to sRGB for maximum compatibility
+                return ColorManager.shared.cgColorToSRGBHex(rgbColor.cgColor)
             }
-            // Fallback
-            return "color(display-p3 0 0 0)"
+        case .cmyk(let cmykColor):
+            if useDisplayP3 {
+                // Convert CMYK to RGB, export as hex in P3 space
+                let r = Int((1 - cmykColor.cyan) * (1 - cmykColor.black) * 255)
+                let g = Int((1 - cmykColor.magenta) * (1 - cmykColor.black) * 255)
+                let b = Int((1 - cmykColor.yellow) * (1 - cmykColor.black) * 255)
+                return String(format: "#%02X%02X%02X", r, g, b)
+            } else {
+                return ColorManager.shared.cgColorToSRGBHex(cmykColor.rgbColor.cgColor)
+            }
+        case .hsb(let hsbColor):
+            if useDisplayP3 {
+                // Convert HSB to RGB, export as hex in P3 space
+                let color = Color(hue: hsbColor.hue / 360.0, saturation: hsbColor.saturation, brightness: hsbColor.brightness)
+                let nsColor = NSColor(color)
+                // Get P3 components
+                if let p3Color = nsColor.usingColorSpace(.displayP3) {
+                    let r = Int(p3Color.redComponent * 255)
+                    let g = Int(p3Color.greenComponent * 255)
+                    let b = Int(p3Color.blueComponent * 255)
+                    return String(format: "#%02X%02X%02X", r, g, b)
+                }
+                return "#000000"
+            } else {
+                return ColorManager.shared.cgColorToSRGBHex(hsbColor.rgbColor.cgColor)
+            }
         case .pantone(let pantoneColor):
-            // Export Pantone in Display P3 for accurate color representation
-            let rgb = pantoneColor.rgbEquivalent
-            return String(format: "color(display-p3 %.4f %.4f %.4f)",
-                         rgb.red, rgb.green, rgb.blue)
+            if useDisplayP3 {
+                // Export Pantone as hex in P3 space
+                let rgb = pantoneColor.rgbEquivalent
+                let r = Int(rgb.red * 255)
+                let g = Int(rgb.green * 255)
+                let b = Int(rgb.blue * 255)
+                return String(format: "#%02X%02X%02X", r, g, b)
+            } else {
+                return ColorManager.shared.cgColorToSRGBHex(pantoneColor.rgbEquivalent.cgColor)
+            }
         case .spot(let spotColor):
-            // Export SPOT color in Display P3
-            let rgb = spotColor.rgbEquivalent
-            return String(format: "color(display-p3 %.4f %.4f %.4f)",
-                         rgb.red, rgb.green, rgb.blue)
+            if useDisplayP3 {
+                // Export SPOT color as hex in P3 space
+                let rgb = spotColor.rgbEquivalent
+                let r = Int(rgb.red * 255)
+                let g = Int(rgb.green * 255)
+                let b = Int(rgb.blue * 255)
+                return String(format: "#%02X%02X%02X", r, g, b)
+            } else {
+                return ColorManager.shared.cgColorToSRGBHex(spotColor.rgbEquivalent.cgColor)
+            }
         case .appleSystem(let systemColor):
-            // Export Apple System color in Display P3
-            let rgb = systemColor.rgbEquivalent
-            return String(format: "color(display-p3 %.4f %.4f %.4f)",
-                         rgb.red, rgb.green, rgb.blue)
+            if useDisplayP3 {
+                // Export Apple System color as hex in P3 space
+                let rgb = systemColor.rgbEquivalent
+                let r = Int(rgb.red * 255)
+                let g = Int(rgb.green * 255)
+                let b = Int(rgb.blue * 255)
+                return String(format: "#%02X%02X%02X", r, g, b)
+            } else {
+                return ColorManager.shared.cgColorToSRGBHex(systemColor.rgbEquivalent.cgColor)
+            }
         case .gradient(let gradient):
             // For gradients, return the first stop color as a fallback
-            return gradient.stops.first?.color.svgColor ?? "color(display-p3 0 0 0)"
+            return gradient.stops.first?.color.svgColor ?? "#000000"
         }
     }
     

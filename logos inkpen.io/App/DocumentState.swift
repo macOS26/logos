@@ -284,38 +284,54 @@ class DocumentState: ObservableObject {
         panel.isExtensionHidden = false  // Show .svg extension
         panel.message = "Export as SVG (Scalable Vector Graphics)"
         
-        // Create accessory view for text to outlines, text rendering mode, background, and inkpen embed options
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 210))
-        
+        // Create accessory view for text to outlines, text rendering mode, color space, background, and inkpen embed options
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 250))
+
         // Convert text to outlines checkbox (at top)
         let textToOutlinesCheckbox = NSButton(checkboxWithTitle: "Convert text to outlines",
                                               target: nil, action: nil)
-        textToOutlinesCheckbox.frame = NSRect(x: 20, y: 170, width: 250, height: 20)
+        textToOutlinesCheckbox.frame = NSRect(x: 20, y: 210, width: 250, height: 20)
         textToOutlinesCheckbox.state = .off // Default to keeping text as SVG text
         accessoryView.addSubview(textToOutlinesCheckbox)
-        
+
         // Text rendering mode label and radio buttons (only shown when NOT converting to outlines)
         let textModeLabel = NSTextField(labelWithString: "SVG Text Rendering Mode:")
-        textModeLabel.frame = NSRect(x: 40, y: 125, width: 300, height: 20)
+        textModeLabel.frame = NSRect(x: 40, y: 165, width: 300, height: 20)
         textModeLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
         accessoryView.addSubview(textModeLabel)
-        
+
         // Radio buttons for text rendering modes
         // NOTE: Don't call setButtonType(.radio) - radioButtonWithTitle already sets it
         let glyphsRadio = NSButton(radioButtonWithTitle: "Individual Glyphs (most accurate)", target: nil, action: nil)
-        glyphsRadio.frame = NSRect(x: 60, y: 100, width: 300, height: 18)
+        glyphsRadio.frame = NSRect(x: 60, y: 140, width: 300, height: 18)
         glyphsRadio.state = AppState.shared.svgTextRenderingMode == .glyphs ? .on : .off
         accessoryView.addSubview(glyphsRadio)
-        
+
         let linesRadio = NSButton(radioButtonWithTitle: "By Lines (faster)", target: nil, action: nil)
-        linesRadio.frame = NSRect(x: 60, y: 80, width: 300, height: 18)
+        linesRadio.frame = NSRect(x: 60, y: 120, width: 300, height: 18)
         linesRadio.state = AppState.shared.svgTextRenderingMode == .lines ? .on : .off
         accessoryView.addSubview(linesRadio)
-        
+
+        // Color space label and radio buttons
+        let colorSpaceLabel = NSTextField(labelWithString: "Color Space:")
+        colorSpaceLabel.frame = NSRect(x: 20, y: 85, width: 300, height: 20)
+        colorSpaceLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        accessoryView.addSubview(colorSpaceLabel)
+
+        let displayP3Radio = NSButton(radioButtonWithTitle: "Display P3 (wide gamut)", target: nil, action: nil)
+        displayP3Radio.frame = NSRect(x: 40, y: 60, width: 250, height: 18)
+        displayP3Radio.state = AppState.shared.exportColorSpace == .displayP3 ? .on : .off
+        accessoryView.addSubview(displayP3Radio)
+
+        let sRGBRadio = NSButton(radioButtonWithTitle: "sRGB (standard, maximum compatibility)", target: nil, action: nil)
+        sRGBRadio.frame = NSRect(x: 40, y: 40, width: 300, height: 18)
+        sRGBRadio.state = AppState.shared.exportColorSpace == .sRGB ? .on : .off
+        accessoryView.addSubview(sRGBRadio)
+
         // Background checkbox
         let bgCheckbox = NSButton(checkboxWithTitle: "Include background",
                                   target: nil, action: nil)
-        bgCheckbox.frame = NSRect(x: 20, y: 50, width: 200, height: 20)
+        bgCheckbox.frame = NSRect(x: 20, y: 10, width: 200, height: 20)
         bgCheckbox.state = .off // Default to no background for SVG
         accessoryView.addSubview(bgCheckbox)
         
@@ -331,18 +347,46 @@ class DocumentState: ObservableObject {
                                                   textModeLabel: textModeLabel,
                                                   glyphsRadio: glyphsRadio,
                                                   linesRadio: linesRadio)
-        
+
         textToOutlinesCheckbox.target = svgHandler
         textToOutlinesCheckbox.action = #selector(ExportTextOptionsHandler.toggleTextOptions(_:))
-        
+
         glyphsRadio.target = svgHandler
         glyphsRadio.action = #selector(ExportTextOptionsHandler.selectGlyphs(_:))
-        
+
         linesRadio.target = svgHandler
         linesRadio.action = #selector(ExportTextOptionsHandler.selectLines(_:))
-        
-        // Keep handler alive
+
+        // Color space radio button handler
+        class ColorSpaceHandler: NSObject {
+            let displayP3Radio: NSButton
+            let sRGBRadio: NSButton
+
+            init(displayP3Radio: NSButton, sRGBRadio: NSButton) {
+                self.displayP3Radio = displayP3Radio
+                self.sRGBRadio = sRGBRadio
+            }
+
+            @objc func selectDisplayP3(_ sender: NSButton) {
+                displayP3Radio.state = .on
+                sRGBRadio.state = .off
+            }
+
+            @objc func selectSRGB(_ sender: NSButton) {
+                displayP3Radio.state = .off
+                sRGBRadio.state = .on
+            }
+        }
+
+        let colorSpaceHandler = ColorSpaceHandler(displayP3Radio: displayP3Radio, sRGBRadio: sRGBRadio)
+        displayP3Radio.target = colorSpaceHandler
+        displayP3Radio.action = #selector(ColorSpaceHandler.selectDisplayP3(_:))
+        sRGBRadio.target = colorSpaceHandler
+        sRGBRadio.action = #selector(ColorSpaceHandler.selectSRGB(_:))
+
+        // Keep handlers alive
         objc_setAssociatedObject(accessoryView, "textOptionsHandler", svgHandler, .OBJC_ASSOCIATION_RETAIN)
+        objc_setAssociatedObject(accessoryView, "colorSpaceHandler", colorSpaceHandler, .OBJC_ASSOCIATION_RETAIN)
         
         // Set initial visibility
         let shouldHideTextOptions = textToOutlinesCheckbox.state == .on
@@ -361,10 +405,14 @@ class DocumentState: ObservableObject {
             let includeBackground = bgCheckbox.state == .on
             let convertTextToOutlines = textToOutlinesCheckbox.state == .on
             let includeInkpenData = includeInkpenCheckbox.state == .on
-            
+
             // Read and save text rendering mode selection
             let textRenderingMode: AppState.SVGTextRenderingMode = glyphsRadio.state == .on ? .glyphs : .lines
             AppState.shared.svgTextRenderingMode = textRenderingMode
+
+            // Read and save color space selection
+            let colorSpace: AppState.ExportColorSpace = displayP3Radio.state == .on ? .displayP3 : .sRGB
+            AppState.shared.exportColorSpace = colorSpace
             
             Task {
                 do {

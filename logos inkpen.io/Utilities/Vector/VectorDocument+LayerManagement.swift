@@ -87,49 +87,28 @@ extension VectorDocument {
     /// Move a layer from one index to another
     func moveLayer(from sourceIndex: Int, to targetIndex: Int) {
         guard sourceIndex >= 0 && sourceIndex < layers.count,
-              targetIndex >= 0 && targetIndex <= layers.count,  // Allow targetIndex == layers.count for "move to top"
-              sourceIndex != targetIndex else {
-            Log.error("❌ Invalid layer indices for move: source=\(sourceIndex), target=\(targetIndex)", category: .error)
-            return
-        }
-        
-        // PROTECT PASTEBOARD LAYER: Never allow Pasteboard layer to be moved
-        if sourceIndex == 0 && layers[sourceIndex].name == "Pasteboard" {
-            return
-        }
-        
-        // PROTECT CANVAS LAYER: Never allow Canvas layer to be moved
-        if sourceIndex == 1 && layers[sourceIndex].name == "Canvas" {
-            return
-        }
-        
-        // PROTECT PASTEBOARD LAYER: Never allow moving to Pasteboard position
-        if targetIndex == 0 {
-            return
-        }
-        
-        // PROTECT CANVAS LAYER: Never allow moving to Canvas position
-        if targetIndex == 1 && targetIndex < layers.count && layers[targetIndex].name == "Canvas" {
-            return
-        }
-        
+              targetIndex >= 0 && targetIndex <= layers.count,
+              sourceIndex != targetIndex else { return }
+
+        if sourceIndex == 0 && layers[sourceIndex].name == "Pasteboard" { return }
+        if sourceIndex == 1 && layers[sourceIndex].name == "Canvas" { return }
+        if targetIndex == 0 { return }
+        if targetIndex == 1 && targetIndex < layers.count && layers[targetIndex].name == "Canvas" { return }
+
         saveToUndoStack()
-        
+
         let movingLayer = layers.remove(at: sourceIndex)
-        
-        // Handle insertion logic
+
         let adjustedTargetIndex: Int
         if targetIndex == layers.count {
-            // Special case: move to top (append to end after removal)
             adjustedTargetIndex = layers.count
         } else if sourceIndex < targetIndex {
-            // Moving forward in the array - adjust for removal
             adjustedTargetIndex = targetIndex - 1
         } else {
-            // Moving backward in the array - no adjustment needed
             adjustedTargetIndex = targetIndex
         }
-        
+
+        print("📍 Move: source=\(sourceIndex) → target=\(targetIndex) → adjusted=\(adjustedTargetIndex)")
         layers.insert(movingLayer, at: adjustedTargetIndex)
 
         // CRITICAL: Update all object layerIndex values to match the new layer positions
