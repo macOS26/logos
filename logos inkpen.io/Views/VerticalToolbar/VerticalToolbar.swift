@@ -258,11 +258,9 @@ struct VerticalToolbar: View {
                                             if let starVariant = toolItem.starVariant {
                                                 toolGroupManager.selectStarVariant(starVariant)
                                                 document.currentTool = .star
-                                                toolGroupManager.currentToolInGroup = .star
                                                 toolGroupManager.setSelectedToolInGroup(.star)
                                             } else {
                                                 document.currentTool = toolItem.tool
-                                                toolGroupManager.currentToolInGroup = toolItem.tool
                                                 toolGroupManager.setSelectedToolInGroup(toolItem.tool)
                                             }
                                         },

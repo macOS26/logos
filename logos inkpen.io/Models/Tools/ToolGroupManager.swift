@@ -5,8 +5,6 @@ import Combine
 class ToolGroupManager: ObservableObject {
     static let shared = ToolGroupManager()
 
-    // Keep currentToolInGroup as it's actually used externally
-    @Published var currentToolInGroup: DrawingTool? = nil
     @Published var selectedVariant: StarVariant = .fivePoint {
         didSet {
             saveStarVariant()
@@ -124,8 +122,6 @@ class ToolGroupManager: ObservableObject {
     func handleKeyboardToolSwitch(tool: DrawingTool) {
         let groupName = getGroupName(for: tool)
         selectedToolByGroup[groupName] = tool
-        // Maintain currentToolInGroup for any legacy code paths
-        currentToolInGroup = tool
     }
 
     func longPressedTool(_ tool: DrawingTool, variantIndex: Int? = nil) {
@@ -156,7 +152,6 @@ class ToolGroupManager: ObservableObject {
 
             expandedGroups.insert(groupName)
         }
-        currentToolInGroup = tool
     }
 
     private func handleStarVariantLongPress(variantIndex: Int) {
