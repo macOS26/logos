@@ -106,6 +106,11 @@ extension FileOperations {
         // Enable interpolation for better gradient rendering
         pdfContext.interpolationQuality = .high
 
+        // Flip Y-axis to match standard coordinate system
+        // Vector shapes need this flip, but images will need to be flipped back
+        pdfContext.translateBy(x: 0, y: documentSize.height)
+        pdfContext.scaleBy(x: 1.0, y: -1.0)
+
         // Set background color from document settings only if includeBackground is true
         if includeBackground && document.settings.backgroundColor != .clear {
             pdfContext.setFillColor(document.settings.backgroundColor.cgColor)
@@ -437,8 +442,18 @@ extension FileOperations {
         // Draw the image within the shape bounds
         let bounds = shape.bounds
 
-        // Draw the image directly at its bounds position
-        context.draw(cgImage, in: bounds)
+        // Since the context is Y-flipped, we need to flip the image back
+        context.saveGState()
+        context.translateBy(x: bounds.minX, y: bounds.minY)
+
+        // Flip the image vertically to counter the context flip
+        context.translateBy(x: 0, y: bounds.height)
+        context.scaleBy(x: 1.0, y: -1.0)
+
+        // Draw the image at origin with correct size
+        context.draw(cgImage, in: CGRect(origin: .zero, size: bounds.size))
+
+        context.restoreGState()
 
         // Restore graphics state
         context.restoreGState()
@@ -576,8 +591,9 @@ extension FileOperations {
                 // Draw glyph at position using CoreGraphics (creates actual PDF text)
                 context.saveGState()
 
-                // Set text matrix without Y-flip since context is not flipped
-                context.textMatrix = CGAffineTransform.identity
+                // Apply text matrix to flip Y-axis for correct PDF orientation
+                // Since the context is Y-flipped, text needs to be flipped back
+                context.textMatrix = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: 0)
 
                 // Set text position and draw glyph
                 context.textPosition = CGPoint(x: glyphX, y: glyphY)
@@ -811,8 +827,9 @@ extension FileOperations {
             // Draw the line
             context.saveGState()
 
-            // Set text matrix without Y-flip since context is not flipped
-            context.textMatrix = CGAffineTransform.identity
+            // Apply text matrix to flip Y-axis for correct PDF orientation
+            // Since the context is Y-flipped, text needs to be flipped back
+            context.textMatrix = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: 0)
 
             // Set text position and draw line
             context.textPosition = CGPoint(x: lineX, y: lineY)
