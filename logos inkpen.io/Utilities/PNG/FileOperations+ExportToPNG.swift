@@ -227,10 +227,10 @@ extension FileOperations {
             throw VectorImportError.parsingError("Invalid output size: \(outputSize)", line: nil)
         }
 
-        // Create the SwiftUI view that matches screen rendering
+        // Create the SwiftUI view that matches screen rendering at the scaled size
         let contentView = UnifiedObjectView(
             document: document,
-            zoomLevel: 1.0,
+            zoomLevel: scale,  // Use scale as zoom level for proper sizing
             canvasOffset: .zero,
             selectedObjectIDs: [],
             viewMode: .color,
@@ -238,49 +238,50 @@ extension FileOperations {
             dragPreviewDelta: .zero,
             dragPreviewTrigger: false
         )
-        .frame(width: pageSize.width, height: pageSize.height)
+        .frame(width: outputSize.width, height: outputSize.height)
         .background(includeBackground ? Color.white : Color.clear)
 
-        // Create NSHostingView to render SwiftUI
+        // Create NSHostingView to render SwiftUI at full output size
         let hostingView = NSHostingView(rootView: contentView)
-        hostingView.frame = CGRect(origin: .zero, size: pageSize)
+        hostingView.frame = CGRect(origin: .zero, size: outputSize)
 
         // Force layout and display
         hostingView.layoutSubtreeIfNeeded()
         hostingView.display()
 
-        // Create high-resolution bitmap
-        guard let bitmapRep = NSBitmapImageRep(
-            bitmapDataPlanes: nil,
-            pixelsWide: Int(outputSize.width),
-            pixelsHigh: Int(outputSize.height),
-            bitsPerSample: 8,
-            samplesPerPixel: 4,
-            hasAlpha: true,
-            isPlanar: false,
-            colorSpaceName: NSColorSpaceName.deviceRGB,
+        // Create CGContext with Display P3 color space for proper color handling
+        let colorSpace = ColorManager.shared.workingCGColorSpace
+        let bitmapInfo = CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
+
+        guard let cgContext = CGContext(
+            data: nil,
+            width: Int(outputSize.width),
+            height: Int(outputSize.height),
+            bitsPerComponent: 8,
             bytesPerRow: 0,
-            bitsPerPixel: 0
+            space: colorSpace,
+            bitmapInfo: bitmapInfo
         ) else {
-            throw VectorImportError.parsingError("Failed to create bitmap representation", line: nil)
+            throw VectorImportError.parsingError("Failed to create CGContext", line: nil)
         }
 
-        // Render into bitmap at the specified scale
+        // Render into CGContext
         NSGraphicsContext.saveGraphicsState()
-        guard let context = NSGraphicsContext(bitmapImageRep: bitmapRep) else {
-            throw VectorImportError.parsingError("Failed to create graphics context", line: nil)
-        }
-        NSGraphicsContext.current = context
-
-        // Scale the context for high-DPI rendering
-        context.cgContext.scaleBy(x: scale, y: scale)
+        let nsContext = NSGraphicsContext(cgContext: cgContext, flipped: false)
+        NSGraphicsContext.current = nsContext
 
         // Capture the hosting view's display
-        hostingView.cacheDisplay(in: hostingView.bounds, to: bitmapRep)
+        hostingView.displayIfNeeded()
+        hostingView.layer?.render(in: cgContext)
 
         NSGraphicsContext.restoreGraphicsState()
 
-        // Export as PNG
+        // Create bitmap rep from CGContext and export as PNG
+        guard let cgImage = cgContext.makeImage() else {
+            throw VectorImportError.parsingError("Failed to create CGImage", line: nil)
+        }
+
+        let bitmapRep = NSBitmapImageRep(cgImage: cgImage)
         guard let pngData = bitmapRep.representation(using: NSBitmapImageRep.FileType.png, properties: [:]) else {
             throw VectorImportError.parsingError("Failed to create PNG data", line: nil)
         }
