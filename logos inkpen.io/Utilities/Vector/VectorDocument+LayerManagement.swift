@@ -99,16 +99,8 @@ extension VectorDocument {
 
         let movingLayer = layers.remove(at: sourceIndex)
 
-        let adjustedTargetIndex: Int
-        if targetIndex == layers.count {
-            adjustedTargetIndex = layers.count
-        } else if sourceIndex < targetIndex {
-            adjustedTargetIndex = targetIndex - 1
-        } else {
-            adjustedTargetIndex = targetIndex
-        }
+        let adjustedTargetIndex = (sourceIndex < targetIndex) ? targetIndex - 1 : targetIndex
 
-        print("📍 Move: source=\(sourceIndex) → target=\(targetIndex) → adjusted=\(adjustedTargetIndex)")
         layers.insert(movingLayer, at: adjustedTargetIndex)
 
         // CRITICAL: Update all object layerIndex values to match the new layer positions

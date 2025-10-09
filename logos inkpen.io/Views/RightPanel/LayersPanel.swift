@@ -122,20 +122,6 @@ struct LayersPanel: View {
             VStack(spacing: 2) {
                 ForEach((0..<document.layers.count).reversed().map{$0}, id: \.self) { (layerIndex: Int) in
                     VStack(spacing: 0) {
-                        // Drop zone indicator - show EXACTLY where layer will land
-                        if let draggedIndex = draggedLayerIndex,
-                           let targetIndex = targetLayerIndex,
-                           layerIndex != draggedIndex {
-                            let adjustedTarget = draggedIndex < targetIndex ? targetIndex - 1 : targetIndex
-
-                            if layerIndex == adjustedTarget {
-                                Rectangle()
-                                    .fill(Color.blue)
-                                    .frame(height: 3)
-                                    .padding(.horizontal, 8)
-                            }
-                        }
-
                         // Layer row content
                         layerRowContent(for: layerIndex)
                         .offset(draggedLayerIndex == layerIndex ? dragOffset : .zero)
@@ -147,26 +133,24 @@ struct LayersPanel: View {
                                 .onChanged { value in
                                     if draggedLayerIndex == nil {
                                         draggedLayerIndex = layerIndex
-                                        // Select the layer immediately when dragging starts
                                         document.selectedLayerIndex = layerIndex
-                                        print("🎯 Started dragging layer \(layerIndex): \(document.layers[layerIndex].name)")
                                     }
 
                                     dragOffset = value.translation
 
-                                    // Calculate landing position based on drag distance
                                     let rowHeight: CGFloat = 45
                                     let dragDistance = value.translation.height
-                                    let slots = Int(abs(dragDistance) / rowHeight)
 
-                                    if dragDistance < -rowHeight/2 {
-                                        // Dragging up = higher index (reversed display)
-                                        targetLayerIndex = min(document.layers.count - 1, layerIndex + slots)
-                                    } else if dragDistance > rowHeight/2 {
-                                        // Dragging down = lower index (reversed display)
-                                        targetLayerIndex = max(2, layerIndex - slots)
-                                    } else {
+                                    if abs(dragDistance) < rowHeight/2 {
                                         targetLayerIndex = nil
+                                    } else if dragDistance < 0 {
+                                        // Dragging UP (visually) = higher index
+                                        let slots = Int(abs(dragDistance) / rowHeight)
+                                        targetLayerIndex = min(document.layers.count - 1, layerIndex + slots)
+                                    } else {
+                                        // Dragging DOWN (visually) = lower index
+                                        let slots = Int(abs(dragDistance) / rowHeight)
+                                        targetLayerIndex = max(2, layerIndex - slots)
                                     }
                                 }
                                 .onEnded { value in
