@@ -12,14 +12,14 @@ extension FileOperations {
 
     /// Generate PDF data by capturing SwiftUI view directly (matches screen exactly, maintains vector)
     /// Uses manual rendering for vector preservation with proper blend mode and opacity handling
-    static func generatePDFDataFromView(from document: VectorDocument, includeInkpenData: Bool = false, includeBackground: Bool = true) throws -> Data {
+    static func generatePDFDataFromView(from document: VectorDocument, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, includeInkpenData: Bool = false, includeBackground: Bool = true) throws -> Data {
         // Use the manual rendering path which preserves vectors
         // This includes proper blend mode and opacity handling
         return try generatePDFDataWithClippingSupport(
             from: document,
             isExport: true,
             useCMYK: false,
-            textRenderingMode: .glyphs,
+            textRenderingMode: textRenderingMode,
             includeInkpenData: includeInkpenData,
             includeBackground: includeBackground
         )

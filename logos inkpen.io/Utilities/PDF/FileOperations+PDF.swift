@@ -22,7 +22,7 @@ extension FileOperations {
         // This captures the SwiftUI view directly into PDF, ensuring blend modes and opacity match exactly
         // Only fall back to manual rendering if CMYK is needed (SwiftUI rendering is RGB only)
         if !useCMYK {
-            return try generatePDFDataFromView(from: document, includeInkpenData: includeInkpenData, includeBackground: includeBackground)
+            return try generatePDFDataFromView(from: document, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData, includeBackground: includeBackground)
         } else {
             // Use manual rendering for CMYK exports
             return try generatePDFDataWithClippingSupport(from: document, isExport: true, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: includeInkpenData, includeBackground: includeBackground)
