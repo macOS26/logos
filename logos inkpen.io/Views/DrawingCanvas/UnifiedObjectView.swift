@@ -51,19 +51,12 @@ struct UnifiedObjectContentView: View {
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
 
-    // CRITICAL: Check if the layer this object is on is visible and unlocked
+    // CRITICAL: Check if the layer this object is on is visible
     private var layerIsVisible: Bool {
         guard unifiedObject.layerIndex >= 0 && unifiedObject.layerIndex < document.layers.count else {
             return true
         }
         return document.layers[unifiedObject.layerIndex].isVisible
-    }
-
-    private var layerIsLocked: Bool {
-        guard unifiedObject.layerIndex >= 0 && unifiedObject.layerIndex < document.layers.count else {
-            return false
-        }
-        return document.layers[unifiedObject.layerIndex].isLocked
     }
 
     var body: some View {
@@ -148,8 +141,6 @@ struct UnifiedObjectContentView: View {
 
             }
         }
-        // CRITICAL: Dim objects when layer is hidden or locked
-        .opacity(layerIsVisible && !layerIsLocked ? 1.0 : 0.3)
     }
 
     // Helper function to render regular shapes
