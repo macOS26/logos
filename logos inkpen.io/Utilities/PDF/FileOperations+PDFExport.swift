@@ -157,13 +157,10 @@ extension FileOperations {
                 // Save graphics state for layer opacity and blend mode
                 context.saveGState()
 
-                // CRITICAL FIX: Use transparency group for layers with blend modes or opacity
-                // This ensures correct blending behavior at all zoom levels in PDF viewers
-                let needsTransparencyGroup = layer.blendMode != .normal || layer.opacity < 1.0
-
-                if needsTransparencyGroup {
-                    context.beginTransparencyLayer(auxiliaryInfo: nil)
-                }
+                // CRITICAL FIX: ALWAYS use transparency groups for ALL layers
+                // This ensures consistent rendering at all zoom levels in PDF viewers
+                // Even layers with normal blend mode and 100% opacity need this for proper isolation
+                context.beginTransparencyLayer(auxiliaryInfo: nil)
 
                 // Apply layer blend mode if not normal
                 if layer.blendMode != .normal {
@@ -175,7 +172,7 @@ extension FileOperations {
                     context.setAlpha(CGFloat(layer.opacity))
                 }
 
-                // Render shapes in layer using unified objects
+                // Render shapes in layer using unified objects - PRESERVE ORDER
                 let shapesInLayer = document.getShapesForLayer(index)
                 for shape in shapesInLayer where shape.isVisible {
                     // Skip Canvas Background if not including background
@@ -211,10 +208,8 @@ extension FileOperations {
                     }
                 }
 
-                // End transparency layer if we started one
-                if needsTransparencyGroup {
-                    context.endTransparencyLayer()
-                }
+                // End transparency layer (always opened above)
+                context.endTransparencyLayer()
 
                 // Restore graphics state for layer
                 context.restoreGState()
