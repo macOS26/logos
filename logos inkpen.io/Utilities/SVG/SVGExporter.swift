@@ -1022,15 +1022,13 @@ class SVGExporter {
         
         var href: String
         
-        // Check if shape has embedded image data
+        // ALWAYS embed image data - never use linked paths in export
+        // Linked paths would show as broken (X) in viewers that don't have access to the file
         if let embeddedData = shape.embeddedImageData {
             // Use the embedded data directly
             href = "data:image/png;base64,\(embeddedData.base64EncodedString())"
-        } else if let linkedPath = shape.linkedImagePath {
-            // Use the linked path
-            href = linkedPath
         } else {
-            // Convert current image to base64
+            // Convert current image to base64 (works for both linked and in-memory images)
             guard let tiff = image.tiffRepresentation,
                   let bitmap = NSBitmapImageRep(data: tiff),
                   let pngData = bitmap.representation(using: .png, properties: [:]) else {
