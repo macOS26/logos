@@ -84,7 +84,7 @@
          <EnvironmentVariable
             key = "CG_PDF_VERBOSE"
             value = "1"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </EnvironmentVariable>
       </EnvironmentVariables>
    </LaunchAction>

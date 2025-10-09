@@ -1040,8 +1040,9 @@ struct VectorLayer: Hashable, Identifiable {
     var isLocked: Bool
     var opacity: Double
     var blendMode: BlendMode
-    
-    init(name: String, shapes: [VectorShape] = [], isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal) {
+    var color: Color // Persistent layer color indicator (doesn't change when layer moves)
+
+    init(name: String, shapes: [VectorShape] = [], isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, color: Color = .blue) {
         self.id = UUID()
         self.name = name
         // shapes parameter ignored - unified objects is the source
@@ -1049,6 +1050,7 @@ struct VectorLayer: Hashable, Identifiable {
         self.isLocked = isLocked
         self.opacity = opacity
         self.blendMode = blendMode
+        self.color = color
     }
     
     mutating func addShape(_ shape: VectorShape) {
@@ -1063,7 +1065,7 @@ struct VectorLayer: Hashable, Identifiable {
 // MARK: - VectorLayer Codable Implementation
 extension VectorLayer: Codable {
     enum CodingKeys: String, CodingKey {
-        case id, name, isVisible, isLocked, opacity, blendMode
+        case id, name, isVisible, isLocked, opacity, blendMode, color
     }
 
     func encode(to encoder: Encoder) throws {
@@ -1080,6 +1082,9 @@ extension VectorLayer: Codable {
 
         // Only encode blendMode if not normal
         if blendMode != .normal { try container.encode(blendMode, forKey: .blendMode) }
+
+        // Encode color as a string representation
+        try container.encode(color.description, forKey: .color)
     }
 
     init(from decoder: Decoder) throws {
@@ -1090,6 +1095,30 @@ extension VectorLayer: Codable {
         isLocked = try container.decodeIfPresent(Bool.self, forKey: .isLocked) ?? false
         opacity = try container.decodeIfPresent(Double.self, forKey: .opacity) ?? 1.0
         blendMode = try container.decodeIfPresent(BlendMode.self, forKey: .blendMode) ?? .normal
+
+        // Decode color with fallback to blue
+        if let colorString = try container.decodeIfPresent(String.self, forKey: .color) {
+            // Parse color from string
+            self.color = Self.parseColor(from: colorString)
+        } else {
+            self.color = .blue
+        }
+    }
+
+    private static func parseColor(from string: String) -> Color {
+        // Map common color strings to SwiftUI colors
+        switch string.lowercased() {
+        case let s where s.contains("gray"): return .gray
+        case let s where s.contains("blue"): return .blue
+        case let s where s.contains("green"): return .green
+        case let s where s.contains("orange"): return .orange
+        case let s where s.contains("purple"): return .purple
+        case let s where s.contains("red"): return .red
+        case let s where s.contains("pink"): return .pink
+        case let s where s.contains("yellow"): return .yellow
+        case let s where s.contains("cyan"): return .cyan
+        default: return .blue
+        }
     }
 }
 

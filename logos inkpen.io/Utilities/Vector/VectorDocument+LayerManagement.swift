@@ -47,10 +47,10 @@ extension VectorDocument {
         }
         
         saveToUndoStack()
-        
+
         let originalLayer = layers[index]
-        var duplicatedLayer = VectorLayer(name: "\(originalLayer.name) Copy")
-        
+        var duplicatedLayer = VectorLayer(name: "\(originalLayer.name) Copy", color: originalLayer.color)
+
         // Copy all properties
         duplicatedLayer.isVisible = originalLayer.isVisible
         duplicatedLayer.isLocked = originalLayer.isLocked
@@ -170,7 +170,11 @@ extension VectorDocument {
     }
     
     func addLayer(name: String = "New Layer") {
-        let newLayer = VectorLayer(name: name)
+        // Assign a color based on the current layer count (cycle through colors)
+        let colors: [Color] = [.gray, .blue, .green, .orange, .purple, .red, .pink, .yellow, .cyan]
+        let color = colors[layers.count % colors.count]
+
+        let newLayer = VectorLayer(name: name, color: color)
         layers.append(newLayer)
         selectedLayerIndex = layers.count - 1
 

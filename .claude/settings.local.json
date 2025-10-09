@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git branch:*)"
+      "Bash(git branch:*)",
+      "mcp__xcf-server__build_project",
+      "mcp__xcf-server__run_project",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

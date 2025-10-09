@@ -57,6 +57,20 @@ struct LayersPanel: View {
 
     private func layerControlsSection(for layerIndex: Int) -> some View {
         VStack(alignment: .leading, spacing: 8) {
+            // Layer Color Indicator - Static display
+            HStack(spacing: 8) {
+                Text("Color")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .frame(width: 50, alignment: .leading)
+
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(document.layers[layerIndex].color) // Use persistent layer color
+                    .frame(width: 20, height: 16)
+
+                Spacer()
+            }
+
             // Opacity slider
             HStack(spacing: 8) {
                 Text("Opacity")
@@ -125,7 +139,7 @@ struct LayersPanel: View {
                         // Layer row content
                         layerRowContent(for: layerIndex)
                         .offset(draggedLayerIndex == layerIndex ? dragOffset : .zero)
-                        .opacity(draggedLayerIndex == layerIndex ? 0.8 : 1.0)
+                        .opacity(draggedLayerIndex == layerIndex ? 0.9 : 1.0)
                         .zIndex(draggedLayerIndex == layerIndex ? 100 : 0)
                         .gesture(
                             layerIndex > 1 ? // Only draggable if not Canvas/Pasteboard
@@ -175,11 +189,8 @@ struct LayersPanel: View {
         }
     }
 
-    private func layerColor(for index: Int) -> Color {
-        let colors: [Color] = [.gray, .blue, .green, .orange, .purple, .red, .pink, .yellow, .cyan]
-        return colors[index % colors.count]
-    }
-    
+    // REMOVED: layerColor function - now using persistent layer.color property
+
 
     
     private func layerRowContent(for layerIndex: Int) -> some View {

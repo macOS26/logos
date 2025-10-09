@@ -46,7 +46,7 @@ struct ProfessionalLayerRow: View {
                 
                 // Layer Color Indicator (Professional Color Strip)
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(layerColor(for: layerIndex))
+                    .fill(layer.color) // Use persistent layer color, not index-based
                     .frame(width: 4, height: 16)
                 
                 // Layer Name and Info
@@ -223,11 +223,8 @@ struct ProfessionalLayerRow: View {
         .background(Color.clear)
     }
     
-    private func layerColor(for index: Int) -> Color {
-        let colors: [Color] = [.gray, .blue, .green, .orange, .purple, .red, .pink, .yellow, .cyan]
-        return colors[index % colors.count]
-    }
-    
+    // REMOVED: layerColor function - now using persistent layer.color property
+
     private func handleObjectSelection(_ objectID: UUID, layerIndex: Int, isShiftPressed: Bool, isCommandPressed: Bool) {
         // CRITICAL: Determine which unified object this is
         guard document.findObject(by: objectID) != nil else { return }
