@@ -60,16 +60,11 @@ struct LayersPanel: View {
                     .foregroundColor(.secondary)
                     .frame(width: 50, alignment: .leading)
 
-                Slider(
-                    value: Binding(
-                        get: { document.layers[layerIndex].opacity },
-                        set: { newValue in
-                            document.saveToUndoStack()
-                            document.layers[layerIndex].opacity = newValue
-                        }
-                    ),
-                    in: 0...1
-                )
+                Slider(value: $document.layers[layerIndex].opacity, in: 0...1, onEditingChanged: { editing in
+                    if !editing {
+                        document.saveToUndoStack()
+                    }
+                })
                 .frame(maxWidth: .infinity)
 
                 Text("\(Int(document.layers[layerIndex].opacity * 100))%")
@@ -85,19 +80,17 @@ struct LayersPanel: View {
                     .foregroundColor(.secondary)
                     .frame(width: 50, alignment: .leading)
 
-                Picker("", selection: Binding(
-                    get: { document.layers[layerIndex].blendMode },
-                    set: { newValue in
-                        document.saveToUndoStack()
-                        document.layers[layerIndex].blendMode = newValue
-                    }
-                )) {
+                Picker("", selection: $document.layers[layerIndex].blendMode) {
                     ForEach(BlendMode.allCases, id: \.self) { mode in
                         Text(mode.displayName).tag(mode)
                     }
                 }
                 .labelsHidden()
-                .frame(maxWidth: .infinity)
+                .pickerStyle(.menu)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .onChange(of: document.layers[layerIndex].blendMode) { _, _ in
+                    document.saveToUndoStack()
+                }
             }
         }
         .padding(.horizontal, 12)
