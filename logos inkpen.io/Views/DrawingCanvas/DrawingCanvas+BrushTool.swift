@@ -197,17 +197,30 @@ extension DrawingCanvas {
 
             var interpolatedPoints: [BrushPoint] = [startPoint]
 
-            // Add intermediate points for smooth taper - NO JITTER for stable preview
+            // Calculate perpendicular direction for jitter
+            let dx = endPoint.location.x - startPoint.location.x
+            let dy = endPoint.location.y - startPoint.location.y
+            let lineLength = sqrt(dx * dx + dy * dy)
+
+            // Perpendicular vector (normalized) - handle zero-length lines
+            let perpX = lineLength > 0 ? -dy / lineLength : 0
+            let perpY = lineLength > 0 ? dx / lineLength : 0
+
+            // Add intermediate points with subtle jitter for natural brush look
             let numIntermediatePoints = 5
             for i in 1...numIntermediatePoints {
                 let t = Double(i) / Double(numIntermediatePoints + 1)
 
+                // Add subtle perpendicular jitter for organic feel
+                // Use sine wave for smooth variation
+                let jitterAmount = sin(t * .pi) * 2.0 // Max 2 pixels offset at middle
+
                 let interpolatedLocation = CGPoint(
-                    x: startPoint.location.x + (endPoint.location.x - startPoint.location.x) * t,
-                    y: startPoint.location.y + (endPoint.location.y - startPoint.location.y) * t
+                    x: startPoint.location.x + (endPoint.location.x - startPoint.location.x) * t + perpX * jitterAmount,
+                    y: startPoint.location.y + (endPoint.location.y - startPoint.location.y) * t + perpY * jitterAmount
                 )
 
-                // Linear pressure interpolation
+                // Linear pressure interpolation (no artificial bulge)
                 let interpolatedPressure = startPoint.pressure + (endPoint.pressure - startPoint.pressure) * t
 
                 interpolatedPoints.append(BrushPoint(
@@ -418,20 +431,91 @@ extension DrawingCanvas {
     private func finalizeFromPreview(_ preview: VectorPath) {
         guard document.selectedLayerIndex != nil else { return }
 
-        // CHECK: If the path has no width (collapsed to a line), replace with artificial leaf shape
+        // SPECIAL CASE: Detect if this is a straight line by checking path geometry
+        if brushRawPoints.count >= 2 {
+            let start = brushRawPoints.first!.location
+            let end = brushRawPoints.last!.location
+
+            // Calculate line length
+            let dx = end.x - start.x
+            let dy = end.y - start.y
+            let lineLength = sqrt(dx * dx + dy * dy)
+
+            // Check if all points are close to the straight line (< 5% deviation)
+            var maxDeviation = 0.0
+            for point in brushRawPoints {
+                let px = point.location.x - start.x
+                let py = point.location.y - start.y
+
+                // Distance from point to line
+                let deviation = abs(dy * px - dx * py) / lineLength
+                maxDeviation = max(maxDeviation, deviation)
+            }
+
+            let isStraightLine = maxDeviation < lineLength * 0.05
+
+            if isStraightLine {
+                let angle = atan2(dy, dx)
+
+                // Create leaf shape centered at origin
+                let width = document.currentBrushThickness
+                let leafPath = CGMutablePath()
+                leafPath.move(to: CGPoint(x: 0, y: 0))
+                leafPath.addQuadCurve(to: CGPoint(x: lineLength, y: 0), control: CGPoint(x: lineLength * 0.5, y: width * 0.5))
+                leafPath.addQuadCurve(to: CGPoint(x: 0, y: 0), control: CGPoint(x: lineLength * 0.5, y: -width * 0.5))
+                leafPath.closeSubpath()
+
+                // Transform: rotate and translate to match line
+                var transform = CGAffineTransform(translationX: start.x, y: start.y)
+                transform = transform.rotated(by: angle)
+
+                if let transformedPath = leafPath.copy(using: &transform) {
+                    let finalShape = VectorShape(
+                        name: "Brush Stroke",
+                        path: VectorPath(cgPath: transformedPath),
+                        strokeStyle: nil,
+                        fillStyle: FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
+                    )
+                    document.addShape(finalShape)
+                    return
+                }
+            }
+        }
+
+        // CHECK: If the path has coincident points at BOTH ends (no thickness), replace with artificial leaf shape
         if brushRawPoints.count >= 2 {
             let cgPath = preview.cgPath
-            let pathBounds = cgPath.boundingBox
-            let minThickness = document.currentBrushMinTaperThickness
+            var pathPoints: [CGPoint] = []
 
-            // Check if path is collapsed to a line (width OR height is less than minThickness * 2)
-            let pathWidth = pathBounds.width
-            let pathHeight = pathBounds.height
-            let minVisibleDimension = minThickness * 2.0  // Path needs at least 2x minThickness to have visible area
+            // Extract all points from the path
+            cgPath.applyWithBlock { element in
+                switch element.pointee.type {
+                case .moveToPoint, .addLineToPoint:
+                    pathPoints.append(element.pointee.points[0])
+                case .addQuadCurveToPoint:
+                    pathPoints.append(element.pointee.points[1])
+                case .addCurveToPoint:
+                    pathPoints.append(element.pointee.points[2])
+                case .closeSubpath:
+                    break
+                @unknown default:
+                    break
+                }
+            }
 
-            let isCollapsed = pathWidth < minVisibleDimension || pathHeight < minVisibleDimension
+            guard pathPoints.count >= 2 else { return }
 
-            if isCollapsed {
+            // Check if BOTH ends have coincident points (collapsed to a line)
+            let firstPoint = pathPoints[0]
+            let secondPoint = pathPoints[1]
+            let lastPoint = pathPoints[pathPoints.count - 1]
+            let secondLastPoint = pathPoints[pathPoints.count - 2]
+
+            let startCoincident = sqrt(pow(firstPoint.x - secondPoint.x, 2) + pow(firstPoint.y - secondPoint.y, 2)) < 0.5
+            let endCoincident = sqrt(pow(lastPoint.x - secondLastPoint.x, 2) + pow(lastPoint.y - secondLastPoint.y, 2)) < 0.5
+
+            // If BOTH ends are coincident (no thickness at both ends), use artificial leaf shape
+            if startCoincident && endCoincident {
                 let start = brushRawPoints.first!.location
                 let end = brushRawPoints.last!.location
 
