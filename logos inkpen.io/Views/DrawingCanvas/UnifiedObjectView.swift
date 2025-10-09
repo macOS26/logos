@@ -159,6 +159,7 @@ struct UnifiedObjectContentView: View {
         }
         .opacity(layerOpacity)
         .blendMode(layerBlendMode.swiftUIBlendMode)
+        .id("\(unifiedObject.id)-\(layerOpacity)-\(layerBlendMode.rawValue)")
     }
 
     // Helper function to render regular shapes
