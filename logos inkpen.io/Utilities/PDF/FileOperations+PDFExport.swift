@@ -191,17 +191,11 @@ extension FileOperations {
                 // 4. On endTransparencyLayer, composites using the saved values
                 context.beginTransparencyLayer(auxiliaryInfo: nil)
 
-                // Render shapes in layer using unified objects - SAME AS SVG
-                // Skip text objects here - they will be rendered on top in a second pass
+                // Render shapes in layer using unified objects
                 let shapesInLayer = document.getShapesForLayer(index)
                 for shape in shapesInLayer where shape.isVisible {
                     // Skip Canvas Background if not including background
                     if !includeBackground && shape.name == "Canvas Background" {
-                        continue
-                    }
-
-                    // CRITICAL: Skip text objects - render them on top later (matches SVG)
-                    if shape.isTextObject {
                         continue
                     }
 
@@ -238,26 +232,6 @@ extension FileOperations {
 
                 // Restore graphics state for layer
                 context.restoreGState()
-            }
-        }
-
-        // SECOND PASS: Render all text objects on top (matches SVG behavior)
-        for unifiedObject in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType,
-               shape.isTextObject && shape.isVisible {
-                // Skip text objects on Pasteboard (always) or Canvas (if not including background)
-                let layer = document.layers[safe: unifiedObject.layerIndex]
-                if layer?.name == "Pasteboard" {
-                    continue // ALWAYS skip Pasteboard
-                }
-                if !includeBackground && layer?.name == "Canvas" {
-                    continue // Skip Canvas only if not including background
-                }
-
-                // Render the text object
-                if let vectorText = VectorText.from(shape) {
-                    try renderTextToPDF(vectorText: vectorText, context: context, renderingMode: textRenderingMode)
-                }
             }
         }
 
