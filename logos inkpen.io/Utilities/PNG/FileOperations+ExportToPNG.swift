@@ -216,57 +216,11 @@ extension FileOperations {
 
     // MARK: - PNG Export
 
-    /// Export using SwiftUI view rendering for exact screen match
-    @available(macOS 12.0, *)
     static func exportToPNGFromView(_ document: VectorDocument, url: URL, scale: CGFloat, includeBackground: Bool = true) throws {
-        // Calculate output size
-        let pageSize = document.settings.sizeInPoints
-        let outputSize = CGSize(width: pageSize.width * scale, height: pageSize.height * scale)
-
-        // CRITICAL FIX: Add size validation to prevent Core Image crashes
-        guard outputSize.width > 0 && outputSize.height > 0 &&
-              outputSize.width <= 16384 && outputSize.height <= 16384 else {
-            throw VectorImportError.parsingError("Invalid output size: \(outputSize)", line: nil)
-        }
-
-        // Create the SwiftUI view that matches screen rendering
-        let contentView = UnifiedObjectView(
-            document: document,
-            zoomLevel: 1.0,
-            canvasOffset: .zero,
-            selectedObjectIDs: [],
-            viewMode: .color,  // Use color view mode for export
-            isShiftPressed: false,
-            dragPreviewDelta: .zero,
-            dragPreviewTrigger: false
-        )
-        .frame(width: pageSize.width, height: pageSize.height)
-        .background(includeBackground ? Color.white : Color.clear)
-
-        // Use ImageRenderer for proper high-DPI rendering
-        let renderer = ImageRenderer(content: contentView)
-        renderer.scale = scale
-
-        // Render to NSImage
-        guard let nsImage = renderer.nsImage else {
-            throw VectorImportError.parsingError("Failed to render view to image", line: nil)
-        }
-
-        // Convert to PNG data with Display P3 color space
-        guard let tiffData = nsImage.tiffRepresentation,
-              let bitmapRep = NSBitmapImageRep(data: tiffData) else {
-            throw VectorImportError.parsingError("Failed to create bitmap representation", line: nil)
-        }
-
-        // Export as PNG with color profile
-        guard let pngData = bitmapRep.representation(using: NSBitmapImageRep.FileType.png, properties: [:]) else {
-            throw VectorImportError.parsingError("Failed to create PNG data", line: nil)
-        }
-
-        try pngData.write(to: url)
+        // Use the working CoreGraphics method with proper layer handling
+        try exportToPNG(document, url: url, scale: scale, includeBackground: includeBackground)
     }
 
-    /// Legacy CoreGraphics-based PNG export (deprecated - use exportToPNGFromView instead)
     static func exportToPNG(_ document: VectorDocument, url: URL, scale: CGFloat, includeBackground: Bool = true) throws {
 
         // Calculate output size
@@ -305,7 +259,7 @@ extension FileOperations {
 
         // If not including background, the context remains transparent (no fill needed)
 
-        // Draw each layer
+        // Draw each layer with proper compositing
         for (index, layer) in document.layers.enumerated() {
             if !layer.isVisible { continue }
 
@@ -319,8 +273,11 @@ extension FileOperations {
                 continue
             }
 
-            // Apply layer opacity and blend mode
+            // CRITICAL: Use transparency layers for proper blend mode and opacity compositing
             context.saveGState()
+
+            // Begin transparency layer for proper compositing
+            context.beginTransparencyLayer(auxiliaryInfo: nil)
 
             // Apply layer blend mode if not normal
             if layer.blendMode != .normal {
@@ -328,7 +285,9 @@ extension FileOperations {
             }
 
             // Apply layer opacity
-            context.setAlpha(layer.opacity)
+            if layer.opacity < 1.0 {
+                context.setAlpha(layer.opacity)
+            }
 
             // Draw shapes in layer
             let shapesInLayer = document.getShapesForLayer(index)
@@ -337,6 +296,9 @@ extension FileOperations {
 
                 drawShapeInPDF(shape, context: context)
             }
+
+            // End transparency layer
+            context.endTransparencyLayer()
 
             context.restoreGState()
         }
