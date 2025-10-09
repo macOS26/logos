@@ -43,7 +43,7 @@ struct UnifiedObjectView: View {
 // MARK: - Unified Object Content View
 struct UnifiedObjectContentView: View {
     let unifiedObject: VectorObject
-    let document: VectorDocument
+    @ObservedObject var document: VectorDocument
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let selectedObjectIDs: Set<UUID>
@@ -59,7 +59,7 @@ struct UnifiedObjectContentView: View {
         return document.layers[unifiedObject.layerIndex].isVisible
     }
 
-    // Get layer opacity (default 1.0 if invalid)
+    // Get layer opacity (default 1.0 if invalid) - Direct access to ensure SwiftUI tracks changes
     private var layerOpacity: Double {
         guard unifiedObject.layerIndex >= 0 && unifiedObject.layerIndex < document.layers.count else {
             return 1.0
@@ -67,12 +67,12 @@ struct UnifiedObjectContentView: View {
         return document.layers[unifiedObject.layerIndex].opacity
     }
 
-    // Get layer blend mode (default .normal if invalid)
-    private var layerBlendMode: BlendMode {
+    // Get layer blend mode (default .normal if invalid) - Direct access to ensure SwiftUI tracks changes
+    private var layerBlendMode: SwiftUI.BlendMode {
         guard unifiedObject.layerIndex >= 0 && unifiedObject.layerIndex < document.layers.count else {
             return .normal
         }
-        return document.layers[unifiedObject.layerIndex].blendMode
+        return document.layers[unifiedObject.layerIndex].blendMode.swiftUIBlendMode
     }
 
     var body: some View {
@@ -157,9 +157,10 @@ struct UnifiedObjectContentView: View {
 
             }
         }
+        .drawingGroup(opaque: false, colorMode: .nonLinear)
         .opacity(layerOpacity)
-        .blendMode(layerBlendMode.swiftUIBlendMode)
-        .id("\(unifiedObject.id)-\(layerOpacity)-\(layerBlendMode.rawValue)")
+        .compositingGroup()
+        .blendMode(layerBlendMode)
     }
 
     // Helper function to render regular shapes
