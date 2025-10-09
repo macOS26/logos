@@ -93,37 +93,9 @@ extension DrawingCanvas {
     internal func handleBrushDragEnd() {
         guard isBrushDrawing else { return }
 
-        // For straight lines (only 2 points), add intermediate points to ensure proper leaf shape generation
-        if brushRawPoints.count == 2 {
-            let startPoint = brushRawPoints[0]
-            let endPoint = brushRawPoints[1]
-
-            // Add intermediate points along the line for proper variable width calculation
-            var interpolatedPoints: [BrushPoint] = [startPoint]
-
-            // Add 3-5 intermediate points for smooth leaf shape
-            let numIntermediatePoints = 4
-            for i in 1...numIntermediatePoints {
-                let t = Double(i) / Double(numIntermediatePoints + 1)
-                let interpolatedLocation = CGPoint(
-                    x: startPoint.location.x + (endPoint.location.x - startPoint.location.x) * t,
-                    y: startPoint.location.y + (endPoint.location.y - startPoint.location.y) * t
-                )
-                // Interpolate pressure as well
-                let interpolatedPressure = startPoint.pressure + (endPoint.pressure - startPoint.pressure) * t
-                interpolatedPoints.append(BrushPoint(
-                    location: interpolatedLocation,
-                    pressure: interpolatedPressure
-                ))
-            }
-
-            interpolatedPoints.append(endPoint)
-            brushRawPoints = interpolatedPoints
-        }
-
-        // ALWAYS use the preview path as final - it's already calculated correctly
+        // ALWAYS use the preview path as final - it's already calculated and smoothed correctly
         if let preview = brushPreviewPath {
-            // Use the exact preview path as final
+            // Use the exact preview path as final (no re-processing needed)
             finalizeFromPreview(preview)
         } else {
             // Fallback: generate the path if no preview exists (shouldn't happen)
@@ -197,30 +169,17 @@ extension DrawingCanvas {
 
             var interpolatedPoints: [BrushPoint] = [startPoint]
 
-            // Calculate perpendicular direction for jitter
-            let dx = endPoint.location.x - startPoint.location.x
-            let dy = endPoint.location.y - startPoint.location.y
-            let lineLength = sqrt(dx * dx + dy * dy)
-
-            // Perpendicular vector (normalized) - handle zero-length lines
-            let perpX = lineLength > 0 ? -dy / lineLength : 0
-            let perpY = lineLength > 0 ? dx / lineLength : 0
-
-            // Add intermediate points with subtle jitter for natural brush look
+            // Add intermediate points for smooth taper - NO JITTER
             let numIntermediatePoints = 5
             for i in 1...numIntermediatePoints {
                 let t = Double(i) / Double(numIntermediatePoints + 1)
 
-                // Add subtle perpendicular jitter for organic feel
-                // Use sine wave for smooth variation
-                let jitterAmount = sin(t * .pi) * 2.0 // Max 2 pixels offset at middle
-
                 let interpolatedLocation = CGPoint(
-                    x: startPoint.location.x + (endPoint.location.x - startPoint.location.x) * t + perpX * jitterAmount,
-                    y: startPoint.location.y + (endPoint.location.y - startPoint.location.y) * t + perpY * jitterAmount
+                    x: startPoint.location.x + (endPoint.location.x - startPoint.location.x) * t,
+                    y: startPoint.location.y + (endPoint.location.y - startPoint.location.y) * t
                 )
 
-                // Linear pressure interpolation (no artificial bulge)
+                // Linear pressure interpolation
                 let interpolatedPressure = startPoint.pressure + (endPoint.pressure - startPoint.pressure) * t
 
                 interpolatedPoints.append(BrushPoint(
@@ -432,16 +391,19 @@ extension DrawingCanvas {
         guard document.selectedLayerIndex != nil else { return }
 
         // SPECIAL CASE: Detect if this is a straight line by checking path geometry
-        if brushRawPoints.count >= 2 {
-            let start = brushRawPoints.first!.location
-            let end = brushRawPoints.last!.location
+        // ONLY apply artificial leaf shape when there's NO pressure input
+        let hasPressure = appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput
+
+        if !hasPressure && brushRawPoints.count >= 2,
+           let start = brushRawPoints.first?.location,
+           let end = brushRawPoints.last?.location {
 
             // Calculate line length
             let dx = end.x - start.x
             let dy = end.y - start.y
             let lineLength = sqrt(dx * dx + dy * dy)
 
-            // Check if all points are close to the straight line (< 5% deviation)
+            // Check if all points are close to the straight line (< 3 pixels deviation)
             var maxDeviation = 0.0
             for point in brushRawPoints {
                 let px = point.location.x - start.x
@@ -452,7 +414,8 @@ extension DrawingCanvas {
                 maxDeviation = max(maxDeviation, deviation)
             }
 
-            let isStraightLine = maxDeviation < lineLength * 0.05
+            // Very strict: max 3 pixels deviation from straight line
+            let isStraightLine = maxDeviation < 3.0
 
             if isStraightLine {
                 let angle = atan2(dy, dx)
