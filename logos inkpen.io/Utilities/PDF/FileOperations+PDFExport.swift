@@ -157,6 +157,14 @@ extension FileOperations {
                 // Save graphics state for layer opacity and blend mode
                 context.saveGState()
 
+                // CRITICAL FIX: Use transparency group for layers with blend modes or opacity
+                // This ensures correct blending behavior at all zoom levels in PDF viewers
+                let needsTransparencyGroup = layer.blendMode != .normal || layer.opacity < 1.0
+
+                if needsTransparencyGroup {
+                    context.beginTransparencyLayer(auxiliaryInfo: nil)
+                }
+
                 // Apply layer blend mode if not normal
                 if layer.blendMode != .normal {
                     context.setBlendMode(layer.blendMode.cgBlendMode)
@@ -201,6 +209,11 @@ extension FileOperations {
                         try renderShapeToPDFWithImageSupport(shape: shape, context: context, isExport: isExport, useCMYK: useCMYK, textRenderingMode: textRenderingMode)
                         renderedShapeIds.insert(shape.id)
                     }
+                }
+
+                // End transparency layer if we started one
+                if needsTransparencyGroup {
+                    context.endTransparencyLayer()
                 }
 
                 // Restore graphics state for layer
