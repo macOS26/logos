@@ -140,8 +140,14 @@ extension FileOperations {
         // First pass: organize shapes by clipping relationships
         for (index, layer) in document.layers.enumerated() {
             autoreleasepool {
-                // Skip pasteboard (index 0) and canvas (index 1) for PDF export
-                guard index >= 2, !layer.isLocked, layer.isVisible else { return }
+                // Always skip pasteboard (index 0)
+                if index == 0 { return }
+
+                // Skip canvas (index 1) only if not including background
+                if index == 1 && !includeBackground { return }
+
+                // Skip locked or invisible layers
+                guard !layer.isLocked, layer.isVisible else { return }
 
                 let shapesInLayer = document.getShapesForLayer(index)
                 for shape in shapesInLayer where shape.isVisible {
@@ -163,10 +169,16 @@ extension FileOperations {
         // Set to track already rendered shapes
         var renderedShapeIds = Set<UUID>()
 
-        // Render layers (skip pasteboard and canvas background)
+        // Render layers (skip pasteboard, conditionally skip canvas)
         for (index, layer) in document.layers.enumerated() {
-            // Skip pasteboard (index 0) and canvas (index 1) for PDF export
-            guard index >= 2, !layer.isLocked, layer.isVisible else { continue }
+            // Always skip pasteboard (index 0)
+            if index == 0 { continue }
+
+            // Skip canvas (index 1) only if not including background
+            if index == 1 && !includeBackground { continue }
+
+            // Skip locked or invisible layers
+            guard !layer.isLocked, layer.isVisible else { continue }
 
             try autoreleasepool {
 
