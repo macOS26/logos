@@ -29,18 +29,14 @@ extension BlendMode {
         case .color: return .color
         case .luminosity: return .luminosity
 
-        // Porter-Duff compositing modes (only some supported in SwiftUI)
+        // Porter-Duff compositing modes
         case .sourceAtop: return .sourceAtop
         case .destinationOver: return .destinationOver
         case .destinationOut: return .destinationOut
 
-        // Additional modes (supported in SwiftUI)
+        // Additional modes
         case .plusDarker: return .plusDarker
         case .plusLighter: return .plusLighter
-
-        // Unsupported modes - fallback to normal
-        case .clear, .copy, .sourceIn, .sourceOut, .destinationIn, .destinationAtop, .xor:
-            return .normal
         }
     }
 }

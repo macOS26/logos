@@ -27,17 +27,10 @@ enum BlendMode: String, CaseIterable, Codable {
     case color = "Color"
     case luminosity = "Luminosity"
 
-    // Porter-Duff compositing modes
-    case clear = "Clear"
-    case copy = "Copy"
-    case sourceIn = "Source In"
-    case sourceOut = "Source Out"
+    // Porter-Duff compositing modes (SwiftUI supported)
     case sourceAtop = "Source Atop"
     case destinationOver = "Destination Over"
-    case destinationIn = "Destination In"
     case destinationOut = "Destination Out"
-    case destinationAtop = "Destination Atop"
-    case xor = "XOR"
 
     // Additional modes
     case plusDarker = "Plus Darker"
@@ -48,7 +41,7 @@ enum BlendMode: String, CaseIterable, Codable {
         return rawValue
     }
 
-    /// Convert to CGBlendMode for PDF export
+    /// Convert to CGBlendMode for PDF/PNG export
     var cgBlendMode: CGBlendMode {
         switch self {
         // Standard blend modes
@@ -70,16 +63,9 @@ enum BlendMode: String, CaseIterable, Codable {
         case .luminosity: return .luminosity
 
         // Porter-Duff compositing modes
-        case .clear: return .clear
-        case .copy: return .copy
-        case .sourceIn: return .sourceIn
-        case .sourceOut: return .sourceOut
         case .sourceAtop: return .sourceAtop
         case .destinationOver: return .destinationOver
-        case .destinationIn: return .destinationIn
         case .destinationOut: return .destinationOut
-        case .destinationAtop: return .destinationAtop
-        case .xor: return .xor
 
         // Additional modes
         case .plusDarker: return .plusDarker
@@ -88,7 +74,6 @@ enum BlendMode: String, CaseIterable, Codable {
     }
 
     /// Convert to SVG mix-blend-mode for SVG export
-    /// Note: Porter-Duff modes are not supported in SVG and fall back to "normal"
     var svgBlendMode: String {
         switch self {
         // Standard blend modes (fully supported in SVG)
@@ -110,18 +95,11 @@ enum BlendMode: String, CaseIterable, Codable {
         case .luminosity: return "luminosity"
 
         // Porter-Duff compositing modes (not supported in SVG - fallback to normal)
-        case .clear: return "normal"
-        case .copy: return "normal"
-        case .sourceIn: return "normal"
-        case .sourceOut: return "normal"
         case .sourceAtop: return "normal"
         case .destinationOver: return "normal"
-        case .destinationIn: return "normal"
         case .destinationOut: return "normal"
-        case .destinationAtop: return "normal"
-        case .xor: return "normal"
 
-        // Additional modes (plus-lighter and plus-darker are supported in SVG)
+        // Additional modes (supported in SVG)
         case .plusDarker: return "plus-darker"
         case .plusLighter: return "plus-lighter"
         }
