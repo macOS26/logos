@@ -15,6 +15,9 @@ struct LayersPanel: View {
     @State private var expandedLayers: Set<Int> = []
     @State private var renamingLayerIndex: Int?
     @State private var newLayerName: String = ""
+    @State private var draggedLayerIndex: Int? = nil
+    @State private var dragOffset: CGSize = .zero
+    @State private var targetLayerIndex: Int? = nil
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -116,26 +119,88 @@ struct LayersPanel: View {
     
     private var layersScrollContent: some View {
         ScrollView(.vertical, showsIndicators: true) {
-            LazyVStack(spacing: 0) {
-                // Layer rows with drag and drop
-                ForEach(Array(document.layers.indices.reversed().enumerated()), id: \.element) { visualIndex, layerIndex in
-                    layerRowContent(for: layerIndex)
-                        .onDrag {
-                            // Only allow dragging non-protected layers
-                            if layerIndex > 1 { // Protect Pasteboard (0) and Canvas (1)
-                                return NSItemProvider(object: String(layerIndex) as NSString)
-                            }
-                            return NSItemProvider()
+            VStack(spacing: 2) {
+                ForEach(Array(document.layers.indices.reversed()), id: \.self) { layerIndex in
+                    VStack(spacing: 0) {
+                        // Drop zone indicator ABOVE this layer
+                        // Show when target layer would be placed at this index
+                        if let target = targetLayerIndex, target == layerIndex && draggedLayerIndex != layerIndex {
+                            Rectangle()
+                                .fill(Color.blue)
+                                .frame(height: 3)
+                                .padding(.horizontal, 8)
                         }
-                        .onDrop(of: [.text], delegate: LayerDropDelegate(
-                            document: document,
-                            targetLayerIndex: layerIndex,
-                            layers: document.layers
-                        ))
+
+                        // Layer row content (ProfessionalLayerRow already includes color indicator)
+                        layerRowContent(for: layerIndex)
+                        .offset(draggedLayerIndex == layerIndex ? dragOffset : .zero)
+                        .opacity(draggedLayerIndex == layerIndex ? 0.8 : 1.0)
+                        .scaleEffect(draggedLayerIndex == layerIndex ? 0.98 : 1.0)
+                        .zIndex(draggedLayerIndex == layerIndex ? 100 : 0)
+                        .animation(.interactiveSpring(response: 0.15, dampingFraction: 0.9), value: dragOffset)
+                        .gesture(
+                            layerIndex > 1 ? // Only draggable if not Canvas/Pasteboard
+                            DragGesture(minimumDistance: 5)
+                                .onChanged { value in
+                                    if draggedLayerIndex == nil {
+                                        draggedLayerIndex = layerIndex
+                                        // Select the layer immediately when dragging starts
+                                        document.selectedLayerIndex = layerIndex
+                                        print("🎯 Started dragging layer \(layerIndex): \(document.layers[layerIndex].name)")
+                                    }
+
+                                    withAnimation(.interactiveSpring(response: 0.1, dampingFraction: 0.95)) {
+                                        dragOffset = value.translation
+                                    }
+
+                                    // Calculate which layer we're hovering over
+                                    let rowHeight: CGFloat = 45 // Actual row height
+                                    let dragDistance = value.translation.height
+
+                                    // Calculate target based on drag direction
+                                    // NOTE: Layers are displayed REVERSED, so visual up = higher index
+                                    if dragDistance < -rowHeight/2 {
+                                        // Dragging up (visually toward front = higher index in reversed array)
+                                        let slots = Int((-dragDistance + rowHeight/2) / rowHeight)
+                                        let newTarget = min(document.layers.count - 1, layerIndex + slots)
+                                        targetLayerIndex = newTarget
+                                    } else if dragDistance > rowHeight/2 {
+                                        // Dragging down (visually toward back = lower index in reversed array)
+                                        let slots = Int((dragDistance + rowHeight/2) / rowHeight)
+                                        let newTarget = max(2, layerIndex - slots)
+                                        targetLayerIndex = newTarget
+                                    } else {
+                                        targetLayerIndex = nil
+                                    }
+                                }
+                                .onEnded { value in
+                                    withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.8)) {
+                                        dragOffset = .zero
+                                    }
+
+                                    // Use the targetLayerIndex that was calculated during drag
+                                    if let target = targetLayerIndex,
+                                       let source = draggedLayerIndex,
+                                       target != source && target >= 2 {
+                                        print("✅ Moving layer from \(source) to \(target)")
+                                        document.moveLayer(from: source, to: target)
+                                    }
+
+                                    draggedLayerIndex = nil
+                                    targetLayerIndex = nil
+                                }
+                            : nil
+                        )
+                    }
                 }
             }
             .padding(.horizontal, 4)
         }
+    }
+
+    private func layerColor(for index: Int) -> Color {
+        let colors: [Color] = [.gray, .blue, .green, .orange, .purple, .red, .pink, .yellow, .cyan]
+        return colors[index % colors.count]
     }
     
 
@@ -146,42 +211,5 @@ struct LayersPanel: View {
             layer: layerIndex < document.layers.count ? document.layers[layerIndex] : document.layers[0],
             document: document
         )
-    }
-}
-
-// MARK: - Layer Drop Delegate for Reordering
-struct LayerDropDelegate: DropDelegate {
-    let document: VectorDocument
-    let targetLayerIndex: Int
-    let layers: [VectorLayer]
-
-    func performDrop(info: DropInfo) -> Bool {
-        guard let item = info.itemProviders(for: [.text]).first else {
-            return false
-        }
-
-        item.loadItem(forTypeIdentifier: "public.text", options: nil) { (data, error) in
-            if let data = data as? Data,
-               let sourceIndexString = String(data: data, encoding: .utf8),
-               let sourceIndex = Int(sourceIndexString) {
-
-                DispatchQueue.main.async {
-                    // Don't allow moving protected layers
-                    if sourceIndex <= 1 || targetLayerIndex <= 1 {
-                        return
-                    }
-
-                    // Perform the layer move
-                    document.moveLayer(from: sourceIndex, to: targetLayerIndex)
-                }
-            }
-        }
-
-        return true
-    }
-
-    func validateDrop(info: DropInfo) -> Bool {
-        // Only allow dropping on non-protected layers
-        return targetLayerIndex > 1 && info.hasItemsConforming(to: [.text])
     }
 } 
