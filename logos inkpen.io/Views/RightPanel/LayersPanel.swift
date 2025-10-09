@@ -64,27 +64,24 @@ struct LayersPanel: View {
                     .foregroundColor(.secondary)
                     .frame(width: 50, alignment: .leading)
 
-                Menu {
-                    ForEach(availableLayerColors(), id: \.name) { colorOption in
-                        Button(action: {
-                            document.saveToUndoStack()
-                            document.layers[layerIndex].color = colorOption.color
-                        }) {
-                            HStack {
-                                RoundedRectangle(cornerRadius: 2)
-                                    .fill(colorOption.color)
-                                    .frame(width: 16, height: 16)
-                                Text(colorOption.name)
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(document.layers[layerIndex].color) // Use persistent layer color
+                    .frame(width: 20, height: 16)
+                    .contextMenu {
+                        ForEach(availableLayerColors(), id: \.name) { colorOption in
+                            Button(action: {
+                                document.saveToUndoStack()
+                                document.layers[layerIndex].color = colorOption.color
+                            }) {
+                                HStack {
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(colorOption.color)
+                                        .frame(width: 16, height: 16)
+                                    Text(colorOption.name)
+                                }
                             }
                         }
                     }
-                } label: {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(document.layers[layerIndex].color) // Use persistent layer color
-                        .frame(width: 20, height: 16)
-                }
-                .buttonStyle(BorderlessButtonStyle())
-                .help("Click to change layer color")
 
                 Spacer()
             }
@@ -226,11 +223,7 @@ struct LayersPanel: View {
             ("Indigo", .indigo),
             ("Purple", .purple),
             ("Pink", .pink),
-            ("Brown", .brown),
-            // Semantic colors
-            ("Primary", .primary),
-            ("Secondary", .secondary),
-            ("Accent", .accentColor)
+            ("Brown", .brown)
         ]
     }
 
