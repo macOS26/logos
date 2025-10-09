@@ -11,7 +11,7 @@ import SwiftUI
 extension BlendMode {
     var swiftUIBlendMode: SwiftUI.BlendMode {
         switch self {
-        // Standard blend modes
+        // Standard blend modes (fully supported)
         case .normal: return .normal
         case .multiply: return .multiply
         case .screen: return .screen
@@ -29,21 +29,18 @@ extension BlendMode {
         case .color: return .color
         case .luminosity: return .luminosity
 
-        // Porter-Duff compositing modes
-        case .clear: return .sourceAtop  // SwiftUI doesn't have .clear, use closest equivalent
-        case .copy: return .normal  // SwiftUI doesn't have .copy, fallback to normal
-        case .sourceIn: return .sourceAtop  // SwiftUI doesn't have .sourceIn, use closest equivalent
-        case .sourceOut: return .sourceAtop  // SwiftUI doesn't have .sourceOut, use closest equivalent
+        // Porter-Duff compositing modes (only some supported in SwiftUI)
         case .sourceAtop: return .sourceAtop
         case .destinationOver: return .destinationOver
-        case .destinationIn: return .sourceAtop  // SwiftUI doesn't have .destinationIn, use closest equivalent
         case .destinationOut: return .destinationOut
-        case .destinationAtop: return .sourceAtop  // SwiftUI doesn't have .destinationAtop, use closest equivalent
-        case .xor: return .sourceAtop  // SwiftUI doesn't have .xor, use closest equivalent
 
-        // Additional modes
+        // Additional modes (supported in SwiftUI)
         case .plusDarker: return .plusDarker
         case .plusLighter: return .plusLighter
+
+        // Unsupported modes - fallback to normal
+        case .clear, .copy, .sourceIn, .sourceOut, .destinationIn, .destinationAtop, .xor:
+            return .normal
         }
     }
 }
