@@ -98,27 +98,28 @@ extension FileOperations {
         // Use the universal cgColor property which handles all color types
         let cgColor = fillStyle.color.cgColor
 
-        // Get color components and apply opacity
-        if let components = cgColor.components, components.count >= 3 {
-            // RGB or similar color space
-            context.setFillColor(red: components[0], green: components[1], blue: components[2], alpha: fillStyle.opacity)
-        } else if let components = cgColor.components, components.count == 2 {
-            // Grayscale color space
-            context.setFillColor(gray: components[0], alpha: fillStyle.opacity)
-        } else {
-            // Fallback - use CGColor directly with setFillColor
-            var modifiedColor = cgColor
-            if let colorSpace = cgColor.colorSpace,
-               let components = cgColor.components {
-                var componentsWithAlpha = components
-                if componentsWithAlpha.count > 0 {
-                    componentsWithAlpha[componentsWithAlpha.count - 1] = fillStyle.opacity
-                    if let newColor = CGColor(colorSpace: colorSpace, components: componentsWithAlpha) {
-                        modifiedColor = newColor
-                    }
-                }
+        // Always use the working color space for consistent PDF rendering
+        let workingColorSpace = ColorManager.shared.workingCGColorSpace
+
+        // Convert to working color space and apply opacity
+        if let convertedColor = cgColor.converted(to: workingColorSpace, intent: .defaultIntent, options: nil),
+           let components = convertedColor.components {
+            // Create color with opacity in working color space
+            var componentsWithOpacity = components
+            if componentsWithOpacity.count > 0 {
+                // Replace alpha component with fillStyle opacity
+                componentsWithOpacity[componentsWithOpacity.count - 1] = fillStyle.opacity
             }
-            context.setFillColor(modifiedColor)
+
+            if let finalColor = CGColor(colorSpace: workingColorSpace, components: componentsWithOpacity) {
+                context.setFillColor(finalColor)
+            } else {
+                // Fallback to original color with opacity
+                context.setFillColor(cgColor.copy(alpha: fillStyle.opacity) ?? cgColor)
+            }
+        } else {
+            // Fallback - use original color with opacity
+            context.setFillColor(cgColor.copy(alpha: fillStyle.opacity) ?? cgColor)
         }
     }
 
@@ -127,27 +128,28 @@ extension FileOperations {
         // Use the universal cgColor property which handles all color types
         let cgColor = strokeStyle.color.cgColor
 
-        // Get color components and apply opacity
-        if let components = cgColor.components, components.count >= 3 {
-            // RGB or similar color space
-            context.setStrokeColor(red: components[0], green: components[1], blue: components[2], alpha: strokeStyle.opacity)
-        } else if let components = cgColor.components, components.count == 2 {
-            // Grayscale color space
-            context.setStrokeColor(gray: components[0], alpha: strokeStyle.opacity)
-        } else {
-            // Fallback - use CGColor directly
-            var modifiedColor = cgColor
-            if let colorSpace = cgColor.colorSpace,
-               let components = cgColor.components {
-                var componentsWithAlpha = components
-                if componentsWithAlpha.count > 0 {
-                    componentsWithAlpha[componentsWithAlpha.count - 1] = strokeStyle.opacity
-                    if let newColor = CGColor(colorSpace: colorSpace, components: componentsWithAlpha) {
-                        modifiedColor = newColor
-                    }
-                }
+        // Always use the working color space for consistent PDF rendering
+        let workingColorSpace = ColorManager.shared.workingCGColorSpace
+
+        // Convert to working color space and apply opacity
+        if let convertedColor = cgColor.converted(to: workingColorSpace, intent: .defaultIntent, options: nil),
+           let components = convertedColor.components {
+            // Create color with opacity in working color space
+            var componentsWithOpacity = components
+            if componentsWithOpacity.count > 0 {
+                // Replace alpha component with strokeStyle opacity
+                componentsWithOpacity[componentsWithOpacity.count - 1] = strokeStyle.opacity
             }
-            context.setStrokeColor(modifiedColor)
+
+            if let finalColor = CGColor(colorSpace: workingColorSpace, components: componentsWithOpacity) {
+                context.setStrokeColor(finalColor)
+            } else {
+                // Fallback to original color with opacity
+                context.setStrokeColor(cgColor.copy(alpha: strokeStyle.opacity) ?? cgColor)
+            }
+        } else {
+            // Fallback - use original color with opacity
+            context.setStrokeColor(cgColor.copy(alpha: strokeStyle.opacity) ?? cgColor)
         }
 
         // Set line width
