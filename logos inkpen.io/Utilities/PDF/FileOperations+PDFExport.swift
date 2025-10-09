@@ -158,28 +158,22 @@ extension FileOperations {
                 context.saveGState()
 
                 // CRITICAL: Set blend mode and alpha BEFORE beginTransparencyLayer
-                // When endTransparencyLayer is called, the layer will composite with these settings
+                // These settings are captured and used when endTransparencyLayer composites back
                 if layer.blendMode != .normal {
                     context.setBlendMode(layer.blendMode.cgBlendMode)
                 }
 
-                // Set alpha before transparency layer - this controls how the entire layer
-                // composites back when endTransparencyLayer is called
+                // Set alpha before transparency layer
                 if layer.opacity < 1.0 {
                     context.setAlpha(CGFloat(layer.opacity))
                 }
 
-                // Begin transparency layer to create isolated compositing group
+                // Begin transparency layer - this automatically:
+                // 1. Saves the current alpha and blend mode
+                // 2. Resets alpha to 1.0 inside the layer
+                // 3. Resets blend mode to .normal inside the layer
+                // 4. On endTransparencyLayer, composites using the saved values
                 context.beginTransparencyLayer(auxiliaryInfo: nil)
-
-                // CRITICAL FIX: Reset alpha to 1.0 inside the transparency layer
-                // This ensures shapes render at their own opacity, not layer opacity
-                // The layer opacity will be applied when endTransparencyLayer composites back
-                context.setAlpha(1.0)
-
-                // Reset blend mode to normal inside the layer
-                // Layer blend mode applies when compositing the layer, not to shapes inside
-                context.setBlendMode(.normal)
 
                 // Render shapes in layer using unified objects - SAME AS SVG
                 // Skip text objects here - they will be rendered on top in a second pass
