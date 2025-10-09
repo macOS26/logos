@@ -141,12 +141,13 @@ struct LayersPanel: View {
                                     let rowHeight: CGFloat = 45
                                     let dragDistance = value.translation.height
 
-                                    if abs(dragDistance) < rowHeight/2 {
+                                    if abs(dragDistance) < rowHeight / 2 {
                                         targetLayerIndex = nil
                                     } else if dragDistance < 0 {
                                         // Dragging UP (visually) = higher index
                                         let slots = Int(abs(dragDistance) / rowHeight)
-                                        targetLayerIndex = min(document.layers.count - 1, layerIndex + slots)
+                                        targetLayerIndex = max(2, layerIndex + slots + 1)
+//                                        targetLayerIndex = min(document.layers.count - 1, layerIndex + slots)
                                     } else {
                                         // Dragging DOWN (visually) = lower index
                                         let slots = Int(abs(dragDistance) / rowHeight)
