@@ -10,148 +10,19 @@ import SwiftUI
 // MARK: - PDF Export Extensions with Clipping Path and Image Support
 extension FileOperations {
 
-    /// Generate PDF data by capturing SwiftUI view directly (RECOMMENDED - matches screen exactly)
-    /// This uses NSBitmapImageRep + cacheDisplay pattern (same as working PNG export)
+    /// Generate PDF data by capturing SwiftUI view directly (matches screen exactly, maintains vector)
+    /// Uses manual rendering for vector preservation with proper blend mode and opacity handling
     static func generatePDFDataFromView(from document: VectorDocument, includeInkpenData: Bool = false, includeBackground: Bool = true) throws -> Data {
-        // Get document dimensions - use sizeInPoints which is already in points
-        let documentSize = document.settings.sizeInPoints
-
-        // Create PDF data container
-        let pdfData = NSMutableData()
-
-        // Create media box
-        var mediaBox = CGRect(origin: .zero, size: documentSize)
-
-        // Create auxiliary dictionary for PDF options
-        let auxiliaryDict: [String: Any] = [
-            kCGPDFContextCreator as String: "Inkpen.io",
-            kCGPDFContextAuthor as String: NSFullUserName(),
-            kCGPDFContextTitle as String: "Inkpen Document",
-            kCGPDFContextSubject as String: "Vector Graphics",
-            kCGPDFContextKeywords as String: "vector, graphics, illustration"
-        ]
-
-        let auxiliaryInfo = auxiliaryDict as CFDictionary
-
-        // Create PDF context
-        guard let pdfConsumer = CGDataConsumer(data: pdfData),
-              let pdfContext = CGContext(consumer: pdfConsumer, mediaBox: &mediaBox, auxiliaryInfo) else {
-            throw VectorImportError.parsingError("Failed to create PDF context", line: nil)
-        }
-
-        // Embed inkpen document metadata if requested
-        if includeInkpenData {
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-
-            if let jsonData = try? encoder.encode(document) {
-                let base64String = jsonData.base64EncodedString()
-
-                let xmpMetadata = """
-                <?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
-                <x:xmpmeta xmlns:x="adobe:ns:meta/">
-                    <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-                        <rdf:Description rdf:about=""
-                            xmlns:inkpen="https://inkpen.io/ns/1.0/">
-                            <inkpen:document>\(base64String)</inkpen:document>
-                        </rdf:Description>
-                    </rdf:RDF>
-                </x:xmpmeta>
-                <?xpacket end="w"?>
-                """
-
-                if let xmpData = xmpMetadata.data(using: .utf8) {
-                    pdfContext.addDocumentMetadata(xmpData as CFData)
-                }
-            }
-        }
-
-        // Begin PDF page
-        let pageInfo = [
-            kCGPDFContextMediaBox as String: mediaBox,
-            kCGPDFContextArtBox as String: mediaBox,
-            kCGPDFContextTrimBox as String: mediaBox,
-            kCGPDFContextBleedBox as String: mediaBox
-        ] as [String : Any]
-        pdfContext.beginPDFPage(pageInfo as CFDictionary)
-
-        // Set PDF compatibility features
-        pdfContext.setBlendMode(.normal)
-        pdfContext.setShouldAntialias(true)
-        pdfContext.setAllowsAntialiasing(true)
-        pdfContext.interpolationQuality = .high
-
-        // Create SwiftUI view at document size (1x)
-        let contentView = UnifiedObjectView(
-            document: document,
-            zoomLevel: 1.0,
-            canvasOffset: .zero,
-            selectedObjectIDs: [],
-            viewMode: .color,
-            isShiftPressed: false,
-            dragPreviewDelta: .zero,
-            dragPreviewTrigger: false
+        // Use the manual rendering path which preserves vectors
+        // This includes proper blend mode and opacity handling
+        return try generatePDFDataWithClippingSupport(
+            from: document,
+            isExport: true,
+            useCMYK: false,
+            textRenderingMode: .glyphs,
+            includeInkpenData: includeInkpenData,
+            includeBackground: includeBackground
         )
-        .frame(width: documentSize.width, height: documentSize.height)
-        .background(includeBackground ? document.settings.backgroundColor.color : Color.clear)
-
-        // Create NSHostingView
-        let hostingView = NSHostingView(rootView: contentView)
-        hostingView.frame = CGRect(origin: .zero, size: documentSize)
-
-        // Force layout and display
-        hostingView.layoutSubtreeIfNeeded()
-        hostingView.display()
-
-        // Create bitmap to capture the view (using NSBitmapImageRep for cacheDisplay)
-        guard let bitmapRep = NSBitmapImageRep(
-            bitmapDataPlanes: nil,
-            pixelsWide: Int(documentSize.width),
-            pixelsHigh: Int(documentSize.height),
-            bitsPerSample: 8,
-            samplesPerPixel: 4,
-            hasAlpha: true,
-            isPlanar: false,
-            colorSpaceName: NSColorSpaceName.deviceRGB,  // Use deviceRGB (same as working PNG)
-            bytesPerRow: 0,
-            bitsPerPixel: 0
-        ) else {
-            throw VectorImportError.parsingError("Failed to create bitmap representation", line: nil)
-        }
-
-        // Render into bitmap using NSGraphicsContext
-        NSGraphicsContext.saveGraphicsState()
-        guard let nsContext = NSGraphicsContext(bitmapImageRep: bitmapRep) else {
-            throw VectorImportError.parsingError("Failed to create graphics context", line: nil)
-        }
-        NSGraphicsContext.current = nsContext
-
-        // CRITICAL: Use cacheDisplay - this is what makes NSViewRepresentable (images) work!
-        hostingView.cacheDisplay(in: hostingView.bounds, to: bitmapRep)
-
-        NSGraphicsContext.restoreGraphicsState()
-
-        // Convert bitmap to CGImage
-        guard let cgImage = bitmapRep.cgImage else {
-            throw VectorImportError.parsingError("Failed to create CGImage from bitmap", line: nil)
-        }
-
-        // Draw the captured image into the PDF context
-        // PDF coordinate system has Y=0 at bottom, so we need to flip
-        pdfContext.saveGState()
-        pdfContext.translateBy(x: 0, y: documentSize.height)
-        pdfContext.scaleBy(x: 1.0, y: -1.0)
-
-        // Draw the image
-        pdfContext.draw(cgImage, in: CGRect(origin: .zero, size: documentSize))
-
-        pdfContext.restoreGState()
-
-        // End PDF document
-        pdfContext.endPDFPage()
-        pdfContext.closePDF()
-
-        return pdfData as Data
     }
 
     /// Generate PDF data from VectorDocument with proper clipping path and image support
@@ -234,10 +105,6 @@ extension FileOperations {
 
         // Enable interpolation for better gradient rendering
         pdfContext.interpolationQuality = .high
-
-        // Flip Y-axis to match standard coordinate system
-        pdfContext.translateBy(x: 0, y: documentSize.height)
-        pdfContext.scaleBy(x: 1.0, y: -1.0)
 
         // Set background color from document settings only if includeBackground is true
         if includeBackground && document.settings.backgroundColor != .clear {
@@ -570,18 +437,8 @@ extension FileOperations {
         // Draw the image within the shape bounds
         let bounds = shape.bounds
 
-        // Translate to the image position
-        context.saveGState()
-        context.translateBy(x: bounds.minX, y: bounds.minY)
-
-        // Flip the image vertically since we already flipped the context
-        context.translateBy(x: 0, y: bounds.height)
-        context.scaleBy(x: 1.0, y: -1.0)
-
-        // Draw the image at origin with correct size
-        context.draw(cgImage, in: CGRect(origin: .zero, size: bounds.size))
-
-        context.restoreGState()
+        // Draw the image directly at its bounds position
+        context.draw(cgImage, in: bounds)
 
         // Restore graphics state
         context.restoreGState()
@@ -719,10 +576,8 @@ extension FileOperations {
                 // Draw glyph at position using CoreGraphics (creates actual PDF text)
                 context.saveGState()
 
-                // CRITICAL FIX: Apply text matrix to flip Y-axis for correct PDF orientation
-                // PDF coordinate system has Y=0 at bottom, increasing upward
-                // We need to flip the text to render correctly
-                context.textMatrix = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: 0)
+                // Set text matrix without Y-flip since context is not flipped
+                context.textMatrix = CGAffineTransform.identity
 
                 // Set text position and draw glyph
                 context.textPosition = CGPoint(x: glyphX, y: glyphY)
@@ -956,8 +811,8 @@ extension FileOperations {
             // Draw the line
             context.saveGState()
 
-            // CRITICAL FIX: Apply text matrix to flip Y-axis for correct PDF orientation
-            context.textMatrix = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: 0)
+            // Set text matrix without Y-flip since context is not flipped
+            context.textMatrix = CGAffineTransform.identity
 
             // Set text position and draw line
             context.textPosition = CGPoint(x: lineX, y: lineY)
