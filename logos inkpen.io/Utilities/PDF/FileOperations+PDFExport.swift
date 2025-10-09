@@ -101,6 +101,10 @@ extension FileOperations {
         pdfContext.translateBy(x: 0, y: documentSize.height)
         pdfContext.scaleBy(x: 1.0, y: -1.0)
 
+        // CRITICAL: Call displayIfNeeded() to ensure NSViewRepresentable views (images) are rendered
+        // This is required for ImageNSView and other NSViewRepresentable views to appear in PDF
+        hostingView.displayIfNeeded()
+
         // Render the SwiftUI view's layer into the PDF context
         if let layer = hostingView.layer {
             layer.render(in: pdfContext)
