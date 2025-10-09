@@ -95,7 +95,7 @@ extension DrawingCanvas {
                 return event // Let flagsChanged pass through normally
             }
             
-            // HANDLE ARROW KEYS FOR NUDGING (Arrow tool only, no modifiers)
+            // HANDLE ARROW KEYS FOR NUDGING AND OBJECT REORDERING
             if let characters = event.charactersIgnoringModifiers {
                 let arrowUp = "\u{F700}"    // NSUpArrowFunctionKey
                 let arrowDown = "\u{F701}"  // NSDownArrowFunctionKey
@@ -104,6 +104,21 @@ extension DrawingCanvas {
 
                 // Check if it's an arrow key
                 if [arrowUp, arrowDown, arrowLeft, arrowRight].contains(characters) {
+
+                    // OPTION+UP/DOWN: Move object up/down in stacking order
+                    if event.modifierFlags.contains(.option) &&
+                       !event.modifierFlags.contains(.control) &&
+                       !event.modifierFlags.contains(.command) &&
+                       !self.document.selectedObjectIDs.isEmpty {
+
+                        if characters == arrowUp {
+                            self.document.moveSelectedObjectsUp()
+                            return nil // Consume the event
+                        } else if characters == arrowDown {
+                            self.document.moveSelectedObjectsDown()
+                            return nil // Consume the event
+                        }
+                    }
 
                     // Only nudge with arrow/selection tool and no modifiers
                     if !event.modifierFlags.contains(.control) &&

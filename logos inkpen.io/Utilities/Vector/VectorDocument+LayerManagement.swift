@@ -308,4 +308,96 @@ extension VectorDocument {
         // Force UI update
         objectWillChange.send()
     }
+
+    /// Move selected objects up in stacking order (increase orderID - toward front)
+    func moveSelectedObjectsUp() {
+        guard !selectedObjectIDs.isEmpty else { return }
+
+        saveToUndoStack()
+
+        // Get all selected objects
+        var selectedObjects: [VectorObject] = []
+        for objectID in selectedObjectIDs {
+            if let obj = findObject(by: objectID) {
+                selectedObjects.append(obj)
+            }
+        }
+
+        // Sort by orderID (highest first) to process from front to back
+        selectedObjects.sort { $0.orderID > $1.orderID }
+
+        // For each selected object, swap with the next higher orderID object on the same layer
+        for selectedObj in selectedObjects {
+            // Find the object with the next higher orderID on the same layer
+            let higherObjects = unifiedObjects.filter {
+                $0.layerIndex == selectedObj.layerIndex && $0.orderID > selectedObj.orderID
+            }.sorted { $0.orderID < $1.orderID }
+
+            guard let nextHigher = higherObjects.first else { continue }
+
+            // Swap orderIDs
+            if let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObj.id }),
+               let higherIndex = unifiedObjects.firstIndex(where: { $0.id == nextHigher.id }) {
+                let tempOrderID = unifiedObjects[selectedIndex].orderID
+                unifiedObjects[selectedIndex] = VectorObject(
+                    shape: extractShape(from: unifiedObjects[selectedIndex]),
+                    layerIndex: unifiedObjects[selectedIndex].layerIndex,
+                    orderID: unifiedObjects[higherIndex].orderID
+                )
+                unifiedObjects[higherIndex] = VectorObject(
+                    shape: extractShape(from: unifiedObjects[higherIndex]),
+                    layerIndex: unifiedObjects[higherIndex].layerIndex,
+                    orderID: tempOrderID
+                )
+            }
+        }
+
+        objectWillChange.send()
+    }
+
+    /// Move selected objects down in stacking order (decrease orderID - toward back)
+    func moveSelectedObjectsDown() {
+        guard !selectedObjectIDs.isEmpty else { return }
+
+        saveToUndoStack()
+
+        // Get all selected objects
+        var selectedObjects: [VectorObject] = []
+        for objectID in selectedObjectIDs {
+            if let obj = findObject(by: objectID) {
+                selectedObjects.append(obj)
+            }
+        }
+
+        // Sort by orderID (lowest first) to process from back to front
+        selectedObjects.sort { $0.orderID < $1.orderID }
+
+        // For each selected object, swap with the next lower orderID object on the same layer
+        for selectedObj in selectedObjects {
+            // Find the object with the next lower orderID on the same layer
+            let lowerObjects = unifiedObjects.filter {
+                $0.layerIndex == selectedObj.layerIndex && $0.orderID < selectedObj.orderID
+            }.sorted { $0.orderID > $1.orderID }
+
+            guard let nextLower = lowerObjects.first else { continue }
+
+            // Swap orderIDs
+            if let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObj.id }),
+               let lowerIndex = unifiedObjects.firstIndex(where: { $0.id == nextLower.id }) {
+                let tempOrderID = unifiedObjects[selectedIndex].orderID
+                unifiedObjects[selectedIndex] = VectorObject(
+                    shape: extractShape(from: unifiedObjects[selectedIndex]),
+                    layerIndex: unifiedObjects[selectedIndex].layerIndex,
+                    orderID: unifiedObjects[lowerIndex].orderID
+                )
+                unifiedObjects[lowerIndex] = VectorObject(
+                    shape: extractShape(from: unifiedObjects[lowerIndex]),
+                    layerIndex: unifiedObjects[lowerIndex].layerIndex,
+                    orderID: tempOrderID
+                )
+            }
+        }
+
+        objectWillChange.send()
+    }
 }
