@@ -33,6 +33,22 @@ enum BlendMode: String, CaseIterable, Codable {
         return rawValue
     }
 
+    /// Custom decoder that falls back to .normal for invalid/removed blend modes
+    /// This allows opening old .inkpen files that used removed blend modes (sourceAtop, plusDarker, etc.)
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+
+        // Try to initialize from raw value
+        if let mode = BlendMode(rawValue: rawValue) {
+            self = mode
+        } else {
+            // Unknown/removed blend mode - fall back to normal and log warning
+            Log.fileOperation("⚠️ Unknown blend mode '\(rawValue)' found - using .normal instead", level: .warning)
+            self = .normal
+        }
+    }
+
     /// Convert to CGBlendMode for PDF/PNG export
     var cgBlendMode: CGBlendMode {
         switch self {
