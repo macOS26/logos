@@ -231,26 +231,74 @@ extension DrawingCanvas {
     internal func activateTemporaryHandTool() {
         // Only activate if not already using hand tool and not in temporary mode
         guard document.currentTool != .hand && !isTemporaryHandToolActive else { return }
-        
+
         // Store the current tool to restore later
         temporaryToolPreviousTool = document.currentTool
         isTemporaryHandToolActive = true
-        
+
         // Switch to hand tool
         document.currentTool = .hand
-        
+
+        // Explicitly set the hand cursor if hovering over canvas
+        if isCanvasHovering {
+            HandOpenCursor.set()
+
+            // Also set on next runloop to ensure it wins any cursor races
+            DispatchQueue.main.async {
+                if self.isTemporaryHandToolActive && self.isCanvasHovering {
+                    HandOpenCursor.set()
+                }
+            }
+        }
     }
     
     /// Deactivate temporary hand tool when spacebar is released
     internal func deactivateTemporaryHandTool() {
         // Only deactivate if in temporary mode
         guard isTemporaryHandToolActive, let previousTool = temporaryToolPreviousTool else { return }
-        
+
         // Restore the previous tool
         document.currentTool = previousTool
         isTemporaryHandToolActive = false
         temporaryToolPreviousTool = nil
-        
+
+        // Restore the appropriate cursor for the previous tool if hovering over canvas
+        if isCanvasHovering {
+            switch previousTool {
+            case .hand:
+                HandOpenCursor.set()
+            case .eyedropper:
+                EyedropperCursor.set()
+            case .selectSameColor:
+                EyedropperCursor.set()
+            case .zoom:
+                MagnifyingGlassCursor.set()
+            case .rectangle, .square, .circle, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .cone, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon:
+                CrosshairCursor.set()
+            default:
+                NSCursor.arrow.set()
+            }
+
+            // Also set on next runloop to ensure it wins any cursor races
+            DispatchQueue.main.async {
+                if self.isCanvasHovering && !self.isTemporaryHandToolActive {
+                    switch previousTool {
+                    case .hand:
+                        HandOpenCursor.set()
+                    case .eyedropper:
+                        EyedropperCursor.set()
+                    case .selectSameColor:
+                        EyedropperCursor.set()
+                    case .zoom:
+                        MagnifyingGlassCursor.set()
+                    case .rectangle, .square, .circle, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .cone, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon:
+                        CrosshairCursor.set()
+                    default:
+                        NSCursor.arrow.set()
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Object Nudging with Arrow Keys
