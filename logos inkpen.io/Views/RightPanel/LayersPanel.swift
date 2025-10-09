@@ -61,12 +61,22 @@ struct LayersPanel: View {
                     .foregroundColor(.secondary)
                     .frame(width: 50, alignment: .leading)
 
-                Slider(value: $document.layers[layerIndex].opacity, in: 0...1, onEditingChanged: { editing in
-                    document.objectWillChange.send()
-                    if !editing {
-                        document.saveToUndoStack()
+                Slider(
+                    value: Binding(
+                        get: { document.layers[layerIndex].opacity },
+                        set: { newValue in
+                            var updatedLayer = document.layers[layerIndex]
+                            updatedLayer.opacity = newValue
+                            document.layers[layerIndex] = updatedLayer
+                        }
+                    ),
+                    in: 0...1,
+                    onEditingChanged: { editing in
+                        if !editing {
+                            document.saveToUndoStack()
+                        }
                     }
-                })
+                )
                 .frame(maxWidth: .infinity)
 
                 Text("\(Int(document.layers[layerIndex].opacity * 100))%")
@@ -82,7 +92,15 @@ struct LayersPanel: View {
                     .foregroundColor(.secondary)
                     .frame(width: 50, alignment: .leading)
 
-                Picker("", selection: $document.layers[layerIndex].blendMode) {
+                Picker("", selection: Binding(
+                    get: { document.layers[layerIndex].blendMode },
+                    set: { newValue in
+                        var updatedLayer = document.layers[layerIndex]
+                        updatedLayer.blendMode = newValue
+                        document.layers[layerIndex] = updatedLayer
+                        document.saveToUndoStack()
+                    }
+                )) {
                     ForEach(BlendMode.allCases, id: \.self) { mode in
                         Text(mode.displayName).tag(mode)
                     }
@@ -90,10 +108,6 @@ struct LayersPanel: View {
                 .labelsHidden()
                 .pickerStyle(.menu)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .onChange(of: document.layers[layerIndex].blendMode) { _, _ in
-                    document.saveToUndoStack()
-                    document.objectWillChange.send()
-                }
             }
         }
         .padding(.horizontal, 12)
