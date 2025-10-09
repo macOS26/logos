@@ -7,6 +7,7 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
+import Combine
 
         // PROFESSIONAL LAYERS PANEL (Professional Style)
 struct LayersPanel: View {
@@ -61,6 +62,7 @@ struct LayersPanel: View {
                     .frame(width: 50, alignment: .leading)
 
                 Slider(value: $document.layers[layerIndex].opacity, in: 0...1, onEditingChanged: { editing in
+                    document.objectWillChange.send()
                     if !editing {
                         document.saveToUndoStack()
                     }
@@ -90,6 +92,7 @@ struct LayersPanel: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .onChange(of: document.layers[layerIndex].blendMode) { _, _ in
                     document.saveToUndoStack()
+                    document.objectWillChange.send()
                 }
             }
         }
