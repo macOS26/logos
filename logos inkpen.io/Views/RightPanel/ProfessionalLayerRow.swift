@@ -66,33 +66,51 @@ struct ProfessionalLayerRow: View {
     var body: some View {
         VStack(spacing: 0) {
             // Layer Header with Adobe Illustrator Layout - Icons OUTSIDE main button
-            HStack(spacing: 2) {
-                // First Column: Visibility Toggle (Eye Icon) - Using binding for speed
-                Button(action: {
-                    isVisibleBinding.wrappedValue.toggle()
-                }) {
-                    Image(systemName: isVisibleBinding.wrappedValue ? "eye" : "eye.slash")
-                        .font(.system(size: 11))
-                        .foregroundColor(isVisibleBinding.wrappedValue ? .primary : .secondary.opacity(0.3))
-                        .frame(width: 20, height: 20)
-                }
-                .buttonStyle(BorderlessButtonStyle())
-                .help(isVisibleBinding.wrappedValue ? "Hide Layer" : "Show Layer")
+            ZStack(alignment: .bottom) {
+                // Horizontal dividers under eye and lock columns
+                HStack(spacing: 2) {
+                    // Divider under eye column
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: 20, height: 1)
 
-                // Second Column: Lock Toggle - Using binding for speed
-                Button(action: {
-                    isLockedBinding.wrappedValue.toggle()
-                }) {
-                    Image(systemName: isLockedBinding.wrappedValue ? "lock.fill" : "lock.open")
-                        .font(.system(size: 10))
-                        .foregroundColor(isLockedBinding.wrappedValue ? .orange : .secondary.opacity(0.3))
-                        .frame(width: 20, height: 20)
-                }
-                .buttonStyle(BorderlessButtonStyle())
-                .help(isLockedBinding.wrappedValue ? "Unlock Layer" : "Lock Layer")
+                    // Divider under lock column
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: 20, height: 1)
 
-                // MAIN LAYER BUTTON - Separate from eye/lock icons
-                HStack(spacing: 4) {
+                    Spacer()
+                }
+                .padding(.horizontal, 4)
+
+                // Layer row content
+                HStack(spacing: 2) {
+                    // First Column: Visibility Toggle (Eye Icon) - Using binding for speed
+                    Button(action: {
+                        isVisibleBinding.wrappedValue.toggle()
+                    }) {
+                        Image(systemName: isVisibleBinding.wrappedValue ? "eye" : "eye.slash")
+                            .font(.system(size: 11))
+                            .foregroundColor(isVisibleBinding.wrappedValue ? .primary : .secondary.opacity(0.3))
+                            .frame(width: 20, height: 20)
+                    }
+                    .buttonStyle(BorderlessButtonStyle())
+                    .help(isVisibleBinding.wrappedValue ? "Hide Layer" : "Show Layer")
+
+                    // Second Column: Lock Toggle - Using binding for speed
+                    Button(action: {
+                        isLockedBinding.wrappedValue.toggle()
+                    }) {
+                        Image(systemName: isLockedBinding.wrappedValue ? "lock.fill" : "lock.open")
+                            .font(.system(size: 10))
+                            .foregroundColor(isLockedBinding.wrappedValue ? .orange : .secondary.opacity(0.3))
+                            .frame(width: 20, height: 20)
+                    }
+                    .buttonStyle(BorderlessButtonStyle())
+                    .help(isLockedBinding.wrappedValue ? "Unlock Layer" : "Lock Layer")
+
+                    // MAIN LAYER BUTTON - Separate from eye/lock icons
+                    HStack(spacing: 4) {
                     // Disclosure Triangle
                     Button(action: {
                         withAnimation(.easeInOut(duration: 0.2)) {
@@ -201,8 +219,9 @@ struct ProfessionalLayerRow: View {
                     document.selectedTextIDs.removeAll()
                     document.syncSelectionArrays()
                 }
+                }
+                .padding(.horizontal, 4)
             }
-            .padding(.horizontal, 4)
             .dropDestination(for: DraggableVectorObject.self) { items, location in
                 // Handle dropping objects onto this layer
                 guard let droppedObject = items.first else { return false }
@@ -281,7 +300,7 @@ struct ProfessionalLayerRow: View {
                     // Drop zone at bottom of layer for reordering to the end
                     BottomDropZone(layerIndex: layerIndex, document: document)
                 }
-                .padding(.leading, 30) // Indent objects under layer
+                .padding(.leading, 26) // Indent objects under layer
             }
         }
         .background(Color.clear)
