@@ -81,7 +81,7 @@ struct ProfessionalLayerRow: View {
 
                     Spacer()
                 }
-                .padding(.leading, 1)  // Shifted left by 3px (was 4)
+                .padding(.leading, 2.5)  // Shifted right by 1.5px (was 1)
                 .padding(.trailing, 4)
 
                 // Layer row content
