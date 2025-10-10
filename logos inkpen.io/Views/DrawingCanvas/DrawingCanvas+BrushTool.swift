@@ -92,10 +92,10 @@ extension DrawingCanvas {
         let actualPressure = pressure ?? PressureManager.shared.currentPressure
 
         // DISTANCE-BASED FILTERING: Only add point if it's far enough from the last point
-        // This prevents excessive point density and duplicate points when drawing slowly
+        // This prevents excessive point density and ensures zero duplicate points
         if let lastPoint = brushRawPoints.last {
             let distance = hypot(location.x - lastPoint.location.x, location.y - lastPoint.location.y)
-            let minDistance: Double = 1.5 // Minimum 1.5 pixels between points (prevents edge duplicates and reduces density)
+            let minDistance: Double = 3.0 // Minimum 3.0 pixels between points (ensures no duplicates, significantly reduces density)
 
             // Skip this point if too close to previous point
             if distance < minDistance {
