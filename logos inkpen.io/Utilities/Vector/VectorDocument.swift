@@ -241,6 +241,9 @@ class VectorDocument: ObservableObject, Codable {
     @Published var currentBrushMinTaperThickness: Double = 0.5 {  // Minimum thickness at taper ends (0-15 pts)
         didSet { UserDefaults.standard.set(currentBrushMinTaperThickness, forKey: "brushMinTaperThickness") }
     }
+    @Published var currentBrushSimplification: Double = 50.0 {  // Point simplification (0=max, 50=moderate, 100=none)
+        didSet { UserDefaults.standard.set(currentBrushSimplification, forKey: "brushSimplification") }
+    }
     @Published var hasPressureInput: Bool = false // Whether pressure-sensitive input is detected
     @Published var brushApplyNoStroke: Bool = true {
         didSet { UserDefaults.standard.set(brushApplyNoStroke, forKey: "brushApplyNoStroke") }
@@ -440,6 +443,7 @@ class VectorDocument: ObservableObject, Codable {
         // currentBrushPressureSensitivity removed - now using global pressure curve
         // currentBrushTaper removed - tapering is now hardcoded in brush tool
         self.currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 2.0
+        self.currentBrushSimplification = UserDefaults.standard.object(forKey: "brushSimplification") as? Double ?? 50.0
 
         // Initialize advanced smoothing settings from UserDefaults
         self.advancedSmoothingEnabled = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? false
@@ -811,6 +815,7 @@ class VectorDocument: ObservableObject, Codable {
         currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 2.0
         currentBrushLiquid = UserDefaults.standard.object(forKey: "brushLiquid") as? Double ?? 0.0
         currentBrushMinTaperThickness = UserDefaults.standard.object(forKey: "brushMinTaperThickness") as? Double ?? 0.5
+        currentBrushSimplification = UserDefaults.standard.object(forKey: "brushSimplification") as? Double ?? 50.0
 
         // Initialize advanced smoothing settings from UserDefaults (properties with didSet)
         advancedSmoothingEnabled = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? false

@@ -6,7 +6,8 @@
       "mcp__xcf-server__run_project",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(git revert:*)"
     ],
     "deny": [],
     "ask": []

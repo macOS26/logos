@@ -114,38 +114,18 @@ struct LayersPanel: View {
 
                 Spacer()
                     .frame(width: 0)
-                // Layer Color Swatch - Square, clickable with color picker
-                Button(action: {
-                    showColorPicker = true
-                }) {
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(document.layers[layerIndex].color)
-                        .padding(.horizontal, -3)
-                        .frame(width: 14, height: 16)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .popover(isPresented: $showColorPicker, arrowEdge: .bottom) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        ForEach(availableLayerColors(), id: \.name) { colorOption in
-                            Button(action: {
-                                document.saveToUndoStack()
-                                document.layers[layerIndex].color = colorOption.color
-                                showColorPicker = false
-                            }) {
-                                HStack(spacing: 6) {
-                                    RoundedRectangle(cornerRadius: 2)
-                                        .fill(colorOption.color)
-                                        .frame(width: 14, height: 14)
-                                    Text(colorOption.name)
-                                        .font(.system(size: 11))
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .buttonStyle(PlainButtonStyle())
+
+                // Layer Color Swatch - Square, clickable with color picker (with proper binding)
+                ColorSwatchButton(
+                    color: Binding(
+                        get: { document.layers[layerIndex].color },
+                        set: { newColor in
+                            document.saveToUndoStack()
+                            document.layers[layerIndex].color = newColor
                         }
-                    }
-                    .padding(6)
-                }
+                    ),
+                    availableColors: availableLayerColors()
+                )
 
                 Spacer()
             }
@@ -243,5 +223,45 @@ struct LayersPanel: View {
             layer: layerIndex < document.layers.count ? document.layers[layerIndex] : document.layers[0],
             document: document
         )
+    }
+}
+
+// MARK: - Color Swatch Button Component
+struct ColorSwatchButton: View {
+    @Binding var color: Color
+    let availableColors: [(name: String, color: Color)]
+    @State private var showColorPicker: Bool = false
+
+    var body: some View {
+        Button(action: {
+            showColorPicker = true
+        }) {
+            RoundedRectangle(cornerRadius: 20)
+                .fill(color)
+                .padding(.horizontal, -3)
+                .frame(width: 14, height: 16)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .popover(isPresented: $showColorPicker, arrowEdge: .bottom) {
+            VStack(alignment: .leading, spacing: 2) {
+                ForEach(availableColors, id: \.name) { colorOption in
+                    Button(action: {
+                        color = colorOption.color
+                        showColorPicker = false
+                    }) {
+                        HStack(spacing: 6) {
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(colorOption.color)
+                                .frame(width: 14, height: 14)
+                            Text(colorOption.name)
+                                .font(.system(size: 11))
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            .padding(6)
+        }
     }
 } 

@@ -55,14 +55,27 @@ extension DrawingCanvas {
         rubberBandPreview(geometry: geometry)
         
         // Brush live preview (SwiftUI overlay; avoids document mutations during drag)
+        // CRITICAL: Render directly like marker tool - no modifier to prevent flicker
         if let preview = brushPreviewPath {
-            Path { path in
-                addPathElements(preview.elements, to: &path)
+            // Check brush preview style from appState
+            if appState.brushPreviewStyle == .fill {
+                // Fill mode: show actual fill color
+                Path { path in
+                    addPathElements(preview.elements, to: &path)
+                }
+                .fill(document.defaultFillColor.color)
+                .opacity(document.defaultFillOpacity)
+                .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+            } else {
+                // Outline mode: show blue stroke like marker outline
+                Path { path in
+                    addPathElements(preview.elements, to: &path)
+                }
+                .stroke(Color.blue, lineWidth: max(1.0, 1.0 / document.zoomLevel))
+                .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
             }
-            .modifier(BrushPreviewStyleModifier(appState: appState, document: document, preview: preview))
-            .scaleEffect(document.zoomLevel, anchor: .topLeading)
-            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-            .drawingGroup() // CRITICAL FIX: Composite into offscreen buffer to prevent flashing during slow drawing
         }
         
         // Freehand live preview (SwiftUI overlay; avoids document mutations during drag)

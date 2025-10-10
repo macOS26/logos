@@ -33,8 +33,6 @@ extension DrawingCanvas {
         // Start new brush stroke with proper initialization
         guard !isBrushDrawing else { return }
 
-        print("🔵 BRUSH START at \(location)")
-
         // Initialize brush drawing state
         isBrushDrawing = true
         brushRawPoints = [BrushPoint(location: location, pressure: 1.0)]
@@ -81,7 +79,6 @@ extension DrawingCanvas {
             .close
         ])
         brushPreviewPath = initialPreview
-        print("🔵 BRUSH: Set initial preview with \(initialPreview.elements.count) elements")
 
         // VECTOR APP OPTIMIZATION: Don't add to document during drawing - use overlay system
         // Shape will be added only when drawing is complete
@@ -94,15 +91,17 @@ extension DrawingCanvas {
         // Use pressure passed directly from event, or fall back to PressureManager current value (NO SIMULATION)
         let actualPressure = pressure ?? PressureManager.shared.currentPressure
 
+        // DEBUG: Log pressure values every 10 points
+        if brushRawPoints.count % 10 == 0 {
+            print("🔴 PRESSURE: \(String(format: "%.2f", actualPressure)) | Sensitivity: \(appState.pressureSensitivityEnabled) | HasReal: \(PressureManager.shared.hasRealPressureInput)")
+        }
+
         // Add point to raw path with RAW pressure data (no speed-based simulation)
         let newPoint = BrushPoint(location: location, pressure: actualPressure)
         brushRawPoints.append(newPoint)
 
-        // THROTTLED UPDATE: Only update preview every 5 points to reduce flickering
-        // This provides live feedback without constant regeneration
-        if brushRawPoints.count % 5 == 0 {
-            updateBrushPreview()
-        }
+        // Update preview on every point (same as marker tool for responsive drawing)
+        updateBrushPreview()
     }
     
 
@@ -190,31 +189,11 @@ extension DrawingCanvas {
     // MARK: - Real-time Preview
     
     private func updateBrushPreview() {
-        // CRITICAL: NEVER clear or blank out the existing preview
-        // Keep showing the last preview if we don't have enough points yet
-        guard brushRawPoints.count >= 2 else {
-            print("🔴 BRUSH: Not enough points (\(brushRawPoints.count)), keeping old preview")
-            return
-        }
+        // Generate preview - same simple approach as marker tool (no validation)
+        guard brushRawPoints.count >= 2 else { return }
 
-        print("🟡 BRUSH: Generating preview with \(brushRawPoints.count) points")
-
-        // Generate new path completely BEFORE replacing old one
         let newPreviewPath = generateLivePreviewPath()
-
-        print("🟢 BRUSH: Generated path with \(newPreviewPath.elements.count) elements")
-
-        // STRICT VALIDATION: Only update if we have a valid, non-empty path with actual geometry
-        // This prevents ANY possibility of showing "nothing" or blank screen
-        guard !newPreviewPath.elements.isEmpty,
-              newPreviewPath.elements.count > 1 else {
-            // Keep showing old preview - NEVER blank it out
-            print("🔴 BRUSH: Path validation FAILED - keeping old preview (isEmpty: \(newPreviewPath.elements.isEmpty), count: \(newPreviewPath.elements.count))")
-            return
-        }
-
-        // Safe to update - we have a valid complete path
-        print("✅ BRUSH: Updating preview with valid path (\(newPreviewPath.elements.count) elements)")
+        print("🔵 BRUSH UPDATE: \(brushRawPoints.count) points -> \(newPreviewPath.elements.count) elements")
         brushPreviewPath = newPreviewPath
     }
     
@@ -270,51 +249,22 @@ extension DrawingCanvas {
 
         let rawPointLocations = pointsToProcess.map { $0.location }
 
-        let simplifiedPoints: [CGPoint]
-
-        // Use liquid smoothing only (no separate simplify control)
-        let liquidValue = document.currentBrushLiquid
-
-        // Calculate tolerance from liquid setting
-        let tolerance: Double
-        if abs(liquidValue - 50.0) < 0.01 {
-            tolerance = 0.5
-        } else if liquidValue < 50.0 {
-            let smoothFactor = (50.0 - liquidValue) / 50.0
-            tolerance = 0.5 + (2.0 * smoothFactor)
-        } else {
-            let smoothFactor = (liquidValue - 50.0) / 50.0
-            tolerance = 2.5 + (7.5 * smoothFactor)
-        }
-
-        if tolerance < 0.6 {
-            simplifiedPoints = rawPointLocations
-        } else {
-            simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
-                points: rawPointLocations,
-                tolerance: tolerance
-            )
-        }
-
-        // CRITICAL: Only return a valid path with actual geometry
-        // Never return an incomplete path that would cause flickering
-        if simplifiedPoints.count >= 2 {
+        // CRITICAL FIX: Use raw points directly like marker tool - NO SIMPLIFICATION during preview
+        // Simplification causes the path geometry to change dramatically between updates -> flicker
+        // The marker tool doesn't simplify and it doesn't flicker!
+        if rawPointLocations.count >= 2 {
             let newPath = generatePreviewVariableWidthPath(
-                centerPoints: (appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput) ? rawPointLocations : simplifiedPoints,
+                centerPoints: rawPointLocations,  // Use ALL raw points - no simplification!
                 recentRawPoints: pointsToProcess,
                 thickness: document.currentBrushThickness,
                 pressureSensitivity: 0.5,
                 taper: 0.5
             )
-            // Double-check the returned path has enough elements
-            if newPath.elements.count > 2 {
-                return newPath
-            }
+            return newPath
         }
 
-        // If we can't generate a valid path, return an empty path
-        // The updateBrushPreview() validation will catch this and keep the old preview
-        return VectorPath(elements: [])
+        // Fallback for not enough points
+        return VectorPath(elements: [.move(to: VectorPoint(rawPointLocations[0]))])
     }
     
     /// Generate live preview of the variable width brush stroke as the user draws
@@ -470,9 +420,66 @@ extension DrawingCanvas {
         
     }
 
-    // MARK: - Finalize From Preview (no recompute)
+    // MARK: - Finalize From Preview (with point reduction)
     private func finalizeFromPreview(_ preview: VectorPath) {
         guard document.selectedLayerIndex != nil else { return }
+
+        // CRITICAL: Simplify raw points to reduce final path complexity
+        // This happens AFTER drawing is complete, so it doesn't cause flicker
+        let rawPointLocations = brushRawPoints.map { $0.location }
+
+        // Use dedicated Simplification setting to control point reduction
+        // 0% = maximum simplification (high tolerance)
+        // 50% = moderate simplification
+        // 100% = no simplification (all points, very low tolerance)
+        let simplificationValue = document.currentBrushSimplification
+        let tolerance: Double
+        if simplificationValue >= 95.0 {
+            // 95-100%: No simplification (tolerance < 0.6)
+            tolerance = 0.5
+        } else if simplificationValue >= 50.0 {
+            // 50-95%: Light to no simplification (tolerance 0.5 to 2.5)
+            let factor = (simplificationValue - 50.0) / 45.0 // 0 to 1
+            tolerance = 2.5 - (2.0 * factor) // 2.5 -> 0.5
+        } else {
+            // 0-50%: Moderate to maximum simplification (tolerance 2.5 to 10.0)
+            let factor = simplificationValue / 50.0 // 0 to 1
+            tolerance = 10.0 - (7.5 * factor) // 10.0 -> 2.5
+        }
+
+        print("🔵 SIMPLIFICATION: Value=\(simplificationValue)% -> Tolerance=\(tolerance)")
+
+        let simplifiedLocations: [CGPoint]
+        if tolerance < 0.6 {
+            simplifiedLocations = rawPointLocations
+        } else {
+            simplifiedLocations = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
+                points: rawPointLocations,
+                tolerance: tolerance
+            )
+        }
+
+        // Rebuild brushRawPoints with simplified locations but preserve pressure mapping
+        var simplifiedRawPoints: [BrushPoint] = []
+        for simplifiedLocation in simplifiedLocations {
+            // Find closest original point to preserve pressure
+            var closestPoint = brushRawPoints[0]
+            var closestDistance = Double.infinity
+            for rawPoint in brushRawPoints {
+                let distance = hypot(simplifiedLocation.x - rawPoint.location.x,
+                                   simplifiedLocation.y - rawPoint.location.y)
+                if distance < closestDistance {
+                    closestDistance = distance
+                    closestPoint = rawPoint
+                }
+            }
+            simplifiedRawPoints.append(BrushPoint(location: simplifiedLocation, pressure: closestPoint.pressure))
+        }
+
+        print("🟢 BRUSH FINALIZE: Simplified \(brushRawPoints.count) points -> \(simplifiedRawPoints.count) points")
+
+        // Replace with simplified points
+        brushRawPoints = simplifiedRawPoints
 
         // SPECIAL CASE: Detect if this is a straight line by checking path geometry
         // ONLY apply artificial leaf shape when there's NO pressure input
@@ -653,6 +660,11 @@ extension DrawingCanvas {
                 let curve = appState.pressureCurve
 
                 mappedPressure = getThicknessFromPressureCurve(pressure: closestPressure, curve: curve)
+
+                // DEBUG: Log pressure mapping for first few points
+                if index < 5 {
+                    print("🟡 PRESSURE MAP [\(index)]: raw=\(String(format: "%.2f", closestPressure)) -> mapped=\(String(format: "%.2f", mappedPressure))")
+                }
             }
 
             // Apply taper to ends - BLEND with pressure for smoother transitions

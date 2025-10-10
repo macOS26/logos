@@ -149,14 +149,11 @@ func getThicknessFromPressureCurve(pressure: Double, curve: [CGPoint]) -> Double
     let t = (clampedPressure - lowerPoint.x) / (upperPoint.x - lowerPoint.x)
     let curveOutput = lowerPoint.y + t * (upperPoint.y - lowerPoint.y)
 
-    // Convert curve output to thickness multiplier
-    // Linear curve (input=output) → multiplier = 1.0 (no thickness change)
-    // Soft curve (output>input) → multiplier > 1.0 (thicker)
-    // Hard curve (output<input) → multiplier < 1.0 (thinner)
-    if clampedPressure == 0 {
-        return curveOutput == 0 ? 1.0 : 0.0
-    }
-    return curveOutput / clampedPressure
+    // Return the curve output directly as the thickness multiplier
+    // Linear curve (0.5 → 0.5) means pressure 0.5 gives thickness multiplier 0.5
+    // Soft curve (0.5 → 0.7) means pressure 0.5 gives thickness multiplier 0.7 (more sensitive)
+    // Hard curve (0.5 → 0.3) means pressure 0.5 gives thickness multiplier 0.3 (less sensitive)
+    return curveOutput
 }
 
 #Preview {

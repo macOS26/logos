@@ -127,6 +127,27 @@ struct VariableStrokeSection: View {
                 .help("Minimum thickness at taper ends (0-15 points)")
             }
 
+            // Point Simplification
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Point Simplification")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.secondaryText)
+                    Spacer()
+                    Text("\(Int(document.currentBrushSimplification))%")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.primaryText)
+                        .monospacedDigit()
+                }
+
+                Slider(value: Binding(
+                    get: { document.currentBrushSimplification },
+                    set: { document.currentBrushSimplification = $0 }
+                ), in: 0...100)
+                .controlSize(.regular)
+                .help("Control point reduction after drawing - 0% = maximum simplification, 50% = moderate, 100% = no simplification (all points)")
+            }
+
             // Advanced Smoothing Section
             Divider()
                 .padding(.vertical, 8)
