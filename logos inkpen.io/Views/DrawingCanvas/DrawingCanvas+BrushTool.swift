@@ -407,35 +407,9 @@ extension DrawingCanvas {
     private func finalizeFromPreview(_ preview: VectorPath) {
         guard document.selectedLayerIndex != nil else { return }
 
-        // SECOND PASS: Remove duplicate/near-duplicate points after drawing completes
-        // This eliminates any remaining duplicates that slipped through during drawing
-        var dedupedPoints: [BrushPoint] = []
-        let dupThreshold = 3.0 // Points closer than 3 pixels are considered duplicates (ensures zero duplicates)
-
-        for point in brushRawPoints {
-            if let lastPoint = dedupedPoints.last {
-                let distance = hypot(point.location.x - lastPoint.location.x,
-                                   point.location.y - lastPoint.location.y)
-                if distance < dupThreshold {
-                    continue // Skip this duplicate point
-                }
-            }
-            dedupedPoints.append(point)
-        }
-
-        brushRawPoints = dedupedPoints
-        print("🟣 DEDUP PASS: Removed \(brushRawPoints.count - dedupedPoints.count) duplicates -> \(dedupedPoints.count) points")
-
-        // CRITICAL: Regenerate the path using deduped points
-        // The preview was created with ALL raw points, but we need to use deduped points for final
-        let dedupedCenterPoints = dedupedPoints.map { $0.location }
-        let regeneratedPath = generatePreviewVariableWidthPath(
-            centerPoints: dedupedCenterPoints,
-            recentRawPoints: dedupedPoints,
-            thickness: document.currentBrushThickness,
-            pressureSensitivity: 0.5,
-            taper: 0.5
-        )
+        // Use preview path directly - no second pass deduplication
+        // The 1.0 pixel filtering during drawing is sufficient
+        var finalPath = preview
 
         let strokeStyle: StrokeStyle? = document.brushApplyNoStroke ? nil : StrokeStyle(
             color: getCurrentStrokeColor(),
@@ -446,11 +420,10 @@ extension DrawingCanvas {
             opacity: getCurrentStrokeOpacity()
         )
         let fillStyle = FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
-        var finalPath = regeneratedPath
 
         // CRITICAL: Brush has NO STROKE - only fill. Use WINDING rule to prevent reversed holes.
         if document.brushRemoveOverlap {
-            let currentPath = regeneratedPath.cgPath
+            let currentPath = preview.cgPath
 
             // Use WINDING fill rule to prevent even-odd reversed holes on self-overlap
             var cleaned: CGPath? = nil
