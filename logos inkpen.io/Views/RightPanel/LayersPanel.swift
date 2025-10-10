@@ -148,6 +148,7 @@ struct LayersPanel: View {
                         VStack(spacing: 0) {
                             // Layer row content
                             layerRowContent(for: layerIndex)
+                            .frame(height: 45) // Fixed height to ensure consistency
                             .offset(draggedLayerIndex == layerIndex ? dragOffset : .zero)
                             .opacity(draggedLayerIndex == layerIndex ? 0.9 : 1.0)
                             .zIndex(draggedLayerIndex == layerIndex ? 100 : 0)
@@ -197,59 +198,43 @@ struct LayersPanel: View {
                 .padding(.horizontal, 4)
 
                 // Invisible overlay columns for eye and lock drag-through
-                // Positioned IN FRONT with higher zIndex but only responding to drags
                 HStack(spacing: 2) {
-                    // Eye column overlay - ONLY responds to drags, not clicks
+                    // Eye column overlay
                     Color.clear
                         .frame(width: 20)
                         .contentShape(Rectangle())
-                        .allowsHitTesting(isDraggingVisibility) // Only capture events when dragging
-                        .gesture(
-                            DragGesture(minimumDistance: 10) // Increased minimum distance to avoid accidental drags
+                        .simultaneousGesture(
+                            DragGesture(minimumDistance: 1)
                                 .onChanged { value in
+                                    // Start drag
                                     if !isDraggingVisibility {
                                         isDraggingVisibility = true
+                                        processedLayersDuringDrag.removeAll()
                                         document.saveToUndoStack()
 
-                                        // Toggle the initial layer where drag started
+                                        // Process initial position
                                         let rowHeight: CGFloat = 45
-                                        let iconHeight: CGFloat = 20
                                         let startY = value.startLocation.y
                                         let layerIndex = Int(startY / rowHeight)
-                                        let yInRow = startY.truncatingRemainder(dividingBy: rowHeight)
+                                        let reversedIndex = document.layers.count - 1 - layerIndex
 
-                                        // Check if we're within the icon's vertical bounds (centered in row)
-                                        let iconTop = (rowHeight - iconHeight) / 2
-                                        let iconBottom = iconTop + iconHeight
-
-                                        if yInRow >= iconTop && yInRow <= iconBottom {
-                                            let reversedIndex = document.layers.count - 1 - layerIndex
-                                            if reversedIndex >= 0 && reversedIndex < document.layers.count {
-                                                document.layers[reversedIndex].isVisible.toggle()
-                                                processedLayersDuringDrag.insert(reversedIndex)
-                                            }
+                                        if reversedIndex >= 0 && reversedIndex < document.layers.count {
+                                            document.layers[reversedIndex].isVisible.toggle()
+                                            processedLayersDuringDrag.insert(reversedIndex)
                                         }
                                     }
 
-                                    // Calculate which layer index we're currently over
+                                    // Process current position
                                     let rowHeight: CGFloat = 45
-                                    let iconHeight: CGFloat = 20
                                     let currentY = value.location.y
                                     let layerIndex = Int(currentY / rowHeight)
-                                    let yInRow = currentY.truncatingRemainder(dividingBy: rowHeight)
+                                    let reversedIndex = document.layers.count - 1 - layerIndex
 
-                                    // Check if we're within the icon's vertical bounds
-                                    let iconTop = (rowHeight - iconHeight) / 2
-                                    let iconBottom = iconTop + iconHeight
-
-                                    if yInRow >= iconTop && yInRow <= iconBottom {
-                                        let reversedIndex = document.layers.count - 1 - layerIndex
-                                        if reversedIndex >= 0 && reversedIndex < document.layers.count {
-                                            if !processedLayersDuringDrag.contains(reversedIndex) {
-                                                // Toggle this layer's visibility
-                                                document.layers[reversedIndex].isVisible.toggle()
-                                                processedLayersDuringDrag.insert(reversedIndex)
-                                            }
+                                    if reversedIndex >= 0 && reversedIndex < document.layers.count {
+                                        if !processedLayersDuringDrag.contains(reversedIndex) {
+                                            // Toggle this layer's visibility
+                                            document.layers[reversedIndex].isVisible.toggle()
+                                            processedLayersDuringDrag.insert(reversedIndex)
                                         }
                                     }
                                 }
@@ -259,57 +244,42 @@ struct LayersPanel: View {
                                 }
                         )
 
-                    // Lock column overlay - ONLY responds to drags, not clicks
+                    // Lock column overlay
                     Color.clear
                         .frame(width: 20)
                         .contentShape(Rectangle())
-                        .allowsHitTesting(isDraggingLock) // Only capture events when dragging
-                        .gesture(
-                            DragGesture(minimumDistance: 10) // Increased minimum distance to avoid accidental drags
+                        .simultaneousGesture(
+                            DragGesture(minimumDistance: 1)
                                 .onChanged { value in
+                                    // Start drag
                                     if !isDraggingLock {
                                         isDraggingLock = true
+                                        processedLayersDuringDrag.removeAll()
                                         document.saveToUndoStack()
 
-                                        // Toggle the initial layer where drag started
+                                        // Process initial position
                                         let rowHeight: CGFloat = 45
-                                        let iconHeight: CGFloat = 20
                                         let startY = value.startLocation.y
                                         let layerIndex = Int(startY / rowHeight)
-                                        let yInRow = startY.truncatingRemainder(dividingBy: rowHeight)
+                                        let reversedIndex = document.layers.count - 1 - layerIndex
 
-                                        // Check if we're within the icon's vertical bounds (centered in row)
-                                        let iconTop = (rowHeight - iconHeight) / 2
-                                        let iconBottom = iconTop + iconHeight
-
-                                        if yInRow >= iconTop && yInRow <= iconBottom {
-                                            let reversedIndex = document.layers.count - 1 - layerIndex
-                                            if reversedIndex >= 0 && reversedIndex < document.layers.count {
-                                                document.layers[reversedIndex].isLocked.toggle()
-                                                processedLayersDuringDrag.insert(reversedIndex)
-                                            }
+                                        if reversedIndex >= 0 && reversedIndex < document.layers.count {
+                                            document.layers[reversedIndex].isLocked.toggle()
+                                            processedLayersDuringDrag.insert(reversedIndex)
                                         }
                                     }
 
-                                    // Calculate which layer index we're currently over
+                                    // Process current position
                                     let rowHeight: CGFloat = 45
-                                    let iconHeight: CGFloat = 20
                                     let currentY = value.location.y
                                     let layerIndex = Int(currentY / rowHeight)
-                                    let yInRow = currentY.truncatingRemainder(dividingBy: rowHeight)
+                                    let reversedIndex = document.layers.count - 1 - layerIndex
 
-                                    // Check if we're within the icon's vertical bounds
-                                    let iconTop = (rowHeight - iconHeight) / 2
-                                    let iconBottom = iconTop + iconHeight
-
-                                    if yInRow >= iconTop && yInRow <= iconBottom {
-                                        let reversedIndex = document.layers.count - 1 - layerIndex
-                                        if reversedIndex >= 0 && reversedIndex < document.layers.count {
-                                            if !processedLayersDuringDrag.contains(reversedIndex) {
-                                                // Toggle this layer's lock
-                                                document.layers[reversedIndex].isLocked.toggle()
-                                                processedLayersDuringDrag.insert(reversedIndex)
-                                            }
+                                    if reversedIndex >= 0 && reversedIndex < document.layers.count {
+                                        if !processedLayersDuringDrag.contains(reversedIndex) {
+                                            // Toggle this layer's lock
+                                            document.layers[reversedIndex].isLocked.toggle()
+                                            processedLayersDuringDrag.insert(reversedIndex)
                                         }
                                     }
                                 }
@@ -322,7 +292,7 @@ struct LayersPanel: View {
                     Spacer()
                 }
                 .padding(.horizontal, 4)
-                .zIndex(10) // Put in front but only hit test when dragging
+                .zIndex(200) // High z-index to be in front
             }
         }
     }
