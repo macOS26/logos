@@ -113,6 +113,9 @@ struct LayersPanel: View {
                 .pickerStyle(.menu)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
+                Spacer()
+                    .frame(width: 10)
+
                 // Layer Color Swatch - Square, clickable with color picker
                 Button(action: {
                     showColorPicker = true
