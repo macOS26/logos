@@ -95,7 +95,7 @@ extension DrawingCanvas {
         // This prevents excessive point density and duplicate points
         if let lastPoint = brushRawPoints.last {
             let distance = hypot(location.x - lastPoint.location.x, location.y - lastPoint.location.y)
-            let minDistance: Double = 1.0 // Minimum 1.0 pixel between points (smooth drawing, cleaned up in second pass)
+            let minDistance: Double = 2.5 // Minimum 2.5 pixels between points for smoother drawing
 
             // Skip this point if too close to previous point
             if distance < minDistance {
@@ -188,7 +188,7 @@ extension DrawingCanvas {
 
         // DEDUPLICATION DURING PREVIEW: Remove duplicate/near-duplicate points
         var dedupedPoints: [BrushPoint] = []
-        let dupThreshold = 2.0 // 2 pixel threshold for deduplication
+        let dupThreshold = 4.0 // 4 pixel threshold for aggressive deduplication
 
         for point in brushRawPoints {
             if let lastPoint = dedupedPoints.last {
