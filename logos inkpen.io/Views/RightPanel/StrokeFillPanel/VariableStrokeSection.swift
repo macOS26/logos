@@ -63,14 +63,14 @@ struct VariableStrokeSection: View {
 
             // REMOVED: Taper is no longer used - natural pressure creates tapering
 
-            // Brush Smoothness
+            // Smoothness (Point Reduction)
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Smoothness")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("\(formatNumberForDisplay(document.currentBrushSmoothingTolerance))")
+                    Text("\(formatNumberForDisplay(document.currentBrushSmoothingTolerance))px")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.primaryText)
                         .monospacedDigit()
@@ -81,7 +81,7 @@ struct VariableStrokeSection: View {
                     set: { document.currentBrushSmoothingTolerance = $0 }
                 ), in: 0.5...10)
                 .controlSize(.regular)
-                .help("Curve fitting tolerance - lower values preserve more detail, higher values create smoother curves")
+                .help("Point reduction threshold - higher values remove more duplicate points for smoother strokes (0.5-10 pixels)")
             }
 
             // Liquid (Curve Fluidity)

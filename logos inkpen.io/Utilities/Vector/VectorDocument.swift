@@ -232,7 +232,7 @@ class VectorDocument: ObservableObject, Codable {
     }
     // currentBrushPressureSensitivity REMOVED - now using global pressure curve from AppState
     // currentBrushTaper REMOVED - tapering is now hardcoded in brush tool (leaf shape)
-    @Published var currentBrushSmoothingTolerance: Double = 2.0 {
+    @Published var currentBrushSmoothingTolerance: Double = 5.0 {  // Point reduction threshold in pixels (0.5-10)
         didSet { UserDefaults.standard.set(currentBrushSmoothingTolerance, forKey: "brushSmoothingTolerance") }
     }
     @Published var currentBrushLiquid: Double = 0.0 {  // Internal: 0=moderate, 50=none, 100=max (UI shows reversed)
@@ -442,7 +442,7 @@ class VectorDocument: ObservableObject, Codable {
         self.currentBrushThickness = UserDefaults.standard.object(forKey: "brushThickness") as? Double ?? 20.0
         // currentBrushPressureSensitivity removed - now using global pressure curve
         // currentBrushTaper removed - tapering is now hardcoded in brush tool
-        self.currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 2.0
+        self.currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 5.0
         self.currentBrushSimplification = UserDefaults.standard.object(forKey: "brushSimplification") as? Double ?? 50.0
 
         // Initialize advanced smoothing settings from UserDefaults
@@ -812,7 +812,7 @@ class VectorDocument: ObservableObject, Codable {
         currentBrushThickness = UserDefaults.standard.object(forKey: "brushThickness") as? Double ?? 20.0
         // currentBrushPressureSensitivity removed - now using global pressure curve
         // currentBrushTaper removed - tapering is now hardcoded in brush tool
-        currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 2.0
+        currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 5.0
         currentBrushLiquid = UserDefaults.standard.object(forKey: "brushLiquid") as? Double ?? 0.0
         currentBrushMinTaperThickness = UserDefaults.standard.object(forKey: "brushMinTaperThickness") as? Double ?? 0.5
         currentBrushSimplification = UserDefaults.standard.object(forKey: "brushSimplification") as? Double ?? 50.0

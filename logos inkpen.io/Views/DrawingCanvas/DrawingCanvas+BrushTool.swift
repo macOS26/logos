@@ -408,8 +408,9 @@ extension DrawingCanvas {
         guard document.selectedLayerIndex != nil else { return }
 
         // DEDUPLICATION ON FINAL: Remove duplicate/near-duplicate points from raw points
+        // Use the smoothness slider value as the deduplication threshold (0.5-10 pixels)
         var dedupedPoints: [BrushPoint] = []
-        let dupThreshold = 2.0 // 2 pixel threshold for deduplication
+        let dupThreshold = document.currentBrushSmoothingTolerance
 
         for point in brushRawPoints {
             if let lastPoint = dedupedPoints.last {
