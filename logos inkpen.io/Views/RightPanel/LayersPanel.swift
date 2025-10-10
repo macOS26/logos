@@ -24,6 +24,7 @@ struct LayersPanel: View {
     @State private var isDraggingVisibility: Bool = false
     @State private var isDraggingLock: Bool = false
     @State private var processedLayersDuringDrag: Set<Int> = []
+    @State private var layerHeights: [Int: CGFloat] = [:] // Track actual height of each layer row
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -152,8 +153,19 @@ struct LayersPanel: View {
 //                                    .frame(width: 60, alignment: .leading)
 //                            }
 
-                            // Layer row content
+                            // Layer row content with height measurement
                             layerRowContent(for: layerIndex)
+                            .background(
+                                GeometryReader { geometry in
+                                    Color.clear
+                                        .onAppear {
+                                            layerHeights[layerIndex] = geometry.size.height
+                                        }
+                                        .onChange(of: geometry.size.height) { _, newHeight in
+                                            layerHeights[layerIndex] = newHeight
+                                        }
+                                }
+                            )
                             .offset(draggedLayerIndex == layerIndex ? dragOffset : .zero)
                             .opacity(draggedLayerIndex == layerIndex ? 0.9 : 1.0)
                             .zIndex(draggedLayerIndex == layerIndex ? 100 : 0)
@@ -202,133 +214,81 @@ struct LayersPanel: View {
                 }
                 .padding(.horizontal, 4)
 
-                // Invisible overlay columns for eye and lock drag-through
+                // Flexible overlay columns for eye and lock drag-through
                 HStack(spacing: 2) {
-                    // Eye column overlay
-                    Color.clear
-                        .frame(width: 20)
-                        .contentShape(Rectangle())
-                        .onTapGesture { location in
-                            // Handle click/tap with smaller click zone
-                            let rowHeight: CGFloat = 45
-                            let clickZoneHeight: CGFloat = 30 // Smaller click zone
-                            let deadZone: CGFloat = (rowHeight - clickZoneHeight) / 2
-
-                            let layerIndex = Int(location.y / rowHeight)
-                            let yInRow = location.y.truncatingRemainder(dividingBy: rowHeight)
-
-                            // Only respond to clicks in the center zone, not in dead zones
-                            if yInRow >= deadZone && yInRow <= (rowHeight - deadZone) {
-                                let reversedIndex = document.layers.count - 1 - layerIndex
-                                if reversedIndex >= 0 && reversedIndex < document.layers.count {
+                    // Eye column overlay with flexible sections
+                    VStack(spacing: 0) {
+                        // Create a section for each layer using actual heights
+                        ForEach(Array((0..<document.layers.count).reversed().enumerated()), id: \.element) { (index, layerIndex) in
+                            Color.clear
+                                .frame(width: 20, height: layerHeights[layerIndex] ?? 45) // Use measured height or default
+                                .contentShape(Rectangle())
+                                .onTapGesture {
                                     document.saveToUndoStack()
-                                    document.layers[reversedIndex].isVisible.toggle()
+                                    document.layers[layerIndex].isVisible.toggle()
+                                }
+                                .onHover { hovering in
+                                    // Handle drag-through when dragging
+                                    if isDraggingVisibility && hovering {
+                                        if !processedLayersDuringDrag.contains(layerIndex) {
+                                            document.layers[layerIndex].isVisible.toggle()
+                                            processedLayersDuringDrag.insert(layerIndex)
+                                        }
+                                    }
+                                }
+                        }
+                    }
+                    .gesture(
+                        DragGesture(minimumDistance: 5)
+                            .onChanged { _ in
+                                if !isDraggingVisibility {
+                                    isDraggingVisibility = true
+                                    processedLayersDuringDrag.removeAll()
+                                    document.saveToUndoStack()
                                 }
                             }
-                        }
-                        .highPriorityGesture(
-                            DragGesture(minimumDistance: 1)
-                                .onChanged { value in
-                                    // Start drag
-                                    if !isDraggingVisibility {
-                                        isDraggingVisibility = true
-                                        processedLayersDuringDrag.removeAll()
-                                        document.saveToUndoStack()
+                            .onEnded { _ in
+                                isDraggingVisibility = false
+                                processedLayersDuringDrag.removeAll()
+                            }
+                    )
 
-                                        // Process initial position
-                                        let rowHeight: CGFloat = 45
-                                        let startY = value.startLocation.y
-                                        let layerIndex = Int(startY / rowHeight)
-                                        let reversedIndex = document.layers.count - 1 - layerIndex
-
-                                        if reversedIndex >= 0 && reversedIndex < document.layers.count {
-                                            document.layers[reversedIndex].isVisible.toggle()
-                                            processedLayersDuringDrag.insert(reversedIndex)
-                                        }
-                                    }
-
-                                    // Process current position
-                                    let rowHeight: CGFloat = 45
-                                    let currentY = value.location.y
-                                    let layerIndex = Int(currentY / rowHeight)
-                                    let reversedIndex = document.layers.count - 1 - layerIndex
-
-                                    if reversedIndex >= 0 && reversedIndex < document.layers.count {
-                                        if !processedLayersDuringDrag.contains(reversedIndex) {
-                                            // Toggle this layer's visibility
-                                            document.layers[reversedIndex].isVisible.toggle()
-                                            processedLayersDuringDrag.insert(reversedIndex)
-                                        }
-                                    }
-                                }
-                                .onEnded { _ in
-                                    isDraggingVisibility = false
-                                    processedLayersDuringDrag.removeAll()
-                                }
-                        )
-
-                    // Lock column overlay
-                    Color.clear
-                        .frame(width: 20)
-                        .contentShape(Rectangle())
-                        .onTapGesture { location in
-                            // Handle click/tap with smaller click zone
-                            let rowHeight: CGFloat = 45
-                            let clickZoneHeight: CGFloat = 30 // Smaller click zone
-                            let deadZone: CGFloat = (rowHeight - clickZoneHeight) / 2
-
-                            let layerIndex = Int(location.y / rowHeight)
-                            let yInRow = location.y.truncatingRemainder(dividingBy: rowHeight)
-
-                            // Only respond to clicks in the center zone, not in dead zones
-                            if yInRow >= deadZone && yInRow <= (rowHeight - deadZone) {
-                                let reversedIndex = document.layers.count - 1 - layerIndex
-                                if reversedIndex >= 0 && reversedIndex < document.layers.count {
+                    // Lock column overlay with flexible sections
+                    VStack(spacing: 0) {
+                        // Create a section for each layer using actual heights
+                        ForEach(Array((0..<document.layers.count).reversed().enumerated()), id: \.element) { (index, layerIndex) in
+                            Color.clear
+                                .frame(width: 20, height: layerHeights[layerIndex] ?? 45) // Use measured height or default
+                                .contentShape(Rectangle())
+                                .onTapGesture {
                                     document.saveToUndoStack()
-                                    document.layers[reversedIndex].isLocked.toggle()
+                                    document.layers[layerIndex].isLocked.toggle()
+                                }
+                                .onHover { hovering in
+                                    // Handle drag-through when dragging
+                                    if isDraggingLock && hovering {
+                                        if !processedLayersDuringDrag.contains(layerIndex) {
+                                            document.layers[layerIndex].isLocked.toggle()
+                                            processedLayersDuringDrag.insert(layerIndex)
+                                        }
+                                    }
+                                }
+                        }
+                    }
+                    .gesture(
+                        DragGesture(minimumDistance: 5)
+                            .onChanged { _ in
+                                if !isDraggingLock {
+                                    isDraggingLock = true
+                                    processedLayersDuringDrag.removeAll()
+                                    document.saveToUndoStack()
                                 }
                             }
-                        }
-                        .highPriorityGesture(
-                            DragGesture(minimumDistance: 1)
-                                .onChanged { value in
-                                    // Start drag
-                                    if !isDraggingLock {
-                                        isDraggingLock = true
-                                        processedLayersDuringDrag.removeAll()
-                                        document.saveToUndoStack()
-
-                                        // Process initial position
-                                        let rowHeight: CGFloat = 45
-                                        let startY = value.startLocation.y
-                                        let layerIndex = Int(startY / rowHeight)
-                                        let reversedIndex = document.layers.count - 1 - layerIndex
-
-                                        if reversedIndex >= 0 && reversedIndex < document.layers.count {
-                                            document.layers[reversedIndex].isLocked.toggle()
-                                            processedLayersDuringDrag.insert(reversedIndex)
-                                        }
-                                    }
-
-                                    // Process current position
-                                    let rowHeight: CGFloat = 45
-                                    let currentY = value.location.y
-                                    let layerIndex = Int(currentY / rowHeight)
-                                    let reversedIndex = document.layers.count - 1 - layerIndex
-
-                                    if reversedIndex >= 0 && reversedIndex < document.layers.count {
-                                        if !processedLayersDuringDrag.contains(reversedIndex) {
-                                            // Toggle this layer's lock
-                                            document.layers[reversedIndex].isLocked.toggle()
-                                            processedLayersDuringDrag.insert(reversedIndex)
-                                        }
-                                    }
-                                }
-                                .onEnded { _ in
-                                    isDraggingLock = false
-                                    processedLayersDuringDrag.removeAll()
-                                }
-                        )
+                            .onEnded { _ in
+                                isDraggingLock = false
+                                processedLayersDuringDrag.removeAll()
+                            }
+                    )
 
                     Spacer()
                 }
