@@ -91,6 +91,18 @@ extension DrawingCanvas {
         // Use pressure passed directly from event, or fall back to PressureManager current value (NO SIMULATION)
         let actualPressure = pressure ?? PressureManager.shared.currentPressure
 
+        // DISTANCE-BASED FILTERING: Only add point if it's far enough from the last point
+        // This prevents excessive point density when drawing slowly
+        if let lastPoint = brushRawPoints.last {
+            let distance = hypot(location.x - lastPoint.location.x, location.y - lastPoint.location.y)
+            let minDistance: Double = 2.0 // Minimum 2 pixels between points
+
+            // Skip this point if too close to previous point
+            if distance < minDistance {
+                return
+            }
+        }
+
         // DEBUG: Log pressure values every 10 points
         if brushRawPoints.count % 10 == 0 {
             print("🔴 PRESSURE: \(String(format: "%.2f", actualPressure)) | Sensitivity: \(appState.pressureSensitivityEnabled) | HasReal: \(PressureManager.shared.hasRealPressureInput)")
