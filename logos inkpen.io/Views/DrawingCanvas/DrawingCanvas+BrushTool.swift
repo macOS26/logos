@@ -174,12 +174,19 @@ extension DrawingCanvas {
     
     private func updateBrushPreview() {
         // VECTOR APP OPTIMIZATION: Direct overlay update - no throttling for 60fps
-        guard brushRawPoints.count >= 2 else { return }
-        
+        guard brushRawPoints.count >= 2 else {
+            // Keep showing the last preview if we don't have enough points yet
+            return
+        }
+
         // Generate preview path for overlay rendering - SwiftUI will handle 60fps updates
-        let previewPath = generateLivePreviewPath()
-        brushPreviewPath = previewPath
-        
+        // CRITICAL: Generate the new path BEFORE clearing the old one to prevent flashing
+        let newPreviewPath = generateLivePreviewPath()
+
+        // Atomic update - replace old path with new path in single assignment
+        // This prevents the brief moment where path could be nil
+        brushPreviewPath = newPreviewPath
+
         // No document updates during drawing - overlay handles all preview rendering
     }
     

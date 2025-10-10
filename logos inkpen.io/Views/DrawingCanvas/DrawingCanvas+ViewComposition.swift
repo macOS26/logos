@@ -62,6 +62,7 @@ extension DrawingCanvas {
             .modifier(BrushPreviewStyleModifier(appState: appState, document: document, preview: preview))
             .scaleEffect(document.zoomLevel, anchor: .topLeading)
             .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+            .drawingGroup() // CRITICAL FIX: Composite into offscreen buffer to prevent flashing during slow drawing
         }
         
         // Freehand live preview (SwiftUI overlay; avoids document mutations during drag)
