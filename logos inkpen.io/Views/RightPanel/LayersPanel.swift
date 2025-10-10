@@ -148,7 +148,6 @@ struct LayersPanel: View {
                         VStack(spacing: 0) {
                             // Layer row content
                             layerRowContent(for: layerIndex)
-                            .frame(height: 45) // Fixed height to ensure consistency
                             .offset(draggedLayerIndex == layerIndex ? dragOffset : .zero)
                             .opacity(draggedLayerIndex == layerIndex ? 0.9 : 1.0)
                             .zIndex(draggedLayerIndex == layerIndex ? 100 : 0)
