@@ -20,11 +20,6 @@ struct LayersPanel: View {
     @State private var targetLayerIndex: Int? = nil
     @State private var showColorPicker: Bool = false
 
-    // Drag-through batch toggle states
-    @State private var isDraggingVisibility: Bool = false
-    @State private var isDraggingLock: Bool = false
-    @State private var processedLayersDuringDrag: Set<Int> = []
-
     // Check if any layers are expanded (overlay only works when all collapsed)
     private var hasExpandedLayers: Bool {
         for layer in document.layers {
@@ -153,17 +148,10 @@ struct LayersPanel: View {
         ScrollView(.vertical, showsIndicators: true) {
             ZStack(alignment: .topLeading) {
                 // Main layer rows
-                VStack() {
+                VStack(spacing: 0) {
                     ForEach(Array((0..<document.layers.count).reversed().enumerated()), id: \.element) { (index, layerIndex) in
-                        VStack() {
-//                            // Add divider between layers (except for the first one)
-//                            if index > 0 {
-//                                Divider()
-//                                    .frame(width: 60, alignment: .leading)
-//                            }
-
-                            // Layer row content
-                            layerRowContent(for: layerIndex)
+                        // Layer row content
+                        layerRowContent(for: layerIndex)
                             .offset(draggedLayerIndex == layerIndex ? dragOffset : .zero)
                             .opacity(draggedLayerIndex == layerIndex ? 0.9 : 1.0)
                             .zIndex(draggedLayerIndex == layerIndex ? 100 : 0)
@@ -178,7 +166,7 @@ struct LayersPanel: View {
 
                                         dragOffset = value.translation
 
-                                        let rowHeight: CGFloat = 45
+                                        let rowHeight: CGFloat = 40
                                         let dragDistance = value.translation.height
 
                                         if abs(dragDistance) < rowHeight / 2 {
@@ -207,12 +195,11 @@ struct LayersPanel: View {
                                     }
                                 : nil
                             )
-                        }
                     }
                 }
                 .padding(.horizontal, 4)
 
-                // Simple overlay columns for drag-through (only when all layers collapsed)
+                // Overlay columns for drag-through (always present when all layers collapsed)
                 if !hasExpandedLayers {
                     HStack(spacing: 2) {
                         // Eye column overlay (simple fixed-height approach)
@@ -220,43 +207,43 @@ struct LayersPanel: View {
                             .frame(width: 20)
                             .contentShape(Rectangle())
                             .highPriorityGesture(
-                                DragGesture(minimumDistance: 5)
+                                DragGesture(minimumDistance: 0)
                                     .onChanged { value in
-                                        // Start drag
-                                        if !isDraggingVisibility {
-                                            isDraggingVisibility = true
-                                            processedLayersDuringDrag.removeAll()
+                                        // Start drag if not already started
+                                        if !document.isDraggingVisibility {
+                                            document.isDraggingVisibility = true
+                                            document.processedLayersDuringDrag.removeAll()
                                             document.saveToUndoStack()
 
                                             // Process initial position
-                                            let rowHeight: CGFloat = 45
+                                            let rowHeight: CGFloat = 40
                                             let startY = value.startLocation.y
                                             let layerIndex = Int(startY / rowHeight)
                                             let reversedIndex = document.layers.count - 1 - layerIndex
 
                                             if reversedIndex >= 0 && reversedIndex < document.layers.count {
                                                 document.layers[reversedIndex].isVisible.toggle()
-                                                processedLayersDuringDrag.insert(reversedIndex)
+                                                document.processedLayersDuringDrag.insert(reversedIndex)
                                             }
                                         }
 
-                                        // Process current position
-                                        let rowHeight: CGFloat = 45
+                                        // Process current position during drag
+                                        let rowHeight: CGFloat = 40
                                         let currentY = value.location.y
                                         let layerIndex = Int(currentY / rowHeight)
                                         let reversedIndex = document.layers.count - 1 - layerIndex
 
                                         if reversedIndex >= 0 && reversedIndex < document.layers.count {
-                                            if !processedLayersDuringDrag.contains(reversedIndex) {
+                                            if !document.processedLayersDuringDrag.contains(reversedIndex) {
                                                 // Toggle this layer's visibility
                                                 document.layers[reversedIndex].isVisible.toggle()
-                                                processedLayersDuringDrag.insert(reversedIndex)
+                                                document.processedLayersDuringDrag.insert(reversedIndex)
                                             }
                                         }
                                     }
                                     .onEnded { _ in
-                                        isDraggingVisibility = false
-                                        processedLayersDuringDrag.removeAll()
+                                        document.isDraggingVisibility = false
+                                        document.processedLayersDuringDrag.removeAll()
                                     }
                             )
 
@@ -265,43 +252,43 @@ struct LayersPanel: View {
                             .frame(width: 20)
                             .contentShape(Rectangle())
                             .highPriorityGesture(
-                                DragGesture(minimumDistance: 5)
+                                DragGesture(minimumDistance: 0)
                                     .onChanged { value in
-                                        // Start drag
-                                        if !isDraggingLock {
-                                            isDraggingLock = true
-                                            processedLayersDuringDrag.removeAll()
+                                        // Start drag if not already started
+                                        if !document.isDraggingLock {
+                                            document.isDraggingLock = true
+                                            document.processedLayersDuringDrag.removeAll()
                                             document.saveToUndoStack()
 
                                             // Process initial position
-                                            let rowHeight: CGFloat = 45
+                                            let rowHeight: CGFloat = 40
                                             let startY = value.startLocation.y
                                             let layerIndex = Int(startY / rowHeight)
                                             let reversedIndex = document.layers.count - 1 - layerIndex
 
                                             if reversedIndex >= 0 && reversedIndex < document.layers.count {
                                                 document.layers[reversedIndex].isLocked.toggle()
-                                                processedLayersDuringDrag.insert(reversedIndex)
+                                                document.processedLayersDuringDrag.insert(reversedIndex)
                                             }
                                         }
 
-                                        // Process current position
-                                        let rowHeight: CGFloat = 45
+                                        // Process current position during drag
+                                        let rowHeight: CGFloat = 40
                                         let currentY = value.location.y
                                         let layerIndex = Int(currentY / rowHeight)
                                         let reversedIndex = document.layers.count - 1 - layerIndex
 
                                         if reversedIndex >= 0 && reversedIndex < document.layers.count {
-                                            if !processedLayersDuringDrag.contains(reversedIndex) {
+                                            if !document.processedLayersDuringDrag.contains(reversedIndex) {
                                                 // Toggle this layer's lock
                                                 document.layers[reversedIndex].isLocked.toggle()
-                                                processedLayersDuringDrag.insert(reversedIndex)
+                                                document.processedLayersDuringDrag.insert(reversedIndex)
                                             }
                                         }
                                     }
                                     .onEnded { _ in
-                                        isDraggingLock = false
-                                        processedLayersDuringDrag.removeAll()
+                                        document.isDraggingLock = false
+                                        document.processedLayersDuringDrag.removeAll()
                                     }
                             )
 

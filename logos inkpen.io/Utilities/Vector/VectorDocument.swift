@@ -45,6 +45,11 @@ class VectorDocument: ObservableObject, Codable {
         didSet { settings.customHsbSwatches = customHsbSwatches }
     }
 
+    // Layer panel drag-through states
+    @Published var isDraggingVisibility: Bool = false
+    @Published var isDraggingLock: Bool = false
+    @Published var processedLayersDuringDrag: Set<Int> = []
+
     // Computed properties for combined swatches (default + custom)
     var rgbSwatches: [VectorColor] {
         // Start with default swatches from ColorManager

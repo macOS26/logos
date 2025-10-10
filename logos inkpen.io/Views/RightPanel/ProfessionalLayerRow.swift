@@ -87,7 +87,7 @@ struct ProfessionalLayerRow: View {
 
                 // Layer row content
                 HStack(spacing: 2) {
-                    // First Column: Visibility Toggle (Eye Icon) - Using binding for speed
+                    // First Column: Visibility Toggle (Eye Icon) - With drag detection
                     Button(action: {
                         isVisibleBinding.wrappedValue.toggle()
                     }) {
@@ -98,8 +98,27 @@ struct ProfessionalLayerRow: View {
                     }
                     .buttonStyle(BorderlessButtonStyle())
                     .help(isVisibleBinding.wrappedValue ? "Hide Layer" : "Show Layer")
+                    .gesture(
+                        DragGesture(minimumDistance: 5)
+                            .onChanged { _ in
+                                // Start drag - activate overlay
+                                if !document.isDraggingVisibility {
+                                    document.isDraggingVisibility = true
+                                    document.processedLayersDuringDrag.removeAll()
+                                    document.saveToUndoStack()
+                                    // Toggle this layer's visibility
+                                    document.layers[layerIndex].isVisible.toggle()
+                                    document.processedLayersDuringDrag.insert(layerIndex)
+                                }
+                            }
+                            .onEnded { _ in
+                                // End drag - hide overlay
+                                document.isDraggingVisibility = false
+                                document.processedLayersDuringDrag.removeAll()
+                            }
+                    )
 
-                    // Second Column: Lock Toggle - Using binding for speed
+                    // Second Column: Lock Toggle - With drag detection
                     Button(action: {
                         isLockedBinding.wrappedValue.toggle()
                     }) {
@@ -110,6 +129,25 @@ struct ProfessionalLayerRow: View {
                     }
                     .buttonStyle(BorderlessButtonStyle())
                     .help(isLockedBinding.wrappedValue ? "Unlock Layer" : "Lock Layer")
+                    .gesture(
+                        DragGesture(minimumDistance: 5)
+                            .onChanged { _ in
+                                // Start drag - activate overlay
+                                if !document.isDraggingLock {
+                                    document.isDraggingLock = true
+                                    document.processedLayersDuringDrag.removeAll()
+                                    document.saveToUndoStack()
+                                    // Toggle this layer's lock
+                                    document.layers[layerIndex].isLocked.toggle()
+                                    document.processedLayersDuringDrag.insert(layerIndex)
+                                }
+                            }
+                            .onEnded { _ in
+                                // End drag - hide overlay
+                                document.isDraggingLock = false
+                                document.processedLayersDuringDrag.removeAll()
+                            }
+                    )
 
                     // MAIN LAYER BUTTON - Separate from eye/lock icons
                     HStack(spacing: 4) {
