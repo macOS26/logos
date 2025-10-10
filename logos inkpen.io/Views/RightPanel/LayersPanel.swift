@@ -20,6 +20,9 @@ struct LayersPanel: View {
     @State private var targetLayerIndex: Int? = nil
     @State private var showColorPicker: Bool = false
 
+    // Consistent row height variable used throughout
+    private let layerRowHeight: CGFloat = 32  // Actual height of layer rows
+
     // Check if all layers have the same effective height (overlay works when uniform)
     private var allLayersHaveUniformHeight: Bool {
         // Check each layer to see if it would have content when expanded
@@ -186,18 +189,17 @@ struct LayersPanel: View {
 
                                         dragOffset = value.translation
 
-                                        let rowHeight: CGFloat = 40
                                         let dragDistance = value.translation.height
 
-                                        if abs(dragDistance) < rowHeight / 2 {
+                                        if abs(dragDistance) < layerRowHeight / 2 {
                                             targetLayerIndex = nil
                                         } else if dragDistance < 0 {
                                             // Dragging UP (visually) = higher index
-                                            let slots = Int(abs(dragDistance) / rowHeight)
+                                            let slots = Int(abs(dragDistance) / layerRowHeight)
                                             targetLayerIndex = max(2, layerIndex + slots + 1)
                                         } else {
                                             // Dragging DOWN (visually) = lower index
-                                            let slots = Int(abs(dragDistance) / rowHeight)
+                                            let slots = Int(abs(dragDistance) / layerRowHeight)
                                             targetLayerIndex = max(2, layerIndex - slots)
                                         }
                                     }
@@ -222,12 +224,12 @@ struct LayersPanel: View {
                 // Overlay columns for drag-through (present when all layers have same height)
                 if allLayersHaveUniformHeight {
                     HStack(spacing: 2) {
-                        // Eye column overlay (simple fixed-height approach)
+                        // Eye column overlay (using consistent row height)
                         Color.clear
                             .frame(width: 20)
                             .contentShape(Rectangle())
                             .highPriorityGesture(
-                                DragGesture(minimumDistance: 0)
+                                DragGesture(minimumDistance: 10) // Increased to avoid accidental activation
                                     .onChanged { value in
                                         // Start drag if not already started
                                         if !document.isDraggingVisibility {
@@ -236,9 +238,8 @@ struct LayersPanel: View {
                                             document.saveToUndoStack()
 
                                             // Process initial position
-                                            let rowHeight: CGFloat = 40
                                             let startY = value.startLocation.y
-                                            let layerIndex = Int(startY / rowHeight)
+                                            let layerIndex = Int(startY / layerRowHeight)
                                             let reversedIndex = document.layers.count - 1 - layerIndex
 
                                             if reversedIndex >= 0 && reversedIndex < document.layers.count {
@@ -248,9 +249,8 @@ struct LayersPanel: View {
                                         }
 
                                         // Process current position during drag
-                                        let rowHeight: CGFloat = 40
                                         let currentY = value.location.y
-                                        let layerIndex = Int(currentY / rowHeight)
+                                        let layerIndex = Int(currentY / layerRowHeight)
                                         let reversedIndex = document.layers.count - 1 - layerIndex
 
                                         if reversedIndex >= 0 && reversedIndex < document.layers.count {
@@ -267,7 +267,7 @@ struct LayersPanel: View {
                                     }
                             )
 
-                        // Lock column overlay (simple fixed-height approach)
+                        // Lock column overlay (using consistent row height)
                         Color.clear
                             .frame(width: 20)
                             .contentShape(Rectangle())
@@ -281,9 +281,8 @@ struct LayersPanel: View {
                                             document.saveToUndoStack()
 
                                             // Process initial position
-                                            let rowHeight: CGFloat = 40
                                             let startY = value.startLocation.y
-                                            let layerIndex = Int(startY / rowHeight)
+                                            let layerIndex = Int(startY / layerRowHeight)
                                             let reversedIndex = document.layers.count - 1 - layerIndex
 
                                             if reversedIndex >= 0 && reversedIndex < document.layers.count {
@@ -293,9 +292,8 @@ struct LayersPanel: View {
                                         }
 
                                         // Process current position during drag
-                                        let rowHeight: CGFloat = 40
                                         let currentY = value.location.y
-                                        let layerIndex = Int(currentY / rowHeight)
+                                        let layerIndex = Int(currentY / layerRowHeight)
                                         let reversedIndex = document.layers.count - 1 - layerIndex
 
                                         if reversedIndex >= 0 && reversedIndex < document.layers.count {
