@@ -88,7 +88,6 @@ struct TransformationControls: View {
     @State private var heightValue: String = ""
     @State private var aspectRatio: CGFloat = 1.0
     @State private var updateTrigger: Bool = false
-    @State private var frameCounter: Int = 0  // Update 1 out of every 60 frames
 
     var hasSelection: Bool {
         !document.selectedObjectIDs.isEmpty
@@ -255,13 +254,7 @@ struct TransformationControls: View {
             }
         }
         .onChange(of: document.currentDragOffset) { _, _ in
-            // PERFORMANCE: Update X,Y only 1 out of every 60 frames during drag
-            frameCounter += 1
-            guard frameCounter >= 60 else { return }
-            frameCounter = 0
-
-            // PERFORMANCE OPTIMIZATION: Only update X,Y during dragging, not W,H
-            // Width and height don't change when dragging objects
+            // Update X,Y coordinates during dragging (W,H don't change when dragging)
             updatePositionOnly()
         }
         .onChange(of: document.scalePreviewDimensions) { _, _ in
