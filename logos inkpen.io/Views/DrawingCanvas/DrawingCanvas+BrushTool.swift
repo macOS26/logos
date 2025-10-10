@@ -84,8 +84,11 @@ extension DrawingCanvas {
         let newPoint = BrushPoint(location: location, pressure: actualPressure)
         brushRawPoints.append(newPoint)
 
-        // Update preview with new point
-        updateBrushPreview()
+        // THROTTLED UPDATE: Only update preview every 5 points to reduce flickering
+        // This provides live feedback without constant regeneration
+        if brushRawPoints.count % 5 == 0 {
+            updateBrushPreview()
+        }
     }
     
 
