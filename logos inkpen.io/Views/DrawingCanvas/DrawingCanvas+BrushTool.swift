@@ -92,10 +92,10 @@ extension DrawingCanvas {
         let actualPressure = pressure ?? PressureManager.shared.currentPressure
 
         // DISTANCE-BASED FILTERING: Only add point if it's far enough from the last point
-        // This prevents excessive point density and ensures zero duplicate points
+        // This prevents excessive point density and duplicate points
         if let lastPoint = brushRawPoints.last {
             let distance = hypot(location.x - lastPoint.location.x, location.y - lastPoint.location.y)
-            let minDistance: Double = 3.0 // Minimum 3.0 pixels between points (ensures no duplicates, significantly reduces density)
+            let minDistance: Double = 2.0 // Minimum 2.0 pixels between points (balance between smoothness and duplicate prevention)
 
             // Skip this point if too close to previous point
             if distance < minDistance {
@@ -406,6 +406,25 @@ extension DrawingCanvas {
     // MARK: - Finalize From Preview (with point reduction)
     private func finalizeFromPreview(_ preview: VectorPath) {
         guard document.selectedLayerIndex != nil else { return }
+
+        // SECOND PASS: Remove duplicate/near-duplicate points after drawing completes
+        // This eliminates any remaining duplicates that slipped through during drawing
+        var dedupedPoints: [BrushPoint] = []
+        let dupThreshold = 2.0 // Points closer than 2 pixels are considered duplicates
+
+        for point in brushRawPoints {
+            if let lastPoint = dedupedPoints.last {
+                let distance = hypot(point.location.x - lastPoint.location.x,
+                                   point.location.y - lastPoint.location.y)
+                if distance < dupThreshold {
+                    continue // Skip this duplicate point
+                }
+            }
+            dedupedPoints.append(point)
+        }
+
+        brushRawPoints = dedupedPoints
+        print("🟣 DEDUP PASS: \(brushRawPoints.count + (brushRawPoints.count - dedupedPoints.count)) points -> \(dedupedPoints.count) points (removed \(brushRawPoints.count - dedupedPoints.count) duplicates)")
 
         // CRITICAL: Simplify raw points to reduce final path complexity
         // This happens AFTER drawing is complete, so it doesn't cause flicker
