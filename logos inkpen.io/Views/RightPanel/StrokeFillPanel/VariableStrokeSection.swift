@@ -145,7 +145,7 @@ struct VariableStrokeSection: View {
                     set: { document.currentBrushSimplification = $0 }
                 ), in: 0...100)
                 .controlSize(.regular)
-                .help("Control point reduction after drawing - 0% = maximum simplification, 50% = moderate, 100% = no simplification (all points)")
+                .help("Control point reduction after drawing - 0% = keep all points, 100% = moderate simplification (safe reduction without distorting shape)")
             }
 
             // Advanced Smoothing Section
