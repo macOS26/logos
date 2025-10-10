@@ -440,6 +440,17 @@ extension DrawingCanvas {
         // Replace with simplified points
         brushRawPoints = simplifiedRawPoints
 
+        // CRITICAL: Regenerate the path using simplified points
+        // The preview was created with ALL raw points, but we need to use simplified points for final
+        let simplifiedCenterPoints = simplifiedRawPoints.map { $0.location }
+        let regeneratedPath = generatePreviewVariableWidthPath(
+            centerPoints: simplifiedCenterPoints,
+            recentRawPoints: simplifiedRawPoints,
+            thickness: document.currentBrushThickness,
+            pressureSensitivity: 0.5,
+            taper: 0.5
+        )
+
         let strokeStyle: StrokeStyle? = document.brushApplyNoStroke ? nil : StrokeStyle(
             color: getCurrentStrokeColor(),
             width: getCurrentStrokeWidth(),
@@ -449,11 +460,11 @@ extension DrawingCanvas {
             opacity: getCurrentStrokeOpacity()
         )
         let fillStyle = FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
-        var finalPath = preview
+        var finalPath = regeneratedPath
 
         // CRITICAL: Brush has NO STROKE - only fill. Use WINDING rule to prevent reversed holes.
         if document.brushRemoveOverlap {
-            let currentPath = preview.cgPath
+            let currentPath = regeneratedPath.cgPath
 
             // Use WINDING fill rule to prevent even-odd reversed holes on self-overlap
             var cleaned: CGPath? = nil
