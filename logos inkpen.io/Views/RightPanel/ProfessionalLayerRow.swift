@@ -261,14 +261,14 @@ struct ProfessionalLayerRow: View {
             ("Vermillion", Color(hue: 22.5/360, saturation: 1.0, brightness: 1.0)),    // 22.5°
             ("Orange", Color(hue: 45/360, saturation: 1.0, brightness: 1.0)),          // 45°
             ("Amber", Color(hue: 67.5/360, saturation: 1.0, brightness: 1.0)),         // 67.5°
-            ("Chartreuse", Color(hue: 90/360, saturation: 1.0, brightness: 0.92)),     // 90°
-            ("Lime", Color(hue: 112.5/360, saturation: 1.0, brightness: 0.9)),         // 112.5°
-            ("Green", Color(hue: 135/360, saturation: 1.0, brightness: 0.88)),         // 135°
-            ("Spring", Color(hue: 157.5/360, saturation: 1.0, brightness: 0.9)),       // 157.5°
-            ("Cyan", Color(hue: 180/360, saturation: 1.0, brightness: 0.95)),          // 180°
-            ("Sky", Color(hue: 202.5/360, saturation: 1.0, brightness: 0.97)),         // 202.5°
-            ("Azure", Color(hue: 225/360, saturation: 1.0, brightness: 0.95)),         // 225°
-            ("Blue", Color(hue: 247.5/360, saturation: 1.0, brightness: 0.93)),        // 247.5°
+            ("Chartreuse", Color(hue: 90/360, saturation: 1.0, brightness: 1.0)),      // 90°
+            ("Lime", Color(hue: 112.5/360, saturation: 0.9, brightness: 0.85)),        // 112.5°
+            ("Green", Color(hue: 135/360, saturation: 0.75, brightness: 0.7)),         // 135°
+            ("Spring", Color(hue: 157.5/360, saturation: 0.6, brightness: 0.6)),       // 157.5°
+            ("Cyan", Color(hue: 180/360, saturation: 0.7, brightness: 0.65)),          // 180°
+            ("Sky", Color(hue: 202.5/360, saturation: 0.85, brightness: 0.8)),         // 202.5°
+            ("Azure", Color(hue: 225/360, saturation: 0.95, brightness: 0.9)),         // 225°
+            ("Blue", Color(hue: 247.5/360, saturation: 1.0, brightness: 1.0)),         // 247.5°
             ("Violet", Color(hue: 270/360, saturation: 1.0, brightness: 0.9)),         // 270°
             ("Purple", Color(hue: 292.5/360, saturation: 1.0, brightness: 0.9)),       // 292.5°
             ("Magenta", Color(hue: 315/360, saturation: 1.0, brightness: 0.95)),       // 315°
