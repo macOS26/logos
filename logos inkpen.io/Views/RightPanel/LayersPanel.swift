@@ -197,14 +197,15 @@ struct LayersPanel: View {
                 .padding(.horizontal, 4)
 
                 // Invisible overlay columns for eye and lock drag-through
+                // Positioned IN FRONT with higher zIndex but only responding to drags
                 HStack(spacing: 2) {
                     // Eye column overlay - ONLY responds to drags, not clicks
                     Color.clear
                         .frame(width: 20)
                         .contentShape(Rectangle())
-                        .allowsHitTesting(isDraggingVisibility) // Only allow hit testing during drag
+                        .allowsHitTesting(isDraggingVisibility) // Only capture events when dragging
                         .gesture(
-                            DragGesture(minimumDistance: 5) // Require minimum distance to start drag
+                            DragGesture(minimumDistance: 10) // Increased minimum distance to avoid accidental drags
                                 .onChanged { value in
                                     if !isDraggingVisibility {
                                         isDraggingVisibility = true
@@ -262,9 +263,9 @@ struct LayersPanel: View {
                     Color.clear
                         .frame(width: 20)
                         .contentShape(Rectangle())
-                        .allowsHitTesting(isDraggingLock) // Only allow hit testing during drag
+                        .allowsHitTesting(isDraggingLock) // Only capture events when dragging
                         .gesture(
-                            DragGesture(minimumDistance: 5) // Require minimum distance to start drag
+                            DragGesture(minimumDistance: 10) // Increased minimum distance to avoid accidental drags
                                 .onChanged { value in
                                     if !isDraggingLock {
                                         isDraggingLock = true
@@ -321,7 +322,7 @@ struct LayersPanel: View {
                     Spacer()
                 }
                 .padding(.horizontal, 4)
-                .zIndex(isDraggingVisibility || isDraggingLock ? 200 : -1) // Only on top during drag
+                .zIndex(10) // Put in front but only hit test when dragging
             }
         }
     }
