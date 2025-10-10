@@ -253,9 +253,15 @@ struct TransformationControls: View {
                 updateValuesFromSelection()
             }
         }
-        .onChange(of: document.currentDragOffset) { _, _ in
+        .onChange(of: document.currentDragOffset) { _, newOffset in
             // Update X,Y coordinates during dragging (W,H don't change when dragging)
-            updatePositionOnly()
+            if newOffset != .zero {
+                // Active drag - update position with drag offset
+                updatePositionOnly()
+            } else {
+                // Drag ended (offset reset to zero) - update full values to get final position
+                updateValuesFromSelection()
+            }
         }
         .onChange(of: document.scalePreviewDimensions) { _, _ in
             // PERFORMANCE: Only update W,H during scaling, skip X,Y for speed
