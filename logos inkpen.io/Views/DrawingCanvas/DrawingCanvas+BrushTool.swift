@@ -430,26 +430,15 @@ extension DrawingCanvas {
         // This happens AFTER drawing is complete, so it doesn't cause flicker
         let rawPointLocations = brushRawPoints.map { $0.location }
 
-        // Use dedicated Simplification setting to control point reduction
-        // 0% = no simplification (keep all points, tolerance 0.0)
-        // 100% = ultra-minimal simplification (tolerance 0.25, extremely safe point reduction)
-        let simplificationValue = document.currentBrushSimplification
+        // Fixed simplification with very minimal tolerance for clean strokes
+        let tolerance = 0.05 // Fixed ultra-minimal tolerance
 
-        // Map 0-100% to tolerance 0.0-0.25 (ultra-minimal, extremely safe)
-        let tolerance = (simplificationValue / 100.0) * 0.25
+        print("🔵 SIMPLIFICATION: Fixed tolerance=\(tolerance)")
 
-        print("🔵 SIMPLIFICATION: Value=\(simplificationValue)% -> Tolerance=\(tolerance)")
-
-        let simplifiedLocations: [CGPoint]
-        if tolerance < 0.1 {
-            // 0% simplification: keep all points
-            simplifiedLocations = rawPointLocations
-        } else {
-            simplifiedLocations = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
-                points: rawPointLocations,
-                tolerance: tolerance
-            )
-        }
+        let simplifiedLocations = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
+            points: rawPointLocations,
+            tolerance: tolerance
+        )
 
         // Rebuild brushRawPoints with simplified locations but preserve pressure mapping
         var simplifiedRawPoints: [BrushPoint] = []
