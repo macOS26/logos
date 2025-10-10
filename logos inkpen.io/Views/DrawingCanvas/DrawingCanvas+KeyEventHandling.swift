@@ -105,6 +105,20 @@ extension DrawingCanvas {
                 // Check if it's an arrow key
                 if [arrowUp, arrowDown, arrowLeft, arrowRight].contains(characters) {
 
+                    // CMD+UP/DOWN: Navigate/select next/previous object in layer stack
+                    if event.modifierFlags.contains(.command) &&
+                       !event.modifierFlags.contains(.control) &&
+                       !event.modifierFlags.contains(.option) {
+
+                        if characters == arrowUp {
+                            self.document.selectNextObjectUp()
+                            return nil // Consume the event
+                        } else if characters == arrowDown {
+                            self.document.selectNextObjectDown()
+                            return nil // Consume the event
+                        }
+                    }
+
                     // OPTION+UP/DOWN: Move object up/down in stacking order
                     if event.modifierFlags.contains(.option) &&
                        !event.modifierFlags.contains(.control) &&

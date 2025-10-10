@@ -284,6 +284,98 @@ extension VectorDocument {
         objectWillChange.send()
     }
 
+    /// Select the next object in stacking order (Cmd+Up Arrow)
+    func selectNextObjectUp() {
+        // Get all visible objects sorted by layer and orderID (front to back)
+        let visibleObjects = unifiedObjects
+            .filter { obj in
+                // Check if layer is visible
+                if obj.layerIndex >= 0 && obj.layerIndex < layers.count {
+                    return layers[obj.layerIndex].isVisible
+                }
+                return false
+            }
+            .sorted { obj1, obj2 in
+                // Sort by layer first (higher layer index = front), then by orderID
+                if obj1.layerIndex != obj2.layerIndex {
+                    return obj1.layerIndex > obj2.layerIndex
+                }
+                return obj1.orderID > obj2.orderID
+            }
+
+        guard !visibleObjects.isEmpty else { return }
+
+        // If nothing is selected, select the frontmost object
+        if selectedObjectIDs.isEmpty {
+            selectedObjectIDs = [visibleObjects.first!.id]
+            syncSelectionArrays()
+            objectWillChange.send()
+            return
+        }
+
+        // Find the currently selected object (use first if multiple selected)
+        guard let currentID = selectedObjectIDs.first,
+              let currentIndex = visibleObjects.firstIndex(where: { $0.id == currentID }) else {
+            // Current selection not found, select frontmost
+            selectedObjectIDs = [visibleObjects.first!.id]
+            syncSelectionArrays()
+            objectWillChange.send()
+            return
+        }
+
+        // Select the next object up (toward front)
+        let nextIndex = (currentIndex > 0) ? currentIndex - 1 : currentIndex
+        selectedObjectIDs = [visibleObjects[nextIndex].id]
+        syncSelectionArrays()
+        objectWillChange.send()
+    }
+
+    /// Select the next object down in stacking order (Cmd+Down Arrow)
+    func selectNextObjectDown() {
+        // Get all visible objects sorted by layer and orderID (front to back)
+        let visibleObjects = unifiedObjects
+            .filter { obj in
+                // Check if layer is visible
+                if obj.layerIndex >= 0 && obj.layerIndex < layers.count {
+                    return layers[obj.layerIndex].isVisible
+                }
+                return false
+            }
+            .sorted { obj1, obj2 in
+                // Sort by layer first (higher layer index = front), then by orderID
+                if obj1.layerIndex != obj2.layerIndex {
+                    return obj1.layerIndex > obj2.layerIndex
+                }
+                return obj1.orderID > obj2.orderID
+            }
+
+        guard !visibleObjects.isEmpty else { return }
+
+        // If nothing is selected, select the backmost object
+        if selectedObjectIDs.isEmpty {
+            selectedObjectIDs = [visibleObjects.last!.id]
+            syncSelectionArrays()
+            objectWillChange.send()
+            return
+        }
+
+        // Find the currently selected object (use first if multiple selected)
+        guard let currentID = selectedObjectIDs.first,
+              let currentIndex = visibleObjects.firstIndex(where: { $0.id == currentID }) else {
+            // Current selection not found, select backmost
+            selectedObjectIDs = [visibleObjects.last!.id]
+            syncSelectionArrays()
+            objectWillChange.send()
+            return
+        }
+
+        // Select the next object down (toward back)
+        let nextIndex = (currentIndex < visibleObjects.count - 1) ? currentIndex + 1 : currentIndex
+        selectedObjectIDs = [visibleObjects[nextIndex].id]
+        syncSelectionArrays()
+        objectWillChange.send()
+    }
+
     /// Move selected objects up in stacking order (increase orderID - toward front)
     func moveSelectedObjectsUp() {
         guard !selectedObjectIDs.isEmpty else { return }
