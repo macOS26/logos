@@ -290,45 +290,48 @@ extension FileOperations {
         if shape.isGroup && !shape.groupedShapes.isEmpty {
             // IMPORTANT: Create a PDF transparency group (Form XObject)
             // This will be recognized as a group in Illustrator and other PDF editors
-            
-            
+
             // Save graphics state for group
             context.saveGState()
-            
+
             // Apply group transform if any
             context.concatenate(shape.transform)
-            
-            // Begin PDF transparency group
-            // This creates a Form XObject that will be recognized as a group
-            context.beginTransparencyLayer(auxiliaryInfo: nil)
-            
-            // Apply group opacity if it's less than 1.0
-            if shape.opacity < 1.0 {
-                context.setAlpha(CGFloat(shape.opacity))
-            }
-            
-            // Apply group blend mode if not normal
+
+            // CRITICAL FIX: Set blend mode and alpha BEFORE beginTransparencyLayer
+            // This matches the layer rendering logic and ensures Quick Look renders correctly
+            // These settings are captured and used when endTransparencyLayer composites back
             if shape.blendMode != .normal {
                 context.setBlendMode(shape.blendMode.cgBlendMode)
             }
-            
+
+            if shape.opacity < 1.0 {
+                context.setAlpha(CGFloat(shape.opacity))
+            }
+
+            // Begin PDF transparency group - this automatically:
+            // 1. Saves the current alpha and blend mode
+            // 2. Resets alpha to 1.0 inside the layer
+            // 3. Resets blend mode to .normal inside the layer
+            // 4. On endTransparencyLayer, composites using the saved values
+            context.beginTransparencyLayer(auxiliaryInfo: nil)
+
             // Render each shape in the group recursively
             for groupedShape in shape.groupedShapes {
                 try renderShapeToPDFWithImageSupport(
-                    shape: groupedShape, 
-                    context: context, 
-                    isExport: isExport, 
+                    shape: groupedShape,
+                    context: context,
+                    isExport: isExport,
                     useCMYK: useCMYK,
                     textRenderingMode: textRenderingMode
                 )
             }
-            
+
             // End the transparency group
             context.endTransparencyLayer()
-            
+
             // Restore graphics state
             context.restoreGState()
-            
+
             return
         }
 
