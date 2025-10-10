@@ -186,23 +186,25 @@ extension DrawingCanvas {
     // MARK: - Real-time Preview
     
     private func updateBrushPreview() {
-        // VECTOR APP OPTIMIZATION: Direct overlay update - no throttling for 60fps
+        // CRITICAL: NEVER clear or blank out the existing preview
+        // Keep showing the last preview if we don't have enough points yet
         guard brushRawPoints.count >= 2 else {
-            // Keep showing the last preview if we don't have enough points yet
             return
         }
 
-        // CRITICAL: Generate new path completely BEFORE replacing old one
-        // This ensures brushPreviewPath is NEVER nil or empty during drawing
+        // Generate new path completely BEFORE replacing old one
         let newPreviewPath = generateLivePreviewPath()
 
-        // Only update if we successfully generated a valid path
-        // This prevents any possibility of showing "nothing"
-        if !newPreviewPath.elements.isEmpty {
-            brushPreviewPath = newPreviewPath
+        // STRICT VALIDATION: Only update if we have a valid, non-empty path with actual geometry
+        // This prevents ANY possibility of showing "nothing" or blank screen
+        guard !newPreviewPath.elements.isEmpty,
+              newPreviewPath.elements.count > 1 else {
+            // Keep showing old preview - NEVER blank it out
+            return
         }
 
-        // No document updates during drawing - overlay handles all preview rendering
+        // Safe to update - we have a valid complete path
+        brushPreviewPath = newPreviewPath
     }
     
     /// Generate live preview path for overlay rendering
@@ -283,17 +285,25 @@ extension DrawingCanvas {
             )
         }
 
+        // CRITICAL: Only return a valid path with actual geometry
+        // Never return an incomplete path that would cause flickering
         if simplifiedPoints.count >= 2 {
-            return generatePreviewVariableWidthPath(
+            let newPath = generatePreviewVariableWidthPath(
                 centerPoints: (appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput) ? rawPointLocations : simplifiedPoints,
                 recentRawPoints: pointsToProcess,
                 thickness: document.currentBrushThickness,
                 pressureSensitivity: 0.5,
                 taper: 0.5
             )
-        } else {
-            return VectorPath(elements: [.move(to: VectorPoint(pointsToProcess[0].location))])
+            // Double-check the returned path has enough elements
+            if newPath.elements.count > 2 {
+                return newPath
+            }
         }
+
+        // If we can't generate a valid path, return an empty path
+        // The updateBrushPreview() validation will catch this and keep the old preview
+        return VectorPath(elements: [])
     }
     
     /// Generate live preview of the variable width brush stroke as the user draws
