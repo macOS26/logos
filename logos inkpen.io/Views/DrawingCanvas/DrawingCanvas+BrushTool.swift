@@ -186,11 +186,26 @@ extension DrawingCanvas {
             return VectorPath(elements: [.move(to: VectorPoint(brushRawPoints[0].location))])
         }
 
-        // ALWAYS use ALL points - never delete the beginning
-        var pointsToProcess = brushRawPoints
-        if brushRawPoints.count == 2 {
-            let startPoint = brushRawPoints[0]
-            let endPoint = brushRawPoints[1]
+        // DEDUPLICATION DURING PREVIEW: Remove duplicate/near-duplicate points
+        var dedupedPoints: [BrushPoint] = []
+        let dupThreshold = 2.0 // 2 pixel threshold for deduplication
+
+        for point in brushRawPoints {
+            if let lastPoint = dedupedPoints.last {
+                let distance = hypot(point.location.x - lastPoint.location.x,
+                                   point.location.y - lastPoint.location.y)
+                if distance < dupThreshold {
+                    continue // Skip duplicate points
+                }
+            }
+            dedupedPoints.append(point)
+        }
+
+        // Use deduplicated points for processing
+        var pointsToProcess = dedupedPoints
+        if dedupedPoints.count == 2 {
+            let startPoint = dedupedPoints[0]
+            let endPoint = dedupedPoints[1]
 
             var interpolatedPoints: [BrushPoint] = [startPoint]
 
