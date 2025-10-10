@@ -409,7 +409,7 @@ extension DrawingCanvas {
 
         // DEDUPLICATION ON FINAL: Remove duplicate/near-duplicate points from raw points
         var dedupedPoints: [BrushPoint] = []
-        let dupThreshold = 4.0 // 4 pixel threshold for deduplication
+        let dupThreshold = 2.0 // 2 pixel threshold for deduplication
 
         for point in brushRawPoints {
             if let lastPoint = dedupedPoints.last {
