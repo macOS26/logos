@@ -141,59 +141,130 @@ struct LayersPanel: View {
     
     private var layersScrollContent: some View {
         ScrollView(.vertical, showsIndicators: true) {
-            VStack(spacing: 2) {
-                ForEach((0..<document.layers.count).reversed().map{$0}, id: \.self) { (layerIndex: Int) in
-                    VStack(spacing: 0) {
-                        // Layer row content
-                        layerRowContent(for: layerIndex)
-                        .offset(draggedLayerIndex == layerIndex ? dragOffset : .zero)
-                        .opacity(draggedLayerIndex == layerIndex ? 0.9 : 1.0)
-                        .zIndex(draggedLayerIndex == layerIndex ? 100 : 0)
-                        .gesture(
-                            layerIndex > 1 ? // Only draggable if not Canvas/Pasteboard
-                            DragGesture(minimumDistance: 5)
-                                .onChanged { value in
-                                    if draggedLayerIndex == nil {
-                                        draggedLayerIndex = layerIndex
-                                        document.selectedLayerIndex = layerIndex
+            ZStack(alignment: .topLeading) {
+                // Main layer rows
+                VStack(spacing: 2) {
+                    ForEach((0..<document.layers.count).reversed().map{$0}, id: \.self) { (layerIndex: Int) in
+                        VStack(spacing: 0) {
+                            // Layer row content
+                            layerRowContent(for: layerIndex)
+                            .offset(draggedLayerIndex == layerIndex ? dragOffset : .zero)
+                            .opacity(draggedLayerIndex == layerIndex ? 0.9 : 1.0)
+                            .zIndex(draggedLayerIndex == layerIndex ? 100 : 0)
+                            .gesture(
+                                layerIndex > 1 ? // Only draggable if not Canvas/Pasteboard
+                                DragGesture(minimumDistance: 5)
+                                    .onChanged { value in
+                                        if draggedLayerIndex == nil {
+                                            draggedLayerIndex = layerIndex
+                                            document.selectedLayerIndex = layerIndex
+                                        }
+
+                                        dragOffset = value.translation
+
+                                        let rowHeight: CGFloat = 45
+                                        let dragDistance = value.translation.height
+
+                                        if abs(dragDistance) < rowHeight / 2 {
+                                            targetLayerIndex = nil
+                                        } else if dragDistance < 0 {
+                                            // Dragging UP (visually) = higher index
+                                            let slots = Int(abs(dragDistance) / rowHeight)
+                                            targetLayerIndex = max(2, layerIndex + slots + 1)
+                                        } else {
+                                            // Dragging DOWN (visually) = lower index
+                                            let slots = Int(abs(dragDistance) / rowHeight)
+                                            targetLayerIndex = max(2, layerIndex - slots)
+                                        }
                                     }
+                                    .onEnded { value in
+                                        dragOffset = .zero
 
-                                    dragOffset = value.translation
+                                        if let target = targetLayerIndex,
+                                           let source = draggedLayerIndex,
+                                           target != source && target >= 2 {
+                                            document.moveLayer(from: source, to: target)
+                                        }
 
-                                    let rowHeight: CGFloat = 45
-                                    let dragDistance = value.translation.height
-
-                                    if abs(dragDistance) < rowHeight / 2 {
+                                        draggedLayerIndex = nil
                                         targetLayerIndex = nil
-                                    } else if dragDistance < 0 {
-                                        // Dragging UP (visually) = higher index
-                                        let slots = Int(abs(dragDistance) / rowHeight)
-                                        targetLayerIndex = max(2, layerIndex + slots + 1)
-//                                        targetLayerIndex = min(document.layers.count - 1, layerIndex + slots)
-                                    } else {
-                                        // Dragging DOWN (visually) = lower index
-                                        let slots = Int(abs(dragDistance) / rowHeight)
-                                        targetLayerIndex = max(2, layerIndex - slots)
                                     }
-                                }
-                                .onEnded { value in
-                                    dragOffset = .zero
-
-                                    if let target = targetLayerIndex,
-                                       let source = draggedLayerIndex,
-                                       target != source && target >= 2 {
-                                        document.moveLayer(from: source, to: target)
-                                    }
-
-                                    draggedLayerIndex = nil
-                                    targetLayerIndex = nil
-                                }
-                            : nil
-                        )
+                                : nil
+                            )
+                        }
                     }
                 }
+                .padding(.horizontal, 4)
+
+                // Invisible overlay columns for eye and lock drag-through
+                HStack(spacing: 2) {
+                    // Eye column overlay
+                    Color.clear
+                        .frame(width: 20)
+                        .contentShape(Rectangle())
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { value in
+                                    if !isDraggingVisibility {
+                                        isDraggingVisibility = true
+                                        document.saveToUndoStack()
+                                    }
+
+                                    // Calculate which layer index we're over
+                                    let rowHeight: CGFloat = 45
+                                    let layerIndex = Int(value.location.y / rowHeight)
+                                    let reversedIndex = document.layers.count - 1 - layerIndex
+
+                                    if reversedIndex >= 0 && reversedIndex < document.layers.count {
+                                        if !processedLayersDuringDrag.contains(reversedIndex) {
+                                            // Toggle this layer's visibility
+                                            document.layers[reversedIndex].isVisible.toggle()
+                                            processedLayersDuringDrag.insert(reversedIndex)
+                                        }
+                                    }
+                                }
+                                .onEnded { _ in
+                                    isDraggingVisibility = false
+                                    processedLayersDuringDrag.removeAll()
+                                }
+                        )
+
+                    // Lock column overlay
+                    Color.clear
+                        .frame(width: 20)
+                        .contentShape(Rectangle())
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { value in
+                                    if !isDraggingLock {
+                                        isDraggingLock = true
+                                        document.saveToUndoStack()
+                                    }
+
+                                    // Calculate which layer index we're over
+                                    let rowHeight: CGFloat = 45
+                                    let layerIndex = Int(value.location.y / rowHeight)
+                                    let reversedIndex = document.layers.count - 1 - layerIndex
+
+                                    if reversedIndex >= 0 && reversedIndex < document.layers.count {
+                                        if !processedLayersDuringDrag.contains(reversedIndex) {
+                                            // Toggle this layer's lock
+                                            document.layers[reversedIndex].isLocked.toggle()
+                                            processedLayersDuringDrag.insert(reversedIndex)
+                                        }
+                                    }
+                                }
+                                .onEnded { _ in
+                                    isDraggingLock = false
+                                    processedLayersDuringDrag.removeAll()
+                                }
+                        )
+
+                    Spacer()
+                }
+                .padding(.horizontal, 4)
+                .zIndex(200) // Make sure overlays are above the layer rows
             }
-            .padding(.horizontal, 4)
         }
     }
 
@@ -226,10 +297,7 @@ struct LayersPanel: View {
         ProfessionalLayerRow(
             layerIndex: layerIndex,
             layer: layerIndex < document.layers.count ? document.layers[layerIndex] : document.layers[0],
-            document: document,
-            isDraggingVisibility: $isDraggingVisibility,
-            isDraggingLock: $isDraggingLock,
-            processedLayersDuringDrag: $processedLayersDuringDrag
+            document: document
         )
     }
 }
