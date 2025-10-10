@@ -143,7 +143,7 @@ struct LayersPanel: View {
         ScrollView(.vertical, showsIndicators: true) {
             ZStack(alignment: .topLeading) {
                 // Main layer rows
-                VStack(spacing: 2) {
+                VStack(spacing: 0) {
                     ForEach((0..<document.layers.count).reversed().map{$0}, id: \.self) { (layerIndex: Int) in
                         VStack(spacing: 0) {
                             // Layer row content

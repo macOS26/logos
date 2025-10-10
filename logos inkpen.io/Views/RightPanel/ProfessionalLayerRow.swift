@@ -155,7 +155,7 @@ struct ProfessionalLayerRow: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 4)
-                .padding(.vertical, 6)
+                .padding(.vertical, 3)
                 .background(
                     RoundedRectangle(cornerRadius: 6)
                         .fill(document.selectedLayerIndex == layerIndex ?
