@@ -33,6 +33,8 @@ extension DrawingCanvas {
         // Start new brush stroke with proper initialization
         guard !isBrushDrawing else { return }
 
+        print("🔵 BRUSH START at \(location)")
+
         // Initialize brush drawing state
         isBrushDrawing = true
         brushRawPoints = [BrushPoint(location: location, pressure: 1.0)]
@@ -72,12 +74,14 @@ extension DrawingCanvas {
         // CRITICAL: Create initial preview immediately so it never shows nothing
         // This ensures something is always visible from the very first point
         let thickness = document.currentBrushThickness
-        brushPreviewPath = VectorPath(elements: [
+        let initialPreview = VectorPath(elements: [
             .move(to: VectorPoint(location.x - thickness/2, location.y)),
             .line(to: VectorPoint(location.x + thickness/2, location.y)),
             .line(to: VectorPoint(location.x, location.y + thickness/2)),
             .close
         ])
+        brushPreviewPath = initialPreview
+        print("🔵 BRUSH: Set initial preview with \(initialPreview.elements.count) elements")
 
         // VECTOR APP OPTIMIZATION: Don't add to document during drawing - use overlay system
         // Shape will be added only when drawing is complete
@@ -189,21 +193,28 @@ extension DrawingCanvas {
         // CRITICAL: NEVER clear or blank out the existing preview
         // Keep showing the last preview if we don't have enough points yet
         guard brushRawPoints.count >= 2 else {
+            print("🔴 BRUSH: Not enough points (\(brushRawPoints.count)), keeping old preview")
             return
         }
 
+        print("🟡 BRUSH: Generating preview with \(brushRawPoints.count) points")
+
         // Generate new path completely BEFORE replacing old one
         let newPreviewPath = generateLivePreviewPath()
+
+        print("🟢 BRUSH: Generated path with \(newPreviewPath.elements.count) elements")
 
         // STRICT VALIDATION: Only update if we have a valid, non-empty path with actual geometry
         // This prevents ANY possibility of showing "nothing" or blank screen
         guard !newPreviewPath.elements.isEmpty,
               newPreviewPath.elements.count > 1 else {
             // Keep showing old preview - NEVER blank it out
+            print("🔴 BRUSH: Path validation FAILED - keeping old preview (isEmpty: \(newPreviewPath.elements.isEmpty), count: \(newPreviewPath.elements.count))")
             return
         }
 
         // Safe to update - we have a valid complete path
+        print("✅ BRUSH: Updating preview with valid path (\(newPreviewPath.elements.count) elements)")
         brushPreviewPath = newPreviewPath
     }
     
