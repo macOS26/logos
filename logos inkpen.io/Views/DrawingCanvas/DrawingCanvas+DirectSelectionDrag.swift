@@ -123,12 +123,14 @@ extension DrawingCanvas {
         }
 
         // Now move all points with the snapped delta
+        var affectedShapeIDs = Set<UUID>()
         for pointID in selectedPoints {
             if let originalPosition = originalPointPositions[pointID] {
                 movePointToAbsolutePositionBatched(pointID, to: CGPoint(
                     x: originalPosition.x + snappedDelta.x,
                     y: originalPosition.y + snappedDelta.y
                 ))
+                affectedShapeIDs.insert(pointID.shapeID)
             }
         }
 
@@ -140,8 +142,25 @@ extension DrawingCanvas {
                     x: originalPosition.x + delta.x,
                     y: originalPosition.y + delta.y
                 ))
+                affectedShapeIDs.insert(handleID.shapeID)
             }
         }
+
+        // Update bounds for all affected shapes during drag to show live W/H
+        for shapeID in affectedShapeIDs {
+            for layerIndex in document.layers.indices {
+                let shapes = document.getShapesForLayer(layerIndex)
+                if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
+                   var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                    shape.updateBounds()
+                    document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
+                    break
+                }
+            }
+        }
+
+        // Trigger transform panel update to show live W/H changes during point dragging
+        document.objectPositionUpdateTrigger.toggle()
 
         // Single UI update after all movements are complete
         document.objectWillChange.send()
