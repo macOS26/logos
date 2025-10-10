@@ -19,6 +19,13 @@ struct LayersPanel: View {
     @State private var dragOffset: CGSize = .zero
     @State private var targetLayerIndex: Int? = nil
     @State private var showColorPicker: Bool = false
+
+    // Drag-through batch toggle states
+    @State private var isDraggingVisibility: Bool = false
+    @State private var isDraggingLock: Bool = false
+    @State private var visibilityDragStartState: Bool = false
+    @State private var lockDragStartState: Bool = false
+    @State private var processedLayersDuringDrag: Set<Int> = []
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -221,7 +228,12 @@ struct LayersPanel: View {
         ProfessionalLayerRow(
             layerIndex: layerIndex,
             layer: layerIndex < document.layers.count ? document.layers[layerIndex] : document.layers[0],
-            document: document
+            document: document,
+            isDraggingVisibility: $isDraggingVisibility,
+            isDraggingLock: $isDraggingLock,
+            visibilityDragStartState: $visibilityDragStartState,
+            lockDragStartState: $lockDragStartState,
+            processedLayersDuringDrag: $processedLayersDuringDrag
         )
     }
 }
