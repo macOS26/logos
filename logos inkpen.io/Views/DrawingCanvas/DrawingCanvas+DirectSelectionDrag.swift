@@ -173,8 +173,9 @@ extension DrawingCanvas {
             finishSelectionDrag()
             isDraggingDirectSelectedShapes = false
 
-            // Restore direct selection state
-            document.selectedObjectIDs.removeAll()
+            // Keep shapes direct-selected by maintaining them in selectedObjectIDs
+            // This allows the transform panel to continue showing coordinates
+            // The shapes remain selected with anchor points visible
             return
         }
 
