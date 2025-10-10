@@ -26,6 +26,17 @@ struct ProfessionalLayerRow: View {
         document.onSettingsChanged()
     }
 
+    // CRITICAL: Computed binding for layer color to ensure SwiftUI reactivity
+    private var layerColor: Binding<Color> {
+        Binding(
+            get: { document.layers[layerIndex].color },
+            set: { newColor in
+                document.saveToUndoStack()
+                document.layers[layerIndex].color = newColor
+            }
+        )
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // Layer Header with Modern Design
@@ -50,7 +61,7 @@ struct ProfessionalLayerRow: View {
                     showColorPicker = true
                 }) {
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(layer.color) // Use persistent layer color, not index-based
+                        .fill(layerColor.wrappedValue) // Use binding for SwiftUI reactivity
                         .frame(width: 4, height: 16)
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -58,8 +69,7 @@ struct ProfessionalLayerRow: View {
                     VStack(alignment: .leading, spacing: 2) {
                         ForEach(availableLayerColors(), id: \.name) { colorOption in
                             Button(action: {
-                                document.saveToUndoStack()
-                                document.layers[layerIndex].color = colorOption.color
+                                layerColor.wrappedValue = colorOption.color // Use binding setter
                                 showColorPicker = false
                             }) {
                                 HStack(spacing: 6) {
