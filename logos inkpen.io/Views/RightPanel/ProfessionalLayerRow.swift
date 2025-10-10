@@ -54,28 +54,27 @@ struct ProfessionalLayerRow: View {
                         .frame(width: 4, height: 16)
                 }
                 .buttonStyle(PlainButtonStyle())
-                .popover(isPresented: $showColorPicker) {
-                    VStack(alignment: .leading, spacing: 4) {
+                .popover(isPresented: $showColorPicker, arrowEdge: .bottom) {
+                    VStack(alignment: .leading, spacing: 2) {
                         ForEach(availableLayerColors(), id: \.name) { colorOption in
                             Button(action: {
                                 document.saveToUndoStack()
                                 document.layers[layerIndex].color = colorOption.color
                                 showColorPicker = false
                             }) {
-                                HStack {
+                                HStack(spacing: 6) {
                                     RoundedRectangle(cornerRadius: 2)
                                         .fill(colorOption.color)
-                                        .frame(width: 16, height: 16)
+                                        .frame(width: 14, height: 14)
                                     Text(colorOption.name)
                                         .font(.system(size: 11))
-                                    Spacer()
                                 }
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
                     }
-                    .padding(8)
-                    .frame(width: 150)
+                    .padding(6)
                 }
                 
                 // Layer Name and Info
@@ -256,20 +255,24 @@ struct ProfessionalLayerRow: View {
 
     private func availableLayerColors() -> [(name: String, color: Color)] {
         return [
-            // Standard colors (no black/white)
-            ("Gray", .gray),
-            ("Red", .red),
-            ("Orange", .orange),
-            ("Yellow", .yellow),
-            ("Green", .green),
-            ("Mint", .mint),
-            ("Teal", .teal),
-            ("Cyan", .cyan),
-            ("Blue", .blue),
-            ("Indigo", .indigo),
-            ("Purple", .purple),
-            ("Pink", .pink),
-            ("Brown", .brown)
+            // 16 perfectly evenly-spaced rainbow colors (HSB-based, exact 22.5° intervals)
+            // Hue: 0° - 360° (360/16 = 22.5° spacing), Saturation: 100%, Brightness: 90-100%
+            ("Red", Color(hue: 0/360, saturation: 1.0, brightness: 1.0)),              // 0°
+            ("Vermillion", Color(hue: 22.5/360, saturation: 1.0, brightness: 1.0)),    // 22.5°
+            ("Orange", Color(hue: 45/360, saturation: 1.0, brightness: 1.0)),          // 45°
+            ("Amber", Color(hue: 67.5/360, saturation: 1.0, brightness: 1.0)),         // 67.5°
+            ("Chartreuse", Color(hue: 90/360, saturation: 1.0, brightness: 0.9)),      // 90°
+            ("Lime", Color(hue: 112.5/360, saturation: 1.0, brightness: 0.9)),         // 112.5°
+            ("Green", Color(hue: 135/360, saturation: 1.0, brightness: 0.9)),          // 135°
+            ("Spring", Color(hue: 157.5/360, saturation: 1.0, brightness: 0.9)),       // 157.5°
+            ("Cyan", Color(hue: 180/360, saturation: 1.0, brightness: 0.95)),          // 180°
+            ("Sky", Color(hue: 202.5/360, saturation: 1.0, brightness: 0.95)),         // 202.5°
+            ("Azure", Color(hue: 225/360, saturation: 1.0, brightness: 0.95)),         // 225°
+            ("Blue", Color(hue: 247.5/360, saturation: 1.0, brightness: 0.95)),        // 247.5°
+            ("Violet", Color(hue: 270/360, saturation: 1.0, brightness: 0.9)),         // 270°
+            ("Purple", Color(hue: 292.5/360, saturation: 1.0, brightness: 0.9)),       // 292.5°
+            ("Magenta", Color(hue: 315/360, saturation: 1.0, brightness: 0.95)),       // 315°
+            ("Rose", Color(hue: 337.5/360, saturation: 1.0, brightness: 1.0))          // 337.5°
         ]
     }
 
