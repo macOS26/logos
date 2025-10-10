@@ -47,113 +47,101 @@ struct ProfessionalLayerRow: View {
     var body: some View {
         VStack(spacing: 0) {
             // Layer Header with Modern Design - Adobe Illustrator Layout
-            HStack(spacing: 2) {
-                // SEPARATE ZONES: Eye and Lock icons are outside the draggable area
-
-                // First Column: Visibility Toggle (Eye Icon) - NOT DRAGGABLE
-                Image(systemName: layer.isVisible ? "eye" : "eye.slash")
-                    .font(.system(size: 11))
-                    .foregroundColor(layer.isVisible ? .primary : .secondary.opacity(0.3))
-                    .frame(width: 20, height: 20)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        // Simple click toggles just this layer
-                        if !isDraggingVisibility {
-                            document.saveToUndoStack()
-                            document.layers[layerIndex].isVisible.toggle()
-                        }
+            HStack(spacing: 4) {
+                // First Column: Visibility Toggle (Eye Icon) with drag-through support
+                Button(action: {
+                    if !isDraggingVisibility {
+                        document.saveToUndoStack()
+                        document.layers[layerIndex].isVisible.toggle()
                     }
-                    .simultaneousGesture(
-                        DragGesture(minimumDistance: 1)
-                            .onChanged { value in
-                                if !isDraggingVisibility {
-                                    // Start drag operation
-                                    isDraggingVisibility = true
-                                    document.saveToUndoStack()
-                                    // Toggle current layer first
-                                    document.layers[layerIndex].isVisible.toggle()
-                                    // Remember the new state to apply to others
-                                    visibilityDragStartState = document.layers[layerIndex].isVisible
-                                    processedLayersDuringDrag.insert(layerIndex)
-                                }
+                }) {
+                    Image(systemName: layer.isVisible ? "eye" : "eye.slash")
+                        .font(.system(size: 11))
+                        .foregroundColor(layer.isVisible ? .primary : .secondary.opacity(0.3))
+                        .frame(width: 16, height: 16)
+                }
+                .buttonStyle(BorderlessButtonStyle())
+                .help(layer.isVisible ? "Hide Layer" : "Show Layer")
+                .onHover { hovering in
+                    // When dragging through layers, apply the toggle
+                    if isDraggingVisibility && hovering && !processedLayersDuringDrag.contains(layerIndex) {
+                        // Set to opposite of the initial drag state
+                        document.layers[layerIndex].isVisible = !visibilityDragStartState
+                        processedLayersDuringDrag.insert(layerIndex)
+                    }
+                }
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { _ in
+                            if !isDraggingVisibility {
+                                isDraggingVisibility = true
+                                visibilityDragStartState = layer.isVisible
+                                document.saveToUndoStack()
+                                // Toggle the current layer
+                                document.layers[layerIndex].isVisible.toggle()
+                                processedLayersDuringDrag.insert(layerIndex)
                             }
-                            .onEnded { _ in
-                                isDraggingVisibility = false
-                                processedLayersDuringDrag.removeAll()
-                            }
-                    )
-                    .onHover { hovering in
-                        // Apply toggle when dragging over this icon
-                        if isDraggingVisibility && hovering && !processedLayersDuringDrag.contains(layerIndex) {
-                            // Set to the same state as the initial toggle
-                            document.layers[layerIndex].isVisible = visibilityDragStartState
-                            processedLayersDuringDrag.insert(layerIndex)
                         }
-                    }
-                    .help(layer.isVisible ? "Hide Layer" : "Show Layer")
+                        .onEnded { _ in
+                            isDraggingVisibility = false
+                            processedLayersDuringDrag.removeAll()
+                        }
+                )
 
-                // Second Column: Lock Toggle - NOT DRAGGABLE
-                Image(systemName: layer.isLocked ? "lock.fill" : "lock.open")
-                    .font(.system(size: 10))
-                    .foregroundColor(layer.isLocked ? .orange : .secondary.opacity(0.3))
-                    .frame(width: 20, height: 20)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        if !isDraggingLock {
-                            document.saveToUndoStack()
-                            document.layers[layerIndex].isLocked.toggle()
-                        }
+                // Second Column: Lock Toggle with drag-through support
+                Button(action: {
+                    if !isDraggingLock {
+                        document.saveToUndoStack()
+                        document.layers[layerIndex].isLocked.toggle()
                     }
-                    .simultaneousGesture(
-                        DragGesture(minimumDistance: 1)
-                            .onChanged { value in
-                                if !isDraggingLock {
-                                    // Start drag operation
-                                    isDraggingLock = true
-                                    document.saveToUndoStack()
-                                    // Toggle current layer first
-                                    document.layers[layerIndex].isLocked.toggle()
-                                    // Remember the new state to apply to others
-                                    lockDragStartState = document.layers[layerIndex].isLocked
-                                    processedLayersDuringDrag.insert(layerIndex)
-                                }
+                }) {
+                    Image(systemName: layer.isLocked ? "lock.fill" : "lock.open")
+                        .font(.system(size: 10))
+                        .foregroundColor(layer.isLocked ? .orange : .secondary.opacity(0.3))
+                        .frame(width: 16, height: 16)
+                }
+                .buttonStyle(BorderlessButtonStyle())
+                .help(layer.isLocked ? "Unlock Layer" : "Lock Layer")
+                .onHover { hovering in
+                    // When dragging through layers, apply the toggle
+                    if isDraggingLock && hovering && !processedLayersDuringDrag.contains(layerIndex) {
+                        // Set to opposite of the initial drag state
+                        document.layers[layerIndex].isLocked = !lockDragStartState
+                        processedLayersDuringDrag.insert(layerIndex)
+                    }
+                }
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { _ in
+                            if !isDraggingLock {
+                                isDraggingLock = true
+                                lockDragStartState = layer.isLocked
+                                document.saveToUndoStack()
+                                // Toggle the current layer
+                                document.layers[layerIndex].isLocked.toggle()
+                                processedLayersDuringDrag.insert(layerIndex)
                             }
-                            .onEnded { _ in
-                                isDraggingLock = false
-                                processedLayersDuringDrag.removeAll()
-                            }
-                    )
-                    .onHover { hovering in
-                        // Apply toggle when dragging over this icon
-                        if isDraggingLock && hovering && !processedLayersDuringDrag.contains(layerIndex) {
-                            // Set to the same state as the initial toggle
-                            document.layers[layerIndex].isLocked = lockDragStartState
-                            processedLayersDuringDrag.insert(layerIndex)
                         }
-                    }
-                    .help(layer.isLocked ? "Unlock Layer" : "Lock Layer")
-
-                // Vertical Divider
-                Divider()
-                    .frame(width: 1, height: 16)
-                    .padding(.horizontal, 2)
-
-                // DRAGGABLE ZONE STARTS HERE - Everything after this divider is draggable
-                HStack(spacing: 4) {
-                    // Disclosure Triangle
-                    Button(action: {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            setExpanded(!isExpanded)
+                        .onEnded { _ in
+                            isDraggingLock = false
+                            processedLayersDuringDrag.removeAll()
                         }
-                    }) {
-                        Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(.secondary)
-                            .rotationEffect(.degrees(0))
-                            .animation(.easeInOut(duration: 0.15), value: isExpanded)
-                            .frame(width: 12, height: 12)
+                )
+
+                // Disclosure Triangle (After visibility and lock icons)
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        setExpanded(!isExpanded)
                     }
-                    .buttonStyle(BorderlessButtonStyle())
+                }) {
+                    Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .rotationEffect(.degrees(0))
+                        .animation(.easeInOut(duration: 0.15), value: isExpanded)
+                        .frame(width: 12, height: 12)
+                }
+                .buttonStyle(BorderlessButtonStyle())
 
                 // Layer Color Indicator (Professional Color Strip) - Clickable with color picker
                 Button(action: {
@@ -222,8 +210,7 @@ struct ProfessionalLayerRow: View {
                 }
 
                 Spacer()
-                } // Close inner HStack (draggable zone)
-            } // Close outer HStack
+            }
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
             .background(
