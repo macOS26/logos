@@ -58,47 +58,6 @@ struct LayersPanel: View {
 
     private func layerControlsSection(for layerIndex: Int) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Layer Color Indicator - Clickable with color picker
-            HStack(spacing: 8) {
-                Text("Color")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
-                    .frame(width: 50, alignment: .leading)
-
-                Button(action: {
-                    showColorPicker = true
-                }) {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(document.layers[layerIndex].color) // Use persistent layer color
-                        .frame(width: 20, height: 16)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .popover(isPresented: $showColorPicker, arrowEdge: .bottom) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        ForEach(availableLayerColors(), id: \.name) { colorOption in
-                            Button(action: {
-                                document.saveToUndoStack()
-                                document.layers[layerIndex].color = colorOption.color
-                                showColorPicker = false
-                            }) {
-                                HStack(spacing: 6) {
-                                    RoundedRectangle(cornerRadius: 2)
-                                        .fill(colorOption.color)
-                                        .frame(width: 14, height: 14)
-                                    Text(colorOption.name)
-                                        .font(.system(size: 11))
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                    }
-                    .padding(6)
-                }
-
-                Spacer()
-            }
-
             // Opacity slider
             HStack(spacing: 8) {
                 Text("Opacity")
@@ -130,7 +89,7 @@ struct LayersPanel: View {
                     .frame(width: 35, alignment: .trailing)
             }
 
-            // Blend mode picker
+            // Blend mode picker with color swatch
             HStack(spacing: 8) {
                 Text("Blend")
                     .font(.system(size: 11))
@@ -153,6 +112,38 @@ struct LayersPanel: View {
                 .labelsHidden()
                 .pickerStyle(.menu)
                 .frame(maxWidth: .infinity, alignment: .leading)
+
+                // Layer Color Swatch - Square, clickable with color picker
+                Button(action: {
+                    showColorPicker = true
+                }) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(document.layers[layerIndex].color)
+                        .frame(width: 20, height: 20)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .popover(isPresented: $showColorPicker, arrowEdge: .bottom) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        ForEach(availableLayerColors(), id: \.name) { colorOption in
+                            Button(action: {
+                                document.saveToUndoStack()
+                                document.layers[layerIndex].color = colorOption.color
+                                showColorPicker = false
+                            }) {
+                                HStack(spacing: 6) {
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(colorOption.color)
+                                        .frame(width: 14, height: 14)
+                                    Text(colorOption.name)
+                                        .font(.system(size: 11))
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .padding(6)
+                }
             }
         }
         .padding(.horizontal, 12)
