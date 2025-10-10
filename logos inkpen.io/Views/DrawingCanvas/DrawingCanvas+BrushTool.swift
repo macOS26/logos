@@ -410,7 +410,7 @@ extension DrawingCanvas {
         // SECOND PASS: Remove duplicate/near-duplicate points after drawing completes
         // This eliminates any remaining duplicates that slipped through during drawing
         var dedupedPoints: [BrushPoint] = []
-        let dupThreshold = 2.0 // Points closer than 2 pixels are considered duplicates
+        let dupThreshold = 3.0 // Points closer than 3 pixels are considered duplicates (ensures zero duplicates)
 
         for point in brushRawPoints {
             if let lastPoint = dedupedPoints.last {
