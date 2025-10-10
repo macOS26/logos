@@ -33,13 +33,13 @@ struct LayersPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             layersHeader
-//            Divider().padding(.horizontal, 8)
-//
-//            // Layer controls (opacity and blend mode) - shown when a layer is selected
-//            if let selectedIndex = document.selectedLayerIndex, selectedIndex < document.layers.count {
-//                layerControlsSection(for: selectedIndex)
-//                Divider().padding(.horizontal, 8)
-//            }
+            Divider().padding(.horizontal, 8)
+
+            // Layer controls (opacity and blend mode) - shown when a layer is selected
+            if let selectedIndex = document.selectedLayerIndex, selectedIndex < document.layers.count {
+                layerControlsSection(for: selectedIndex)
+                Divider().padding(.horizontal, 8)
+            }
 
             layersScrollContent
             Spacer()
