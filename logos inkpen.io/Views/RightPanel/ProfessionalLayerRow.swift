@@ -81,7 +81,8 @@ struct ProfessionalLayerRow: View {
 
                     Spacer()
                 }
-                .padding(.horizontal, 4)
+                .padding(.leading, 1)  // Shifted left by 3px (was 4)
+                .padding(.trailing, 4)
 
                 // Layer row content
                 HStack(spacing: 2) {
