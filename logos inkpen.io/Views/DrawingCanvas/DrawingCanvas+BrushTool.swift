@@ -95,7 +95,7 @@ extension DrawingCanvas {
         // This prevents excessive point density and duplicate points
         if let lastPoint = brushRawPoints.last {
             let distance = hypot(location.x - lastPoint.location.x, location.y - lastPoint.location.y)
-            let minDistance: Double = 2.0 // Minimum 2.0 pixels between points (balance between smoothness and duplicate prevention)
+            let minDistance: Double = 1.0 // Minimum 1.0 pixel between points (smooth drawing, cleaned up in second pass)
 
             // Skip this point if too close to previous point
             if distance < minDistance {
@@ -424,50 +424,14 @@ extension DrawingCanvas {
         }
 
         brushRawPoints = dedupedPoints
-        print("🟣 DEDUP PASS: \(brushRawPoints.count + (brushRawPoints.count - dedupedPoints.count)) points -> \(dedupedPoints.count) points (removed \(brushRawPoints.count - dedupedPoints.count) duplicates)")
+        print("🟣 DEDUP PASS: Removed \(brushRawPoints.count - dedupedPoints.count) duplicates -> \(dedupedPoints.count) points")
 
-        // CRITICAL: Simplify raw points to reduce final path complexity
-        // This happens AFTER drawing is complete, so it doesn't cause flicker
-        let rawPointLocations = brushRawPoints.map { $0.location }
-
-        // Fixed simplification with very minimal tolerance for clean strokes
-        let tolerance = 0.05 // Fixed ultra-minimal tolerance
-
-        print("🔵 SIMPLIFICATION: Fixed tolerance=\(tolerance)")
-
-        let simplifiedLocations = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
-            points: rawPointLocations,
-            tolerance: tolerance
-        )
-
-        // Rebuild brushRawPoints with simplified locations but preserve pressure mapping
-        var simplifiedRawPoints: [BrushPoint] = []
-        for simplifiedLocation in simplifiedLocations {
-            // Find closest original point to preserve pressure
-            var closestPoint = brushRawPoints[0]
-            var closestDistance = Double.infinity
-            for rawPoint in brushRawPoints {
-                let distance = hypot(simplifiedLocation.x - rawPoint.location.x,
-                                   simplifiedLocation.y - rawPoint.location.y)
-                if distance < closestDistance {
-                    closestDistance = distance
-                    closestPoint = rawPoint
-                }
-            }
-            simplifiedRawPoints.append(BrushPoint(location: simplifiedLocation, pressure: closestPoint.pressure))
-        }
-
-        print("🟢 BRUSH FINALIZE: Simplified \(brushRawPoints.count) points -> \(simplifiedRawPoints.count) points")
-
-        // Replace with simplified points
-        brushRawPoints = simplifiedRawPoints
-
-        // CRITICAL: Regenerate the path using simplified points
-        // The preview was created with ALL raw points, but we need to use simplified points for final
-        let simplifiedCenterPoints = simplifiedRawPoints.map { $0.location }
+        // CRITICAL: Regenerate the path using deduped points
+        // The preview was created with ALL raw points, but we need to use deduped points for final
+        let dedupedCenterPoints = dedupedPoints.map { $0.location }
         let regeneratedPath = generatePreviewVariableWidthPath(
-            centerPoints: simplifiedCenterPoints,
-            recentRawPoints: simplifiedRawPoints,
+            centerPoints: dedupedCenterPoints,
+            recentRawPoints: dedupedPoints,
             thickness: document.currentBrushThickness,
             pressureSensitivity: 0.5,
             taper: 0.5
