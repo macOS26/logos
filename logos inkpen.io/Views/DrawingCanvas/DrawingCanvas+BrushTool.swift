@@ -186,26 +186,11 @@ extension DrawingCanvas {
             return VectorPath(elements: [.move(to: VectorPoint(brushRawPoints[0].location))])
         }
 
-        // DEDUPLICATION DURING PREVIEW: Remove duplicate/near-duplicate points
-        var dedupedPoints: [BrushPoint] = []
-        let dupThreshold = 8.0 // 8 pixel threshold for very aggressive deduplication
-
-        for point in brushRawPoints {
-            if let lastPoint = dedupedPoints.last {
-                let distance = hypot(point.location.x - lastPoint.location.x,
-                                   point.location.y - lastPoint.location.y)
-                if distance < dupThreshold {
-                    continue // Skip duplicate points
-                }
-            }
-            dedupedPoints.append(point)
-        }
-
-        // Use deduplicated points for processing
-        var pointsToProcess = dedupedPoints
-        if dedupedPoints.count == 2 {
-            let startPoint = dedupedPoints[0]
-            let endPoint = dedupedPoints[1]
+        // ALWAYS use ALL points - no deduplication during preview for performance
+        var pointsToProcess = brushRawPoints
+        if brushRawPoints.count == 2 {
+            let startPoint = brushRawPoints[0]
+            let endPoint = brushRawPoints[1]
 
             var interpolatedPoints: [BrushPoint] = [startPoint]
 
@@ -422,9 +407,36 @@ extension DrawingCanvas {
     private func finalizeFromPreview(_ preview: VectorPath) {
         guard document.selectedLayerIndex != nil else { return }
 
-        // Use preview path directly - no second pass deduplication
-        // The 1.0 pixel filtering during drawing is sufficient
-        var finalPath = preview
+        // DEDUPLICATION ON FINAL: Remove duplicate/near-duplicate points from raw points
+        var dedupedPoints: [BrushPoint] = []
+        let dupThreshold = 8.0 // 8 pixel threshold for aggressive deduplication
+
+        for point in brushRawPoints {
+            if let lastPoint = dedupedPoints.last {
+                let distance = hypot(point.location.x - lastPoint.location.x,
+                                   point.location.y - lastPoint.location.y)
+                if distance < dupThreshold {
+                    continue // Skip duplicate points
+                }
+            }
+            dedupedPoints.append(point)
+        }
+
+        // Regenerate path with deduplicated points for final stroke
+        let dedupedLocations = dedupedPoints.map { $0.location }
+        var finalPath: VectorPath
+
+        if dedupedLocations.count >= 2 {
+            finalPath = generatePreviewVariableWidthPath(
+                centerPoints: dedupedLocations,
+                recentRawPoints: dedupedPoints,
+                thickness: document.currentBrushThickness,
+                pressureSensitivity: 0.5,
+                taper: 0.5
+            )
+        } else {
+            finalPath = preview
+        }
 
         let strokeStyle: StrokeStyle? = document.brushApplyNoStroke ? nil : StrokeStyle(
             color: getCurrentStrokeColor(),
@@ -438,7 +450,7 @@ extension DrawingCanvas {
 
         // CRITICAL: Brush has NO STROKE - only fill. Use WINDING rule to prevent reversed holes.
         if document.brushRemoveOverlap {
-            let currentPath = preview.cgPath
+            let currentPath = finalPath.cgPath
 
             // Use WINDING fill rule to prevent even-odd reversed holes on self-overlap
             var cleaned: CGPath? = nil
