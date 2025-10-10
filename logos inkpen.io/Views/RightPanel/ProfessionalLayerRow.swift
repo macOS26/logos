@@ -45,7 +45,9 @@ struct ProfessionalLayerRow: View {
 
     // CRITICAL: Use document settings for layer expansion state (persists across tab switches)
     private var isExpanded: Bool {
-        document.settings.layerExpansionState[layer.id] ?? true // Default to expanded
+        // Canvas (index 0) and Pasteboard (index 1) default to collapsed, others to expanded
+        let defaultExpanded = layerIndex > 1
+        return document.settings.layerExpansionState[layer.id] ?? defaultExpanded
     }
 
     private func setExpanded(_ value: Bool) {

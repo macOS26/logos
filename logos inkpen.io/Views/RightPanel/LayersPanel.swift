@@ -20,14 +20,25 @@ struct LayersPanel: View {
     @State private var targetLayerIndex: Int? = nil
     @State private var showColorPicker: Bool = false
 
-    // Check if any layers are expanded (overlay only works when all collapsed)
-    private var hasExpandedLayers: Bool {
-        for layer in document.layers {
-            if document.settings.layerExpansionState[layer.id] ?? true {
-                return true
+    // Check if all layers have the same effective height (overlay works when uniform)
+    private var allLayersHaveUniformHeight: Bool {
+        // Check each layer to see if it would have content when expanded
+        for (index, layer) in document.layers.enumerated() {
+            // Check if layer is expanded (Canvas/Pasteboard default to collapsed, others to expanded)
+            let defaultExpanded = index > 1
+            let isExpanded = document.settings.layerExpansionState[layer.id] ?? defaultExpanded
+
+            // If expanded, check if it has objects
+            if isExpanded {
+                let hasObjects = document.unifiedObjects.contains { $0.layerIndex == index }
+                // If expanded with objects, heights are not uniform
+                if hasObjects {
+                    return false
+                }
             }
         }
-        return false
+        // All layers are either collapsed or expanded with no objects = uniform height
+        return true
     }
     
     var body: some View {
@@ -199,8 +210,8 @@ struct LayersPanel: View {
                 }
                 .padding(.horizontal, 4)
 
-                // Overlay columns for drag-through (always present when all layers collapsed)
-                if !hasExpandedLayers {
+                // Overlay columns for drag-through (present when all layers have same height)
+                if allLayersHaveUniformHeight {
                     HStack(spacing: 2) {
                         // Eye column overlay (simple fixed-height approach)
                         Color.clear
