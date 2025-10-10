@@ -228,9 +228,9 @@ struct LayersPanel: View {
             ("Orange", Color(hue: 45/360, saturation: 1.0, brightness: 1.0)),          // 45°
             ("Amber", Color(hue: 67.5/360, saturation: 1.0, brightness: 1.0)),         // 67.5°
             ("Chartreuse", Color(hue: 90/360, saturation: 1.0, brightness: 1.0)),      // 90°
-            ("Lime", Color(hue: 112.5/360, saturation: 0.9, brightness: 0.85)),        // 112.5°
-            ("Green", Color(hue: 135/360, saturation: 0.75, brightness: 0.7)),         // 135°
-            ("Spring", Color(hue: 157.5/360, saturation: 0.6, brightness: 0.6)),       // 157.5°
+            ("Lime", Color(hue: 112.5/360, saturation: 0.8, brightness: 0.75)),        // 112.5°
+            ("Green", Color(hue: 135/360, saturation: 0.7, brightness: 0.65)),         // 135°
+            ("Spring", Color(hue: 165/360, saturation: 0.6, brightness: 0.6)),         // 165° (shifted towards blue)
             ("Cyan", Color(hue: 190/360, saturation: 0.7, brightness: 0.85)),          // 190° (shifted towards blue)
             ("Sky", Color(hue: 202.5/360, saturation: 0.85, brightness: 0.8)),         // 202.5°
             ("Azure", Color(hue: 225/360, saturation: 0.8, brightness: 0.75)),         // 225°
