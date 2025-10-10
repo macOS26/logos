@@ -95,7 +95,7 @@ extension DrawingCanvas {
         // This prevents excessive point density when drawing slowly
         if let lastPoint = brushRawPoints.last {
             let distance = hypot(location.x - lastPoint.location.x, location.y - lastPoint.location.y)
-            let minDistance: Double = 2.0 // Minimum 2 pixels between points
+            let minDistance: Double = 0.5 // Minimum 0.5 pixels between points (reduces density without visible jitter)
 
             // Skip this point if too close to previous point
             if distance < minDistance {
