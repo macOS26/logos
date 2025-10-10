@@ -16,6 +16,31 @@ struct ProfessionalLayerRow: View {
     @State private var editedName: String = ""
     @State private var showColorPicker: Bool = false
 
+    // Bindings for immediate UI updates
+    private var isVisibleBinding: Binding<Bool> {
+        Binding(
+            get: { document.layers[layerIndex].isVisible },
+            set: { newValue in
+                if document.layers[layerIndex].isVisible != newValue {
+                    document.saveToUndoStack()
+                    document.layers[layerIndex].isVisible = newValue
+                }
+            }
+        )
+    }
+
+    private var isLockedBinding: Binding<Bool> {
+        Binding(
+            get: { document.layers[layerIndex].isLocked },
+            set: { newValue in
+                if document.layers[layerIndex].isLocked != newValue {
+                    document.saveToUndoStack()
+                    document.layers[layerIndex].isLocked = newValue
+                }
+            }
+        )
+    }
+
 
     // CRITICAL: Use document settings for layer expansion state (persists across tab switches)
     private var isExpanded: Bool {
@@ -42,31 +67,29 @@ struct ProfessionalLayerRow: View {
         VStack(spacing: 0) {
             // Layer Header with Adobe Illustrator Layout - Icons OUTSIDE main button
             HStack(spacing: 2) {
-                // First Column: Visibility Toggle (Eye Icon) - Simple button
+                // First Column: Visibility Toggle (Eye Icon) - Using binding for speed
                 Button(action: {
-                    document.saveToUndoStack()
-                    document.layers[layerIndex].isVisible.toggle()
+                    isVisibleBinding.wrappedValue.toggle()
                 }) {
-                    Image(systemName: layer.isVisible ? "eye" : "eye.slash")
+                    Image(systemName: isVisibleBinding.wrappedValue ? "eye" : "eye.slash")
                         .font(.system(size: 11))
-                        .foregroundColor(layer.isVisible ? .primary : .secondary.opacity(0.3))
+                        .foregroundColor(isVisibleBinding.wrappedValue ? .primary : .secondary.opacity(0.3))
                         .frame(width: 20, height: 20)
                 }
                 .buttonStyle(BorderlessButtonStyle())
-                .help(layer.isVisible ? "Hide Layer" : "Show Layer")
+                .help(isVisibleBinding.wrappedValue ? "Hide Layer" : "Show Layer")
 
-                // Second Column: Lock Toggle - Simple button
+                // Second Column: Lock Toggle - Using binding for speed
                 Button(action: {
-                    document.saveToUndoStack()
-                    document.layers[layerIndex].isLocked.toggle()
+                    isLockedBinding.wrappedValue.toggle()
                 }) {
-                    Image(systemName: layer.isLocked ? "lock.fill" : "lock.open")
+                    Image(systemName: isLockedBinding.wrappedValue ? "lock.fill" : "lock.open")
                         .font(.system(size: 10))
-                        .foregroundColor(layer.isLocked ? .orange : .secondary.opacity(0.3))
+                        .foregroundColor(isLockedBinding.wrappedValue ? .orange : .secondary.opacity(0.3))
                         .frame(width: 20, height: 20)
                 }
                 .buttonStyle(BorderlessButtonStyle())
-                .help(layer.isLocked ? "Unlock Layer" : "Lock Layer")
+                .help(isLockedBinding.wrappedValue ? "Unlock Layer" : "Lock Layer")
 
                 // MAIN LAYER BUTTON - Separate from eye/lock icons
                 HStack(spacing: 4) {
