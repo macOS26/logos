@@ -32,22 +32,22 @@ extension DrawingCanvas {
     internal func handleBrushDragStart(at location: CGPoint) {
         // Start new brush stroke with proper initialization
         guard !isBrushDrawing else { return }
-        
+
         // Initialize brush drawing state
         isBrushDrawing = true
         brushRawPoints = [BrushPoint(location: location, pressure: 1.0)]
         brushSimplifiedPoints = []
-        
+
         // Detect pressure input capability using PressureManager
         document.hasPressureInput = PressureManager.shared.hasRealPressureInput
-        
+
         // Reset pressure manager for new drawing
         PressureManager.shared.resetForNewDrawing()
-        
+
         // Create initial VectorPath for center line
         let startPoint = VectorPoint(location)
         brushPath = VectorPath(elements: [.move(to: startPoint)])
-        
+
         // Create real VectorShape for brush stroke using current user settings
         let strokeStyle: StrokeStyle? = document.brushApplyNoStroke ? nil : StrokeStyle(
             color: getCurrentStrokeColor(), // Use whatever stroke color user has set
@@ -61,17 +61,27 @@ extension DrawingCanvas {
             color: getCurrentFillColor(), // Use whatever fill color user has set
             opacity: getCurrentFillOpacity() // Use whatever fill opacity user has set
         )
-        
+
         activeBrushShape = VectorShape(
             name: "Brush Stroke",
             path: brushPath!,
             strokeStyle: strokeStyle,
             fillStyle: fillStyle
         )
-        
+
+        // CRITICAL: Create initial preview immediately so it never shows nothing
+        // This ensures something is always visible from the very first point
+        let thickness = document.currentBrushThickness
+        brushPreviewPath = VectorPath(elements: [
+            .move(to: VectorPoint(location.x - thickness/2, location.y)),
+            .line(to: VectorPoint(location.x + thickness/2, location.y)),
+            .line(to: VectorPoint(location.x, location.y + thickness/2)),
+            .close
+        ])
+
         // VECTOR APP OPTIMIZATION: Don't add to document during drawing - use overlay system
         // Shape will be added only when drawing is complete
-        
+
     }
     
     internal func handleBrushDragUpdate(at location: CGPoint, pressure: Double? = nil) {
@@ -182,13 +192,15 @@ extension DrawingCanvas {
             return
         }
 
-        // Generate preview path for overlay rendering - SwiftUI will handle 60fps updates
-        // CRITICAL: Generate the new path BEFORE clearing the old one to prevent flashing
+        // CRITICAL: Generate new path completely BEFORE replacing old one
+        // This ensures brushPreviewPath is NEVER nil or empty during drawing
         let newPreviewPath = generateLivePreviewPath()
 
-        // Atomic update - replace old path with new path in single assignment
-        // This prevents the brief moment where path could be nil
-        brushPreviewPath = newPreviewPath
+        // Only update if we successfully generated a valid path
+        // This prevents any possibility of showing "nothing"
+        if !newPreviewPath.elements.isEmpty {
+            brushPreviewPath = newPreviewPath
+        }
 
         // No document updates during drawing - overlay handles all preview rendering
     }
