@@ -27,25 +27,17 @@ struct LayersPanel: View {
     private var allLayersHaveUniformHeight: Bool {
         // Check each layer to see if it would have content when expanded
         for (index, layer) in document.layers.enumerated() {
-            // For Canvas/Pasteboard, they're forced closed if ≤1 object
-            if index <= 1 {
-                let objectCount = document.unifiedObjects.filter { $0.layerIndex == index }.count
-                if objectCount <= 1 {
-                    continue // Always collapsed, so uniform
-                }
-                // If >1 object, check if expanded
-                let isExpanded = document.settings.layerExpansionState[layer.id] ?? false
-                if isExpanded {
-                    return false // Expanded with multiple objects = not uniform
-                }
+            // Check expansion state based on layer index
+            let isExpanded = if index <= 1 {
+                document.settings.layerExpansionState[layer.id] ?? false
             } else {
-                // Other layers: check if expanded with objects
-                let isExpanded = document.settings.layerExpansionState[layer.id] ?? true
-                if isExpanded {
-                    let hasObjects = document.unifiedObjects.contains { $0.layerIndex == index }
-                    if hasObjects {
-                        return false // Expanded with objects = not uniform
-                    }
+                document.settings.layerExpansionState[layer.id] ?? true
+            }
+
+            if isExpanded {
+                let hasObjects = document.unifiedObjects.contains { $0.layerIndex == index }
+                if hasObjects {
+                    return false // Expanded with objects = not uniform
                 }
             }
         }
@@ -223,13 +215,14 @@ struct LayersPanel: View {
 
                 // Overlay columns for drag-through (present when all layers have same height)
                 if allLayersHaveUniformHeight {
-                    HStack(spacing: 2) {
+                    VStack {
+                        HStack(spacing: 0) {
                         // Eye column overlay (using consistent row height)
-                        Color.clear
-                            .frame(width: 20)
+                        Color.red.opacity(0.3) // Debug: 30% red to visualize overlay
+                            .frame(width: 23, height: CGFloat(document.layers.count) * layerRowHeight)
                             .contentShape(Rectangle())
                             .highPriorityGesture(
-                                DragGesture(minimumDistance: 10) // Increased to avoid accidental activation
+                                DragGesture(minimumDistance: 0) // Match lock overlay behavior
                                     .onChanged { value in
                                         // Start drag if not already started
                                         if !document.isDraggingVisibility {
@@ -267,9 +260,13 @@ struct LayersPanel: View {
                                     }
                             )
 
-                        // Lock column overlay (using consistent row height)
+                        // Spacer to create dead space between overlays
                         Color.clear
-                            .frame(width: 20)
+                            .frame(width: 2, height: CGFloat(document.layers.count) * layerRowHeight)
+
+                        // Lock column overlay (using consistent row height)
+                        Color.red.opacity(0.3) // Debug: 30% red to visualize overlay
+                            .frame(width: 23, height: CGFloat(document.layers.count) * layerRowHeight)
                             .contentShape(Rectangle())
                             .highPriorityGesture(
                                 DragGesture(minimumDistance: 0)
@@ -313,6 +310,8 @@ struct LayersPanel: View {
                         Spacer()
                     }
                     .padding(.horizontal, 4)
+                        Spacer()
+                    }
                     .zIndex(200) // High z-index to be in front
                 }
             }

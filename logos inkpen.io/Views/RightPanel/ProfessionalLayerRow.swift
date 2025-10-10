@@ -45,14 +45,8 @@ struct ProfessionalLayerRow: View {
 
     // CRITICAL: Use document settings for layer expansion state (persists across tab switches)
     private var isExpanded: Bool {
-        // For Canvas (index 0) and Pasteboard (index 1), force closed if ≤1 object
+        // For Canvas (index 0) and Pasteboard (index 1), default to collapsed
         if layerIndex <= 1 {
-            let objectCount = document.unifiedObjects.filter { $0.layerIndex == layerIndex }.count
-            // Force closed if 1 or fewer objects
-            if objectCount <= 1 {
-                return false
-            }
-            // If >1 object, use saved state or default to collapsed
             return document.settings.layerExpansionState[layer.id] ?? false
         }
         // Other layers: use saved state or default to expanded
@@ -60,17 +54,7 @@ struct ProfessionalLayerRow: View {
     }
 
     private func setExpanded(_ value: Bool) {
-        // For Canvas/Pasteboard, don't allow expansion if ≤1 object
-        if layerIndex <= 1 {
-            let objectCount = document.unifiedObjects.filter { $0.layerIndex == layerIndex }.count
-            if objectCount <= 1 {
-                // Force to stay closed
-                document.settings.layerExpansionState[layer.id] = false
-                document.onSettingsChanged()
-                return
-            }
-        }
-        // Otherwise, save the new state
+        // Save the new state
         document.settings.layerExpansionState[layer.id] = value
         document.onSettingsChanged()
     }

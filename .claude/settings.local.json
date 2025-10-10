@@ -12,7 +12,8 @@
       "mcp__xcf-server__create_diff_from_doc",
       "mcp__xcf-server__apply_diff_to_doc",
       "mcp__xcf-server__apply_undo_diff_to_doc",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "mcp__xcf-server__read_doc"
     ],
     "deny": [],
     "ask": []
