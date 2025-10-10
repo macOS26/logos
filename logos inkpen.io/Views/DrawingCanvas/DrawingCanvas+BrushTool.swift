@@ -154,38 +154,7 @@ extension DrawingCanvas {
         // This allows user to immediately change colors for the next stroke
         document.selectedShapeIDs.removeAll()
     }
-    
-    // MARK: - Pressure Simulation
-    
-    private func calculateSimulatedPressure(at location: CGPoint) -> Double {
-        // If pressure sensitivity is disabled, return constant pressure
-        if !appState.pressureSensitivityEnabled {
-            return 1.0
-        }
-        
-        guard brushRawPoints.count > 1,
-              let lastPointData = brushRawPoints.last else { return 1.0 }
 
-        let lastPoint = lastPointData.location
-        let distance = sqrt(pow(location.x - lastPoint.x, 2) + pow(location.y - lastPoint.y, 2))
-        
-        // Simulate pressure based on drawing speed
-        // Fast drawing = light pressure, slow drawing = heavy pressure
-        let maxSpeed: Double = 100.0 // Maximum pixels per measurement
-        let normalizedSpeed = min(distance / maxSpeed, 1.0)
-        let basePressure = 1.0 - (normalizedSpeed * 0.5) // Reduce pressure with speed
-        
-        // Apply fixed sensitivity for old code
-        let sensitivity = 0.5
-        let pressureVariation = (basePressure - 0.5) * sensitivity
-        
-        let finalPressure = max(0.1, min(1.0, 0.5 + pressureVariation))
-        
-        // Print pressure value during drawing
-        
-        return finalPressure
-    }
-    
     // MARK: - Real-time Preview
     
     private func updateBrushPreview() {
@@ -429,28 +398,18 @@ extension DrawingCanvas {
         let rawPointLocations = brushRawPoints.map { $0.location }
 
         // Use dedicated Simplification setting to control point reduction
-        // 0% = maximum simplification (high tolerance)
-        // 50% = moderate simplification
-        // 100% = no simplification (all points, very low tolerance)
+        // 0% = no simplification (keep all points, tolerance 0.0)
+        // 100% = maximum simplification (highest tolerance, fewest points, tolerance 50.0)
         let simplificationValue = document.currentBrushSimplification
-        let tolerance: Double
-        if simplificationValue >= 95.0 {
-            // 95-100%: No simplification (tolerance < 0.6)
-            tolerance = 0.5
-        } else if simplificationValue >= 50.0 {
-            // 50-95%: Light to no simplification (tolerance 0.5 to 2.5)
-            let factor = (simplificationValue - 50.0) / 45.0 // 0 to 1
-            tolerance = 2.5 - (2.0 * factor) // 2.5 -> 0.5
-        } else {
-            // 0-50%: Moderate to maximum simplification (tolerance 2.5 to 10.0)
-            let factor = simplificationValue / 50.0 // 0 to 1
-            tolerance = 10.0 - (7.5 * factor) // 10.0 -> 2.5
-        }
+
+        // Map 0-100% to tolerance 0.0-50.0
+        let tolerance = (simplificationValue / 100.0) * 50.0
 
         print("🔵 SIMPLIFICATION: Value=\(simplificationValue)% -> Tolerance=\(tolerance)")
 
         let simplifiedLocations: [CGPoint]
-        if tolerance < 0.6 {
+        if tolerance < 0.1 {
+            // 0% simplification: keep all points
             simplifiedLocations = rawPointLocations
         } else {
             simplifiedLocations = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
@@ -480,60 +439,6 @@ extension DrawingCanvas {
 
         // Replace with simplified points
         brushRawPoints = simplifiedRawPoints
-
-        // SPECIAL CASE: Detect if this is a straight line by checking path geometry
-        // ONLY apply artificial leaf shape when there's NO pressure input
-        let hasPressure = appState.pressureSensitivityEnabled && PressureManager.shared.hasRealPressureInput
-
-        if !hasPressure && brushRawPoints.count >= 2,
-           let start = brushRawPoints.first?.location,
-           let end = brushRawPoints.last?.location {
-
-            // Calculate line length
-            let dx = end.x - start.x
-            let dy = end.y - start.y
-            let lineLength = sqrt(dx * dx + dy * dy)
-
-            // Check if all points are close to the straight line (< 5% deviation)
-            var maxDeviation = 0.0
-            for point in brushRawPoints {
-                let px = point.location.x - start.x
-                let py = point.location.y - start.y
-
-                // Distance from point to line
-                let deviation = abs(dy * px - dx * py) / lineLength
-                maxDeviation = max(maxDeviation, deviation)
-            }
-
-            let isStraightLine = maxDeviation < lineLength * 0.05
-
-            if isStraightLine {
-                let angle = atan2(dy, dx)
-
-                // Create leaf shape centered at origin
-                let width = document.currentBrushThickness
-                let leafPath = CGMutablePath()
-                leafPath.move(to: CGPoint(x: 0, y: 0))
-                leafPath.addQuadCurve(to: CGPoint(x: lineLength, y: 0), control: CGPoint(x: lineLength * 0.5, y: width * 0.5))
-                leafPath.addQuadCurve(to: CGPoint(x: 0, y: 0), control: CGPoint(x: lineLength * 0.5, y: -width * 0.5))
-                leafPath.closeSubpath()
-
-                // Transform: rotate and translate to match line
-                var transform = CGAffineTransform(translationX: start.x, y: start.y)
-                transform = transform.rotated(by: angle)
-
-                if let transformedPath = leafPath.copy(using: &transform) {
-                    let finalShape = VectorShape(
-                        name: "Brush Stroke",
-                        path: VectorPath(cgPath: transformedPath),
-                        strokeStyle: nil,
-                        fillStyle: FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
-                    )
-                    document.addShape(finalShape)
-                    return
-                }
-            }
-        }
 
         let strokeStyle: StrokeStyle? = document.brushApplyNoStroke ? nil : StrokeStyle(
             color: getCurrentStrokeColor(),
