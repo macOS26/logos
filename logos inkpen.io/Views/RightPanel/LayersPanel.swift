@@ -144,8 +144,14 @@ struct LayersPanel: View {
             ZStack(alignment: .topLeading) {
                 // Main layer rows
                 VStack(spacing: 0) {
-                    ForEach((0..<document.layers.count).reversed().map{$0}, id: \.self) { (layerIndex: Int) in
+                    ForEach(Array((0..<document.layers.count).reversed().enumerated()), id: \.element) { (index, layerIndex) in
                         VStack(spacing: 0) {
+                            // Add divider between layers (except for the first one)
+                            if index > 0 {
+                                Divider()
+                                    .padding(.horizontal, 8)
+                            }
+
                             // Layer row content
                             layerRowContent(for: layerIndex)
                             .offset(draggedLayerIndex == layerIndex ? dragOffset : .zero)
@@ -203,14 +209,21 @@ struct LayersPanel: View {
                         .frame(width: 20)
                         .contentShape(Rectangle())
                         .onTapGesture { location in
-                            // Handle click/tap
+                            // Handle click/tap with smaller click zone
                             let rowHeight: CGFloat = 45
-                            let layerIndex = Int(location.y / rowHeight)
-                            let reversedIndex = document.layers.count - 1 - layerIndex
+                            let clickZoneHeight: CGFloat = 30 // Smaller click zone
+                            let deadZone: CGFloat = (rowHeight - clickZoneHeight) / 2
 
-                            if reversedIndex >= 0 && reversedIndex < document.layers.count {
-                                document.saveToUndoStack()
-                                document.layers[reversedIndex].isVisible.toggle()
+                            let layerIndex = Int(location.y / rowHeight)
+                            let yInRow = location.y.truncatingRemainder(dividingBy: rowHeight)
+
+                            // Only respond to clicks in the center zone, not in dead zones
+                            if yInRow >= deadZone && yInRow <= (rowHeight - deadZone) {
+                                let reversedIndex = document.layers.count - 1 - layerIndex
+                                if reversedIndex >= 0 && reversedIndex < document.layers.count {
+                                    document.saveToUndoStack()
+                                    document.layers[reversedIndex].isVisible.toggle()
+                                }
                             }
                         }
                         .highPriorityGesture(
@@ -259,14 +272,21 @@ struct LayersPanel: View {
                         .frame(width: 20)
                         .contentShape(Rectangle())
                         .onTapGesture { location in
-                            // Handle click/tap
+                            // Handle click/tap with smaller click zone
                             let rowHeight: CGFloat = 45
-                            let layerIndex = Int(location.y / rowHeight)
-                            let reversedIndex = document.layers.count - 1 - layerIndex
+                            let clickZoneHeight: CGFloat = 30 // Smaller click zone
+                            let deadZone: CGFloat = (rowHeight - clickZoneHeight) / 2
 
-                            if reversedIndex >= 0 && reversedIndex < document.layers.count {
-                                document.saveToUndoStack()
-                                document.layers[reversedIndex].isLocked.toggle()
+                            let layerIndex = Int(location.y / rowHeight)
+                            let yInRow = location.y.truncatingRemainder(dividingBy: rowHeight)
+
+                            // Only respond to clicks in the center zone, not in dead zones
+                            if yInRow >= deadZone && yInRow <= (rowHeight - deadZone) {
+                                let reversedIndex = document.layers.count - 1 - layerIndex
+                                if reversedIndex >= 0 && reversedIndex < document.layers.count {
+                                    document.saveToUndoStack()
+                                    document.layers[reversedIndex].isLocked.toggle()
+                                }
                             }
                         }
                         .highPriorityGesture(
