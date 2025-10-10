@@ -72,12 +72,12 @@ struct ProfessionalLayerRow: View {
                     // Divider under eye column
                     Rectangle()
                         .fill(Color.gray.opacity(0.2))
-                        .frame(width: 20, height: 1)
+                        .frame(width: 21, height: 1)
 
                     // Divider under lock column
                     Rectangle()
                         .fill(Color.gray.opacity(0.2))
-                        .frame(width: 20, height: 1)
+                        .frame(width: 19, height: 1)
 
                     Spacer()
                 }
@@ -301,7 +301,7 @@ struct ProfessionalLayerRow: View {
                     // Drop zone at bottom of layer for reordering to the end
                     BottomDropZone(layerIndex: layerIndex, document: document)
                 }
-                .padding(.leading, 26) // Indent objects under layer
+                .padding(.leading, 27) // Indent objects under layer
             }
         }
         .background(Color.clear)
