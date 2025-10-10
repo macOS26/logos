@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Combine
+import AppKit
 
 struct ProfessionalLayerRow: View {
     let layerIndex: Int
@@ -112,10 +113,23 @@ struct ProfessionalLayerRow: View {
 
                     // MAIN LAYER BUTTON - Separate from eye/lock icons
                     HStack(spacing: 4) {
-                    // Disclosure Triangle
+                    // Disclosure Triangle with option-click for expand/collapse all
                     Button(action: {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            setExpanded(!isExpanded)
+                        // Check if option key is pressed
+                        if NSEvent.modifierFlags.contains(.option) {
+                            // Option-click: expand/collapse all layers
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                let shouldExpand = !isExpanded
+                                for layer in document.layers {
+                                    document.settings.layerExpansionState[layer.id] = shouldExpand
+                                }
+                                document.onSettingsChanged()
+                            }
+                        } else {
+                            // Regular click: toggle just this layer
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                setExpanded(!isExpanded)
+                            }
                         }
                     }) {
                         Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
@@ -126,6 +140,7 @@ struct ProfessionalLayerRow: View {
                             .frame(width: 12, height: 12)
                     }
                     .buttonStyle(BorderlessButtonStyle())
+                    .help("Click to expand/collapse layer. Option-click to expand/collapse all layers.")
 
                 // Layer Color Indicator (Professional Color Strip) - Clickable with color picker
                 Button(action: {

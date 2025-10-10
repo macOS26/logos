@@ -24,7 +24,16 @@ struct LayersPanel: View {
     @State private var isDraggingVisibility: Bool = false
     @State private var isDraggingLock: Bool = false
     @State private var processedLayersDuringDrag: Set<Int> = []
-    @State private var layerHeights: [Int: CGFloat] = [:] // Track actual height of each layer row
+
+    // Check if any layers are expanded (overlay only works when all collapsed)
+    private var hasExpandedLayers: Bool {
+        for layer in document.layers {
+            if document.settings.layerExpansionState[layer.id] ?? true {
+                return true
+            }
+        }
+        return false
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -153,19 +162,8 @@ struct LayersPanel: View {
 //                                    .frame(width: 60, alignment: .leading)
 //                            }
 
-                            // Layer row content with height measurement
+                            // Layer row content
                             layerRowContent(for: layerIndex)
-                            .background(
-                                GeometryReader { geometry in
-                                    Color.clear
-                                        .onAppear {
-                                            layerHeights[layerIndex] = geometry.size.height
-                                        }
-                                        .onChange(of: geometry.size.height) { _, newHeight in
-                                            layerHeights[layerIndex] = newHeight
-                                        }
-                                }
-                            )
                             .offset(draggedLayerIndex == layerIndex ? dragOffset : .zero)
                             .opacity(draggedLayerIndex == layerIndex ? 0.9 : 1.0)
                             .zIndex(draggedLayerIndex == layerIndex ? 100 : 0)
@@ -214,86 +212,104 @@ struct LayersPanel: View {
                 }
                 .padding(.horizontal, 4)
 
-                // Flexible overlay columns for eye and lock drag-through
-                HStack(spacing: 2) {
-                    // Eye column overlay with flexible sections
-                    VStack(spacing: 0) {
-                        // Create a section for each layer using actual heights
-                        ForEach(Array((0..<document.layers.count).reversed().enumerated()), id: \.element) { (index, layerIndex) in
-                            Color.clear
-                                .frame(width: 20, height: layerHeights[layerIndex] ?? 45) // Use measured height or default
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    document.saveToUndoStack()
-                                    document.layers[layerIndex].isVisible.toggle()
-                                }
-                                .onHover { hovering in
-                                    // Handle drag-through when dragging
-                                    if isDraggingVisibility && hovering {
-                                        if !processedLayersDuringDrag.contains(layerIndex) {
-                                            document.layers[layerIndex].isVisible.toggle()
-                                            processedLayersDuringDrag.insert(layerIndex)
+                // Simple overlay columns for drag-through (only when all layers collapsed)
+                if !hasExpandedLayers {
+                    HStack(spacing: 2) {
+                        // Eye column overlay (simple fixed-height approach)
+                        Color.clear
+                            .frame(width: 20)
+                            .contentShape(Rectangle())
+                            .highPriorityGesture(
+                                DragGesture(minimumDistance: 5)
+                                    .onChanged { value in
+                                        // Start drag
+                                        if !isDraggingVisibility {
+                                            isDraggingVisibility = true
+                                            processedLayersDuringDrag.removeAll()
+                                            document.saveToUndoStack()
+
+                                            // Process initial position
+                                            let rowHeight: CGFloat = 45
+                                            let startY = value.startLocation.y
+                                            let layerIndex = Int(startY / rowHeight)
+                                            let reversedIndex = document.layers.count - 1 - layerIndex
+
+                                            if reversedIndex >= 0 && reversedIndex < document.layers.count {
+                                                document.layers[reversedIndex].isVisible.toggle()
+                                                processedLayersDuringDrag.insert(reversedIndex)
+                                            }
+                                        }
+
+                                        // Process current position
+                                        let rowHeight: CGFloat = 45
+                                        let currentY = value.location.y
+                                        let layerIndex = Int(currentY / rowHeight)
+                                        let reversedIndex = document.layers.count - 1 - layerIndex
+
+                                        if reversedIndex >= 0 && reversedIndex < document.layers.count {
+                                            if !processedLayersDuringDrag.contains(reversedIndex) {
+                                                // Toggle this layer's visibility
+                                                document.layers[reversedIndex].isVisible.toggle()
+                                                processedLayersDuringDrag.insert(reversedIndex)
+                                            }
                                         }
                                     }
-                                }
-                        }
-                    }
-                    .gesture(
-                        DragGesture(minimumDistance: 5)
-                            .onChanged { _ in
-                                if !isDraggingVisibility {
-                                    isDraggingVisibility = true
-                                    processedLayersDuringDrag.removeAll()
-                                    document.saveToUndoStack()
-                                }
-                            }
-                            .onEnded { _ in
-                                isDraggingVisibility = false
-                                processedLayersDuringDrag.removeAll()
-                            }
-                    )
+                                    .onEnded { _ in
+                                        isDraggingVisibility = false
+                                        processedLayersDuringDrag.removeAll()
+                                    }
+                            )
 
-                    // Lock column overlay with flexible sections
-                    VStack(spacing: 0) {
-                        // Create a section for each layer using actual heights
-                        ForEach(Array((0..<document.layers.count).reversed().enumerated()), id: \.element) { (index, layerIndex) in
-                            Color.clear
-                                .frame(width: 20, height: layerHeights[layerIndex] ?? 45) // Use measured height or default
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    document.saveToUndoStack()
-                                    document.layers[layerIndex].isLocked.toggle()
-                                }
-                                .onHover { hovering in
-                                    // Handle drag-through when dragging
-                                    if isDraggingLock && hovering {
-                                        if !processedLayersDuringDrag.contains(layerIndex) {
-                                            document.layers[layerIndex].isLocked.toggle()
-                                            processedLayersDuringDrag.insert(layerIndex)
+                        // Lock column overlay (simple fixed-height approach)
+                        Color.clear
+                            .frame(width: 20)
+                            .contentShape(Rectangle())
+                            .highPriorityGesture(
+                                DragGesture(minimumDistance: 5)
+                                    .onChanged { value in
+                                        // Start drag
+                                        if !isDraggingLock {
+                                            isDraggingLock = true
+                                            processedLayersDuringDrag.removeAll()
+                                            document.saveToUndoStack()
+
+                                            // Process initial position
+                                            let rowHeight: CGFloat = 45
+                                            let startY = value.startLocation.y
+                                            let layerIndex = Int(startY / rowHeight)
+                                            let reversedIndex = document.layers.count - 1 - layerIndex
+
+                                            if reversedIndex >= 0 && reversedIndex < document.layers.count {
+                                                document.layers[reversedIndex].isLocked.toggle()
+                                                processedLayersDuringDrag.insert(reversedIndex)
+                                            }
+                                        }
+
+                                        // Process current position
+                                        let rowHeight: CGFloat = 45
+                                        let currentY = value.location.y
+                                        let layerIndex = Int(currentY / rowHeight)
+                                        let reversedIndex = document.layers.count - 1 - layerIndex
+
+                                        if reversedIndex >= 0 && reversedIndex < document.layers.count {
+                                            if !processedLayersDuringDrag.contains(reversedIndex) {
+                                                // Toggle this layer's lock
+                                                document.layers[reversedIndex].isLocked.toggle()
+                                                processedLayersDuringDrag.insert(reversedIndex)
+                                            }
                                         }
                                     }
-                                }
-                        }
-                    }
-                    .gesture(
-                        DragGesture(minimumDistance: 5)
-                            .onChanged { _ in
-                                if !isDraggingLock {
-                                    isDraggingLock = true
-                                    processedLayersDuringDrag.removeAll()
-                                    document.saveToUndoStack()
-                                }
-                            }
-                            .onEnded { _ in
-                                isDraggingLock = false
-                                processedLayersDuringDrag.removeAll()
-                            }
-                    )
+                                    .onEnded { _ in
+                                        isDraggingLock = false
+                                        processedLayersDuringDrag.removeAll()
+                                    }
+                            )
 
-                    Spacer()
+                        Spacer()
+                    }
+                    .padding(.horizontal, 4)
+                    .zIndex(200) // High z-index to be in front
                 }
-                .padding(.horizontal, 4)
-                .zIndex(200) // High z-index to be in front
             }
         }
     }
