@@ -203,7 +203,18 @@ struct LayersPanel: View {
                     Color.clear
                         .frame(width: 20)
                         .contentShape(Rectangle())
-                        .simultaneousGesture(
+                        .onTapGesture { location in
+                            // Handle click/tap
+                            let rowHeight: CGFloat = 45
+                            let layerIndex = Int(location.y / rowHeight)
+                            let reversedIndex = document.layers.count - 1 - layerIndex
+
+                            if reversedIndex >= 0 && reversedIndex < document.layers.count {
+                                document.saveToUndoStack()
+                                document.layers[reversedIndex].isVisible.toggle()
+                            }
+                        }
+                        .highPriorityGesture(
                             DragGesture(minimumDistance: 1)
                                 .onChanged { value in
                                     // Start drag
@@ -248,7 +259,18 @@ struct LayersPanel: View {
                     Color.clear
                         .frame(width: 20)
                         .contentShape(Rectangle())
-                        .simultaneousGesture(
+                        .onTapGesture { location in
+                            // Handle click/tap
+                            let rowHeight: CGFloat = 45
+                            let layerIndex = Int(location.y / rowHeight)
+                            let reversedIndex = document.layers.count - 1 - layerIndex
+
+                            if reversedIndex >= 0 && reversedIndex < document.layers.count {
+                                document.saveToUndoStack()
+                                document.layers[reversedIndex].isLocked.toggle()
+                            }
+                        }
+                        .highPriorityGesture(
                             DragGesture(minimumDistance: 1)
                                 .onChanged { value in
                                     // Start drag
