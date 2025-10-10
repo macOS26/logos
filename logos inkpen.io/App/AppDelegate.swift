@@ -173,10 +173,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     // SAVE: Window state when app is about to terminate
     func applicationWillTerminate(_ notification: Notification) {
+        // AUTO-SAVE: Save all open documents before shutdown
+        saveAllOpenDocuments()
+
         // CRITICAL: Force cleanup of all DocumentState instances
         DocumentStateRegistry.shared.forceCleanupAll()
 
         // Force synchronize UserDefaults before shutdown
         UserDefaults.standard.synchronize()
+    }
+
+    /// Auto-save all open documents when app terminates unexpectedly
+    private func saveAllOpenDocuments() {
+        // SwiftUI DocumentGroup uses NSDocumentController under the hood
+        let documentController = NSDocumentController.shared
+
+        for document in documentController.documents {
+            // NSDocument provides the save API we need
+            if document.isDocumentEdited {
+                do {
+                    // If the document has a file URL, save to it
+                    if let fileURL = document.fileURL {
+                        // Use writeSafely for synchronous write
+                        try document.writeSafely(to: fileURL, ofType: document.fileType ?? "io.logos.logos-inkpen-io", for: .saveOperation)
+                        print("💾 Auto-saved document: \(fileURL.lastPathComponent)")
+                    } else {
+                        // For untitled documents, create an auto-save in ~/Documents
+                        if let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+                            let dateFormatter = DateFormatter()
+                            dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+                            let timestamp = dateFormatter.string(from: Date())
+                            let autoSaveURL = documentsURL.appendingPathComponent("AutoSave_\(timestamp).inkpen")
+
+                            try document.writeSafely(to: autoSaveURL, ofType: "io.logos.logos-inkpen-io", for: .saveAsOperation)
+                            print("💾 Auto-saved untitled document to: \(autoSaveURL.lastPathComponent)")
+                        }
+                    }
+                } catch {
+                    Log.error("❌ Failed to auto-save document: \(error)", category: .error)
+                }
+            }
+        }
     }
 }
