@@ -268,7 +268,7 @@ struct ProfessionalLayerRow: View {
             ("Cyan", Color(hue: 190/360, saturation: 0.7, brightness: 0.85)),          // 190° (shifted towards blue)
             ("Sky", Color(hue: 202.5/360, saturation: 0.85, brightness: 0.8)),         // 202.5°
             ("Azure", Color(hue: 225/360, saturation: 0.8, brightness: 0.75)),         // 225°
-            ("Blue", Color(hue: 247.5/360, saturation: 0.75, brightness: 0.85)),       // 247.5°
+            ("Blue", Color(hue: 260/360, saturation: 0.75, brightness: 0.85)),         // 260° (shifted towards purple)
             ("Violet", Color(hue: 270/360, saturation: 0.75, brightness: 0.75)),       // 270°
             ("Purple", Color(hue: 292.5/360, saturation: 0.85, brightness: 0.85)),     // 292.5°
             ("Magenta", Color(hue: 315/360, saturation: 1.0, brightness: 1.0)),        // 315°
