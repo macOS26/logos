@@ -23,8 +23,6 @@ struct LayersPanel: View {
     // Drag-through batch toggle states
     @State private var isDraggingVisibility: Bool = false
     @State private var isDraggingLock: Bool = false
-    @State private var visibilityDragStartState: Bool = false
-    @State private var lockDragStartState: Bool = false
     @State private var processedLayersDuringDrag: Set<Int> = []
     
     var body: some View {
@@ -231,8 +229,6 @@ struct LayersPanel: View {
             document: document,
             isDraggingVisibility: $isDraggingVisibility,
             isDraggingLock: $isDraggingLock,
-            visibilityDragStartState: $visibilityDragStartState,
-            lockDragStartState: $lockDragStartState,
             processedLayersDuringDrag: $processedLayersDuringDrag
         )
     }

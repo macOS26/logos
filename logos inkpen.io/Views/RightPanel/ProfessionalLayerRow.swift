@@ -19,8 +19,6 @@ struct ProfessionalLayerRow: View {
     // Drag-through batch toggle bindings (passed from parent)
     @Binding var isDraggingVisibility: Bool
     @Binding var isDraggingLock: Bool
-    @Binding var visibilityDragStartState: Bool
-    @Binding var lockDragStartState: Bool
     @Binding var processedLayersDuringDrag: Set<Int>
 
     // CRITICAL: Use document settings for layer expansion state (persists across tab switches)
@@ -65,9 +63,8 @@ struct ProfessionalLayerRow: View {
                             .onChanged { _ in
                                 if !isDraggingVisibility {
                                     isDraggingVisibility = true
-                                    visibilityDragStartState = layer.isVisible
                                     document.saveToUndoStack()
-                                    // Toggle the current layer
+                                    // Toggle the current layer where drag started
                                     document.layers[layerIndex].isVisible.toggle()
                                     processedLayersDuringDrag.insert(layerIndex)
                                 }
@@ -78,10 +75,10 @@ struct ProfessionalLayerRow: View {
                             }
                     )
                     .onHover { hovering in
-                        // When dragging through layers, apply the toggle
+                        // When dragging through layers, toggle each one we haven't processed yet
                         if isDraggingVisibility && hovering && !processedLayersDuringDrag.contains(layerIndex) {
-                            // Set to opposite of the initial drag state
-                            document.layers[layerIndex].isVisible = !visibilityDragStartState
+                            // Toggle (reverse) the current state of this layer
+                            document.layers[layerIndex].isVisible.toggle()
                             processedLayersDuringDrag.insert(layerIndex)
                         }
                     }
@@ -104,9 +101,8 @@ struct ProfessionalLayerRow: View {
                             .onChanged { _ in
                                 if !isDraggingLock {
                                     isDraggingLock = true
-                                    lockDragStartState = layer.isLocked
                                     document.saveToUndoStack()
-                                    // Toggle the current layer
+                                    // Toggle the current layer where drag started
                                     document.layers[layerIndex].isLocked.toggle()
                                     processedLayersDuringDrag.insert(layerIndex)
                                 }
@@ -117,10 +113,10 @@ struct ProfessionalLayerRow: View {
                             }
                     )
                     .onHover { hovering in
-                        // When dragging through layers, apply the toggle
+                        // When dragging through layers, toggle each one we haven't processed yet
                         if isDraggingLock && hovering && !processedLayersDuringDrag.contains(layerIndex) {
-                            // Set to opposite of the initial drag state
-                            document.layers[layerIndex].isLocked = !lockDragStartState
+                            // Toggle (reverse) the current state of this layer
+                            document.layers[layerIndex].isLocked.toggle()
                             processedLayersDuringDrag.insert(layerIndex)
                         }
                     }
