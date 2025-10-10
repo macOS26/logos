@@ -113,15 +113,15 @@ struct LayersPanel: View {
                 .pickerStyle(.menu)
 
                 Spacer()
-                    .frame(width: 10)
-
+                    .frame(width: 0)
                 // Layer Color Swatch - Square, clickable with color picker
                 Button(action: {
                     showColorPicker = true
                 }) {
-                    RoundedRectangle(cornerRadius: 2)
+                    RoundedRectangle(cornerRadius: 20)
                         .fill(document.layers[layerIndex].color)
-                        .frame(width: 20, height: 20)
+                        .padding(.horizontal, -3)
+                        .frame(width: 14, height: 16)
                 }
                 .buttonStyle(PlainButtonStyle())
                 .popover(isPresented: $showColorPicker, arrowEdge: .bottom) {
