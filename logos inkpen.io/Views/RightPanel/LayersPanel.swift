@@ -24,16 +24,25 @@ struct LayersPanel: View {
     private var allLayersHaveUniformHeight: Bool {
         // Check each layer to see if it would have content when expanded
         for (index, layer) in document.layers.enumerated() {
-            // Check if layer is expanded (Canvas/Pasteboard default to collapsed, others to expanded)
-            let defaultExpanded = index > 1
-            let isExpanded = document.settings.layerExpansionState[layer.id] ?? defaultExpanded
-
-            // If expanded, check if it has objects
-            if isExpanded {
-                let hasObjects = document.unifiedObjects.contains { $0.layerIndex == index }
-                // If expanded with objects, heights are not uniform
-                if hasObjects {
-                    return false
+            // For Canvas/Pasteboard, they're forced closed if ≤1 object
+            if index <= 1 {
+                let objectCount = document.unifiedObjects.filter { $0.layerIndex == index }.count
+                if objectCount <= 1 {
+                    continue // Always collapsed, so uniform
+                }
+                // If >1 object, check if expanded
+                let isExpanded = document.settings.layerExpansionState[layer.id] ?? false
+                if isExpanded {
+                    return false // Expanded with multiple objects = not uniform
+                }
+            } else {
+                // Other layers: check if expanded with objects
+                let isExpanded = document.settings.layerExpansionState[layer.id] ?? true
+                if isExpanded {
+                    let hasObjects = document.unifiedObjects.contains { $0.layerIndex == index }
+                    if hasObjects {
+                        return false // Expanded with objects = not uniform
+                    }
                 }
             }
         }
