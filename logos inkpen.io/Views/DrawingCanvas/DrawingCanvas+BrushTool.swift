@@ -149,10 +149,12 @@ extension DrawingCanvas {
         // Clean up state including clearing preview path for overlay system
         brushPreviewPath = nil
         cancelBrushDrawing()
-        
-        // AUTO-DESELECT: Clear selection after completing brush stroke
+
+        // AUTO-DESELECT: Clear all selections after completing brush stroke
         // This allows user to immediately change colors for the next stroke
         document.selectedShapeIDs.removeAll()
+        document.selectedObjectIDs.removeAll()
+        document.selectedTextIDs.removeAll()
     }
 
     // MARK: - Real-time Preview
