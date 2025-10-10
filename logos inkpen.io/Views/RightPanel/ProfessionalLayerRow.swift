@@ -281,7 +281,7 @@ struct ProfessionalLayerRow: View {
                     // Drop zone at bottom of layer for reordering to the end
                     BottomDropZone(layerIndex: layerIndex, document: document)
                 }
-                .padding(.leading, 20) // Indent objects under layer
+                .padding(.leading, 30) // Indent objects under layer
             }
         }
         .background(Color.clear)

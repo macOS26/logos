@@ -28,13 +28,13 @@ struct LayersPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             layersHeader
-            Divider().padding(.horizontal, 8)
-
-            // Layer controls (opacity and blend mode) - shown when a layer is selected
-            if let selectedIndex = document.selectedLayerIndex, selectedIndex < document.layers.count {
-                layerControlsSection(for: selectedIndex)
-                Divider().padding(.horizontal, 8)
-            }
+//            Divider().padding(.horizontal, 8)
+//
+//            // Layer controls (opacity and blend mode) - shown when a layer is selected
+//            if let selectedIndex = document.selectedLayerIndex, selectedIndex < document.layers.count {
+//                layerControlsSection(for: selectedIndex)
+//                Divider().padding(.horizontal, 8)
+//            }
 
             layersScrollContent
             Spacer()
@@ -143,14 +143,14 @@ struct LayersPanel: View {
         ScrollView(.vertical, showsIndicators: true) {
             ZStack(alignment: .topLeading) {
                 // Main layer rows
-                VStack(spacing: 0) {
+                VStack() {
                     ForEach(Array((0..<document.layers.count).reversed().enumerated()), id: \.element) { (index, layerIndex) in
-                        VStack(spacing: 0) {
-                            // Add divider between layers (except for the first one)
-                            if index > 0 {
-                                Divider()
-                                    .padding(.horizontal, 8)
-                            }
+                        VStack() {
+//                            // Add divider between layers (except for the first one)
+//                            if index > 0 {
+//                                Divider()
+//                                    .frame(width: 60, alignment: .leading)
+//                            }
 
                             // Layer row content
                             layerRowContent(for: layerIndex)
