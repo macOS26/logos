@@ -228,12 +228,12 @@ struct LayersPanel: View {
             ("Orange", Color(hue: 45/360, saturation: 1.0, brightness: 1.0)),          // 45°
             ("Amber", Color(hue: 67.5/360, saturation: 1.0, brightness: 1.0)),         // 67.5°
             ("Chartreuse", Color(hue: 90/360, saturation: 1.0, brightness: 1.0)),      // 90°
-            ("Lime", Color(hue: 112.5/360, saturation: 1.0, brightness: 0.9)),         // 112.5°
-            ("Green", Color(hue: 135/360, saturation: 1.0, brightness: 0.8)),          // 135°
-            ("Spring", Color(hue: 157.5/360, saturation: 1.0, brightness: 0.7)),       // 157.5°
-            ("Cyan", Color(hue: 180/360, saturation: 1.0, brightness: 0.7)),           // 180°
-            ("Sky", Color(hue: 202.5/360, saturation: 1.0, brightness: 0.8)),          // 202.5°
-            ("Azure", Color(hue: 225/360, saturation: 1.0, brightness: 0.9)),          // 225°
+            ("Lime", Color(hue: 112.5/360, saturation: 1.0, brightness: 0.8)),         // 112.5°
+            ("Green", Color(hue: 135/360, saturation: 1.0, brightness: 0.6)),          // 135°
+            ("Spring", Color(hue: 157.5/360, saturation: 1.0, brightness: 0.4)),       // 157.5°
+            ("Cyan", Color(hue: 180/360, saturation: 1.0, brightness: 0.4)),           // 180°
+            ("Sky", Color(hue: 202.5/360, saturation: 1.0, brightness: 0.6)),          // 202.5°
+            ("Azure", Color(hue: 225/360, saturation: 1.0, brightness: 0.8)),          // 225°
             ("Blue", Color(hue: 247.5/360, saturation: 1.0, brightness: 1.0)),         // 247.5°
             ("Violet", Color(hue: 270/360, saturation: 1.0, brightness: 0.9)),         // 270°
             ("Purple", Color(hue: 292.5/360, saturation: 1.0, brightness: 0.9)),       // 292.5°
