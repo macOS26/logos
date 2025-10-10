@@ -399,11 +399,11 @@ extension DrawingCanvas {
 
         // Use dedicated Simplification setting to control point reduction
         // 0% = no simplification (keep all points, tolerance 0.0)
-        // 100% = moderate simplification (tolerance 5.0, safe point reduction without destroying shape)
+        // 100% = gentle simplification (tolerance 2.0, safe point reduction without destroying shape)
         let simplificationValue = document.currentBrushSimplification
 
-        // Map 0-100% to tolerance 0.0-5.0 (much gentler than before)
-        let tolerance = (simplificationValue / 100.0) * 5.0
+        // Map 0-100% to tolerance 0.0-2.0 (very gentle)
+        let tolerance = (simplificationValue / 100.0) * 2.0
 
         print("🔵 SIMPLIFICATION: Value=\(simplificationValue)% -> Tolerance=\(tolerance)")
 
