@@ -111,7 +111,6 @@ struct LayersPanel: View {
                 }
                 .labelsHidden()
                 .pickerStyle(.menu)
-                .frame(maxWidth: .infinity, alignment: .leading)
 
                 Spacer()
                     .frame(width: 10)
@@ -147,6 +146,8 @@ struct LayersPanel: View {
                     }
                     .padding(6)
                 }
+
+                Spacer()
             }
         }
         .padding(.horizontal, 12)
