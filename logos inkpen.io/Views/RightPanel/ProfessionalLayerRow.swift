@@ -290,13 +290,13 @@ struct ProfessionalLayerRow: View {
                 return true
             }
             
-            // Expanded Object List (Professional Style)
-            if isExpanded {
+            // Expanded Object List (Professional Style) - Only show if there are objects
+            let layerObjects = document.unifiedObjects
+                .filter { $0.layerIndex == layerIndex }
+                .sorted { $0.orderID > $1.orderID } // Front to back order (higher orderID = front, lower orderID = back)
+
+            if isExpanded && !layerObjects.isEmpty {
                 VStack(spacing: 0) {
-                    // CRITICAL FIX: Use unified objects to show true intermixed order
-                    let layerObjects = document.unifiedObjects
-                        .filter { $0.layerIndex == layerIndex }
-                        .sorted { $0.orderID > $1.orderID } // Front to back order (higher orderID = front, lower orderID = back)
                     
                     ForEach(layerObjects, id: \.id) { unifiedObject in
                         switch unifiedObject.objectType {
