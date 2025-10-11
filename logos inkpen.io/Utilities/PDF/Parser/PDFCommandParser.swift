@@ -152,7 +152,6 @@ class PDFCommandParser {
            let creatorStringRef = creatorStringRef {
             if let cfString = CGPDFStringCopyTextString(creatorStringRef) {
                 pdfCreator = cfString as String
-                Log.info("PDF Creator detected: \(pdfCreator)", category: .general)
             }
         }
     }

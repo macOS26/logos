@@ -56,7 +56,6 @@ class PDFMetalAccelerator {
             parallelMaxIndexPipeline = try createPipeline(named: "parallelMaxWithIndex")
             interpolatePipeline = try createPipeline(named: "batchInterpolate")
 
-            Log.info("✅ Metal GPU initialized - PDF parsing will run on GPU", category: .general)
         } catch {
             fatalError("Failed to create Metal pipelines: \(error)")
         }

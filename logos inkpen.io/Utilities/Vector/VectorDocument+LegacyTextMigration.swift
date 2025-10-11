@@ -49,15 +49,12 @@ extension VectorDocument {
                     )
 
                     needsMigration = true
-
-                    Log.info("✅ Migrated legacy text: '\(shape.textContent?.prefix(20) ?? "")' - Font: \(actualFontFamily) Variant: \(fontVariant ?? "Regular")", category: .general)
                 }
             }
         }
 
         if needsMigration {
             objectWillChange.send()
-            Log.info("🔄 Legacy text migration complete - fontVariant extracted from fontWeight + fontStyle", category: .general)
         }
     }
 }

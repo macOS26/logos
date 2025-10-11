@@ -190,10 +190,8 @@ extension PDFCommandParser {
 
                 if tmHasPosition && !ctmHasPosition {
                     usesTextMatrixForPosition = true
-                    Log.info("PDF: Detected text position in Tm (InkPen style)", category: .general)
                 } else if ctmHasPosition && (!tmHasPosition || (abs(e) < 1.0 && abs(f) < 1.0)) {
                     usesTextMatrixForPosition = false
-                    Log.info("PDF: Detected text position in CTM (Pages style)", category: .general)
                 }
             }
 

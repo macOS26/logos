@@ -394,34 +394,42 @@ struct BottomDropZone: View {
 
     var body: some View {
         Color.clear
-            .frame(height: 4)
+            .frame(height: 8)
             .dropDestination(for: DraggableVectorObject.self) { items, location in
-                guard let droppedObject = items.first else { return false }
-
-                if droppedObject.sourceLayerIndex != layerIndex {
+                guard let droppedObject = items.first else {
+                    print("❌ No dropped object")
                     return false
                 }
 
-                let layerObjects = document.unifiedObjects.filter { $0.layerIndex == layerIndex }
-                guard let lowestOrderID = layerObjects.map({ $0.orderID }).min() else { return false }
+                print("🔵 Bottom drop zone: dropping object \(droppedObject.objectId) from layer \(droppedObject.sourceLayerIndex) to layer \(layerIndex)")
 
-                if let objectIndex = document.unifiedObjects.firstIndex(where: { $0.id == droppedObject.objectId }) {
-                    let object = document.unifiedObjects[objectIndex]
-                    let newOrderID = lowestOrderID - 1
-
-                    if case .shape(let shape) = object.objectType {
-                        document.unifiedObjects[objectIndex] = VectorObject(
-                            shape: shape,
-                            layerIndex: layerIndex,
-                            orderID: newOrderID
-                        )
-                    }
-
-                    document.objectWillChange.send()
-                    return true
+                // Find the object being dropped
+                guard let objectIndex = document.unifiedObjects.firstIndex(where: { $0.id == droppedObject.objectId }) else {
+                    print("❌ Object not found in unifiedObjects")
+                    return false
                 }
 
-                return false
+                document.saveToUndoStack()
+
+                let object = document.unifiedObjects[objectIndex]
+
+                // Get the lowest orderID in target layer (or use 0 if layer is empty)
+                let layerObjects = document.unifiedObjects.filter { $0.layerIndex == layerIndex }
+                let newOrderID = layerObjects.map({ $0.orderID }).min().map { $0 - 1 } ?? 0
+
+                print("🟢 Moving to bottom of layer \(layerIndex) with orderID \(newOrderID)")
+
+                // Update the object with new layer and orderID
+                if case .shape(let shape) = object.objectType {
+                    document.unifiedObjects[objectIndex] = VectorObject(
+                        shape: shape,
+                        layerIndex: layerIndex,
+                        orderID: newOrderID
+                    )
+                }
+
+                document.objectWillChange.send()
+                return true
             } isTargeted: { isTargeted in
                 withAnimation(.easeInOut(duration: 0.15)) {
                     isDropTarget = isTargeted

@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct ObjectRowIconStyle: ViewModifier {
     let size: CGFloat
@@ -352,15 +353,36 @@ struct ObjectRow: View {
             .dropDestination(for: DraggableVectorObject.self) { items, location in
                 guard let droppedObject = items.first else { return false }
 
-                if droppedObject.sourceLayerIndex != layerIndex {
-                    return false
-                }
-
                 if droppedObject.objectId == objectId {
                     return false
                 }
 
-                document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectId)
+                document.saveToUndoStack()
+
+                // If same layer, reorder within layer
+                if droppedObject.sourceLayerIndex == layerIndex {
+                    document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectId)
+                } else {
+                    // Cross-layer drop: move to target layer at target position
+                    guard let sourceIndex = document.unifiedObjects.firstIndex(where: { $0.id == droppedObject.objectId }),
+                          let targetIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) else {
+                        return false
+                    }
+
+                    let sourceObject = document.unifiedObjects[sourceIndex]
+                    let targetObject = document.unifiedObjects[targetIndex]
+
+                    if case .shape(let shape) = sourceObject.objectType {
+                        document.unifiedObjects[sourceIndex] = VectorObject(
+                            shape: shape,
+                            layerIndex: layerIndex,
+                            orderID: targetObject.orderID
+                        )
+                    }
+
+                    document.objectWillChange.send()
+                }
+
                 return true
             } isTargeted: { isTargeted in
                 withAnimation(.easeInOut(duration: 0.15)) {
