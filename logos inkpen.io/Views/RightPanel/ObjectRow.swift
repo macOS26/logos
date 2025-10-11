@@ -93,184 +93,283 @@ struct ObjectRow: View {
         self.document = document
         self.groupedShapes = groupedShapes
     }
+    
+    private var isVisibleBinding: Binding<Bool> {
+        Binding(
+            get: { isVisible },
+            set: { newValue in
+                if let object = document.findObject(by: objectId) {
+                    if case .shape(var shape) = object.objectType {
+                        if shape.isVisible != newValue {
+                            document.saveToUndoStack()
+                            shape.isVisible = newValue
+                            if let index = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
+                                document.unifiedObjects[index] = VectorObject(
+                                    shape: shape,
+                                    layerIndex: layerIndex,
+                                    orderID: object.orderID
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        )
+    }
+    
+    private var isLockedBinding: Binding<Bool> {
+        Binding(
+            get: { isLocked },
+            set: { newValue in
+                if let object = document.findObject(by: objectId) {
+                    if case .shape(var shape) = object.objectType {
+                        if shape.isLocked != newValue {
+                            document.saveToUndoStack()
+                            shape.isLocked = newValue
+                            if let index = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
+                                document.unifiedObjects[index] = VectorObject(
+                                    shape: shape,
+                                    layerIndex: layerIndex,
+                                    orderID: object.orderID
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        )
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                Group {
-                    if objectType == .group {
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.15)) {
-                                isGroupExpanded.toggle()
-                            }
-                        }) {
-                            Image(systemName: isGroupExpanded ? "chevron.down" : "chevron.right")
-                                .font(.system(size: 9, weight: .medium))
-                                .foregroundColor(.secondary)
-                                .frame(width: 10, height: 10)
-                        }
-                        .buttonStyle(BorderlessButtonStyle())
-                    } else {
-                        Color.clear.frame(width: 10, height: 10)
-                    }
+            ZStack(alignment: .bottom) {
+                HStack(spacing: 2) {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: 21, height: 1)
+                    
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: 19, height: 1)
+                    
+                    Spacer()
                 }
-                .padding(.leading, 8)
-                .padding(.trailing, 6)
+                .padding(.leading, 2.5)
+                .padding(.trailing, 4)
                 
-                HStack(spacing: 6) {
-                    Image(systemName: objectIcon)
-                        .objectRowIcon(size: 10)
-                        .foregroundColor(objectIconColor)
-                        .frame(width: 12)
-
-                    Circle()
-                        .fill(isSelected ? Color.blue : Color.clear)
-                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                        .frame(width: 8, height: 8)
-
-                    Text(name)
-                        .objectRowText(size: 11, isSelected: isSelected)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                    HStack(spacing: 2) {
-                        if !isVisible {
-                            Image(systemName: "eye.slash")
-                                .objectRowIndicator()
+                HStack(spacing: 2) {
+                    Button(action: {
+                        isVisibleBinding.wrappedValue.toggle()
+                    }) {
+                        Image(systemName: isVisibleBinding.wrappedValue ? "eye" : "eye.slash")
+                            .visibilityButton(isVisible: isVisibleBinding.wrappedValue)
+                    }
+                    .buttonStyle(BorderlessButtonStyle())
+                    .help(isVisibleBinding.wrappedValue ? "Hide Object" : "Show Object")
+                    
+                    Button(action: {
+                        isLockedBinding.wrappedValue.toggle()
+                    }) {
+                        Image(systemName: isLockedBinding.wrappedValue ? "lock.fill" : "lock.open")
+                            .lockButton(isLocked: isLockedBinding.wrappedValue)
+                    }
+                    .buttonStyle(BorderlessButtonStyle())
+                    .help(isLockedBinding.wrappedValue ? "Unlock Object" : "Lock Object")
+                    
+                    HStack(spacing: 4) {
+                        if objectType == .group {
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    isGroupExpanded.toggle()
+                                }
+                            }) {
+                                Image(systemName: isGroupExpanded ? "chevron.down" : "chevron.right")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                    .frame(width: 12, height: 12)
+                            }
+                            .buttonStyle(BorderlessButtonStyle())
+                            .help("Expand/collapse group")
+                        } else {
+                            Color.clear.frame(width: 12, height: 12)
                         }
-                        if isLocked {
-                            Image(systemName: "lock")
-                                .objectRowIndicator()
+                        
+                        HStack(spacing: 4) {
+                            Image(systemName: objectIcon)
+                                .font(.system(size: 10))
+                                .foregroundColor(objectIconColor)
+                                .frame(width: 12)
+                            
+                            Circle()
+                                .fill(isSelected ? Color.blue : Color.clear)
+                                .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                                .frame(width: 8, height: 8)
+                            
+                            Text(name)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(.primary)
+                                .lineLimit(1)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
-                }
-                .padding(.leading, 3)
-                .padding(.trailing, 8)
-                .padding(.vertical, 3) 
-                .background(
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(isSelected ? Color.blue.opacity(0.1) : Color.clear)
-                        .padding(.leading, -3)
-                        .padding(.trailing, 4)
-                )
-            }
-            .padding(.bottom, -2)
-            .opacity(isDragging ? 0.5 : 1.0)
-            .scaleEffect(isDragging ? 0.95 : 1.0)
-            .animation(.easeInOut(duration: 0.15), value: isDragging)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                let isShiftPressed = NSEvent.modifierFlags.contains(.shift)
-                let isCommandPressed = NSEvent.modifierFlags.contains(.command)
-                onSelect(isShiftPressed, isCommandPressed)
-            }
-        .draggable(DraggableVectorObject(
-            objectType: objectType == .text ? .text : .shape,
-            objectId: objectId,
-            sourceLayerIndex: layerIndex
-        )) {
-            HStack(spacing: 4) {
-                Image(systemName: objectIcon)
-                    .font(.system(size: 12))
-                    .foregroundColor(.white)
-                Text(name)
-                    .font(.system(size: 11))
-                    .foregroundColor(.white)
-                    .lineLimit(1)
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(Color.blue.opacity(0.8))
-            .cornerRadius(6)
-        }
-        .onChange(of: isDragging) { oldValue, newValue in
-        }
-        .contextMenu {
-            Button("Select") {
-                onSelect(false, false)
-            }
-
-            Divider()
-
-            if objectType == .shape {
-                Button("Duplicate Shape") {
-                }
-                Button("Delete Shape") {
-                    document.selectedShapeIDs = [objectId]
-                    document.removeSelectedShapes()
-                }
-            } else {
-                Button("Duplicate Text") {
-                }
-                Button("Delete Text") {
-                    document.selectedTextIDs = [objectId]
-                    document.removeSelectedText()
-                }
-            }
-
-            Divider()
-
-            Button(isVisible ? "Hide" : "Show") {
-            }
-
-            Button(isLocked ? "Unlock" : "Lock") {
-            }
-        }
-        .dropDestination(for: DraggableVectorObject.self) { items, location in
-            guard let droppedObject = items.first else { return false }
-
-            if droppedObject.sourceLayerIndex != layerIndex {
-                return false
-            }
-
-            if droppedObject.objectId == objectId {
-                return false
-            }
-
-            document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectId)
-            return true
-        } isTargeted: { isTargeted in
-            withAnimation(.easeInOut(duration: 0.15)) {
-                isDropTarget = isTargeted
-            }
-        }
-        .overlay(alignment: .top) {
-            if isDropTarget {
-                Rectangle()
-                    .fill(Color.blue)
-                    .frame(height: 2)
-                    .transition(.opacity)
-            }
-        }
-
-            if objectType == .group, isGroupExpanded, let shapes = groupedShapes {
-                ForEach(shapes, id: \.id) { childShape in
-                    let isChildSelected = document.selectedObjectIDs.contains(childShape.id)
-
-                    HStack(spacing: 6) {
-                        Color.clear.frame(width: 20)
-
-                        Image(systemName: childShape.isTextObject ? "textformat" : "square")
-                            .objectRowIcon(size: 9)
-                            .foregroundColor(childShape.isTextObject ? .green : .blue)
-                            .frame(width: 12)
-
-                        Circle()
-                            .fill(isChildSelected ? Color.blue : Color.clear)
-                            .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                            .frame(width: 7, height: 7)
-
-                        Text(childShape.isTextObject ? (childShape.textContent ?? "Text") : childShape.name)
-                            .objectRowChildText(size: 10, isSelected: isChildSelected)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(isChildSelected ? Color.blue.opacity(0.08) : Color.clear)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 3)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(isSelected ? Color.accentColor.opacity(0.08) : Color.clear)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(isSelected ? Color.accentColor.opacity(0.2) : Color.clear, lineWidth: 1)
+                            )
+                    )
                     .contentShape(Rectangle())
                     .onTapGesture {
                         let isShiftPressed = NSEvent.modifierFlags.contains(.shift)
                         let isCommandPressed = NSEvent.modifierFlags.contains(.command)
-
+                        onSelect(isShiftPressed, isCommandPressed)
+                    }
+                }
+                .padding(.horizontal, 4)
+            }
+            .opacity(isDragging ? 0.5 : 1.0)
+            .scaleEffect(isDragging ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.15), value: isDragging)
+            .draggable(DraggableVectorObject(
+                objectType: objectType == .text ? .text : .shape,
+                objectId: objectId,
+                sourceLayerIndex: layerIndex
+            )) {
+                HStack(spacing: 4) {
+                    Image(systemName: objectIcon)
+                        .font(.system(size: 12))
+                        .foregroundColor(.white)
+                    Text(name)
+                        .font(.system(size: 11))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.blue.opacity(0.8))
+                .cornerRadius(6)
+            }
+            .onChange(of: isDragging) { oldValue, newValue in
+            }
+            .contextMenu {
+                Button("Select") {
+                    onSelect(false, false)
+                }
+                
+                Divider()
+                
+                if objectType == .shape {
+                    Button("Duplicate Shape") {
+                    }
+                    Button("Delete Shape") {
+                        document.selectedShapeIDs = [objectId]
+                        document.removeSelectedShapes()
+                    }
+                } else {
+                    Button("Duplicate Text") {
+                    }
+                    Button("Delete Text") {
+                        document.selectedTextIDs = [objectId]
+                        document.removeSelectedText()
+                    }
+                }
+                
+                Divider()
+                
+                Button(isVisible ? "Hide" : "Show") {
+                    isVisibleBinding.wrappedValue.toggle()
+                }
+                
+                Button(isLocked ? "Unlock" : "Lock") {
+                    isLockedBinding.wrappedValue.toggle()
+                }
+            }
+            .dropDestination(for: DraggableVectorObject.self) { items, location in
+                guard let droppedObject = items.first else { return false }
+                
+                if droppedObject.sourceLayerIndex != layerIndex {
+                    return false
+                }
+                
+                if droppedObject.objectId == objectId {
+                    return false
+                }
+                
+                document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectId)
+                return true
+            } isTargeted: { isTargeted in
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    isDropTarget = isTargeted
+                }
+            }
+            .overlay(alignment: .top) {
+                if isDropTarget {
+                    Rectangle()
+                        .fill(Color.blue)
+                        .frame(height: 2)
+                        .transition(.opacity)
+                }
+            }
+            
+            if objectType == .group, isGroupExpanded, let shapes = groupedShapes {
+                ForEach(shapes, id: \.id) { childShape in
+                    let isChildSelected = document.selectedObjectIDs.contains(childShape.id)
+                    
+                    ZStack(alignment: .bottom) {
+                        HStack(spacing: 2) {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(width: 21, height: 1)
+                            
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(width: 19, height: 1)
+                            
+                            Spacer()
+                        }
+                        .padding(.leading, 2.5)
+                        .padding(.trailing, 4)
+                        
+                        HStack(spacing: 2) {
+                            Color.clear.frame(width: 20, height: 20)
+                            Color.clear.frame(width: 20, height: 20)
+                            
+                            HStack(spacing: 4) {
+                                Color.clear.frame(width: 12, height: 12)
+                                
+                                Image(systemName: childShape.isTextObject ? "textformat" : "square")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(childShape.isTextObject ? .green : .blue)
+                                    .frame(width: 12)
+                                
+                                Circle()
+                                    .fill(isChildSelected ? Color.blue : Color.clear)
+                                    .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                                    .frame(width: 8, height: 8)
+                                
+                                Text(childShape.isTextObject ? (childShape.textContent ?? "Text") : childShape.name)
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(isChildSelected ? .blue : .secondary)
+                                    .lineLimit(1)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 3)
+                            .background(isChildSelected ? Color.blue.opacity(0.08) : Color.clear)
+                        }
+                        .padding(.horizontal, 4)
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        let isShiftPressed = NSEvent.modifierFlags.contains(.shift)
+                        let isCommandPressed = NSEvent.modifierFlags.contains(.command)
+                        
                         if isCommandPressed {
                             if document.selectedObjectIDs.contains(childShape.id) {
                                 document.selectedObjectIDs.remove(childShape.id)
