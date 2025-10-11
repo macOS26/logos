@@ -2,6 +2,30 @@ import SwiftUI
 import Combine
 import AppKit
 
+// Shared drop indicator modifier
+struct DropIndicator: ViewModifier {
+    let isDropTarget: Bool
+    let alignment: Alignment
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(alignment: alignment) {
+                if isDropTarget {
+                    Rectangle()
+                        .fill(Color.blue)
+                        .frame(height: 2)
+                        .transition(.opacity)
+                }
+            }
+    }
+}
+
+extension View {
+    func dropIndicator(isActive: Bool, alignment: Alignment = .top) -> some View {
+        modifier(DropIndicator(isDropTarget: isActive, alignment: alignment))
+    }
+}
+
 struct ProfessionalLayerRow: View {
     let layerIndex: Int
     let layer: VectorLayer
@@ -369,9 +393,8 @@ struct BottomDropZone: View {
     @State private var isDropTarget = false
 
     var body: some View {
-        Rectangle()
-            .fill(Color.clear)
-            .frame(height: 0)
+        Color.clear
+            .frame(height: 4)
             .dropDestination(for: DraggableVectorObject.self) { items, location in
                 guard let droppedObject = items.first else { return false }
 
@@ -404,13 +427,6 @@ struct BottomDropZone: View {
                     isDropTarget = isTargeted
                 }
             }
-            .overlay(alignment: .top) {
-                if isDropTarget {
-                    Rectangle()
-                        .fill(Color.blue)
-                        .frame(height: 2)
-                        .transition(.opacity)
-                }
-            }
+            .dropIndicator(isActive: isDropTarget, alignment: .bottom)
     }
 }

@@ -89,11 +89,12 @@ struct LayersPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             layersHeader
-            Divider().padding(.horizontal, 8)
+            Divider().padding(.horizontal, 6.5)
 
             if let selectedIndex = document.selectedLayerIndex, selectedIndex < document.layers.count {
                 layerControlsSection(for: selectedIndex)
-                Divider().padding(.horizontal, 8)
+                Divider().padding(.horizontal, 6.5)
+                    .frame(width: 55)
             }
 
             layersScrollContent
@@ -182,8 +183,12 @@ struct LayersPanel: View {
                     ),
                     availableColors: availableLayerColors()
                 )
-
+                
                 Spacer()
+
+                Text("Swatch")
+                    .offset(x: 10)
+                    .layerControlLabel()
             }
         }
         .padding(.horizontal, 12)

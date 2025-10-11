@@ -351,15 +351,15 @@ struct ObjectRow: View {
             }
             .dropDestination(for: DraggableVectorObject.self) { items, location in
                 guard let droppedObject = items.first else { return false }
-                
+
                 if droppedObject.sourceLayerIndex != layerIndex {
                     return false
                 }
-                
+
                 if droppedObject.objectId == objectId {
                     return false
                 }
-                
+
                 document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectId)
                 return true
             } isTargeted: { isTargeted in
@@ -367,14 +367,7 @@ struct ObjectRow: View {
                     isDropTarget = isTargeted
                 }
             }
-            .overlay(alignment: .top) {
-                if isDropTarget {
-                    Rectangle()
-                        .fill(Color.blue)
-                        .frame(height: 2)
-                        .transition(.opacity)
-                }
-            }
+            .dropIndicator(isActive: isDropTarget, alignment: .top)
             
             if objectType == .group, isGroupExpanded, let shapes = groupedShapes {
                 ForEach(shapes, id: \.id) { childShape in
