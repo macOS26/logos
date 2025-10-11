@@ -33,35 +33,20 @@ extension View {
                 return false
             }
 
-            // Find the target object
-            guard let targetObject = document.unifiedObjects.first(where: { $0.id == targetObjectId }) else {
-                return false
-            }
-
-            // Find the object immediately above the target (higher orderID)
-            let objectsAbove = document.unifiedObjects.filter {
-                $0.layerIndex == layerIndex && $0.orderID > targetObject.orderID
-            }.sorted { $0.orderID < $1.orderID }
-
             // If same layer, reorder within layer
             if droppedObject.sourceLayerIndex == layerIndex {
-                // If there's an object above, reorder to that object's position
-                // Otherwise reorder to target (will be at target's position)
-                if let objectAbove = objectsAbove.first {
-                    document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectAbove.id)
-                } else {
-                    document.reorderObject(objectId: droppedObject.objectId, targetObjectId: targetObjectId)
-                }
+                document.reorderObject(objectId: droppedObject.objectId, targetObjectId: targetObjectId)
             } else {
-                // Cross-layer drop: move to target layer
+                // Cross-layer drop: move to target layer just above target object
+                guard document.unifiedObjects.first(where: { $0.id == targetObjectId }) != nil else {
+                    return false
+                }
+
+                // Move to target layer at the target's orderID position
                 document.moveObjectToLayer(objectId: droppedObject.objectId, targetLayerIndex: layerIndex)
 
-                // Now reorder to just above the target
-                if let objectAbove = objectsAbove.first {
-                    document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectAbove.id)
-                } else {
-                    document.reorderObject(objectId: droppedObject.objectId, targetObjectId: targetObjectId)
-                }
+                // Now reorder to the target position
+                document.reorderObject(objectId: droppedObject.objectId, targetObjectId: targetObjectId)
             }
 
             return true
