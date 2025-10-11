@@ -305,13 +305,16 @@ struct ObjectRow: View {
                     return false
                 }
 
-                // If same layer, reorder within layer
-                if droppedObject.sourceLayerIndex == layerIndex {
-                    document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectId)
-                } else {
-                    // Cross-layer drop: move to target layer and reorder
-                    document.moveObjectToLayer(objectId: droppedObject.objectId, targetLayerIndex: layerIndex)
-                    document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectId)
+                // Animate the reorder/move
+                withAnimation(.easeOut(duration: 0.2)) {
+                    // If same layer, reorder within layer
+                    if droppedObject.sourceLayerIndex == layerIndex {
+                        document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectId)
+                    } else {
+                        // Cross-layer drop: move to target layer and reorder
+                        document.moveObjectToLayer(objectId: droppedObject.objectId, targetLayerIndex: layerIndex)
+                        document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectId)
+                    }
                 }
 
                 return true

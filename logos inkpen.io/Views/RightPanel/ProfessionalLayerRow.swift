@@ -257,7 +257,9 @@ struct ProfessionalLayerRow: View {
                     return false
                 }
 
-                document.moveObjectToLayer(objectId: droppedObject.objectId, targetLayerIndex: layerIndex)
+                withAnimation(.easeOut(duration: 0.2)) {
+                    document.moveObjectToLayer(objectId: droppedObject.objectId, targetLayerIndex: layerIndex)
+                }
                 return true
             }
 
