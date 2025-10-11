@@ -99,59 +99,59 @@ struct ObjectRow: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 6) {
-                if objectType == .group {
-                    Button(action: {
-                        withAnimation(.easeInOut(duration: 0.15)) {
-                            isGroupExpanded.toggle()
+            HStack(spacing: 0) {
+                // Chevron or empty space
+                Group {
+                    if objectType == .group {
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                isGroupExpanded.toggle()
+                            }
+                        }) {
+                            Image(systemName: isGroupExpanded ? "chevron.down" : "chevron.right")
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundColor(.secondary)
+                                .frame(width: 10, height: 10)
                         }
-                    }) {
-                        Image(systemName: isGroupExpanded ? "chevron.down" : "chevron.right")
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundColor(.secondary)
-                            .frame(width: 10, height: 10)
-                    }
-                    .buttonStyle(BorderlessButtonStyle())
-                } else {
-                    Color.clear.frame(width: 10, height: 10)
-                }
-
-                Image(systemName: objectIcon)
-                    .objectRowIcon(size: 10)
-                    .foregroundColor(objectIconColor)
-                    .frame(width: 12)
-
-                Circle()
-                    .fill(isSelected ? Color.blue : Color.clear)
-                    .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                    .frame(width: 8, height: 8)
-
-                Text(name)
-                    .objectRowText(size: 11, isSelected: isSelected)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                HStack(spacing: 2) {
-                    if !isVisible {
-                        Image(systemName: "eye.slash")
-                            .objectRowIndicator()
-                    }
-                    if isLocked {
-                        Image(systemName: "lock")
-                            .objectRowIndicator()
+                        .buttonStyle(BorderlessButtonStyle())
+                    } else {
+                        Color.clear.frame(width: 10, height: 10)
                     }
                 }
+                .padding(.leading, 8)
+                .padding(.trailing, 6)
+                
+                // Content with selection background
+                HStack(spacing: 6) {
+                    Image(systemName: objectIcon)
+                        .objectRowIcon(size: 10)
+                        .foregroundColor(objectIconColor)
+                        .frame(width: 12)
+
+                    Circle()
+                        .fill(isSelected ? Color.blue : Color.clear)
+                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                        .frame(width: 8, height: 8)
+
+                    Text(name)
+                        .objectRowText(size: 11, isSelected: isSelected)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    HStack(spacing: 2) {
+                        if !isVisible {
+                            Image(systemName: "eye.slash")
+                                .objectRowIndicator()
+                        }
+                        if isLocked {
+                            Image(systemName: "lock")
+                                .objectRowIndicator()
+                        }
+                    }
+                }
+                .padding(.trailing, 8)
+                .padding(.vertical, 3)
+                .background(isSelected ? Color.blue.opacity(0.1) : Color.clear)
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(
-                GeometryReader { geometry in
-                    if isSelected {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color.blue.opacity(0.1))
-                            .padding(.leading, -27)  // Compensate for the 27pt indentation from ProfessionalLayerRow
-                    }
-                }
-            )
             .opacity(isDragging ? 0.5 : 1.0)
             .scaleEffect(isDragging ? 0.95 : 1.0)
             .animation(.easeInOut(duration: 0.15), value: isDragging)
