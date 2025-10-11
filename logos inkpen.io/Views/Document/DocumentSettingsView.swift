@@ -1,5 +1,88 @@
 import SwiftUI
 
+// MARK: - Common Styles
+struct SettingsSectionIconStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 14, weight: .medium))
+            .foregroundColor(.blue)
+    }
+}
+
+struct SettingsSectionTitleStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundColor(.primary)
+    }
+}
+
+struct SettingsFieldLabelStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 12, weight: .medium))
+            .foregroundColor(.secondary)
+    }
+}
+
+struct SettingsUnitTextStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 12, weight: .medium))
+            .foregroundColor(.secondary)
+            .frame(width: 60, alignment: .leading)
+    }
+}
+
+struct SettingsToggleLabelStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 13))
+            .foregroundColor(.primary)
+            .frame(width: 120, alignment: .leading)
+    }
+}
+
+// MARK: - View Extensions
+extension View {
+    func settingsSectionIcon() -> some View {
+        modifier(SettingsSectionIconStyle())
+    }
+    
+    func settingsSectionTitle() -> some View {
+        modifier(SettingsSectionTitleStyle())
+    }
+    
+    func settingsFieldLabel() -> some View {
+        modifier(SettingsFieldLabelStyle())
+    }
+    
+    func settingsUnitText() -> some View {
+        modifier(SettingsUnitTextStyle())
+    }
+    
+    func settingsToggleLabel() -> some View {
+        modifier(SettingsToggleLabelStyle())
+    }
+}
+
+// MARK: - Subviews
+private struct SettingsSectionHeader: View {
+    let icon: String
+    let title: String
+    
+    var body: some View {
+        HStack {
+            Image(systemName: icon)
+                .settingsSectionIcon()
+            
+            Text(title)
+                .settingsSectionTitle()
+        }
+    }
+}
+
+// MARK: - Main View
 struct DocumentSettingsView: View {
     @ObservedObject var document: VectorDocument
     @Environment(\.presentationMode) var presentationMode
@@ -96,22 +179,13 @@ struct DocumentSettingsView: View {
 
     private var documentSizeSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "ruler")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.blue)
-
-                Text("Document Size")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-            }
+            SettingsSectionHeader(icon: "ruler", title: "Document Size")
 
             VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 24) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Width")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.secondary)
+                            .settingsFieldLabel()
 
                         HStack(spacing: 8) {
                             TextField("Width", value: $document.settings.width, format: .number)
@@ -122,16 +196,13 @@ struct DocumentSettingsView: View {
                                 }
 
                             Text(document.settings.unit.rawValue.capitalized)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.secondary)
-                                .frame(width: 60, alignment: .leading)
+                                .settingsUnitText()
                         }
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Height")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.secondary)
+                            .settingsFieldLabel()
 
                         HStack(spacing: 8) {
                             TextField("Height", value: $document.settings.height, format: .number)
@@ -142,9 +213,7 @@ struct DocumentSettingsView: View {
                                 }
 
                             Text(document.settings.unit.rawValue.capitalized)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.secondary)
-                                .frame(width: 60, alignment: .leading)
+                                .settingsUnitText()
                         }
                     }
 
@@ -153,8 +222,7 @@ struct DocumentSettingsView: View {
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Units")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .settingsFieldLabel()
 
                     Picker("Unit", selection: $document.settings.unit) {
                         ForEach(MeasurementUnit.allCases, id: \.self) { unit in
@@ -180,20 +248,11 @@ struct DocumentSettingsView: View {
 
     private var colorSettingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "paintpalette")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.blue)
-
-                Text("Color Settings")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-            }
+            SettingsSectionHeader(icon: "paintpalette", title: "Color Settings")
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Color Mode")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .settingsFieldLabel()
 
                 Picker("Color Mode", selection: $document.settings.colorMode) {
                     ForEach(ColorMode.allCases, id: \.self) { mode in
@@ -207,20 +266,11 @@ struct DocumentSettingsView: View {
 
     private var displaySettingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "eye")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.blue)
-
-                Text("Display Settings")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-            }
+            SettingsSectionHeader(icon: "eye", title: "Display Settings")
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Resolution")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .settingsFieldLabel()
 
                 HStack(spacing: 8) {
                     TextField("Resolution", value: $document.settings.resolution, format: .number)
@@ -231,9 +281,7 @@ struct DocumentSettingsView: View {
                         }
 
                     Text("DPI")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .frame(width: 60, alignment: .leading)
+                        .settingsUnitText()
                 }
             }
         }
@@ -242,8 +290,7 @@ struct DocumentSettingsView: View {
     private var layerSelectionSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Selected Layer")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.secondary)
+                .settingsFieldLabel()
 
             Picker("", selection: Binding(
                     get: {
@@ -277,23 +324,13 @@ struct DocumentSettingsView: View {
 
     private var displayOptionsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "eye")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.blue)
-
-                Text("Display Options")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-            }
+            SettingsSectionHeader(icon: "eye", title: "Display Options")
 
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 40) {
                     HStack {
                         Text("Show Rulers")
-                            .font(.system(size: 13))
-                            .foregroundColor(.primary)
-                            .frame(width: 120, alignment: .leading)
+                            .settingsToggleLabel()
 
                         StylusToggleButton(isOn: $document.settings.showRulers) { newValue in
                             document.showRulers = newValue
@@ -304,9 +341,7 @@ struct DocumentSettingsView: View {
 
                     HStack {
                         Text("Snap to Point")
-                            .font(.system(size: 13))
-                            .foregroundColor(.primary)
-                            .frame(width: 120, alignment: .leading)
+                            .settingsToggleLabel()
 
                         StylusToggleButton(isOn: $document.settings.snapToPoint) { newValue in
                             document.snapToPoint = newValue
@@ -319,9 +354,7 @@ struct DocumentSettingsView: View {
                 HStack(spacing: 40) {
                     HStack {
                         Text("Show Grid")
-                            .font(.system(size: 13))
-                            .foregroundColor(.primary)
-                            .frame(width: 120, alignment: .leading)
+                            .settingsToggleLabel()
 
                         StylusToggleButton(isOn: $document.settings.showGrid) { newValue in
                             document.showGrid = newValue
@@ -332,9 +365,7 @@ struct DocumentSettingsView: View {
 
                     HStack {
                         Text("Snap to Grid")
-                            .font(.system(size: 13))
-                            .foregroundColor(.primary)
-                            .frame(width: 120, alignment: .leading)
+                            .settingsToggleLabel()
 
                         StylusToggleButton(isOn: $document.settings.snapToGrid) { newValue in
                             document.snapToGrid = newValue
@@ -350,8 +381,7 @@ struct DocumentSettingsView: View {
     private var gridSpacingSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Grid Spacing")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.secondary)
+                .settingsFieldLabel()
 
             HStack(spacing: 8) {
                 TextField("Grid Spacing", value: $document.settings.gridSpacing, format: .number)
@@ -362,9 +392,7 @@ struct DocumentSettingsView: View {
                     }
 
                 Text(document.settings.unit.rawValue.capitalized)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .frame(width: 60, alignment: .leading)
+                    .settingsUnitText()
             }
         }
     }
