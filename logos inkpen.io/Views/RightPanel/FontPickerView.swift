@@ -2,6 +2,36 @@ import SwiftUI
 import AppKit
 import Combine
 
+// MARK: - Common Styles
+struct FontPickerLabelStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.caption)
+            .foregroundColor(.secondary)
+    }
+}
+
+struct FontPickerPickerStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .pickerStyle(.menu)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 4)
+    }
+}
+
+// MARK: - View Extensions
+extension View {
+    func fontPickerLabel() -> some View {
+        modifier(FontPickerLabelStyle())
+    }
+    
+    func fontPickerStyle() -> some View {
+        modifier(FontPickerPickerStyle())
+    }
+}
+
+// MARK: - Main View
 struct FontPickerView: View {
     @ObservedObject var document: VectorDocument
     let selectedTextTypography: TypographyProperties?
@@ -27,8 +57,8 @@ struct FontPickerView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Font")
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .fontPickerLabel()
+            
             Picker("", selection: Binding(
                 get: {
                     if let selectedText = selectedText {
@@ -53,14 +83,12 @@ struct FontPickerView: View {
                         .tag(fontFamily)
                 }
             }
-            .pickerStyle(.menu)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 4)
+            .fontPickerStyle()
             .id(fontFamilyUpdateTrigger)
 
             Text("Weight")
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .fontPickerLabel()
+            
             Picker("", selection: Binding(
                 get: {
                     if let selectedText = selectedText {
@@ -88,11 +116,8 @@ struct FontPickerView: View {
                         .tag(variant)
                 }
             }
-            .pickerStyle(.menu)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 4)
+            .fontPickerStyle()
             .id(fontFamilyUpdateTrigger)
-
         }
     }
 
