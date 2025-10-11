@@ -1,4 +1,3 @@
-
 import XCTest
 import SwiftUI
 @testable import logos_inkpen_io

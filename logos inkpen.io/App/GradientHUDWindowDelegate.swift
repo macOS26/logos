@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 class GradientHUDWindowDelegate: NSObject, NSWindowDelegate {

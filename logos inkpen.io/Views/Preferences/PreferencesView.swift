@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 func defaultPressureCurveData() -> Data {

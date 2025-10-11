@@ -1,11 +1,3 @@
-//
-//  PDFComputeShaders.metal
-//  logos inkpen.io
-//
-//  Metal GPU compute shaders for PDF parsing
-//  Uses GPU SIMD for 1000x speedup over CPU
-//
-
 #include <metal_stdlib>
 using namespace metal;
 

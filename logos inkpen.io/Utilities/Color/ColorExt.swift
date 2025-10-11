@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 extension Color {
@@ -28,4 +27,3 @@ extension Color {
         return (0, 0, 0, 1)
     }
 }
-

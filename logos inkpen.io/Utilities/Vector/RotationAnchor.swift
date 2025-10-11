@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 enum RotationAnchor: String, CaseIterable, Codable {

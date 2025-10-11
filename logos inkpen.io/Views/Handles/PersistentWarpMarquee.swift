@@ -1,4 +1,3 @@
-
 import SwiftUI
 import SwiftUI
 
@@ -168,4 +167,3 @@ struct PersistentWarpMarquee: View {
         )
     }
 }
-

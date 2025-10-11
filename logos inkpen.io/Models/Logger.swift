@@ -166,4 +166,3 @@ struct Log {
         #endif
     }
 }
-

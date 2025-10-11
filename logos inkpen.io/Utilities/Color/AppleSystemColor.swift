@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 struct AppleSystemColor: Codable, Hashable {
@@ -51,4 +50,3 @@ struct AppleSystemColor: Codable, Hashable {
 
 
 }
-

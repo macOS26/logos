@@ -1,4 +1,3 @@
-
 struct PDFContent {
     let shapes: [VectorShape]
     let textCount: Int

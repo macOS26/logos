@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 
@@ -23,4 +22,3 @@ extension VectorDocument {
         }
     }
 }
-

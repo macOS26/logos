@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 struct LogoTemplatePreview: View {

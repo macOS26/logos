@@ -1,4 +1,3 @@
-
 enum MetalError: Error {
     case libraryCreationFailed
     case deviceNotAvailable

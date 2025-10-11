@@ -1,4 +1,3 @@
-
 import SwiftUI
 import SwiftUI
 
@@ -717,4 +716,3 @@ extension DrawingCanvas {
 
 
 }
-

@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 class SVGExporter {
@@ -1002,4 +1001,3 @@ class SVGExporter {
             .replacingOccurrences(of: "'", with: "&apos;")
     }
 }
-

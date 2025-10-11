@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 struct FillRule: Codable, Hashable {

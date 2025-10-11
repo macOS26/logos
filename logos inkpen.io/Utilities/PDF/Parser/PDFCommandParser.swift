@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 class PDFCommandParser {
@@ -287,4 +286,3 @@ class PDFCommandParser {
 
 
 }
-

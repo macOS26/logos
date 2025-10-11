@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 enum DrawingTool: String, CaseIterable, Codable {

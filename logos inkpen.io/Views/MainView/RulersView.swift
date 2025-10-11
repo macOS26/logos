@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 struct RulersView: View {

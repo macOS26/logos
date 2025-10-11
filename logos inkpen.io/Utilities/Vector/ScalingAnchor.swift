@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 enum ScalingAnchor: String, CaseIterable, Codable {

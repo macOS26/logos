@@ -1,4 +1,3 @@
-
 import XCTest
 import AppKit
 @testable import logos_inkpen_io

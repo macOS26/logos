@@ -1,4 +1,3 @@
-
 import AppKit
 
 class DisabledContextMenuTextView: NSTextView {

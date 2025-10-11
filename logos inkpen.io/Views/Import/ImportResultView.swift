@@ -1,4 +1,3 @@
-
 import SwiftUI
 import SwiftUI
 
@@ -99,4 +98,3 @@ struct ImportResultView: View {
         .frame(width: 500, height: 400)
     }
 }
-

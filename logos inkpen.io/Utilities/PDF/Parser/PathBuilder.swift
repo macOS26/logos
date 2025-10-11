@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 
@@ -89,4 +88,3 @@ func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
         producer: inkpenMetadata
     )
 }
-

@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 enum BlendMode: String, CaseIterable, Codable {
@@ -98,4 +97,3 @@ enum BlendMode: String, CaseIterable, Codable {
         }
     }
 }
-

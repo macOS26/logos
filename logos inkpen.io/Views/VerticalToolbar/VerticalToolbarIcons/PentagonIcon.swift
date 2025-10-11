@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 private func polygonIconPath(center: CGPoint, radius: CGFloat, sides: Int) -> Path {

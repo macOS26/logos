@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHotspot: CGPoint) -> NSCursor {

@@ -1,11 +1,3 @@
-//
-//  PDFProcessing.metal
-//  logos inkpen.io
-//
-//  GPU-accelerated PDF processing kernels
-//  Created by Claude on 1/13/25.
-//
-
 #include <metal_stdlib>
 using namespace metal;
 

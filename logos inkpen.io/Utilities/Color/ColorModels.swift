@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 enum ColorMode: String, CaseIterable, Codable {

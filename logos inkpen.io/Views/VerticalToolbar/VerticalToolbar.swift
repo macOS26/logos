@@ -1,4 +1,3 @@
-
 import SwiftUI
 import AppKit
 
@@ -472,4 +471,3 @@ struct VerticalToolbarButton: View {
     VerticalToolbar(document: VectorDocument())
         .frame(height: 600)
 }
-

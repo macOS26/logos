@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 
@@ -253,4 +252,3 @@ struct CurveSmoothing {
         return (control1, control2)
     }
 }
-

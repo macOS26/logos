@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 final class DocumentStateRegistry {

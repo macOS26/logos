@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 struct RealTimeSmoothing {
@@ -45,4 +44,3 @@ struct RealTimeSmoothing {
         return smoothedPoints
     }
 }
-

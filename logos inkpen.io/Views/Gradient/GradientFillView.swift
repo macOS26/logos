@@ -1,5 +1,3 @@
-
-
 import SwiftUI
 import SwiftUI
 
@@ -142,4 +140,3 @@ class GradientNSView: NSView {
         context.restoreGState()
     }
 }
-

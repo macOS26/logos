@@ -198,4 +198,3 @@ private final class CursorOverlayNSView: NSView {
         cursorLockUntil = .distantPast
     }
 }
-

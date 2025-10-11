@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 class ColorManagement {
@@ -27,4 +26,3 @@ class ColorManagement {
         return pantoneLibrary.allColors
     }
 }
-

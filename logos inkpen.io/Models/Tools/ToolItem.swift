@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 let IconStrokeWidth: CGFloat = 1.0

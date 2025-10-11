@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 struct SPOTColor: Codable, Hashable {

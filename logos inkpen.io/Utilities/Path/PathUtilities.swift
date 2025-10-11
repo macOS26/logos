@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 func deletePointsFromPath(_ path: VectorPath, selectedPoints: [PointID]) -> VectorPath {

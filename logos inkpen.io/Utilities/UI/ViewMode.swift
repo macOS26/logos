@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 enum ViewMode: String, CaseIterable, Codable {

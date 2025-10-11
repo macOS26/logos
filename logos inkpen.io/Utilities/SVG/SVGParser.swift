@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 class SVGParser: NSObject, XMLParserDelegate {

@@ -1,4 +1,3 @@
-
 import Foundation
 
 func getPointPositionExternal(_ pointID: PointID, in document: VectorDocument) -> VectorPoint? {

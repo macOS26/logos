@@ -1,4 +1,3 @@
-
 import SwiftUI
 import AppKit
 import SwiftUI
@@ -96,4 +95,3 @@ struct LayerView: View {
     }
 
 }
-

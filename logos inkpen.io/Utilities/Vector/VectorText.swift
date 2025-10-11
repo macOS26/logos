@@ -1,4 +1,3 @@
-
 import SwiftUI
 import Combine
 
@@ -563,4 +562,3 @@ extension VectorText {
         return shape
     }
 }
-

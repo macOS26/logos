@@ -1,4 +1,3 @@
-
 import SwiftUI
 import AppKit
 import Combine
@@ -739,4 +738,3 @@ struct GradientPanel_Previews: PreviewProvider {
             .frame(width: 300, height: 600)
     }
 }
-
