@@ -139,6 +139,66 @@ struct ObjectRow: View {
             }
         )
     }
+    
+    private func childVisibilityBinding(for childShapeId: UUID) -> Binding<Bool> {
+        Binding(
+            get: {
+                if let object = document.findObject(by: objectId),
+                   case .shape(let parentShape) = object.objectType,
+                   let child = parentShape.groupedShapes.first(where: { $0.id == childShapeId }) {
+                    return child.isVisible
+                }
+                return true
+            },
+            set: { newValue in
+                if let object = document.findObject(by: objectId) {
+                    if case .shape(var parentShape) = object.objectType {
+                        if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
+                            parentShape.groupedShapes[childIndex].isVisible = newValue
+                            document.saveToUndoStack()
+                            if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
+                                document.unifiedObjects[objIndex] = VectorObject(
+                                    shape: parentShape,
+                                    layerIndex: layerIndex,
+                                    orderID: document.unifiedObjects[objIndex].orderID
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        )
+    }
+    
+    private func childLockBinding(for childShapeId: UUID) -> Binding<Bool> {
+        Binding(
+            get: {
+                if let object = document.findObject(by: objectId),
+                   case .shape(let parentShape) = object.objectType,
+                   let child = parentShape.groupedShapes.first(where: { $0.id == childShapeId }) {
+                    return child.isLocked
+                }
+                return false
+            },
+            set: { newValue in
+                if let object = document.findObject(by: objectId) {
+                    if case .shape(var parentShape) = object.objectType {
+                        if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
+                            parentShape.groupedShapes[childIndex].isLocked = newValue
+                            document.saveToUndoStack()
+                            if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
+                                document.unifiedObjects[objIndex] = VectorObject(
+                                    shape: parentShape,
+                                    layerIndex: layerIndex,
+                                    orderID: document.unifiedObjects[objIndex].orderID
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        )
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -319,6 +379,8 @@ struct ObjectRow: View {
             if objectType == .group, isGroupExpanded, let shapes = groupedShapes {
                 ForEach(shapes, id: \.id) { childShape in
                     let isChildSelected = document.selectedObjectIDs.contains(childShape.id)
+                    let childVisBinding = childVisibilityBinding(for: childShape.id)
+                    let childLockBinding = childLockBinding(for: childShape.id)
                     
                     ZStack(alignment: .bottom) {
                         HStack(spacing: 2) {
@@ -336,8 +398,23 @@ struct ObjectRow: View {
                         .padding(.trailing, 4)
                         
                         HStack(spacing: 2) {
-                            Color.clear.frame(width: 20, height: 20)
-                            Color.clear.frame(width: 20, height: 20)
+                            Button(action: {
+                                childVisBinding.wrappedValue.toggle()
+                            }) {
+                                Image(systemName: childVisBinding.wrappedValue ? "eye" : "eye.slash")
+                                    .visibilityButton(isVisible: childVisBinding.wrappedValue)
+                            }
+                            .buttonStyle(BorderlessButtonStyle())
+                            .help(childVisBinding.wrappedValue ? "Hide Object" : "Show Object")
+                            
+                            Button(action: {
+                                childLockBinding.wrappedValue.toggle()
+                            }) {
+                                Image(systemName: childLockBinding.wrappedValue ? "lock.fill" : "lock.open")
+                                    .lockButton(isLocked: childLockBinding.wrappedValue)
+                            }
+                            .buttonStyle(BorderlessButtonStyle())
+                            .help(childLockBinding.wrappedValue ? "Unlock Object" : "Lock Object")
                             
                             HStack(spacing: 4) {
                                 Color.clear.frame(width: 12, height: 12)
