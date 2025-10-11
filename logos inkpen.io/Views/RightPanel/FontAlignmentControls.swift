@@ -28,68 +28,32 @@ struct FontAlignmentControls: View {
                     updateAlignment(.left)
                 } label: {
                     Image(systemName: "text.alignleft")
-                        .font(.system(size: 14))
-                        .foregroundColor(currentTextAlignment == .left ? .white : .primary)
-                        .frame(width: 36, height: 28)
-                        .background(currentTextAlignment == .left ? Color.blue : Color.clear)
-                        .cornerRadius(4)
-                        .contentShape(Rectangle())
                 }
-                .buttonStyle(BorderlessButtonStyle())
-                .onTapGesture {
-                    updateAlignment(.left)
-                }
+                .buttonStyle(.alignment(isSelected: currentTextAlignment == .left))
                 .help("Align Left")
 
                 Button {
                     updateAlignment(.center)
                 } label: {
                     Image(systemName: "text.aligncenter")
-                        .font(.system(size: 14))
-                        .foregroundColor(currentTextAlignment == .center ? .white : .primary)
-                        .frame(width: 36, height: 28)
-                        .background(currentTextAlignment == .center ? Color.blue : Color.clear)
-                        .cornerRadius(4)
-                        .contentShape(Rectangle())
                 }
-                .buttonStyle(BorderlessButtonStyle())
-                .onTapGesture {
-                    updateAlignment(.center)
-                }
+                .buttonStyle(.alignment(isSelected: currentTextAlignment == .center))
                 .help("Align Center")
 
                 Button {
                     updateAlignment(.right)
                 } label: {
                     Image(systemName: "text.alignright")
-                        .font(.system(size: 14))
-                        .foregroundColor(currentTextAlignment == .right ? .white : .primary)
-                        .frame(width: 36, height: 28)
-                        .background(currentTextAlignment == .right ? Color.blue : Color.clear)
-                        .cornerRadius(4)
-                        .contentShape(Rectangle())
                 }
-                .buttonStyle(BorderlessButtonStyle())
-                .onTapGesture {
-                    updateAlignment(.right)
-                }
+                .buttonStyle(.alignment(isSelected: currentTextAlignment == .right))
                 .help("Align Right")
 
                 Button {
                     updateAlignment(.justified)
                 } label: {
                     Image(systemName: "text.justify")
-                        .font(.system(size: 14))
-                        .foregroundColor(currentTextAlignment == .justified ? .white : .primary)
-                        .frame(width: 36, height: 28)
-                        .background(currentTextAlignment == .justified ? Color.blue : Color.clear)
-                        .cornerRadius(4)
-                        .contentShape(Rectangle())
                 }
-                .buttonStyle(BorderlessButtonStyle())
-                .onTapGesture {
-                    updateAlignment(.justified)
-                }
+                .buttonStyle(.alignment(isSelected: currentTextAlignment == .justified))
                 .help("Justify")
 
                 Spacer()
