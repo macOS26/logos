@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftUI
 
 struct GradientFillView: NSViewRepresentable {
     let gradient: VectorGradient
