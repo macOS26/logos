@@ -293,6 +293,29 @@ struct ObjectRow: View {
                 }
                 .padding(.horizontal, 4)
             }
+            .draggable(DraggableVectorObject(
+                objectType: objectType == .text ? .text : .shape,
+                objectId: objectId,
+                sourceLayerIndex: layerIndex
+            ))
+            .dropDestination(for: DraggableVectorObject.self) { items, location in
+                guard let droppedObject = items.first else { return false }
+
+                if droppedObject.objectId == objectId {
+                    return false
+                }
+
+                // If same layer, reorder within layer
+                if droppedObject.sourceLayerIndex == layerIndex {
+                    document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectId)
+                } else {
+                    // Cross-layer drop: move to target layer and reorder
+                    document.moveObjectToLayer(objectId: droppedObject.objectId, targetLayerIndex: layerIndex)
+                    document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectId)
+                }
+
+                return true
+            }
             .contextMenu {
                 Button("Select") {
                     onSelect(false, false)
