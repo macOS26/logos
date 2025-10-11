@@ -155,6 +155,7 @@ struct ObjectRow: View {
                     RoundedRectangle(cornerRadius: 4)
                         .fill(isSelected ? Color.blue.opacity(0.1) : Color.clear)
                         .padding(.leading, -3)  // Extend background back to proper position
+                        .padding(.trailing, 4)  // Small right padding to match parent layer
                 )
             }
             .opacity(isDragging ? 0.5 : 1.0)
