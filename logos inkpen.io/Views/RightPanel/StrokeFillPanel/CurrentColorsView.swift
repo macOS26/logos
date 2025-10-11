@@ -1,5 +1,30 @@
 import SwiftUI
 
+// MARK: - Common Styles
+struct ColorLabelStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.caption2)
+            .foregroundColor(Color.ui.secondaryText)
+    }
+}
+
+struct ColorSwatchButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+// MARK: - View Extensions
+extension View {
+    func colorLabelStyle() -> some View {
+        modifier(ColorLabelStyle())
+    }
+}
+
+// MARK: - Main View
 struct CurrentColorsView: View {
     let strokeColor: VectorColor
     let fillColor: VectorColor
@@ -10,30 +35,49 @@ struct CurrentColorsView: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            VStack(spacing: 4) {
-                Button(action: onFillColorTap) {
-                    renderColorSwatchRightPanel(fillColor, width: 30, height: 30, cornerRadius: 0, borderWidth: 1, opacity: fillOpacity)
-                }
-                .buttonStyle(BorderlessButtonStyle())
-
-                Text("Fill")
-                    .font(.caption2)
-                    .foregroundColor(Color.ui.secondaryText)
-            }
-
-            VStack(spacing: 4) {
-                Button(action: onStrokeColorTap) {
-                    renderColorSwatchRightPanel(strokeColor, width: 30, height: 30, cornerRadius: 0, borderWidth: 1, opacity: strokeOpacity)
-                }
-                .buttonStyle(BorderlessButtonStyle())
-
-                Text("Stroke")
-                    .font(.caption2)
-                    .foregroundColor(Color.ui.secondaryText)
-            }
+            ColorSwatchView(
+                color: fillColor,
+                opacity: fillOpacity,
+                label: "Fill",
+                action: onFillColorTap
+            )
+            
+            ColorSwatchView(
+                color: strokeColor,
+                opacity: strokeOpacity,
+                label: "Stroke",
+                action: onStrokeColorTap
+            )
         }
         .padding(12)
         .background(Color.ui.semiTransparentControlBackground)
         .cornerRadius(8)
+    }
+}
+
+// MARK: - Subviews
+private struct ColorSwatchView: View {
+    let color: VectorColor
+    let opacity: Double
+    let label: String
+    let action: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Button(action: action) {
+                renderColorSwatchRightPanel(
+                    color,
+                    width: 30,
+                    height: 30,
+                    cornerRadius: 0,
+                    borderWidth: 1,
+                    opacity: opacity
+                )
+            }
+            .buttonStyle(ColorSwatchButtonStyle())
+            
+            Text(label)
+                .colorLabelStyle()
+        }
     }
 }
