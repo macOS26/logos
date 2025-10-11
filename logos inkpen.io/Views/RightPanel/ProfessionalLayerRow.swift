@@ -213,13 +213,12 @@ struct ProfessionalLayerRow: View {
                     Spacer()
                     
                     let objectCount = document.unifiedObjects.filter { $0.layerIndex == layerIndex }.count
-                    Text("\(objectCount) objects")
+                    Text("\(objectCount)")
                         .font(.system(size: 9))
+                        .multilineTextAlignment(.trailing)
                         .foregroundColor(.secondary.opacity(0.8))
                         .padding(.trailing, 4)
                 }
-
-                    Spacer()
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 4)

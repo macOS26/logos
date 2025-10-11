@@ -66,7 +66,7 @@ struct LayersPanel: View {
     @State private var targetLayerIndex: Int? = nil
     @State private var showColorPicker: Bool = false
 
-    private let layerRowHeight: CGFloat = 26
+    private let layerRowHeight: CGFloat = 22.02
 
     private var allLayersHaveUniformHeight: Bool {
         for (index, layer) in document.layers.enumerated() {
