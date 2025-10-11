@@ -1,7 +1,63 @@
 import SwiftUI
 import AppKit
 
+// MARK: - Common Styles
+struct DocumentSectionIconStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 14, weight: .medium))
+            .foregroundColor(.blue)
+    }
+}
 
+struct DocumentSectionTitleStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundColor(.primary)
+    }
+}
+
+struct DocumentFieldLabelStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 12, weight: .medium))
+            .foregroundColor(.secondary)
+    }
+}
+
+// MARK: - View Extensions
+extension View {
+    func documentSectionIcon() -> some View {
+        modifier(DocumentSectionIconStyle())
+    }
+    
+    func documentSectionTitle() -> some View {
+        modifier(DocumentSectionTitleStyle())
+    }
+    
+    func documentFieldLabel() -> some View {
+        modifier(DocumentFieldLabelStyle())
+    }
+}
+
+// MARK: - Reusable Components
+private struct DocumentSectionHeader: View {
+    let icon: String
+    let title: String
+    
+    var body: some View {
+        HStack {
+            Image(systemName: icon)
+                .documentSectionIcon()
+            
+            Text(title)
+                .documentSectionTitle()
+        }
+    }
+}
+
+// MARK: - Main View
 struct NewDocumentSetupView: View {
     @Binding var isPresented: Bool
     let onDocumentCreated: (VectorDocument, URL?) -> Void
@@ -12,7 +68,6 @@ struct NewDocumentSetupView: View {
     @State private var skipNextUnitConversion = false
     @Environment(AppState.self) private var appState
     @Environment(\.dismissWindow) private var dismissWindow
-
 
     var body: some View {
             VStack(spacing: 0) {
@@ -105,15 +160,7 @@ struct NewDocumentSetupView: View {
 
     private var documentNameSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "doc.text")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.blue)
-
-                Text("Document Name")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-            }
+            DocumentSectionHeader(icon: "doc.text", title: "Document Name")
 
             VStack(alignment: .leading, spacing: 8) {
                 TextField("Enter document name", text: $setupData.filename)
@@ -129,22 +176,13 @@ struct NewDocumentSetupView: View {
 
     private var documentSizeSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "ruler")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.blue)
-
-                Text("Document Size")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-            }
+            DocumentSectionHeader(icon: "ruler", title: "Document Size")
 
             VStack(spacing: 16) {
                 HStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Width")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.secondary)
+                            .documentFieldLabel()
 
                         HStack(spacing: 8) {
                             TextField("Width", value: $setupData.width, format: .number)
@@ -152,15 +190,13 @@ struct NewDocumentSetupView: View {
                                 .frame(width: 100)
 
                             Text(unitLabel)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.secondary)
+                                .documentFieldLabel()
                         }
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Height")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.secondary)
+                            .documentFieldLabel()
 
                         HStack(spacing: 8) {
                             TextField("Height", value: $setupData.height, format: .number)
@@ -168,8 +204,7 @@ struct NewDocumentSetupView: View {
                                 .frame(width: 100)
 
                             Text(unitLabel)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.secondary)
+                                .documentFieldLabel()
                         }
                     }
                 }
@@ -195,14 +230,8 @@ struct NewDocumentSetupView: View {
 
     private var quickSizesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "square.grid.2x2")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.blue)
-                Text("Quick Sizes")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-            }
+            DocumentSectionHeader(icon: "square.grid.2x2", title: "Quick Sizes")
+            
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
                 ForEach(quickSizes, id: \.self) { size in
                     ProfessionalQuickSizeButton(size: size, displayUnit: setupData.unit) {
@@ -217,15 +246,7 @@ struct NewDocumentSetupView: View {
     private var previewPanel: some View {
              VStack(spacing: 24) {
             VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Image(systemName: "eye")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.blue)
-
-                    Text("Document Preview")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
-                }
+                DocumentSectionHeader(icon: "eye", title: "Document Preview")
 
                 VStack(spacing: 16) {
                     ZStack {
@@ -277,8 +298,8 @@ struct NewDocumentSetupView: View {
             VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Units")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .documentFieldLabel()
+                    
                     Picker("Unit", selection: $setupData.unit) {
                         ForEach(MeasurementUnit.allCases, id: \.self) { unit in
                             Text(unit.rawValue.capitalized).tag(unit)
@@ -290,8 +311,8 @@ struct NewDocumentSetupView: View {
                 HStack(spacing: 20) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Color Mode")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.secondary)
+                            .documentFieldLabel()
+                        
                         Picker("Color Mode", selection: $setupData.colorMode) {
                             ForEach(ColorMode.allCases, id: \.self) { mode in
                                 Text(mode.rawValue.uppercased()).tag(mode)
@@ -302,15 +323,14 @@ struct NewDocumentSetupView: View {
 
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Resolution")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.secondary)
+                            .documentFieldLabel()
+                        
                         HStack(spacing: 6) {
                             TextField("Resolution", value: $setupData.resolution, format: .number)
                                 .textFieldStyle(ProfessionalTextFieldStyle())
                                 .frame(width: 80)
                             Text("DPI")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.secondary)
+                                .documentFieldLabel()
                         }
                     }
                 }
