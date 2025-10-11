@@ -9,21 +9,6 @@ import SwiftUI
 import Combine
 import AppKit
 
-// Structure to hold icon positions (Equatable for PreferenceKey)
-struct IconPositions: Equatable {
-    let eye: CGRect
-    let lock: CGRect
-}
-
-// Preference key to track icon positions
-struct IconPositionKey: PreferenceKey {
-    static var defaultValue: [Int: IconPositions] = [:]
-
-    static func reduce(value: inout [Int: IconPositions], nextValue: () -> [Int: IconPositions]) {
-        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
-    }
-}
-
 struct ProfessionalLayerRow: View {
     let layerIndex: Int
     let layer: VectorLayer
@@ -119,11 +104,6 @@ struct ProfessionalLayerRow: View {
                     }
                     .buttonStyle(BorderlessButtonStyle())
                     .help(isVisibleBinding.wrappedValue ? "Hide Layer" : "Show Layer")
-                    .overlay(
-                        // Red overlay square that snaps to icon bounds
-                        Color.red.opacity(0.3)
-                            .allowsHitTesting(false) // Allow clicks to pass through
-                    )
                     .gesture(
                         DragGesture(minimumDistance: 5)
                             .onChanged { _ in
@@ -155,11 +135,6 @@ struct ProfessionalLayerRow: View {
                     }
                     .buttonStyle(BorderlessButtonStyle())
                     .help(isLockedBinding.wrappedValue ? "Unlock Layer" : "Lock Layer")
-                    .overlay(
-                        // Red overlay square that snaps to icon bounds
-                        Color.red.opacity(0.3)
-                            .allowsHitTesting(false) // Allow clicks to pass through
-                    )
                     .gesture(
                         DragGesture(minimumDistance: 5)
                             .onChanged { _ in

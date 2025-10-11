@@ -19,46 +19,30 @@ struct LayersPanel: View {
     @State private var dragOffset: CGSize = .zero
     @State private var targetLayerIndex: Int? = nil
     @State private var showColorPicker: Bool = false
-    @State private var iconPositions: [Int: IconPositions] = [:]
 
     // Consistent row height variable used throughout
     private let layerRowHeight: CGFloat = 32  // Actual height of layer rows
 
     // Check if all layers have the same effective height (overlay works when uniform)
     private var allLayersHaveUniformHeight: Bool {
-        // Always return true to keep overlay active regardless of cell height changes
-        return true
-    }
+        // Check each layer to see if it would have content when expanded
+        for (index, layer) in document.layers.enumerated() {
+            // Check expansion state based on layer index
+            let isExpanded = if index <= 1 {
+                document.settings.layerExpansionState[layer.id] ?? false
+            } else {
+                document.settings.layerExpansionState[layer.id] ?? true
+            }
 
-    // Calculate the Y offset for a layer accounting for expanded layers above it
-    private func calculateYOffsetForLayer(_ layerIndex: Int) -> CGFloat {
-        var offset: CGFloat = 0
-
-        // Iterate through layers from the top down to calculate positions
-        for i in (layerIndex..<document.layers.count).reversed() {
-            if i != layerIndex {
-                // Add the base row height for layers above
-                offset += layerRowHeight
-
-                // Check if this layer above is expanded and has objects
-                let layer = document.layers[i]
-                let isExpanded = if i <= 1 {
-                    document.settings.layerExpansionState[layer.id] ?? false
-                } else {
-                    document.settings.layerExpansionState[layer.id] ?? true
-                }
-
-                if isExpanded {
-                    let objectCount = document.unifiedObjects.filter { $0.layerIndex == i }.count
-                    if objectCount > 0 {
-                        // Add extra height for objects (with indentation and spacing)
-                        offset += CGFloat(objectCount) * 28 + 8  // Object rows + bottom drop zone
-                    }
+            if isExpanded {
+                let hasObjects = document.unifiedObjects.contains { $0.layerIndex == index }
+                if hasObjects {
+                    return false // Expanded with objects = not uniform
                 }
             }
         }
-
-        return offset
+        // All layers are either collapsed or expanded with no objects = uniform height
+        return true
     }
     
     var body: some View {
@@ -183,7 +167,6 @@ struct LayersPanel: View {
                     ForEach(Array((0..<document.layers.count).reversed().enumerated()), id: \.element) { (index, layerIndex) in
                         // Layer row content
                         layerRowContent(for: layerIndex)
-                            .coordinateSpace(name: "layerRow\(layerIndex)")
                             .offset(draggedLayerIndex == layerIndex ? dragOffset : .zero)
                             .opacity(draggedLayerIndex == layerIndex ? 0.9 : 1.0)
                             .zIndex(draggedLayerIndex == layerIndex ? 100 : 0)
@@ -230,23 +213,31 @@ struct LayersPanel: View {
                 }
                 .padding(.horizontal, 4)
 
-                // Overlay columns for drag-through using ACTUAL icon positions
+                // Overlay columns for drag-through (present when all layers have same height)
                 if allLayersHaveUniformHeight {
-                    // Debug: Always show overlay if we have positions
-                    GeometryReader { geometry in
-                        // Compound overlay of individual squares for eye icons
-                        ZStack {
-                            ForEach(Array(iconPositions.keys), id: \.self) { layerIndex in
-                                if let positions = iconPositions[layerIndex], positions.eye != .zero {
-                                    // Individual square hit area at EXACT eye icon position
-                                    Color.red.opacity(0.3)  // 30% red overlay for visualization
-                                        .frame(width: 20, height: 20)
-                                        .position(
-                                            x: positions.eye.midX - geometry.frame(in: .global).minX,
-                                            y: positions.eye.midY - geometry.frame(in: .global).minY
-                                        )
-                                }
-                            }
+                    // Calculate exact positions based on layout
+                    let iconSize: CGFloat = 20
+                    let iconSpacing: CGFloat = 2
+                    let rowPadding: CGFloat = 4  // Horizontal padding from edge
+                    let verticalPadding: CGFloat = 3  // Vertical padding in row
+
+                    // Eye icon is first in the HStack
+                    let eyeIconX = rowPadding + (iconSize / 2)  // Center X of eye icon
+                    // Lock icon is second (eye width + spacing)
+                    let lockIconX = rowPadding + iconSize + iconSpacing + (iconSize / 2)  // Center X of lock icon
+
+                    // Compound overlay of individual squares for eye icons
+                    ZStack {
+                        ForEach(0..<document.layers.count, id: \.self) { index in
+                            // Calculate Y position - center of each row
+                            let rowY = CGFloat(document.layers.count - 1 - index) * layerRowHeight
+                            let iconCenterY = rowY + (layerRowHeight / 2)
+
+                            // Individual square hit area for each eye icon
+                            Color.red.opacity(0.3)  // 30% red overlay for visualization
+                                .frame(width: iconSize, height: iconSize)
+                                .contentShape(Rectangle())
+                                .position(x: eyeIconX, y: iconCenterY)
                         }
                     }
                     .highPriorityGesture(
@@ -290,19 +281,17 @@ struct LayersPanel: View {
                     .padding(.horizontal, 4)
                     
                     // Compound overlay of individual squares for lock icons
-                    GeometryReader { geometry in
-                        ZStack {
-                            ForEach(Array(iconPositions.keys), id: \.self) { layerIndex in
-                                if let positions = iconPositions[layerIndex], positions.lock != .zero {
-                                    // Individual square hit area at EXACT lock icon position
-                                    Color.red.opacity(0.3)  // 30% red overlay for visualization
-                                        .frame(width: 20, height: 20)
-                                        .position(
-                                            x: positions.lock.midX - geometry.frame(in: .global).minX,
-                                            y: positions.lock.midY - geometry.frame(in: .global).minY
-                                        )
-                                }
-                            }
+                    ZStack {
+                        ForEach(0..<document.layers.count, id: \.self) { index in
+                            // Calculate Y position - center of each row
+                            let rowY = CGFloat(document.layers.count - 1 - index) * layerRowHeight
+                            let iconCenterY = rowY + (layerRowHeight / 2)
+
+                            // Individual square hit area for each lock icon
+                            Color.red.opacity(0.3)  // 30% red overlay for visualization
+                                .frame(width: iconSize, height: iconSize)
+                                .contentShape(Rectangle())
+                                .position(x: lockIconX, y: iconCenterY)
                         }
                     }
                     .highPriorityGesture(
@@ -345,24 +334,6 @@ struct LayersPanel: View {
                     )
                     .padding(.horizontal, 4)
                     .zIndex(200) // High z-index to be in front
-                }
-            }
-        }
-        .onPreferenceChange(IconPositionKey.self) { positions in
-            // Debug: Print when we get positions
-            if !positions.isEmpty {
-                print("Got icon positions for \(positions.count) layers")
-            }
-            // Merge the new positions with existing ones
-            for (layerIndex, rects) in positions {
-                if let existing = iconPositions[layerIndex] {
-                    // Merge eye and lock positions (keep non-zero values)
-                    iconPositions[layerIndex] = IconPositions(
-                        eye: rects.eye != .zero ? rects.eye : existing.eye,
-                        lock: rects.lock != .zero ? rects.lock : existing.lock
-                    )
-                } else {
-                    iconPositions[layerIndex] = rects
                 }
             }
         }
