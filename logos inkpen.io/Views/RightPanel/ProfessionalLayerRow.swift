@@ -2,62 +2,8 @@ import SwiftUI
 import Combine
 import AppKit
 
-// Shared drop indicator modifier
-struct DropIndicator: ViewModifier {
-    let isDropTarget: Bool
-    let alignment: Alignment
-
-    func body(content: Content) -> some View {
-        content
-            .overlay(alignment: alignment) {
-                if isDropTarget {
-                    Rectangle()
-                        .fill(Color.blue)
-                        .frame(height: 2)
-                        .transition(.opacity)
-                }
-            }
-    }
-}
-
 extension View {
-    func dropIndicator(isActive: Bool, alignment: Alignment = .top) -> some View {
-        modifier(DropIndicator(isDropTarget: isActive, alignment: alignment))
-    }
-
-    func objectDropDestination(targetObjectId: UUID, layerIndex: Int, document: VectorDocument, showIndicator: Binding<Bool>? = nil) -> some View {
-        self.dropDestination(for: DraggableVectorObject.self) { items, location in
-            guard let droppedObject = items.first else { return false }
-
-            if droppedObject.objectId == targetObjectId {
-                return false
-            }
-
-            // If same layer, reorder within layer
-            if droppedObject.sourceLayerIndex == layerIndex {
-                document.reorderObject(objectId: droppedObject.objectId, targetObjectId: targetObjectId)
-            } else {
-                // Cross-layer drop: move to target layer just above target object
-                guard document.unifiedObjects.first(where: { $0.id == targetObjectId }) != nil else {
-                    return false
-                }
-
-                // Move to target layer at the target's orderID position
-                document.moveObjectToLayer(objectId: droppedObject.objectId, targetLayerIndex: layerIndex)
-
-                // Now reorder to the target position
-                document.reorderObject(objectId: droppedObject.objectId, targetObjectId: targetObjectId)
-            }
-
-            return true
-        } isTargeted: { isTargeted in
-            if let showIndicator = showIndicator {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    showIndicator.wrappedValue = isTargeted
-                }
-            }
-        }
-    }
+    // Live rearrangement animation based on WebWidow's FavoritesToolbar
 }
 
 struct ProfessionalLayerRow: View {

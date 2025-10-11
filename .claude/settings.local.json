@@ -15,7 +15,11 @@
       "Bash(git checkout:*)",
       "mcp__xcf-server__read_doc",
       "Bash(chmod:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "WebFetch(domain:canopas.com)",
+      "WebFetch(domain:avitsadok.medium.com)",
+      "Read(//Users/toddbruss/Documents/GitHub/Web-Man/WebWidow/WebWidow/**)",
+      "Bash(xcodebuild:*)"
     ],
     "deny": [],
     "ask": []

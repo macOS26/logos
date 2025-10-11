@@ -79,9 +79,7 @@ struct ObjectRow: View {
     let groupedShapes: [VectorShape]?
     let showBottomIndicator: Bool
 
-    @State private var isDragging = false
     @State private var isGroupExpanded = false
-    @State private var isDropTarget = false
 
     init(objectType: ObjectType, objectId: UUID, name: String, isSelected: Bool, isVisible: Bool, isLocked: Bool, onSelect: @escaping (_: Bool, _: Bool) -> Void, layerIndex: Int, document: VectorDocument, groupedShapes: [VectorShape]? = nil, showBottomIndicator: Bool = false) {
         self.objectType = objectType
@@ -295,30 +293,6 @@ struct ObjectRow: View {
                 }
                 .padding(.horizontal, 4)
             }
-            .opacity(isDragging ? 0.5 : 1.0)
-            .scaleEffect(isDragging ? 0.95 : 1.0)
-            .animation(.easeInOut(duration: 0.15), value: isDragging)
-            .draggable(DraggableVectorObject(
-                objectType: objectType == .text ? .text : .shape,
-                objectId: objectId,
-                sourceLayerIndex: layerIndex
-            )) {
-                HStack(spacing: 4) {
-                    Image(systemName: objectIcon)
-                        .font(.system(size: 12))
-                        .foregroundColor(.white)
-                    Text(name)
-                        .font(.system(size: 11))
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.blue.opacity(0.8))
-                .cornerRadius(6)
-            }
-            .onChange(of: isDragging) { oldValue, newValue in
-            }
             .contextMenu {
                 Button("Select") {
                     onSelect(false, false)
@@ -351,11 +325,6 @@ struct ObjectRow: View {
                 Button(isLocked ? "Unlock" : "Lock") {
                     isLockedBinding.wrappedValue.toggle()
                 }
-            }
-            .objectDropDestination(targetObjectId: objectId, layerIndex: layerIndex, document: document, showIndicator: $isDropTarget)
-            .dropIndicator(isActive: isDropTarget, alignment: .top)
-            .if(showBottomIndicator) { view in
-                view.dropIndicator(isActive: isDropTarget, alignment: .bottom)
             }
             
             if objectType == .group, isGroupExpanded, let shapes = groupedShapes {
