@@ -1,5 +1,67 @@
 import SwiftUI
 
+// MARK: - Common Styles
+struct ObjectRowIconStyle: ViewModifier {
+    let size: CGFloat
+    
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: size))
+    }
+}
+
+struct ObjectRowTextStyle: ViewModifier {
+    let size: CGFloat
+    let isSelected: Bool
+    
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: size))
+            .foregroundColor(isSelected ? .blue : .primary)
+            .lineLimit(1)
+    }
+}
+
+struct ObjectRowChildTextStyle: ViewModifier {
+    let size: CGFloat
+    let isSelected: Bool
+    
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: size))
+            .foregroundColor(isSelected ? .blue : .secondary)
+            .lineLimit(1)
+    }
+}
+
+struct ObjectRowIndicatorStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 8))
+            .foregroundColor(.secondary)
+    }
+}
+
+// MARK: - View Extensions
+extension View {
+    func objectRowIcon(size: CGFloat) -> some View {
+        modifier(ObjectRowIconStyle(size: size))
+    }
+    
+    func objectRowText(size: CGFloat, isSelected: Bool) -> some View {
+        modifier(ObjectRowTextStyle(size: size, isSelected: isSelected))
+    }
+    
+    func objectRowChildText(size: CGFloat, isSelected: Bool) -> some View {
+        modifier(ObjectRowChildTextStyle(size: size, isSelected: isSelected))
+    }
+    
+    func objectRowIndicator() -> some View {
+        modifier(ObjectRowIndicatorStyle())
+    }
+}
+
+// MARK: - Main View
 struct ObjectRow: View {
     enum ObjectType: String {
         case shape = "shape"
@@ -55,7 +117,7 @@ struct ObjectRow: View {
                 }
 
                 Image(systemName: objectIcon)
-                        .font(.system(size: 10))
+                    .objectRowIcon(size: 10)
                     .foregroundColor(objectIconColor)
                     .frame(width: 12)
 
@@ -65,21 +127,17 @@ struct ObjectRow: View {
                     .frame(width: 8, height: 8)
 
                 Text(name)
-                    .font(.system(size: 11))
-                    .foregroundColor(isSelected ? .blue : .primary)
-                    .lineLimit(1)
+                    .objectRowText(size: 11, isSelected: isSelected)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 HStack(spacing: 2) {
                     if !isVisible {
                         Image(systemName: "eye.slash")
-                            .font(.system(size: 8))
-                            .foregroundColor(.secondary)
+                            .objectRowIndicator()
                     }
                     if isLocked {
                         Image(systemName: "lock")
-                            .font(.system(size: 8))
-                            .foregroundColor(.secondary)
+                            .objectRowIndicator()
                     }
                 }
             }
@@ -182,7 +240,7 @@ struct ObjectRow: View {
                         Color.clear.frame(width: 20)
 
                         Image(systemName: childShape.isTextObject ? "textformat" : "square")
-                            .font(.system(size: 9))
+                            .objectRowIcon(size: 9)
                             .foregroundColor(childShape.isTextObject ? .green : .blue)
                             .frame(width: 12)
 
@@ -192,9 +250,7 @@ struct ObjectRow: View {
                             .frame(width: 7, height: 7)
 
                         Text(childShape.isTextObject ? (childShape.textContent ?? "Text") : childShape.name)
-                            .font(.system(size: 10))
-                            .foregroundColor(isChildSelected ? .blue : .secondary)
-                            .lineLimit(1)
+                            .objectRowChildText(size: 10, isSelected: isChildSelected)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .padding(.horizontal, 8)
