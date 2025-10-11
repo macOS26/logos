@@ -219,7 +219,6 @@ struct LayersPanel: View {
                     let iconSize: CGFloat = 20
                     let iconSpacing: CGFloat = 2
                     let rowPadding: CGFloat = 4  // Horizontal padding from edge
-                    let verticalPadding: CGFloat = 3  // Vertical padding in row
 
                     // Eye icon is first in the HStack
                     let eyeIconX = rowPadding + (iconSize / 2)  // Center X of eye icon
@@ -234,7 +233,7 @@ struct LayersPanel: View {
                             let iconCenterY = rowY + (layerRowHeight / 2)
 
                             // Individual square hit area for each eye icon
-                            Color.red.opacity(0.3)  // 30% red overlay for visualization
+                            Color.red.opacity(0.0)  // 30% red overlay for visualization
                                 .frame(width: iconSize, height: iconSize)
                                 .contentShape(Rectangle())
                                 .position(x: eyeIconX, y: iconCenterY)
@@ -288,7 +287,7 @@ struct LayersPanel: View {
                             let iconCenterY = rowY + (layerRowHeight / 2)
 
                             // Individual square hit area for each lock icon
-                            Color.red.opacity(0.3)  // 30% red overlay for visualization
+                            Color.red.opacity(0.0)  // 30% red overlay for visualization
                                 .frame(width: iconSize, height: iconSize)
                                 .contentShape(Rectangle())
                                 .position(x: lockIconX, y: iconCenterY)
@@ -343,24 +342,23 @@ struct LayersPanel: View {
 
     private func availableLayerColors() -> [(name: String, color: Color)] {
         return [
-            // 16 perfectly evenly-spaced rainbow colors (HSB-based, exact 22.5° intervals)
-            // Hue: 0° - 360° (360/16 = 22.5° spacing), Saturation: 100%, Brightness: 90-100%
-            ("Red", Color(hue: 0/360, saturation: 1.0, brightness: 1.0)),              // 0°
-            ("Vermillion", Color(hue: 22.5/360, saturation: 1.0, brightness: 1.0)),    // 22.5°
-            ("Orange", Color(hue: 45/360, saturation: 1.0, brightness: 1.0)),          // 45°
-            ("Amber", Color(hue: 67.5/360, saturation: 1.0, brightness: 1.0)),         // 67.5°
-            ("Chartreuse", Color(hue: 90/360, saturation: 1.0, brightness: 1.0)),      // 90°
-            ("Lime", Color(hue: 112.5/360, saturation: 0.8, brightness: 0.75)),        // 112.5°
-            ("Green", Color(hue: 135/360, saturation: 0.7, brightness: 0.65)),         // 135°
-            ("Spring", Color(hue: 165/360, saturation: 0.6, brightness: 0.6)),         // 165° (shifted towards blue)
-            ("Cyan", Color(hue: 190/360, saturation: 0.7, brightness: 0.85)),          // 190° (shifted towards blue)
-            ("Sky", Color(hue: 202.5/360, saturation: 0.85, brightness: 0.85)),        // 202.5°
-            ("Azure", Color(hue: 225/360, saturation: 0.9, brightness: 0.9)),          // 225°
-            ("Blue", Color(hue: 240/360, saturation: 0.8, brightness: 0.95)),          // 240° (true blue)
-            ("Violet", Color(hue: 270/360, saturation: 0.75, brightness: 0.75)),       // 270°
-            ("Purple", Color(hue: 292.5/360, saturation: 0.85, brightness: 0.85)),     // 292.5°
-            ("Magenta", Color(hue: 315/360, saturation: 1.0, brightness: 1.0)),        // 315°
-            ("Rose", Color(hue: 337.5/360, saturation: 1.0, brightness: 1.0))          // 337.5°
+            // 16 distinct colors in P3 color space - optimized for clarity and separation
+            ("Red", Color(.displayP3, red: 0.75, green: 0.2, blue: 0.2)),             // Muted red - KEEP
+            ("Vermillion", Color(.displayP3, red: 0.8, green: 0.38, blue: 0.2)),      // Red-orange - slightly less saturated
+            ("Orange", Color(.displayP3, red: 0.85, green: 0.5, blue: 0.15)),         // Pure orange - reduced saturation
+            ("Amber", Color(.displayP3, red: 0.82, green: 0.62, blue: 0.2)),          // Yellow-orange - slightly muted
+            ("Chartreuse", Color(.displayP3, red: 0.55, green: 0.72, blue: 0.2)),     // Yellow-green - reduced saturation
+            ("Lime", Color(.displayP3, red: 0.4, green: 0.68, blue: 0.28)),           // Bright lime - less intense
+            ("Green", Color(.displayP3, red: 0.2, green: 0.65, blue: 0.3)),           // Forest green - KEEP
+            ("Spring", Color(.displayP3, red: 0.2, green: 0.68, blue: 0.5)),          // Blue-green - slightly muted
+            ("Cyan", Color(.displayP3, red: 0.15, green: 0.65, blue: 0.72)),          // Proper cyan - less saturated
+            ("Sky", Color(.displayP3, red: 0.32, green: 0.58, blue: 0.82)),           // Sky blue - reduced saturation
+            ("Azure", Color(.displayP3, red: 0.18, green: 0.4, blue: 0.78)),          // Deep azure - slightly muted
+            ("Blue", Color(.displayP3, red: 0.2, green: 0.25, blue: 0.75)),           // Pure blue - KEEP
+            ("Violet", Color(.displayP3, red: 0.4, green: 0.25, blue: 0.7)),          // Blue-purple - KEEP
+            ("Purple", Color(.displayP3, red: 0.55, green: 0.25, blue: 0.65)),        // True purple - KEEP
+            ("Magenta", Color(.displayP3, red: 0.7, green: 0.2, blue: 0.5)),          // Muted magenta - KEEP
+            ("Rose", Color(.displayP3, red: 0.8, green: 0.3, blue: 0.4))              // Dusty rose - KEEP
         ]
     }
 
@@ -397,7 +395,7 @@ struct ColorSwatchButton: View {
                         showColorPicker = false
                     }) {
                         HStack(spacing: 6) {
-                            RoundedRectangle(cornerRadius: 2)
+                            RoundedRectangle(cornerRadius: 7)
                                 .fill(colorOption.color)
                                 .frame(width: 14, height: 14)
                             Text(colorOption.name)
