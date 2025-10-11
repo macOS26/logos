@@ -371,7 +371,7 @@ struct BottomDropZone: View {
     var body: some View {
         Rectangle()
             .fill(Color.clear)
-            .frame(height: 8)
+            .frame(height: 0)
             .dropDestination(for: DraggableVectorObject.self) { items, location in
                 guard let droppedObject = items.first else { return false }
 
