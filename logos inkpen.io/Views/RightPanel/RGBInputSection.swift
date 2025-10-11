@@ -1,6 +1,114 @@
 import SwiftUI
 import Combine
 
+// MARK: - Common Styles
+struct ColorChannelLabelStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 11, weight: .medium))
+            .foregroundColor(.secondary)
+            .frame(width: 12)
+    }
+}
+
+struct ColorValueTextFieldStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .textFieldStyle(RoundedBorderTextFieldStyle())
+            .frame(width: 45)
+            .font(.system(size: 11))
+    }
+}
+
+struct ColorIndicatorStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .frame(width: 12, height: 12)
+    }
+}
+
+struct HexTextFieldStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .textFieldStyle(RoundedBorderTextFieldStyle())
+            .font(.system(size: 11))
+            .frame(width: 70)
+    }
+}
+
+// MARK: - View Extensions
+extension View {
+    func colorChannelLabel() -> some View {
+        modifier(ColorChannelLabelStyle())
+    }
+    
+    func colorValueTextField() -> some View {
+        modifier(ColorValueTextFieldStyle())
+    }
+    
+    func colorIndicator() -> some View {
+        modifier(ColorIndicatorStyle())
+    }
+    
+    func hexTextField() -> some View {
+        modifier(HexTextFieldStyle())
+    }
+}
+
+// MARK: - Reusable Components
+struct ColorChannelSlider: View {
+    let color: Color
+    let label: String
+    @Binding var sliderValue: Double
+    @Binding var textValue: String
+    let gradient: SwiftUI.LinearGradient
+    let onChange: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(color)
+                .colorIndicator()
+            
+            Text(label)
+                .colorChannelLabel()
+            
+            ZStack {
+                Capsule()
+                    .fill(Color.white)
+                    .frame(height: 6)
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
+                    )
+                
+                Slider(value: $sliderValue, in: 0...255)
+                    .controlSize(.regular)
+                    .tint(Color.clear)
+                    .onChange(of: sliderValue) {
+                        textValue = String(Int(sliderValue))
+                        onChange()
+                    }
+                
+                Capsule()
+                    .fill(gradient)
+                    .frame(height: 6)
+                    .allowsHitTesting(false)
+            }
+            
+            TextField("", text: $textValue)
+                .colorValueTextField()
+                .onChange(of: textValue) {
+                    if let intValue = Double(textValue) {
+                        sliderValue = min(255, max(0, intValue))
+                        onChange()
+                    }
+                }
+        }
+    }
+}
+
+// MARK: - Main View
 struct RGBInputSection: View {
     @ObservedObject var document: VectorDocument
     @Binding var sharedColor: VectorColor
@@ -79,156 +187,44 @@ struct RGBInputSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(spacing: 8) {
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(Color.red)
-                        .frame(width: 12, height: 12)
-
-                    Text("R")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .frame(width: 12)
-
-                    ZStack {
-                        Capsule()
-                            .fill(Color.white)
-                            .frame(height: 6)
-                            .overlay(
-                                Capsule()
-                                    .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
-                            )
-
-                        Slider(value: $redSlider, in: 0...255)
-                            .controlSize(.regular)
-                            .tint(Color.clear)
-                            .onChange(of: redSlider) {
-                                guard !isProgrammaticallyUpdating else {
-                                    return
-                                }
-                                redValue = String(Int(redSlider))
-                                updateHexFromRGB()
-                                updateSharedColor()
-                            }
-
-                        Capsule()
-                            .fill(redGradient)
-                            .frame(height: 6)
-                            .allowsHitTesting(false)
+                ColorChannelSlider(
+                    color: .red,
+                    label: "R",
+                    sliderValue: $redSlider,
+                    textValue: $redValue,
+                    gradient: redGradient,
+                    onChange: {
+                        guard !isProgrammaticallyUpdating else { return }
+                        updateHexFromRGB()
+                        updateSharedColor()
                     }
-
-                    TextField("", text: $redValue)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 45)
-                        .font(.system(size: 11))
-                        .onChange(of: redValue) {
-                            guard !isProgrammaticallyUpdating else {
-                                return
-                            }
-                            if let intValue = Double(redValue) {
-                                redSlider = min(255, max(0, intValue))
-                                updateHexFromRGB()
-                                updateSharedColor()
-                            }
-                        }
-                }
-
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(Color.green)
-                        .frame(width: 12, height: 12)
-
-                    Text("G")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .frame(width: 12)
-
-                    ZStack {
-                        Capsule()
-                            .fill(Color.white)
-                            .frame(height: 6)
-                            .overlay(
-                                Capsule()
-                                    .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
-                            )
-
-                        Slider(value: $greenSlider, in: 0...255)
-                            .controlSize(.regular)
-                            .tint(Color.clear)
-                            .onChange(of: greenSlider) {
-                                guard !isProgrammaticallyUpdating else { return }
-                                greenValue = String(Int(greenSlider))
-                                updateHexFromRGB()
-                                updateSharedColor()
-                            }
-
-                        Capsule()
-                            .fill(greenGradient)
-                            .frame(height: 6)
-                            .allowsHitTesting(false)
+                )
+                
+                ColorChannelSlider(
+                    color: .green,
+                    label: "G",
+                    sliderValue: $greenSlider,
+                    textValue: $greenValue,
+                    gradient: greenGradient,
+                    onChange: {
+                        guard !isProgrammaticallyUpdating else { return }
+                        updateHexFromRGB()
+                        updateSharedColor()
                     }
-
-                    TextField("", text: $greenValue)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 45)
-                        .font(.system(size: 11))
-                        .onChange(of: greenValue) {
-                            guard !isProgrammaticallyUpdating else { return }
-                            if let intValue = Double(greenValue) {
-                                greenSlider = min(255, max(0, intValue))
-                                updateHexFromRGB()
-                                updateSharedColor()
-                            }
-                        }
-                }
-
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(Color.blue)
-                        .frame(width: 12, height: 12)
-
-                    Text("B")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .frame(width: 12)
-
-                    ZStack {
-                        Capsule()
-                            .fill(Color.white)
-                            .frame(height: 6)
-                            .overlay(
-                                Capsule()
-                                    .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
-                            )
-
-                        Slider(value: $blueSlider, in: 0...255)
-                            .controlSize(.regular)
-                            .tint(Color.clear)
-                            .onChange(of: blueSlider) {
-                                guard !isProgrammaticallyUpdating else { return }
-                                blueValue = String(Int(blueSlider))
-                                updateHexFromRGB()
-                                updateSharedColor()
-                            }
-
-                        Capsule()
-                            .fill(blueGradient)
-                            .frame(height: 6)
-                            .allowsHitTesting(false)
+                )
+                
+                ColorChannelSlider(
+                    color: .blue,
+                    label: "B",
+                    sliderValue: $blueSlider,
+                    textValue: $blueValue,
+                    gradient: blueGradient,
+                    onChange: {
+                        guard !isProgrammaticallyUpdating else { return }
+                        updateHexFromRGB()
+                        updateSharedColor()
                     }
-
-                    TextField("", text: $blueValue)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 45)
-                        .font(.system(size: 11))
-                        .onChange(of: blueValue) {
-                            guard !isProgrammaticallyUpdating else { return }
-                            if let intValue = Double(blueValue) {
-                                blueSlider = min(255, max(0, intValue))
-                                updateHexFromRGB()
-                                updateSharedColor()
-                            }
-                        }
-                }
+                )
             }
 
             HStack(spacing: 8) {
@@ -264,14 +260,11 @@ struct RGBInputSection: View {
                     .foregroundColor(.secondary)
 
                 TextField("854e44", text: $hexValue)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .font(.system(size: 11))
-                    .frame(width: 70)
+                    .hexTextField()
                     .onChange(of: hexValue) {
                         updateRGBFromHex()
                         updateSharedColor()
                     }
-
             }
         }
         .padding(.vertical, 8)
