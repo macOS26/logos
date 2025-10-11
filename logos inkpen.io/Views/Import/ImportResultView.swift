@@ -1,7 +1,57 @@
 import SwiftUI
-import SwiftUI
 
+// MARK: - Common Styles
+struct ImportResultHeaderStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.headline)
+    }
+}
 
+struct ImportResultSectionStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.caption)
+            .foregroundColor(.secondary)
+    }
+}
+
+struct ImportResultWarningStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.caption)
+            .foregroundColor(.orange)
+    }
+}
+
+struct ImportResultErrorStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.caption)
+            .foregroundColor(.red)
+    }
+}
+
+// MARK: - View Extensions
+extension View {
+    func importResultHeader() -> some View {
+        modifier(ImportResultHeaderStyle())
+    }
+    
+    func importResultSection() -> some View {
+        modifier(ImportResultSectionStyle())
+    }
+    
+    func importResultWarning() -> some View {
+        modifier(ImportResultWarningStyle())
+    }
+    
+    func importResultError() -> some View {
+        modifier(ImportResultErrorStyle())
+    }
+}
+
+// MARK: - Main View
 struct ImportResultView: View {
     let result: VectorImportResult
     let onDismiss: () -> Void
@@ -20,8 +70,7 @@ struct ImportResultView: View {
                         .fontWeight(.semibold)
 
                     Text("Format: \(result.metadata.originalFormat.displayName)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .importResultSection()
                 }
 
                 Spacer()
@@ -31,7 +80,7 @@ struct ImportResultView: View {
                 HStack {
                     VStack(alignment: .leading) {
                         Text("Imported Objects")
-                            .font(.headline)
+                            .importResultHeader()
 
                         Label("\(result.metadata.shapeCount) shapes", systemImage: "square.and.pencil")
                         Label("\(result.metadata.textObjectCount) text objects", systemImage: "textformat")
@@ -42,7 +91,7 @@ struct ImportResultView: View {
 
                     VStack(alignment: .leading) {
                         Text("Document Info")
-                            .font(.headline)
+                            .importResultHeader()
 
                         Label("Size: \(Int(result.metadata.documentSize.width))×\(Int(result.metadata.documentSize.height))", systemImage: "rectangle")
                         Label("DPI: \(Int(result.metadata.dpi))", systemImage: "grid")
@@ -54,13 +103,12 @@ struct ImportResultView: View {
             if !result.warnings.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Warnings")
-                        .font(.headline)
+                        .importResultHeader()
                         .foregroundColor(.orange)
 
                     ForEach(result.warnings, id: \.self) { warning in
                         Label(warning, systemImage: "exclamationmark.triangle")
-                            .font(.caption)
-                            .foregroundColor(.orange)
+                            .importResultWarning()
                     }
                 }
             }
@@ -68,13 +116,12 @@ struct ImportResultView: View {
             if !result.errors.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Errors")
-                        .font(.headline)
+                        .importResultHeader()
                         .foregroundColor(.red)
 
                     ForEach(result.errors, id: \.localizedDescription) { error in
                         Label(error.localizedDescription, systemImage: "xmark.circle")
-                            .font(.caption)
-                            .foregroundColor(.red)
+                            .importResultError()
                     }
                 }
             }
