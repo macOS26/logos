@@ -1,6 +1,5 @@
 import SwiftUI
 import AppKit
-import SwiftUI
 import UniformTypeIdentifiers
 
 struct LayerView: View {
@@ -93,5 +92,4 @@ struct LayerView: View {
 
         return path
     }
-
 }
