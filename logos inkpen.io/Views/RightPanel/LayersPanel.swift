@@ -215,103 +215,124 @@ struct LayersPanel: View {
 
                 // Overlay columns for drag-through (present when all layers have same height)
                 if allLayersHaveUniformHeight {
-                    VStack {
-                        HStack(spacing: 0) {
-                        // Eye column overlay (using consistent row height)
-                        Color.red.opacity(0.3) // Debug: 30% red to visualize overlay
-                            .frame(width: 23, height: CGFloat(document.layers.count) * layerRowHeight)
-                            .contentShape(Rectangle())
-                            .highPriorityGesture(
-                                DragGesture(minimumDistance: 0) // Match lock overlay behavior
-                                    .onChanged { value in
-                                        // Start drag if not already started
-                                        if !document.isDraggingVisibility {
-                                            document.isDraggingVisibility = true
-                                            document.processedLayersDuringDrag.removeAll()
-                                            document.saveToUndoStack()
+                    // Calculate exact positions based on layout
+                    let iconSize: CGFloat = 20
+                    let iconSpacing: CGFloat = 2
+                    let rowPadding: CGFloat = 4  // Horizontal padding from edge
+                    let verticalPadding: CGFloat = 3  // Vertical padding in row
 
-                                            // Process initial position
-                                            let startY = value.startLocation.y
-                                            let layerIndex = Int(startY / layerRowHeight)
-                                            let reversedIndex = document.layers.count - 1 - layerIndex
+                    // Eye icon is first in the HStack
+                    let eyeIconX = rowPadding + (iconSize / 2)  // Center X of eye icon
+                    // Lock icon is second (eye width + spacing)
+                    let lockIconX = rowPadding + iconSize + iconSpacing + (iconSize / 2)  // Center X of lock icon
 
-                                            if reversedIndex >= 0 && reversedIndex < document.layers.count {
-                                                document.layers[reversedIndex].isVisible.toggle()
-                                                document.processedLayersDuringDrag.insert(reversedIndex)
-                                            }
-                                        }
+                    // Compound overlay of individual squares for eye icons
+                    ZStack {
+                        ForEach(0..<document.layers.count, id: \.self) { index in
+                            // Calculate Y position - center of each row
+                            let rowY = CGFloat(document.layers.count - 1 - index) * layerRowHeight
+                            let iconCenterY = rowY + (layerRowHeight / 2)
 
-                                        // Process current position during drag
-                                        let currentY = value.location.y
-                                        let layerIndex = Int(currentY / layerRowHeight)
-                                        let reversedIndex = document.layers.count - 1 - layerIndex
-
-                                        if reversedIndex >= 0 && reversedIndex < document.layers.count {
-                                            if !document.processedLayersDuringDrag.contains(reversedIndex) {
-                                                // Toggle this layer's visibility
-                                                document.layers[reversedIndex].isVisible.toggle()
-                                                document.processedLayersDuringDrag.insert(reversedIndex)
-                                            }
-                                        }
-                                    }
-                                    .onEnded { _ in
-                                        document.isDraggingVisibility = false
-                                        document.processedLayersDuringDrag.removeAll()
-                                    }
-                            )
-
-                        // Spacer to create dead space between overlays
-                        Color.clear
-                            .frame(width: 2, height: CGFloat(document.layers.count) * layerRowHeight)
-
-                        // Lock column overlay (using consistent row height)
-                        Color.red.opacity(0.3) // Debug: 30% red to visualize overlay
-                            .frame(width: 23, height: CGFloat(document.layers.count) * layerRowHeight)
-                            .contentShape(Rectangle())
-                            .highPriorityGesture(
-                                DragGesture(minimumDistance: 0)
-                                    .onChanged { value in
-                                        // Start drag if not already started
-                                        if !document.isDraggingLock {
-                                            document.isDraggingLock = true
-                                            document.processedLayersDuringDrag.removeAll()
-                                            document.saveToUndoStack()
-
-                                            // Process initial position
-                                            let startY = value.startLocation.y
-                                            let layerIndex = Int(startY / layerRowHeight)
-                                            let reversedIndex = document.layers.count - 1 - layerIndex
-
-                                            if reversedIndex >= 0 && reversedIndex < document.layers.count {
-                                                document.layers[reversedIndex].isLocked.toggle()
-                                                document.processedLayersDuringDrag.insert(reversedIndex)
-                                            }
-                                        }
-
-                                        // Process current position during drag
-                                        let currentY = value.location.y
-                                        let layerIndex = Int(currentY / layerRowHeight)
-                                        let reversedIndex = document.layers.count - 1 - layerIndex
-
-                                        if reversedIndex >= 0 && reversedIndex < document.layers.count {
-                                            if !document.processedLayersDuringDrag.contains(reversedIndex) {
-                                                // Toggle this layer's lock
-                                                document.layers[reversedIndex].isLocked.toggle()
-                                                document.processedLayersDuringDrag.insert(reversedIndex)
-                                            }
-                                        }
-                                    }
-                                    .onEnded { _ in
-                                        document.isDraggingLock = false
-                                        document.processedLayersDuringDrag.removeAll()
-                                    }
-                            )
-
-                        Spacer()
+                            // Individual square hit area for each eye icon
+                            Color.red.opacity(0.3)  // 30% red overlay for visualization
+                                .frame(width: iconSize, height: iconSize)
+                                .contentShape(Rectangle())
+                                .position(x: eyeIconX, y: iconCenterY)
+                        }
                     }
+                    .highPriorityGesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                // Start drag if not already started
+                                if !document.isDraggingVisibility {
+                                    document.isDraggingVisibility = true
+                                    document.processedLayersDuringDrag.removeAll()
+                                    document.saveToUndoStack()
+                                    
+                                    // Process initial position
+                                    let startY = value.startLocation.y
+                                    let layerIndex = Int(startY / layerRowHeight)
+                                    let reversedIndex = document.layers.count - 1 - layerIndex
+                                    
+                                    if reversedIndex >= 0 && reversedIndex < document.layers.count {
+                                        document.layers[reversedIndex].isVisible.toggle()
+                                        document.processedLayersDuringDrag.insert(reversedIndex)
+                                    }
+                                }
+                                
+                                // Process current position during drag
+                                let currentY = value.location.y
+                                let layerIndex = Int(currentY / layerRowHeight)
+                                let reversedIndex = document.layers.count - 1 - layerIndex
+                                
+                                if reversedIndex >= 0 && reversedIndex < document.layers.count {
+                                    if !document.processedLayersDuringDrag.contains(reversedIndex) {
+                                        // Toggle this layer's visibility
+                                        document.layers[reversedIndex].isVisible.toggle()
+                                        document.processedLayersDuringDrag.insert(reversedIndex)
+                                    }
+                                }
+                            }
+                            .onEnded { _ in
+                                document.isDraggingVisibility = false
+                                document.processedLayersDuringDrag.removeAll()
+                            }
+                    )
                     .padding(.horizontal, 4)
-                        Spacer()
+                    
+                    // Compound overlay of individual squares for lock icons
+                    ZStack {
+                        ForEach(0..<document.layers.count, id: \.self) { index in
+                            // Calculate Y position - center of each row
+                            let rowY = CGFloat(document.layers.count - 1 - index) * layerRowHeight
+                            let iconCenterY = rowY + (layerRowHeight / 2)
+
+                            // Individual square hit area for each lock icon
+                            Color.red.opacity(0.3)  // 30% red overlay for visualization
+                                .frame(width: iconSize, height: iconSize)
+                                .contentShape(Rectangle())
+                                .position(x: lockIconX, y: iconCenterY)
+                        }
                     }
+                    .highPriorityGesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                // Start drag if not already started
+                                if !document.isDraggingLock {
+                                    document.isDraggingLock = true
+                                    document.processedLayersDuringDrag.removeAll()
+                                    document.saveToUndoStack()
+                                    
+                                    // Process initial position
+                                    let startY = value.startLocation.y
+                                    let layerIndex = Int(startY / layerRowHeight)
+                                    let reversedIndex = document.layers.count - 1 - layerIndex
+                                    
+                                    if reversedIndex >= 0 && reversedIndex < document.layers.count {
+                                        document.layers[reversedIndex].isLocked.toggle()
+                                        document.processedLayersDuringDrag.insert(reversedIndex)
+                                    }
+                                }
+                                
+                                // Process current position during drag
+                                let currentY = value.location.y
+                                let layerIndex = Int(currentY / layerRowHeight)
+                                let reversedIndex = document.layers.count - 1 - layerIndex
+                                
+                                if reversedIndex >= 0 && reversedIndex < document.layers.count {
+                                    if !document.processedLayersDuringDrag.contains(reversedIndex) {
+                                        // Toggle this layer's lock
+                                        document.layers[reversedIndex].isLocked.toggle()
+                                        document.processedLayersDuringDrag.insert(reversedIndex)
+                                    }
+                                }
+                            }
+                            .onEnded { _ in
+                                document.isDraggingLock = false
+                                document.processedLayersDuringDrag.removeAll()
+                            }
+                    )
+                    .padding(.horizontal, 4)
                     .zIndex(200) // High z-index to be in front
                 }
             }
@@ -390,4 +411,4 @@ struct ColorSwatchButton: View {
             .padding(6)
         }
     }
-} 
+}
