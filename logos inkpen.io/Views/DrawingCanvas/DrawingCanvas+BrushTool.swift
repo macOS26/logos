@@ -51,8 +51,16 @@ extension DrawingCanvas {
             fillStyle: fillStyle
         )
 
-        // Don't create an initial preview - wait for actual drag movement
-        brushPreviewPath = nil
+        let thickness = document.currentBrushThickness
+        let initialPreview = VectorPath(elements: [
+            .move(to: VectorPoint(location.x - thickness/2, location.y)),
+            .line(to: VectorPoint(location.x + thickness/2, location.y)),
+            .line(to: VectorPoint(location.x, location.y + thickness/2)),
+            .close
+        ])
+        brushPreviewPath = initialPreview
+
+
     }
 
     internal func handleBrushDragUpdate(at location: CGPoint, pressure: Double? = nil) {
@@ -82,12 +90,6 @@ extension DrawingCanvas {
 
     internal func handleBrushDragEnd() {
         guard isBrushDrawing else { return }
-        
-        // Don't create a shape if we only have a single point (no actual stroke)
-        guard brushRawPoints.count >= 2 else {
-            cancelBrushDrawing()
-            return
-        }
 
         if brushRawPoints.count == 2 {
             let startPoint = brushRawPoints[0]
@@ -129,11 +131,7 @@ extension DrawingCanvas {
 
 
     private func updateBrushPreview() {
-        guard brushRawPoints.count >= 2 else { 
-            // Don't create a preview for a single point
-            brushPreviewPath = nil
-            return 
-        }
+        guard brushRawPoints.count >= 2 else { return }
 
         let newPreviewPath = generateLivePreviewPath()
         print("🔵 BRUSH UPDATE: \(brushRawPoints.count) points -> \(newPreviewPath.elements.count) elements")
