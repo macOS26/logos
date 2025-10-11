@@ -1,7 +1,6 @@
 import SwiftUI
 import AppKit
 
-// MARK: - Helper Functions
 private func createGridPath(
     gridSpacing: CGFloat,
     canvasSize: CGSize,
@@ -11,7 +10,6 @@ private func createGridPath(
     Path { path in
         let gridSteps = Int(ceil(max(canvasSize.width, canvasSize.height) / gridSpacing)) + 1
         
-        // Vertical lines
         for i in 0...gridSteps {
             let shouldDraw = isMajor ? (i % majorGridInterval == 0) : (i % majorGridInterval != 0)
             if shouldDraw {
@@ -23,7 +21,6 @@ private func createGridPath(
             }
         }
         
-        // Horizontal lines
         for i in 0...gridSteps {
             let shouldDraw = isMajor ? (i % majorGridInterval == 0) : (i % majorGridInterval != 0)
             if shouldDraw {
@@ -37,7 +34,6 @@ private func createGridPath(
     }
 }
 
-// MARK: - Reusable Components
 private struct GridLines: View {
     let gridSpacing: CGFloat
     let canvasSize: CGSize
@@ -61,7 +57,6 @@ private struct GridLines: View {
     }
 }
 
-// MARK: - Main View
 struct GridView: View {
     let document: VectorDocument
     let geometry: GeometryProxy
@@ -86,7 +81,6 @@ struct GridView: View {
 
         if gridSpacing > 0 {
             ZStack {
-                // Minor grid lines
                 GridLines(
                     gridSpacing: gridSpacing,
                     canvasSize: canvasSize,
@@ -98,7 +92,6 @@ struct GridView: View {
                     canvasOffset: document.canvasOffset
                 )
                 
-                // Major grid lines
                 GridLines(
                     gridSpacing: gridSpacing,
                     canvasSize: canvasSize,

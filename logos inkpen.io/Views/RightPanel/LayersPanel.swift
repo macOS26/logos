@@ -2,7 +2,6 @@ import SwiftUI
 import UniformTypeIdentifiers
 import Combine
 
-// MARK: - Style Modifiers
 struct LayerLabelStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -39,7 +38,6 @@ struct DragTargetStyle: ViewModifier {
     }
 }
 
-// MARK: - View Extensions
 extension View {
     func layerLabel() -> some View {
         modifier(LayerLabelStyle())
@@ -58,7 +56,6 @@ extension View {
     }
 }
 
-// MARK: - Main View
 struct LayersPanel: View {
     @ObservedObject var document: VectorDocument
     @State private var expandedLayers: Set<Int> = []
@@ -69,7 +66,7 @@ struct LayersPanel: View {
     @State private var targetLayerIndex: Int? = nil
     @State private var showColorPicker: Bool = false
 
-    private let layerRowHeight: CGFloat = 32
+    private let layerRowHeight: CGFloat = 26
 
     private var allLayersHaveUniformHeight: Bool {
         for (index, layer) in document.layers.enumerated() {

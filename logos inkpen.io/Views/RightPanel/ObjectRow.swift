@@ -1,6 +1,5 @@
 import SwiftUI
 
-// MARK: - Common Styles
 struct ObjectRowIconStyle: ViewModifier {
     let size: CGFloat
     
@@ -42,7 +41,6 @@ struct ObjectRowIndicatorStyle: ViewModifier {
     }
 }
 
-// MARK: - View Extensions
 extension View {
     func objectRowIcon(size: CGFloat) -> some View {
         modifier(ObjectRowIconStyle(size: size))
@@ -61,7 +59,6 @@ extension View {
     }
 }
 
-// MARK: - Main View
 struct ObjectRow: View {
     enum ObjectType: String {
         case shape = "shape"
@@ -100,7 +97,6 @@ struct ObjectRow: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
-                // Chevron or empty space
                 Group {
                     if objectType == .group {
                         Button(action: {
@@ -121,7 +117,6 @@ struct ObjectRow: View {
                 .padding(.leading, 8)
                 .padding(.trailing, 6)
                 
-                // Content with selection background
                 HStack(spacing: 6) {
                     Image(systemName: objectIcon)
                         .objectRowIcon(size: 10)
@@ -148,16 +143,17 @@ struct ObjectRow: View {
                         }
                     }
                 }
-                .padding(.leading, 3)  // Add small left padding to align properly
+                .padding(.leading, 3)
                 .padding(.trailing, 8)
-                .padding(.vertical, 3)
+                .padding(.vertical, 3) 
                 .background(
                     RoundedRectangle(cornerRadius: 4)
                         .fill(isSelected ? Color.blue.opacity(0.1) : Color.clear)
-                        .padding(.leading, -3)  // Extend background back to proper position
-                        .padding(.trailing, 4)  // Small right padding to match parent layer
+                        .padding(.leading, -3)
+                        .padding(.trailing, 4)
                 )
             }
+            .padding(.bottom, -2)
             .opacity(isDragging ? 0.5 : 1.0)
             .scaleEffect(isDragging ? 0.95 : 1.0)
             .animation(.easeInOut(duration: 0.15), value: isDragging)

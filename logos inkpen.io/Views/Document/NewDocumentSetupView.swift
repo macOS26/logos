@@ -1,7 +1,6 @@
 import SwiftUI
 import AppKit
 
-// MARK: - Common Styles
 struct DocumentSectionIconStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -26,7 +25,6 @@ struct DocumentFieldLabelStyle: ViewModifier {
     }
 }
 
-// MARK: - View Extensions
 extension View {
     func documentSectionIcon() -> some View {
         modifier(DocumentSectionIconStyle())
@@ -41,7 +39,6 @@ extension View {
     }
 }
 
-// MARK: - Reusable Components
 private struct DocumentSectionHeader: View {
     let icon: String
     let title: String
@@ -57,7 +54,6 @@ private struct DocumentSectionHeader: View {
     }
 }
 
-// MARK: - Main View
 struct NewDocumentSetupView: View {
     @Binding var isPresented: Bool
     let onDocumentCreated: (VectorDocument, URL?) -> Void

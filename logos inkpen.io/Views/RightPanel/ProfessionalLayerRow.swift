@@ -185,7 +185,7 @@ struct ProfessionalLayerRow: View {
                     .padding(6)
                 }
 
-                VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 0) {
                     if isEditingName {
                         TextField("Layer Name", text: $editedName, onCommit: {
                             if !editedName.isEmpty {
@@ -209,11 +209,14 @@ struct ProfessionalLayerRow: View {
                                 editedName = layer.name
                             }
                     }
-
+                    
+                    Spacer()
+                    
                     let objectCount = document.unifiedObjects.filter { $0.layerIndex == layerIndex }.count
                     Text("\(objectCount) objects")
                         .font(.system(size: 9))
                         .foregroundColor(.secondary.opacity(0.8))
+                        .padding(.trailing, 4)
                 }
 
                     Spacer()

@@ -2,7 +2,6 @@ import SwiftUI
 import AppKit
 import Combine
 
-// MARK: - Common Styles
 struct FontPickerLabelStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -20,7 +19,6 @@ struct FontPickerPickerStyle: ViewModifier {
     }
 }
 
-// MARK: - View Extensions
 extension View {
     func fontPickerLabel() -> some View {
         modifier(FontPickerLabelStyle())
@@ -31,7 +29,6 @@ extension View {
     }
 }
 
-// MARK: - Main View
 struct FontPickerView: View {
     @ObservedObject var document: VectorDocument
     let selectedTextTypography: TypographyProperties?

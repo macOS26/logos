@@ -1,6 +1,5 @@
 import SwiftUI
 
-// MARK: - Common Styles
 struct ImportResultHeaderStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -32,7 +31,6 @@ struct ImportResultErrorStyle: ViewModifier {
     }
 }
 
-// MARK: - View Extensions
 extension View {
     func importResultHeader() -> some View {
         modifier(ImportResultHeaderStyle())
@@ -51,7 +49,6 @@ extension View {
     }
 }
 
-// MARK: - Main View
 struct ImportResultView: View {
     let result: VectorImportResult
     let onDismiss: () -> Void

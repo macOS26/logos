@@ -1,6 +1,5 @@
 import SwiftUI
 
-// MARK: - Common Styles
 struct SettingsSectionIconStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -43,7 +42,6 @@ struct SettingsToggleLabelStyle: ViewModifier {
     }
 }
 
-// MARK: - View Extensions
 extension View {
     func settingsSectionIcon() -> some View {
         modifier(SettingsSectionIconStyle())
@@ -66,7 +64,6 @@ extension View {
     }
 }
 
-// MARK: - Subviews
 private struct SettingsSectionHeader: View {
     let icon: String
     let title: String
@@ -82,7 +79,6 @@ private struct SettingsSectionHeader: View {
     }
 }
 
-// MARK: - Main View
 struct DocumentSettingsView: View {
     @ObservedObject var document: VectorDocument
     @Environment(\.presentationMode) var presentationMode

@@ -1,7 +1,6 @@
 import SwiftUI
 import Combine
 
-// MARK: - Common Styles
 struct ColorChannelLabelStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -36,7 +35,6 @@ struct HexTextFieldStyle: ViewModifier {
     }
 }
 
-// MARK: - View Extensions
 extension View {
     func colorChannelLabel() -> some View {
         modifier(ColorChannelLabelStyle())
@@ -55,7 +53,6 @@ extension View {
     }
 }
 
-// MARK: - Reusable Components
 struct ColorChannelSlider: View {
     let color: Color
     let label: String
@@ -108,7 +105,6 @@ struct ColorChannelSlider: View {
     }
 }
 
-// MARK: - Main View
 struct RGBInputSection: View {
     @ObservedObject var document: VectorDocument
     @Binding var sharedColor: VectorColor

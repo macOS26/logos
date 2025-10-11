@@ -1,6 +1,5 @@
 import SwiftUI
 
-// MARK: - Common Styles
 struct ColorLabelStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -17,14 +16,12 @@ struct ColorSwatchButtonStyle: ButtonStyle {
     }
 }
 
-// MARK: - View Extensions
 extension View {
     func colorLabelStyle() -> some View {
         modifier(ColorLabelStyle())
     }
 }
 
-// MARK: - Main View
 struct CurrentColorsView: View {
     let strokeColor: VectorColor
     let fillColor: VectorColor
@@ -55,7 +52,6 @@ struct CurrentColorsView: View {
     }
 }
 
-// MARK: - Subviews
 private struct ColorSwatchView: View {
     let color: VectorColor
     let opacity: Double

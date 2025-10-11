@@ -1,6 +1,5 @@
 import SwiftUI
 
-// MARK: - Common Styles
 struct GradientLabelStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -28,7 +27,6 @@ struct GradientTextFieldStyle: ViewModifier {
     }
 }
 
-// MARK: - View Extensions
 extension View {
     func gradientLabel() -> some View {
         modifier(GradientLabelStyle())
@@ -43,7 +41,6 @@ extension View {
     }
 }
 
-// MARK: - Reusable Components
 private struct GradientSliderControl: View {
     let label: String
     let value: Double
@@ -74,7 +71,6 @@ private struct GradientSliderControl: View {
     }
 }
 
-// MARK: - Main Views
 struct GradientTypePickerView: View {
     @Binding var gradientType: GradientFillSection.GradientType
     @Binding var currentGradient: VectorGradient?
