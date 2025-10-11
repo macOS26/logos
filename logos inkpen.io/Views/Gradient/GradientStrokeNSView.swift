@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftUI
 
 class GradientStrokeNSView: NSView {
     var gradient: VectorGradient
