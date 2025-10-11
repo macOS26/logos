@@ -348,7 +348,6 @@ struct LayersPanel: View {
         }
     }
 
-
     private func availableLayerColors() -> [(name: String, color: Color)] {
         return [
             ("Red", Color(.displayP3, red: 0.75, green: 0.2, blue: 0.2)),

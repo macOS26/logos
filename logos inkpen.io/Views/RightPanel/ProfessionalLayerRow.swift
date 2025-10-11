@@ -260,8 +260,7 @@ struct ProfessionalLayerRow: View {
                 .sorted { $0.orderID > $1.orderID }
 
             if isExpanded && !layerObjects.isEmpty {
-                VStack(spacing: 0) {
-
+                VStack() {
                     ForEach(layerObjects, id: \.id) { unifiedObject in
                         switch unifiedObject.objectType {
                         case .shape(let shape):
@@ -311,7 +310,6 @@ struct ProfessionalLayerRow: View {
                             }
                         }
                     }
-
                     BottomDropZone(layerIndex: layerIndex, document: document)
                 }
                 .padding(.leading, 27)
