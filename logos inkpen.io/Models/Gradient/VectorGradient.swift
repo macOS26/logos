@@ -1,20 +1,11 @@
-//
-//  VectorGradientExt.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/31/25.
-//
 
 import SwiftUI
 
-// MARK: - CoreGraphics Extension for Gradient Rendering
 
-/// Enhanced vector gradient enum supporting professional gradient types
 enum VectorGradient: Codable, Hashable {
     case linear(LinearGradient)
     case radial(RadialGradient)
-    
-    /// Get all color stops regardless of gradient type
+
     var stops: [GradientStop] {
         switch self {
         case .linear(let gradient):
@@ -23,8 +14,7 @@ enum VectorGradient: Codable, Hashable {
             return gradient.stops
         }
     }
-    
-    // Generate a stable signature used for deduplicating identical gradients across shapes
+
     var signature: String {
         func stopSig(_ s: GradientStop) -> String {
             switch s.color {
@@ -50,7 +40,7 @@ enum VectorGradient: Codable, Hashable {
                 return "p=\(s.position),gradref,so=\(s.opacity)"
             }
         }
-        
+
         switch self {
         case .linear(let lg):
             let stopsSig = lg.stops.map(stopSig).joined(separator: "|")

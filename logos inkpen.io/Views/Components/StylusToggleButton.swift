@@ -1,9 +1,3 @@
-//
-//  StylusToggleButton.swift
-//  logos inkpen.io
-//
-//  Custom toggle button that works with stylus input
-//
 
 import SwiftUI
 
@@ -24,12 +18,10 @@ struct StylusToggleButton: View {
                 onChange?(isOn)
             } label: {
                 ZStack {
-                    // Background track
                     RoundedRectangle(cornerRadius: 12)
                         .fill(isOn ? Color.accentColor : Color.gray.opacity(0.3))
                         .frame(width: 44, height: 24)
 
-                    // Thumb
                     Circle()
                         .fill(Color.white)
                         .frame(width: 20, height: 20)
@@ -44,7 +36,6 @@ struct StylusToggleButton: View {
     }
 }
 
-// Convenience modifier to replace Toggle with StylusToggleButton
 struct StylusToggleModifier: ViewModifier {
     @Binding var isOn: Bool
     var label: String = ""

@@ -1,9 +1,3 @@
-//
-//  ColorSwatchGrid.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 
@@ -13,17 +7,15 @@ struct ColorSwatchGrid: View {
     @State private var selectedFillColor: VectorColor = .white
     @State private var selectedStrokeColor: VectorColor = .black
     @State private var showingColorPicker = false
-    
+
     let columns = [
         GridItem(.fixed(10), spacing: 1),
         GridItem(.fixed(10), spacing: 1),
         GridItem(.fixed(10), spacing: 1),
         GridItem(.fixed(10), spacing: 1)
     ]
-    
-    // REFACTORED: Use unified objects system for current fill color
+
     private var currentFillColor: VectorColor {
-        // Get the first selected object from unified system
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
@@ -33,14 +25,11 @@ struct ColorSwatchGrid: View {
                 }
             }
         }
-        
-        // Show default color for new shapes
+
         return document.defaultFillColor
     }
-    
-    // REFACTORED: Use unified objects system for current stroke color
+
     private var currentStrokeColor: VectorColor {
-        // Get the first selected object from unified system
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
@@ -48,18 +37,15 @@ struct ColorSwatchGrid: View {
                 if let strokeStyle = shape.strokeStyle {
                     return strokeStyle.color
                 } else {
-                    return .clear  // Show clear/none when no stroke exists
+                    return .clear
                 }
             }
         }
-        
-        // Show default color for new shapes
+
         return document.defaultStrokeColor
     }
-    
-    // REFACTORED: Use unified objects system for current fill opacity
+
     private var currentFillOpacity: Double {
-        // Get the first selected object from unified system
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
@@ -69,14 +55,11 @@ struct ColorSwatchGrid: View {
                 }
             }
         }
-        
-        // Show default opacity
+
         return document.defaultFillOpacity
     }
-    
-    // REFACTORED: Use unified objects system for current stroke opacity
+
     private var currentStrokeOpacity: Double {
-        // Get the first selected object from unified system
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
@@ -86,32 +69,26 @@ struct ColorSwatchGrid: View {
                 }
             }
         }
-        
-        // Show default opacity
+
         return document.defaultStrokeOpacity
     }
-    
+
     var body: some View {
         VStack(spacing: 4) {
-            // Current Fill and Stroke Colors - Professional Style (overlapping squares)
             ZStack {
-                // Stroke color (background, bottom-right)
                 Button {
-                    // Just switch target, don't apply any color
                     document.activeColorTarget = .stroke
                 } label: {
                     if case .clear = currentStrokeColor {
                         ZStack {
-                            // Checkerboard pattern for clear color
                             CheckerboardPattern(size: 4)
                                 .frame(width: 22, height: 22)
                                 .clipped()
-	                            
+
 	                            Rectangle()
 	                                .fill(Color.clear)
 	                                .frame(width: 22, height: 22)
-                            
-                            // Selected overlay: 3pt black overprint + 3pt white screen on top (same size)
+
                             if document.activeColorTarget == .stroke {
 	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
@@ -127,12 +104,10 @@ struct ColorSwatchGrid: View {
                             .frame(width: 22, height: 22)
                         }
                     } else if case .gradient(let gradient) = currentStrokeColor {
-                        // Handle gradient colors with NSView-based rendering
                         ZStack {
                             GradientSwatchNSView(gradient: gradient, size: 22)
                                 .frame(width: 22, height: 22)
 
-                            // Selected overlay: 3pt black overprint + 3pt white screen on top (same size)
                             if document.activeColorTarget == .stroke {
 	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
@@ -146,7 +121,6 @@ struct ColorSwatchGrid: View {
                                 .fill(currentStrokeColor.color.opacity(currentStrokeOpacity))
                                 .frame(width: 22, height: 22)
 
-                            // Selected overlay: 3pt black overprint + 3pt white screen on top (same size)
                             if document.activeColorTarget == .stroke {
 	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
@@ -159,24 +133,20 @@ struct ColorSwatchGrid: View {
                 .buttonStyle(BorderlessButtonStyle())
                 .focusable(false)
                 .help("Current Stroke Color (Opacity: \(Int(currentStrokeOpacity * 100))%) - Click to make active")
-                .offset(x: 6, y: 6)  // Bottom-right offset
-                // Fill color (foreground, top-left)
+                .offset(x: 6, y: 6)
                 Button {
-                    // Just switch target, don't apply any color
                     document.activeColorTarget = .fill
                 } label: {
                     if case .clear = currentFillColor {
                         ZStack {
-                            // Checkerboard pattern for clear color
                             CheckerboardPattern(size: 4)
                                 .frame(width: 22, height: 22)
                                 .clipped()
-	                            
+
 	                            Rectangle()
 	                                .fill(Color.clear)
 	                                .frame(width: 22, height: 22)
-                            
-                            // Selected overlay: 3pt black overprint + 3pt white screen on top (same size)
+
                             if document.activeColorTarget == .fill {
 	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
@@ -192,12 +162,10 @@ struct ColorSwatchGrid: View {
                             .frame(width: 22, height: 22)
                         }
                     } else if case .gradient(let gradient) = currentFillColor {
-                        // Handle gradient colors with NSView-based rendering
                         ZStack {
                             GradientSwatchNSView(gradient: gradient, size: 22)
                                 .frame(width: 22, height: 22)
 
-                            // Selected overlay: 3pt black overprint + 3pt white screen on top (same size)
                             if document.activeColorTarget == .fill {
 	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
@@ -211,7 +179,6 @@ struct ColorSwatchGrid: View {
                                 .fill(currentFillColor.color.opacity(currentFillOpacity))
                                 .frame(width: 22, height: 22)
 
-                            // Selected overlay: 3pt black overprint + 3pt white screen on top (same size)
                             if document.activeColorTarget == .fill {
 	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
@@ -224,18 +191,15 @@ struct ColorSwatchGrid: View {
                 .buttonStyle(BorderlessButtonStyle())
                 .focusable(false)
                 .help("Current Fill Color (Opacity: \(Int(currentFillOpacity * 100))%) - Click to make active")
-                .offset(x: -6, y: -6)  // Top-left offset
+                .offset(x: -6, y: -6)
             }
-			.frame(width: 28, height: 28)  // Total frame to contain both squares
+			.frame(width: 28, height: 28)
             .padding(.bottom, 6)
             .padding(.top, 8)
 
-            // Color Swatches
             LazyVGrid(columns: columns, spacing: 1) {
                 ForEach(Array(document.currentSwatches.enumerated()), id: \.offset) { index, color in
                     Button {
-                        // Apply color to the currently active target
-                        // This should only happen when user explicitly clicks a swatch
                         if document.activeColorTarget == .stroke {
                             selectedStrokeColor = color
                             document.setActiveColor(color)
@@ -245,20 +209,17 @@ struct ColorSwatchGrid: View {
                         }
                     } label: {
                         ZStack {
-                            // Base color (checkerboard for clear, normal color for others)
                             if case .clear = color {
                                 ZStack {
-                                    // Checkerboard pattern for clear color
                                     CheckerboardPattern(size: 2)
                                         .frame(width: 10, height: 10)
                                         .clipped()
-                                    
+
                                     Rectangle()
                                         .fill(Color.clear)
                                         .frame(width: 10, height: 10)
                                         .border(Color.gray, width: 0.5)
-                                    
-                                    // Red slash overlay for clear color
+
                                     Path { path in
                                         path.move(to: CGPoint(x: 0, y: 0))
                                         path.addLine(to: CGPoint(x: 10, y: 10))
@@ -267,7 +228,6 @@ struct ColorSwatchGrid: View {
                                     .frame(width: 10, height: 10)
                                 }
                             } else if case .gradient(let gradient) = color {
-                                // Handle gradient colors with NSView-based rendering
                                 GradientSwatchNSView(gradient: gradient, size: 10)
                                     .frame(width: 10, height: 10)
                                     .border(Color.gray, width: 0.5)
@@ -285,10 +245,8 @@ struct ColorSwatchGrid: View {
                 }
             }
             .padding(.horizontal, 2)
-            
-            // Add Color Button
+
             Button {
-                // Show persistent Ink HUD (Ink Color Mixer)
                 appState.persistentInkHUD.show(document: document)
             } label: {
                 Image(systemName: "plus.circle")
@@ -297,7 +255,6 @@ struct ColorSwatchGrid: View {
             }
             .buttonStyle(BorderlessButtonStyle())
             .help("Add Custom Color")
-            // HUD handles color selection and swatch additions; no sheet here
         }
     }
 
@@ -312,7 +269,7 @@ struct ColorSwatchGrid: View {
         case .pantone(let pantone): return "Pantone \(pantone.pantone)"
         case .spot(let spot): return "SPOT \(spot.number)"
         case .appleSystem(let systemColor): return "Apple \(systemColor.name.capitalized)"
-        case .gradient(let gradient): 
+        case .gradient(let gradient):
             switch gradient {
             case .linear(_): return "Linear Gradient"
             case .radial(_): return "Radial Gradient"

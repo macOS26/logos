@@ -1,13 +1,6 @@
-//
-//  PathCommand.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/31/25.
-//
 
 import SwiftUI
 
-// MARK: - Path Command Types
 enum PathCommand: Equatable {
     case moveTo(CGPoint)
     case lineTo(CGPoint)

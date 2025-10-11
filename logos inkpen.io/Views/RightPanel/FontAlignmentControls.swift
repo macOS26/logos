@@ -1,9 +1,3 @@
-//
-//  FontAlignmentControls.swift
-//  logos inkpen.io
-//
-//  Created by Claude on 2025/01/15.
-//
 
 import SwiftUI
 import Combine
@@ -12,7 +6,7 @@ struct FontAlignmentControls: View {
     @ObservedObject var document: VectorDocument
     let selectedText: VectorText?
     let editingText: VectorText?
-    
+
     private var currentTextAlignment: NSTextAlignment {
         if let selectedText = selectedText {
             return selectedText.typography.alignment.nsTextAlignment
@@ -22,16 +16,15 @@ struct FontAlignmentControls: View {
             return document.fontManager.selectedTextAlignment.nsTextAlignment
         }
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Alignment")
                 .font(.caption)
                 .fontWeight(.semibold)
                 .foregroundColor(.secondary)
-            
+
             HStack(spacing: 4) {
-                // Left Align
                 Button {
                     updateAlignment(.left)
                 } label: {
@@ -44,12 +37,11 @@ struct FontAlignmentControls: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(BorderlessButtonStyle())
-                .onTapGesture { // Luna Display compatibility
+                .onTapGesture {
                     updateAlignment(.left)
                 }
                 .help("Align Left")
-                
-                // Center Align
+
                 Button {
                     updateAlignment(.center)
                 } label: {
@@ -62,12 +54,11 @@ struct FontAlignmentControls: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(BorderlessButtonStyle())
-                .onTapGesture { // Luna Display compatibility
+                .onTapGesture {
                     updateAlignment(.center)
                 }
                 .help("Align Center")
-                
-                // Right Align
+
                 Button {
                     updateAlignment(.right)
                 } label: {
@@ -80,12 +71,11 @@ struct FontAlignmentControls: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(BorderlessButtonStyle())
-                .onTapGesture { // Luna Display compatibility
+                .onTapGesture {
                     updateAlignment(.right)
                 }
                 .help("Align Right")
-                
-                // Justify
+
                 Button {
                     updateAlignment(.justified)
                 } label: {
@@ -98,22 +88,20 @@ struct FontAlignmentControls: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(BorderlessButtonStyle())
-                .onTapGesture { // Luna Display compatibility
+                .onTapGesture {
                     updateAlignment(.justified)
                 }
                 .help("Justify")
-                
+
                 Spacer()
             }
             .padding(.vertical, 8)
         }
     }
-    
+
     private func updateAlignment(_ alignment: TextAlignment) {
-        // ALWAYS update defaults first - NO RESTRICTIONS
         document.fontManager.selectedTextAlignment = alignment
 
-        // Then update selected text if any - with immediate update
         if let textID = document.selectedTextIDs.first,
            let freshText = document.findText(by: textID) {
             var updatedTypography = freshText.typography
@@ -121,7 +109,6 @@ struct FontAlignmentControls: View {
             document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
         }
 
-        // Force UI update after the change
         document.objectWillChange.send()
     }
 }

@@ -1,19 +1,12 @@
-//
-//  DocumentSettings.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 
-// MARK: - Document Settings
 struct DocumentSettings: Codable, Hashable {
     var width: Double
     var height: Double
-    var unit: MeasurementUnit  // Saved with document - remembers pixels/inches/cm etc
+    var unit: MeasurementUnit
     var colorMode: ColorMode
-    var resolution: Double // DPI
+    var resolution: Double
     var showRulers: Bool
     var showGrid: Bool
     var snapToGrid: Bool
@@ -23,42 +16,34 @@ struct DocumentSettings: Codable, Hashable {
     var selectedLayerId: UUID?
     var selectedLayerName: String?
 
-    // Layer expansion state - keyed by layer UUID to handle reordering
     var layerExpansionState: [UUID: Bool]
 
-    // Page origin (ruler 0,0 point) - optional, defaults to top-left
     var pageOrigin: CGPoint?
 
-    // Document-specific colors and custom swatches (only user-added swatches)
     var fillColor: VectorColor?
     var strokeColor: VectorColor?
     var customRgbSwatches: [VectorColor]?
     var customCmykSwatches: [VectorColor]?
     var customHsbSwatches: [VectorColor]?
 
-    // FIX: Store actual document size in points to prevent coordinate system corruption
     private var _sizeInPoints: CGSize?
-    
+
     init(width: Double = 11.0, height: Double = 8.5, unit: MeasurementUnit = .inches, colorMode: ColorMode = .rgb, resolution: Double = 72.0, showRulers: Bool? = nil, showGrid: Bool? = nil, snapToGrid: Bool? = nil, snapToPoint: Bool? = nil, gridSpacing: Double = 0.125, backgroundColor: VectorColor = .white, selectedLayerId: UUID? = nil, selectedLayerName: String? = "Layer 1", layerExpansionState: [UUID: Bool] = [:], fillColor: VectorColor? = nil, strokeColor: VectorColor? = nil, customRgbSwatches: [VectorColor]? = nil, customCmykSwatches: [VectorColor]? = nil, customHsbSwatches: [VectorColor]? = nil) {
         self.width = width
         self.height = height
         self.unit = unit
         self.colorMode = colorMode
         self.resolution = resolution
-        // Load display settings from UserDefaults if not explicitly provided
-        // Show Rulers defaults to true if user hasn't set it
         if let showRulersValue = showRulers {
             self.showRulers = showRulersValue
         } else {
-            // Check if user has ever set this value
             if UserDefaults.standard.object(forKey: "showRulers") != nil {
                 self.showRulers = UserDefaults.standard.bool(forKey: "showRulers")
             } else {
-                self.showRulers = true // Default ON
+                self.showRulers = true
             }
         }
 
-        // Other settings default to false if user hasn't set them
         self.showGrid = showGrid ?? UserDefaults.standard.bool(forKey: "showGrid")
         self.snapToGrid = snapToGrid ?? UserDefaults.standard.bool(forKey: "snapToGrid")
         self.snapToPoint = snapToPoint ?? UserDefaults.standard.bool(forKey: "snapToPoint")
@@ -68,22 +53,20 @@ struct DocumentSettings: Codable, Hashable {
         self.selectedLayerName = selectedLayerName ?? "Layer 1"
         self.layerExpansionState = layerExpansionState
 
-        // Initialize document-specific colors and custom swatches
         self.fillColor = fillColor
         self.strokeColor = strokeColor
         self.customRgbSwatches = customRgbSwatches
         self.customCmykSwatches = customCmykSwatches
         self.customHsbSwatches = customHsbSwatches
     }
-    
-    // MARK: - Custom Decoding for Backward Compatibility
+
     enum CodingKeys: String, CodingKey {
         case width, height, unit, colorMode, resolution, showRulers, showGrid, snapToGrid, snapToPoint, gridSpacing, backgroundColor, selectedLayerId, selectedLayerName
         case layerExpansionState
         case fillColor, strokeColor, customRgbSwatches, customCmykSwatches, customHsbSwatches
         case pageOrigin
     }
-    
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         width = try container.decode(Double.self, forKey: .width)
@@ -102,14 +85,13 @@ struct DocumentSettings: Codable, Hashable {
         layerExpansionState = try container.decodeIfPresent([UUID: Bool].self, forKey: .layerExpansionState) ?? [:]
         pageOrigin = try container.decodeIfPresent(CGPoint.self, forKey: .pageOrigin)
 
-        // Decode document-specific colors and custom swatches
         fillColor = try container.decodeIfPresent(VectorColor.self, forKey: .fillColor)
         strokeColor = try container.decodeIfPresent(VectorColor.self, forKey: .strokeColor)
         customRgbSwatches = try container.decodeIfPresent([VectorColor].self, forKey: .customRgbSwatches)
         customCmykSwatches = try container.decodeIfPresent([VectorColor].self, forKey: .customCmykSwatches)
         customHsbSwatches = try container.decodeIfPresent([VectorColor].self, forKey: .customHsbSwatches)
     }
-    
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(width, forKey: .width)
@@ -128,16 +110,14 @@ struct DocumentSettings: Codable, Hashable {
         try container.encode(layerExpansionState, forKey: .layerExpansionState)
         try container.encodeIfPresent(pageOrigin, forKey: .pageOrigin)
 
-        // Encode document-specific colors and custom swatches
         try container.encodeIfPresent(fillColor, forKey: .fillColor)
         try container.encodeIfPresent(strokeColor, forKey: .strokeColor)
         try container.encodeIfPresent(customRgbSwatches, forKey: .customRgbSwatches)
         try container.encodeIfPresent(customCmykSwatches, forKey: .customCmykSwatches)
         try container.encodeIfPresent(customHsbSwatches, forKey: .customHsbSwatches)
     }
-    
+
     var sizeInPoints: CGSize {
-        // FIX: Use stored size in points if available, otherwise calculate from current unit
         if let storedSize = _sizeInPoints {
             return storedSize
         } else {
@@ -145,26 +125,19 @@ struct DocumentSettings: Codable, Hashable {
             return CGSize(width: width * pointsPerUnit, height: height * pointsPerUnit)
         }
     }
-    
-    // FIX: Method to update unit while preserving document size in points
+
     mutating func changeUnit(to newUnit: MeasurementUnit) {
-        // Store current size in points before changing unit
         let currentSizeInPoints = sizeInPoints
-        
-        // Update the unit
+
         unit = newUnit
-        
-        // Update width and height to match the new unit while preserving actual size
+
         let newPointsPerUnit = newUnit.pointsPerUnit
         width = currentSizeInPoints.width / newPointsPerUnit
         height = currentSizeInPoints.height / newPointsPerUnit
 
-        // Store the preserved size in points
         _sizeInPoints = currentSizeInPoints
     }
 
-    /// Set the document size in points, updating width/height according to current unit
-    /// and persisting the points value to avoid unit conversion drift.
     mutating func setSizeInPoints(_ newSize: CGSize) {
         _sizeInPoints = newSize
         let ppu = unit.pointsPerUnit

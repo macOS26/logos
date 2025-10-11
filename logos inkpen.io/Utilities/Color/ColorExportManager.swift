@@ -1,21 +1,13 @@
-//
-//  ColorExportManager.swift
-//  logos inkpen.io
-//
-//  Centralized color management for image export with proper P3 support
-//
 
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Manages color space conversion and profile embedding for image exports
 final class ColorExportManager {
 
     static let shared = ColorExportManager()
 
     private init() {}
 
-    // MARK: - Export Types
 
     enum ExportFormat {
         case png
@@ -27,15 +19,7 @@ final class ColorExportManager {
         case adobeRGB
     }
 
-    // MARK: - Main Export Function
 
-    /// Exports a CGImage with proper color space conversion and profile embedding
-    /// - Parameters:
-    ///   - cgImage: The source CGImage to export
-    ///   - format: The export format (PNG or JPEG with quality)
-    ///   - colorSpace: The target color space (default: Display P3)
-    ///   - outputURL: The destination URL for the exported file
-    /// - Returns: Success status
     @discardableResult
     func exportImage(
         _ cgImage: CGImage,
@@ -44,24 +28,17 @@ final class ColorExportManager {
         to outputURL: URL
     ) throws -> Bool {
 
-        // Create CIImage from CGImage for color space conversion
         let ciImage = CIImage(cgImage: cgImage)
 
-        // Get the target color space
         let targetColorSpace = getColorSpace(for: colorSpace)
 
-        // Apply color space conversion - matchedFromWorkingSpace is the CIImage API equivalent
-        // to the concept shown in the user's example
         let convertedCIImage = ciImage.matchedFromWorkingSpace(to: targetColorSpace) ?? ciImage
 
-        // Create a CIContext to render the CIImage to a CGImage
-        // This ensures proper color management during the conversion
         let context = CIContext(options: [
             .workingColorSpace: targetColorSpace,
             .outputColorSpace: targetColorSpace
         ])
 
-        // Render the CIImage to a new CGImage in the target color space
         guard let finalCGImage = context.createCGImage(
             convertedCIImage,
             from: convertedCIImage.extent,
@@ -71,14 +48,12 @@ final class ColorExportManager {
             throw ExportError.imageConversionFailed
         }
 
-        // Export based on format
         switch format {
         case .png:
             return try exportAsPNG(finalCGImage, colorSpace: colorSpace, to: outputURL)
         }
     }
 
-    // MARK: - PNG Export
 
     private func exportAsPNG(
         _ cgImage: CGImage,
@@ -95,17 +70,13 @@ final class ColorExportManager {
             throw ExportError.destinationCreationFailed
         }
 
-        // Set properties for PNG with color profile
         let properties = getImageProperties(for: colorSpace)
 
-        // Add the image with properties
         CGImageDestinationAddImage(destination, cgImage, properties as CFDictionary)
 
-        // Set file-level properties to ensure profile is embedded
         let fileProperties = getFileProperties(for: colorSpace)
         CGImageDestinationSetProperties(destination, fileProperties as CFDictionary)
 
-        // Finalize the export
         guard CGImageDestinationFinalize(destination) else {
             throw ExportError.finalizationFailed
         }
@@ -113,7 +84,6 @@ final class ColorExportManager {
         return true
     }
 
-// MARK: - Helper Methods
 
     private func getColorSpace(for option: ColorSpaceOption) -> CGColorSpace {
         switch option {
@@ -141,7 +111,6 @@ final class ColorExportManager {
         return [
             kCGImagePropertyColorModel: kCGImagePropertyColorModelRGB,
             kCGImagePropertyProfileName: getProfileName(for: colorSpace) as CFString,
-            // Ensure proper color management
             kCGImagePropertyHasAlpha: true as CFBoolean
         ]
     }
@@ -153,7 +122,6 @@ final class ColorExportManager {
         ]
     }
 
-    // MARK: - Error Types
 
     enum ExportError: LocalizedError {
         case imageConversionFailed
@@ -173,11 +141,9 @@ final class ColorExportManager {
     }
 }
 
-// MARK: - Convenience Extensions
 
 extension ColorExportManager {
 
-    /// Export from context (for direct rendering exports)
     @discardableResult
     func exportFromContext(
         _ context: CGContext,

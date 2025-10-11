@@ -1,26 +1,15 @@
-//
-//  StrokeFillHelpers.swift
-//  logos inkpen.io
-//
-//  Helper functions and extensions for StrokeFillPanel
-//
 
 import SwiftUI
 import AppKit
 
 
-
-/// Formats a number for display, showing decimals only when needed
 func formatNumberForDisplay(_ value: Double, maxDecimals: Int = 2) -> String {
-    // If the value is a whole number, show it without decimals
     if value.truncatingRemainder(dividingBy: 1) == 0 {
         return String(format: "%.0f", value)
     }
-    // Otherwise show with specified decimal places
     return String(format: "%.\(maxDecimals)f", value)
 }
 
-// MARK: - CGLineJoin Extensions for UI
 
 extension CGLineJoin {
     var iconName: String {
@@ -51,7 +40,6 @@ extension CGLineJoin {
     }
 }
 
-// MARK: - CGLineCap Extensions for UI
 
 extension CGLineCap {
     var iconName: String {

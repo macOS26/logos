@@ -1,9 +1,3 @@
-//
-//  ProfessionalLayerRow.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 import Combine
@@ -17,7 +11,6 @@ struct ProfessionalLayerRow: View {
     @State private var editedName: String = ""
     @State private var showColorPicker: Bool = false
 
-    // Bindings for immediate UI updates
     private var isVisibleBinding: Binding<Bool> {
         Binding(
             get: { document.layers[layerIndex].isVisible },
@@ -43,23 +36,18 @@ struct ProfessionalLayerRow: View {
     }
 
 
-    // CRITICAL: Use document settings for layer expansion state (persists across tab switches)
     private var isExpanded: Bool {
-        // For Canvas (index 0) and Pasteboard (index 1), default to collapsed
         if layerIndex <= 1 {
             return document.settings.layerExpansionState[layer.id] ?? false
         }
-        // Other layers: use saved state or default to expanded
         return document.settings.layerExpansionState[layer.id] ?? true
     }
 
     private func setExpanded(_ value: Bool) {
-        // Save the new state
         document.settings.layerExpansionState[layer.id] = value
         document.onSettingsChanged()
     }
 
-    // CRITICAL: Computed binding for layer color to ensure SwiftUI reactivity
     private var layerColor: Binding<Color> {
         Binding(
             get: { document.layers[layerIndex].color },
@@ -72,28 +60,22 @@ struct ProfessionalLayerRow: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Layer Header with Adobe Illustrator Layout - Icons OUTSIDE main button
             ZStack(alignment: .bottom) {
-                // Horizontal dividers under eye and lock columns
                 HStack(spacing: 2) {
-                    // Divider under eye column
                     Rectangle()
                         .fill(Color.gray.opacity(0.2))
                         .frame(width: 21, height: 1)
 
-                    // Divider under lock column
                     Rectangle()
                         .fill(Color.gray.opacity(0.2))
                         .frame(width: 19, height: 1)
 
                     Spacer()
                 }
-                .padding(.leading, 2.5)  // Shifted right by 1.5px (was 1)
+                .padding(.leading, 2.5)
                 .padding(.trailing, 4)
 
-                // Layer row content
                 HStack(spacing: 2) {
-                    // First Column: Visibility Toggle (Eye Icon) - With drag detection
                     Button(action: {
                         isVisibleBinding.wrappedValue.toggle()
                     }) {
@@ -107,24 +89,20 @@ struct ProfessionalLayerRow: View {
                     .gesture(
                         DragGesture(minimumDistance: 5)
                             .onChanged { _ in
-                                // Start drag - activate overlay
                                 if !document.isDraggingVisibility {
                                     document.isDraggingVisibility = true
                                     document.processedLayersDuringDrag.removeAll()
                                     document.saveToUndoStack()
-                                    // Toggle this layer's visibility
                                     document.layers[layerIndex].isVisible.toggle()
                                     document.processedLayersDuringDrag.insert(layerIndex)
                                 }
                             }
                             .onEnded { _ in
-                                // End drag - hide overlay
                                 document.isDraggingVisibility = false
                                 document.processedLayersDuringDrag.removeAll()
                             }
                     )
 
-                    // Second Column: Lock Toggle - With drag detection
                     Button(action: {
                         isLockedBinding.wrappedValue.toggle()
                     }) {
@@ -138,30 +116,23 @@ struct ProfessionalLayerRow: View {
                     .gesture(
                         DragGesture(minimumDistance: 5)
                             .onChanged { _ in
-                                // Start drag - activate overlay
                                 if !document.isDraggingLock {
                                     document.isDraggingLock = true
                                     document.processedLayersDuringDrag.removeAll()
                                     document.saveToUndoStack()
-                                    // Toggle this layer's lock
                                     document.layers[layerIndex].isLocked.toggle()
                                     document.processedLayersDuringDrag.insert(layerIndex)
                                 }
                             }
                             .onEnded { _ in
-                                // End drag - hide overlay
                                 document.isDraggingLock = false
                                 document.processedLayersDuringDrag.removeAll()
                             }
                     )
 
-                    // MAIN LAYER BUTTON - Separate from eye/lock icons
                     HStack(spacing: 4) {
-                    // Disclosure Triangle with option-click for expand/collapse all
                     Button(action: {
-                        // Check if option key is pressed
                         if NSEvent.modifierFlags.contains(.option) {
-                            // Option-click: expand/collapse all layers
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 let shouldExpand = !isExpanded
                                 for layer in document.layers {
@@ -170,7 +141,6 @@ struct ProfessionalLayerRow: View {
                                 document.onSettingsChanged()
                             }
                         } else {
-                            // Regular click: toggle just this layer
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 setExpanded(!isExpanded)
                             }
@@ -186,12 +156,11 @@ struct ProfessionalLayerRow: View {
                     .buttonStyle(BorderlessButtonStyle())
                     .help("Click to expand/collapse layer. Option-click to expand/collapse all layers.")
 
-                // Layer Color Indicator (Professional Color Strip) - Clickable with color picker
                 Button(action: {
                     showColorPicker = true
                 }) {
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(layerColor.wrappedValue) // Use binding for SwiftUI reactivity
+                        .fill(layerColor.wrappedValue)
                         .frame(width: 4, height: 16)
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -199,7 +168,7 @@ struct ProfessionalLayerRow: View {
                     VStack(alignment: .leading, spacing: 2) {
                         ForEach(availableLayerColors(), id: \.name) { colorOption in
                             Button(action: {
-                                layerColor.wrappedValue = colorOption.color // Use binding setter
+                                layerColor.wrappedValue = colorOption.color
                                 showColorPicker = false
                             }) {
                                 HStack(spacing: 6) {
@@ -217,12 +186,9 @@ struct ProfessionalLayerRow: View {
                     .padding(6)
                 }
 
-                // Layer Name and Info
                 VStack(alignment: .leading, spacing: 1) {
-                    // Primary name - editable on double-click
                     if isEditingName {
                         TextField("Layer Name", text: $editedName, onCommit: {
-                            // Save the new name
                             if !editedName.isEmpty {
                                 document.saveToUndoStack()
                                 document.layers[layerIndex].name = editedName
@@ -245,7 +211,6 @@ struct ProfessionalLayerRow: View {
                             }
                     }
 
-                    // Object count info (Professional Detail)
                     let objectCount = document.unifiedObjects.filter { $0.layerIndex == layerIndex }.count
                     Text("\(objectCount) objects")
                         .font(.system(size: 9))
@@ -272,10 +237,8 @@ struct ProfessionalLayerRow: View {
                 .contentShape(Rectangle())
                 .onTapGesture {
                     document.selectedLayerIndex = layerIndex
-                    // Clear shape selection when selecting layer
                     document.selectedShapeIDs.removeAll()
                     document.selectedObjectIDs.removeAll()
-                    // Clear text selection when selecting layer
                     document.selectedTextIDs.removeAll()
                     document.syncSelectionArrays()
                 }
@@ -283,32 +246,27 @@ struct ProfessionalLayerRow: View {
                 .padding(.horizontal, 4)
             }
             .dropDestination(for: DraggableVectorObject.self) { items, location in
-                // Handle dropping objects onto this layer
                 guard let droppedObject = items.first else { return false }
 
-                // Don't allow dropping on the same layer
                 if droppedObject.sourceLayerIndex == layerIndex {
                     return false
                 }
 
-                // Move the object to this layer
                 document.moveObjectToLayer(objectId: droppedObject.objectId, targetLayerIndex: layerIndex)
                 return true
             }
-            
-            // Expanded Object List (Professional Style) - Only show if there are objects
+
             let layerObjects = document.unifiedObjects
                 .filter { $0.layerIndex == layerIndex }
-                .sorted { $0.orderID > $1.orderID } // Front to back order (higher orderID = front, lower orderID = back)
+                .sorted { $0.orderID > $1.orderID }
 
             if isExpanded && !layerObjects.isEmpty {
                 VStack(spacing: 0) {
-                    
+
                     ForEach(layerObjects, id: \.id) { unifiedObject in
                         switch unifiedObject.objectType {
                         case .shape(let shape):
                             if shape.isTextObject {
-                                // Handle text objects (VectorShape with isTextObject = true)
                                 ObjectRow(
                                     objectType: .text,
                                     objectId: shape.id,
@@ -323,7 +281,6 @@ struct ProfessionalLayerRow: View {
                                     document: document
                                 )
                             } else if shape.isGroupContainer {
-                                // Handle groups
                                 ObjectRow(
                                     objectType: .group,
                                     objectId: shape.id,
@@ -339,7 +296,6 @@ struct ProfessionalLayerRow: View {
                                     groupedShapes: shape.groupedShapes
                                 )
                             } else {
-                                // Handle regular shapes
                                 ObjectRow(
                                     objectType: .shape,
                                     objectId: shape.id,
@@ -357,69 +313,58 @@ struct ProfessionalLayerRow: View {
                         }
                     }
 
-                    // Drop zone at bottom of layer for reordering to the end
                     BottomDropZone(layerIndex: layerIndex, document: document)
                 }
-                .padding(.leading, 27) // Indent objects under layer
+                .padding(.leading, 27)
             }
         }
         .background(Color.clear)
     }
-    
-    // REMOVED: layerColor function - now using persistent layer.color property
+
 
     private func availableLayerColors() -> [(name: String, color: Color)] {
         return [
-            // 16 perfectly evenly-spaced rainbow colors (HSB-based, exact 22.5° intervals)
-            // Hue: 0° - 360° (360/16 = 22.5° spacing), Saturation: 100%, Brightness: 90-100%
-            ("Red", Color(hue: 0/360, saturation: 1.0, brightness: 1.0)),              // 0°
-            ("Vermillion", Color(hue: 22.5/360, saturation: 1.0, brightness: 1.0)),    // 22.5°
-            ("Orange", Color(hue: 45/360, saturation: 1.0, brightness: 1.0)),          // 45°
-            ("Amber", Color(hue: 67.5/360, saturation: 1.0, brightness: 1.0)),         // 67.5°
-            ("Chartreuse", Color(hue: 90/360, saturation: 1.0, brightness: 1.0)),      // 90°
-            ("Lime", Color(hue: 112.5/360, saturation: 0.8, brightness: 0.75)),        // 112.5°
-            ("Green", Color(hue: 135/360, saturation: 0.7, brightness: 0.65)),         // 135°
-            ("Spring", Color(hue: 165/360, saturation: 0.6, brightness: 0.6)),         // 165° (shifted towards blue)
-            ("Cyan", Color(hue: 190/360, saturation: 0.7, brightness: 0.85)),          // 190° (shifted towards blue)
-            ("Sky", Color(hue: 202.5/360, saturation: 0.85, brightness: 0.85)),        // 202.5°
-            ("Azure", Color(hue: 225/360, saturation: 0.9, brightness: 0.9)),          // 225°
-            ("Blue", Color(hue: 240/360, saturation: 0.8, brightness: 0.95)),          // 240° (true blue)
-            ("Violet", Color(hue: 270/360, saturation: 0.75, brightness: 0.75)),       // 270°
-            ("Purple", Color(hue: 292.5/360, saturation: 0.85, brightness: 0.85)),     // 292.5°
-            ("Magenta", Color(hue: 315/360, saturation: 1.0, brightness: 1.0)),        // 315°
-            ("Rose", Color(hue: 337.5/360, saturation: 1.0, brightness: 1.0))          // 337.5°
+            ("Red", Color(hue: 0/360, saturation: 1.0, brightness: 1.0)),
+            ("Vermillion", Color(hue: 22.5/360, saturation: 1.0, brightness: 1.0)),
+            ("Orange", Color(hue: 45/360, saturation: 1.0, brightness: 1.0)),
+            ("Amber", Color(hue: 67.5/360, saturation: 1.0, brightness: 1.0)),
+            ("Chartreuse", Color(hue: 90/360, saturation: 1.0, brightness: 1.0)),
+            ("Lime", Color(hue: 112.5/360, saturation: 0.8, brightness: 0.75)),
+            ("Green", Color(hue: 135/360, saturation: 0.7, brightness: 0.65)),
+            ("Spring", Color(hue: 165/360, saturation: 0.6, brightness: 0.6)),
+            ("Cyan", Color(hue: 190/360, saturation: 0.7, brightness: 0.85)),
+            ("Sky", Color(hue: 202.5/360, saturation: 0.85, brightness: 0.85)),
+            ("Azure", Color(hue: 225/360, saturation: 0.9, brightness: 0.9)),
+            ("Blue", Color(hue: 240/360, saturation: 0.8, brightness: 0.95)),
+            ("Violet", Color(hue: 270/360, saturation: 0.75, brightness: 0.75)),
+            ("Purple", Color(hue: 292.5/360, saturation: 0.85, brightness: 0.85)),
+            ("Magenta", Color(hue: 315/360, saturation: 1.0, brightness: 1.0)),
+            ("Rose", Color(hue: 337.5/360, saturation: 1.0, brightness: 1.0))
         ]
     }
 
     private func handleObjectSelection(_ objectID: UUID, layerIndex: Int, isShiftPressed: Bool, isCommandPressed: Bool) {
-        // CRITICAL: Determine which unified object this is
         guard document.findObject(by: objectID) != nil else { return }
-        
-        // Set the layer as selected first
+
         document.selectedLayerIndex = layerIndex
-        
+
         if isCommandPressed {
-            // Command+click: toggle individual selection
             if document.selectedObjectIDs.contains(objectID) {
                 document.selectedObjectIDs.remove(objectID)
             } else {
                 document.selectedObjectIDs.insert(objectID)
             }
         } else if isShiftPressed {
-            // Shift+click: extend selection (add to selection)
             document.selectedObjectIDs.insert(objectID)
         } else {
-            // Regular click: select only this object
             document.selectedObjectIDs = [objectID]
         }
-        
-        // CRITICAL: Keep legacy arrays in sync with unified selection
+
         document.syncSelectionArrays()
-        
+
     }
 }
 
-// MARK: - Bottom Drop Zone for Layer Object Reordering
 struct BottomDropZone: View {
     let layerIndex: Int
     @ObservedObject var document: VectorDocument
@@ -430,24 +375,19 @@ struct BottomDropZone: View {
             .fill(Color.clear)
             .frame(height: 8)
             .dropDestination(for: DraggableVectorObject.self) { items, location in
-                // Handle dropping objects at the end of the layer
                 guard let droppedObject = items.first else { return false }
 
-                // Only allow reordering within the same layer
                 if droppedObject.sourceLayerIndex != layerIndex {
                     return false
                 }
 
-                // Find the object with the lowest orderID in this layer
                 let layerObjects = document.unifiedObjects.filter { $0.layerIndex == layerIndex }
                 guard let lowestOrderID = layerObjects.map({ $0.orderID }).min() else { return false }
 
-                // Move the dropped object to the bottom (one below the current lowest)
                 if let objectIndex = document.unifiedObjects.firstIndex(where: { $0.id == droppedObject.objectId }) {
                     let object = document.unifiedObjects[objectIndex]
                     let newOrderID = lowestOrderID - 1
 
-                    // Update the object with new orderID
                     if case .shape(let shape) = object.objectType {
                         document.unifiedObjects[objectIndex] = VectorObject(
                             shape: shape,
@@ -467,7 +407,6 @@ struct BottomDropZone: View {
                 }
             }
             .overlay(alignment: .top) {
-                // Drop indicator line
                 if isDropTarget {
                     Rectangle()
                         .fill(Color.blue)

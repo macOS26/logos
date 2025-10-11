@@ -1,23 +1,14 @@
-//
-//  SVGGradientHelpers.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 9/2/25.
-//  Extracted from SVGParser.swift for better organization
-//
 
 import SwiftUI
 
 extension SVGParser {
-    
-    // MARK: - Helper Computed Properties and Functions
-    
+
+
     func finishGradientElement() {
         guard let gradientId = currentGradientId, let gradientType = currentGradientType, isParsingGradient else { return }
-        
+
         let attributes = currentGradientAttributes
-        
-        // Handle gradient inheritance (xlink:href / href)
+
         var inheritedGradient: VectorGradient? = nil
         if let hrefRaw = attributes["xlink:href"] ?? attributes["href"] {
             var refId = hrefRaw.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -28,8 +19,7 @@ extension SVGParser {
             }
             inheritedGradient = gradientDefinitions[refId]
         }
-        
-        // Ensure we have at least one gradient stop
+
         if currentGradientStops.isEmpty {
             if let inherited = inheritedGradient {
                 currentGradientStops = inherited.stops
@@ -40,79 +30,76 @@ extension SVGParser {
                 ]
             }
         }
-        
+
         let vectorGradient: VectorGradient
-        
+
         if gradientType == "linearGradient" {
             vectorGradient = finishLinearGradientElement(inheritedGradient: inheritedGradient)
         } else {
             vectorGradient = finishRadialGradientElement(inheritedGradient: inheritedGradient)
         }
-        
-        // Store the gradient definition
+
         gradientDefinitions[gradientId] = vectorGradient
-        
-        // Reset parsing state
+
         currentGradientId = nil
         currentGradientType = nil
         currentGradientAttributes = [:]
         currentGradientStops = []
         isParsingGradient = false
-        
-        // Reset extreme value handling for next gradient
+
         if detectedExtremeValues {
             detectedExtremeValues = false
             useExtremeValueHandling = false
         }
-        
+
     }
-    
+
     internal func parseGradientUnits(from attributes: [String: String]) -> GradientUnits {
         return GradientUnits(rawValue: attributes["gradientUnits"] ?? "objectBoundingBox") ?? .objectBoundingBox
     }
-    
+
     internal func parseSpreadMethod(from attributes: [String: String]) -> GradientSpreadMethod {
         return GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
     }
-    
+
     internal func degreesToRadians(_ degrees: Double) -> Double {
         return degrees * .pi / 180.0
     }
-    
+
     internal func radiansToDegrees(_ radians: Double) -> Double {
         return radians * 180.0 / .pi
     }
-    
+
     internal func parseGradientTransformFromAttributes(_ attributes: [String: String]) -> (angle: Double, scaleX: Double, scaleY: Double) {
         var gradientAngle: Double = 0.0
         var gradientScaleX: Double = 1.0
         var gradientScaleY: Double = 1.0
-        
+
         if let gradientTransformRaw = attributes["gradientTransform"] {
             let transforms = parseGradientTransform(gradientTransformRaw)
             gradientAngle = transforms.angle
             gradientScaleX = transforms.scaleX
             gradientScaleY = transforms.scaleY
         }
-        
+
         return (angle: gradientAngle, scaleX: gradientScaleX, scaleY: gradientScaleY)
     }
-    
+
     internal func parseGradientStop(attributes: [String: String]) {
         guard isParsingGradient else { return }
-        
+
         let offset = parseLength(attributes["offset"]) ?? 0.0
         var stopColor = VectorColor.black
         var stopOpacity = 1.0
-        
+
         if let colorValue = attributes["stop-color"] {
             stopColor = parseColor(colorValue) ?? .black
         }
-        
+
         if let opacityValue = attributes["stop-opacity"] {
             stopOpacity = parseLength(opacityValue) ?? 1.0
         }
-        
+
         if let style = attributes["style"] {
             let styleDict = parseStyleAttribute(style)
             if let stopColorValue = styleDict["stop-color"] {
@@ -122,17 +109,17 @@ extension SVGParser {
                 stopOpacity = parseLength(stopOpacityValue) ?? stopOpacity
             }
         }
-        
+
         let gradientStop = GradientStop(position: offset, color: stopColor, opacity: stopOpacity)
         currentGradientStops.append(gradientStop)
-        
+
     }
-    
+
     internal func parseGradientTransform(_ transform: String) -> (angle: Double, scaleX: Double, scaleY: Double) {
         var angle: Double = 0.0
         var scaleX: Double = 1.0
         var scaleY: Double = 1.0
-        
+
         if let rotateMatch = transform.range(of: #"rotate\(([^)]+)\)"#, options: .regularExpression) {
             let rotateSubstring = String(transform[rotateMatch])
             let numbers = extractNumbers(from: rotateSubstring)
@@ -140,7 +127,7 @@ extension SVGParser {
                 angle = -rotateAngle
             }
         }
-        
+
         if let scaleMatch = transform.range(of: #"scale\(([^)]+)\)"#, options: .regularExpression) {
             let scaleSubstring = String(transform[scaleMatch])
             let numbers = extractNumbers(from: scaleSubstring)
@@ -152,10 +139,10 @@ extension SVGParser {
                 scaleY = numbers[0]
             }
         }
-        
+
         return (angle: angle, scaleX: scaleX, scaleY: scaleY)
     }
-    
+
     internal func extractNumbers(from string: String) -> [Double] {
         let pattern = #"-?\d*\.?\d+"#
         guard let regex = try? NSRegularExpression(pattern: pattern) else {
@@ -171,14 +158,14 @@ extension SVGParser {
             return nil
         }
     }
-    
+
     internal func clamp(_ value: Double, _ minValue: Double, _ maxValue: Double) -> Double {
         return max(minValue, min(maxValue, value))
     }
-    
+
     internal func parseStyleAttribute(_ style: String) -> [String: String] {
         var styleDict: [String: String] = [:]
-        
+
         let declarations = style.components(separatedBy: ";")
         for declaration in declarations {
             let keyValue = declaration.components(separatedBy: ":")
@@ -188,7 +175,7 @@ extension SVGParser {
                 styleDict[key] = value
             }
         }
-        
+
         return styleDict
     }
 }

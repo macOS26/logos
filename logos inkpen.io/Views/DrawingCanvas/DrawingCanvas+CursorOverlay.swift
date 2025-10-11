@@ -1,8 +1,6 @@
 import SwiftUI
-
 import AppKit
 
-/// SwiftUI wrapper that installs an AppKit cursor rect overlay to eliminate cursor flicker
 struct CanvasCursorOverlayView: View {
     let isHovering: Bool
     let currentTool: DrawingTool
@@ -44,7 +42,6 @@ private struct CanvasCursorOverlayRepresentable: NSViewRepresentable {
         nsView.isPanActive = isPanActive
         nsView.window?.invalidateCursorRects(for: nsView)
 
-        // Activate a short cursor lock to defeat late Arrow flips after zoom/offset/layout changes
         if isHovering {
             nsView.activateCursorLock(duration: 0.5)
         }
@@ -94,7 +91,7 @@ private final class CursorOverlayNSView: NSView {
             case .eyedropper:
                 return EyedropperCursor
             case .selectSameColor:
-                return EyedropperCursor  // Use eyedropper cursor for now
+                return EyedropperCursor
             case .zoom:
                 return MagnifyingGlassCursor
             case .rectangle, .square, .circle,
@@ -108,33 +105,28 @@ private final class CursorOverlayNSView: NSView {
 
         if let cursor = cursor {
             addCursorRect(bounds, cursor: cursor)
-            // Apply immediately to prevent any interim Arrow state
             cursor.set()
         }
     }
 
     private func installEventMonitors() {
-        // Block system cursor updates while hovering over the canvas area
         let cursorUpdateMonitor = NSEvent.addLocalMonitorForEvents(matching: [.cursorUpdate]) { [weak self] event in
             guard let self = self else { return event }
             guard self.window === event.window else { return event }
-            // Ensure the cursor update pertains to our region
             let p = self.convert(event.locationInWindow, from: nil)
             let shouldForce = self.isHovering && self.bounds.contains(p) && self.shouldForceCustomCursor()
             if shouldForce {
                 self.applyForcedCursor()
-                return nil // Swallow to prevent Arrow reset
+                return nil
             }
             return event
         }
         eventMonitors.append(cursorUpdateMonitor as Any)
 
-        // Also reinforce on mouse moved within our area during tool modes
         let mouseMoveMonitor = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved, .leftMouseDragged, .leftMouseDown, .leftMouseUp]) { [weak self] event in
             guard let self = self else { return event }
             guard self.window === event.window else { return event }
             let p = self.convert(event.locationInWindow, from: nil)
-            // Only enforce while we're in a hover state over the canvas
             if self.isHovering && self.bounds.contains(p) && self.shouldForceCustomCursor() {
                 self.applyForcedCursor()
             }
@@ -168,7 +160,7 @@ private final class CursorOverlayNSView: NSView {
             case .eyedropper:
                 return EyedropperCursor
             case .selectSameColor:
-                return EyedropperCursor  // Use eyedropper cursor for now
+                return EyedropperCursor
             case .zoom:
                 return MagnifyingGlassCursor
             case .rectangle, .square, .circle,
@@ -182,7 +174,6 @@ private final class CursorOverlayNSView: NSView {
         cursor?.set()
     }
 
-    // MARK: - Cursor Lock (short enforcement window after zoom/layout changes)
     func activateCursorLock(duration: TimeInterval) {
         cursorLockUntil = Date().addingTimeInterval(duration)
         cursorLockTimer?.invalidate()
@@ -207,18 +198,4 @@ private final class CursorOverlayNSView: NSView {
         cursorLockUntil = .distantPast
     }
 }
-
-
-// No-op on non-macOS platforms
-//struct CanvasCursorOverlayView: View {
-//    let isHovering: Bool
-//    let currentTool: DrawingTool
-//    let isPanActive: Bool
-//    let zoomLevel: CGFloat
-//    let canvasOffset: CGPoint
-//
-//    var body: some View { Color.clear.opacity(0) }
-//}
-
-
 

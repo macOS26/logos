@@ -1,9 +1,3 @@
-//
-//  JoinType.swift
-//  logos inkpen.io
-//
-//  Join type for path operations
-//
 
 import SwiftUI
 

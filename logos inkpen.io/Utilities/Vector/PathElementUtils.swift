@@ -1,14 +1,6 @@
-//
-//  PathElementUtils.swift
-//  logos inkpen.io
-//
-//  Shared helpers for converting model PathElement arrays into SwiftUI Path commands.
-//
 
 import SwiftUI
 
-/// Adds an array of `PathElement` into a SwiftUI `Path`.
-/// This is a shared helper so views and utilities can build paths consistently.
 @inline(__always)
 func addPathElements(_ elements: [PathElement], to path: inout Path) {
     for element in elements {
@@ -26,5 +18,4 @@ func addPathElements(_ elements: [PathElement], to path: inout Path) {
         }
     }
 }
-
 

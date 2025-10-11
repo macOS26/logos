@@ -1,9 +1,3 @@
-//
-//  SharedEnvelopeOutline.swift
-//  logos inkpen.io
-//
-//  Shared envelope outline drawing for both warp and selection tools
-//
 
 import SwiftUI
 
@@ -20,12 +14,11 @@ struct SharedEnvelopeOutline: View {
             let corners = shape.warpEnvelope
 
             Path { path in
-                // Connect all 4 corners to form the envelope quadrilateral
-                path.move(to: corners[0])        // Top-left
-                path.addLine(to: corners[1])     // Top-right
-                path.addLine(to: corners[2])     // Bottom-right
-                path.addLine(to: corners[3])     // Bottom-left
-                path.closeSubpath()              // Back to top-left
+                path.move(to: corners[0])
+                path.addLine(to: corners[1])
+                path.addLine(to: corners[2])
+                path.addLine(to: corners[3])
+                path.closeSubpath()
             }
             .stroke(
                 color,

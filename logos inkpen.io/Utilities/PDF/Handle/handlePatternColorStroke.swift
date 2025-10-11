@@ -1,9 +1,3 @@
-//
-//  handlePatternColorStroke.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/31/25.
-//
 
 import SwiftUI
 
@@ -13,10 +7,9 @@ extension PDFCommandParser {
         if CGPDFScannerPopName(scanner, &nameObj),
            let name = nameObj {
             let patternName = String(cString: name)
-            
+
             if let gradient = extractGradientFromPattern(patternName: patternName, scanner: scanner) {
                 currentStrokeGradient = gradient
-                // Note: We can't store gradient in CGColor, need to handle differently
             }
         }
     }

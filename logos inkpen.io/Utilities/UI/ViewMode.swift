@@ -1,24 +1,17 @@
-//
-//  ViewMode.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 
-// MARK: - View Modes
 enum ViewMode: String, CaseIterable, Codable {
     case color = "Color View"
     case keyline = "Keyline View"
-    
+
     var iconName: String {
         switch self {
         case .color: return "paintbrush.fill"
         case .keyline: return "square.dashed"
         }
     }
-    
+
     var description: String {
         switch self {
         case .color: return "Show full artwork with fills and strokes"

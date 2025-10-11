@@ -1,29 +1,20 @@
-//
-//  DrawingCanvas+ViewComposition.swift
-//  logos inkpen.io
-//
-//  View composition functionality
-//
 
 import SwiftUI
 
 extension DrawingCanvas {
     @ViewBuilder
     internal func canvasOverlays(geometry: GeometryProxy) -> some View {
-        // Current drawing path (while drawing)
         if let currentPath = currentPath {
             Path { path in
                 addPathElements(currentPath.elements, to: &path)
             }
             .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel)
-            .scaleEffect(document.zoomLevel, anchor: .topLeading)  // ✅ FIXED: Added missing anchor
+            .scaleEffect(document.zoomLevel, anchor: .topLeading)
             .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-            
-            // REAL-TIME SIZE DISPLAY WHILE DRAWING
+
             drawingDimensionsOverlay(for: currentPath)
         }
-        
-        // Bounding box visualization for triangle drift verification
+
         if let boundingBoxPath = tempBoundingBoxPath {
             Path { path in
                 addPathElements(boundingBoxPath.elements, to: &path)
@@ -33,7 +24,6 @@ extension DrawingCanvas {
             .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
         }
 
-        // Show the actual polygon bounds (tight fit) with subtle blue styling
         if let currentPath = currentPath,
            (document.currentTool == .polygon || document.currentTool == .pentagon ||
             document.currentTool == .hexagon || document.currentTool == .heptagon ||
@@ -48,18 +38,11 @@ extension DrawingCanvas {
             .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
         }
 
-        // PROFESSIONAL REAL-TIME BEZIER PATH (Professional style - shows actual path with real colors)
-        // Note: Real bezier shapes are now shown as actual VectorShapes in the document
-        
-        // PROFESSIONAL RUBBER BAND PREVIEW (Professional Standards)
+
         rubberBandPreview(geometry: geometry)
-        
-        // Brush live preview (SwiftUI overlay; avoids document mutations during drag)
-        // CRITICAL: Render directly like marker tool - no modifier to prevent flicker
+
         if let preview = brushPreviewPath {
-            // Check brush preview style from appState
             if appState.brushPreviewStyle == .fill {
-                // Fill mode: show actual fill color
                 Path { path in
                     addPathElements(preview.elements, to: &path)
                 }
@@ -68,7 +51,6 @@ extension DrawingCanvas {
                 .scaleEffect(document.zoomLevel, anchor: .topLeading)
                 .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
             } else {
-                // Outline mode: show blue stroke like marker outline
                 Path { path in
                     addPathElements(preview.elements, to: &path)
                 }
@@ -77,8 +59,7 @@ extension DrawingCanvas {
                 .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
             }
         }
-        
-        // Freehand live preview (SwiftUI overlay; avoids document mutations during drag)
+
         if let preview = freehandPreviewPath {
             Path { path in
                 addPathElements(preview.elements, to: &path)
@@ -88,19 +69,16 @@ extension DrawingCanvas {
             .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
         }
 
-        // Marker live preview (SwiftUI overlay; avoids document mutations during drag)
         if let preview = markerPreviewPath {
             let markerFillColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
             let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
             let showStroke = !document.markerApplyNoStroke
 
             if showStroke {
-                // Match final stroke settings exactly
-                // IMPORTANT: placement .inside or .outside doubles the stroke width (see ShapeView.swift line 208, 265)
                 let baseStrokeWidth = getCurrentStrokeWidth()
                 let strokeWidth = (document.defaultStrokePlacement == .center) ? baseStrokeWidth : baseStrokeWidth * 2.0
-                let lineCap: CGLineCap = .round // Always round for marker tool (per line 69 in MarkerTool.swift)
-                let lineJoin: CGLineJoin = .round // Always round for marker tool (per line 70 in MarkerTool.swift)
+                let lineCap: CGLineCap = .round
+                let lineJoin: CGLineJoin = .round
 
                 Path { path in
                     addPathElements(preview.elements, to: &path)
@@ -136,11 +114,8 @@ extension DrawingCanvas {
         bezierControlHandles()
         bezierClosePathHint()
         bezierContinuePathHint()
-        
-        // Selection handles for selected shapes
-        // PROFESSIONAL UX: Show transform box during drag (like Illustrator, Figma, Sketch, etc.)
-        // CORNER TOOL FIX: Hide bounding box and selection handles when in corner radius edit mode
-        if !(document.currentTool == .bezierPen && isBezierDrawing) && 
+
+        if !(document.currentTool == .bezierPen && isBezierDrawing) &&
            !isCornerRadiusEditMode {
             SelectionHandlesView(
                 document: document,
@@ -151,14 +126,11 @@ extension DrawingCanvas {
                 dragPreviewDelta: currentDragDelta
             )
         }
-        
-        // Real-time dimensions for Bezier tool
+
         if isBezierDrawing && document.currentTool == .bezierPen {
             bezierDrawingDimensionsOverlay()
         }
-        
-        // Direct selection points and handles
-        // Show direct selection UI for Direct Selection, Convert Point, and Pen +/- tools
+
         if document.currentTool == .directSelection || document.currentTool == .convertAnchorPoint || document.currentTool == .penPlusMinus {
             ProfessionalDirectSelectionView(
                 document: document,
@@ -169,30 +141,24 @@ extension DrawingCanvas {
                 geometry: geometry
             )
         }
-        
-        // Gradient center point visualization and editing - only when gradient tool is selected
+
         if document.currentTool == .gradient {
             gradientCenterPointOverlay(geometry: geometry)
         }
-        
-        // Corner radius tool - when corner radius tool is selected
+
         if document.currentTool == .cornerRadius {
             cornerRadiusTool(geometry: geometry)
         }
-        
-        // Corner radius editing - ONLY when in corner radius mode (Control-Click to activate)
+
         if document.currentTool == .selection && isCornerRadiusEditMode {
             cornerRadiusEditTool(geometry: geometry)
         }
     }
-    
+
     @ViewBuilder
     internal func canvasBaseContent(geometry: GeometryProxy) -> some View {
         ZStack {
-            // BRILLIANT USER SOLUTION: No more manual background!
-            // Canvas is now a regular layer/shape that auto-syncs with everything else
 
-            // First: Render the Pasteboard Background (behind everything)
             PasteboardBackgroundView(
                 document: document,
                 zoomLevel: document.zoomLevel,
@@ -203,7 +169,6 @@ extension DrawingCanvas {
                 dragPreviewTrigger: dragPreviewUpdateTrigger
             )
 
-            // Second: Render the Canvas Background (on top of pasteboard)
             CanvasBackgroundView(
                 document: document,
                 zoomLevel: document.zoomLevel,
@@ -214,13 +179,11 @@ extension DrawingCanvas {
                 dragPreviewTrigger: dragPreviewUpdateTrigger
             )
 
-            // Third: Grid (if enabled) - Renders on top of canvas background but below graphics
             if document.showGrid {
                 GridView(document: document, geometry: geometry)
-                    .allowsHitTesting(false) // Grid should not intercept mouse events
+                    .allowsHitTesting(false)
             }
 
-            // Fourth: Render all other graphics (excluding Canvas and Pasteboard backgrounds)
             NonBackgroundObjectsView(
                 document: document,
                 zoomLevel: document.zoomLevel,
@@ -235,24 +198,22 @@ extension DrawingCanvas {
             canvasOverlays(geometry: geometry)
         }
     }
-    
+
     @ViewBuilder
     internal func drawingDimensionsOverlay(for path: VectorPath) -> some View {
         if isDrawing {
             let bounds = path.cgPath.boundingBoxOfPath
             let width = bounds.width
             let height = bounds.height
-            
-            // Position the label above the top-right of the shape being drawn
+
             let labelPosition = CGPoint(
                 x: bounds.maxX + 10,
                 y: bounds.minY - 30
             )
-            
-            // Format dimensions (same as status bar)
+
             let widthText = width == floor(width) ? String(format: "%.0f", width) : String(format: "%.1f", width)
             let heightText = height == floor(height) ? String(format: "%.0f", height) : String(format: "%.1f", height)
-            
+
             Text("W: \(widthText)pt\nH: \(heightText)pt")
                 .font(.caption)
                 .foregroundColor(.white)
@@ -264,24 +225,22 @@ extension DrawingCanvas {
                 .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
         }
     }
-    
+
     @ViewBuilder
     internal func bezierDrawingDimensionsOverlay() -> some View {
         if let bezierPath = bezierPath, bezierPoints.count >= 2 {
             let bounds = bezierPath.cgPath.boundingBoxOfPath
             let width = bounds.width
             let height = bounds.height
-            
-            // Position the label above the top-right of the bezier path being drawn
+
             let labelPosition = CGPoint(
                 x: bounds.maxX + 10,
                 y: bounds.minY - 30
             )
-            
-            // Format dimensions (same as status bar)
+
             let widthText = width == floor(width) ? String(format: "%.0f", width) : String(format: "%.1f", width)
             let heightText = height == floor(height) ? String(format: "%.0f", height) : String(format: "%.1f", height)
-            
+
             Text("W: \(widthText)pt\nH: \(heightText)pt")
                 .font(.caption)
                 .foregroundColor(.white)
@@ -293,16 +252,14 @@ extension DrawingCanvas {
                 .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
         }
     }
-    
+
     @ViewBuilder
     internal func canvasMainContent(geometry: GeometryProxy) -> some View {
         ZStack {
             canvasBaseContent(geometry: geometry)
-            
-            // Pressure-sensitive overlay for real Apple Pencil pressure detection
+
             pressureSensitiveOverlay(geometry: geometry)
-			
-			// In-App Performance HUD (draggable, independent of Apple's HUD)
+
 			if appState.showInAppPerformanceHUD {
 				VStack {
 					HStack {
@@ -314,7 +271,6 @@ extension DrawingCanvas {
 				}
 			}
         }
-        // CRITICAL FIX: NO CLIPPING to allow pasteboard area gestures
         .onAppear {
             setupCanvas()
             setupKeyEventMonitoring()
@@ -323,27 +279,20 @@ extension DrawingCanvas {
         }
             .onDisappear {
                 teardownKeyEventMonitoring()
-                // No cursor management
             }
             .onChange(of: document.currentTool) { oldTool, newTool in
                 handleToolChange(oldTool: oldTool, newTool: newTool)
-                // No cursor management
             }
             .onHover { isHovering in
-                // Track enter/exit and update cursor only within the drawing area
                 isCanvasHovering = isHovering
-                // No cursor management
             }
             .onContinuousHover { phase in
                 handleHover(phase: phase, geometry: geometry)
             }
             .onTapGesture { location in
-                // CRITICAL: Single-click selection (was missing!)
                 handleUnifiedTap(at: location, geometry: geometry)
             }
             .simultaneousGesture(
-                // UNIFIED DRAG GESTURE - FIXED: Use reasonable minimum distance 
-                // This prevents tiny movements from interrupting real drags
                 DragGesture(minimumDistance: 3)
                     .onChanged { value in
                         handleUnifiedDragChanged(value: value, geometry: geometry)
@@ -353,7 +302,6 @@ extension DrawingCanvas {
                     }
             )
             .simultaneousGesture(
-                // PROFESSIONAL ZOOM GESTURE - Separate from drag to avoid conflicts
                 MagnificationGesture()
                     .onChanged { value in
                         handleZoomGestureChanged(value: value, geometry: geometry)
@@ -371,22 +319,17 @@ extension DrawingCanvas {
             .contextMenu {
                 directSelectionContextMenu
             }
-            // REMOVED: FitCanvasToPage notification - unused dead code (never posted)
     }
-    
-    // MARK: - Gradient Edit Tool Overlay
-    
+
+
     @ViewBuilder
     internal func gradientCenterPointOverlay(geometry: GeometryProxy) -> some View {
-        // Use the new isolated gradient edit tool
         gradientEditTool(geometry: geometry)
     }
-    
-    // MARK: - Pressure-Sensitive Overlay
-    
+
+
     @ViewBuilder
     internal func pressureSensitiveOverlay(geometry: GeometryProxy) -> some View {
-        // Only show pressure overlay for drawing tools that use pressure
         if document.currentTool == .brush || document.currentTool == .freehand || document.currentTool == .marker {
             PressureSensitiveCanvasRepresentable(
                                             onPressureEvent: { location, pressure, eventType, isTabletEvent in
@@ -398,27 +341,22 @@ extension DrawingCanvas {
             .background(Color.clear)
         }
     }
-    
-    // MARK: - Pressure Event Handling
-    
+
+
     private func handlePressureEvent(
-        location: CGPoint, 
-        pressure: Double, 
+        location: CGPoint,
+        pressure: Double,
         eventType: PressureSensitiveCanvasView.PressureEventType,
         isTabletEvent: Bool,
         geometry: GeometryProxy
     ) {
-        
-        // Convert to canvas coordinates
+
         let canvasLocation = screenToCanvas(location, geometry: geometry)
 
 
-        // Update pressure manager with real pressure data
-        // Note: PressureManager will auto-detect if this is real varying pressure (stylus) or constant pressure (mouse/trackpad)
         PressureManager.shared.processRealPressure(pressure, at: canvasLocation, isTabletEvent: isTabletEvent)
 
 
-        // Route to appropriate tool based on event type and current tool
         switch eventType {
         case .began:
             handlePressureDrawingStart(at: canvasLocation)
@@ -428,7 +366,7 @@ extension DrawingCanvas {
             handlePressureDrawingEnd(at: canvasLocation)
         }
     }
-    
+
     private func handlePressureDrawingStart(at location: CGPoint) {
 
         switch document.currentTool {
@@ -448,33 +386,29 @@ extension DrawingCanvas {
             break
         }
     }
-    
+
     private func handlePressureDrawingUpdate(at location: CGPoint) {
 
-        // Get the current pressure that was just updated by the pressure event
         let currentPressure = PressureManager.shared.currentPressure
 
         switch document.currentTool {
         case .brush:
             if isBrushDrawing {
-                // Brush drag update - logging removed for performance
                 handleBrushDragUpdate(at: location)
             }
         case .freehand:
             if isFreehandDrawing {
-                // Freehand drag update - logging removed for performance
                 handleFreehandDragUpdate(at: location)
             }
         case .marker:
             if isMarkerDrawing {
-                // Marker drag update - pass pressure directly to avoid delay
                 handleMarkerDragUpdate(at: location, pressure: currentPressure)
             }
         default:
             break
         }
     }
-    
+
     private func handlePressureDrawingEnd(at location: CGPoint) {
         switch document.currentTool {
         case .brush:
@@ -494,7 +428,6 @@ extension DrawingCanvas {
         }
     }
 
-    // MARK: - In-App Performance HUD
     private var hudOverlay: some View {
         let monitor = OptimizedPerformanceMonitor.shared
         return LightweightPerformanceOverlay(monitor: monitor)
@@ -507,21 +440,20 @@ extension DrawingCanvas {
             )
     }
 
-} 
+}
 
-// MARK: - Brush Preview Styling
 private struct BrushPreviewStyleModifier: ViewModifier {
     @Environment(AppState.self) var appState
     let appStateRef: AppState?
     let document: VectorDocument
     let preview: VectorPath
-    
+
     init(appState: AppState, document: VectorDocument, preview: VectorPath) {
         self.document = document
         self.preview = preview
         self.appStateRef = appState
     }
-    
+
     func body(content: Content) -> some View {
         switch appStateRef?.brushPreviewStyle ?? .outline {
         case .outline:
@@ -536,8 +468,7 @@ private struct BrushPreviewStyleModifier: ViewModifier {
                 .opacity(document.defaultFillOpacity)
         }
     }
-    
-    /// VECTOR APP OPTIMIZATION: Render only dragged objects as overlay (no full scene redraw)
+
     @ViewBuilder
     internal func draggedObjectPreview(geometry: GeometryProxy, dragDelta: CGPoint) -> some View {
         if dragDelta != .zero && !document.selectedObjectIDs.isEmpty {
@@ -547,16 +478,15 @@ private struct BrushPreviewStyleModifier: ViewModifier {
             }
         }
     }
-    
+
     @ViewBuilder
     private func draggedObjectView(_ unifiedObject: VectorObject, dragDelta: CGPoint) -> some View {
         switch unifiedObject.objectType {
         case .shape(let shape):
             draggedShapeView(shape, dragDelta: dragDelta)
-            // Text handled as VectorShape
         }
     }
-    
+
     @ViewBuilder
     private func draggedShapeView(_ shape: VectorShape, dragDelta: CGPoint) -> some View {
         let offsetShape = applyDragOffsetToShape(shape, offset: dragDelta)
@@ -574,7 +504,7 @@ private struct BrushPreviewStyleModifier: ViewModifier {
         .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
         .opacity(0.8)
     }
-    
+
     @ViewBuilder
     private func draggedTextView(_ text: VectorText, dragDelta: CGPoint) -> some View {
         Text(text.content)
@@ -586,8 +516,7 @@ private struct BrushPreviewStyleModifier: ViewModifier {
             )
             .opacity(0.8)
     }
-    
-    /// Apply drag offset to shape coordinates without modifying the original
+
     private func applyDragOffsetToShape(_ shape: VectorShape, offset: CGPoint) -> VectorShape {
         var offsetShape = shape
         offsetShape.path = VectorPath(elements: shape.path.elements.map { element in
@@ -615,23 +544,20 @@ private struct BrushPreviewStyleModifier: ViewModifier {
     }
 }
 
-// MARK: - Freehand Preview Style Modifier
 
 private struct FreehandPreviewStyleModifier: ViewModifier {
     @Environment(AppState.self) var appState
     let appStateRef: AppState?
     let document: VectorDocument
     let preview: VectorPath
-    
+
     init(appState: AppState, document: VectorDocument, preview: VectorPath) {
         self.document = document
         self.preview = preview
         self.appStateRef = appState
     }
-    
+
     func body(content: Content) -> some View {
-        // Freehand tool uses stroke preview with current stroke color and settings
-        // Always use round caps and joins for smooth appearance
         Path { p in addPathElements(preview.elements, to: &p) }
             .stroke(document.defaultStrokeColor.color,
                     style: SwiftUI.StrokeStyle(

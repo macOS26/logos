@@ -1,44 +1,31 @@
-//
-//  FileOperations+PDFImport.swift
-//  logos inkpen.io
-//
-//  PDF import functionality extracted from FileOperations.swift
-//
 
 import SwiftUI
 
 extension FileOperations {
-    
-    // MARK: - PDF Import
-    
-    /// Import PDF from data for FileDocument protocol
+
+
     static func importFromPDFData(_ data: Data) throws -> VectorDocument {
-        // Create a temporary file to use with the existing PDF import infrastructure
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("pdf")
 
         do {
             try data.write(to: tempURL)
             let document = try importFromPDFSync(url: tempURL)
 
-            // Clean up temporary file
             try? FileManager.default.removeItem(at: tempURL)
 
             return document
         } catch {
-            // Clean up temporary file on error
             try? FileManager.default.removeItem(at: tempURL)
             throw error
         }
     }
 
-    /// Synchronous version of PDF import for FileDocument protocol
     static func importFromPDFSync(url: URL) throws -> VectorDocument {
-        
-        // Use a semaphore to make the async call synchronous
+
         let semaphore = DispatchSemaphore(value: 0)
         var resultDocument: VectorDocument?
         var resultError: Error?
-        
+
         Task {
             do {
                 resultDocument = try await importFromPDF(url: url)
@@ -47,21 +34,20 @@ extension FileOperations {
             }
             semaphore.signal()
         }
-        
+
         semaphore.wait()
-        
+
         if let error = resultError {
             throw error
         }
-        
+
         guard let document = resultDocument else {
             throw VectorImportError.parsingError("Failed to import PDF: Unknown error", line: nil)
         }
-        
+
         return document
     }
-    
-    /// Async PDF import method
+
     static func importFromPDF(url: URL) async throws -> VectorDocument {
         let result = await VectorImportManager.shared.importVectorFile(from: url)
 
@@ -70,52 +56,39 @@ extension FileOperations {
             throw VectorImportError.parsingError("Failed to import PDF: \(errorMessage)", line: nil)
         }
 
-        // Check if PDF contains embedded inkpen metadata
         if let inkpenMetadata = result.metadata.inkpenMetadata {
 
-            // Decode base64 and parse as JSON
             guard let inkpenData = Data(base64Encoded: inkpenMetadata) else {
                 Log.error("❌ Failed to decode inkpen metadata from base64", category: .error)
                 throw VectorImportError.parsingError("Invalid inkpen metadata encoding", line: nil)
             }
 
-            // Parse as inkpen document
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
             let inkpenDocument = try decoder.decode(VectorDocument.self, from: inkpenData)
 
-            // Return the original inkpen document
             return inkpenDocument
         }
 
-        // Create a new VectorDocument from the imported shapes
         let document = VectorDocument()
-        
-        // Use document dimensions from PDF file metadata
+
         let pdfDocumentSize = result.metadata.documentSize
         let canvasWidth = pdfDocumentSize.width
         let canvasHeight = pdfDocumentSize.height
-        
-        // Set document size based on PDF dimensions
-        document.settings.width = canvasWidth / 72.0 // Convert to inches
+
+        document.settings.width = canvasWidth / 72.0
         document.settings.height = canvasHeight / 72.0
         document.settings.unit = .inches
 
-        // CRITICAL FIX: Update the canvas background to match the PDF dimensions
-        // VectorDocument init already created Pasteboard, Canvas and Working layers with default 8.5x11 size
-        // We need to update them to match the actual PDF size
         document.updateCanvasLayer()
         document.updatePasteboardLayer()
-        
-        // Add all imported shapes to the layer
+
         for shape in result.shapes {
             var importedShape = shape
 
-            // Ensure the shape is editable
             importedShape.isLocked = false
             importedShape.isVisible = true
 
-            // Register embedded images in ImageContentRegistry
             if let imageData = importedShape.embeddedImageData {
                 if let nsImage = NSImage(data: imageData) {
                     ImageContentRegistry.register(image: nsImage, for: importedShape.id)
@@ -125,12 +98,10 @@ extension FileOperations {
                 }
             }
 
-            // Add shape to unified system (layer index 2 for working layer)
             document.addShapeToUnifiedSystem(importedShape, layerIndex: 2)
         }
 
-        // Select the working layer which contains imported shapes
-        document.selectedLayerIndex = 2 // Working layer is at index 2
+        document.selectedLayerIndex = 2
 
         return document
     }

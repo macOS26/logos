@@ -1,9 +1,3 @@
-//
-//  CornerRadiusToolbar.swift
-//  logos inkpen.io
-//
-//  Compact Corner Radius Display for Top Toolbar
-//
 
 import SwiftUI
 import Combine
@@ -12,7 +6,7 @@ struct CornerRadiusToolbar: View {
     @ObservedObject var document: VectorDocument
     @State private var cornerValues: [Double] = []
     @State private var cornerCount: Int = 0
-    
+
     var body: some View {
         Group {
             if let shape = getSelectedShape(), isRectangleShape(shape) && cornerCount == 4 {
@@ -26,23 +20,21 @@ struct CornerRadiusToolbar: View {
             updateCornerValues()
         }
         .onChange(of: document.layers) { _, _ in
-            updateCornerValues()  // Update when any layer changes
+            updateCornerValues()
         }
         .onReceive(document.objectWillChange) { _ in
-            updateCornerValues()  // Update when document changes
+            updateCornerValues()
         }
     }
-    
+
     @ViewBuilder
     private var cornerRadiusDisplay: some View {
         HStack(spacing: 4) {
-            // Shape type indicator
             Image(systemName: shapeIcon)
                 .foregroundColor(Color.ui.secondaryText)
                 .font(.caption)
-                .offset(y: 2)  // Lower icon by 2px
-            
-            // Corner radius fields based on corner count
+                .offset(y: 2)
+
             cornerFieldsView
         }
         .padding(.horizontal, 8)
@@ -50,10 +42,9 @@ struct CornerRadiusToolbar: View {
         .background(Color.ui.controlBackground)
         .cornerRadius(6)
     }
-    
+
     @ViewBuilder
     private var cornerFieldsView: some View {
-        // Only show for 3 or 4 sided shapes, single line format
         if cornerCount == 4 {
             HStack(spacing: 4) {
                 ForEach(0..<cornerCount, id: \.self) { index in
@@ -62,37 +53,33 @@ struct CornerRadiusToolbar: View {
             }
         }
     }
-    
+
     @ViewBuilder
     private func cornerField(index: Int, label: String) -> some View {
         let isRounded = getSelectedShape().map { isCornerRounded(shape: $0, cornerIndex: index) } ?? false
         let cornerValue = cornerValues[safe: index] ?? 0.0
-        
+
         HStack(spacing: 2) {
-            // Label with rounded indicator
             HStack(spacing: 1) {
                 Text(label + ":")
                     .font(.caption)
                     .foregroundColor(Color.ui.secondaryText)
-                
-                // Visual indicator for rounded corner
+
                 if isRounded && cornerValue > 0 {
                     Image(systemName: "circle.fill")
                         .font(.system(size: 4))
                         .foregroundColor(Color.ui.primaryBlue)
-                        .offset(y: 2)  // Lower icon by 2px
+                        .offset(y: 2)
                 } else {
                     Image(systemName: "square.fill")
                         .font(.system(size: 4))
                         .foregroundColor(Color.ui.standardBorder)
-                        .offset(y: 2)  // Lower icon by 2px
+                        .offset(y: 2)
                 }
             }
-            
-            // Value field - always editable (WHOLE NUMBERS)
+
             TextField("0", text: Binding(
                 get: {
-                    // LIVE VALUES: Always get fresh value from the actual shape (WHOLE NUMBERS)
                     if let shape = getSelectedShape() {
                         let currentRadius = shape.cornerRadii[safe: index] ?? 0.0
                         return String(format: "%.0f", currentRadius)
@@ -111,7 +98,7 @@ struct CornerRadiusToolbar: View {
             .background(isRounded && (getSelectedShape()?.cornerRadii[safe: index] ?? 0.0) > 0 ? InkPenUIColors.shared.veryLightBlueBackground : Color.clear)
         }
     }
-    
+
     private var shapeIcon: String {
         switch cornerCount {
         case 3: return "triangle"
@@ -121,41 +108,36 @@ struct CornerRadiusToolbar: View {
         default: return "circle"
         }
     }
-    
+
     private func updateCornerValues() {
         guard let selectedShape = getSelectedShape() else {
             cornerValues = []
             cornerCount = 0
             return
         }
-        
-        // Count corners by analyzing path elements
+
         cornerCount = countShapeCorners(shape: selectedShape)
-        
-        // Get corner radii (extend array if needed)
+
         let currentRadii = selectedShape.cornerRadii
         cornerValues = Array(0..<cornerCount).map { index in
             currentRadii[safe: index] ?? 0.0
         }
     }
-    
+
     private func countShapeCorners(shape: VectorShape) -> Int {
-        // ROBUST DETECTION: Support basic shapes as requested
         let shapeName = shape.name.lowercased()
-        
-        // Check shape name first (most reliable) - FIXED: Better matching
+
         if shapeName.contains("triangle") {
             return 3
-        } else if shapeName == "rectangle" || shapeName == "square" || 
+        } else if shapeName == "rectangle" || shapeName == "square" ||
                   shapeName == "rounded rectangle" || shapeName == "pill" {
             return 4
         }
-        
-        // Fallback: Count path segments for basic shapes only
+
         let elements = shape.path.elements
         var lineCount = 0
         var curveCount = 0
-        
+
         for element in elements {
             switch element {
             case .move, .close:
@@ -166,10 +148,9 @@ struct CornerRadiusToolbar: View {
                 curveCount += 1
             }
         }
-        
+
         let totalSegments = lineCount + curveCount
-        
-        // BASIC SHAPE DETECTION BY PATH STRUCTURE:
+
         if totalSegments == 3 {
             return 3
         } else if totalSegments == 4 {
@@ -179,10 +160,10 @@ struct CornerRadiusToolbar: View {
         } else if curveCount == 4 && lineCount == 0 {
             return 4
         }
-        
-        return 0  // Unsupported shape
+
+        return 0
     }
-    
+
     private func getSelectedShape() -> VectorShape? {
         guard document.selectedShapeIDs.count == 1,
               let selectedID = document.selectedShapeIDs.first else { return nil }
@@ -194,14 +175,12 @@ struct CornerRadiusToolbar: View {
         }
         return nil
     }
-    
-    /// Detect if a specific corner is rounded by analyzing path structure
+
     private func isCornerRounded(shape: VectorShape, cornerIndex: Int) -> Bool {
         let elements = shape.path.elements
         var lineSegments: [PathElement] = []
         var curves: [PathElement] = []
-        
-        // Collect all line and curve elements
+
         for element in elements {
             switch element {
             case .line:
@@ -212,84 +191,66 @@ struct CornerRadiusToolbar: View {
                 break
             }
         }
-        
-        // For a rounded rectangle, we expect:
-        // - 4 line segments (sides)
-        // - 4 curve segments (corners)
-        // Corner N is rounded if there's a corresponding curve element
-        
 
-        
-        // If we have the same number of curves as corners, then corner at index is rounded
+
         if curves.count == cornerCount && cornerIndex < curves.count {
             return true
         }
-        
-        // If no curves, all corners are sharp
+
         if curves.count == 0 {
             return false
         }
-        
-        // For partial rounding, check corner radius values
+
         let radius = shape.cornerRadii[safe: cornerIndex] ?? 0.0
         return radius > 0.0
     }
-    
+
     private func updateCornerRadius(index: Int, value: Double) {
         guard let selectedShape = getSelectedShape() else { return }
-        
+
         document.saveToUndoStack()
-        
-        // Find and update the shape
+
         for layerIndex in document.layers.indices {
             let shapes = document.getShapesForLayer(layerIndex)
             if let shapeIndex = shapes.firstIndex(where: { $0.id == selectedShape.id }),
                var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                
-                // ENABLE CORNER RADIUS SUPPORT: Convert regular rectangles to corner-radius-enabled rectangles
+
                 if !shape.isRoundedRectangle && isRectangleShape(shape) {
-                    
-                    // Calculate original bounds from current path
+
                     let pathBounds = shape.path.cgPath.boundingBox
                     shape.originalBounds = pathBounds
                     shape.isRoundedRectangle = true
-                    
-                    // Initialize corner radii if empty
+
                     if shape.cornerRadii.isEmpty {
                         shape.cornerRadii = [0.0, 0.0, 0.0, 0.0]
                     }
                 }
-                
-                // Update corner radii array
+
                 var updatedRadii = shape.cornerRadii
-                
-                // Extend array if needed
+
                 while updatedRadii.count <= index {
                     updatedRadii.append(0.0)
                 }
                 updatedRadii[index] = value
-                
+
                 shape.cornerRadii = updatedRadii
-                
-                // Regenerate path with corner radius using current bounds
+
                 let currentBounds = shape.path.cgPath.boundingBox
                 let newPath = GeometricShapes.createRoundedRectPathWithIndividualCorners(
                     rect: currentBounds,
                     cornerRadii: updatedRadii
                 )
-                
-                // Use unified helper to update shape
+
                 document.updateShapeCornerRadiiInUnified(id: shape.id, cornerRadii: updatedRadii, path: newPath)
-                
+
                 break
             }
         }
-        
+
         document.objectWillChange.send()
         updateCornerValues()
     }
-    
-    /// Check if a shape is a rectangle-based shape
+
     private func isRectangleShape(_ shape: VectorShape) -> Bool {
         let shapeName = shape.name.lowercased()
         return shapeName == "rectangle" || shapeName == "square" ||
@@ -297,7 +258,6 @@ struct CornerRadiusToolbar: View {
     }
 }
 
-// MARK: - Preview
 #Preview {
     CornerRadiusToolbar(document: VectorDocument())
         .padding()

@@ -1,20 +1,11 @@
-//
-//  createShapeFromShading.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/31/25.
-//
 
 import SwiftUI
 
 extension PDFCommandParser {
-    
+
     func createShapeFromShading(gradient: VectorGradient) {
-        // For standalone shadings, we need to create a shape that covers the entire page
-        // or the current clipping area. This is common for background gradients.
-        
-        
-        // Create a rectangle covering the entire page
+
+
         let pageRect = [
             PathCommand.moveTo(CGPoint(x: 0, y: 0)),
             PathCommand.lineTo(CGPoint(x: pageSize.width, y: 0)),
@@ -22,8 +13,7 @@ extension PDFCommandParser {
             PathCommand.lineTo(CGPoint(x: 0, y: pageSize.height)),
             PathCommand.closePath
         ]
-        
-        // Convert to VectorPath elements
+
         var vectorElements: [PathElement] = []
         for command in pageRect {
             switch command {
@@ -39,17 +29,17 @@ extension PDFCommandParser {
                 break
             }
         }
-        
+
         let vectorPath = VectorPath(elements: vectorElements, isClosed: true)
         let fillStyle = FillStyle(gradient: gradient)
-        
+
 
         let shadingShape = VectorShape(
             name: "PDF Shading Shape \(shapes.count + 1)",
             path: vectorPath,
             strokeStyle: nil,
             fillStyle: fillStyle,
-            isCompoundPath: true  // Mark gradient shapes as compound paths for editor compatibility
+            isCompoundPath: true
         )
 
         shapes.append(shadingShape)

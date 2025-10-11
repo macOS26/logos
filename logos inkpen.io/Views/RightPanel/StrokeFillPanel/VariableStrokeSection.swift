@@ -1,9 +1,3 @@
-//
-//  VariableStrokeSection.swift
-//  logos inkpen.io
-//
-//  Variable stroke section for brush tool settings
-//
 
 import SwiftUI
 
@@ -21,7 +15,6 @@ struct VariableStrokeSection: View {
                 Spacer()
             }
 
-            // Brush Thickness
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Thickness")
@@ -42,7 +35,6 @@ struct VariableStrokeSection: View {
                 .help("Adjust brush stroke thickness (1-100 points)")
             }
 
-            // Pressure Sensitivity Toggle
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Pressure Sensitivity")
@@ -59,11 +51,7 @@ struct VariableStrokeSection: View {
                 .help("Enable or disable pressure sensitivity for variable stroke")
             }
 
-            // Pressure Sensitivity Slider REMOVED - now using global pressure curve from Preferences
 
-            // REMOVED: Taper is no longer used - natural pressure creates tapering
-
-            // Smoothness (Point Reduction)
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Smoothness")
@@ -84,14 +72,12 @@ struct VariableStrokeSection: View {
                 .help("Point reduction threshold - higher values remove more duplicate points for smoother strokes (0.5-10 pixels)")
             }
 
-            // Liquid (Curve Fluidity)
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Liquid")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    // Display reversed: internal 0 shows as 100%, internal 100 shows as 0%
                     Text("\(Int(100.0 - document.currentBrushLiquid))%")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.primaryText)
@@ -99,14 +85,13 @@ struct VariableStrokeSection: View {
                 }
 
                 Slider(value: Binding(
-                    get: { 100.0 - document.currentBrushLiquid },  // Reverse for display
-                    set: { document.currentBrushLiquid = 100.0 - $0 }  // Reverse when setting
+                    get: { 100.0 - document.currentBrushLiquid },
+                    set: { document.currentBrushLiquid = 100.0 - $0 }
                 ), in: 0...100)
                 .controlSize(.regular)
                 .help("Controls curve fluidity - 0% = no smoothing (all points), 50% = moderate smoothing, 100% = maximum liquid smoothing")
             }
 
-            // Min Taper Thickness
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Min Taper Thickness")
@@ -127,7 +112,6 @@ struct VariableStrokeSection: View {
                 .help("Minimum thickness at taper ends (0-15 points)")
             }
 
-            // Advanced Smoothing Section
             Divider()
                 .padding(.vertical, 8)
 
@@ -149,7 +133,6 @@ struct VariableStrokeSection: View {
                 .help("Enable advanced curve smoothing algorithms for ultra-smooth strokes")
 
                 if document.advancedSmoothingEnabled {
-                    // Chaikin Smoothing Iterations
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("Chaikin Iterations")
@@ -170,7 +153,6 @@ struct VariableStrokeSection: View {
                         .help("Number of smoothing passes - 0 = off, 6 = maximum smoothing")
                     }
 
-                    // Preserve Sharp Corners Toggle
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Preserve Sharp Corners")
@@ -192,12 +174,10 @@ struct VariableStrokeSection: View {
                 }
             }
 
-            // Brush Tool Options
             VStack(alignment: .leading, spacing: 12) {
                 Divider()
                     .padding(.vertical, 4)
 
-                // Brush Preview Style
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Preview Style")
                         .font(.subheadline)
@@ -215,7 +195,6 @@ struct VariableStrokeSection: View {
                     .help("Choose how the brush preview appears while drawing")
                 }
 
-                // Apply No Stroke Toggle
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Apply No Stroke")
@@ -235,7 +214,6 @@ struct VariableStrokeSection: View {
                     .help("When enabled, brush shapes will have no stroke regardless of current stroke settings")
                 }
 
-                // Remove Overlap Toggle
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Remove Overlap")
@@ -256,7 +234,6 @@ struct VariableStrokeSection: View {
                 }
             }
 
-            // Pressure Input Status
             HStack {
                 Image(systemName: document.hasPressureInput ? "hand.point.up.braille" : "hand.tap")
                     .foregroundColor(document.hasPressureInput ? .green : .orange)

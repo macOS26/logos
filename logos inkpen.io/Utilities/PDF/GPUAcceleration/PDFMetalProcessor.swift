@@ -1,22 +1,11 @@
-//
-//  PDFMetalProcessor.swift
-//  logos inkpen.io
-//
-//  GPU-accelerated PDF processing using Metal compute shaders
-//  Created by Claude on 1/13/25.
-//
 
 import Foundation
 import Metal
 
-/// GPU-accelerated PDF processing for massive performance improvements
-/// Uses Metal compute shaders to process large PDF images and gradients in parallel
 class PDFMetalProcessor {
 
-    // MARK: - Singleton
     static let shared = PDFMetalProcessor()
 
-    // MARK: - Metal Resources
     private var device: MTLDevice?
     private var commandQueue: MTLCommandQueue?
     private var rgbToRGBAPipeline: MTLComputePipelineState?
@@ -25,14 +14,12 @@ class PDFMetalProcessor {
 
     private var isInitialized: Bool = false
 
-    // MARK: - Initialization
 
     private init() {
         setupMetal()
     }
 
     private func setupMetal() {
-        // Get default Metal device (GPU)
         guard let device = MTLCreateSystemDefaultDevice() else {
             Log.error("❌ Metal is not supported on this device", category: .error)
             return
@@ -41,25 +28,20 @@ class PDFMetalProcessor {
         self.device = device
         self.commandQueue = device.makeCommandQueue()
 
-        // Load shader library
         guard let library = device.makeDefaultLibrary() else {
             Log.error("❌ Failed to load Metal shader library", category: .error)
             return
         }
 
-        // Create compute pipeline states
         do {
-            // RGB to RGBA pipeline
             if let rgbToRGBAFunction = library.makeFunction(name: "rgbToRGBA") {
                 rgbToRGBAPipeline = try device.makeComputePipelineState(function: rgbToRGBAFunction)
             }
 
-            // Indexed to RGBA pipeline
             if let indexedToRGBAFunction = library.makeFunction(name: "indexedToRGBA") {
                 indexedToRGBAPipeline = try device.makeComputePipelineState(function: indexedToRGBAFunction)
             }
 
-            // Gradient color extraction pipeline
             if let extractGradientFunction = library.makeFunction(name: "extractGradientColors8Bit") {
                 extractGradientColorsPipeline = try device.makeComputePipelineState(function: extractGradientFunction)
             }
@@ -71,10 +53,7 @@ class PDFMetalProcessor {
         }
     }
 
-    // MARK: - Image Processing
 
-    /// Convert RGB image data to RGBA using GPU acceleration
-    /// This is MUCH faster than CPU for large PDF images (100-1000x speedup)
     func convertRGBtoRGBA(rgbData: Data, maskData: Data?, width: Int, height: Int) -> Data? {
         guard isInitialized,
               let device = device,
@@ -88,7 +67,6 @@ class PDFMetalProcessor {
         let rgbSize = pixelCount * 3
         let rgbaSize = pixelCount * 4
 
-        // Create Metal buffers
         guard let rgbBuffer = device.makeBuffer(bytes: rgbData.withUnsafeBytes { $0.baseAddress! },
                                                  length: rgbSize,
                                                  options: .storageModeShared),
@@ -98,7 +76,6 @@ class PDFMetalProcessor {
             return nil
         }
 
-        // Optional mask buffer
         var maskBuffer: MTLBuffer?
         var hasMaskValue: UInt32 = 0
         if let mask = maskData {
@@ -112,7 +89,6 @@ class PDFMetalProcessor {
                                               length: MemoryLayout<UInt32>.size,
                                               options: .storageModeShared)
 
-        // Create command buffer and encoder
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
               let encoder = commandBuffer.makeComputeCommandEncoder() else {
             return nil
@@ -120,11 +96,10 @@ class PDFMetalProcessor {
 
         encoder.setComputePipelineState(pipeline)
         encoder.setBuffer(rgbBuffer, offset: 0, index: 0)
-        encoder.setBuffer(maskBuffer ?? rgbBuffer, offset: 0, index: 1)  // Dummy if no mask
+        encoder.setBuffer(maskBuffer ?? rgbBuffer, offset: 0, index: 1)
         encoder.setBuffer(rgbaBuffer, offset: 0, index: 2)
         encoder.setBuffer(hasMaskBuffer, offset: 0, index: 3)
 
-        // Calculate thread groups
         let threadGroupSize = MTLSize(width: pipeline.threadExecutionWidth, height: 1, depth: 1)
         let threadGroups = MTLSize(width: (pixelCount + pipeline.threadExecutionWidth - 1) / pipeline.threadExecutionWidth,
                                   height: 1,
@@ -133,18 +108,15 @@ class PDFMetalProcessor {
         encoder.dispatchThreadgroups(threadGroups, threadsPerThreadgroup: threadGroupSize)
         encoder.endEncoding()
 
-        // Execute and wait
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
 
-        // Extract result
         let resultData = Data(bytes: rgbaBuffer.contents(), count: rgbaSize)
 
 
         return resultData
     }
 
-    /// Convert indexed color (palette-based) image to RGBA using GPU acceleration
     func convertIndexedToRGBA(indexData: Data, paletteData: Data, maskData: Data?, width: Int, height: Int) -> Data? {
         guard isInitialized,
               let device = device,
@@ -158,7 +130,6 @@ class PDFMetalProcessor {
         let rgbaSize = pixelCount * 4
         let paletteEntries = paletteData.count / 3
 
-        // Create Metal buffers
         guard let indexBuffer = device.makeBuffer(bytes: indexData.withUnsafeBytes { $0.baseAddress! },
                                                    length: pixelCount,
                                                    options: .storageModeShared),
@@ -170,7 +141,6 @@ class PDFMetalProcessor {
             return nil
         }
 
-        // Optional mask buffer
         var maskBuffer: MTLBuffer?
         var hasMaskValue: UInt32 = 0
         if let mask = maskData {
@@ -189,7 +159,6 @@ class PDFMetalProcessor {
                                               length: MemoryLayout<UInt32>.size,
                                               options: .storageModeShared)
 
-        // Create command buffer and encoder
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
               let encoder = commandBuffer.makeComputeCommandEncoder() else {
             return nil
@@ -203,7 +172,6 @@ class PDFMetalProcessor {
         encoder.setBuffer(paletteEntriesBuffer, offset: 0, index: 4)
         encoder.setBuffer(hasMaskBuffer, offset: 0, index: 5)
 
-        // Calculate thread groups
         let threadGroupSize = MTLSize(width: pipeline.threadExecutionWidth, height: 1, depth: 1)
         let threadGroups = MTLSize(width: (pixelCount + pipeline.threadExecutionWidth - 1) / pipeline.threadExecutionWidth,
                                   height: 1,
@@ -212,21 +180,16 @@ class PDFMetalProcessor {
         encoder.dispatchThreadgroups(threadGroups, threadsPerThreadgroup: threadGroupSize)
         encoder.endEncoding()
 
-        // Execute and wait
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
 
-        // Extract result
         let resultData = Data(bytes: rgbaBuffer.contents(), count: rgbaSize)
 
 
         return resultData
     }
 
-    // MARK: - Gradient Processing
 
-    /// Extract gradient colors from sampled function stream using GPU acceleration
-    /// Much faster than CPU for large gradient samples (10-100x speedup)
     func extractGradientColors(sampleData: Data,
                               totalSamples: Int,
                               outputComponents: Int,
@@ -240,13 +203,11 @@ class PDFMetalProcessor {
             return nil
         }
 
-        // CRITICAL: Limit maximum samples to prevent memory issues
         let maxSamples = 1024
         let actualSamples = min(totalSamples, maxSamples)
 
-        let outputSize = actualSamples * 3 * MemoryLayout<Float>.size  // RGB float triplets
+        let outputSize = actualSamples * 3 * MemoryLayout<Float>.size
 
-        // Create Metal buffers
         guard let sampleBuffer = device.makeBuffer(bytes: sampleData.withUnsafeBytes { $0.baseAddress! },
                                                     length: sampleData.count,
                                                     options: .storageModeShared),
@@ -266,7 +227,6 @@ class PDFMetalProcessor {
                                                  length: MemoryLayout<UInt32>.size,
                                                  options: .storageModeShared)
 
-        // Create command buffer and encoder
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
               let encoder = commandBuffer.makeComputeCommandEncoder() else {
             return nil
@@ -279,7 +239,6 @@ class PDFMetalProcessor {
         encoder.setBuffer(rangeMinBuffer, offset: 0, index: 3)
         encoder.setBuffer(rangeMaxBuffer, offset: 0, index: 4)
 
-        // Calculate thread groups using actualSamples
         let threadGroupSize = MTLSize(width: pipeline.threadExecutionWidth, height: 1, depth: 1)
         let threadGroups = MTLSize(width: (actualSamples + pipeline.threadExecutionWidth - 1) / pipeline.threadExecutionWidth,
                                   height: 1,
@@ -288,11 +247,9 @@ class PDFMetalProcessor {
         encoder.dispatchThreadgroups(threadGroups, threadsPerThreadgroup: threadGroupSize)
         encoder.endEncoding()
 
-        // Execute and wait
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
 
-        // Extract result and convert to VectorColor
         let floatPointer = colorBuffer.contents().assumingMemoryBound(to: Float.self)
         var colors: [VectorColor] = []
         colors.reserveCapacity(actualSamples)

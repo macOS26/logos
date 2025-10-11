@@ -1,13 +1,6 @@
-//
-//  ProfessionalTextFieldStyle.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 
-// MARK: - Professional Text Field Style
 struct ProfessionalTextFieldStyle: TextFieldStyle {
     func _body(configuration: TextField<Self._Label>) -> some View {
         configuration

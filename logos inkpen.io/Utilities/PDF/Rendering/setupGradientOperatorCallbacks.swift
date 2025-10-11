@@ -1,37 +1,27 @@
-//
-//  File.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/31/25.
-//
 
 import SwiftUI
 
 extension PDFCommandParser {
-    // Add this to your setupOperatorCallbacks method:
     func setupGradientOperatorCallbacks(_ operatorTable: CGPDFOperatorTableRef) {
-        
-        // Pattern color space operators
+
         CGPDFOperatorTableSetCallback(operatorTable, "SCN") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
             parser.handlePatternColorStroke(scanner: scanner)
         }
-        
+
         CGPDFOperatorTableSetCallback(operatorTable, "scn") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
             parser.handlePatternColorFill(scanner: scanner)
         }
-        
-        // Matrix concatenation operator (cm)
+
         CGPDFOperatorTableSetCallback(operatorTable, "cm") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
             parser.handleConcatMatrix(scanner: scanner)
         }
-        
-        // Shading operator
+
         CGPDFOperatorTableSetCallback(operatorTable, "sh") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()

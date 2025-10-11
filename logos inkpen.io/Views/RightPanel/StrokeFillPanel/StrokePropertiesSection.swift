@@ -1,25 +1,19 @@
-//
-//  StrokePropertiesSection.swift
-//  logos inkpen.io
-//
-//  Stroke properties section for StrokeFillPanel
-//
 
 import SwiftUI
 
 struct StrokePropertiesSection: View {
     let strokeWidth: Double
     let strokePlacement: StrokePlacement
-    let strokeOpacity: Double // PROFESSIONAL STROKE TRANSPARENCY
-    let strokeLineJoin: CGLineJoin // PROFESSIONAL JOIN TYPES
-    let strokeLineCap: CGLineCap // PROFESSIONAL ENDCAPS
-    let strokeMiterLimit: Double // PROFESSIONAL MITER LIMIT
+    let strokeOpacity: Double
+    let strokeLineJoin: CGLineJoin
+    let strokeLineCap: CGLineCap
+    let strokeMiterLimit: Double
     let onUpdateStrokeWidth: (Double) -> Void
     let onUpdateStrokePlacement: (StrokePlacement) -> Void
-    let onUpdateStrokeOpacity: (Double) -> Void // PROFESSIONAL STROKE TRANSPARENCY
-    let onUpdateLineJoin: (CGLineJoin) -> Void // PROFESSIONAL JOIN TYPES
-    let onUpdateLineCap: (CGLineCap) -> Void // PROFESSIONAL ENDCAPS
-    let onUpdateMiterLimit: (Double) -> Void // PROFESSIONAL MITER LIMIT
+    let onUpdateStrokeOpacity: (Double) -> Void
+    let onUpdateLineJoin: (CGLineJoin) -> Void
+    let onUpdateLineCap: (CGLineCap) -> Void
+    let onUpdateMiterLimit: (Double) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -27,7 +21,6 @@ struct StrokePropertiesSection: View {
                 .font(.headline)
                 .fontWeight(.medium)
 
-            // Stroke Width
             VStack(spacing: 8) {
                 HStack {
                     Text("Width")
@@ -46,7 +39,6 @@ struct StrokePropertiesSection: View {
                 .controlSize(.regular)
             }
 
-            // PROFESSIONAL STROKE TRANSPARENCY (Professional Standard)
             VStack(spacing: 8) {
                 HStack {
                     Text("Opacity")
@@ -65,7 +57,6 @@ struct StrokePropertiesSection: View {
                 .controlSize(.regular)
             }
 
-            // Stroke Placement
             VStack(alignment: .leading, spacing: 4) {
                 Text("Placement")
                     .font(.caption)
@@ -87,7 +78,6 @@ struct StrokePropertiesSection: View {
                 .font(.caption)
             }
 
-            // PROFESSIONAL JOIN TYPE CONTROL (Professional Standard)
             VStack(alignment: .leading, spacing: 4) {
                 Text("Joins")
                     .font(.caption)
@@ -124,7 +114,6 @@ struct StrokePropertiesSection: View {
                 }
             }
 
-            // PROFESSIONAL ENDCAP CONTROL (Professional Standard)
             VStack(alignment: .leading, spacing: 4) {
                 Text("End Caps")
                     .font(.caption)
@@ -161,7 +150,6 @@ struct StrokePropertiesSection: View {
                 }
             }
 
-            // Miter Limit - ALWAYS VISIBLE, NO RESTRICTIONS
             VStack(spacing: 8) {
                 HStack {
                     Text("Miter Limit")

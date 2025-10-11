@@ -1,19 +1,12 @@
-//
-//  VectorText.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 7/5/25.
-//
 
 import SwiftUI
 import Combine
 
-// MARK: - Text Box State Tracking (Blue, Green, Gray)
 enum TextBoxState: String, CaseIterable {
-    case editing = "editing"      // BLUE - Currently being edited
-    case selected = "selected"    // GREEN - Selected and draggable
-    case unselected = "unselected" // GRAY - Not selected, not editing
-    
+    case editing = "editing"
+    case selected = "selected"
+    case unselected = "unselected"
+
     var color: Color {
         switch self {
         case .editing: return .blue
@@ -21,7 +14,7 @@ enum TextBoxState: String, CaseIterable {
         case .unselected: return .gray
         }
     }
-    
+
     var description: String {
         switch self {
         case .editing: return "BLUE - Edit Mode"
@@ -31,13 +24,12 @@ enum TextBoxState: String, CaseIterable {
     }
 }
 
-// MARK: - Professional Text Alignment
 enum TextAlignment: String, CaseIterable, Codable {
     case left = "Left"
     case center = "Center"
     case right = "Right"
     case justified = "Justified"
-    
+
     var iconName: String {
         switch self {
         case .left: return "text.alignleft"
@@ -46,7 +38,7 @@ enum TextAlignment: String, CaseIterable, Codable {
         case .justified: return "text.justify"
         }
     }
-    
+
     var nsTextAlignment: NSTextAlignment {
         switch self {
         case .left: return .left
@@ -57,9 +49,6 @@ enum TextAlignment: String, CaseIterable, Codable {
     }
 }
 
-// MARK: - Professional Font Weight (Adobe Standards)
-// DEPRECATED: Weight is now encoded in fontVariant name (e.g. "Bold", "Ultra Light")
-// Kept for backward compatibility with legacy files only
 @available(*, deprecated, message: "Use fontVariant instead - weight is encoded in variant name")
 enum FontWeight: String, CaseIterable, Codable {
     case thin = "Thin"
@@ -101,9 +90,6 @@ enum FontWeight: String, CaseIterable, Codable {
     }
 }
 
-// MARK: - Professional Font Style (Adobe / FreeHand Standards)
-// DEPRECATED: Style is now encoded in fontVariant name (e.g. "Bold Italic")
-// Kept for backward compatibility with legacy files only
 @available(*, deprecated, message: "Use fontVariant instead - style is encoded in variant name")
 enum FontStyle: String, CaseIterable, Codable {
     case normal = "Normal"
@@ -119,27 +105,23 @@ enum FontStyle: String, CaseIterable, Codable {
     }
 }
 
-// MARK: - Professional Typography Properties
 struct TypographyProperties: Codable, Hashable {
     var fontFamily: String
-    var fontVariant: String?  // Store the actual variant name like "Condensed Bold Italic"
-    var fontSize: Double // In points (professional standard)
-    var lineHeight: Double // Leading in typography
-    var lineSpacing: Double // Extra spacing between lines (0 to fontSize/2)
-    var letterSpacing: Double // Tracking
+    var fontVariant: String?
+    var fontSize: Double
+    var lineHeight: Double
+    var lineSpacing: Double
+    var letterSpacing: Double
     var alignment: TextAlignment
 
-    // Professional stroke properties for outlined text
     var hasStroke: Bool
     var strokeColor: VectorColor
     var strokeWidth: Double
     var strokeOpacity: Double
 
-    // Professional fill properties for text
     var fillColor: VectorColor
     var fillOpacity: Double
 
-    // NO DEFAULT FONT COLORS - COLORS MUST BE EXPLICITLY PROVIDED
     init(
         fontFamily: String = "Helvetica",
         fontVariant: String? = nil,
@@ -149,10 +131,10 @@ struct TypographyProperties: Codable, Hashable {
         letterSpacing: Double = 0.0,
         alignment: TextAlignment = .left,
         hasStroke: Bool = false,
-        strokeColor: VectorColor,  // NO DEFAULT - MUST BE PROVIDED
+        strokeColor: VectorColor,
         strokeWidth: Double = 1.0,
         strokeOpacity: Double = 1.0,
-        fillColor: VectorColor,    // NO DEFAULT - MUST BE PROVIDED
+        fillColor: VectorColor,
         fillOpacity: Double = 1.0
     ) {
         self.fontFamily = fontFamily
@@ -170,10 +152,8 @@ struct TypographyProperties: Codable, Hashable {
         self.fillOpacity = fillOpacity
     }
 
-    
-    // Create NSFont for text rendering
+
     var nsFont: NSFont {
-        // If we have a variant name, try to use it to get exact font
         if let variant = fontVariant {
             let fontManager = NSFontManager.shared
             let members = fontManager.availableMembers(ofFontFamily: fontFamily) ?? []
@@ -189,21 +169,18 @@ struct TypographyProperties: Codable, Hashable {
             }
         }
 
-        // Fallback to regular font
         return NSFont(name: fontFamily, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
     }
 
-    // Create SwiftUI Font for UI display
     var swiftUIFont: Font {
         return Font.custom(fontFamily, size: fontSize)
     }
 
-    // Custom Codable to handle old files with fontWeight/fontStyle
     enum CodingKeys: String, CodingKey {
         case fontFamily, fontVariant, fontSize, lineHeight, lineSpacing
         case letterSpacing, alignment, hasStroke, strokeColor, strokeWidth
         case strokeOpacity, fillColor, fillOpacity
-        case fontWeight, fontStyle  // Old deprecated keys
+        case fontWeight, fontStyle
     }
 
     init(from decoder: Decoder) throws {
@@ -221,7 +198,6 @@ struct TypographyProperties: Codable, Hashable {
         strokeOpacity = try container.decode(Double.self, forKey: .strokeOpacity)
         fillColor = try container.decode(VectorColor.self, forKey: .fillColor)
         fillOpacity = try container.decode(Double.self, forKey: .fillOpacity)
-        // Ignore old fontWeight/fontStyle - migration will populate fontVariant
     }
 
     func encode(to encoder: Encoder) throws {
@@ -239,75 +215,64 @@ struct TypographyProperties: Codable, Hashable {
         try container.encode(strokeOpacity, forKey: .strokeOpacity)
         try container.encode(fillColor, forKey: .fillColor)
         try container.encode(fillOpacity, forKey: .fillOpacity)
-        // Don't encode fontWeight/fontStyle - they're deprecated
     }
 }
 
-// MARK: - Professional Vector Text Object
 struct VectorText: Identifiable, Codable, Hashable {
     var id: UUID
     var content: String
     var typography: TypographyProperties
-    var position: CGPoint // Text origin point
+    var position: CGPoint
     var transform: CGAffineTransform
     var bounds: CGRect
     var isVisible: Bool
     var isLocked: Bool
-    var isEditing: Bool // For inline text editing
-    var layerIndex: Int? // Which layer this text belongs to
-    
-    // PROFESSIONAL TEXT TOOL PROPERTIES
-    // Removed isPointText - only area text is used
-    var cursorPosition: Int // Current cursor position for inline editing
-    var areaSize: CGSize? // Area size for area text (nil for point text)
-    
-    // HELPER: Get current text box state based on selection and editing
+    var isEditing: Bool
+    var layerIndex: Int?
+
+    var cursorPosition: Int
+    var areaSize: CGSize?
+
     func getState(in document: VectorDocument) -> TextBoxState {
         if isEditing {
-            return .editing  // BLUE
+            return .editing
         } else if document.selectedTextIDs.contains(id) {
-            return .selected // GREEN
+            return .selected
         } else {
-            return .unselected // GRAY
+            return .unselected
         }
     }
-    
-    // HELPER: Check if this text box can be edited (not locked and visible)
+
     var canBeEdited: Bool {
         return isVisible && !isLocked
     }
-    
-    // HELPER: Check if font settings should be shown in font panel
+
     func shouldShowFontSettings(in document: VectorDocument) -> Bool {
         let state = getState(in: document)
         return state == .editing || state == .selected
     }
-    
-    // Professional text metrics using Core Text
+
     var textBounds: CGRect {
         let font = createCoreTextFont()
         let displayText = content.isEmpty ? "" : content
-        
-        // Create attributed string with proper font and kerning
+
         let attributes: [NSAttributedString.Key: Any] = [
             .font: font,
             .kern: typography.letterSpacing
         ]
-        
+
         let attributedString = NSAttributedString(string: displayText, attributes: attributes)
-        
-        // Use CTLine for precise text layout metrics
+
         let line = CTLineCreateWithAttributedString(attributedString)
-        
-        // Get accurate text bounds from Core Text
+
         let textBounds = CTLineGetBoundsWithOptions(line, .useOpticalBounds)
-        
+
         return textBounds
     }
-    
+
     init(
         content: String = "",
-        typography: TypographyProperties = TypographyProperties(strokeColor: .black, fillColor: .black),  // Fallback for manual creation only
+        typography: TypographyProperties = TypographyProperties(strokeColor: .black, fillColor: .black),
         position: CGPoint = .zero,
         transform: CGAffineTransform = .identity,
         isVisible: Bool = true,
@@ -331,76 +296,64 @@ struct VectorText: Identifiable, Codable, Hashable {
         self.areaSize = areaSize
         updateBounds()
     }
-    
+
     mutating func updateBounds() {
-        // CRITICAL FIX: Don't override bounds that are managed by ProfessionalTextCanvas
-        // The ProfessionalTextCanvas handles proper multi-line text bounds calculation
-        // This old method was treating multi-line text as single line, causing the thin blue selection line
-        
-        // CRITICAL FIX: If areaSize is set, use it for bounds instead of calculating
-        // This preserves user-drawn text box dimensions during copy/paste
+
         if let userAreaSize = areaSize {
             bounds = CGRect(x: 0, y: 0, width: userAreaSize.width, height: userAreaSize.height)
             return
         }
-        
-        // Only calculate bounds if we don't have proper bounds set (width and height both > 0)
-        // OR if this is clearly single-line text (no line breaks)
+
         let hasProperBounds = bounds.width > 0 && bounds.height > 0
         let isSingleLineText = !content.contains("\n") && !content.contains("\r")
-        
-        // If we already have proper bounds from ProfessionalTextCanvas, don't override them
+
         if hasProperBounds && !isSingleLineText {
             return
         }
-        
-        // LEGACY SINGLE-LINE CALCULATION: Only for single-line text or fallback cases
+
         let font = createCoreTextFont()
         let displayText = content.isEmpty ? "" : content
-        
+
         if isSingleLineText {
-            // Single line text: Use CTLine (original logic)
             let attributes: [NSAttributedString.Key: Any] = [
                 .font: font,
                 .kern: typography.letterSpacing
             ]
-            
+
             let attributedString = NSAttributedString(string: displayText, attributes: attributes)
             let line = CTLineCreateWithAttributedString(attributedString)
             let textBounds = CTLineGetBoundsWithOptions(line, .useOpticalBounds)
-            
+
             let ascent = CTFontGetAscent(font)
             let descent = CTFontGetDescent(font)
             let leading = CTFontGetLeading(font)
-            
+
             bounds = CGRect(
                 x: 0,
                 y: -ascent,
                 width: max(textBounds.width, content.isEmpty ? 20 : 1),
                 height: ascent + descent + leading
             )
-            
+
         } else {
-            // Multi-line text: Use CTFramesetter for proper wrapping calculation
             let paragraphStyle = NSMutableParagraphStyle()
             paragraphStyle.alignment = typography.alignment.nsTextAlignment
             paragraphStyle.lineSpacing = max(0, typography.lineSpacing)
             paragraphStyle.minimumLineHeight = typography.lineHeight
             paragraphStyle.maximumLineHeight = typography.lineHeight
-            
+
             let attributes: [NSAttributedString.Key: Any] = [
                 .font: font,
                 .kern: typography.letterSpacing,
                 .paragraphStyle: paragraphStyle
             ]
-            
+
             let attributedString = NSAttributedString(string: displayText, attributes: attributes)
             let framesetter = CTFramesetterCreateWithAttributedString(attributedString)
-            
-            // Use a reasonable default width for text wrapping if no bounds set
+
             let defaultWidth: CGFloat = 300.0
             let constraintSize = CGSize(width: defaultWidth, height: CGFloat.greatestFiniteMagnitude)
-            
+
             let suggestedSize = CTFramesetterSuggestFrameSizeWithConstraints(
                 framesetter,
                 CFRangeMake(0, 0),
@@ -408,47 +361,39 @@ struct VectorText: Identifiable, Codable, Hashable {
                 constraintSize,
                 nil
             )
-            
+
             let ascent = CTFontGetAscent(font)
-            
+
             bounds = CGRect(
                 x: 0,
                 y: -ascent,
                 width: max(suggestedSize.width, content.isEmpty ? 20 : 1),
-                height: max(suggestedSize.height + 20, typography.lineHeight) // Add padding for proper rendering
+                height: max(suggestedSize.height + 20, typography.lineHeight)
             )
-            
+
         }
     }
-    
+
     private func createCoreTextFont() -> CTFont {
-        // SURGICAL FIX: Use the existing nsFont property from TypographyProperties
-        // This already handles weight and style correctly using SwiftUI's font system
         let nsFont = typography.nsFont
-        
-        // Convert NSFont to CTFont
+
         return CTFontCreateWithName(nsFont.fontName as CFString, typography.fontSize, nil)
     }
-    
-    
-    // MIGRATION: Convert VectorShape back to VectorText for unified access
+
+
     static func from(_ vectorShape: VectorShape) -> VectorText? {
         guard vectorShape.isTextObject else { return nil }
 
-        // CRITICAL FIX: Check for existing typography FIRST to preserve alignment and all properties
         let typography: TypographyProperties
         if let existingTypography = vectorShape.typography {
-            // Use existing typography if available (preserves alignment!)
             typography = existingTypography
         } else if !vectorShape.metadata.isEmpty,
            let fontFamily = vectorShape.metadata["fontFamily"],
            let fontSizeStr = vectorShape.metadata["fontSize"],
            let fontSize = Double(fontSizeStr) {
 
-            // Reconstruct typography from PDF import metadata (legacy fallback)
             let letterSpacing = Double(vectorShape.metadata["letterSpacing"] ?? "0") ?? 0
             let lineSpacing = Double(vectorShape.metadata["lineSpacing"] ?? "0") ?? 0
-            // Note: wordSpacing is stored but not used in TypographyProperties init
 
             typography = TypographyProperties(
                 fontFamily: fontFamily,
@@ -465,93 +410,74 @@ struct VectorText: Identifiable, Codable, Hashable {
                 fillOpacity: vectorShape.fillStyle?.opacity ?? 1.0
             )
         } else {
-            // Fallback: create from stroke/fill
             typography = TypographyProperties(
                 strokeColor: vectorShape.strokeStyle?.color ?? .black,
                 fillColor: vectorShape.fillStyle?.color ?? .black
             )
         }
 
-        // Extract VectorText data from VectorShape
-        // This is a reverse conversion from VectorShape.from(_:VectorText)
-        // Use textPosition if available (preserved from original text), otherwise use transform
         let position = vectorShape.textPosition ?? CGPoint(x: vectorShape.transform.tx, y: vectorShape.transform.ty)
         var vectorText = VectorText(
-            content: vectorShape.textContent ?? "", // Use the actual text content
+            content: vectorShape.textContent ?? "",
             typography: typography,
             position: position,
             areaSize: vectorShape.areaSize
         )
 
-        // CRITICAL: Restore bounds from shape
         vectorText.bounds = vectorShape.bounds
 
-        // CRITICAL FIX: Preserve the original VectorShape ID so object lookups work
         vectorText.id = vectorShape.id
 
-        // CRITICAL FIX: Preserve lock and visibility states from the shape
         vectorText.isLocked = vectorShape.isLocked
         vectorText.isVisible = vectorShape.isVisible
 
-        // CRITICAL FIX: Preserve editing state from the shape
         vectorText.isEditing = vectorShape.isEditing ?? false
 
-        // CRITICAL FIX: Preserve cursor position from the shape
         vectorText.cursorPosition = vectorShape.cursorPosition ?? 0
 
         return vectorText
     }
 }
 
-// MARK: - Professional Font Management
 class FontManager: ObservableObject {
     @Published var availableFonts: [String] = []
     @Published var systemFonts: [String] = []
     @Published var googleFonts: [String] = []
 
-    // Cache for font variants to avoid expensive NSFontManager calls
     private var fontVariantsCache: [String: [String]] = [:]
 
-    // SELECTED FONT PROPERTIES for new text objects
     @Published var selectedFontFamily: String = "Helvetica Neue"
-    @Published var selectedFontVariant: String = "Regular"  // Store selected variant name
+    @Published var selectedFontVariant: String = "Regular"
     @Published var selectedFontSize: Double = 24.0
-    
-    // NEW: Line spacing and line height properties for new text creation
+
     @Published var selectedLineSpacing: Double = 0.0
-    @Published var selectedLineHeight: Double = 24.0 // Default to font size
+    @Published var selectedLineHeight: Double = 24.0
     @Published var selectedTextAlignment: TextAlignment = .left
-    
+
     init() {
         loadAvailableFonts()
     }
-    
+
     private func loadAvailableFonts() {
-        // Get system fonts
         let fontManager = NSFontManager.shared
         systemFonts = fontManager.availableFontFamilies.sorted()
-        
-        // Prioritize professional fonts
+
         var orderedFonts: [String] = []
-        
-        // Add remaining system fonts
+
         for font in systemFonts {
             if !orderedFonts.contains(font) {
                 orderedFonts.append(font)
             }
         }
-        
+
         availableFonts = orderedFonts
     }
-    
-    // Get all font variant names for a family (for display in Weight picker)
+
     func getAvailableVariantNames(for family: String) -> [String] {
-        // Check cache first
         if let cached = fontVariantsCache[family] {
             return cached
         }
 
-        // Not in cache, calculate and store
         let fontManager = NSFontManager.shared
         let members = fontManager.availableMembers(ofFontFamily: family) ?? []
 
@@ -564,27 +490,23 @@ class FontManager: ObservableObject {
             }
         }
 
-        // Sort by weight (light to heavy)
         let sortedVariants = variants.sorted { $0.weight < $1.weight }.map { $0.name }
 
-        // Store in cache
         fontVariantsCache[family] = sortedVariants
 
         return sortedVariants
     }
 
-    // DEPRECATED: getAvailableStyles removed - style is now encoded in fontVariant names
 }
 
-// MARK: - Extensions for NSBezierPath CGPath conversion
 extension NSBezierPath {
     convenience init(cgPath: CGPath) {
         self.init()
-        
+
         cgPath.applyWithBlock { elementPointer in
             let element = elementPointer.pointee
             let points = element.points
-            
+
             switch element.type {
             case .moveToPoint:
                 self.move(to: points[0])
@@ -603,13 +525,9 @@ extension NSBezierPath {
     }
 }
 
-// MARK: - VectorText to VectorShape Conversion
 
 extension VectorText {
-    /// Convert VectorText to VectorShape for unified storage
-    /// This is used by both PDF and SVG import to convert text objects to shapes
     func toVectorShape() -> VectorShape {
-        // Create fill and stroke styles from typography
         let fillStyle = FillStyle(
             color: typography.fillColor,
             opacity: typography.fillOpacity
@@ -621,26 +539,22 @@ extension VectorText {
             opacity: typography.strokeOpacity
         ) : nil
 
-        // For text objects, position is handled separately from transform
-        // Use the text's transform (may contain rotation, scale, etc)
         var shape = VectorShape(
             name: "Text: \(content.prefix(20))",
-            path: VectorPath(elements: []), // Empty path for text objects
+            path: VectorPath(elements: []),
             strokeStyle: strokeStyle,
             fillStyle: fillStyle,
-            transform: transform  // Use text's transform
+            transform: transform
         )
 
-        // Mark as text object
         shape.isTextObject = true
         shape.textContent = content
         shape.textPosition = position
-        shape.typography = typography  // CRITICAL: Store typography for text rendering
-        shape.areaSize = areaSize      // CRITICAL: Store area size for text display
-        shape.bounds = bounds           // CRITICAL: Set proper bounds for rendering
-        shape.cursorPosition = 0        // Initialize cursor position
+        shape.typography = typography
+        shape.areaSize = areaSize
+        shape.bounds = bounds
+        shape.cursorPosition = 0
 
-        // Store font info in metadata for import reconstruction
         shape.metadata["fontFamily"] = typography.fontFamily
         shape.metadata["fontSize"] = "\(typography.fontSize)"
         shape.metadata["letterSpacing"] = "\(typography.letterSpacing)"

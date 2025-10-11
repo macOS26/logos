@@ -1,87 +1,55 @@
-//
-//  DrawingCanvas+KeyEventHandling.swift
-//  logos inkpen.io
-//
-//  Key event handling functionality
-//
 
 import SwiftUI
 import AppKit
 import Combine
 
 extension DrawingCanvas {
-    // MARK: - BEEP PREVENTION - Local Monitor to Handle All Key Events
     internal func setupKeyEventMonitoring() {
-        // IMPROVED: Local monitor that prevents beeping but allows modifier key commands
-        // ENHANCED: Now also tracks flagsChanged for shift key constraints in transform tools
         keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { (event: NSEvent) -> NSEvent? in
 
             if event.type == .keyDown {
-                
-                
-                // Check both document.currentTool and AppState default tool
-                
-                
+
+
             }
 
-            // CRITICAL FIX: If we're editing text, let ALL keyboard events pass through naturally
-            // This prevents the monitor from interfering with text input
             if self.isEditingText {
                 return event
             }
 
-            // Also check if NSTextView is first responder as a backup
             if let window = NSApp.keyWindow,
                let firstResponder = window.firstResponder,
                firstResponder is NSTextView {
-                // NSTextView is first responder - let it handle naturally
                 return event
             }
 
-            // Handle key up events for temporary tool deactivation
             if event.type == .keyUp {
-                // Handle spacebar release for temporary hand tool deactivation
                 if let characters = event.charactersIgnoringModifiers,
                    characters == " " {
                     self.deactivateTemporaryHandTool()
-                    return nil // Consume the event
+                    return nil
                 }
-                return event // Let other keyUp events pass through
+                return event
             }
 
-            // Handle modifier key changes for transform tools
             if event.type == .flagsChanged {
-                // FIXED: Remove async dispatch to prevent race conditions during rapid key events
-                // Update modifier states immediately for reliable corner radius tool behavior
                 self.isShiftPressed = event.modifierFlags.contains(.shift)
                 self.isOptionPressed = event.modifierFlags.contains(.option)
                 self.isCommandPressed = event.modifierFlags.contains(.command)
                 self.isControlPressed = event.modifierFlags.contains(.control)
 
-                // REMOVED: Repetitive debug logging for key state changes that spam the console
-                // Only log significant state changes when needed for debugging
 
-                // Command-based temporary behavior for Arrow tool
                 if self.isCommandPressed {
-                    // Only when using selection tool, enter temporary command mode
                     if self.document.currentTool == .selection && !self.isTemporaryDirectSelectionViaCommand {
                         self.isTemporaryDirectSelectionViaCommand = true
                         self.temporaryCommandPreviousTool = self.document.currentTool
-                        // REMOVED: Repetitive command held logging
                     }
                 } else {
-                    // Command released: if we were in temporary command mode and didn't permanently switch tools, restore
                     if self.isTemporaryDirectSelectionViaCommand {
                         self.isTemporaryDirectSelectionViaCommand = false
-                        // REMOVED: Repetitive command released logging
-                        // If we temporarily switched to direct selection, restore the previous tool (selection tool)
                         if self.document.currentTool == .directSelection {
-                            // Restore to the tool we saved when Command was first pressed (should be .selection)
                             self.document.currentTool = self.temporaryCommandPreviousTool ?? .selection
                         }
-                        // When leaving temp mode, ensure direct selection visuals are cleared
                         if self.document.currentTool == .selection {
-                            // Keep selectedShapeIDs, but clear direct selection state
                             self.selectedPoints.removeAll()
                             self.selectedHandles.removeAll()
                             self.directSelectedShapeIDs.removeAll()
@@ -92,34 +60,30 @@ extension DrawingCanvas {
                     }
                 }
 
-                return event // Let flagsChanged pass through normally
+                return event
             }
-            
-            // HANDLE ARROW KEYS FOR NUDGING AND OBJECT REORDERING
-            if let characters = event.charactersIgnoringModifiers {
-                let arrowUp = "\u{F700}"    // NSUpArrowFunctionKey
-                let arrowDown = "\u{F701}"  // NSDownArrowFunctionKey
-                let arrowLeft = "\u{F702}"  // NSLeftArrowFunctionKey
-                let arrowRight = "\u{F703}" // NSRightArrowFunctionKey
 
-                // Check if it's an arrow key
+            if let characters = event.charactersIgnoringModifiers {
+                let arrowUp = "\u{F700}"
+                let arrowDown = "\u{F701}"
+                let arrowLeft = "\u{F702}"
+                let arrowRight = "\u{F703}"
+
                 if [arrowUp, arrowDown, arrowLeft, arrowRight].contains(characters) {
 
-                    // CMD+UP/DOWN: Navigate/select next/previous object in layer stack
                     if event.modifierFlags.contains(.command) &&
                        !event.modifierFlags.contains(.control) &&
                        !event.modifierFlags.contains(.option) {
 
                         if characters == arrowUp {
                             self.document.selectNextObjectUp()
-                            return nil // Consume the event
+                            return nil
                         } else if characters == arrowDown {
                             self.document.selectNextObjectDown()
-                            return nil // Consume the event
+                            return nil
                         }
                     }
 
-                    // OPTION+UP/DOWN: Move object up/down in stacking order
                     if event.modifierFlags.contains(.option) &&
                        !event.modifierFlags.contains(.control) &&
                        !event.modifierFlags.contains(.command) &&
@@ -127,14 +91,13 @@ extension DrawingCanvas {
 
                         if characters == arrowUp {
                             self.document.moveSelectedObjectsUp()
-                            return nil // Consume the event
+                            return nil
                         } else if characters == arrowDown {
                             self.document.moveSelectedObjectsDown()
-                            return nil // Consume the event
+                            return nil
                         }
                     }
 
-                    // Only nudge with arrow/selection tool and no modifiers
                     if !event.modifierFlags.contains(.control) &&
                        !event.modifierFlags.contains(.command) &&
                        !event.modifierFlags.contains(.option) &&
@@ -155,124 +118,94 @@ extension DrawingCanvas {
                         }
 
                         if let direction = nudgeDirection {
-                            // Use grid spacing for nudge amount
                             let gridSpacing = self.document.gridSpacing
                             let nudgeAmount = CGVector(dx: direction.dx * gridSpacing, dy: direction.dy * gridSpacing)
                             self.nudgeSelectedObjects(by: nudgeAmount)
-                            return nil // Consume the event
+                            return nil
                         }
                     }
                 }
             }
 
-            // ALLOW OTHER MODIFIER KEY COMBINATIONS (Cmd+Z, Cmd+C, etc.) to pass through
-            if event.modifierFlags.contains(.command) || 
-               event.modifierFlags.contains(.option) || 
+            if event.modifierFlags.contains(.command) ||
+               event.modifierFlags.contains(.option) ||
                event.modifierFlags.contains(.control) {
-                // Let modifier key combinations pass through to menu commands
                 return event
             }
-            
-            // HANDLE SPACEBAR FOR TEMPORARY HAND TOOL
+
             if let characters = event.charactersIgnoringModifiers,
                characters == " " {
-                // Handle spacebar for temporary hand tool activation
                 activateTemporaryHandTool()
-                return nil // Consume the event to prevent system handling
+                return nil
             }
-            
-            // HANDLE TAB KEY FOR DESELECT ALL AND BEZIER CURVE CANCELLATION
+
             if let characters = event.charactersIgnoringModifiers,
                characters == "\t" {
-                // CRITICAL: Clear the unified selection first
                 self.document.selectedObjectIDs.removeAll()
 
-                // Then sync the legacy arrays
                 self.document.syncSelectionArrays()
 
-                // CRITICAL: Also stop editing any text boxes that are in edit mode
                 if self.isEditingText {
                     self.finishTextEditing()
                 }
 
-                // Stop editing any text that might be in edit mode in the unified system
                 for unifiedObj in self.document.unifiedObjects {
                     if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject, shape.isEditing == true {
                         self.document.setTextEditingInUnified(id: shape.id, isEditing: false)
                     }
                 }
 
-                // Clear any direct selection state
                 self.selectedPoints.removeAll()
                 self.selectedHandles.removeAll()
                 self.directSelectedShapeIDs.removeAll()
                 self.syncDirectSelectionWithDocument()
                 self.isCornerRadiusEditMode = false
 
-                // CRITICAL FIX: Finish bezier drawing when using bezier pen tool (create unclosed object)
                 if self.document.currentTool == .bezierPen && self.isBezierDrawing {
                     self.finishBezierPath()
                 }
 
-                // Force UI update
                 self.document.objectWillChange.send()
 
-                return nil // Consume the event to prevent system handling
+                return nil
             }
-            
-            // ALLOW TOOL SWITCHING SHORTCUTS to pass through
-            // These are single key presses that should trigger tool switching
+
             let toolSwitchingKeys = Set(["a", "d", "c", "s", "r", "x", "w", "p", "f", "b", "m", "t", "l", "e", "o", "i", "h", "z", "g", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"])
-            
+
             if let characters = event.charactersIgnoringModifiers?.lowercased(),
                toolSwitchingKeys.contains(characters) {
-                // Let tool switching shortcuts pass through to the menu system
                 return event
             }
-            
-            // FOR OTHER SINGLE KEY PRESSES: Consume the event to prevent beeping
-            // This tells macOS "we handled this event, don't make error sound"
+
             return nil
         }
     }
-    
+
     internal func teardownKeyEventMonitoring() {
         if let monitor = keyEventMonitor {
             NSEvent.removeMonitor(monitor)
             keyEventMonitor = nil
         }
     }
-    
-            // PROFESSIONAL TOOL KEYBOARD SHORTCUTS (Professional Standards)
+
     internal func setupToolKeyboardShortcuts() {
-        // REMOVED: NSEvent keyboard monitoring was disabled to fix text input issues
-        // All keyboard shortcuts have been removed to prevent interference with NSTextView
     }
-    
+
     internal func updateModifierKeyStates(with event: NSEvent) {
-        // REMOVED: This method is no longer used since NSEvent monitoring was disabled
-        // to fix text input conflicts with NSTextView
     }
-    
-    // MARK: - Temporary Hand Tool (Spacebar)
-    
-    /// Temporarily activate hand tool when spacebar is pressed
+
+
     internal func activateTemporaryHandTool() {
-        // Only activate if not already using hand tool and not in temporary mode
         guard document.currentTool != .hand && !isTemporaryHandToolActive else { return }
 
-        // Store the current tool to restore later
         temporaryToolPreviousTool = document.currentTool
         isTemporaryHandToolActive = true
 
-        // Switch to hand tool
         document.currentTool = .hand
 
-        // Explicitly set the hand cursor if hovering over canvas
         if isCanvasHovering {
             HandOpenCursor.set()
 
-            // Also set on next runloop to ensure it wins any cursor races
             DispatchQueue.main.async {
                 if self.isTemporaryHandToolActive && self.isCanvasHovering {
                     HandOpenCursor.set()
@@ -280,18 +213,14 @@ extension DrawingCanvas {
             }
         }
     }
-    
-    /// Deactivate temporary hand tool when spacebar is released
+
     internal func deactivateTemporaryHandTool() {
-        // Only deactivate if in temporary mode
         guard isTemporaryHandToolActive, let previousTool = temporaryToolPreviousTool else { return }
 
-        // Restore the previous tool
         document.currentTool = previousTool
         isTemporaryHandToolActive = false
         temporaryToolPreviousTool = nil
 
-        // Restore the appropriate cursor for the previous tool if hovering over canvas
         if isCanvasHovering {
             switch previousTool {
             case .hand:
@@ -308,7 +237,6 @@ extension DrawingCanvas {
                 NSCursor.arrow.set()
             }
 
-            // Also set on next runloop to ensure it wins any cursor races
             DispatchQueue.main.async {
                 if self.isCanvasHovering && !self.isTemporaryHandToolActive {
                     switch previousTool {
@@ -330,27 +258,19 @@ extension DrawingCanvas {
         }
     }
 
-    // MARK: - Object Nudging with Arrow Keys
 
-    /// Nudge selected objects by the specified amount
     internal func nudgeSelectedObjects(by nudgeAmount: CGVector) {
-        // Only proceed if we have selected objects
         guard !document.selectedObjectIDs.isEmpty else { return }
 
-        // Save to undo stack before nudging
         document.saveToUndoStack()
 
-        // Nudge each selected object
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(var shape):
-                    // Check if this is a group - handle grouped shapes specially
                     if shape.isGroupContainer {
-                        // Transform each grouped shape
                         var nudgedGroupedShapes: [VectorShape] = []
                         for var groupedShape in shape.groupedShapes {
-                            // Nudge the grouped shape's path
                             var nudgedElements: [PathElement] = []
                             for element in groupedShape.path.elements {
                                 switch element {
@@ -380,7 +300,6 @@ extension DrawingCanvas {
                         shape.groupedShapes = nudgedGroupedShapes
                         shape.updateBounds()
                     } else {
-                        // Nudge regular shape's path
                         var nudgedElements: [PathElement] = []
                         for element in shape.path.elements {
                             switch element {
@@ -407,7 +326,6 @@ extension DrawingCanvas {
                         shape.updateBounds()
                     }
 
-                    // Update the shape in the unified system
                     document.updateEntireShapeInUnified(id: shape.id) { updatedShape in
                         updatedShape = shape
                     }
@@ -415,10 +333,8 @@ extension DrawingCanvas {
             }
         }
 
-        // Trigger transform panel update to show new position
         document.objectPositionUpdateTrigger.toggle()
 
-        // Force UI update
         document.objectWillChange.send()
     }
-} 
+}

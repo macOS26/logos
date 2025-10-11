@@ -1,14 +1,7 @@
-//
-//  FileOperations.swift
-//  logos
-//
-//  Created by Todd Bruss on 7/5/25.
-//
 
 import SwiftUI
 
 class FileOperations {
-    /// Convert VectorPath to CGPath
     static func convertVectorPathToCGPath(_ vectorPath: VectorPath) -> CGPath {
         let cgPath = CGMutablePath()
 

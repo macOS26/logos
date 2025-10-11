@@ -1,46 +1,34 @@
-//
-//  CMYKInputSection.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 7/5/25.
-//
 
 import SwiftUI
 
-// MARK: - Professional CMYK Input Section
 
 struct CMYKInputSection: View {
     @ObservedObject var document: VectorDocument
-    @Binding var sharedColor: VectorColor // Shared color state
+    @Binding var sharedColor: VectorColor
     @Environment(AppState.self) private var appState
-    
-    // Callback indicates we're in gradient editing mode
+
     let onColorSelected: ((VectorColor) -> Void)?
-    let showGradientEditing: Bool  // 🔥 NEW: Controls whether this section allows gradient editing
-    
+    let showGradientEditing: Bool
+
     @State private var cyanValue: String = "0"
     @State private var magentaValue: String = "0"
     @State private var yellowValue: String = "0"
     @State private var blackValue: String = "0"
-    
-    // Slider values (0-100)
+
     @State private var cyanSlider: Double = 0
     @State private var magentaSlider: Double = 0
     @State private var yellowSlider: Double = 0
     @State private var blackSlider: Double = 0
-    
-    // Flag to prevent automatic gradient updates during programmatic changes
+
     @State private var isProgrammaticallyUpdating: Bool = false
-    // Flag to track if we're displaying a gradient (should not auto-update)
     @State private var isDisplayingGradient: Bool = false
-    
-    // Computed color from CMYK values
+
     private var currentColor: CMYKColor {
         let c = (Double(cyanValue) ?? 0) / 100.0
         let m = (Double(magentaValue) ?? 0) / 100.0
         let y = (Double(yellowValue) ?? 0) / 100.0
         let k = (Double(blackValue) ?? 0) / 100.0
-        
+
         return CMYKColor(
             cyan: max(0, min(1, c)),
             magenta: max(0, min(1, m)),
@@ -48,14 +36,12 @@ struct CMYKInputSection: View {
             black: max(0, min(1, k))
         )
     }
-    
-    // Helper function to get SwiftUI Color from CMYK values
+
     private func swiftUIColorFromCMYK(c: Double, m: Double, y: Double, k: Double) -> Color {
         let cmykColor = CMYKColor(cyan: c/100.0, magenta: m/100.0, yellow: y/100.0, black: k/100.0)
         return cmykColor.color
     }
-    
-    // Cyan slider gradient (morphs from current color with C=0 to current color with C=100)
+
     private var cyanGradient: SwiftUI.LinearGradient {
         let m = Double(magentaValue) ?? 0
         let y = Double(yellowValue) ?? 0
@@ -69,8 +55,7 @@ struct CMYKInputSection: View {
             endPoint: .trailing
         )
     }
-    
-    // Magenta slider gradient
+
     private var magentaGradient: SwiftUI.LinearGradient {
         let c = Double(cyanValue) ?? 0
         let y = Double(yellowValue) ?? 0
@@ -84,8 +69,7 @@ struct CMYKInputSection: View {
             endPoint: .trailing
         )
     }
-    
-    // Yellow slider gradient
+
     private var yellowGradient: SwiftUI.LinearGradient {
         let c = Double(cyanValue) ?? 0
         let m = Double(magentaValue) ?? 0
@@ -99,8 +83,7 @@ struct CMYKInputSection: View {
             endPoint: .trailing
         )
     }
-    
-    // Black slider gradient
+
     private var blackGradient: SwiftUI.LinearGradient {
         let c = Double(cyanValue) ?? 0
         let m = Double(magentaValue) ?? 0
@@ -114,33 +97,30 @@ struct CMYKInputSection: View {
             endPoint: .trailing
         )
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("CMYK Process Colors")
                     .font(.caption)
                 .fontWeight(.medium)
                     .foregroundColor(.secondary)
-            
+
             Text("Enter process color values (0-100%)")
                 .font(.caption2)
                     .foregroundColor(.secondary)
-            
-            // CMYK Sliders with Native Apple Sliders and Gradients
+
             VStack(spacing: 8) {
-                // Cyan Slider
                 HStack(spacing: 8) {
                     Circle()
                         .fill(Color.cyan)
                         .frame(width: 12, height: 12)
-                    
+
                     Text("C")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.secondary)
                         .frame(width: 12)
-                    
+
                     ZStack {
-                        // White background for slider track
                         Capsule()
                             .fill(Color.white)
                             .frame(height: 6)
@@ -148,8 +128,7 @@ struct CMYKInputSection: View {
                                 Capsule()
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
-                        
-                        // Native Apple Slider
+
                         Slider(value: $cyanSlider, in: 0...100)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -157,14 +136,13 @@ struct CMYKInputSection: View {
                                 cyanValue = String(Int(cyanSlider))
                                 updateSharedColor()
                             }
-                        
-                        // Gradient overlay
+
                         Capsule()
                             .fill(cyanGradient)
                             .frame(height: 6)
                             .allowsHitTesting(false)
                     }
-                    
+
                     TextField("", text: $cyanValue)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .frame(width: 45)
@@ -177,20 +155,18 @@ struct CMYKInputSection: View {
                             }
                         }
                 }
-                
-                // Magenta Slider
+
                 HStack(spacing: 8) {
                     Circle()
                         .fill(Color.pink)
                         .frame(width: 12, height: 12)
-                    
+
                     Text("M")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.secondary)
                         .frame(width: 12)
-                    
+
                     ZStack {
-                        // White background for slider track
                         Capsule()
                             .fill(Color.white)
                             .frame(height: 6)
@@ -198,8 +174,7 @@ struct CMYKInputSection: View {
                                 Capsule()
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
-                        
-                        // Native Apple Slider
+
                         Slider(value: $magentaSlider, in: 0...100)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -207,14 +182,13 @@ struct CMYKInputSection: View {
                                 magentaValue = String(Int(magentaSlider))
                                 updateSharedColor()
                             }
-                        
-                        // Gradient overlay
+
                         Capsule()
                             .fill(magentaGradient)
                             .frame(height: 6)
                             .allowsHitTesting(false)
                     }
-                    
+
                     TextField("", text: $magentaValue)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .frame(width: 45)
@@ -227,20 +201,18 @@ struct CMYKInputSection: View {
                             }
                         }
                 }
-                
-                // Yellow Slider
+
                 HStack(spacing: 8) {
                     Circle()
                         .fill(Color.yellow)
                         .frame(width: 12, height: 12)
-                    
+
                     Text("Y")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.secondary)
                         .frame(width: 12)
-                    
+
                     ZStack {
-                        // White background for slider track
                         Capsule()
                             .fill(Color.white)
                             .frame(height: 6)
@@ -248,8 +220,7 @@ struct CMYKInputSection: View {
                                 Capsule()
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
-                        
-                        // Native Apple Slider
+
                         Slider(value: $yellowSlider, in: 0...100)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -257,14 +228,13 @@ struct CMYKInputSection: View {
                                 yellowValue = String(Int(yellowSlider))
                                 updateSharedColor()
                             }
-                        
-                        // Gradient overlay
+
                         Capsule()
                             .fill(yellowGradient)
                             .frame(height: 6)
                             .allowsHitTesting(false)
                     }
-                    
+
                     TextField("", text: $yellowValue)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .frame(width: 45)
@@ -277,20 +247,18 @@ struct CMYKInputSection: View {
                             }
                         }
                 }
-                
-                // Black Slider
+
                 HStack(spacing: 8) {
                     Circle()
                         .fill(Color.black)
                         .frame(width: 12, height: 12)
-                    
+
                     Text("K")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.secondary)
                         .frame(width: 12)
-                    
+
                     ZStack {
-                        // White background for slider track
                         Capsule()
                             .fill(Color.white)
                             .frame(height: 6)
@@ -298,8 +266,7 @@ struct CMYKInputSection: View {
                                 Capsule()
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
-                        
-                        // Native Apple Slider
+
                         Slider(value: $blackSlider, in: 0...100)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -307,14 +274,13 @@ struct CMYKInputSection: View {
                                 blackValue = String(Int(blackSlider))
                                 updateSharedColor()
                             }
-                        
-                        // Gradient overlay
+
                         Capsule()
                             .fill(blackGradient)
                             .frame(height: 6)
                             .allowsHitTesting(false)
                     }
-                    
+
                     TextField("", text: $blackValue)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .frame(width: 45)
@@ -328,10 +294,8 @@ struct CMYKInputSection: View {
                         }
                 }
             }
-            
-            // Compact Color Preview and Add Button (similar to RGB)
+
             HStack(spacing: 8) {
-                // Square Color Swatch Preview (30x30 like RGB section)
                 Button(action: {
                     applyColorToActiveSelection()
                 }) {
@@ -345,19 +309,19 @@ struct CMYKInputSection: View {
                 }
                 .buttonStyle(BorderlessButtonStyle())
                 .help("Click to apply color to active fill or stroke")
-                
+
                 VStack(alignment: .leading, spacing: 2) {
                     Text("CMYK(\(Int(currentColor.cyan * 100)), \(Int(currentColor.magenta * 100)), \(Int(currentColor.yellow * 100)), \(Int(currentColor.black * 100)))")
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(.primary)
-                    
+
                     Button("Add Swatch") {
                         addCMYKColorToSwatches()
                     }
                     .font(.system(size: 10))
                     .foregroundColor(.primary)
                 }
-                
+
                 Spacer()
             }
         }
@@ -369,42 +333,24 @@ struct CMYKInputSection: View {
             loadFromSharedColor()
         }
     }
-    
+
     private func updateSharedColor() {
-        // CRITICAL FIX: Don't update shared color when displaying a gradient
-        // This preserves gradients when the Ink panel is opened
         if isDisplayingGradient {
             return
         }
 
-        // Update the shared color binding for UI synchronization
         sharedColor = .cmyk(currentColor)
 
-        // CRITICAL FIX: Don't update gradients during programmatic changes OR when just browsing
-        // Only update gradients when user explicitly applies/selects colors
         if isProgrammaticallyUpdating {
             return
         }
 
-        // FIX: Don't update defaults here - let setActiveColor handle it when needed
-        // This updateSharedColor is called during initialization and slider changes,
-        // but we only want to update colors when user explicitly selects a swatch
 
-        // CRITICAL FIX #2: Don't directly modify shapes in updateSharedColor!
-        // This function is called during slider movements and initialization.
-        // Direct shape modification should ONLY happen through proper channels (setActiveColor).
-        // Removing all direct shape modifications to prevent gradient corruption.
         return
 
-        /* REMOVED: Direct shape modification causing gradient loss
-        // The code below was directly modifying shapes during slider movements,
-        // which was replacing gradients with solid colors without proper undo handling.
-        // This should only happen through explicit user actions (clicking swatches, etc.)
-        */
     }
-    
+
     private func loadFromSharedColor() {
-        // Reset gradient flag by default (will be set to true if we detect a gradient)
         isDisplayingGradient = false
 
         switch sharedColor {
@@ -458,8 +404,6 @@ struct CMYKInputSection: View {
                 black: Int(cmyk.black * 100)
             )
         case .gradient(let gradient):
-            // For gradients, use the first stop color as representative
-            // BUT DON'T UPDATE THE ACTUAL GRADIENT TO A SOLID COLOR
             isDisplayingGradient = true
             if let firstStop = gradient.stops.first {
                 switch firstStop.color {
@@ -471,7 +415,6 @@ struct CMYKInputSection: View {
                         black: Int(cmyk.black * 100)
                     )
                 default:
-                    // Convert any other color type to CMYK for display
                     let swiftUIColor = firstStop.color.color
                     let components = swiftUIColor.components
                     let rgbColor = RGBColor(red: components.red, green: components.green, blue: components.blue, alpha: components.alpha)
@@ -487,8 +430,6 @@ struct CMYKInputSection: View {
                 setCMYKValues(cyan: 0, magenta: 0, yellow: 0, black: 0)
             }
         case .clear:
-            // For clear colors, we don't update CMYK values since they're not applicable
-            // The clear color should be handled separately
             return
         case .black:
             setCMYKValues(cyan: 0, magenta: 0, yellow: 0, black: 100)
@@ -496,9 +437,9 @@ struct CMYKInputSection: View {
             setCMYKValues(cyan: 0, magenta: 0, yellow: 0, black: 0)
         }
     }
-    
+
     private func setCMYKValues(cyan: Int, magenta: Int, yellow: Int, black: Int) {
-        
+
         isProgrammaticallyUpdating = true
         cyanValue = String(cyan)
         magentaValue = String(magenta)
@@ -509,29 +450,24 @@ struct CMYKInputSection: View {
         yellowSlider = Double(yellow)
         blackSlider = Double(black)
         isProgrammaticallyUpdating = false
-        
+
     }
-    
+
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.cmyk(currentColor)
 
-        // 🔥 CRITICAL FIX: Only use gradient callback if THIS section allows gradient editing
-        // Priority 1: If we're in gradient editing mode AND this section supports it, use gradient callback
         if showGradientEditing, let gradientCallback = appState.gradientEditingState?.onColorSelected {
             gradientCallback(vectorColor)
-            // Also add to swatches when ink well is clicked
             document.addColorSwatch(vectorColor)
             return
         }
 
-        // Priority 2: Otherwise, apply to document's active selection
         document.setActiveColor(vectorColor)
-        // Also add to swatches when ink well is clicked
         document.addColorSwatch(vectorColor)
     }
-    
+
     private func addCMYKColorToSwatches() {
         let vectorColor = VectorColor.cmyk(currentColor)
         document.addColorSwatch(vectorColor)
     }
-} 
+}

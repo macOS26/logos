@@ -1,13 +1,6 @@
-//
-//  PreferencesView.swift
-//  logos inkpen.io
-//
-//  Application preferences window
-//
 
 import SwiftUI
 
-// Helper function to create default curve data
 func defaultPressureCurveData() -> Data {
     let defaultCurve = [
         CGPoint(x: 0.0, y: 0.0),

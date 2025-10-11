@@ -1,19 +1,11 @@
-//
-//  ConeIcon.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 
 struct ConeIcon: View {
     let isSelected: Bool
-    
+
     var body: some View {
         Path { path in
-            // Cone path using same proportions as canvas cone (DrawingCanvas+ShapeDrawing.swift)
-            // Define an icon-space bounding rect similar to other icons
             let r = CGRect(
                 x: 5 - IconStrokeExpand,
                 y: 4 - IconStrokeExpand,

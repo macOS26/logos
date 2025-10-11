@@ -1,13 +1,6 @@
-//
-//  VectorPath.swift
-//  logos
-//
-//  Created by Todd Bruss on 7/5/25.
-//
 
 import SwiftUI
 
-// MARK: - FillRule Wrapper (Codable wrapper for CGPathFillRule)
 struct FillRule: Codable, Hashable {
     private let rule: String
 
@@ -47,21 +40,20 @@ struct FillRule: Codable, Hashable {
     static let evenOdd = FillRule(.evenOdd)
 }
 
-// MARK: - Point Types
 struct VectorPoint: Codable, Hashable {
     var x: Double
     var y: Double
-    
+
     init(_ x: Double, _ y: Double) {
         self.x = x
         self.y = y
     }
-    
+
     init(_ point: CGPoint) {
         self.x = Double(point.x)
         self.y = Double(point.y)
     }
-    
+
     var cgPoint: CGPoint {
         CGPoint(x: x, y: y)
     }
@@ -71,7 +63,7 @@ struct BezierControlPoint: Codable, Hashable {
     var point: VectorPoint
     var inControl: VectorPoint?
     var outControl: VectorPoint?
-    
+
     init(point: VectorPoint, inControl: VectorPoint? = nil, outControl: VectorPoint? = nil) {
         self.point = point
         self.inControl = inControl
@@ -79,7 +71,6 @@ struct BezierControlPoint: Codable, Hashable {
     }
 }
 
-// MARK: - Path Elements
 enum PathElement: Codable, Hashable {
     case move(to: VectorPoint)
     case line(to: VectorPoint)
@@ -88,7 +79,6 @@ enum PathElement: Codable, Hashable {
     case close
 }
 
-// MARK: - Vector Path
 struct VectorPath: Codable, Hashable, Identifiable {
     var id: UUID
     var elements: [PathElement]
@@ -102,7 +92,6 @@ struct VectorPath: Codable, Hashable, Identifiable {
         self.fillRule = FillRule(fillRule)
     }
 
-    // Custom encoding to make isClosed optional when false
     enum CodingKeys: String, CodingKey {
         case id, elements, isClosed, fillRule
     }
@@ -111,12 +100,10 @@ struct VectorPath: Codable, Hashable, Identifiable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
 
-        // Only encode elements if not empty (text objects often have empty paths)
         if !elements.isEmpty {
             try container.encode(elements, forKey: .elements)
         }
 
-        // Only encode isClosed if it's true
         if isClosed {
             try container.encode(isClosed, forKey: .isClosed)
         }
@@ -131,28 +118,25 @@ struct VectorPath: Codable, Hashable, Identifiable {
         isClosed = try container.decodeIfPresent(Bool.self, forKey: .isClosed) ?? false
         fillRule = try container.decode(FillRule.self, forKey: .fillRule)
     }
-    
-    // PROFESSIONAL CONVENIENCE INITIALIZER: CGPath to VectorPath conversion
-    /// Creates a VectorPath from a CGPath (for stroke outlining and other Core Graphics operations)
+
     init(cgPath: CGPath, fillRule: CGPathFillRule = .winding) {
         self.id = UUID()
         self.elements = []
         self.isClosed = false
         self.fillRule = FillRule(fillRule)
-        
-        // Convert CGPath to VectorPath elements
+
         cgPath.applyWithBlock { elementPointer in
             let element = elementPointer.pointee
-            
+
             switch element.type {
             case .moveToPoint:
                 let point = element.points[0]
                 elements.append(.move(to: VectorPoint(point.x, point.y)))
-                
+
             case .addLineToPoint:
                 let point = element.points[0]
                 elements.append(.line(to: VectorPoint(point.x, point.y)))
-                
+
             case .addQuadCurveToPoint:
                 let control = element.points[0]
                 let point = element.points[1]
@@ -160,7 +144,7 @@ struct VectorPath: Codable, Hashable, Identifiable {
                     to: VectorPoint(point.x, point.y),
                     control: VectorPoint(control.x, control.y)
                 ))
-                
+
             case .addCurveToPoint:
                 let control1 = element.points[0]
                 let control2 = element.points[1]
@@ -170,20 +154,20 @@ struct VectorPath: Codable, Hashable, Identifiable {
                     control1: VectorPoint(control1.x, control1.y),
                     control2: VectorPoint(control2.x, control2.y)
                 ))
-                
+
             case .closeSubpath:
                 elements.append(.close)
                 isClosed = true
-                
+
             @unknown default:
                 break
             }
         }
     }
-    
+
     var cgPath: CGPath {
         let path = CGMutablePath()
-        
+
         for element in elements {
             switch element {
             case .move(let to):
@@ -198,18 +182,18 @@ struct VectorPath: Codable, Hashable, Identifiable {
                 path.closeSubpath()
             }
         }
-        
+
         if isClosed && !elements.contains(.close) {
             path.closeSubpath()
         }
-        
+
         return path
     }
-    
+
     mutating func addElement(_ element: PathElement) {
         elements.append(element)
     }
-    
+
     mutating func close() {
         if !isClosed {
             isClosed = true
@@ -220,14 +204,13 @@ struct VectorPath: Codable, Hashable, Identifiable {
     }
 }
 
-// MARK: - LEGACY PATH OPERATIONS (for backward compatibility)
 enum PathOperation: String, CaseIterable, Codable {
     case union = "Union"
     case intersect = "Intersect"
     case frontMinusBack = "Front Minus Back"
     case backMinusFront = "Back Minus Front"
     case exclude = "Exclude"
-    
+
     var iconName: String {
         switch self {
         case .union: return "plus.circle"

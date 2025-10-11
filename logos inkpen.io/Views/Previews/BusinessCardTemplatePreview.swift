@@ -1,9 +1,3 @@
-//
-//  BusinessCardTemplatePreview.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 
@@ -13,7 +7,7 @@ struct BusinessCardTemplatePreview: View {
             Rectangle()
                 .fill(Color.ui.lightBlueBackground)
                 .frame(height: 20)
-            
+
             HStack {
                 VStack(alignment: .leading) {
                     Rectangle()
@@ -26,7 +20,7 @@ struct BusinessCardTemplatePreview: View {
                 Spacer()
             }
             .padding(.horizontal)
-            
+
             Spacer()
         }
         .background(Color.white)

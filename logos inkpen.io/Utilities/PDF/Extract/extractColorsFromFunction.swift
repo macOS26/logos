@@ -1,27 +1,19 @@
-//
-//  extractColorsFromFunction.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/31/25.
-//
 
 import SwiftUI
 
 extension PDFCommandParser {
-    
+
     func extractColorsFromFunction(_ function: CGPDFDictionaryRef) -> (VectorColor, VectorColor) {
-        // Check function type
         var functionType: CGPDFInteger = 0
         CGPDFDictionaryGetInteger(function, "FunctionType", &functionType)
 
         var colors: [VectorColor] = []
 
         switch functionType {
-        case 0: // Sampled function
+        case 0:
             colors = extractColorsFromSampledFunction(function)
 
-        case 2: // Exponential interpolation function
-            // Get C0 and C1 arrays (start and end colors)
+        case 2:
             var c0Array: CGPDFArrayRef?
             var c1Array: CGPDFArrayRef?
 
@@ -44,7 +36,7 @@ extension PDFCommandParser {
 
             colors = [startColor, endColor]
 
-        case 3: // Stitching function
+        case 3:
             colors = [.black, .white]
 
         default:
@@ -52,7 +44,6 @@ extension PDFCommandParser {
             colors = [.black, .white]
         }
 
-        // For now, still return start/end for compatibility, but we have all colors
         return (colors.first ?? .black, colors.last ?? .white)
     }
 }

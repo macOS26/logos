@@ -1,28 +1,15 @@
-//
-//  DrawingCanvas+UnifiedGestures.swift
-//  logos inkpen.io
-//
-//  Unified gesture management for Drawing Canvas and Pasteboard
-//  Uses Drawing Canvas approach as the ideal template
-//
 
 import SwiftUI
 import AppKit
 
 extension DrawingCanvas {
-    
-    // MARK: - Advanced Click Detection
-    
-    /// Detect and log advanced click types (option+click, command+click, double click)
-    /// Shows current tool and green text box detection
+
+
     internal func detectAdvancedClickTypes(at location: CGPoint, geometry: GeometryProxy, clickType: String) {
         screenToCanvas(location, geometry: geometry)
-        // Advanced click detection - reduced logging for performance
     }
-    
-    /// Handle double-click events with advanced detection
+
     internal func handleDoubleClick(at location: CGPoint, geometry: GeometryProxy) {
-        // DETECT ADVANCED CLICK TYPES FOR DOUBLE CLICK
         var clickType = "Double Click"
         if isOptionPressed && isCommandPressed {
             clickType = "Option+Command+Double Click"
@@ -31,45 +18,33 @@ extension DrawingCanvas {
         } else if isCommandPressed {
             clickType = "Command+Double Click"
         }
-        
-        // Call the advanced click detection
+
         detectAdvancedClickTypes(at: location, geometry: geometry, clickType: clickType)
-        
+
         let canvasLocation = screenToCanvas(location, geometry: geometry)
-        
-        // Check if we're clicking on a text box
+
         if let textID = findTextAt(location: canvasLocation) {
-            // 1. Switch to Font tool (Aa)
             document.currentTool = .font
 
-            // 2. Turn text box to blue edit mode
             startEditingText(textID: textID, at: canvasLocation)
 
-            // 3. Activate I-beam cursor and enter text editing mode
             isTextEditingMode = true
             NSCursor.iBeam.set()
         }
     }
-    
-    // MARK: - Unified Gesture System
-    
-    /// UNIFIED TAP HANDLER - Works consistently for all areas (Canvas + Pasteboard)
-    /// Uses Drawing Canvas logic as the ideal template
+
+
     internal func handleUnifiedTap(at location: CGPoint, geometry: GeometryProxy) {
-        // FIXED: Ensure coordinate system is properly synchronized
         let canvasLocation = screenToCanvas(location, geometry: geometry)
 
-        // DOUBLE-CLICK DETECTION
         let currentTime = Date()
         let timeSinceLastClick = currentTime.timeIntervalSince(lastClickTime)
         let distanceFromLastClick = distance(location, lastClickLocation)
-        let isDoubleClick = timeSinceLastClick < doubleClickTimeout && distanceFromLastClick < 10.0 // 10px tolerance
-        
-        // Update click tracking
+        let isDoubleClick = timeSinceLastClick < doubleClickTimeout && distanceFromLastClick < 10.0
+
         lastClickTime = currentTime
         lastClickLocation = location
-        
-        // DETECT ADVANCED CLICK TYPES
+
         var clickType = "Single Click"
         if isDoubleClick {
             if isOptionPressed && isCommandPressed {
@@ -81,12 +56,10 @@ extension DrawingCanvas {
             } else {
                 clickType = "Double Click"
             }
-            
-            // Handle double-click immediately
+
             handleDoubleClick(at: location, geometry: geometry)
-            return // Exit early for double-clicks
+            return
         } else {
-            // Single click with modifiers
             if isOptionPressed && isCommandPressed {
                 clickType = "Option+Command+Click"
             } else if isOptionPressed {
@@ -95,73 +68,58 @@ extension DrawingCanvas {
                 clickType = "Command+Click"
             }
         }
-        
-        // Call the advanced click detection
+
         detectAdvancedClickTypes(at: location, geometry: geometry, clickType: clickType)
-        
-        // Cancel bezier drawing for all tools except bezier pen
+
         if document.currentTool != .bezierPen && isBezierDrawing {
             cancelBezierDrawing()
         }
-        
-        // Route to appropriate tool handler based on current tool
+
         switch document.currentTool {
         case .selection, .scale, .rotate, .shear, .warp:
-            // All transform tools use selection logic
             handleSelectionTap(at: canvasLocation)
-            // REMOVED: handleAggressiveBackgroundTap - this was deselecting objects immediately after selection!
-            
+
         case .directSelection:
             handleDirectSelectionTap(at: canvasLocation)
-            // REMOVED: handleAggressiveBackgroundTap - this was interfering with direct selection!
-            
+
         case .convertAnchorPoint:
             handleConvertAnchorPointTap(at: canvasLocation)
-            
+
         case .penPlusMinus:
             handlePenPlusMinusTap(at: canvasLocation)
-            
+
         case .bezierPen:
             handleBezierPenTap(at: canvasLocation)
-            
+
         case .font:
-            // Font tool: Only handle editing existing text on tap, new text requires drag
             if let existingTextID = findTextAt(location: canvasLocation) {
                 startEditingText(textID: existingTextID, at: canvasLocation)
             }
-            // Keep background tap handling for font tool only (this makes sense for font tool)
             handleAggressiveBackgroundTap(at: canvasLocation)
-            
+
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
-            // Shape tools are drag-only - ignore taps
             break
 
         case .zoom:
-            // Ensure zoom cursor stays during click
             MagnifyingGlassCursor.set()
-            // Click to zoom at cursor position. Option-click to zoom out.
             let focalPoint = location
             let currentZoom = CGFloat(document.zoomLevel)
             let targetZoom: CGFloat
             if isOptionPressed {
-                // Step down to the next lower allowed step
                 targetZoom = nextAllowedStepDown(from: currentZoom)
             } else {
-                // Step up to the next higher allowed step
                 targetZoom = nextAllowedStepUp(from: currentZoom)
             }
             handleZoomAtPoint(newZoomLevel: targetZoom, focalPoint: focalPoint, geometry: geometry)
-            // Re-assert cursor post-zoom operation
             if isCanvasHovering && document.currentTool == .zoom {
                 MagnifyingGlassCursor.set()
             }
-            // Defensive: schedule one more set to override late system arrow resets
             DispatchQueue.main.async {
                 if isCanvasHovering && document.currentTool == .zoom {
                     MagnifyingGlassCursor.set()
                 }
             }
-            
+
         case .eyedropper:
             startEyedropperColorPick()
 
@@ -172,28 +130,22 @@ extension DrawingCanvas {
             break
         }
     }
-    
-    /// UNIFIED DRAG CHANGED HANDLER - Works consistently for all areas
-    /// Uses Drawing Canvas logic as the ideal template
+
     internal func handleUnifiedDragChanged(value: DragGesture.Value, geometry: GeometryProxy) {
-        // Route to appropriate tool handler based on current tool
         switch document.currentTool {
         case .hand:
             handlePanGesture(value: value, geometry: geometry)
 
         case .zoom:
-            // Scrubby zoom from the drag start point. Up = zoom in, Down = zoom out (or invert with Option).
             if zoomToolDragStartPoint == .zero {
                 zoomToolDragStartPoint = value.startLocation
                 zoomToolInitialZoomLevel = document.zoomLevel
             }
-            // Maintain magnifying glass while dragging in zoom tool
             MagnifyingGlassCursor.set()
             let deltaY = value.location.y - zoomToolDragStartPoint.y
             let sensitivity: CGFloat = 300.0
-            var scaleChange = exp(-deltaY / sensitivity) // drag up (negative deltaY) -> zoom in
+            var scaleChange = exp(-deltaY / sensitivity)
             if isOptionPressed { scaleChange = 1.0 / scaleChange }
-            // Keep drag zoom continuous (no snapping)
             let continuousZoom = max(0.1, min(16.0, zoomToolInitialZoomLevel * scaleChange))
             handleZoomAtPoint(newZoomLevel: continuousZoom, focalPoint: value.startLocation, geometry: geometry)
 
@@ -229,33 +181,23 @@ extension DrawingCanvas {
             handleBrushDragUpdate(at: currentLocation)
 
         case .marker:
-            // MARKER USES PRESSURE EVENTS ONLY - DragGesture disabled to prevent timing conflicts
-            // Pressure events handle all drawing (began/changed/ended) via PressureSensitiveCanvasView
             break
 
         case .scale, .rotate, .shear, .warp:
-            // Transform tools don't use drag gestures - handled by their own handles
             break
 
         default:
             break
         }
     }
-    
-    /// UNIFIED DRAG ENDED HANDLER - Works consistently for all areas
-    /// CRITICAL FIX: NO drag-to-tap conversion to prevent interrupting real drags
-    internal func handleUnifiedDragEnded(value: DragGesture.Value, geometry: GeometryProxy) {
-        // FIXED: Always handle as completed drag - NO conversion to tap
-        // This prevents drags from getting "lost" mid-operation
-        // Removed excessive logging during drag operations
 
-        // Handle as completed drag
+    internal func handleUnifiedDragEnded(value: DragGesture.Value, geometry: GeometryProxy) {
+
         switch document.currentTool {
         case .hand:
             finishPanGesture()
 
         case .zoom:
-            // Reset zoom tool state
             zoomToolDragStartPoint = .zero
             zoomToolInitialZoomLevel = document.zoomLevel
 
@@ -270,7 +212,6 @@ extension DrawingCanvas {
         case .selection:
             finishSelectionDrag()
             isDrawing = false
-            // Reset handle scaling flag if it was set
             if document.isHandleScalingActive {
                 document.isHandleScalingActive = false
             }
@@ -288,94 +229,73 @@ extension DrawingCanvas {
             handleBrushDragEnd()
 
         case .marker:
-            // MARKER USES PRESSURE EVENTS ONLY - DragGesture disabled to prevent timing conflicts
-            // Pressure event .ended handles drawing completion via PressureSensitiveCanvasView
             break
 
         default:
             break
         }
     }
-    
-    // MARK: - Unified Selection Drag Handler
-    
-    /// UNIFIED SELECTION DRAG - Consolidates selection behavior for all areas
-    /// FIXED: Simplified logic to prevent bouncing behavior
+
+
     private func handleUnifiedSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
-        // Check if we're clicking on a transform handle at drag start
         if !isDrawing && !document.isHandleScalingActive {
-            // Check if we hit any transform handle
             for objectID in document.selectedObjectIDs {
                 if let unifiedObject = document.findObject(by: objectID),
                    case .shape(let shape) = unifiedObject.objectType {
-                    // Skip background shapes
                     if shape.name != "Canvas Background" && shape.name != "Pasteboard Background" {
-                        // Don't check for handles - let the actual handle views handle their own hit testing
-                        // The handle views have their own gesture handlers that will set isHandleScalingActive
-                        // We should NOT interfere with object dragging here
                     }
                 }
             }
         }
 
-        // If a transform handle drag is active (e.g., arrow-tool transform box), ignore canvas drag
         if document.isHandleScalingActive {
             return
         }
-        // CORNER TOOL FIX: Prevent object dragging when in corner radius edit mode
-        // In this mode, only corner handles should be interactive, not the object itself
         if isCornerRadiusEditMode {
             return
         }
-        
+
         let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
-        
-        // Start drag if not already dragging
+
         if !isDrawing {
-            // Try to select if nothing selected or dragging unselected object
             if document.selectedObjectIDs.isEmpty || !isDraggingSelectedObject(at: startLocation) {
                 selectObjectAt(startLocation)
             }
 
-            // Start drag if we have something selected
             if !document.selectedObjectIDs.isEmpty {
                 selectionDragStart = value.startLocation
                 startSelectionDrag()
                 isDrawing = true
             }
         }
-        
-        // Continue drag if active
+
         if isDrawing {
             handleSelectionDrag(value: value, geometry: geometry)
         }
     }
-    
-    // MARK: - State Reset Helpers
-    
+
+
     private func finishPanGesture() {
         initialCanvasOffset = CGPoint.zero
         handToolDragStart = CGPoint.zero
         isPanGestureActive = false
-        
+
         if isCanvasHovering && document.currentTool == .hand {
             NSCursor.openHand.set()
         } else {
             NSCursor.arrow.set()
         }
     }
-    
+
     private func resetShapeDrawingState() {
         isDrawing = false
         currentPath = nil
-        tempBoundingBoxPath = nil // Clear debug bounding box
+        tempBoundingBoxPath = nil
         currentDrawingPoints.removeAll()
         shapeDragStart = CGPoint.zero
         shapeStartPoint = CGPoint.zero
     }
 
-    // MARK: - Eyedropper
-    /// Launch the system color sampler and apply the picked color to the active target (fill/stroke)
     private func startEyedropperColorPick() {
         let sampler = NSColorSampler()
         sampler.show { pickedColor in
@@ -391,38 +311,31 @@ extension DrawingCanvas {
         }
     }
 
-    // MARK: - Select Same Color
-    /// Select all objects with the same fill or stroke color as the object at the tap location
-    /// CRITICAL: Only selects the topmost object at click location, and respects layer visibility/lock
     private func selectSameColorAt(_ location: CGPoint) {
-        // Find the topmost object at the tap location by iterating through unified objects
         var tappedObject: VectorObject?
         var tappedShape: VectorShape?
 
         for unifiedObject in document.unifiedObjects.reversed() {
             if case .shape(let shape) = unifiedObject.objectType {
-                // CRITICAL: Check if layer is visible and unlocked
                 let layerIndex = unifiedObject.layerIndex
                 if layerIndex >= 0 && layerIndex < document.layers.count {
                     let layer = document.layers[layerIndex]
                     if !layer.isVisible || layer.isLocked {
-                        continue // Skip objects on hidden or locked layers
+                        continue
                     }
                 }
 
                 if !shape.isVisible { continue }
 
-                // Skip background shapes
                 if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
                     continue
                 }
 
-                // Check if this shape contains the location
                 let transformedBounds = shape.bounds.applying(shape.transform)
                 if transformedBounds.contains(location) {
                     tappedObject = unifiedObject
                     tappedShape = shape
-                    break // CRITICAL: Only select the topmost object
+                    break
                 }
             }
         }
@@ -431,10 +344,8 @@ extension DrawingCanvas {
             return
         }
 
-        // Get the color to match from the tapped object
         let targetColor: VectorColor?
 
-        // Prefer fill color, fallback to stroke color
         if let fillColor = tappedShape.fillStyle?.color {
             targetColor = fillColor
         } else if let strokeColor = tappedShape.strokeStyle?.color {
@@ -445,26 +356,22 @@ extension DrawingCanvas {
 
         guard let colorToMatch = targetColor else { return }
 
-        // Find all objects with the same color (respecting layer visibility/lock)
         var matchingObjectIDs = Set<UUID>()
 
         for unifiedObject in document.unifiedObjects {
             if case .shape(let shape) = unifiedObject.objectType {
-                // CRITICAL: Check if layer is visible and unlocked
                 let layerIndex = unifiedObject.layerIndex
                 if layerIndex >= 0 && layerIndex < document.layers.count {
                     let layer = document.layers[layerIndex]
                     if !layer.isVisible || layer.isLocked {
-                        continue // Skip objects on hidden or locked layers
+                        continue
                     }
                 }
 
-                // Skip background shapes
                 if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
                     continue
                 }
 
-                // Check if fill or stroke color matches
                 let hasFillMatch = shape.fillStyle?.color == colorToMatch
                 let hasStrokeMatch = shape.strokeStyle?.color == colorToMatch
 
@@ -474,30 +381,25 @@ extension DrawingCanvas {
             }
         }
 
-        // Update selection
         if !matchingObjectIDs.isEmpty {
             document.selectedObjectIDs = matchingObjectIDs
             document.syncSelectionArrays()
         }
     }
-    
-    // MARK: - Coordinate System Validation
-    
-    /// FIXED: Validate canvas coordinates to ensure proper synchronization
+
+
     private func validateCanvasLocation(_ location: CGPoint) -> CGPoint {
-        // Check for NaN or infinite values that could cause selection issues
         if location.x.isNaN || location.y.isNaN || location.x.isInfinite || location.y.isInfinite {
             Log.error("❌ INVALID CANVAS COORDINATES: \(location) - using zero point", category: .error)
             return .zero
         }
-        
-        // Check for extreme values that might indicate coordinate system corruption
+
         let maxReasonableValue: CGFloat = 1000000.0
         if abs(location.x) > maxReasonableValue || abs(location.y) > maxReasonableValue {
             Log.error("❌ EXTREME CANVAS COORDINATES: \(location) - using zero point", category: .error)
             return .zero
         }
-        
+
         return location
     }
-} 
+}

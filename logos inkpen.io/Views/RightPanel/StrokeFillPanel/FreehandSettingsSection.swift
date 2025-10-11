@@ -1,9 +1,3 @@
-//
-//  FreehandSettingsSection.swift
-//  logos inkpen.io
-//
-//  Freehand tool settings section for StrokeFillPanel
-//
 
 import SwiftUI
 
@@ -22,7 +16,6 @@ struct FreehandSettingsSection: View {
                 Spacer()
             }
 
-            // Fill Mode Selector
             VStack(alignment: .leading, spacing: 8) {
                 Text("Fill Mode")
                     .font(.subheadline)
@@ -40,7 +33,6 @@ struct FreehandSettingsSection: View {
                 .help("Choose whether freehand paths have fill or just stroke")
             }
 
-            // Freehand Smoothing Tolerance
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Smoothing")
@@ -61,7 +53,6 @@ struct FreehandSettingsSection: View {
                 .help("Curve fitting tolerance - lower values preserve more detail, higher values create smoother curves")
             }
 
-            // Close Path Toggle
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Close Path")
@@ -81,7 +72,6 @@ struct FreehandSettingsSection: View {
                 .help("When enabled, closes the path by connecting the end to the start")
             }
 
-            // Expand Stroke Toggle
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Expand Stroke")
@@ -104,7 +94,6 @@ struct FreehandSettingsSection: View {
             Divider()
                 .padding(.vertical, 4)
 
-            // Real-time Smoothing
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Real-time Smoothing")
@@ -141,7 +130,6 @@ struct FreehandSettingsSection: View {
                 }
             }
 
-            // Preserve Sharp Corners
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Preserve Sharp Corners")
@@ -161,7 +149,6 @@ struct FreehandSettingsSection: View {
                 .help("Preserve sharp corners when simplifying paths")
             }
 
-            // Advanced Smoothing Section (shared with brush)
             Divider()
                 .padding(.vertical, 8)
 
@@ -183,7 +170,6 @@ struct FreehandSettingsSection: View {
                 .help("Enable advanced curve smoothing algorithms")
 
                 if document.advancedSmoothingEnabled {
-                    // Chaikin Smoothing Iterations
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("Chaikin Iterations")
@@ -204,7 +190,6 @@ struct FreehandSettingsSection: View {
                         .help("More iterations create smoother curves but may lose detail (1-3)")
                     }
 
-                    // Adaptive Tension Toggle
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Preserve Sharp Corners")
@@ -226,7 +211,6 @@ struct FreehandSettingsSection: View {
                 }
             }
 
-            // Freehand Info
             HStack {
                 Image(systemName: "info.circle")
                     .foregroundColor(Color.ui.primaryBlue)

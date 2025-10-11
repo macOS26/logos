@@ -1,20 +1,13 @@
-//
-//  StarVariant.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 
-// MARK: - Star Variants
 enum StarVariant: String, CaseIterable {
     case threePoint = "3-Point Star"
-    case fourPoint = "4-Point Star" 
+    case fourPoint = "4-Point Star"
     case fivePoint = "5-Point Star"
     case sixPoint = "6-Point Star"
     case sevenPoint = "7-Point Star"
-    
+
     @ViewBuilder
     func iconView(isSelected: Bool, color: Color = .primary) -> some View {
         switch self {

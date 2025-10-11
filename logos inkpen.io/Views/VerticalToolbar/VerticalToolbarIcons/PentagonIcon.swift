@@ -1,13 +1,6 @@
-//
-//  PentagonIcon.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 
-// MARK: - Custom Polygon Icons (5–9 sides) using the same math as canvas
 private func polygonIconPath(center: CGPoint, radius: CGFloat, sides: Int) -> Path {
     var p = Path()
     let adjustedRadius = radius + IconStrokeExpand

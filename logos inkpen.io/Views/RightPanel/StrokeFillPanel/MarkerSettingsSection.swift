@@ -1,9 +1,3 @@
-//
-//  MarkerSettingsSection.swift
-//  logos inkpen.io
-//
-//  Marker tool settings section for StrokeFillPanel
-//
 
 import SwiftUI
 
@@ -22,7 +16,6 @@ struct MarkerSettingsSection: View {
                 Spacer()
             }
 
-            // Marker Tip Size
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Tip Size")
@@ -53,7 +46,6 @@ struct MarkerSettingsSection: View {
                 .help("Adjust marker tip thickness (1-50 points)")
             }
 
-            // Marker Opacity
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Opacity")
@@ -84,7 +76,6 @@ struct MarkerSettingsSection: View {
                 .help("Adjust marker ink opacity (0-100%)")
             }
 
-            // Pressure Sensitivity Toggle
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Pressure Sensitivity")
@@ -101,9 +92,7 @@ struct MarkerSettingsSection: View {
                 .help("Enable or disable pressure sensitivity for marker tool")
             }
 
-            // Pressure Sensitivity Slider REMOVED - raw pressure applied directly
 
-            // Smoothing Tolerance
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Smoothing")
@@ -134,7 +123,6 @@ struct MarkerSettingsSection: View {
                 .help("Smoothing amount - 0% = no smoothing (preserves exact shape), 100% = maximum smoothing")
             }
 
-            // Feathering
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Feathering")
@@ -165,7 +153,6 @@ struct MarkerSettingsSection: View {
                 .help("Edge softness for felt-tip marker appearance")
             }
 
-            // Start Taper
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Start Taper")
@@ -196,7 +183,6 @@ struct MarkerSettingsSection: View {
                 .help("Thickness tapering at the start of marker strokes")
             }
 
-            // End Taper
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("End Taper")
@@ -227,7 +213,6 @@ struct MarkerSettingsSection: View {
                 .help("Thickness tapering at the end of marker strokes")
             }
 
-            // Min Taper Thickness
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Min Taper Thickness")
@@ -258,12 +243,10 @@ struct MarkerSettingsSection: View {
                 .help("Minimum thickness at taper ends (0-60 points)")
             }
 
-            // Marker Tool Options
             VStack(alignment: .leading, spacing: 12) {
                 Divider()
                     .padding(.vertical, 4)
 
-                // Use Fill Color for Stroke Toggle
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Use Fill Color for Stroke")
@@ -283,7 +266,6 @@ struct MarkerSettingsSection: View {
                     .help("When enabled, marker uses fill color for both fill and stroke. When disabled, uses stroke color for both.")
                 }
 
-                // Apply No Stroke Toggle
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Apply No Stroke")
@@ -303,7 +285,6 @@ struct MarkerSettingsSection: View {
                     .help("When enabled, marker shapes will have no stroke regardless of current stroke settings")
                 }
 
-                // Remove Overlap Toggle
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Remove Overlap")
@@ -324,7 +305,6 @@ struct MarkerSettingsSection: View {
                 }
             }
 
-            // Marker Info
             HStack {
                 Image(systemName: PressureManager.shared.hasRealPressureInput ? "hand.point.up.braille" : "hand.tap")
                     .foregroundColor(PressureManager.shared.hasRealPressureInput ? .green : .orange)

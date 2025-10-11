@@ -1,9 +1,3 @@
-//
-//  PressureCurveEditor.swift
-//  logos inkpen.io
-//
-//  Interactive pressure curve editor for mapping input pressure to output thickness
-//
 
 import SwiftUI
 
@@ -46,21 +40,17 @@ struct PressureCurveEditor: View {
             }
 
             ZStack {
-                // Background grid
                 Rectangle()
                     .fill(Color(NSColor.controlBackgroundColor))
                     .border(Color.gray.opacity(0.3), width: 1)
 
-                // Grid lines
                 Path { path in
-                    // Vertical lines
                     let gridCount = 10
                     for i in 0...gridCount {
                         let x = CGFloat(i) * (size / CGFloat(gridCount))
                         path.move(to: CGPoint(x: x, y: 0))
                         path.addLine(to: CGPoint(x: x, y: size))
                     }
-                    // Horizontal lines
                     for i in 0...gridCount {
                         let y = CGFloat(i) * (size / CGFloat(gridCount))
                         path.move(to: CGPoint(x: 0, y: y))
@@ -69,7 +59,6 @@ struct PressureCurveEditor: View {
                 }
                 .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
 
-                // Curve path
                 Path { path in
                     guard curve.count >= 2 else { return }
 
@@ -83,7 +72,6 @@ struct PressureCurveEditor: View {
                 }
                 .stroke(Color.blue, lineWidth: 2)
 
-                // Control points
                 ForEach(curve.indices, id: \.self) { index in
                     let point = curve[index]
                     let isSelected = selectedControlPoint == index
@@ -95,11 +83,9 @@ struct PressureCurveEditor: View {
                         .gesture(
                             DragGesture(minimumDistance: 0)
                                 .onChanged { value in
-                                    // Update position
                                     let newX = max(0, min(1, value.location.x / size))
                                     let newY = max(0, min(1, (size - value.location.y) / size))
 
-                                    // Create NEW array to trigger Binding update
                                     var newCurve = curve
                                     newCurve[index] = CGPoint(x: newX, y: newY)
                                     curve = newCurve
@@ -120,14 +106,11 @@ struct PressureCurveEditor: View {
     }
 }
 
-/// Helper function to get thickness from pressure curve
 func getThicknessFromPressureCurve(pressure: Double, curve: [CGPoint]) -> Double {
     guard curve.count >= 2 else { return pressure }
 
-    // Clamp pressure to valid range
     let clampedPressure = max(0.0, min(1.0, pressure))
 
-    // Find the two control points that bracket the input pressure
     var lowerIndex = 0
     for i in 0..<curve.count {
         if curve[i].x <= clampedPressure {
@@ -141,7 +124,6 @@ func getThicknessFromPressureCurve(pressure: Double, curve: [CGPoint]) -> Double
     let lowerPoint = curve[lowerIndex]
     let upperPoint = curve[upperIndex]
 
-    // Linear interpolation between the two points
     if upperPoint.x == lowerPoint.x {
         return lowerPoint.y
     }
@@ -149,10 +131,6 @@ func getThicknessFromPressureCurve(pressure: Double, curve: [CGPoint]) -> Double
     let t = (clampedPressure - lowerPoint.x) / (upperPoint.x - lowerPoint.x)
     let curveOutput = lowerPoint.y + t * (upperPoint.y - lowerPoint.y)
 
-    // Return the curve output directly as the thickness multiplier
-    // Linear curve (0.5 → 0.5) means pressure 0.5 gives thickness multiplier 0.5
-    // Soft curve (0.5 → 0.7) means pressure 0.5 gives thickness multiplier 0.7 (more sensitive)
-    // Hard curve (0.5 → 0.3) means pressure 0.5 gives thickness multiplier 0.3 (less sensitive)
     return curveOutput
 }
 

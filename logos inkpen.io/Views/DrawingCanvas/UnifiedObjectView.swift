@@ -1,9 +1,3 @@
-//
-//  UnifiedObjectView.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 
@@ -17,7 +11,6 @@ struct UnifiedObjectView: View {
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
 
-    // State variables to track all layer opacities and blend modes for live updates
     @State private var layerOpacities: [Double] = []
     @State private var layerBlendModes: [BlendMode] = []
 
@@ -27,7 +20,6 @@ struct UnifiedObjectView: View {
 
     var body: some View {
         ZStack {
-            // Group objects by layer and apply opacity/blend mode to each layer's ZStack
             ForEach(Array(Set(objects.map { $0.layerIndex })).sorted(), id: \.self) { layerIndex in
                 ZStack {
                     ForEach(objects.filter { $0.layerIndex == layerIndex }, id: \.id) { unifiedObject in
@@ -47,7 +39,7 @@ struct UnifiedObjectView: View {
                 .opacity(layerIndex < document.layers.count ? document.layers[layerIndex].opacity : 1.0)
                 .blendMode(layerIndex < document.layers.count ? document.layers[layerIndex].blendMode.swiftUIBlendMode : .normal)
             }
-       
+
         }
         .onAppear {
             layerOpacities = document.layers.map { $0.opacity }
@@ -62,7 +54,6 @@ struct UnifiedObjectView: View {
     }
 }
 
-// MARK: - Unified Object Content View
 struct UnifiedObjectContentView: View {
     let unifiedObject: VectorObject
     let document: VectorDocument
@@ -73,7 +64,6 @@ struct UnifiedObjectContentView: View {
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
 
-    // CRITICAL: Check if the layer this object is on is visible
     private var layerIsVisible: Bool {
         guard unifiedObject.layerIndex >= 0 && unifiedObject.layerIndex < document.layers.count else {
             return true
@@ -85,15 +75,12 @@ struct UnifiedObjectContentView: View {
         Group {
             switch unifiedObject.objectType {
             case .shape(let shape):
-                // CRITICAL FIX: Handle text objects represented as VectorShape
                 if shape.isTextObject {
-                    // Render text using existing StableProfessionalTextCanvas
-                    // Convert VectorShape back to VectorText for the text canvas
                     if shape.textContent != nil, shape.typography != nil {
 
                         StableProfessionalTextCanvas(
                             document: document,
-                            textObjectID: shape.id, // Use shape ID
+                            textObjectID: shape.id,
                             dragPreviewDelta: dragPreviewDelta,
                             dragPreviewTrigger: dragPreviewTrigger
                         )
@@ -102,25 +89,18 @@ struct UnifiedObjectContentView: View {
                         EmptyView()
                     }
                 }
-                // CRITICAL FIX: Handle clipping masks in unified object system
                 else if shape.isClippingPath {
-                    // Do not render clipping path shapes themselves
                     EmptyView()
                 } else if let clipID = shape.clippedByShapeID {
-                    // This shape is clipped by another shape - find the mask shape
-                    // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
                     if let maskUnifiedObject = document.findObject(by: clipID),
                     case .shape(let maskShape) = maskUnifiedObject.objectType {
-                        // Create pre-transformed paths for the clipping mask
                         let clippedPath = createPreTransformedPath(for: shape)
                         let maskPath = createPreTransformedPath(for: maskShape)
 
-                        // Determine selection state for both clipped shape and mask
                         let isClippedShapeSelected = selectedObjectIDs.contains(unifiedObject.id)
                         let isMaskShapeSelected = selectedObjectIDs.contains(maskUnifiedObject.id)
                         let isSelected = isClippedShapeSelected || isMaskShapeSelected
 
-                        // Render the clipped shape using NSView-based clipping mask
                         ClippingMaskShapeView(
                             clippedShape: shape,
                             maskShape: maskShape,
@@ -133,18 +113,14 @@ struct UnifiedObjectContentView: View {
                             dragPreviewTrigger: dragPreviewTrigger,
                             viewMode: viewMode
                         )
-                        .id("\(shape.id)-\(shape.path.isClosed)-\(maskShape.id)-\(maskShape.path.isClosed)-\(shape.clippedByShapeID?.uuidString ?? "none")")  // CRITICAL FIX: Include clipping mask ID
+                        .id("\(shape.id)-\(shape.path.isClosed)-\(maskShape.id)-\(maskShape.path.isClosed)-\(shape.clippedByShapeID?.uuidString ?? "none")")
                     } else {
-                        // Mask shape not found - render as regular shape
                         renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(unifiedObject.id))
                     }
                 } else {
-                    // Regular shape - render normally
-                    // CRITICAL FIX: For groups, also render text objects inside
                     ZStack {
                         renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(unifiedObject.id))
 
-                        // CRITICAL FIX: Render text objects inside groups
                         if shape.isGroupContainer {
                             ForEach(shape.groupedShapes.filter { $0.isTextObject }, id: \.id) { textShape in
                                 if textShape.textContent != nil, textShape.typography != nil {
@@ -165,7 +141,6 @@ struct UnifiedObjectContentView: View {
         }
     }
 
-    // Helper function to render regular shapes
     @ViewBuilder
     private func renderRegularShape(shape: VectorShape, isSelected: Bool) -> some View {
         ShapeView(
@@ -174,19 +149,17 @@ struct UnifiedObjectContentView: View {
             canvasOffset: canvasOffset,
             isSelected: isSelected,
             viewMode: viewMode,
-            isCanvasLayer: unifiedObject.layerIndex == 1, // Canvas layer is index 1
-            isPasteboardLayer: unifiedObject.layerIndex == 0, // Pasteboard layer is index 0
+            isCanvasLayer: unifiedObject.layerIndex == 1,
+            isPasteboardLayer: unifiedObject.layerIndex == 0,
             dragPreviewDelta: dragPreviewDelta,
             dragPreviewTrigger: dragPreviewTrigger
         )
-        .id("\(shape.id)-\(shape.path.isClosed)-\(shape.bounds.hashValue)-\(shape.isClippingPath)-\(shape.clippedByShapeID?.uuidString ?? "none")")  // CRITICAL FIX: Include clipping mask properties to trigger refresh
+        .id("\(shape.id)-\(shape.path.isClosed)-\(shape.bounds.hashValue)-\(shape.isClippingPath)-\(shape.clippedByShapeID?.uuidString ?? "none")")
     }
-    
-    // Helper function to create pre-transformed paths for clipping masks
+
     private func createPreTransformedPath(for shape: VectorShape) -> CGPath {
         let path = CGMutablePath()
-        
-        // Add path elements
+
         for element in shape.path.elements {
             switch element {
             case .move(let to):
@@ -201,19 +174,17 @@ struct UnifiedObjectContentView: View {
                 path.closeSubpath()
             }
         }
-        
-        // Apply shape transform for proper positioning
+
         if !shape.transform.isIdentity {
             let transformedPath = CGMutablePath()
             transformedPath.addPath(path, transform: shape.transform)
             return transformedPath
         }
-        
+
         return path
     }
 }
 
-// MARK: - Pasteboard Background View
 struct PasteboardBackgroundView: View {
     @ObservedObject var document: VectorDocument
     let zoomLevel: Double
@@ -237,7 +208,6 @@ struct PasteboardBackgroundView: View {
 
     var body: some View {
         ZStack {
-            // Render only the Pasteboard Background
             if let pasteboardBackground = pasteboardBackground {
                 UnifiedObjectContentView(
                     unifiedObject: pasteboardBackground,
@@ -267,7 +237,6 @@ struct PasteboardBackgroundView: View {
     }
 }
 
-// MARK: - Canvas Background View
 struct CanvasBackgroundView: View {
     @ObservedObject var document: VectorDocument
     let zoomLevel: Double
@@ -291,7 +260,6 @@ struct CanvasBackgroundView: View {
 
     var body: some View {
         ZStack {
-            // Render only the Canvas Background
             if let canvasBackground = canvasBackground {
                 UnifiedObjectContentView(
                     unifiedObject: canvasBackground,
@@ -321,7 +289,6 @@ struct CanvasBackgroundView: View {
     }
 }
 
-// MARK: - Non-Background Objects View
 struct NonBackgroundObjectsView: View {
     @ObservedObject var document: VectorDocument
     let zoomLevel: Double
@@ -335,7 +302,6 @@ struct NonBackgroundObjectsView: View {
     private var nonBackgroundObjects: [VectorObject] {
         document.getObjectsInStackingOrder().filter { obj in
             if case .shape(let shape) = obj.objectType {
-                // Exclude both Canvas Background and Pasteboard Background
                 return shape.name != "Canvas Background" && shape.name != "Pasteboard Background"
             }
             return true
@@ -347,7 +313,6 @@ struct NonBackgroundObjectsView: View {
 
     var body: some View {
         ZStack {
-            // Group objects by layer and apply opacity/blend mode to each layer's ZStack
             ForEach(Array(Set(nonBackgroundObjects.map { $0.layerIndex })).sorted(), id: \.self) { layerIndex in
                 ZStack {
                     ForEach(nonBackgroundObjects.filter { $0.layerIndex == layerIndex }, id: \.id) { unifiedObject in
@@ -382,7 +347,6 @@ struct NonBackgroundObjectsView: View {
     }
 }
 
-// MARK: - CG Opacity Modifier
 struct CGOpacityModifier: ViewModifier {
     let opacity: CGFloat
 

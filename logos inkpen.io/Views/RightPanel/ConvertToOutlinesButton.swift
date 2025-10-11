@@ -1,13 +1,6 @@
-//
-//  ConvertToOutlinesButton.swift
-//  logos inkpen.io
-//
-//  Created by Claude on 2025/01/15.
-//
 
 import SwiftUI
 
-// Custom button style for full-width button without horizontal padding
 struct FullWidthSecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -41,16 +34,15 @@ struct ConvertToOutlinesButton: View {
         .buttonStyle(FullWidthSecondaryButtonStyle())
         .help("Convert text to vector paths (⌘⇧O)")
         .keyboardShortcut("o", modifiers: [.command, .shift])
-        .disabled(selectedText == nil)  // Disable when no text selected, but always visible
+        .disabled(selectedText == nil)
     }
-    
+
     private func convertSelectedTextToOutlines() {
         guard !document.selectedTextIDs.isEmpty else {
             Log.error("❌ CONVERT TO OUTLINES: No text selected", category: .error)
             return
         }
 
-        // Check if selected layer is locked
         if let layerIndex = document.selectedLayerIndex,
            layerIndex >= 0 && layerIndex < document.layers.count {
             let layer = document.layers[layerIndex]

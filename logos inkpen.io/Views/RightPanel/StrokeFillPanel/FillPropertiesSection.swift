@@ -1,9 +1,3 @@
-//
-//  FillPropertiesSection.swift
-//  logos inkpen.io
-//
-//  Fill properties section for StrokeFillPanel
-//
 
 import SwiftUI
 

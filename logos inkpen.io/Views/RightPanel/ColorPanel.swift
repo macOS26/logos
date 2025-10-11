@@ -1,9 +1,3 @@
-//
-//  ColorPanel.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 7/5/25.
-//
 
 import SwiftUI
 
@@ -12,26 +6,22 @@ struct ColorPanel: View {
     @Environment(AppState.self) private var appState
     @State private var searchText = ""
     @State private var showingPantoneSearch = false
-    @State private var currentPreviewColor: VectorColor = .rgb(RGBColor(red: 0.0, green: 0.478, blue: 1.0, colorSpace: .displayP3)) // Display P3 Blue - Shared color state
+    @State private var currentPreviewColor: VectorColor = .rgb(RGBColor(red: 0.0, green: 0.478, blue: 1.0, colorSpace: .displayP3))
     let onColorSelected: ((VectorColor) -> Void)?
-    let showGradientEditing: Bool // New parameter to control gradient editing display
-    
+    let showGradientEditing: Bool
+
     init(document: VectorDocument, onColorSelected: ((VectorColor) -> Void)? = nil, showGradientEditing: Bool = false) {
         self.document = document
         self.onColorSelected = onColorSelected
         self.showGradientEditing = showGradientEditing
-        // Initialize with the actual selected object's color if available (preserves gradients)
-        // Otherwise fall back to default color for new shapes
         let initialColor = document.getSelectedObjectColor() ?? document.defaultFillColor
         self._currentPreviewColor = State(initialValue: initialColor)
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Top padding for the color view
             Spacer()
                 .frame(height: 8)
-            // GRADIENT EDITING INDICATOR - Only show when explicitly enabled
             if showGradientEditing, let gradientState = appState.gradientEditingState {
                 HStack {
                     Image(systemName: "circle.fill")
@@ -51,18 +41,16 @@ struct ColorPanel: View {
                 .background(Color.blue.opacity(0.1))
                 .padding(.horizontal, 12)
             }
-            
-            // Color Mode Picker
+
             VStack(alignment: .leading, spacing: 4) {
                 Picker("Color Mode", selection: Binding(
                     get: { document.settings.colorMode },
                     set: { newMode in
                         let oldMode = document.settings.colorMode
                         document.settings.colorMode = newMode
-                        
-                        // Convert current preview color to new mode
+
                         currentPreviewColor = convertColorToMode(currentPreviewColor, from: oldMode, to: newMode)
-                        
+
                         document.updateColorSwatchesForMode()
                     }
                 )) {
@@ -78,8 +66,7 @@ struct ColorPanel: View {
                 .font(.caption)
             }
             .padding(.horizontal, 12)
-            
-            // Mode-specific input sections
+
             if document.settings.colorMode == .pms {
                 HSBInputSection(document: document, sharedColor: $currentPreviewColor, showGradientEditing: showGradientEditing)
                     .padding(.horizontal, 12)
@@ -90,8 +77,7 @@ struct ColorPanel: View {
                 RGBInputSection(document: document, sharedColor: $currentPreviewColor, showGradientEditing: showGradientEditing)
                         .padding(.horizontal, 12)
             }
-                
-            // Color Mode Specific Information
+
             HStack {
                 Text(colorModeDescription)
                     .font(.caption2)
@@ -99,20 +85,17 @@ struct ColorPanel: View {
                 Spacer()
             }
             .padding(.horizontal, 12)
-            
-            // Color Swatches
+
             ScrollView {
                 LazyVGrid(columns: Array(repeating: GridItem(.fixed(28), spacing: 4), count: 8), spacing: 4) {
                                     ForEach(Array(filteredColors.enumerated()), id: \.offset) { index, color in
                     Button {
                         selectColor(color)
-                        // Update preview color when swatch is clicked
                         currentPreviewColor = color
                     } label: {
                         ZStack {
                             renderColorSwatchRightPanel(color, width: 30, height: 30, cornerRadius: 0, borderWidth: 1)
-                            
-                            // Show Pantone number for Pantone colors (if not clear)
+
                             if case .pantone = color {
                                 overlayText(for: color)
                             }
@@ -129,19 +112,16 @@ struct ColorPanel: View {
                 }
                 .padding(.horizontal, 12)
             }
-            
 
-            
+
             Spacer()
         }
         .sheet(isPresented: $showingPantoneSearch) {
             PantoneColorPickerSheet(document: document)
         }
         .onAppear {
-            // Initialize preview to match the active target's current color
             currentPreviewColor = (document.activeColorTarget == .stroke) ? document.defaultStrokeColor : document.defaultFillColor
         }
-        // React to document color changes without any notifications
         .onChange(of: document.activeColorTarget) { _, newTarget in
             currentPreviewColor = (newTarget == .stroke) ? document.defaultStrokeColor : document.defaultFillColor
         }
@@ -156,9 +136,8 @@ struct ColorPanel: View {
             }
         }
     }
-    
-    // MARK: - Helper Properties and Methods
-    
+
+
     private var colorModeDescription: String {
         switch document.settings.colorMode {
         case .rgb:
@@ -169,7 +148,7 @@ struct ColorPanel: View {
             return "PMS colors with Pantone matching"
         }
     }
-    
+
     private var filteredColors: [VectorColor] {
         if searchText.isEmpty {
             return document.currentSwatches
@@ -179,51 +158,42 @@ struct ColorPanel: View {
             }
         }
     }
-    
+
     private func selectColor(_ color: VectorColor) {
-        
-        // If we have a specific callback, use it (we're in a modal for specific purpose)
+
         if let onColorSelected = onColorSelected {
             onColorSelected(color)
         } else {
-            // 🔥 FIXED: Apply color to active target when browsing colors in the Color tab
-            // This makes the Color Panel behave consistently with the VerticalToolbar
-            
-            // 🔥 CRITICAL FIX: Update the preview color in the INK panel
+
             currentPreviewColor = color
-            
-            // Apply color to the currently active target (fill or stroke)
-            // FIX: Don't set defaults directly - setActiveColor handles this internally
+
             if document.activeColorTarget == .stroke {
-                // Use setActiveColor which handles both defaults and selected objects
                 document.setActiveColor(color)
             } else {
-                // Use setActiveColor which handles both defaults and selected objects
                 document.setActiveColor(color)
             }
         }
     }
-    
 
-    
+
     private func colorDescription(for color: VectorColor) -> String {
         switch color {
         case .black: return "Black"
         case .white: return "White"
         case .clear: return "Clear"
-        case .rgb(let rgb): 
+        case .rgb(let rgb):
             return "RGB(\(Int(rgb.red * 255)), \(Int(rgb.green * 255)), \(Int(rgb.blue * 255)))"
-        case .cmyk(let cmyk): 
+        case .cmyk(let cmyk):
             return "CMYK(\(Int((cmyk.cyan * 100).isFinite ? cmyk.cyan * 100 : 0))%, \(Int((cmyk.magenta * 100).isFinite ? cmyk.magenta * 100 : 0))%, \(Int((cmyk.yellow * 100).isFinite ? cmyk.yellow * 100 : 0))%, \(Int((cmyk.black * 100).isFinite ? cmyk.black * 100 : 0))%)"
         case .hsb(let hsb):
             return "HSB(\(Int(hsb.hue))°, \(Int(hsb.saturation * 100))%, \(Int(hsb.brightness * 100))%)"
-        case .pantone(let pantone): 
+        case .pantone(let pantone):
             return "PANTONE \(pantone.pantone) - \(pantone.name)"
         case .spot(let spot):
             return "SPOT \(spot.number) - \(spot.name)"
-        case .appleSystem(let systemColor): 
+        case .appleSystem(let systemColor):
             return "Apple \(systemColor.name.capitalized)"
-        case .gradient(let gradient): 
+        case .gradient(let gradient):
             switch gradient {
             case .linear(_): return "Linear Gradient"
             case .radial(_): return "Radial Gradient"
@@ -245,23 +215,20 @@ struct ColorPanel: View {
                 .allowsTightening(true)
         }
     }
-    
-    // MARK: - Color Mode Conversion
-    
-    // Convert a color to a different color mode
+
+
     private func convertColorToMode(_ color: VectorColor, from oldMode: ColorMode, to newMode: ColorMode) -> VectorColor {
         if oldMode == newMode {
             return color
         }
-        
-        // RGB to CMYK conversion
+
         if oldMode == .rgb && newMode == .cmyk {
             switch color {
             case .rgb(let rgbColor):
                 let cmykColor = ColorManagement.rgbToCMYK(rgbColor)
                 return .cmyk(cmykColor)
             case .cmyk:
-                return color // Already in CMYK
+                return color
             case .hsb(let hsb):
                 let cmykColor = ColorManagement.rgbToCMYK(hsb.rgbColor)
                 return .cmyk(cmykColor)
@@ -273,7 +240,7 @@ struct ColorPanel: View {
                 let cmykColor = ColorManagement.rgbToCMYK(system.rgbEquivalent)
                 return .cmyk(cmykColor)
             case .gradient:
-                return color // Gradients cannot be converted to simple color modes
+                return color
             case .clear:
                 return .clear
             case .black:
@@ -282,15 +249,14 @@ struct ColorPanel: View {
                 return .cmyk(CMYKColor(cyan: 0, magenta: 0, yellow: 0, black: 0))
             }
         }
-        
-        // CMYK to RGB conversion
+
         if oldMode == .cmyk && newMode == .rgb {
             switch color {
             case .cmyk(let cmykColor):
                 let rgbColor = cmykColor.rgbColor
                 return .rgb(rgbColor)
             case .rgb:
-                return color // Already in RGB
+                return color
             case .hsb(let hsb):
                 return .rgb(hsb.rgbColor)
             case .pantone(let pantone):
@@ -298,9 +264,9 @@ struct ColorPanel: View {
             case .spot(let spot):
                 return .rgb(spot.rgbEquivalent)
             case .appleSystem:
-                return color // Already has RGB representation
+                return color
             case .gradient:
-                return color // Gradients cannot be converted to simple color modes
+                return color
             case .clear:
                 return .clear
             case .black:
@@ -309,12 +275,11 @@ struct ColorPanel: View {
                 return .rgb(RGBColor(red: 1, green: 1, blue: 1))
             }
         }
-        
-        // PMS conversions (HSB-based)
+
         if newMode == .pms {
             switch color {
             case .hsb:
-                return color // Already in HSB
+                return color
             case .rgb(let rgb):
                 return .hsb(HSBColorModel.fromRGB(rgb))
             case .cmyk(let cmyk):
@@ -326,7 +291,7 @@ struct ColorPanel: View {
             case .appleSystem(let system):
                 return .hsb(HSBColorModel.fromRGB(system.rgbEquivalent))
             case .gradient:
-                return color // Gradients cannot be converted to simple color modes
+                return color
             case .clear:
                 return .hsb(HSBColorModel(hue: 0, saturation: 0, brightness: 1, alpha: 0))
             case .black:
@@ -335,20 +300,17 @@ struct ColorPanel: View {
                 return .hsb(HSBColorModel(hue: 0, saturation: 0, brightness: 1))
             }
         }
-        
-        // For now, other conversions (to/from SPOT) just return the color
+
         return color
     }
-    
-    // MARK: - Unified Object System Migration Helpers
-    
+
+
     private func updateSelectedTextStrokeColor(color: VectorColor, document: VectorDocument) {
         guard !document.selectedTextIDs.isEmpty else { return }
-        
+
         document.saveToUndoStack()
-        
+
         for textID in document.selectedTextIDs {
-            // MIGRATION: Use unified helper instead of duplicate code
             document.updateTextStrokeColorInUnified(id: textID, color: color)
         }
     }

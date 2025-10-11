@@ -1,9 +1,3 @@
-//
-//  ShearAnchor.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 

@@ -1,30 +1,19 @@
-//
-//  DocumentSettingsView.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 
 struct DocumentSettingsView: View {
     @ObservedObject var document: VectorDocument
     @Environment(\.presentationMode) var presentationMode
-    
+
     var body: some View {
         VStack(spacing: 0) {
-            // Professional Header
             professionalHeader
-            
-            // Main Content
+
             ScrollView {
                 VStack(spacing: 24) {
-                    // Document Size Section
                     documentSizeSection
 
-                    // Display and Color Settings Side by Side
                     HStack(alignment: .top, spacing: 24) {
-                        // Left 50%: Display Settings (Resolution only)
                         VStack(alignment: .leading, spacing: 24) {
                             displaySettingsSection
                         }
@@ -33,23 +22,18 @@ struct DocumentSettingsView: View {
                         Divider()
                             .frame(height: 100)
 
-                        // Right 50%: Color Settings
                         VStack(alignment: .leading, spacing: 24) {
                             colorSettingsSection
                         }
                         .frame(maxWidth: .infinity, alignment: .topLeading)
                     }
 
-                    // Display Options Section (without Grid Spacing)
                     displayOptionsSection
 
-                    // Layer Selection and Grid Spacing Side by Side at Bottom
                     HStack(alignment: .top, spacing: 24) {
-                        // Left: Selected Layer
                         layerSelectionSection
                             .frame(maxWidth: .infinity, alignment: .topLeading)
 
-                        // Right: Grid Spacing
                         gridSpacingSection
                             .frame(maxWidth: .infinity, alignment: .topLeading)
                     }
@@ -57,19 +41,16 @@ struct DocumentSettingsView: View {
                 .padding(24)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
-            // Professional Footer
+
             professionalFooter
         }
         .frame(width: 600, height: 700)
         .background(Color(NSColor.windowBackgroundColor))
     }
-    
-    // MARK: - Professional Header
+
     private var professionalHeader: some View {
         VStack(spacing: 0) {
             HStack(spacing: 16) {
-                // App Icon and Title
                 HStack(spacing: 12) {
                     Image(systemName: "doc.text")
                         .font(.system(size: 24, weight: .medium))
@@ -79,21 +60,20 @@ struct DocumentSettingsView: View {
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(Color.blue.opacity(0.1))
                         )
-                    
+
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Document Settings")
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(.primary)
-                        
+
                         Text("Configure document properties and preferences")
                             .font(.system(size: 13))
                             .foregroundColor(.secondary)
                     }
                 }
-                
+
                 Spacer()
-                
-                // Close Button
+
                 Button(action: { presentationMode.wrappedValue.dismiss() }) {
                     Image(systemName: "xmark")
                         .font(.system(size: 14, weight: .medium))
@@ -109,29 +89,26 @@ struct DocumentSettingsView: View {
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 20)
-            
+
             Divider()
         }
         .background(Color(NSColor.controlBackgroundColor))
     }
-    
-    // MARK: - Document Size Section
+
     private var documentSizeSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Image(systemName: "ruler")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.blue)
-                
+
                 Text("Document Size")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.primary)
             }
-            
+
             VStack(alignment: .leading, spacing: 16) {
-                // Dimensions - Side by Side
                 HStack(spacing: 24) {
-                    // Width
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Width")
                             .font(.system(size: 12, weight: .medium))
@@ -152,7 +129,6 @@ struct DocumentSettingsView: View {
                         }
                     }
 
-                    // Height
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Height")
                             .font(.system(size: 12, weight: .medium))
@@ -175,13 +151,12 @@ struct DocumentSettingsView: View {
 
                     Spacer()
                 }
-                
-                // Units
+
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Units")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.secondary)
-                    
+
                     Picker("Unit", selection: $document.settings.unit) {
                         ForEach(MeasurementUnit.allCases, id: \.self) { unit in
                             Text(unit.rawValue.capitalized).tag(unit)
@@ -189,41 +164,38 @@ struct DocumentSettingsView: View {
                     }
                     .pickerStyle(SegmentedPickerStyle())
                     .onChange(of: document.settings.unit) { oldUnit, newUnit in
-                        // Convert width and height to new units
                         let convertedWidth = UnitsConverter.convert(value: document.settings.width, from: oldUnit, to: newUnit)
                         let convertedHeight = UnitsConverter.convert(value: document.settings.height, from: oldUnit, to: newUnit)
                         document.settings.width = convertedWidth
                         document.settings.height = convertedHeight
 
-                        // Always convert grid spacing when units change
                         let convertedGridSpacing = UnitsConverter.convert(value: document.settings.gridSpacing, from: oldUnit, to: newUnit)
                         document.settings.gridSpacing = convertedGridSpacing
-                        
+
                         document.onSettingsChanged()
                     }
                 }
             }
         }
     }
-    
-    // MARK: - Color Settings Section
+
     private var colorSettingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Image(systemName: "paintpalette")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.blue)
-                
+
                 Text("Color Settings")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.primary)
             }
-            
+
             VStack(alignment: .leading, spacing: 6) {
                 Text("Color Mode")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.secondary)
-                
+
                 Picker("Color Mode", selection: $document.settings.colorMode) {
                     ForEach(ColorMode.allCases, id: \.self) { mode in
                         Text(mode.rawValue.uppercased()).tag(mode)
@@ -233,8 +205,7 @@ struct DocumentSettingsView: View {
             }
         }
     }
-    
-    // MARK: - Display Settings Section (Resolution only)
+
     private var displaySettingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
@@ -247,7 +218,6 @@ struct DocumentSettingsView: View {
                     .foregroundColor(.primary)
             }
 
-            // Resolution
             VStack(alignment: .leading, spacing: 6) {
                 Text("Resolution")
                     .font(.system(size: 12, weight: .medium))
@@ -270,7 +240,6 @@ struct DocumentSettingsView: View {
         }
     }
 
-    // MARK: - Layer Selection Section
     private var layerSelectionSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Selected Layer")
@@ -279,20 +248,16 @@ struct DocumentSettingsView: View {
 
             Picker("", selection: Binding(
                     get: {
-                        // Find the layer with the matching ID, or default to first layer
                         if let selectedId = document.settings.selectedLayerId,
                            let layer = document.layers.first(where: { $0.id == selectedId }) {
                             return layer.id
                         } else if let firstLayer = document.layers.first {
-                            // Default to first layer if no selection or selection not found
                             return firstLayer.id
                         } else {
-                            // This should never happen, but provide a fallback
                             return UUID()
                         }
                     },
                     set: { newLayerId in
-                        // Update both ID and name when selection changes
                         if let selectedLayer = document.layers.first(where: { $0.id == newLayerId }) {
                             document.settings.selectedLayerId = selectedLayer.id
                             document.settings.selectedLayerName = selectedLayer.name
@@ -311,7 +276,6 @@ struct DocumentSettingsView: View {
         }
     }
 
-    // MARK: - Display Options Section (Full Width)
     private var displayOptionsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
@@ -324,11 +288,8 @@ struct DocumentSettingsView: View {
                     .foregroundColor(.primary)
             }
 
-            // 2x2 Grid Layout with proper alignment
             VStack(alignment: .leading, spacing: 12) {
-                // First row: Show Rulers and Snap to Point
                 HStack(spacing: 40) {
-                    // Show Rulers
                     HStack {
                         Text("Show Rulers")
                             .font(.system(size: 13))
@@ -342,7 +303,6 @@ struct DocumentSettingsView: View {
                         }
                     }
 
-                    // Snap to Point
                     HStack {
                         Text("Snap to Point")
                             .font(.system(size: 13))
@@ -357,9 +317,7 @@ struct DocumentSettingsView: View {
                     }
                 }
 
-                // Second row: Show Grid and Snap to Grid
                 HStack(spacing: 40) {
-                    // Show Grid
                     HStack {
                         Text("Show Grid")
                             .font(.system(size: 13))
@@ -373,7 +331,6 @@ struct DocumentSettingsView: View {
                         }
                     }
 
-                    // Snap to Grid
                     HStack {
                         Text("Snap to Grid")
                             .font(.system(size: 13))
@@ -391,7 +348,6 @@ struct DocumentSettingsView: View {
         }
     }
 
-    // MARK: - Grid Spacing Section
     private var gridSpacingSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Grid Spacing")
@@ -413,17 +369,15 @@ struct DocumentSettingsView: View {
             }
         }
     }
-    
-    
-    
-    // MARK: - Professional Footer
+
+
     private var professionalFooter: some View {
         VStack(spacing: 0) {
             Divider()
-            
+
             HStack {
                 Spacer()
-                
+
                 Button {
                     presentationMode.wrappedValue.dismiss()
                 } label: {

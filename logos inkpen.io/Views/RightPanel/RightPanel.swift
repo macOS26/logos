@@ -1,25 +1,17 @@
-//
-//  RightPanel.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 7/5/25.
-//
 
 import SwiftUI
 
 struct RightPanel: View {
     @ObservedObject var document: VectorDocument
     @Environment(AppState.self) private var appState
-    
+
     var body: some View {
         VStack(spacing: 0) {
-            // Tab Bar
             PanelTabBar(selectedTab: Binding(
                 get: { appState.selectedPanelTab },
                 set: { appState.selectedPanelTab = $0 }
             ))
-            
-            // Content
+
             Group {
                 switch appState.selectedPanelTab {
                 case .layers:
@@ -46,11 +38,8 @@ struct RightPanel: View {
 
     }
 }
-// PropertiesPanel removed - using StrokeFillPanel instead
 
-// Old property structures removed - using StrokeFillPanel instead
 
-// Preview
 #Preview {
     RightPanel(document: VectorDocument())
         .frame(height: 600)

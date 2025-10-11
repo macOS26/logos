@@ -1,13 +1,6 @@
-//
-//  VectorImportResult.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 
-/// Professional import result with comprehensive metadata
 struct VectorImportResult: Identifiable {
     let id = UUID()
     let success: Bool
@@ -17,11 +10,10 @@ struct VectorImportResult: Identifiable {
     let warnings: [String]
 }
 
-/// Complete metadata for imported vector graphics
 struct VectorImportMetadata {
     let originalFormat: VectorFileFormat
     let documentSize: CGSize
-    let viewBoxSize: CGSize?  // Added to detect 96 DPI SVGs
+    let viewBoxSize: CGSize?
     let colorSpace: String
     let units: VectorUnit
     let dpi: Double
@@ -31,29 +23,27 @@ struct VectorImportMetadata {
     let importDate: Date
     let sourceApplication: String?
     let documentVersion: String?
-    let inkpenMetadata: String?  // Base64 encoded inkpen document
+    let inkpenMetadata: String?
 }
 
-/// Professional vector graphics units
 enum VectorUnit: String, CaseIterable {
-    case points = "pt"        // 1/72 inch (standard)
-    case inches = "in"        // Imperial
-    case millimeters = "mm"   // Metric
-    case pixels = "px"        // Screen
-    case picas = "pc"         // Typography
-    
+    case points = "pt"
+    case inches = "in"
+    case millimeters = "mm"
+    case pixels = "px"
+    case picas = "pc"
+
     var pointsPerUnit: Double {
         switch self {
         case .points: return 1.0
         case .inches: return 72.0
         case .millimeters: return 72.0 / 25.4
-        case .pixels: return 1.0  // Depends on DPI
+        case .pixels: return 1.0
         case .picas: return 12.0
         }
     }
 }
 
-/// Comprehensive import error types
 enum VectorImportError: Error, LocalizedError {
     case fileNotFound
     case unsupportedFormat(VectorFileFormat)
@@ -64,7 +54,7 @@ enum VectorImportError: Error, LocalizedError {
     case scalingError(String)
     case parsingError(String, line: Int?)
     case commercialLicenseRequired(VectorFileFormat)
-    
+
     var errorDescription: String? {
         switch self {
         case .fileNotFound:

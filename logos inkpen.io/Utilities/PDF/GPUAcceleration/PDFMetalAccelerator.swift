@@ -1,29 +1,17 @@
-//
-//  PDFMetalAccelerator.swift
-//  logos inkpen.io
-//
-//  Metal GPU accelerator for PDF parsing - 1000x speedup
-//  Uses GPU compute shaders for massive parallelism
-//
 
 import Foundation
 import CoreGraphics
 import Metal
 import simd
 
-/// Metal GPU accelerator for PDF parsing operations
-/// Processes thousands of items in parallel on GPU
 class PDFMetalAccelerator {
 
-    // MARK: - Singleton
     static let shared = PDFMetalAccelerator()
 
-    // MARK: - Metal Resources
     private var device: MTLDevice!
     private var commandQueue: MTLCommandQueue!
     private var library: MTLLibrary!
 
-    // Compute pipelines
     private var transformPointsPipeline: MTLComputePipelineState!
     private var batchTransformPipeline: MTLComputePipelineState!
     private var multiplyMatricesPipeline: MTLComputePipelineState!
@@ -39,7 +27,6 @@ class PDFMetalAccelerator {
     private var parallelMaxIndexPipeline: MTLComputePipelineState!
     private var interpolatePipeline: MTLComputePipelineState!
 
-    // MARK: - Initialization
 
     private init() {
         setupMetal()
@@ -54,7 +41,6 @@ class PDFMetalAccelerator {
         self.commandQueue = device.makeCommandQueue()!
         self.library = device.makeDefaultLibrary()!
 
-        // Create compute pipelines
         do {
             transformPointsPipeline = try createPipeline(named: "transformPoints")
             batchTransformPipeline = try createPipeline(named: "batchTransformPoints")
@@ -85,19 +71,15 @@ class PDFMetalAccelerator {
         return try device.makeComputePipelineState(function: function)
     }
 
-    // MARK: - Matrix Transform Operations
 
-    /// Transform points using matrix on GPU - processes thousands in parallel
     func transformPoints(_ points: [CGPoint], with matrix: PDFSIMDMatrix) -> [CGPoint] {
         guard !points.isEmpty else { return [] }
 
         let count = points.count
 
-        // Convert to float2 array
         var inputPoints = points.map { simd_float2(Float($0.x), Float($0.y)) }
         var matrixData = matrix.matrix
 
-        // Create Metal buffers
         guard let inputBuffer = device.makeBuffer(bytes: &inputPoints,
                                                   length: count * MemoryLayout<simd_float2>.stride,
                                                   options: .storageModeShared),
@@ -109,7 +91,6 @@ class PDFMetalAccelerator {
             return points
         }
 
-        // Execute GPU kernel
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
               let encoder = commandBuffer.makeComputeCommandEncoder() else {
             return points
@@ -129,14 +110,11 @@ class PDFMetalAccelerator {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
 
-        // Read results
         let outputPointer = outputBuffer.contents().bindMemory(to: simd_float2.self, capacity: count)
         return (0..<count).map { CGPoint(x: CGFloat(outputPointer[$0].x), y: CGFloat(outputPointer[$0].y)) }
     }
 
-    // MARK: - Matrix Multiplication
 
-    /// Multiply matrices on GPU - thousands in parallel
     func multiplyMatrices(_ matrices: [(PDFSIMDMatrix, PDFSIMDMatrix)]) -> [PDFSIMDMatrix] {
         guard !matrices.isEmpty else { return [] }
 
@@ -178,9 +156,7 @@ class PDFMetalAccelerator {
         return (0..<count).map { PDFSIMDMatrix(metalBuffer: Array(UnsafeBufferPointer(start: outputPointer.advanced(by: $0), count: 1)).flatMap { [$0.columns.0.x, $0.columns.0.y, $0.columns.0.z, $0.columns.1.x, $0.columns.1.y, $0.columns.1.z, $0.columns.2.x, $0.columns.2.y, $0.columns.2.z] }) }
     }
 
-    // MARK: - Distance Calculations
 
-    /// Calculate distances from origin to points - GPU parallel
     func calculateDistances(from origin: CGPoint, to points: [CGPoint]) -> [CGFloat] {
         guard !points.isEmpty else { return [] }
 
@@ -222,7 +198,6 @@ class PDFMetalAccelerator {
         return (0..<count).map { CGFloat(outputPointer[$0]) }
     }
 
-    /// Calculate perpendicular distances for path simplification - GPU parallel
     func perpendicularDistances(points: [CGPoint], lineStart: CGPoint, lineEnd: CGPoint) -> [Float] {
         guard !points.isEmpty else { return [] }
 
@@ -269,7 +244,6 @@ class PDFMetalAccelerator {
         return Array(UnsafeBufferPointer(start: outputPointer, count: count))
     }
 
-    /// Find maximum distance and index - GPU parallel reduction
     func findMaxDistance(_ distances: [Float]) -> (maxValue: Float, maxIndex: Int) {
         guard !distances.isEmpty else { return (0, 0) }
 
@@ -314,9 +288,7 @@ class PDFMetalAccelerator {
         return (maxValue, maxIndex)
     }
 
-    // MARK: - Curve Operations
 
-    /// Evaluate cubic Bezier curves at multiple t values - GPU parallel
     func evaluateCubicBezier(p0: CGPoint, p1: CGPoint, p2: CGPoint, p3: CGPoint, tValues: [Float]) -> [CGPoint] {
         guard !tValues.isEmpty else { return [] }
 
@@ -370,9 +342,7 @@ class PDFMetalAccelerator {
         return (0..<count).map { CGPoint(x: CGFloat(outputPointer[$0].x), y: CGFloat(outputPointer[$0].y)) }
     }
 
-    // MARK: - Collinearity Testing
 
-    /// Batch test collinearity on GPU
     func batchCheckCollinearity(triplets: [(CGPoint, CGPoint, CGPoint)], tolerance: Float) -> [Bool] {
         guard !triplets.isEmpty else { return [] }
 

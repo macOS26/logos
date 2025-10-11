@@ -1,42 +1,31 @@
-//
-//  RGBInputSection.swift
-//  logos inkpen.io
-//
-//  RGB input section for the color panel
-//
 
 import SwiftUI
 import Combine
 
 struct RGBInputSection: View {
     @ObservedObject var document: VectorDocument
-    @Binding var sharedColor: VectorColor // Shared color state
+    @Binding var sharedColor: VectorColor
     @Environment(AppState.self) private var appState
-    
-    // Callback indicates we're in gradient editing mode
-    let showGradientEditing: Bool  // 🔥 NEW: Controls whether this section allows gradient editing
-    
+
+    let showGradientEditing: Bool
+
     @State private var redValue: String = "133"
-    @State private var greenValue: String = "78" 
+    @State private var greenValue: String = "78"
     @State private var blueValue: String = "68"
     @State private var hexValue: String = "854e44"
-    
-    // Slider values (0-255)
+
     @State private var redSlider: Double = 133
     @State private var greenSlider: Double = 78
     @State private var blueSlider: Double = 68
-    
-    // Flag to prevent automatic gradient updates during programmatic changes
+
     @State private var isProgrammaticallyUpdating: Bool = false
-    // Flag to track if we're displaying a gradient (should not auto-update)
     @State private var isDisplayingGradient: Bool = false
-    
-    // Computed color from RGB values
+
     private var currentColor: RGBColor {
         let r = Double(redValue) ?? 0
         let g = Double(greenValue) ?? 0
         let b = Double(blueValue) ?? 0
-        
+
         return RGBColor(
             red: min(255, max(0, r)) / 255.0,
             green: min(255, max(0, g)) / 255.0,
@@ -44,13 +33,11 @@ struct RGBInputSection: View {
             alpha: 1.0
         )
     }
-    
-    // Helper function to get SwiftUI Color from RGB values using Display P3
+
     private func swiftUIColor(r: Double, g: Double, b: Double) -> Color {
         return Color(.displayP3, red: r/255.0, green: g/255.0, blue: b/255.0)
     }
-    
-    // Red slider gradient (morphs from current color with R=0 to current color with R=255)
+
     private var redGradient: SwiftUI.LinearGradient {
         let g = Double(greenValue) ?? 0
         let b = Double(blueValue) ?? 0
@@ -63,8 +50,7 @@ struct RGBInputSection: View {
             endPoint: .trailing
         )
     }
-    
-    // Green slider gradient (morphs from current color with G=0 to current color with G=255)
+
     private var greenGradient: SwiftUI.LinearGradient {
         let r = Double(redValue) ?? 0
         let b = Double(blueValue) ?? 0
@@ -77,8 +63,7 @@ struct RGBInputSection: View {
             endPoint: .trailing
         )
     }
-    
-    // Blue slider gradient (morphs from current color with B=0 to current color with B=255)
+
     private var blueGradient: SwiftUI.LinearGradient {
         let r = Double(redValue) ?? 0
         let g = Double(greenValue) ?? 0
@@ -91,24 +76,21 @@ struct RGBInputSection: View {
             endPoint: .trailing
         )
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // RGB Sliders with Native Apple Sliders and Gradients
             VStack(spacing: 8) {
-                // Red Slider
                 HStack(spacing: 8) {
                     Circle()
                         .fill(Color.red)
                         .frame(width: 12, height: 12)
-                    
+
                     Text("R")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.secondary)
                         .frame(width: 12)
-                    
+
                     ZStack {
-                        // White background for slider track
                         Capsule()
                             .fill(Color.white)
                             .frame(height: 6)
@@ -116,39 +98,33 @@ struct RGBInputSection: View {
                                 Capsule()
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
-                        
-                        // Native Apple Slider
+
                         Slider(value: $redSlider, in: 0...255)
                             .controlSize(.regular)
                             .tint(Color.clear)
                             .onChange(of: redSlider) {
                                 guard !isProgrammaticallyUpdating else {
-                                    // Removed logging spam
                                     return
                                 }
-                                // Removed logging for performance
                                 redValue = String(Int(redSlider))
                                 updateHexFromRGB()
                                 updateSharedColor()
                             }
-                        
-                        // Gradient overlay
+
                         Capsule()
                             .fill(redGradient)
                             .frame(height: 6)
                             .allowsHitTesting(false)
                     }
-                    
+
                     TextField("", text: $redValue)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .frame(width: 45)
                         .font(.system(size: 11))
                         .onChange(of: redValue) {
                             guard !isProgrammaticallyUpdating else {
-                                // Removed logging spam
                                 return
                             }
-                            // Removed logging for performance
                             if let intValue = Double(redValue) {
                                 redSlider = min(255, max(0, intValue))
                                 updateHexFromRGB()
@@ -156,20 +132,18 @@ struct RGBInputSection: View {
                             }
                         }
                 }
-                
-                // Green Slider
+
                 HStack(spacing: 8) {
                     Circle()
                         .fill(Color.green)
                         .frame(width: 12, height: 12)
-                    
+
                     Text("G")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.secondary)
                         .frame(width: 12)
-                    
+
                     ZStack {
-                        // White background for slider track
                         Capsule()
                             .fill(Color.white)
                             .frame(height: 6)
@@ -177,8 +151,7 @@ struct RGBInputSection: View {
                                 Capsule()
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
-        
-                        // Natve Apple Slider
+
                         Slider(value: $greenSlider, in: 0...255)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -188,14 +161,13 @@ struct RGBInputSection: View {
                                 updateHexFromRGB()
                                 updateSharedColor()
                             }
-                        
-                        // Gradient overlay
+
                         Capsule()
                             .fill(greenGradient)
                             .frame(height: 6)
                             .allowsHitTesting(false)
                     }
-                    
+
                     TextField("", text: $greenValue)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .frame(width: 45)
@@ -209,20 +181,18 @@ struct RGBInputSection: View {
                             }
                         }
                 }
-                
-                // Blue Slider
+
                 HStack(spacing: 8) {
                     Circle()
                         .fill(Color.blue)
                         .frame(width: 12, height: 12)
-                    
+
                     Text("B")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.secondary)
                         .frame(width: 12)
-                    
+
                     ZStack {
-                        // White background for slider track
                         Capsule()
                             .fill(Color.white)
                             .frame(height: 6)
@@ -230,8 +200,7 @@ struct RGBInputSection: View {
                                 Capsule()
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
-                        
-                        // Native Apple Slider
+
                         Slider(value: $blueSlider, in: 0...255)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -241,14 +210,13 @@ struct RGBInputSection: View {
                                 updateHexFromRGB()
                                 updateSharedColor()
                             }
-                        
-                        // Gradient overlay
+
                         Capsule()
                             .fill(blueGradient)
                             .frame(height: 6)
                             .allowsHitTesting(false)
                     }
-                    
+
                     TextField("", text: $blueValue)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .frame(width: 45)
@@ -263,17 +231,15 @@ struct RGBInputSection: View {
                         }
                 }
             }
-            
-            // Compact Hex Input and Swatch Preview
+
             HStack(spacing: 8) {
-                // Square Color Swatch Preview (30x30 like other swatches)
                 Button(action: {
                     applyColorToActiveSelection()
                 }) {
                     Rectangle()
                         .fill(Color(.displayP3,
-                            red: currentColor.red, 
-                            green: currentColor.green, 
+                            red: currentColor.red,
+                            green: currentColor.green,
                             blue: currentColor.blue))
                         .frame(width: 30, height: 30)
                         .overlay(
@@ -283,7 +249,7 @@ struct RGBInputSection: View {
                 }
                 .buttonStyle(BorderlessButtonStyle())
                 .help("Click to apply color to active fill or stroke")
-                
+
                 VStack(alignment: .leading, spacing: 2) {
                     Button("Add Swatch") {
                         addColorToSwatches()
@@ -291,13 +257,13 @@ struct RGBInputSection: View {
                     .font(.system(size: 10))
                     .foregroundColor(.primary)
                 }
-                
+
                 Spacer()
-                
+
                 Text("#")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.secondary)
-                
+
                 TextField("854e44", text: $hexValue)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .font(.system(size: 11))
@@ -306,7 +272,7 @@ struct RGBInputSection: View {
                         updateRGBFromHex()
                         updateSharedColor()
                     }
-                
+
             }
         }
         .padding(.vertical, 8)
@@ -317,25 +283,25 @@ struct RGBInputSection: View {
             loadFromSharedColor()
         }
     }
-    
+
     private func updateHexFromRGB() {
         let r = Int(Double(redValue) ?? 0)
         let g = Int(Double(greenValue) ?? 0)
         let b = Int(Double(blueValue) ?? 0)
         hexValue = String(format: "%02x%02x%02x", r, g, b)
     }
-    
+
     private func updateRGBFromHex() {
         let cleanHex = hexValue.replacingOccurrences(of: "#", with: "")
         if cleanHex.count == 6 {
             let scanner = Scanner(string: cleanHex)
             var hexNumber: UInt64 = 0
-            
+
             if scanner.scanHexInt64(&hexNumber) {
                 let r = Int((hexNumber & 0xff0000) >> 16)
                 let g = Int((hexNumber & 0x00ff00) >> 8)
                 let b = Int(hexNumber & 0x0000ff)
-                
+
                 redValue = String(r)
                 greenValue = String(g)
                 blueValue = String(b)
@@ -345,45 +311,25 @@ struct RGBInputSection: View {
             }
         }
     }
-    
+
     private func updateSharedColor() {
-        // CRITICAL FIX: Don't update shared color when displaying a gradient
-        // This preserves gradients when the Ink panel is opened
         if isDisplayingGradient {
             return
         }
 
-        // Update the shared color binding for UI synchronization
         sharedColor = .rgb(currentColor)
 
-        // CRITICAL FIX: Don't update gradients during programmatic changes OR when just browsing
-        // Only update gradients when user explicitly applies/selects colors
         if isProgrammaticallyUpdating {
-            // Removed logging spam
             return
         }
 
-        // CRITICAL FIX #2: Don't directly modify shapes in updateSharedColor!
-        // This function is called during slider movements and initialization.
-        // Direct shape modification should ONLY happen through proper channels (setActiveColor).
-        // Removing all direct shape modifications below to prevent gradient corruption.
 
-        // The code below was directly modifying shapes during live updates,
-        // which was replacing gradients with solid colors without proper undo handling.
-        // This should be handled by explicit user actions only.
         return
 
-        /* REMOVED: Direct shape modification causing gradient loss
-        // The code below was directly modifying shapes during slider movements,
-        // which was replacing gradients with solid colors without proper undo handling.
-        // This should only happen through explicit user actions (clicking swatches, etc.)
-        */
     }
-    
-    private func loadFromSharedColor() {
-        // Removed excessive logging for performance
 
-        // Reset gradient flag by default (will be set to true if we detect a gradient)
+    private func loadFromSharedColor() {
+
         isDisplayingGradient = false
 
         switch sharedColor {
@@ -429,8 +375,6 @@ struct RGBInputSection: View {
                 blue: Int(rgb.blue * 255)
             )
         case .gradient(let gradient):
-            // For gradients, use the first stop color as representative
-            // BUT DON'T UPDATE THE ACTUAL GRADIENT TO A SOLID COLOR
             isDisplayingGradient = true
             if let firstStop = gradient.stops.first {
                 switch firstStop.color {
@@ -441,7 +385,6 @@ struct RGBInputSection: View {
                         blue: Int(rgb.blue * 255)
                     )
                 default:
-                    // Convert any other color type to RGB for display
                     let swiftUIColor = firstStop.color.color
                     let components = swiftUIColor.components
                     setRGBValues(
@@ -453,10 +396,7 @@ struct RGBInputSection: View {
             } else {
                 setRGBValues(red: 0, green: 0, blue: 0)
             }
-            // Don't call updateSharedColor() for gradients - preserve them!
         case .clear:
-            // For clear colors, we don't update RGB values since they're not applicable
-            // The clear color should be handled separately
             return
         case .black:
             setRGBValues(red: 0, green: 0, blue: 0)
@@ -464,10 +404,9 @@ struct RGBInputSection: View {
             setRGBValues(red: 255, green: 255, blue: 255)
         }
     }
-    
+
     private func setRGBValues(red: Int, green: Int, blue: Int) {
-        // Removed excessive logging for performance
-        
+
         isProgrammaticallyUpdating = true
         redValue = String(red)
         greenValue = String(green)
@@ -477,29 +416,23 @@ struct RGBInputSection: View {
         blueSlider = Double(blue)
         updateHexFromRGB()
         isProgrammaticallyUpdating = false
-        
-        // Removed excessive logging for performance
+
     }
-    
+
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.rgb(currentColor)
 
 
-        // 🔥 CRITICAL FIX: Only use gradient callback if THIS section allows gradient editing
-        // Priority 1: If we're in gradient editing mode AND this section supports it, use gradient callback
         if showGradientEditing, let gradientCallback = appState.gradientEditingState?.onColorSelected {
             gradientCallback(vectorColor)
-            // Also add to swatches when ink well is clicked
             document.addColorSwatch(vectorColor)
             return
         }
 
-        // Priority 2: Otherwise, apply to document's active selection
         document.setActiveColor(vectorColor)
-        // Also add to swatches when ink well is clicked
         document.addColorSwatch(vectorColor)
     }
-    
+
     private func addColorToSwatches() {
         let vectorColor = VectorColor.rgb(currentColor)
         document.addColorToSwatches(vectorColor)

@@ -1,9 +1,3 @@
-//
-//  PanelTab.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 7/5/25.
-//
 
 import SwiftUI
 
@@ -14,7 +8,7 @@ enum PanelTab: String, CaseIterable {
     case color = "Ink"
     case pathOps = "Path"
     case font = "Font"
-    
+
     var iconName: String {
         switch self {
         case .layers: return "square.stack"
@@ -25,4 +19,4 @@ enum PanelTab: String, CaseIterable {
         case .font: return "textformat"
         }
     }
-} 
+}

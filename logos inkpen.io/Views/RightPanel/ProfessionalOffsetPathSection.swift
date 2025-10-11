@@ -1,14 +1,7 @@
-//
-//  ProfessionalOffsetPathSection.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 7/5/25.
-//
 
 import SwiftUI
 import Combine
 
-// MARK: - Professional Offset Path Section (Professional Standards)
 
 struct ProfessionalOffsetPathSection: View {
     @ObservedObject var document: VectorDocument
@@ -19,10 +12,8 @@ struct ProfessionalOffsetPathSection: View {
     @State private var keepOriginalPath: Bool = true
 
 
-    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Header with disclosure triangle
             HStack {
                 Button {
                     withAnimation(.easeInOut(duration: 0.2)) {
@@ -33,7 +24,7 @@ struct ProfessionalOffsetPathSection: View {
                         Image(systemName: showAdvanced ? "chevron.down" : "chevron.right")
                             .font(.caption2)
                             .foregroundColor(.secondary)
-                        
+
                         Text("Offset Path")
                             .font(.caption)
                             .fontWeight(.semibold)
@@ -41,33 +32,31 @@ struct ProfessionalOffsetPathSection: View {
                     }
                 }
                 .buttonStyle(BorderlessButtonStyle())
-                
+
                 Spacer()
-                
-                // Professional icon
+
                 Image(systemName: "arrow.up.and.down.and.arrow.left.and.right")
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }
             .padding(.horizontal, 12)
-            
+
             if showAdvanced {
                 VStack(alignment: .leading, spacing: 10) {
-                    // Offset Distance Control
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
                             Text("Offset:")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
-                            
+
                             Spacer()
-                            
+
                             Text("\(offsetDistance)pt")
                                 .font(.caption2)
                                 .foregroundColor(.primary)
                                 .monospacedDigit()
                         }
-                        
+
                         Slider(value: Binding(
                             get: { Double(offsetDistance) },
                             set: { offsetDistance = Int($0) }
@@ -77,8 +66,7 @@ struct ProfessionalOffsetPathSection: View {
                         .controlSize(.regular)
                         .tint(.blue)
                     }
-                    
-                    // Keep Original Path Toggle (Professional Standard)
+
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Keep Original Path")
@@ -96,15 +84,13 @@ struct ProfessionalOffsetPathSection: View {
                             .controlSize(.small)
                     }
                     .help("Keep the original path when creating offset (Professional default)")
-                    
 
-                    
-                    // Join Type Selection (Professional style)
+
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Joins:")
                             .font(.caption2)
                             .foregroundColor(.secondary)
-                        
+
                         HStack(spacing: 6) {
                             ForEach([JoinType.round, .square, .bevel, .miter], id: \.self) { joinType in
                                 Button {
@@ -113,7 +99,7 @@ struct ProfessionalOffsetPathSection: View {
                                     VStack(spacing: 2) {
                                         Image(systemName: joinType.iconName)
                                             .font(.system(size: 12))
-                                        
+
                                         Text(joinType.displayName)
                                             .font(.caption2)
                                     }
@@ -128,30 +114,29 @@ struct ProfessionalOffsetPathSection: View {
                                                     .stroke(selectedJoinType == joinType ? Color.accentColor.opacity(0.3) : Color.gray.opacity(0.2), lineWidth: 0.5)
                                             )
                                     )
-                                    .contentShape(Rectangle()) // Extend hit area to match entire button background
+                                    .contentShape(Rectangle())
                                 }
                                 .buttonStyle(BorderlessButtonStyle())
                                 .help(joinType.description)
                             }
                         }
                     }
-                    
-                    // Miter Limit (only show for miter joins)
+
                     if selectedJoinType == .miter {
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
                                 Text("Miter Limit:")
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
-                                
+
                                 Spacer()
-                                
+
                                 Text("\(miterLimit, specifier: "%.1f")")
                                     .font(.caption2)
                                     .foregroundColor(.primary)
                                     .monospacedDigit()
                             }
-                            
+
                             Slider(value: $miterLimit, in: 1.0...20.0) {
                                 Text("Miter Limit")
                             }
@@ -159,10 +144,8 @@ struct ProfessionalOffsetPathSection: View {
                         }
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
-                    
 
-                    
-                    // Offset Path button - Full Width
+
                     Button {
                         performOffsetPath()
                     } label: {
@@ -182,7 +165,7 @@ struct ProfessionalOffsetPathSection: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(BorderlessButtonStyle())
-                    .onTapGesture { // Luna Display compatibility
+                    .onTapGesture {
                         performOffsetPath()
                     }
                     .help("Create offset path with current settings (⌘⌥O)")
@@ -193,25 +176,21 @@ struct ProfessionalOffsetPathSection: View {
             }
         }
     }
-    
+
     private func canPerformOffset() -> Bool {
         return !document.selectedShapeIDs.isEmpty
     }
-    
 
-    
+
     private func performOffsetPath() {
         guard !document.selectedShapeIDs.isEmpty else { return }
-        
-        
-        // Save to undo stack
+
+
         document.saveToUndoStack()
-        
-        // Get selected shapes and their indices for proper stacking order
+
         let selectedShapes = document.getSelectedShapes()
         var newOffsetShapeIDs: Set<UUID> = []
-        
-        // Store original shape indices for proper insertion
+
         var originalShapeIndices: [UUID: Int] = [:]
         if let layerIndex = document.selectedLayerIndex {
             let shapes = document.getShapesForLayer(layerIndex)
@@ -221,37 +200,32 @@ struct ProfessionalOffsetPathSection: View {
                 }
             }
         }
-        
+
         for shape in selectedShapes {
-            
-            // PROPER OFFSET PATH: Create an offset path using CoreGraphics stroking
+
             let offsetValue = CGFloat(offsetDistance)
-            
-            // Create offset path by stroking with the offset distance
+
             let offsetPath = shape.path.cgPath.copy(strokingWithWidth: abs(offsetValue) * 2.0,
                                                     lineCap: .round,
                                                     lineJoin: mapJoinTypeToCoreGraphics(selectedJoinType),
                                                     miterLimit: CGFloat(miterLimit))
-            
+
             var finalPath: CGPath
-            
+
             if offsetDistance >= 0 {
-                // POSITIVE OFFSET: Union with original
                 if let unionResult = CoreGraphicsPathOperations.union(shape.path.cgPath, offsetPath, using: .winding) {
                     finalPath = unionResult
                 } else {
                     finalPath = offsetPath
                 }
             } else {
-                // NEGATIVE OFFSET: Subtract stroke from original
                 if let subtractResult = CoreGraphicsPathOperations.subtract(offsetPath, from: shape.path.cgPath, using: .winding) {
                     finalPath = subtractResult
                 } else {
                     finalPath = shape.path.cgPath
                 }
             }
-                
-                // Create the final offset shape
+
                 let offsetVectorPath = VectorPath(cgPath: finalPath)
                 let offsetShape = VectorShape(
                     name: "\(shape.name) Offset \(offsetDistance > 0 ? "+" : "")\(offsetDistance)pt",
@@ -261,85 +235,68 @@ struct ProfessionalOffsetPathSection: View {
                     transform: shape.transform,
                     opacity: shape.opacity
                 )
-                
-                // Insert offset shape with proper ordering based on offset direction
+
                 if offsetDistance >= 0 {
-                    // POSITIVE OFFSET: Goes BEHIND original shape (lower orderID)
                     if let layerIndex = document.selectedLayerIndex {
                         document.layers[layerIndex].addShape(offsetShape)
-                        // Use new behind insertion method to ensure proper orderID
                         document.addShapeBehindInUnifiedSystem(offsetShape, layerIndex: layerIndex, behindShapeIDs: [shape.id])
                     }
                 } else {
-                    // NEGATIVE OFFSET: Goes in FRONT of original shape (higher orderID)  
                     document.addShape(offsetShape)
                 }
-                
+
                 newOffsetShapeIDs.insert(offsetShape.id)
-            
+
         }
-        
-        // Handle stacking order based on offset direction
+
         if keepOriginalPath {
             if offsetDistance >= 0 {
-                // POSITIVE OFFSET: Offset shapes are already inserted behind originals
             } else {
-                // NEGATIVE OFFSET: Offset shapes are already positioned after originals
             }
         } else {
-            // Remove original shapes if not keeping them
             document.removeSelectedShapes()
         }
-        
-        // Always select the result of the offset path operation
+
         document.selectedShapeIDs = newOffsetShapeIDs
-        
-        // CRITICAL FIX: Sync unified objects after creating offset shapes
+
         document.updateUnifiedObjectsOptimized()
-        
-        // Force document refresh so arrow tool can see newly created shapes
+
         document.objectWillChange.send()
-         
+
     }
-    
+
 
     private func mapJoinTypeToCoreGraphics(_ joinType: JoinType) -> CGLineJoin {
         switch joinType {
         case .round: return .round
         case .miter: return .miter
         case .bevel: return .bevel
-        case .square: return .miter  // Square corners with minimal miter limit
+        case .square: return .miter
         }
     }
-    
-    /// Helper function to find the outside path from trim results
+
     private func findOutsidePath(from trimmedPaths: [CGPath], original: CGPath, offset: CGPath) -> CGPath? {
         guard !trimmedPaths.isEmpty else { return nil }
-        
-        // Get bounds of offset for comparison  
+
         let offsetBounds = offset.boundingBoxOfPath
-        
-        // The outside path is typically:
-        // 1. The largest path by area
-        // 2. The path that contains or is closest to the offset bounds
+
         var bestPath: CGPath?
         var bestScore: CGFloat = 0
-        
+
         for path in trimmedPaths {
             let pathBounds = path.boundingBoxOfPath
             let pathArea = pathBounds.width * pathBounds.height
-            
-            // Score based on area and proximity to offset bounds
+
             let areaScore = pathArea
             let proximityScore = pathBounds.intersection(offsetBounds).width * pathBounds.intersection(offsetBounds).height
-            let totalScore = areaScore + proximityScore * 2.0 // Weight proximity higher
-            
+            let totalScore = areaScore + proximityScore * 2.0
+
             if totalScore > bestScore {
                 bestScore = totalScore
                 bestPath = path
             }
         }
-        
+
         return bestPath ?? trimmedPaths.first
     }
-} 
+}

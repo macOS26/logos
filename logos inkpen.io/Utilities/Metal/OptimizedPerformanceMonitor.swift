@@ -1,11 +1,10 @@
 import SwiftUI
 import Combine
 
-/// Optimized performance monitor that doesn't add CPU overhead
 class OptimizedPerformanceMonitor: ObservableObject {
-    
+
     static let shared = OptimizedPerformanceMonitor()
-    
+
     @Published var fps: Double = 0.0
     @Published var frameTime: Double = 0.0
     @Published var renderingMode: String = "Core Graphics CPU"
@@ -13,113 +12,95 @@ class OptimizedPerformanceMonitor: ObservableObject {
     @Published var memoryUsage: Double = 0.0
     @Published var drawCallCount: Int = 0
     @Published var cpuUsage: Double = 0.0
-    
-    // Efficient tracking without high-frequency timers
+
     private var frameCount: Int = 0
     private var lastUpdateTime: CFTimeInterval = 0
     private var isTracking: Bool = false
-    
-    // CPU usage tracking
+
     private var lastCPUTime: Double = 0
     private var cpuTimer: Timer?
     private var activityCounter: Int = 0
     private var lastActivityTime: CFTimeInterval = 0
-    
-    // Activity monitor fallback
+
     private var activityFrameCount: Int = 0
     private var activityLastFrameTime: CFTimeInterval = 0
-    
-    // CPU tick tracking for accurate CPU usage
+
     private var previousTotalTicks: UInt32?
     private var previousIdleTicks: UInt32 = 0
-    
+
     init() {
         setupOptimizedTracking()
     }
-    
+
     deinit {
         stopTracking()
     }
-    
-    // MARK: - Optimized Tracking Setup
-    
+
+
     private func setupOptimizedTracking() {
         let metalEngine = MetalComputeEngine.shared
         self.metalDeviceName = metalEngine.device.name
         self.renderingMode = metalEngine.getPerformanceMode()
-        
-        // Use low-frequency CPU monitoring (every 2 seconds instead of 60 FPS)
+
         cpuTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
             self.updateSystemMetrics()
         }
-        
+
         lastUpdateTime = CACurrentMediaTime()
         lastActivityTime = CACurrentMediaTime()
         isTracking = true
-        
-        // Initialize with baseline CPU
+
         DispatchQueue.main.async {
-            self.cpuUsage = 0.0 // Start with 0% baseline
+            self.cpuUsage = 0.0
         }
     }
-    
+
     private func stopTracking() {
         cpuTimer?.invalidate()
         cpuTimer = nil
         isTracking = false
     }
-    
-    // MARK: - Efficient Frame Tracking
-    
-    /// Call this only when actual drawing occurs (not continuously)
+
+
     func trackDrawingEvent(elementCount: Int = 0) {
         guard isTracking else { return }
-        
+
         frameCount += 1
         drawCallCount = elementCount
-        
-        // Only track activity, don't update CPU here
-        // Let the timer-based system handle CPU updates
+
         activityCounter += 1
         let currentTime = CACurrentMediaTime()
-        
-        // Reset activity counter periodically but don't update CPU
+
         if currentTime - lastActivityTime >= 1.0 {
             activityCounter = 0
             lastActivityTime = currentTime
         }
-        
+
         let timeDelta = currentTime - lastUpdateTime
-        
-        // Update FPS every 1 second (instead of 60 times per second)
+
         if timeDelta >= 1.0 {
             let fps = Double(frameCount) / timeDelta
-            
+
             DispatchQueue.main.async {
                 self.fps = fps
-                self.frameTime = timeDelta * 1000.0 / Double(self.frameCount) // Average frame time
+                self.frameTime = timeDelta * 1000.0 / Double(self.frameCount)
             }
-            
+
             frameCount = 0
             lastUpdateTime = currentTime
         }
     }
-    
-    /// Track Metal command start (lightweight)
+
     func metalCommandStart() {
-        // Only track if Metal is actually being used
         if renderingMode.contains("Metal") {
             trackDrawingEvent()
         }
     }
-    
-    // MARK: - System Metrics (Low Frequency)
-    
+
+
     private func updateSystemMetrics() {
-        // CPU usage - try system metrics first, fallback to activity
         updateCPUUsage()
-        
-        // If system metrics failed, use activity-based estimation
+
         if cpuUsage == 0.0 && activityCounter > 0 {
             let activityLevel = min(100.0, Double(activityCounter))
             let scaledActivity = activityLevel * 0.3
@@ -129,38 +110,33 @@ class OptimizedPerformanceMonitor: ObservableObject {
                 }
             }
         }
-        
-        // Memory usage (already low frequency)
+
         updateMemoryUsage()
     }
-    
+
     private func updateCPUUsage() {
-        // Use host_statistics for accurate CPU usage
         var cpuLoad = host_cpu_load_info()
         var count = mach_msg_type_number_t(MemoryLayout<host_cpu_load_info>.size) / 4
-        
+
         let result = withUnsafeMutablePointer(to: &cpuLoad) {
             $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
                 host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, $0, &count)
             }
         }
-        
+
         if result == KERN_SUCCESS {
-            // Calculate CPU usage from ticks
             let totalTicks = cpuLoad.cpu_ticks.0 + cpuLoad.cpu_ticks.1 + cpuLoad.cpu_ticks.2 + cpuLoad.cpu_ticks.3
-            
+
             if let previousTotalTicks = previousTotalTicks {
                 let totalDelta = Int(totalTicks) - Int(previousTotalTicks)
                 let idleDelta = Int(cpuLoad.cpu_ticks.3) - Int(previousIdleTicks)
-                
+
                 if totalDelta > 0 {
                     let cpuUsagePercent = Double(totalDelta - idleDelta) / Double(totalDelta) * 100.0
-                    
+
                     DispatchQueue.main.async {
-                        // Scale down CPU usage to be more realistic for idle state
-                        let scaledCPU = cpuUsagePercent * 0.3 // Scale factor to get closer to 0% when idle
-                        
-                        // Consider very low CPU usage as effectively 0%
+                        let scaledCPU = cpuUsagePercent * 0.3
+
                         if scaledCPU < 5.0 {
                             self.cpuUsage = 0.0
                         } else {
@@ -169,25 +145,23 @@ class OptimizedPerformanceMonitor: ObservableObject {
                     }
                 }
             }
-            
+
             previousTotalTicks = totalTicks
             previousIdleTicks = cpuLoad.cpu_ticks.3
         } else {
-            // Fallback: Use system load average
             updateCPUUsingLoadAverage()
         }
     }
-    
+
     private func updateCPUUsingLoadAverage() {
         var loadAvg = [Double](repeating: 0, count: 3)
         let result = getloadavg(&loadAvg, 3)
-        
+
         if result > 0 {
             let processInfo = ProcessInfo.processInfo
             let cpuLoad = min(100.0, loadAvg[0] * 100.0 / Double(processInfo.processorCount))
-            
+
             DispatchQueue.main.async {
-                // Consider very low CPU usage as effectively 0%
                 if cpuLoad < 5.0 {
                     self.cpuUsage = 0.0
                 } else {
@@ -195,22 +169,19 @@ class OptimizedPerformanceMonitor: ObservableObject {
                 }
             }
         } else {
-            // Final fallback: Use activity monitor approach
             updateCPUUsingActivityMonitor()
         }
     }
-    
+
     private func updateCPUUsingActivityMonitor() {
-        // Simple activity-based CPU estimation
         let now = CACurrentMediaTime()
-        
+
         activityFrameCount += 1
-        
-        if now - activityLastFrameTime >= 2.0 { // Update every 2 seconds
-            let estimatedCPU = min(100.0, Double(activityFrameCount) * 2.0) // Scale by 2 for more realistic values
-            
+
+        if now - activityLastFrameTime >= 2.0 {
+            let estimatedCPU = min(100.0, Double(activityFrameCount) * 2.0)
+
             DispatchQueue.main.async {
-                // Scale down activity-based CPU and apply threshold
                 let scaledCPU = estimatedCPU * 0.3
                 if scaledCPU < 5.0 {
                     self.cpuUsage = 0.0
@@ -218,22 +189,22 @@ class OptimizedPerformanceMonitor: ObservableObject {
                     self.cpuUsage = min(100.0, max(0.0, scaledCPU))
                 }
             }
-            
+
             activityFrameCount = 0
             activityLastFrameTime = now
         }
     }
-    
+
     private func updateMemoryUsage() {
         var info = mach_task_basic_info()
         var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size) / 4
-        
+
         let kern = withUnsafeMutablePointer(to: &info) {
             $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
                 task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
             }
         }
-        
+
         if kern == KERN_SUCCESS {
             let memoryMB = Double(info.resident_size) / (1024.0 * 1024.0)
             DispatchQueue.main.async {
@@ -241,16 +212,15 @@ class OptimizedPerformanceMonitor: ObservableObject {
             }
         }
     }
-    
-    // MARK: - Performance Assessment
-    
+
+
     var performanceGrade: String {
         if cpuUsage > 80 { return "CPU Overload" }
         if cpuUsage > 60 { return "High CPU" }
         if cpuUsage > 40 { return "Moderate CPU" }
         return "Efficient"
     }
-    
+
     var cpuStatusColor: Color {
         switch cpuUsage {
         case 0..<30: return .green
@@ -259,37 +229,34 @@ class OptimizedPerformanceMonitor: ObservableObject {
         default: return .red
         }
     }
-    
-    /// Color specifically for performance grade text
+
     var performanceGradeColor: Color {
         switch performanceGrade {
         case "Efficient": return .green
         case "Moderate CPU": return .yellow
         case "High CPU": return .orange
         case "CPU Overload": return .red
-        default: return .green // Default to green for any other cases
+        default: return .green
         }
     }
 }
 
-// MARK: - Lightweight Performance Overlay
 
 struct LightweightPerformanceOverlay: View {
     @ObservedObject var monitor: OptimizedPerformanceMonitor
     @State private var isExpanded: Bool = false
-    
+
     var body: some View {
         VStack(alignment: .trailing, spacing: 4) {
-            // Compact CPU indicator
             HStack(spacing: 4) {
                 Circle()
                     .fill(monitor.cpuStatusColor)
                     .frame(width: 6, height: 6)
-                
+
                 Text("CPU \(Int(monitor.cpuUsage))%")
                     .font(.system(.caption2, design: .monospaced))
                     .foregroundColor(.primary)
-                
+
                 if isExpanded {
                     Image(systemName: "chevron.up")
                         .font(.caption2)
@@ -300,21 +267,21 @@ struct LightweightPerformanceOverlay: View {
                         .foregroundColor(.secondary)
                 }
             }
-            
+
             if isExpanded {
                 VStack(alignment: .trailing, spacing: 1) {
                     Divider()
-                    
+
                     Text("FPS: \(Int(monitor.fps))")
                         .font(.system(.caption2, design: .monospaced))
-                    
+
                     Text("Memory: \(Int(monitor.memoryUsage))MB")
                         .font(.system(.caption2, design: .monospaced))
-                    
+
                     Text("Mode: \(monitor.renderingMode)")
                         .font(.system(.caption2, design: .monospaced))
                         .lineLimit(1)
-                    
+
                     Text("Grade: \(monitor.performanceGrade)")
                         .font(.system(.caption2, design: .monospaced))
                         .foregroundColor(monitor.performanceGradeColor)

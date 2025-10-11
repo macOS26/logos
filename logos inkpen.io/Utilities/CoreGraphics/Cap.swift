@@ -1,9 +1,3 @@
-//
-//  Cap.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/20/25.
-//
 
 import SwiftUI
 

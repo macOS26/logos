@@ -1,13 +1,6 @@
-//
-//  ObjectRow.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 7/5/25.
-//
 
 import SwiftUI
 
-// PROFESSIONAL OBJECT ROW (Individual objects within layers)
 struct ObjectRow: View {
     enum ObjectType: String {
         case shape = "shape"
@@ -24,7 +17,7 @@ struct ObjectRow: View {
     let onSelect: (_ isShiftPressed: Bool, _ isCommandPressed: Bool) -> Void
     let layerIndex: Int
     let document: VectorDocument
-    let groupedShapes: [VectorShape]? // For groups, to show children
+    let groupedShapes: [VectorShape]?
 
     @State private var isDragging = false
     @State private var isGroupExpanded = false
@@ -46,7 +39,6 @@ struct ObjectRow: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 6) {
-                // Disclosure arrow for groups
                 if objectType == .group {
                     Button(action: {
                         withAnimation(.easeInOut(duration: 0.15)) {
@@ -60,30 +52,25 @@ struct ObjectRow: View {
                     }
                     .buttonStyle(BorderlessButtonStyle())
                 } else {
-                    // Spacer for non-group items to maintain alignment
                     Color.clear.frame(width: 10, height: 10)
                 }
 
-                // Object Type Icon
                 Image(systemName: objectIcon)
                         .font(.system(size: 10))
                     .foregroundColor(objectIconColor)
                     .frame(width: 12)
 
-                // Selection Indicator
                 Circle()
                     .fill(isSelected ? Color.blue : Color.clear)
                     .stroke(Color.blue.opacity(0.3), lineWidth: 1)
                     .frame(width: 8, height: 8)
-            
-                // Object Name
+
                 Text(name)
                     .font(.system(size: 11))
                     .foregroundColor(isSelected ? .blue : .primary)
                     .lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                // Visibility/Lock Indicators
                 HStack(spacing: 2) {
                     if !isVisible {
                         Image(systemName: "eye.slash")
@@ -114,7 +101,6 @@ struct ObjectRow: View {
             objectId: objectId,
             sourceLayerIndex: layerIndex
         )) {
-            // Custom drag preview
             HStack(spacing: 4) {
                 Image(systemName: objectIcon)
                     .font(.system(size: 12))
@@ -130,12 +116,8 @@ struct ObjectRow: View {
             .cornerRadius(6)
         }
         .onChange(of: isDragging) { oldValue, newValue in
-            // Visual feedback during drag
-            //if newValue {
-            //}
         }
         .contextMenu {
-            // Context menu for object operations
             Button("Select") {
                 onSelect(false, false)
             }
@@ -144,7 +126,6 @@ struct ObjectRow: View {
 
             if objectType == .shape {
                 Button("Duplicate Shape") {
-                    // Future implementation
                 }
                 Button("Delete Shape") {
                     document.selectedShapeIDs = [objectId]
@@ -152,7 +133,6 @@ struct ObjectRow: View {
                 }
             } else {
                 Button("Duplicate Text") {
-                    // Future implementation
                 }
                 Button("Delete Text") {
                     document.selectedTextIDs = [objectId]
@@ -163,28 +143,22 @@ struct ObjectRow: View {
             Divider()
 
             Button(isVisible ? "Hide" : "Show") {
-                // Toggle visibility - future implementation
             }
 
             Button(isLocked ? "Unlock" : "Lock") {
-                // Toggle lock - future implementation
             }
         }
         .dropDestination(for: DraggableVectorObject.self) { items, location in
-            // Handle dropping objects for reordering
             guard let droppedObject = items.first else { return false }
 
-            // Only allow reordering within the same layer
             if droppedObject.sourceLayerIndex != layerIndex {
                 return false
             }
 
-            // Don't drop on self
             if droppedObject.objectId == objectId {
                 return false
             }
 
-            // Move the object to this position in the stacking order
             document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectId)
             return true
         } isTargeted: { isTargeted in
@@ -193,7 +167,6 @@ struct ObjectRow: View {
             }
         }
         .overlay(alignment: .top) {
-            // Drop indicator line
             if isDropTarget {
                 Rectangle()
                     .fill(Color.blue)
@@ -202,28 +175,23 @@ struct ObjectRow: View {
             }
         }
 
-            // CRITICAL: Render grouped shapes when expanded
             if objectType == .group, isGroupExpanded, let shapes = groupedShapes {
                 ForEach(shapes, id: \.id) { childShape in
                     let isChildSelected = document.selectedObjectIDs.contains(childShape.id)
 
                     HStack(spacing: 6) {
-                        // Indent for hierarchy
                         Color.clear.frame(width: 20)
 
-                        // Child shape icon
                         Image(systemName: childShape.isTextObject ? "textformat" : "square")
                             .font(.system(size: 9))
                             .foregroundColor(childShape.isTextObject ? .green : .blue)
                             .frame(width: 12)
 
-                        // Selection indicator for child
                         Circle()
                             .fill(isChildSelected ? Color.blue : Color.clear)
                             .stroke(Color.blue.opacity(0.3), lineWidth: 1)
                             .frame(width: 7, height: 7)
 
-                        // Child shape name
                         Text(childShape.isTextObject ? (childShape.textContent ?? "Text") : childShape.name)
                             .font(.system(size: 10))
                             .foregroundColor(isChildSelected ? .blue : .secondary)
@@ -235,12 +203,10 @@ struct ObjectRow: View {
                     .background(isChildSelected ? Color.blue.opacity(0.08) : Color.clear)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        // PROFESSIONAL: Select child object directly (like Illustrator/Figma)
                         let isShiftPressed = NSEvent.modifierFlags.contains(.shift)
                         let isCommandPressed = NSEvent.modifierFlags.contains(.command)
 
                         if isCommandPressed {
-                            // Command-click: Toggle selection
                             if document.selectedObjectIDs.contains(childShape.id) {
                                 document.selectedObjectIDs.remove(childShape.id)
                                 if childShape.isTextObject {
@@ -257,7 +223,6 @@ struct ObjectRow: View {
                                 }
                             }
                         } else if isShiftPressed {
-                            // Shift-click: Add to selection
                             document.selectedObjectIDs.insert(childShape.id)
                             if childShape.isTextObject {
                                 document.selectedTextIDs.insert(childShape.id)
@@ -265,7 +230,6 @@ struct ObjectRow: View {
                                 document.selectedShapeIDs.insert(childShape.id)
                             }
                         } else {
-                            // Regular click: Select only this child
                             document.selectedObjectIDs = [childShape.id]
                             if childShape.isTextObject {
                                 document.selectedTextIDs = [childShape.id]
@@ -297,9 +261,8 @@ struct ObjectRow: View {
         case .group: return .purple
         }
     }
-} 
+}
 
-// MARK: - Preferences View
 struct PreferencesView: View {
     @Environment(AppState.self) private var appState
     @Environment(\._openURL) private var openURL
@@ -307,15 +270,12 @@ struct PreferencesView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Pressure Sensitivity Section
             GroupBox(label: Label("Pressure Sensitivity", systemImage: "hand.draw").font(.headline)) {
                 VStack(alignment: .leading, spacing: 12) {
 
-                    // Pressure curve editor
                     PressureCurveEditor(curve: $pressureCurve, size: 300)
                         .padding(.vertical, 8)
 
-                    // Preset buttons
                     HStack(spacing: 8) {
                         Button("Linear") {
                             pressureCurve = PreferencesView.defaultPressureCurve()
@@ -363,7 +323,6 @@ struct PreferencesView: View {
     }
 
     private func loadPressureCurve() {
-        // Load from UserDefaults using the SAME key as AppState
         if let data = UserDefaults.standard.array(forKey: "pressureCurve") as? [[String: Double]] {
             let loadedCurve = data.compactMap { dict -> CGPoint? in
                 guard let x = dict["x"], let y = dict["y"] else { return nil }
@@ -376,17 +335,14 @@ struct PreferencesView: View {
     }
 
     private func savePressureCurve() {
-        // Save to UserDefaults using the SAME key as AppState
         let data = pressureCurve.map { ["x": $0.x, "y": $0.y] }
         UserDefaults.standard.set(data, forKey: "pressureCurve")
         UserDefaults.standard.synchronize()
 
-        // ALSO update AppState directly so tools get the change immediately
         appState.pressureCurve = pressureCurve
 
     }
 
-    // Helper functions
     static func defaultPressureCurve() -> [CGPoint] {
         return [
             CGPoint(x: 0.0, y: 0.0),

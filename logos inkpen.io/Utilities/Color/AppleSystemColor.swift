@@ -1,19 +1,11 @@
-//
-//  AppleSystemColor.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 
-// MARK: - Apple System Colors
 struct AppleSystemColor: Codable, Hashable {
     var name: String
     var lightMode: RGBColor
 
     var color: Color {
-        // Use the system color directly which adapts to light/dark mode
         switch name {
         case "systemBlue": return Color(.systemBlue)
         case "systemRed": return Color(.systemRed)
@@ -52,39 +44,11 @@ struct AppleSystemColor: Codable, Hashable {
         default: return lightMode.color
         }
     }
-    
+
     var rgbEquivalent: RGBColor {
-        // Return light mode RGB for conversion purposes
         return lightMode
     }
-    
-    // Predefined Apple System Colors with light/dark mode RGB values
-    // Using P3 color space for more vibrant colors
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-}
 
-// MARK: - Helper Extensions
+
+}
 

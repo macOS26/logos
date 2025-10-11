@@ -1,13 +1,6 @@
-//
-//  DocumentSetupData.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 
-// MARK: - Document Setup Data Model
 struct DocumentSetupData {
     var width: Double = 11.0
     var height: Double = 8.5
@@ -19,7 +12,7 @@ struct DocumentSetupData {
     var showGrid: Bool = false
     var snapToGrid: Bool = false
     var backgroundColor: VectorColor = .white
-    
+
     var documentSettings: DocumentSettings {
         DocumentSettings(
             width: width,

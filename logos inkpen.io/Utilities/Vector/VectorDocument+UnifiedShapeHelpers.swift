@@ -1,18 +1,10 @@
-//
-//  VectorDocument+UnifiedShapeHelpers.swift
-//  logos inkpen.io
-//
-//  Split from VectorDocument+UnifiedObjectManagement.swift
-//
 
 import SwiftUI
 import Combine
 
-// MARK: - Unified Shape Helper Functions
 extension VectorDocument {
-    
+
     func updateShapeFillColorInUnified(id: UUID, color: VectorColor) {
-        // Update directly in unified system
         if let index = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return !shape.isTextObject && shape.id == id
@@ -32,9 +24,8 @@ extension VectorDocument {
             }
         }
     }
-    
+
     func updateShapeStrokeColorInUnified(id: UUID, color: VectorColor) {
-        // Update directly in unified system
         if let index = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return !shape.isTextObject && shape.id == id
@@ -54,9 +45,8 @@ extension VectorDocument {
             }
         }
     }
-    
+
     func updateShapeFillOpacityInUnified(id: UUID, opacity: Double) {
-        // Update directly in unified system
         if let index = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return !shape.isTextObject && shape.id == id
@@ -76,9 +66,8 @@ extension VectorDocument {
             }
         }
     }
-    
+
     func updateShapeStrokeWidthInUnified(id: UUID, width: Double) {
-        // Update directly in unified system
         if let index = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return !shape.isTextObject && shape.id == id
@@ -98,9 +87,8 @@ extension VectorDocument {
             }
         }
     }
-    
+
     func lockShapeInUnified(id: UUID) {
-        // Update directly in unified system
         if let index = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return !shape.isTextObject && shape.id == id
@@ -116,9 +104,8 @@ extension VectorDocument {
             }
         }
     }
-    
+
     func unlockShapeInUnified(id: UUID) {
-        // Update directly in unified system
         if let index = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return !shape.isTextObject && shape.id == id
@@ -134,9 +121,8 @@ extension VectorDocument {
             }
         }
     }
-    
+
     func hideShapeInUnified(id: UUID) {
-        // Update directly in unified system
         if let index = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return !shape.isTextObject && shape.id == id
@@ -152,9 +138,8 @@ extension VectorDocument {
             }
         }
     }
-    
+
     func showShapeInUnified(id: UUID) {
-        // Update directly in unified system
         if let index = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return !shape.isTextObject && shape.id == id
@@ -170,9 +155,8 @@ extension VectorDocument {
             }
         }
     }
-    
+
     func updateShapeStrokeOpacityInUnified(id: UUID, opacity: Double) {
-        // Update directly in unified system
         if let index = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return !shape.isTextObject && shape.id == id
@@ -192,9 +176,8 @@ extension VectorDocument {
             }
         }
     }
-    
+
     func updateShapeOpacityInUnified(id: UUID, opacity: Double) {
-        // Update directly in unified system
         if let index = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return !shape.isTextObject && shape.id == id
@@ -210,9 +193,8 @@ extension VectorDocument {
             }
         }
     }
-    
+
     func updateShapeStrokePlacementInUnified(id: UUID, placement: StrokePlacement) {
-        // Update directly in unified system
         if let index = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
                 return !shape.isTextObject && shape.id == id

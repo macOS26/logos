@@ -1,24 +1,14 @@
-//
-//  VectorDocument+ObjectVisibility.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 
-// MARK: - Object Visibility & Locking
 extension VectorDocument {
-    
-    // MARK: - Lock/Unlock Methods
-    
-    /// Lock selected objects
+
+
     func lockSelectedObjects() {
         guard !selectedShapeIDs.isEmpty || !selectedTextIDs.isEmpty else { return }
-        
+
         saveToUndoStack()
-        
-        // Lock selected shapes
+
         for layerIndex in layers.indices {
             let shapes = getShapesForLayer(layerIndex)
             for (shapeIndex, shape) in shapes.enumerated() {
@@ -29,27 +19,23 @@ extension VectorDocument {
                 }
             }
         }
-        
-        // Lock selected text objects using unified helpers
+
         for textID in selectedTextIDs {
             lockTextInUnified(id: textID)
         }
-        
-        
-        // Clear selection since locked objects can't be selected
+
+
         selectedShapeIDs.removeAll()
         selectedTextIDs.removeAll()
     }
-    
-    /// Unlock all objects on current layer
+
     func unlockAllObjects() {
         guard let layerIndex = selectedLayerIndex else { return }
-        
+
         saveToUndoStack()
-        
+
         var unlockedCount = 0
-        
-        // Unlock all shapes on current layer
+
         let shapes = getShapesForLayer(layerIndex)
         for (shapeIndex, shape) in shapes.enumerated() {
             if shape.isLocked {
@@ -59,26 +45,22 @@ extension VectorDocument {
                 unlockedCount += 1
             }
         }
-        
-        // Unlock all text objects using unified helpers
+
         for unifiedObj in unifiedObjects {
             if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject, shape.isLocked == true {
                 unlockTextInUnified(id: shape.id)
                 unlockedCount += 1
             }
         }
-        
+
     }
-    
-    // MARK: - Hide/Show Methods
-    
-    /// Hide selected objects
+
+
     func hideSelectedObjects() {
         guard !selectedShapeIDs.isEmpty || !selectedTextIDs.isEmpty else { return }
-        
+
         saveToUndoStack()
-        
-        // Hide selected shapes
+
         for layerIndex in layers.indices {
             let shapes = getShapesForLayer(layerIndex)
             for (shapeIndex, shape) in shapes.enumerated() {
@@ -89,27 +71,23 @@ extension VectorDocument {
                 }
             }
         }
-        
-        // Hide selected text objects using unified helpers
+
         for textID in selectedTextIDs {
             hideTextInUnified(id: textID)
         }
-        
-        
-        // Clear selection since hidden objects can't be selected
+
+
         selectedShapeIDs.removeAll()
         selectedTextIDs.removeAll()
     }
-    
-    /// Show all objects on current layer
+
     func showAllObjects() {
         guard let layerIndex = selectedLayerIndex else { return }
-        
+
         saveToUndoStack()
-        
+
         var shownCount = 0
-        
-        // Show all shapes on current layer
+
         let shapes = getShapesForLayer(layerIndex)
         for (shapeIndex, shape) in shapes.enumerated() {
             if !shape.isVisible {
@@ -119,14 +97,13 @@ extension VectorDocument {
                 shownCount += 1
             }
         }
-        
-        // Show all text objects using unified helpers
+
         for unifiedObj in unifiedObjects {
             if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject, shape.isVisible == false {
                 showTextInUnified(id: shape.id)
                 shownCount += 1
             }
         }
-        
+
     }
 }

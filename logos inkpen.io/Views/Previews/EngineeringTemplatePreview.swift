@@ -1,9 +1,3 @@
-//
-//  EngineeringTemplatePreview.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 
@@ -15,14 +9,14 @@ struct EngineeringTemplatePreview: View {
                     Circle()
                         .stroke(Color.black, lineWidth: 1)
                         .frame(width: 40, height: 40)
-                    
+
                     Rectangle()
                         .fill(Color.black)
                         .frame(width: 60, height: 1)
                 }
-                
+
                 Spacer()
-                
+
                 VStack(alignment: .trailing, spacing: 2) {
                     Rectangle()
                         .fill(Color.black)
@@ -40,7 +34,7 @@ struct EngineeringTemplatePreview: View {
                         .frame(width: 90, height: 30)
                 )
             }
-            
+
             Spacer()
         }
         .padding()

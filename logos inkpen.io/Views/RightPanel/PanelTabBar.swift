@@ -1,15 +1,9 @@
-//
-//  PanelTabBar.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 7/5/25.
-//
 
 import SwiftUI
 
 struct PanelTabBar: View {
     @Binding var selectedTab: PanelTab
-    
+
     var body: some View {
         HStack(spacing: 0) {
             ForEach(PanelTab.allCases, id: \.self) { tab in
@@ -25,7 +19,7 @@ struct PanelTabBar: View {
                     .foregroundColor(selectedTab == tab ? .blue : .secondary)
                     .frame(width: 46.5, height: 45)
                     .background(selectedTab == tab ? Color.blue.opacity(0.1) : Color.clear)
-                    .contentShape(Rectangle()) // Extend hit area to match entire highlight area
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(BorderlessButtonStyle())
             }
@@ -37,4 +31,4 @@ struct PanelTabBar: View {
             alignment: .bottom
         )
     }
-} 
+}

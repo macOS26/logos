@@ -2,36 +2,29 @@ import SwiftUI
 
 @Observable
 class AppState {
-    // MARK: - Shared Instance
     static let shared = AppState()
-    
+
     var selectedPanelTab: PanelTab = .layers
 
-    /// Master switch for verbose console logging
     var enableVerboseLogging: Bool = false {
         didSet { UserDefaults.standard.set(enableVerboseLogging, forKey: "enableVerboseLogging") }
     }
-    /// Separate control for extremely noisy pressure-related logs
     var enablePressureLogging: Bool = false {
         didSet { UserDefaults.standard.set(enablePressureLogging, forKey: "enablePressureLogging") }
     }
-    
-    // MARK: - Default Tool Setting (Persistent across app launches)
+
     var defaultTool: DrawingTool = .brush {
         didSet {
             UserDefaults.standard.set(defaultTool.rawValue, forKey: "defaultTool")
         }
     }
-    
-    // MARK: - Pressure Sensitivity Toggle
+
     var pressureSensitivityEnabled: Bool = false {
         didSet {
             UserDefaults.standard.set(pressureSensitivityEnabled, forKey: "pressureSensitivityEnabled")
         }
     }
 
-    // MARK: - Global Pressure Curve
-    /// Maps input pressure (0-1) to output thickness (0-1) using interpolation
     internal var _pressureCurve: [CGPoint] = [
         CGPoint(x: 0.0, y: 0.0),
         CGPoint(x: 0.25, y: 0.25),
@@ -61,28 +54,22 @@ class AppState {
                 return CGPoint(x: x, y: y)
             }
             if loadedCurve.count >= 2 {
-                _pressureCurve = loadedCurve  // Set backing storage directly to avoid triggering save
+                _pressureCurve = loadedCurve
             }
         }
     }
-    
-    // MARK: - Clipping Mask Selection Mode
-    /// When true, allows selection of individual shapes within clipping masks
-    /// When false, clipping mask contents cannot be individually selected
+
     var enableClippingMaskContentSelection: Bool = false {
         didSet {
             UserDefaults.standard.set(enableClippingMaskContentSelection, forKey: "enableClippingMaskContentSelection")
         }
     }
-    
-    // MARK: - Gradient Editing State
+
     var gradientEditingState: GradientEditingState? = nil
-    
-    // MARK: - Gradient HUD State
+
     var showingGradientHUD = false
     var gradientHUDData: GradientHUDData? = nil
-    
-    // 🔥 PERSISTENT HUD MANAGER - Prevents recreation spam  
+
     private var _persistentGradientHUD: PersistentGradientHUDManager?
     var persistentGradientHUD: PersistentGradientHUDManager {
         if _persistentGradientHUD == nil {
@@ -90,8 +77,7 @@ class AppState {
         }
         return _persistentGradientHUD!
     }
-    
-    // 🔥 PERSISTENT INK HUD MANAGER
+
     private var _persistentInkHUD: PersistentInkHUDManager?
     var persistentInkHUD: PersistentInkHUDManager {
         if _persistentInkHUD == nil {
@@ -99,42 +85,30 @@ class AppState {
         }
         return _persistentInkHUD!
     }
-    
-    // 🔥 WINDOW MANAGEMENT - For opening gradient HUD window
+
     var openWindowAction: ((String) -> Void)?
     var dismissWindowAction: ((String) -> Void)?
-    
-    // MARK: - New Document Pipeline (WindowGroup-based)
-    /// When user completes New Document Setup in its own window, we store the
-    /// configured VectorDocument here. The next created DocumentGroup window
-    /// will detect this and load these settings, then clear the value.
+
     var pendingNewDocument: VectorDocument? = nil
 
-    // MARK: - New Document Flow
-    /// When true, the next opened document will present the New Document Setup sheet on appear
     var showSetupOnNewDoc: Bool = false
-    
-    /// Controls whether the New Document Setup window should be available for opening
+
     var shouldShowDocumentSetup: Bool = false
-    
-    // MARK: - Preferences: Brush Preview
+
     enum BrushPreviewStyle: String, CaseIterable { case outline, fill }
     var brushPreviewStyle: BrushPreviewStyle = .fill {
         didSet { UserDefaults.standard.set(brushPreviewStyle.rawValue, forKey: "brushPreviewStyle") }
     }
-    /// If true, the live preview is treated as final; we bake exactly that path on mouse up
     var brushPreviewIsFinal: Bool = false {
         didSet { UserDefaults.standard.set(brushPreviewIsFinal, forKey: "brushPreviewIsFinal") }
     }
-    
-    // MARK: - PDF Export Preferences
-    /// Controls whether to use CGGradient or CGShading for PDF gradient rendering
+
     enum PDFGradientMethod: String, CaseIterable {
-        case cgGradient = "cgGradient"  // Smooth gradients, may rasterize in Illustrator
-        case cgShading = "cgShading"    // Baked opacity to avoid transparency flattening
-        case cmyk = "cmyk"              // CMYK color space (was deviceN)
-        case blend = "blend"            // Blend mode with discrete steps (Illustrator-style)
-        case mesh = "mesh"              // Gradient mesh (future implementation)
+        case cgGradient = "cgGradient"
+        case cgShading = "cgShading"
+        case cmyk = "cmyk"
+        case blend = "blend"
+        case mesh = "mesh"
     }
 
     var pdfGradientMethod: PDFGradientMethod = .cgGradient {
@@ -143,10 +117,9 @@ class AppState {
         }
     }
 
-    /// Controls how text is rendered in PDF exports
     enum PDFTextRenderingMode: String, CaseIterable {
-        case glyphs = "glyphs"      // Individual glyphs (most accurate)
-        case lines = "lines"         // By lines (CTLine)
+        case glyphs = "glyphs"
+        case lines = "lines"
     }
 
     var pdfTextRenderingMode: PDFTextRenderingMode = .glyphs {
@@ -155,7 +128,6 @@ class AppState {
         }
     }
 
-    /// Controls how text is rendered in SVG exports (reuse same enum as PDF)
     typealias SVGTextRenderingMode = PDFTextRenderingMode
 
     var svgTextRenderingMode: SVGTextRenderingMode = .glyphs {
@@ -164,10 +136,9 @@ class AppState {
         }
     }
 
-    /// Controls color space for export (SVG, PDF, PNG, etc.)
     enum ExportColorSpace: String, CaseIterable {
-        case displayP3 = "displayP3"    // Wide gamut (25% wider than sRGB)
-        case sRGB = "sRGB"              // Standard RGB (maximum compatibility)
+        case displayP3 = "displayP3"
+        case sRGB = "sRGB"
     }
 
     var exportColorSpace: ExportColorSpace = .displayP3 {
@@ -176,7 +147,6 @@ class AppState {
         }
     }
 
-    /// Number of steps for blend mode (10-255)
     var pdfBlendSteps: Int = 20 {
         didSet {
             let clampedValue = min(max(pdfBlendSteps, 10), 255)
@@ -187,7 +157,6 @@ class AppState {
         }
     }
 
-    /// Grid size for mesh mode (X dimension, 4-50)
     var pdfMeshGridX: Int = 8 {
         didSet {
             let clampedValue = min(max(pdfMeshGridX, 4), 50)
@@ -198,7 +167,6 @@ class AppState {
         }
     }
 
-    /// Grid size for mesh mode (Y dimension, 4-50)
     var pdfMeshGridY: Int = 8 {
         didSet {
             let clampedValue = min(max(pdfMeshGridY, 4), 50)
@@ -209,12 +177,9 @@ class AppState {
         }
     }
 
-    // MARK: - System Metal Performance HUD Preference
-    /// Controls Apple Metal system Performance HUD visibility (live toggle)
     var enableSystemMetalHUD: Bool = false {
         didSet {
             UserDefaults.standard.set(enableSystemMetalHUD, forKey: "enableSystemMetalHUD")
-            // Apply immediately for any newly created Metal views
             if enableSystemMetalHUD {
                 setenv("MTL_HUD_ENABLED", "1", 1)
             } else {
@@ -223,12 +188,9 @@ class AppState {
         }
     }
 
-	// MARK: - In-App Performance HUD (draggable, moveable)
-	/// Show a lightweight in-app performance HUD that can be dragged
 	var showInAppPerformanceHUD: Bool = true {
 		didSet { UserDefaults.standard.set(showInAppPerformanceHUD, forKey: "showInAppPerformanceHUD") }
 	}
-	/// Persistent position for the in-app HUD (top-left origin)
 	var inAppHUDOffsetX: CGFloat = 24 {
 		didSet { UserDefaults.standard.set(Double(inAppHUDOffsetX), forKey: "inAppHUDOffsetX") }
 	}
@@ -236,7 +198,6 @@ class AppState {
 		didSet { UserDefaults.standard.set(Double(inAppHUDOffsetY), forKey: "inAppHUDOffsetY") }
 	}
 
-    // Position and size controls for Apple's HUD carrier view
     var metalHUDOffsetX: CGFloat = 0 {
         didSet { UserDefaults.standard.set(Double(metalHUDOffsetX), forKey: "metalHUDOffsetX") }
     }
@@ -249,33 +210,26 @@ class AppState {
     var metalHUDHeight: CGFloat = 280 {
         didSet { UserDefaults.standard.set(Double(metalHUDHeight), forKey: "metalHUDHeight") }
     }
-    
-    // MARK: - Initializer
+
     private init() {
-        // Load saved default tool from UserDefaults
         if let toolRawValue = UserDefaults.standard.string(forKey: "defaultTool"),
            let tool = DrawingTool(rawValue: toolRawValue) {
             self.defaultTool = tool
         } else {
             self.defaultTool = .brush
         }
-        
-        // Load saved pressure sensitivity setting - default to false (OFF) for mouse/trackpad
+
         self.pressureSensitivityEnabled = UserDefaults.standard.object(forKey: "pressureSensitivityEnabled") as? Bool ?? false
 
-        // Load saved pressure curve
         loadPressureCurve()
-        
-        // Load brush preview preferences
+
         if let styleRaw = UserDefaults.standard.string(forKey: "brushPreviewStyle"),
            let style = BrushPreviewStyle(rawValue: styleRaw) {
             self.brushPreviewStyle = style
         }
         self.brushPreviewIsFinal = UserDefaults.standard.object(forKey: "brushPreviewIsFinal") as? Bool ?? false
 
-        // Load Apple system HUD preference and layout
         self.enableSystemMetalHUD = UserDefaults.standard.object(forKey: "enableSystemMetalHUD") as? Bool ?? false
-		// Load in-app HUD preferences
 		self.showInAppPerformanceHUD = UserDefaults.standard.object(forKey: "showInAppPerformanceHUD") as? Bool ?? true
 		self.inAppHUDOffsetX = CGFloat(UserDefaults.standard.object(forKey: "inAppHUDOffsetX") as? Double ?? 24)
 		self.inAppHUDOffsetY = CGFloat(UserDefaults.standard.object(forKey: "inAppHUDOffsetY") as? Double ?? 12)
@@ -284,42 +238,34 @@ class AppState {
         self.metalHUDWidth = CGFloat(UserDefaults.standard.object(forKey: "metalHUDWidth") as? Double ?? 420)
         self.metalHUDHeight = CGFloat(UserDefaults.standard.object(forKey: "metalHUDHeight") as? Double ?? 280)
 
-        // Load logging preferences
         self.enableVerboseLogging = UserDefaults.standard.object(forKey: "enableVerboseLogging") as? Bool ?? false
         self.enablePressureLogging = UserDefaults.standard.object(forKey: "enablePressureLogging") as? Bool ?? false
 
-        // Load PDF gradient method preference
         if let methodRaw = UserDefaults.standard.string(forKey: "pdfGradientMethod") {
-            // Handle migration from old "deviceN" to new "cmyk"
             let actualRaw = (methodRaw == "deviceN") ? "cmyk" : methodRaw
             if let method = PDFGradientMethod(rawValue: actualRaw) {
                 self.pdfGradientMethod = method
             }
         }
 
-        // Load PDF blend steps
         let savedSteps = UserDefaults.standard.object(forKey: "pdfBlendSteps") as? Int
         self.pdfBlendSteps = savedSteps ?? 20
 
-        // Load PDF mesh grid settings
         let savedGridX = UserDefaults.standard.object(forKey: "pdfMeshGridX") as? Int
         self.pdfMeshGridX = savedGridX ?? 8
         let savedGridY = UserDefaults.standard.object(forKey: "pdfMeshGridY") as? Int
         self.pdfMeshGridY = savedGridY ?? 8
 
-        // Load PDF text rendering mode
         if let modeRaw = UserDefaults.standard.string(forKey: "pdfTextRenderingMode"),
            let mode = PDFTextRenderingMode(rawValue: modeRaw) {
             self.pdfTextRenderingMode = mode
         }
 
-        // Load SVG text rendering mode
         if let modeRaw = UserDefaults.standard.string(forKey: "svgTextRenderingMode"),
            let mode = SVGTextRenderingMode(rawValue: modeRaw) {
             self.svgTextRenderingMode = mode
         }
 
-        // Load export color space preference
         if let colorSpaceRaw = UserDefaults.standard.string(forKey: "exportColorSpace"),
            let colorSpace = ExportColorSpace(rawValue: colorSpaceRaw) {
             self.exportColorSpace = colorSpace
@@ -327,21 +273,17 @@ class AppState {
     }
 
 
-    
     func setWindowActions(openWindow: @escaping (String) -> Void, dismissWindow: @escaping (String) -> Void) {
         self.openWindowAction = { id in
             openWindow(id)
         }
-        
+
         self.dismissWindowAction = { id in
             if id.contains("gradient-hud") {
-                // 🔥 NEW: Stop editing state when window is closed
                 self.persistentGradientHUD.stopEditing()
 
-                // 🔥 PRESERVE WINDOW POSITION - Use orderOut instead of close
                 NSApplication.shared.windows.forEach { window in
                     if window.title.contains("Select Gradient Color") && window.isVisible {
-                        // Use orderOut to hide without destroying, preserving position
                         window.orderOut(nil)
                     }
                 }
@@ -356,13 +298,7 @@ class AppState {
             dismissWindow(id)
         }
     }
-    
-    // MARK: - Panel Actions
-    
-    // MARK: - Gradient Editing Actions
 
-    // Removed: System Metal HUD control utilities and shell runner
+
 }
-
-// MARK: - Persistent Gradient HUD Manager
 

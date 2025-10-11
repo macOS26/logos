@@ -1,9 +1,3 @@
-//
-//  LayerView.swift
-//  logos
-//
-//  Created by Todd Bruss on 7/5/25.
-//
 
 import SwiftUI
 import AppKit
@@ -17,40 +11,33 @@ struct LayerView: View {
     let canvasOffset: CGPoint
     let selectedShapeIDs: Set<UUID>
     let viewMode: ViewMode
-    let isShiftPressed: Bool  // Passed from DrawingCanvas for transform tool constraints
-    let dragPreviewDelta: CGPoint  // Passed for 60fps drag preview
-    let dragPreviewTrigger: Bool  // Trigger for efficient preview updates
-    
+    let isShiftPressed: Bool
+    let dragPreviewDelta: CGPoint
+    let dragPreviewTrigger: Bool
+
     private var layer: VectorLayer {
         document.layers[layerIndex]
     }
-    
-    // CANVAS LAYER PROTECTION: Check if this is the Canvas layer
+
     private var isCanvasLayer: Bool {
         return layer.name == "Canvas"
     }
-    
-    // PASTEBOARD LAYER RECOGNITION: Check if this is the Pasteboard layer
+
     private var isPasteboardLayer: Bool {
         return layer.name == "Pasteboard"
     }
-    
+
     var body: some View {
         let shapes = document.getShapesForLayer(layerIndex)
         return ZStack {
             ForEach(shapes.indices, id: \.self) { shapeIndex in
                 let currentShape = shapes[shapeIndex]
-                // Do not render clipping path shapes themselves
                 if currentShape.isClippingPath {
                     EmptyView()
-                // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
                 } else if let clipID = currentShape.clippedByShapeID, let maskShape = document.findShape(by: clipID) {
-                    // FIXED CLIPPING MASK: Use NSView approach like gradient fills
-                    // Create pre-transformed paths for the clipping mask
                     let clippedPath = createPreTransformedPath(for: currentShape)
                     let maskPath = createPreTransformedPath(for: maskShape)
-                    
-                    // Render the clipped shape using NSView-based clipping mask
+
                     ClippingMaskShapeView(
                         clippedShape: currentShape,
                         maskShape: maskShape,
@@ -63,8 +50,6 @@ struct LayerView: View {
                         dragPreviewTrigger: dragPreviewTrigger,
                         viewMode: viewMode
                     )
-                    // REMOVED: All SwiftUI transforms - handle everything in NSView
-                    // The NSView will handle zoom, offset, and transforms internally
                 } else {
                     ShapeView(
                         shape: currentShape,
@@ -72,8 +57,8 @@ struct LayerView: View {
                         canvasOffset: canvasOffset,
                         isSelected: selectedShapeIDs.contains(currentShape.id),
                         viewMode: viewMode,
-                        isCanvasLayer: isCanvasLayer,  // Pass Canvas layer info
-                        isPasteboardLayer: isPasteboardLayer,  // Pass Pasteboard layer info
+                        isCanvasLayer: isCanvasLayer,
+                        isPasteboardLayer: isPasteboardLayer,
                         dragPreviewDelta: dragPreviewDelta,
                         dragPreviewTrigger: dragPreviewTrigger
                     )
@@ -82,12 +67,10 @@ struct LayerView: View {
         }
         .opacity(layer.opacity)
     }
-    
-    // Helper function to create pre-transformed paths for clipping masks
+
     private func createPreTransformedPath(for shape: VectorShape) -> CGPath {
         let path = CGMutablePath()
-        
-        // Add path elements
+
         for element in shape.path.elements {
             switch element {
             case .move(let to):
@@ -102,17 +85,15 @@ struct LayerView: View {
                 path.closeSubpath()
             }
         }
-        
-        // RESTORE: Apply shape transform for proper positioning
-        // The paths need to include transforms to align with the image
+
         if !shape.transform.isIdentity {
             let transformedPath = CGMutablePath()
             transformedPath.addPath(path, transform: shape.transform)
             return transformedPath
         }
-        
+
         return path
     }
-    
+
 }
 

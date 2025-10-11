@@ -1,9 +1,3 @@
-//
-//  MetalError+DataStruct.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 enum MetalError: Error {
     case libraryCreationFailed
@@ -15,7 +9,6 @@ enum MetalError: Error {
     case operationFailed(String)
 }
 
-// MARK: - Metal Data Structures
 struct Point2D {
     let x: Float
     let y: Float

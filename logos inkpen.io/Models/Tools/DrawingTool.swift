@@ -1,13 +1,6 @@
-//
-//  DrawingTool.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 
-// MARK: - Drawing Tools
 enum DrawingTool: String, CaseIterable, Codable {
     case selection = "Selection"
     case directSelection = "Direct Selection"
@@ -49,7 +42,7 @@ enum DrawingTool: String, CaseIterable, Codable {
     case zoom = "Zoom"
     case gradient = "Gradient"
     case cornerRadius = "Corner Radius"
-    
+
     var iconName: String {
         switch self {
         case .selection: return "arrow.up.left"
@@ -85,7 +78,7 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .hexagon: return "hexagon"
         case .heptagon: return "heptagon"
         case .octagon: return "octagon"
-        case .nonagon: return "octagon" // no SF symbol for nonagon; custom icon provided elsewhere
+        case .nonagon: return "octagon"
         case .eyedropper: return "eyedropper"
         case .selectSameColor: return "paintpalette"
         case .hand: return "hand.raised"

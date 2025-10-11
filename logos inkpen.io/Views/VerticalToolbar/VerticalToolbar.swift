@@ -1,9 +1,3 @@
-//
-//  VerticalToolbar.swift
-//  logos
-//
-//  Created by Todd Bruss on 7/5/25.
-//
 
 import SwiftUI
 import AppKit
@@ -12,28 +6,23 @@ import AppKit
 struct VerticalToolbar: View {
     @ObservedObject var document: VectorDocument
     @StateObject private var toolGroupManager = ToolGroupManager.shared
-    
-    // MARK: - Tool Group Functions
-    
+
+
     private func handleToolLongPress(_ tool: DrawingTool, variantIndex: Int? = nil) {
         toolGroupManager.longPressedTool(tool, variantIndex: variantIndex)
     }
-    
-    // MARK: - Icon Display Functions
-    
+
+
     @ViewBuilder
     private func toolIconView(for toolItem: ToolItem) -> some View {
         if toolItem.tool == .shear {
-            // Use custom skewed rectangle icon for shear tool
             SkewedRectangleIcon(isSelected: document.currentTool == toolItem.tool)
         } else if toolItem.tool == .star, let starVariant = toolItem.starVariant {
-            // Use specific star variant custom icon
             starVariant.iconView(
                 isSelected: document.currentTool == .star && toolGroupManager.selectedVariant == starVariant,
                 color: (document.currentTool == .star && toolGroupManager.selectedVariant == starVariant) ? .white : .primary
             )
         } else if toolItem.tool == .star {
-            // Use selected star variant custom icon
             toolGroupManager.selectedVariant.iconView(
                 isSelected: document.currentTool == toolItem.tool,
                 color: document.currentTool == toolItem.tool ? .white : .primary
@@ -42,7 +31,7 @@ struct VerticalToolbar: View {
             customShapeIconView(for: toolItem)
         }
     }
-    
+
     @ViewBuilder
     private func customShapeIconView(for toolItem: ToolItem) -> some View {
         switch toolItem.tool {
@@ -81,29 +70,25 @@ struct VerticalToolbar: View {
         case .nonagon:
             NonagonIcon(isSelected: document.currentTool == toolItem.tool)
         default:
-            // Use SF Symbols for all other tools
             Image(systemName: toolItem.tool.iconName)
                 .font(.system(size: 16))
                 .foregroundColor(isToolSelected(toolItem) ? .white : .primary)
         }
     }
-    
-    
+
+
     private func getToolsToDisplayByGroup() -> [[ToolItem]] {
         var toolGroups: [[ToolItem]] = []
-        
-        // Get all unique tool groups
+
         let allToolGroups = getAllToolGroups()
-        
+
         for toolGroup in allToolGroups {
             var groupTools: [ToolItem] = []
             let primaryTool = toolGroup[0]
             let groupName = ToolGroupConfiguration.getToolGroupName(for: primaryTool) ?? "single:\(primaryTool.rawValue)"
-            
-            // Expanded state is now per-group
+
             if toolGroupManager.expandedGroups.contains(groupName) {
                 if primaryTool == .star {
-                    // If we have a per-group anchor variant, put it first; otherwise natural order
                     if let anchorVariant = (toolGroupManager.anchorVariantByGroup[groupName] ?? nil) {
                         groupTools.append(ToolItem(tool: .star, starVariant: anchorVariant))
                         let otherVariants = StarVariant.allCases.filter { $0 != anchorVariant }
@@ -116,14 +101,12 @@ struct VerticalToolbar: View {
                         }
                     }
                 } else {
-                    // Use custom order if available, otherwise use default order
                     let orderedTools = toolGroupManager.getOrderedToolsForGroup(groupName, defaultTools: toolGroup)
                     for tool in orderedTools {
                         groupTools.append(ToolItem(tool: tool, starVariant: nil))
                     }
                 }
             } else {
-                // Collapsed state shows the group's selected tool (falls back to primary)
                 if primaryTool == .star {
                     groupTools.append(ToolItem(tool: .star, starVariant: toolGroupManager.selectedVariant))
                 } else {
@@ -131,29 +114,26 @@ struct VerticalToolbar: View {
                     groupTools.append(ToolItem(tool: selectedTool, starVariant: nil))
                 }
             }
-            
+
             if !groupTools.isEmpty {
                 toolGroups.append(groupTools)
             }
         }
-        
+
         return toolGroups
     }
-    
+
     private func getToolsToDisplay() -> [ToolItem] {
         var toolsToShow: [ToolItem] = []
-        
-        // Get all unique tool groups
+
         let allToolGroups = getAllToolGroups()
-        
+
         for toolGroup in allToolGroups {
             let primaryTool = toolGroup[0]
             let groupName = ToolGroupConfiguration.getToolGroupName(for: primaryTool) ?? "single:\(primaryTool.rawValue)"
-            
-            // Expanded state is now per-group
+
             if toolGroupManager.expandedGroups.contains(groupName) {
                 if primaryTool == .star {
-                    // If we have a per-group anchor variant, put it first; otherwise natural order
                     if let anchorVariant = (toolGroupManager.anchorVariantByGroup[groupName] ?? nil) {
                         toolsToShow.append(ToolItem(tool: .star, starVariant: anchorVariant))
                         let otherVariants = StarVariant.allCases.filter { $0 != anchorVariant }
@@ -171,7 +151,6 @@ struct VerticalToolbar: View {
                     }
                 }
             } else {
-                // Collapsed state shows the group's selected tool (falls back to primary)
                 if primaryTool == .star {
                     toolsToShow.append(ToolItem(tool: .star, starVariant: toolGroupManager.selectedVariant))
                 } else {
@@ -180,19 +159,18 @@ struct VerticalToolbar: View {
                 }
             }
         }
-        
+
         return toolsToShow
     }
-    
+
     private func getAllToolGroups() -> [[DrawingTool]] {
-        // Ensure polygon group appears as 5,6,7,8,9 specifically
         var groups = ToolGroupConfiguration.getAllToolGroupsAsArrays()
         if let idx = groups.firstIndex(where: { $0.contains(.pentagon) && $0.contains(.octagon) }) {
             groups[idx] = [.pentagon, .hexagon, .heptagon, .octagon, .nonagon]
         }
         return groups
     }
-    
+
     private func isToolSelected(_ toolItem: ToolItem) -> Bool {
         if let starVariant = toolItem.starVariant {
             return document.currentTool == .star && toolGroupManager.selectedVariant == starVariant
@@ -200,53 +178,47 @@ struct VerticalToolbar: View {
             return document.currentTool == toolItem.tool
         }
     }
-    
+
     private func isToolInExpandableGroup(_ toolItem: ToolItem) -> Bool {
-        // Check if the tool belongs to a group with more than one tool
         let tool = toolItem.tool
         let group = ToolGroupConfiguration.getToolGroup(for: tool)
-        
-        // Star tool always has expandable variants
+
         if tool == .star {
             return true
         }
-        
-        // Other tools are expandable if their group has more than 1 tool
+
         return group.count > 1
     }
-    
+
     private func isGroupExpanded(for toolItem: ToolItem) -> Bool {
-        // Check if this tool's group is currently expanded
         let tool = toolItem.tool
-        
+
         if tool == .star {
             let groupName = "stars"
             return toolGroupManager.expandedGroups.contains(groupName)
         } else if let groupName = ToolGroupConfiguration.getToolGroupName(for: tool) {
             return toolGroupManager.expandedGroups.contains(groupName)
         }
-        
+
         return false
     }
-    
-    
+
+
     var body: some View {
         ZStack {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 0) {
-                    // Drawing Tools
                     ToolSection {
                         VStack(spacing: 0) {
                             let toolsByGroup = getToolsToDisplayByGroup()
                             ForEach(Array(toolsByGroup.enumerated()), id: \.offset) { index, toolGroup in
-                                // Add separator between groups (but not before the first group)
                                 if index > 0 {
                                     Rectangle()
                                         .fill(Color.primary.opacity(0.2))
                                         .frame(height: 0.5)
                                         .frame(maxWidth: .infinity)
                                 }
-                                
+
                                 ForEach(toolGroup, id: \.toolIdentifier) { toolItem in
                                     VerticalToolbarButton(
                                         toolItem: toolItem,
@@ -254,7 +226,6 @@ struct VerticalToolbar: View {
                                         isExpandable: isToolInExpandableGroup(toolItem),
                                         isGroupExpanded: isGroupExpanded(for: toolItem),
                                         onTap: {
-                                            // Handle tool selection
                                             if let starVariant = toolItem.starVariant {
                                                 toolGroupManager.selectStarVariant(starVariant)
                                                 document.currentTool = .star
@@ -265,7 +236,6 @@ struct VerticalToolbar: View {
                                             }
                                         },
                                         onLongPress: {
-                                            // Long press for expanding tool groups
                                             if let starVariant = toolItem.starVariant {
                                                 let variantIndex = StarVariant.allCases.firstIndex(of: starVariant) ?? 0
                                                 handleToolLongPress(.star, variantIndex: variantIndex)
@@ -280,12 +250,10 @@ struct VerticalToolbar: View {
                                         GeometryReader { geometry in
                                             Color.clear
                                                 .onAppear {
-                                                    // Store the button's frame for tool group positioning
                                                     let globalFrame = geometry.frame(in: .global)
                                                     toolGroupManager.setToolButtonFrame(toolItem.tool, frame: globalFrame)
                                                 }
                                                 .onChange(of: geometry.frame(in: .global)) { _, newFrame in
-                                                    // Update frame if it changes (e.g., during scrolling)
                                                     toolGroupManager.setToolButtonFrame(toolItem.tool, frame: newFrame)
                                                 }
                                         }
@@ -294,18 +262,17 @@ struct VerticalToolbar: View {
                             }
                         }
                     }
-                    
+
                     Divider()
-                    
-                    // Quick Color Swatches
+
                     ToolSection {
                         ColorSwatchGrid(document: document)
                     }
-                    
+
                     Spacer()
                 }
                 .padding(.bottom, 4)
-                .frame(width: 48) // ENSURE: Maintain fixed toolbar width
+                .frame(width: 48)
             }
             .background(Color(NSColor.controlBackgroundColor))
             .overlay(
@@ -315,14 +282,13 @@ struct VerticalToolbar: View {
             )
         }
     }
-    
-    
-    
+
+
     private func toolTooltip(for tool: DrawingTool, variant: StarVariant? = nil) -> String {
         if let starVariant = variant {
             return "Star Tool - Draw \(starVariant.rawValue) (Long press for more variants)"
         }
-        
+
         switch tool {
         case .selection:
             return "Selection Tool (V) - Select and move objects"
@@ -408,7 +374,6 @@ struct VerticalToolbar: View {
     }
 }
 
-// MARK: - Vertical Toolbar Button
 struct VerticalToolbarButton: View {
     let toolItem: ToolItem
     let isSelected: Bool
@@ -440,42 +405,39 @@ struct VerticalToolbarButton: View {
 
     fileprivate func FreeHandMXLongPress() {
         inc += 0.1
-        
-        // always handle tap
+
         lastTappedTool = toolItem.tool.rawValue
         onTap()
-        
+
         if inc <= 0.1 {
             shouldRepeat = true
             return
         }
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
             inc = 0.0
             shouldRepeat = true
             lastTappedTool = ""
         }
-        
+
         if shouldRepeat {
             if inc > 0.1 {
                 Thread.sleep(forTimeInterval: 0.1)
             }
-            
+
             if inc >= 0.3 && lastTappedTool == toolItem.tool.rawValue  {
-                // Check if the tool being long-pressed is the same as the one that was tapped
                 onLongPress()
-                shouldRepeat = false  // Stop repeating after long press
+                shouldRepeat = false
                 inc = 0.0
             }
         }
     }
-    
+
     var body: some View {
         Button(action: {
             FreeHandMXLongPress()
         }) {
             ZStack {
-                // Background highlight - always present but transparent when not selected
                 RoundedRectangle(cornerRadius: 100)
                     .fill(isSelected
                           ? InkPenUIColors.shared.toolSelectionBlue
@@ -485,21 +447,19 @@ struct VerticalToolbarButton: View {
                 toolIconView()
                     .frame(width: 47)
 
-                // Orange triangle indicator - always present but transparent when not needed
                 Path { path in
-                    // Triangle pointing to bottom-right corner
-                    path.move(to: CGPoint(x: 0, y: 6))    // Left point
-                    path.addLine(to: CGPoint(x: 6, y: 0)) // Top point
-                    path.addLine(to: CGPoint(x: 6, y: 6)) // Bottom-right corner
+                    path.move(to: CGPoint(x: 0, y: 6))
+                    path.addLine(to: CGPoint(x: 6, y: 0))
+                    path.addLine(to: CGPoint(x: 6, y: 6))
                     path.closeSubpath()
                 }
                 .fill((isSelected && isExpandable && !isGroupExpanded)
-                      ? Color(.displayP3, red: 1.0, green: 0.584, blue: 0.0) // Display P3 orange at full 1.0 opacity
+                      ? Color(.displayP3, red: 1.0, green: 0.584, blue: 0.0)
                       : Color.clear)
                 .frame(width: 6, height: 6)
                 .position(x: 42, y: 26)
             }
-            .contentShape(Rectangle()) // Extend hit area to match entire button area
+            .contentShape(Rectangle())
             .frame(width: 58, height: 34)
             .position(x: 24.5, y: 17)
         }
@@ -508,7 +468,6 @@ struct VerticalToolbarButton: View {
     }
 }
 
-// Preview
 #Preview {
     VerticalToolbar(document: VectorDocument())
         .frame(height: 600)

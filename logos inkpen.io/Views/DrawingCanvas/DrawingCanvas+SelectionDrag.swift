@@ -1,9 +1,3 @@
-//
-//  DrawingCanvas+SelectionDrag.swift
-//  logos inkpen.io
-//
-//  Selection drag functionality
-//
 
 import SwiftUI
 import Combine
@@ -13,19 +7,15 @@ extension DrawingCanvas {
         guard document.selectedLayerIndex != nil,
               !document.selectedObjectIDs.isEmpty else { return }
 
-        // Reset update counter for 60fps throttling
         dragUpdateCounter = 0
 
-        // REFACTORED: Use unified objects system for selection checking
         let selectedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
 
-        // PROTECT LOCKED OBJECTS: Check all selected objects for locked state AND layer lock
         for unifiedObject in selectedObjects {
-            // Check if layer is locked
             if unifiedObject.layerIndex < document.layers.count {
                 let layer = document.layers[unifiedObject.layerIndex]
                 if layer.isLocked {
-                    return  // Prevent drag if any selected object is on a locked layer
+                    return
                 }
             }
 
@@ -36,8 +26,7 @@ extension DrawingCanvas {
                 }
             }
         }
-        
-        // PERFORMANCE: Cache selection bounds at start of drag to avoid recalculation
+
         var combinedBounds: CGRect?
         for unifiedObject in selectedObjects {
             switch unifiedObject.objectType {
@@ -51,28 +40,23 @@ extension DrawingCanvas {
             }
         }
         document.cachedSelectionBounds = combinedBounds
-        
-        // PROFESSIONAL OBJECT DRAGGING: Save initial positions AND transforms
-        // This matches the precision approach used by the hand tool
+
         initialObjectPositions.removeAll()
-        
-        // Store initial positions AND transforms for all selected objects
+
         for unifiedObject in selectedObjects {
             switch unifiedObject.objectType {
             case .shape(let shape):
                 Log.error("🚨 DRAG DEBUG: Processing shape id=\(shape.id), isTextObject=\(shape.isTextObject)", category: .debug)
-                
+
                 if shape.isTextObject {
-                    // CRITICAL FIX: For text objects, use actual position from unified system + center offset
                     if let textObject = document.findText(by: shape.id) {
                         Log.error("🚨 DRAG DEBUG: Found textObject position=\(textObject.position), bounds=\(textObject.bounds)", category: .debug)
-                        let centerX = textObject.position.x + textObject.bounds.width/2  
+                        let centerX = textObject.position.x + textObject.bounds.width/2
                         let centerY = textObject.position.y + textObject.bounds.height/2
                         let calculatedCenter = CGPoint(x: centerX, y: centerY)
                         Log.error("🚨 DRAG DEBUG: Calculated text center=\(calculatedCenter)", category: .debug)
                         initialObjectPositions[unifiedObject.id] = calculatedCenter
                     } else {
-                        // Fallback: Use shape bounds center
                         Log.error("🚨 DRAG DEBUG: NO textObject found! Using shape fallback", category: .debug)
                         Log.error("🚨 DRAG DEBUG: Shape transform=\(shape.transform), bounds=\(shape.bounds)", category: .debug)
                         let bounds = shape.bounds
@@ -83,35 +67,29 @@ extension DrawingCanvas {
                         initialObjectPositions[unifiedObject.id] = fallbackCenter
                     }
                 } else {
-                    // GROUP POSITION FIX: Use appropriate bounds for groups vs individual shapes
-                    // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds (CONSISTENT WITH SCALE TOOL)
                     let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
                     let centerX = bounds.midX
                     let centerY = bounds.midY
                     initialObjectPositions[unifiedObject.id] = CGPoint(x: centerX, y: centerY)
                 }
-                
-                // CRITICAL FIX: Store initial transform to prevent jitter
+
                 Log.error("🚨 DRAG DEBUG: Storing initial transform=\(shape.transform)", category: .debug)
                 initialObjectTransforms[unifiedObject.id] = shape.transform
             }
         }
     }
-    
+
     internal func handleSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         guard document.selectedLayerIndex != nil,
               !document.selectedObjectIDs.isEmpty else { return }
 
-        // REFACTORED: Use unified objects system for selection checking
         let selectedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
 
-        // PROTECT LOCKED OBJECTS: Check all selected objects for locked state AND layer lock
         for unifiedObject in selectedObjects {
-            // Check if layer is locked
             if unifiedObject.layerIndex < document.layers.count {
                 let layer = document.layers[unifiedObject.layerIndex]
                 if layer.isLocked {
-                    return  // Prevent drag if any selected object is on a locked layer
+                    return
                 }
             }
 
@@ -123,221 +101,158 @@ extension DrawingCanvas {
             }
         }
 
-        // PROFESSIONAL OBJECT DRAGGING: Perfect cursor-to-object synchronization
-        // Uses the same precision approach as the hand tool - calculate cursor delta directly
-        // This eliminates floating-point accumulation errors from DragGesture.translation
 
-        // Calculate cursor movement from reference location (perfect 1:1 tracking)
         let cursorDelta = CGPoint(
             x: value.location.x - selectionDragStart.x,
             y: value.location.y - selectionDragStart.y
         )
 
-        // Convert screen delta to canvas delta (accounting for zoom)
         let preciseZoom = Double(document.zoomLevel)
         var canvasDelta = CGPoint(
             x: cursorDelta.x / preciseZoom,
             y: cursorDelta.y / preciseZoom
         )
 
-        // Apply snap to grid or snap to point if enabled
         if document.snapToGrid || document.snapToPoint {
-            // Get the first selected object's bounds to snap its corner instead of center
             if let firstObjectID = document.selectedObjectIDs.first,
                let initialCenter = initialObjectPositions[firstObjectID],
                let firstObject = document.findObject(by: firstObjectID) {
 
-                // Get the object's bounds to find its top-left corner
                 if case .shape(let shape) = firstObject.objectType {
                     let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
 
-                    // Calculate where the top-left corner would be after the drag
                     let topLeftX = initialCenter.x - bounds.width/2 + canvasDelta.x
                     let topLeftY = initialCenter.y - bounds.height/2 + canvasDelta.y
                     let targetTopLeft = CGPoint(x: topLeftX, y: topLeftY)
 
-                    // Apply snapping (snap to point has priority over snap to grid)
                     let snappedTopLeft = applySnapping(to: targetTopLeft)
 
-                    // Calculate the new center position based on snapped top-left
                     let snappedCenter = CGPoint(
                         x: snappedTopLeft.x + bounds.width/2,
                         y: snappedTopLeft.y + bounds.height/2
                     )
 
-                    // Adjust the delta to achieve the snapped position
                     canvasDelta = CGPoint(x: snappedCenter.x - initialCenter.x, y: snappedCenter.y - initialCenter.y)
                 }
             }
         }
-        
-        // CRITICAL FIX: For clipping masks, move the image shape DURING drag for live preview
+
         for unifiedObject in selectedObjects {
             if case .shape(let shape) = unifiedObject.objectType {
-                // CLIPPING MASK PREVIEW: Use same preview system as regular objects
-                // Don't modify actual document during drag - use currentDragDelta for preview
                 if shape.isClippingPath {
-                    // Continue with normal preview system - don't return early
                 }
             }
         }
-        
-        // BLAZING FAST 60FPS: Store drag delta for preview rendering - DON'T modify actual objects during drag
-        // This eliminates expensive document updates and bounds recalculation during drag
+
         currentDragDelta = canvasDelta
         document.currentDragOffset = canvasDelta
 
-        // TWO-WAY BINDING: Update the drag preview coordinates for the transform panel
-        // Update only every 60th frame (once per second at 60fps) to reduce UI updates
         dragUpdateCounter += 1
         if dragUpdateCounter % 60 == 0 {
             document.dragPreviewCoordinates = canvasDelta
         }
 
-        // VECTOR APP OPTIMIZATION: Don't trigger full scene redraw - just update drag preview overlay
-        // The dragged object will be rendered as a separate overlay, keeping all other objects static
-        // NO dragPreviewUpdateTrigger.toggle() - we'll use SwiftUI overlay instead
     }
-    
+
     internal func finishSelectionDrag() {
-        // CRITICAL FIX: Don't apply selection drag if handle scaling was active
         if document.isHandleScalingActive {
-            // Reset state without applying any transforms
             initialObjectPositions.removeAll()
             initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
             currentDragDelta = .zero
-            document.cachedSelectionBounds = nil // Clear cached bounds
-            // Removed excessive logging during drag operations
+            document.cachedSelectionBounds = nil
             return
         }
 
         if !initialObjectPositions.isEmpty && currentDragDelta != .zero {
-            // Save to undo stack ONCE at the end, not at the start
             document.saveToUndoStack()
 
-            // BLAZING FAST FINISH: Apply accumulated drag delta to actual coordinates at the end
-            // This ensures smooth 60fps preview during drag, then commits changes once
             guard document.selectedLayerIndex != nil else { return }
-            
-            // REFACTORED: Use unified objects system for applying drag delta
+
             let selectedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
-            
-            // Apply drag delta to all selected objects
+
             for unifiedObject in selectedObjects {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     let shapes = document.getShapesForLayer(unifiedObject.layerIndex)
                     if let shapeIndex = shapes.firstIndex(where: { $0.id == unifiedObject.id }) {
-                        // CLIPPING MASK MOVEMENT: Use normal drag system (preview already handled movement)
                         if shape.isClippingPath {
-                            // Clipping masks use the same drag system as regular shapes
-                            // The preview system already showed the movement, so just apply normal coordinates
                             applyDragDeltaToShapeCoordinates(layerIndex: unifiedObject.layerIndex, shapeIndex: shapeIndex, delta: currentDragDelta)
                         } else {
-                            // Regular shape movement
                             applyDragDeltaToShapeCoordinates(layerIndex: unifiedObject.layerIndex, shapeIndex: shapeIndex, delta: currentDragDelta)
                         }
                     }
-                    
+
                     if let textObj = document.findText(by: unifiedObject.id),
                        let initialCenter = initialObjectPositions[unifiedObject.id] {
-                        // CRITICAL FIX: Use absolute positioning from initial reference, not delta accumulation
-                        // Convert from center-based reference to position-based coordinates
                         let textBounds = textObj.bounds
                         let newPositionX = initialCenter.x - textBounds.width/2 + currentDragDelta.x
                         let newPositionY = initialCenter.y - textBounds.height/2 + currentDragDelta.y
-                        
+
                         Log.error("🚨 FINISH DRAG: textID=\(unifiedObject.id)", category: .debug)
                         Log.error("🚨 FINISH DRAG: OLD position=\(textObj.position)", category: .debug)
                         Log.error("🚨 FINISH DRAG: NEW position=(\(newPositionX), \(newPositionY))", category: .debug)
                         Log.error("🚨 FINISH DRAG: initialCenter=\(initialCenter), dragDelta=\(currentDragDelta)", category: .debug)
-                        
+
                         let delta = CGPoint(x: newPositionX - textObj.position.x, y: newPositionY - textObj.position.y)
                         document.translateTextInUnified(id: unifiedObject.id, delta: delta)
-                        
+
                         Log.error("🚨 FINISH DRAG: Updated textObject position to (\(newPositionX), \(newPositionY))", category: .debug)
                     }
                 }
             }
-            
-            // CRITICAL FIX: Sync unified objects with moved shapes
+
             syncUnifiedObjectsAfterMovement()
 
-            // Use common update function for transform panel
             document.updateTransformPanelValues()
 
-            // PROFESSIONAL OBJECT DRAGGING: Clean state reset for next drag operation
-            // This ensures each new drag operation starts with fresh reference points
 
-            // Reset state
             initialObjectPositions.removeAll()
             initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
             currentDragDelta = .zero
             document.currentDragOffset = .zero
             document.dragPreviewCoordinates = .zero
-            document.cachedSelectionBounds = nil // Clear cached bounds
-            
-            // Selection drag completed - reduced logging for performance
+            document.cachedSelectionBounds = nil
+
         } else {
-            // Even if drag was cancelled, clear cached bounds
             document.cachedSelectionBounds = nil
         }
     }
-    
-    /// BLAZING FAST: Apply drag delta to actual coordinates (only called at end of drag)
+
     private func applyDragDeltaToShapeCoordinates(layerIndex: Int, shapeIndex: Int, delta: CGPoint) {
         guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
-        
-        // SPECIAL CASE: Raster image shapes are rendered using their transform, not path coordinates.
-        // Move them by updating the transform translation rather than rewriting path points.
+
         if ImageContentRegistry.containsImage(shape) {
             var updatedShape = shape
-            
-            // CRITICAL FIX: For transformed images, we need to handle the coordinate system properly
-            // to prevent jumping when the image has scaling, rotation, or other transforms
+
             if updatedShape.transform.isIdentity {
-                // Simple case: no existing transforms, just add translation
                 updatedShape.transform = updatedShape.transform.translatedBy(x: delta.x, y: delta.y)
             } else {
-                // COMPLEX CASE: Image has existing transforms (scale, rotation, etc.)
-                // We need to decompose the transform, add the translation, and recompose
-                // This prevents coordinate system drift and jumping
-                
-                // Extract the current transform components
+
                 let currentTransform = updatedShape.transform
-                
-                // Create a pure translation transform for the delta
+
                 let translationTransform = CGAffineTransform(translationX: delta.x, y: delta.y)
-                
-                // Apply the translation to the existing transform
-                // This preserves all existing scaling, rotation, and skew while adding movement
+
                 updatedShape.transform = currentTransform.concatenating(translationTransform)
-                
+
             }
-            
-            // Bounds for images are their rectangular path; keep as-is (transform applied at render time)
+
             document.updateShapeTransformAndPathInUnified(id: updatedShape.id, transform: updatedShape.transform)
             return
         }
-        
-        // FLATTENED SHAPE FIX: Handle groups correctly
+
         if shape.isGroupContainer && !shape.groupedShapes.isEmpty {
-            // Apply delta to each individual shape within the flattened group
             var updatedGroupedShapes: [VectorShape] = []
 
             for var groupedShape in shape.groupedShapes {
-                // CRITICAL FIX: For text objects in groups, update textPosition
                 if groupedShape.isTextObject {
                     if let textPosition = groupedShape.textPosition {
                         groupedShape.textPosition = CGPoint(x: textPosition.x + delta.x, y: textPosition.y + delta.y)
                     }
-                    // Also update in the textObjects array
                     document.translateTextInUnified(id: groupedShape.id, delta: delta)
                 }
 
-                // Apply delta to all path elements of this grouped shape
                 var updatedElements: [PathElement] = []
 
                 for element in groupedShape.path.elements {
@@ -373,18 +288,15 @@ extension DrawingCanvas {
                     }
                 }
 
-                // Update this grouped shape with moved coordinates
                 groupedShape.path = VectorPath(elements: updatedElements, isClosed: groupedShape.path.isClosed)
                 groupedShape.updateBounds()
 
                 updatedGroupedShapes.append(groupedShape)
             }
 
-            // Update the flattened group with the moved individual shapes
             var groupShape = shape
             groupShape.groupedShapes = updatedGroupedShapes
-            
-            // CRITICAL FIX: Update warp envelope coordinates for warp objects in groups
+
             if shape.isWarpObject && !shape.warpEnvelope.isEmpty {
                 var updatedWarpEnvelope: [CGPoint] = []
                 for corner in shape.warpEnvelope {
@@ -392,28 +304,26 @@ extension DrawingCanvas {
                     updatedWarpEnvelope.append(movedCorner)
                 }
                 groupShape.warpEnvelope = updatedWarpEnvelope
-                
-                // CRITICAL FIX: DO NOT move originalEnvelope - it must stay as reference coordinate system
+
             }
-            
+
             groupShape.updateBounds()
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: groupShape)
             return
         }
-        
-        // Apply delta to all path elements
+
         var updatedElements: [PathElement] = []
-        
+
         for element in shape.path.elements {
             switch element {
             case .move(let to):
                 let newPoint = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
                 updatedElements.append(.move(to: VectorPoint(newPoint)))
-                
+
             case .line(let to):
                 let newPoint = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
                 updatedElements.append(.line(to: VectorPoint(newPoint)))
-                
+
             case .curve(let to, let control1, let control2):
                 let newTo = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
                 let newControl1 = CGPoint(x: control1.x + delta.x, y: control1.y + delta.y)
@@ -423,7 +333,7 @@ extension DrawingCanvas {
                     control1: VectorPoint(newControl1),
                     control2: VectorPoint(newControl2)
                 ))
-                
+
             case .quadCurve(let to, let control):
                 let newTo = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
                 let newControl = CGPoint(x: control.x + delta.x, y: control.y + delta.y)
@@ -431,20 +341,17 @@ extension DrawingCanvas {
                     to: VectorPoint(newTo),
                     control: VectorPoint(newControl)
                 ))
-                
+
             case .close:
                 updatedElements.append(.close)
             }
         }
-        
-        // Create new path with moved coordinates
+
         let updatedPath = VectorPath(elements: updatedElements, isClosed: shape.path.isClosed)
-        
-        // Update the shape with moved path
+
         var movedShape = shape
         movedShape.path = updatedPath
-        
-        // CRITICAL FIX: Update warp envelope coordinates for warp objects
+
         if shape.isWarpObject && !shape.warpEnvelope.isEmpty {
             var updatedWarpEnvelope: [CGPoint] = []
             for corner in shape.warpEnvelope {
@@ -452,56 +359,47 @@ extension DrawingCanvas {
                 updatedWarpEnvelope.append(movedCorner)
             }
             movedShape.warpEnvelope = updatedWarpEnvelope
-            
-            // CRITICAL FIX: DO NOT move originalEnvelope - it must stay as reference coordinate system
-            // The originalEnvelope represents the coordinate system before ANY transformations
+
         }
-        
-        // CLIPPING MASK: If this is a mask shape, also move all its clipped content
+
         if shape.isClippingPath {
             let shapes = document.getShapesForLayer(layerIndex)
             for (idx, checkShape) in shapes.enumerated() {
                 if checkShape.clippedByShapeID == shape.id {
-                    // Move the clipped shape by the same delta
                     applyDragDeltaToShapeCoordinates(layerIndex: layerIndex, shapeIndex: idx, delta: delta)
                 }
             }
         }
-        
+
         movedShape.updateBounds()
         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: movedShape)
     }
 
-    /// PERFORMANCE OPTIMIZED: Apply transform to actual coordinates (only called at end of drag)
     private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int) {
         guard var shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         let transform = shape.transform
-        
-        // Don't apply identity transforms
+
         if transform.isIdentity {
             return
         }
-        
-        
-        // FLATTENED SHAPE FIX: Handle groups correctly
+
+
         if shape.isGroupContainer && !shape.groupedShapes.isEmpty {
-            // Transform each individual shape within the flattened group
             var transformedGroupedShapes: [VectorShape] = []
-            
+
             for var groupedShape in shape.groupedShapes {
-                // Transform all path elements of this grouped shape
                 var transformedElements: [PathElement] = []
-                
+
                 for element in groupedShape.path.elements {
                     switch element {
                     case .move(let to):
                         let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
                         transformedElements.append(.move(to: VectorPoint(transformedPoint)))
-                        
+
                     case .line(let to):
                         let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
                         transformedElements.append(.line(to: VectorPoint(transformedPoint)))
-                        
+
                     case .curve(let to, let control1, let control2):
                         let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
                         let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(transform)
@@ -511,7 +409,7 @@ extension DrawingCanvas {
                             control1: VectorPoint(transformedControl1),
                             control2: VectorPoint(transformedControl2)
                         ))
-                        
+
                     case .quadCurve(let to, let control):
                         let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
                         let transformedControl = CGPoint(x: control.x, y: control.y).applying(transform)
@@ -519,42 +417,39 @@ extension DrawingCanvas {
                             to: VectorPoint(transformedTo),
                             control: VectorPoint(transformedControl)
                         ))
-                        
+
                     case .close:
                         transformedElements.append(.close)
                     }
                 }
-                
-                // Update this grouped shape with transformed coordinates
+
                 groupedShape.path = VectorPath(elements: transformedElements, isClosed: groupedShape.path.isClosed)
                 groupedShape.transform = .identity
                 groupedShape.updateBounds()
-                
+
                 transformedGroupedShapes.append(groupedShape)
             }
-            
-            // Update the flattened group with the transformed individual shapes
+
             shape.groupedShapes = transformedGroupedShapes
             shape.transform = .identity
             shape.updateBounds()
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
-            
+
             return
         }
-        
-        // Transform regular shape path elements
+
         var transformedElements: [PathElement] = []
-        
+
         for element in shape.path.elements {
             switch element {
             case .move(let to):
                 let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
                 transformedElements.append(.move(to: VectorPoint(transformedPoint)))
-                
+
             case .line(let to):
                 let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
                 transformedElements.append(.line(to: VectorPoint(transformedPoint)))
-                
+
             case .curve(let to, let control1, let control2):
                 let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
                 let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(transform)
@@ -564,7 +459,7 @@ extension DrawingCanvas {
                     control1: VectorPoint(transformedControl1),
                     control2: VectorPoint(transformedControl2)
                 ))
-                
+
             case .quadCurve(let to, let control):
                 let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
                 let transformedControl = CGPoint(x: control.x, y: control.y).applying(transform)
@@ -572,57 +467,46 @@ extension DrawingCanvas {
                     to: VectorPoint(transformedTo),
                     control: VectorPoint(transformedControl)
                 ))
-                
+
             case .close:
                 transformedElements.append(.close)
             }
         }
-        
-        // Create new path with transformed coordinates
+
         let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
-        
-        // Update the shape with transformed path and reset transform to identity
+
         shape.path = transformedPath
         shape.transform = .identity
         shape.updateBounds()
-        
-        // CORNER RADIUS SCALING: Apply transform to corner radii if this shape has them
+
         var updatedShape = shape
         if !updatedShape.cornerRadii.isEmpty && updatedShape.isRoundedRectangle {
-            updatedShape.transform = transform // Temporarily restore transform for scaling calculation
+            updatedShape.transform = transform
             applyTransformToCornerRadii(shape: &updatedShape)
             document.updateShapeCornerRadiiInUnified(id: updatedShape.id, cornerRadii: updatedShape.cornerRadii, path: updatedShape.path)
         }
-        
+
     }
-    
-    /// CRITICAL FIX: Sync unified objects array after shapes/text have been moved
-    /// IMPORTANT: This only updates object data without changing layer ordering
-    /// PERFORMANCE: Only syncs SELECTED objects that were actually moved
+
     private func syncUnifiedObjectsAfterMovement() {
-        // PERFORMANCE: Only update objects that were actually moved (selectedObjectIDs)
-        // Don't loop through ALL objects when only 1 was moved!
 
         for i in document.unifiedObjects.indices {
             let unifiedObject = document.unifiedObjects[i]
 
-            // PERFORMANCE: Skip objects that weren't selected/moved
             guard document.selectedObjectIDs.contains(unifiedObject.id) else { continue }
 
             switch unifiedObject.objectType {
             case .shape(let oldShape):
-                // CRITICAL FIX: Handle text objects - sync unified objects FROM textObjects (after drag)
                 if oldShape.isTextObject {
                     Log.error("🚨 SYNC DEBUG: Text object - syncing unified objects", category: .debug)
                     if let updatedText = document.findText(by: oldShape.id) {
                         Log.error("🚨 SYNC DEBUG: Updating unified object position to (\(updatedText.position.x), \(updatedText.position.y))", category: .debug)
 
-                        // CRITICAL FIX: Update unified object FROM textObjects array (textObjects has new position)
                         let updatedShape = VectorShape.from(updatedText)
                         document.unifiedObjects[i] = VectorObject(
                             shape: updatedShape,
                             layerIndex: unifiedObject.layerIndex,
-                            orderID: unifiedObject.orderID  // Keep same orderID = no reordering
+                            orderID: unifiedObject.orderID
                         )
 
                         Log.error("🚨 SYNC DEBUG: Updated unified objects array from textObjects authority", category: .debug)
@@ -630,15 +514,11 @@ extension DrawingCanvas {
                         Log.error("🚨 SYNC DEBUG: TEXT OBJECT NOT FOUND in textObjects array!", category: .debug)
                     }
                 } else {
-                    // Regular shapes - find in unified objects
-                    // PERFORMANCE: Use O(1) UUID lookup instead of O(N) loop
                     if let updatedShape = document.findShape(by: oldShape.id) {
-                        // DEBUG: Check clipping properties before and after sync
-                        // CRITICAL FIX: Preserve original orderID - DO NOT reorder during drag
                         document.unifiedObjects[i] = VectorObject(
                             shape: updatedShape,
                             layerIndex: unifiedObject.layerIndex,
-                            orderID: unifiedObject.orderID  // Keep same orderID = no reordering
+                            orderID: unifiedObject.orderID
                         )
                     }
                 }
@@ -646,4 +526,4 @@ extension DrawingCanvas {
         }
 
     }
-} 
+}

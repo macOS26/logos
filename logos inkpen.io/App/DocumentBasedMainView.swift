@@ -1,20 +1,13 @@
-//
-//  DocumentBasedMainView.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/23/25.
-//
 
 import SwiftUI
 import UniformTypeIdentifiers
 
 struct DocumentBasedMainView: View {
-    @ObservedObject var document: VectorDocument // External document from DocumentGroup
-    let fileURL: URL? // Current document file URL
+    @ObservedObject var document: VectorDocument
+    let fileURL: URL?
     @StateObject private var documentState = DocumentState()
     @Environment(AppState.self) private var appState
     @State private var showingDocumentSettings = false
-    // @State private var showingExportDialog = false // REMOVED: Unused modal
     @State private var showingColorPicker = false
     @State private var currentDocumentURL: URL? = nil
     @State private var showingImportDialog = false
@@ -25,69 +18,55 @@ struct DocumentBasedMainView: View {
     @State private var hasInitializedTool = false
 
     var body: some View {
-        // EXACT REPLICATION of MainView structure - FIXED status bar position
         VStack(spacing: 0) {
-            // Main Content Area - EXACT HStack structure from MainView
             HStack(spacing: 0) {
-                // Left Toolbar - Fixed width, hugs left - EXACT MainView specs
                 VerticalToolbar(document: document)
-                    .frame(width: 48) // EXACT MainView width
-                    .contentShape(Rectangle()) // CRITICAL: Toolbar has its own hit testing bounds
-                    .background(Color.black.opacity(0.8)) // Visual confirmation of toolbar bounds
-                    .zIndex(100) // CRITICAL: Toolbar above DrawingCanvas
-                
-                // Center Drawing Area - Flexible width with minimum - EXACT MainView structure
+                    .frame(width: 48)
+                    .contentShape(Rectangle())
+                    .background(Color.black.opacity(0.8))
+                    .zIndex(100)
+
                 GeometryReader { geometry in
-                    // Drawing canvas area - CLIPPED AND CONSTRAINED
                     ZStack {
-                        // DEBUGGING: Background to see exact bounds
                         Rectangle()
                             .fill(Color.gray.opacity(0.1))
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .allowsHitTesting(false) // Background doesn't capture gestures
-                        
-                        // Main Drawing Canvas - FULL PASTEBOARD GESTURE COVERAGE
+                            .allowsHitTesting(false)
+
                         DrawingCanvas(document: document)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .contentShape(Rectangle()) // CRITICAL: Full gesture area including pasteboard
-                            .background(Color.clear) // Ensure no background extension
-                            .zIndex(1) // CRITICAL: Canvas below panels but above background
-                            .allowsHitTesting(true) // CRITICAL: Ensure gesture capture everywhere
-                        
-                        // Rulers - CRITICAL: Above canvas but below panels
+                            .contentShape(Rectangle())
+                            .background(Color.clear)
+                            .zIndex(1)
+                            .allowsHitTesting(true)
+
                         RulersView(document: document, geometry: geometry)
-                            .zIndex(50) // CRITICAL: Rulers above canvas but below toolbar/panels
-                            .allowsHitTesting(true) // Allow ruler interactions (taps, drags, right-clicks)
+                            .zIndex(50)
+                            .allowsHitTesting(true)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .frame(minWidth: 400, minHeight: 300) // MINIMUM: Ensure drawing area is never crushed
+                    .frame(minWidth: 400, minHeight: 300)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(minWidth: 500) // MINIMUM: Ensure center area has enough space
-                .contentShape(Rectangle()) // CRITICAL: Define exact hit testing bounds for center column
-                .allowsHitTesting(true) // CRITICAL: Center column captures all gestures
-                
-                // Right Panel - Fixed width, hugs right - EXACT MainView specs
+                .frame(minWidth: 500)
+                .contentShape(Rectangle())
+                .allowsHitTesting(true)
+
                 RightPanel(document: document)
-                    .frame(width: 280) // EXACT MainView width
-                    .frame(minWidth: 280) // ENSURE: Panel width is always preserved
-                    .zIndex(100) // CRITICAL: Right panel above DrawingCanvas
+                    .frame(width: 280)
+                    .frame(minWidth: 280)
+                    .zIndex(100)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .frame(minWidth: 828, minHeight: 400) // MINIMUM: 48 + 500 + 280 = 828 minimum layout width
-            
-            // Status Bar at bottom - MOVED OUTSIDE canvas area to prevent overlap
+            .frame(minWidth: 828, minHeight: 400)
+
             StatusBar(document: document)
         }
-        .frame(minHeight: 524) // MINIMUM: Ensure overall height accommodates all elements + status bar (500 + 24)
+        .frame(minHeight: 524)
         .toolbarBackground(Color(NSColor.controlBackgroundColor), for: .windowToolbar)
         .toolbarBackground(.visible, for: .windowToolbar)
         .toolbar {
-            // CUSTOM DOCUMENT TOOLBAR with icon and clickable path navigation
-            //            ToolbarItem(placement: .principal) {
-            //                DocumentTitleToolbar(fileURL: fileURL)
-            //            }
-            
+
             MainToolbarContent(
                 document: document,
                 appState: appState,
@@ -102,7 +81,6 @@ struct DocumentBasedMainView: View {
                 onRunDiagnostics: runPasteboardDiagnostics
             )
         }
-        // New Document Setup has moved to its own WindowGroup; remove sheet
         .sheet(isPresented: $showingDocumentSettings) {
             DocumentSettingsView(document: document)
         }
@@ -111,19 +89,16 @@ struct DocumentBasedMainView: View {
                 document: document,
                 title: "Color Picker",
                 onColorSelected: { color in
-                    // Apply to active target and add to swatches
                     if document.activeColorTarget == .stroke {
                         document.defaultStrokeColor = color
                     } else {
                         document.defaultFillColor = color
                     }
-                    // ONLY add to swatches when explicitly using color picker
                     document.addColorSwatch(color)
                 }
             )
         }
         .onAppear {
-            // Hydrate linked images when opened via DocumentGroup (where init lacks URL context)
             if let url = fileURL {
                 ImageContentRegistry.setBaseDirectory(url.deletingLastPathComponent())
                 for unifiedObject in document.unifiedObjects {
@@ -134,17 +109,16 @@ struct DocumentBasedMainView: View {
             }
         }
         .onChange(of: fileURL) { oldURL, newURL in
-            // When DocumentGroup completes Save As, the fileURL updates.
             guard let url = newURL else { return }
             currentDocumentURL = url
         }
         .fileImporter(
             isPresented: $showingImportDialog,
             allowedContentTypes: [
-                .svg,                                    // SVG files
-                .pdf,                                    // PDF files
-                .png, // PNG images only
-                .data                                    // Generic data for unknown formats
+                .svg,
+                .pdf,
+                .png,
+                .data
             ],
             allowsMultipleSelection: false
         ) { result in
@@ -169,46 +143,31 @@ struct DocumentBasedMainView: View {
                 .frame(width: 1200, height: 800)
         }
         .onAppear {
-            // Only apply default tool once when document is first opened
             if !hasInitializedTool {
                 document.currentTool = appState.defaultTool
                 hasInitializedTool = true
             }
 
-            // Connect document to menu system
             documentState.setDocument(document)
 
-            // If a New Document was configured in the setup window, apply it now
             if let configured = appState.pendingNewDocument {
                 loadImportedDocument(configured)
                 appState.pendingNewDocument = nil
             }
 
-            // PROFESSIONAL: Calculate fit-to-page zoom IMMEDIATELY to prevent flash
-            // Do NOT defer - native apps show the correct zoom from frame 1
             calculateInitialZoom()
         }
         .onDisappear {
-            // CRITICAL: Clean up DocumentState when view disappears to prevent retain cycles
             documentState.cleanup()
         }
-        // Cleanup is triggered directly by the AppDelegate via DocumentStateRegistry
         .focusedSceneObject(documentState)
     }
-    
-    // MARK: - Initial Zoom Calculation
 
-    /// PROFESSIONAL: Calculate and apply fit-to-page zoom immediately on document open
-    /// Native apps don't flash - they show the correct zoom from the first frame
+
     private func calculateInitialZoom() {
-        // Use document bounds to calculate optimal fit zoom
         let documentBounds = document.documentBounds
 
-        // Estimate available view area (accounting for toolbar, panels, rulers)
-        // Left toolbar: 48px, Right panel: 280px, Status bar: 24px
-        // Rulers: 20px each if enabled
         guard let window = NSApplication.shared.mainWindow else {
-            // Fallback: Use document's request system if window not available
             document.requestZoom(to: 0.0, mode: .fitToPage)
             return
         }
@@ -218,15 +177,12 @@ struct DocumentBasedMainView: View {
         let availableWidth = windowSize.width - 48 - 280 - rulerOffset
         let availableHeight = windowSize.height - 24 - rulerOffset
 
-        // Calculate fit zoom
         let scaleX = availableWidth / documentBounds.width
         let scaleY = availableHeight / documentBounds.height
         let fitZoom = max(0.1, min(16.0, min(scaleX, scaleY)))
 
-        // Apply zoom and center offset immediately
         document.zoomLevel = fitZoom
 
-        // Calculate center offset
         let visibleCenter = CGPoint(
             x: (availableWidth + rulerOffset) / 2.0 + rulerOffset,
             y: (availableHeight + rulerOffset) / 2.0 + rulerOffset
@@ -240,11 +196,9 @@ struct DocumentBasedMainView: View {
             y: visibleCenter.y - (documentCenter.y * fitZoom)
         )
     }
-    
-    // MARK: - Document Operations
+
 
     private func loadImportedDocument(_ importedDoc: VectorDocument) {
-        // Load the imported document into the current document
         document.settings = importedDoc.settings
         document.layers = importedDoc.layers
         document.customRgbSwatches = importedDoc.customRgbSwatches
@@ -255,53 +209,44 @@ struct DocumentBasedMainView: View {
         document.selectedLayerIndex = importedDoc.selectedLayerIndex
         document.selectedShapeIDs = importedDoc.selectedShapeIDs
         document.selectedTextIDs = importedDoc.selectedTextIDs
-        // Text is now managed in unified system
         document.currentTool = appState.defaultTool
         document.viewMode = .color
         document.showRulers = importedDoc.showRulers
         document.snapToGrid = importedDoc.snapToGrid
 
-        // PROFESSIONAL: Calculate and apply zoom immediately - no flash
         calculateInitialZoom()
     }
-    
-    // MARK: - Professional Vector Import
-    
+
+
     private func importVectorFile(from url: URL) {
         showingImportProgress = true
-        
+
         Task {
             let result = await VectorImportManager.shared.importVectorFile(from: url)
-            
+
             await MainActor.run {
                 showingImportProgress = false
-                
+
                 if result.success {
-                    // CRITICAL FIX: Save to undo stack ONCE before importing all shapes
                     document.saveToUndoStack()
-                    
-                    // Add imported shapes to current layer using proper VectorDocument method
+
                     guard let layerIndex = document.selectedLayerIndex else { return }
                     var newShapeIDs: Set<UUID> = []
-                    
+
                     for shape in result.shapes {
-                        // CRITICAL FIX: Use VectorDocument.addShape to ensure unified system is updated
                         document.addShape(shape, to: layerIndex)
                         newShapeIDs.insert(shape.id)
                     }
-                    
-                    // Select all imported shapes and sync unified system
+
                     document.selectedShapeIDs = newShapeIDs
                     document.selectedObjectIDs = newShapeIDs
                     document.syncSelectionArrays()
 
-                    // PROFESSIONAL: Calculate and apply zoom immediately - no flash
                     calculateInitialZoom()
                 } else {
                     Log.error("❌ Import failed: \(result.errors.map { $0.localizedDescription }.joined(separator: ", "))", category: .error)
                 }
-                
-                // Show import result dialog
+
                 importResult = result
             }
         }
@@ -310,8 +255,7 @@ struct DocumentBasedMainView: View {
     private func runPasteboardDiagnostics() {
         let report = PasteboardDiagnostics.shared.runDiagnostics(on: document)
         report.printSummary()
-        
-        // Show results in an alert
+
         DispatchQueue.main.async {
             let alert = NSAlert()
             alert.messageText = "Pasteboard Diagnostics Complete"

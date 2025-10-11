@@ -1,9 +1,3 @@
-//
-//  ImagePropertiesSection.swift
-//  logos inkpen.io
-//
-//  Image properties section for StrokeFillPanel
-//
 
 import SwiftUI
 
@@ -22,7 +16,6 @@ struct ImagePropertiesSection: View {
                 Spacer()
             }
 
-            // Image Opacity
             VStack(spacing: 8) {
                 HStack {
                     Text("Opacity")

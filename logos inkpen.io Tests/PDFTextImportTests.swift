@@ -1,31 +1,21 @@
-//
-//  PDFTextImportTests.swift
-//  logos inkpen.io Tests
-//
-//  Unit tests for PDF text import functionality
-//
 
 import XCTest
 @testable import logos_inkpen_io
 
 class PDFTextImportTests: XCTestCase {
 
-    // MARK: - Test PDF Text Operator Handling
 
     func testBeginEndTextOperators() {
         let parser = PDFCommandParser()
 
-        // Test BT operator
         parser.handleBeginText()
         XCTAssertTrue(parser.isInTextObject, "BT should set isInTextObject to true")
         XCTAssertEqual(parser.currentTextMatrix, .identity, "BT should reset text matrix")
         XCTAssertEqual(parser.currentLineMatrix, .identity, "BT should reset line matrix")
         XCTAssertEqual(parser.currentTextContent, "", "BT should clear text content")
 
-        // Add some text
         parser.currentTextContent = "Test Text"
 
-        // Test ET operator
         parser.handleEndText()
         XCTAssertFalse(parser.isInTextObject, "ET should set isInTextObject to false")
         XCTAssertGreaterThan(parser.shapes.count, 0, "ET should create shape if text exists")
@@ -41,9 +31,6 @@ class PDFTextImportTests: XCTestCase {
         parser.currentFontName = "OldFont"
         parser.currentFontSize = 10.0
 
-        // Simulate setting new font
-        // Note: Can't directly test handleSetFont without CGPDFScannerRef
-        // but we can test the state changes
         parser.currentFontName = "Helvetica"
         parser.currentFontSize = 24.0
 
@@ -54,23 +41,18 @@ class PDFTextImportTests: XCTestCase {
     func testTextSpacingOperators() {
         let parser = PDFCommandParser()
 
-        // Test character spacing (Tc)
         parser.textCharacterSpacing = 2.0
         XCTAssertEqual(parser.textCharacterSpacing, 2.0, "Character spacing should be set")
 
-        // Test word spacing (Tw)
         parser.textWordSpacing = 3.0
         XCTAssertEqual(parser.textWordSpacing, 3.0, "Word spacing should be set")
 
-        // Test horizontal scaling (Tz)
         parser.textHorizontalScaling = 150.0
         XCTAssertEqual(parser.textHorizontalScaling, 150.0, "Horizontal scaling should be set")
 
-        // Test text leading (TL)
         parser.textLeading = 20.0
         XCTAssertEqual(parser.textLeading, 20.0, "Text leading should be set")
 
-        // Test text rise (Ts)
         parser.textRise = 5.0
         XCTAssertEqual(parser.textRise, 5.0, "Text rise should be set")
     }
@@ -78,7 +60,6 @@ class PDFTextImportTests: XCTestCase {
     func testTextRenderingMode() {
         let parser = PDFCommandParser()
 
-        // Test different rendering modes
         let modes = [
             (0, "fill"),
             (1, "stroke"),
@@ -99,7 +80,6 @@ class PDFTextImportTests: XCTestCase {
     func testTextMatrixOperations() {
         let parser = PDFCommandParser()
 
-        // Test setting text matrix (Tm)
         let testMatrix = CGAffineTransform(a: 1, b: 0, c: 0, d: 1, tx: 100, ty: 200)
         parser.currentTextMatrix = testMatrix
         parser.currentLineMatrix = testMatrix
@@ -108,12 +88,10 @@ class PDFTextImportTests: XCTestCase {
         XCTAssertEqual(parser.currentLineMatrix, testMatrix, "Line matrix should match text matrix")
     }
 
-    // MARK: - Test VectorText Creation from PDF
 
     func testVectorTextCreationFromPDF() {
         let parser = PDFCommandParser()
 
-        // Set up text state
         parser.isInTextObject = true
         parser.currentFontName = "Helvetica"
         parser.currentFontSize = 24.0
@@ -121,9 +99,8 @@ class PDFTextImportTests: XCTestCase {
         parser.textLeading = 30.0
         parser.currentTextContent = "Sample PDF Text"
         parser.currentFillColor = CGColor(red: 1, green: 0, blue: 0, alpha: 1)
-        parser.textRenderingMode = 0 // Fill mode
+        parser.textRenderingMode = 0
 
-        // Simulate ending text object
         parser.handleEndText()
 
         XCTAssertEqual(parser.shapes.count, 1, "Should create one shape")
@@ -132,13 +109,11 @@ class PDFTextImportTests: XCTestCase {
             XCTAssertTrue(shape.isTextObject, "Shape should be text object")
             XCTAssertEqual(shape.textContent, "Sample PDF Text", "Text content should match")
 
-            // Check metadata
             XCTAssertEqual(shape.metadata["fontFamily"], "Helvetica", "Font family should be stored")
             XCTAssertEqual(shape.metadata["fontSize"], "24.0", "Font size should be stored")
             XCTAssertEqual(shape.metadata["letterSpacing"], "1.0", "Letter spacing should be stored")
             XCTAssertEqual(shape.metadata["lineSpacing"], "30.0", "Line spacing should be stored")
 
-            // Check fill style
             XCTAssertNotNil(shape.fillStyle, "Should have fill style")
             if let fillStyle = shape.fillStyle {
                 XCTAssertEqual(fillStyle.opacity, 1.0, "Fill opacity should be 1.0")
@@ -147,7 +122,6 @@ class PDFTextImportTests: XCTestCase {
     }
 
     func testVectorTextReconstructionFromMetadata() {
-        // Create a VectorShape with PDF metadata
         var shape = VectorShape(
             name: "Text: Test",
             path: VectorPath(elements: [])
@@ -164,7 +138,6 @@ class PDFTextImportTests: XCTestCase {
             "lineSpacing": "25.0"
         ]
 
-        // Convert back to VectorText
         let vectorText = VectorText.from(shape)
 
         XCTAssertNotNil(vectorText, "Should create VectorText from shape")
@@ -179,7 +152,6 @@ class PDFTextImportTests: XCTestCase {
         }
     }
 
-    // MARK: - Test Font Mapping
 
     func testPDFFontMapping() {
         let fontMappings = [
@@ -190,23 +162,18 @@ class PDFTextImportTests: XCTestCase {
             ("Arial-BoldMT", "Arial-Bold")
         ]
 
-        // This would test the mapPDFFontToSystem method if it were public
-        // For now, we just verify the expected mappings exist
         for (pdfFont, systemFont) in fontMappings {
             XCTAssertNotNil(pdfFont, "PDF font name should exist")
             XCTAssertNotNil(systemFont, "System font name should exist")
         }
     }
 
-    // MARK: - Test Text Encoding
 
     func testTextEncodingExtraction() {
-        // Test different text encodings
         let utf8Text = "UTF-8 Text: 你好"
         let asciiText = "ASCII Text"
         let macRomanText = "MacRoman: Café"
 
-        // Convert to data and back
         if let utf8Data = utf8Text.data(using: .utf8),
            let utf8Recovered = String(data: utf8Data, encoding: .utf8) {
             XCTAssertEqual(utf8Recovered, utf8Text, "UTF-8 should round-trip")
@@ -223,12 +190,10 @@ class PDFTextImportTests: XCTestCase {
         }
     }
 
-    // MARK: - Test Stroke and Fill Modes
 
     func testTextRenderingModeConversion() {
         let parser = PDFCommandParser()
 
-        // Test fill mode (0)
         parser.textRenderingMode = 0
         parser.currentFillColor = CGColor(red: 1, green: 0, blue: 0, alpha: 1)
         parser.currentFillOpacity = 0.8
@@ -241,7 +206,6 @@ class PDFTextImportTests: XCTestCase {
             XCTAssertNil(shape.strokeStyle, "Fill mode should not create stroke style")
         }
 
-        // Test stroke mode (1)
         parser.shapes.removeAll()
         parser.textRenderingMode = 1
         parser.currentStrokeColor = CGColor(red: 0, green: 1, blue: 0, alpha: 1)
@@ -259,7 +223,6 @@ class PDFTextImportTests: XCTestCase {
             }
         }
 
-        // Test fill+stroke mode (2)
         parser.shapes.removeAll()
         parser.textRenderingMode = 2
         parser.isInTextObject = true
@@ -272,7 +235,6 @@ class PDFTextImportTests: XCTestCase {
         }
     }
 
-    // MARK: - Test Multi-line Text
 
     func testMultiLineTextHandling() {
         let parser = PDFCommandParser()
@@ -290,10 +252,8 @@ class PDFTextImportTests: XCTestCase {
         }
     }
 
-    // MARK: - Integration Test
 
     func testFullPDFTextRoundTrip() {
-        // Create a VectorText
         let originalText = VectorText(
             content: "Round Trip Test",
             typography: TypographyProperties(
@@ -305,14 +265,12 @@ class PDFTextImportTests: XCTestCase {
             position: CGPoint(x: 100, y: 200)
         )
 
-        // Convert to VectorShape (as would happen in PDF export)
         let shape = originalText.toVectorShape()
 
         XCTAssertTrue(shape.isTextObject, "Shape should be text object")
         XCTAssertEqual(shape.textContent, "Round Trip Test", "Content should match")
         XCTAssertNotNil(shape.metadata["fontFamily"], "Should have font metadata")
 
-        // Convert back to VectorText (as would happen in PDF import)
         let reconstructedText = VectorText.from(shape)
 
         XCTAssertNotNil(reconstructedText, "Should reconstruct VectorText")

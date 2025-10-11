@@ -1,37 +1,26 @@
-//
-//  VectorDocument+UndoRedo.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 import Combine
 
-// MARK: - Undo/Redo
 extension VectorDocument {
     func saveToUndoStack() {
-        // Create a copy of the current state
         do {
             let data = try JSONEncoder().encode(self)
             let copy = try JSONDecoder().decode(VectorDocument.self, from: data)
             undoStack.append(copy)
 
-            // Limit undo stack size
             if undoStack.count > maxUndoStackSize {
                 undoStack.removeFirst()
             }
 
-            // Clear redo stack when a new action is performed
             redoStack.removeAll()
         } catch {
         }
     }
-    
+
     func undo() {
         guard !undoStack.isEmpty else { return }
 
-        // Save current state to redo stack
         do {
             let data = try JSONEncoder().encode(self)
             let copy = try JSONDecoder().decode(VectorDocument.self, from: data)
@@ -40,14 +29,10 @@ extension VectorDocument {
             Log.error("❌ UNDO: Failed to save current state to redo - \(error)", category: .error)
         }
 
-        // Restore previous state
         let previousState = undoStack.removeLast()
 
-        // CRITICAL: Set flags to prevent reordering and suppress intermediate updates
         isUndoRedoOperation = true
 
-        // CRITICAL: Perform ALL updates in a single transaction WITHOUT notifying SwiftUI
-        // This prevents view recreation and flicker
         var transaction = Transaction()
         transaction.disablesAnimations = true
         transaction.animation = nil
@@ -64,7 +49,6 @@ extension VectorDocument {
             selectedTextIDs = previousState.selectedTextIDs
             selectedObjectIDs = previousState.selectedObjectIDs
 
-            // Text is now stored in unified system
             unifiedObjects = previousState.unifiedObjects
             currentTool = previousState.currentTool
             zoomLevel = previousState.zoomLevel
@@ -99,41 +83,34 @@ extension VectorDocument {
             layerIndex = previousState.layerIndex
             directSelectedShapeIDs = previousState.directSelectedShapeIDs
 
-            // CRITICAL: Rebuild the lookup cache after restoring unified objects
             rebuildLookupCache()
         }
 
-        // Reset flag and notify SwiftUI ONCE
         isUndoRedoOperation = false
         objectWillChange.send()
     }
-    
+
     func redo() {
         guard !redoStack.isEmpty else { return }
 
-        // Save current state to undo stack WITHOUT clearing redo stack
         do {
             let data = try JSONEncoder().encode(self)
             let copy = try JSONDecoder().decode(VectorDocument.self, from: data)
             undoStack.append(copy)
 
-            // Limit undo stack size
             if undoStack.count > maxUndoStackSize {
                 undoStack.removeFirst()
             }
         } catch {
         }
 
-        // Restore next state (double-check the stack isn't empty)
         guard !redoStack.isEmpty else {
             return
         }
         let nextState = redoStack.removeLast()
 
-        // CRITICAL: Set flags to prevent reordering and suppress intermediate updates
         isUndoRedoOperation = true
 
-        // CRITICAL: Perform ALL updates in a single transaction WITHOUT notifying SwiftUI
         var transaction = Transaction()
         transaction.disablesAnimations = true
         transaction.animation = nil
@@ -150,7 +127,6 @@ extension VectorDocument {
             selectedTextIDs = nextState.selectedTextIDs
             selectedObjectIDs = nextState.selectedObjectIDs
 
-            // Text is now stored in unified system
             unifiedObjects = nextState.unifiedObjects
             currentTool = nextState.currentTool
             zoomLevel = nextState.zoomLevel
@@ -185,53 +161,37 @@ extension VectorDocument {
             layerIndex = nextState.layerIndex
             directSelectedShapeIDs = nextState.directSelectedShapeIDs
 
-            // CRITICAL: Rebuild the lookup cache after restoring unified objects
             rebuildLookupCache()
         }
 
-        // Reset flag and notify SwiftUI ONCE
         isUndoRedoOperation = false
         objectWillChange.send()
     }
-    
-    /// CRITICAL FIX: Ensures unified objects are properly ordered after undo/redo operations
-    /// This function checks if the orderIDs are consistent with the current ordering system
-    /// and fixes them if necessary without changing the actual object order
+
     private func fixUnifiedObjectsOrderingAfterUndo() {
-        // Temporarily disable the undo/redo flag to allow this specific operation
         let wasUndoRedoOperation = isUndoRedoOperation
         isUndoRedoOperation = false
-        
+
         defer { isUndoRedoOperation = wasUndoRedoOperation }
-   
-        // CRITICAL FIX: Special handling for text objects to ensure they maintain their proper order
+
         fixTextObjectOrderingAfterUndo()
-        
-        // Check if orderIDs are consistent across all layers
+
         for layerIndex in layers.indices {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
             guard layerObjects.count > 1 else { continue }
-            
-            // Get the orderIDs for this layer
+
             let orderIDs = layerObjects.map { $0.orderID }.sorted()
-            
-            // Check if orderIDs are sequential starting from 0
+
             let expectedOrderIDs = Array(0..<layerObjects.count)
-            
-            // CRITICAL FIX: Only fix when orderIDs are actually inconsistent
-            // The issue is that orderIDs might be sequential but in wrong order
+
             let needsFixing = orderIDs != expectedOrderIDs
-            
+
             if needsFixing {
-                // CRITICAL: The issue is that the orderIDs are in the wrong order
-                // We need to reverse them so that the last created object (which should be on top) gets the highest orderID
                 let sortedObjects = layerObjects.sorted { $0.orderID < $1.orderID }
-                
-                // REVERSE THE ORDER: Last created object gets highest orderID (front), first created gets lowest (back)
+
                 for (arrayIndex, unifiedObject) in sortedObjects.enumerated() {
-                    let newOrderID = sortedObjects.count - 1 - arrayIndex // Reverse order: last item gets highest orderID (front)
-                    
-                    // Find and update the unified object with the correct orderID
+                    let newOrderID = sortedObjects.count - 1 - arrayIndex
+
                     if let objectIndex = unifiedObjects.firstIndex(where: { $0.id == unifiedObject.id }) {
                         switch unifiedObject.objectType {
                         case .shape(let shape):
@@ -240,7 +200,6 @@ extension VectorDocument {
                                 layerIndex: layerIndex,
                                 orderID: newOrderID
                             )
-                        // Text handled as VectorShape(let text):
                             unifiedObjects[objectIndex] = VectorObject(
                                 shape: shape,
                                 layerIndex: layerIndex,
@@ -253,16 +212,8 @@ extension VectorDocument {
         }
 
     }
-    
-    /// CRITICAL FIX: Special handling for text objects to ensure they maintain their proper order during undo/redo
+
     private func fixTextObjectOrderingAfterUndo() {
     }
-    
-    /// CRITICAL FIX: Sync legacy arrays after undo/redo operations to ensure consistency
-//    private func syncLegacyArraysAfterUndo() {
-//        // Temporarily disable the undo/redo flag to allow this specific operation
-//        let wasUndoRedoOperation = isUndoRedoOperation
-//        isUndoRedoOperation = false
-//        isUndoRedoOperation = wasUndoRedoOperation
-//    }
+
 }

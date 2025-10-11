@@ -1,51 +1,39 @@
-//
-//  PDFTransparencyHandlers.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 9/1/25.
-//  Extracted from PDFContent.swift - Transparency and opacity handlers
-//
 
 import SwiftUI
 
-// MARK: - PDF Transparency Handlers Extension
 extension PDFCommandParser {
-    
-    // MARK: - Opacity/Transparency Handlers
-    
+
+
     func handleFillOpacity(scanner: CGPDFScannerRef) {
         var opacity: CGFloat = 1.0
-        
+
         guard CGPDFScannerPopNumber(scanner, &opacity) else {
             Log.error("PDF: Failed to read fill opacity", category: .error)
             return
         }
-        
+
         currentFillOpacity = Double(opacity)
     }
-    
+
     func handleStrokeOpacity(scanner: CGPDFScannerRef) {
         var opacity: CGFloat = 1.0
-        
+
         guard CGPDFScannerPopNumber(scanner, &opacity) else {
             Log.error("PDF: Failed to read stroke opacity", category: .error)
             return
         }
-        
+
         currentStrokeOpacity = Double(opacity)
     }
-    
+
     func handleGraphicsState(scanner: CGPDFScannerRef) {
-        // PDF 1.4+ uses names, PDF 1.3 uses strings - try both
         var nameRef: CGPDFStringRef?
         var namePtr: UnsafePointer<CChar>?
         var name: String
-        
+
         if CGPDFScannerPopName(scanner, &namePtr), let namePtrUnwrapped = namePtr {
-            // PDF 1.4+ format - name
             name = String(cString: namePtrUnwrapped)
         } else if CGPDFScannerPopString(scanner, &nameRef) {
-            // PDF 1.3 format - string
             guard let nameRefUnwrapped = nameRef,
                   let textString = CGPDFStringCopyTextString(nameRefUnwrapped) else {
                 Log.error("PDF: Failed to copy text string from graphics state name", category: .error)
@@ -56,59 +44,55 @@ extension PDFCommandParser {
             Log.error("PDF: Failed to read graphics state name (tried both name and string formats)", category: .error)
             return
         }
-        
-        // Enhanced ExtGState parsing with better error handling
+
         guard let page = currentPage else {
             return
         }
-        
+
         guard let resourceDict = page.dictionary else {
             return
         }
-        
-        // Try to get Resources dictionary - could be directly on page or inherited
+
         var resourcesRef: CGPDFDictionaryRef? = nil
         if !CGPDFDictionaryGetDictionary(resourceDict, "Resources", &resourcesRef) {
             return
         }
-        
+
         guard let resourcesDict = resourcesRef else {
             return
         }
-        
-        
+
+
         var extGStateDict: CGPDFDictionaryRef? = nil
         if !CGPDFDictionaryGetDictionary(resourcesDict, "ExtGState", &extGStateDict) {
             return
         }
-        
+
         guard let extGState = extGStateDict else {
             return
         }
-        
+
         var stateDict: CGPDFDictionaryRef? = nil
         guard CGPDFDictionaryGetDictionary(extGState, name, &stateDict),
               let state = stateDict else {
             return
         }
-        
-        // Parse opacity values from the ExtGState dictionary
+
         var fillOpacity: CGFloat = 1.0
         var strokeOpacity: CGFloat = 1.0
-        
+
         if CGPDFDictionaryGetNumber(state, "ca", &fillOpacity) {
             currentFillOpacity = Double(fillOpacity)
         } else {
-            currentFillOpacity = 1.0  // Reset to full opacity when no 'ca' entry
+            currentFillOpacity = 1.0
         }
-        
+
         if CGPDFDictionaryGetNumber(state, "CA", &strokeOpacity) {
             currentStrokeOpacity = Double(strokeOpacity)
         } else {
-            currentStrokeOpacity = 1.0  // Reset to full opacity when no 'CA' entry
+            currentStrokeOpacity = 1.0
         }
-        
-        // CRITICAL FIX: Store specific graphics state opacity values for XObject inheritance
+
         if name == "Gs1" {
             gs1FillOpacity = currentFillOpacity
             gs1StrokeOpacity = currentStrokeOpacity
@@ -117,49 +101,40 @@ extension PDFCommandParser {
             gs3StrokeOpacity = currentStrokeOpacity
         }
     }
-    
-    
+
+
     func handleXObject(scanner: CGPDFScannerRef) {
-        // Save graphics state for XObject processing
-        // At this point we have the correct outer scope opacity values
         xObjectSavedFillOpacity = currentFillOpacity
         xObjectSavedStrokeOpacity = currentStrokeOpacity
     }
-    
+
     func handleXObjectWithOpacitySaving(scanner: CGPDFScannerRef) {
-        // First get the name to know which XObject we're processing
         var namePtr: UnsafePointer<CChar>?
-        
+
         guard CGPDFScannerPopName(scanner, &namePtr) else {
             Log.error("PDF: Failed to read XObject name", category: .error)
             return
         }
-        
+
         let name = String(cString: namePtr!)
-        
-        // CRITICAL FIX: Use the correct graphics state opacity based on XObject name
+
         var savedFillOpacity: Double
         var savedStrokeOpacity: Double
-        
+
         if name == "Fm1" {
-            // Fm1 should use Gs1 opacity (0.5)
             savedFillOpacity = gs1FillOpacity
             savedStrokeOpacity = gs1StrokeOpacity
         } else if name == "Fm2" {
-            // Fm2 should use Gs3 opacity (0.75)
             savedFillOpacity = gs3FillOpacity
             savedStrokeOpacity = gs3StrokeOpacity
         } else {
-            // Default to current opacity for other XObjects
             savedFillOpacity = currentFillOpacity
             savedStrokeOpacity = currentStrokeOpacity
         }
-        
-        // Store these values for the PDF17 XObject handler to use
+
         xObjectSavedFillOpacity = savedFillOpacity
         xObjectSavedStrokeOpacity = savedStrokeOpacity
-        
-        // Now directly process the XObject content using the saved name (with image support)
+
         processXObjectWithImageSupport(name: name)
     }
 }

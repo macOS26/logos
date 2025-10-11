@@ -1,18 +1,11 @@
-//
-//  LayerView+PathOutline.swift
-//  logos
-//
-//  Created by Todd Bruss on 7/5/25.
-//
 
 import SwiftUI
 
-// MARK: - Command Outline (Red with white outline)
 struct PathOutline: View {
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
-    
+
     var body: some View {
         ZStack {
             if shape.isGroup && !shape.groupedShapes.isEmpty {

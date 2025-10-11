@@ -1,14 +1,7 @@
-//
-//  TransformationControls.swift
-//  logos inkpen.io
-//
-//  Created by Claude on 2025-09-21.
-//
 
 import SwiftUI
 import Combine
 
-// MARK: - Transform Origin Point
 enum TransformOrigin: String, CaseIterable {
     case topLeft = "Top Left"
     case topCenter = "Top Center"
@@ -35,7 +28,6 @@ enum TransformOrigin: String, CaseIterable {
     }
 }
 
-// MARK: - 9-Point Origin Selector
 struct NinePointOriginSelector: View {
     @Binding var selectedOrigin: TransformOrigin
 
@@ -55,7 +47,7 @@ struct NinePointOriginSelector: View {
                                 .frame(width: selectedOrigin == origin ? 6 : 4, height: selectedOrigin == origin ? 6 : 4)
                         }
                         .frame(width: 10, height: 10)
-                        .contentShape(Rectangle()) // Make entire area clickable
+                        .contentShape(Rectangle())
                         .onTapGesture {
                             selectedOrigin = origin
                         }
@@ -78,7 +70,6 @@ struct NinePointOriginSelector: View {
     }
 }
 
-// MARK: - Transformation Controls
 struct TransformationControls: View {
     @ObservedObject var document: VectorDocument
     @State private var keepProportions: Bool = false
@@ -95,12 +86,10 @@ struct TransformationControls: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            // 9-point origin selector
             NinePointOriginSelector(selectedOrigin: $document.transformOrigin)
                 .disabled(!hasSelection)
                 .opacity(hasSelection ? 1.0 : 0.5)
 
-            // X coordinate
             HStack(spacing: 2) {
                 Text("X:")
                     .font(.system(size: 10, weight: .medium))
@@ -116,7 +105,6 @@ struct TransformationControls: View {
                     }
             }
 
-            // Y coordinate
             HStack(spacing: 2) {
                 Text("Y:")
                     .font(.system(size: 10, weight: .medium))
@@ -132,7 +120,6 @@ struct TransformationControls: View {
                     }
             }
 
-            // Width
             HStack(spacing: 2) {
                 Text("W:")
                     .font(.system(size: 10, weight: .medium))
@@ -150,14 +137,12 @@ struct TransformationControls: View {
                         applyTransformation()
                     }
                     .onChange(of: widthValue) { _, _ in
-                        // Auto-update height if lock is on and user is typing
                         if keepProportions && !widthValue.isEmpty {
                             updateHeightProportionally()
                         }
                     }
             }
 
-            // Height
             HStack(spacing: 2) {
                 Text("H:")
                     .font(.system(size: 10, weight: .medium))
@@ -175,21 +160,19 @@ struct TransformationControls: View {
                         applyTransformation()
                     }
                     .onChange(of: heightValue) { _, _ in
-                        // Auto-update width if lock is on and user is typing
                         if keepProportions && !heightValue.isEmpty {
                             updateWidthProportionally()
                         }
                     }
             }
 
-            // Lock/Unlock proportions button
             Button(action: {
                 keepProportions.toggle()
             }) {
                 Image(systemName: keepProportions ? "lock.fill" : "lock.open.fill")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 12, height: 12) // Smaller icon for a more compact button
+                    .frame(width: 12, height: 12)
                     .foregroundColor(keepProportions ? .orange : Color(NSColor.systemBlue))
                     .frame(width: 24, height: 24)
                     .contentShape(Rectangle())
@@ -219,18 +202,18 @@ struct TransformationControls: View {
                         .stroke(Color.orange, lineWidth: 2)
                     }
                     .frame(width: 24, height: 24)
-                    .opacity(0)  // Hidden, but keeps structure for animation
-                    .allowsHitTesting(false) // Don't block clicks
+                    .opacity(0)
+                    .allowsHitTesting(false)
                 ) :
                 AnyView(
                     EmptyView()
                         .frame(width: 24, height: 24)
-                        .allowsHitTesting(false) // Don't block clicks
+                        .allowsHitTesting(false)
             )
             )
             .shadow(color: keepProportions ?
-                Color(.displayP3, red: 0.0, green: 0.478, blue: 1.0).opacity(0.3) : // Display P3 system blue
-                Color(.displayP3, red: 1.0, green: 0.584, blue: 0.0).opacity(0.3), // Display P3 orange
+                Color(.displayP3, red: 0.0, green: 0.478, blue: 1.0).opacity(0.3) :
+                Color(.displayP3, red: 1.0, green: 0.584, blue: 0.0).opacity(0.3),
                 radius: 2)
             .disabled(!hasSelection)
             .opacity(hasSelection ? 1.0 : 0.3)
@@ -247,46 +230,34 @@ struct TransformationControls: View {
             updateValuesFromSelection()
         }
         .onChange(of: document.objectPositionUpdateTrigger) { _, _ in
-            // PERFORMANCE: Skip full update during active handle scaling (W/H already updating live)
-            // This prevents unnecessary X/Y recalculation during scaling for better performance
             if !document.isHandleScalingActive {
                 updateValuesFromSelection()
             }
         }
         .onChange(of: document.currentDragOffset) { _, newOffset in
-            // Update X,Y coordinates during dragging (W,H don't change when dragging)
             if newOffset != .zero {
-                // Active drag - update position with drag offset
                 updatePositionOnly()
             } else {
-                // Drag ended (offset reset to zero) - update full values to get final position
                 updateValuesFromSelection()
             }
         }
         .onChange(of: document.scalePreviewDimensions) { _, _ in
-            // PERFORMANCE: Only update W,H during scaling, skip X,Y for speed
             if document.isHandleScalingActive && document.scalePreviewDimensions != .zero {
-                // Only update width and height - X,Y don't broadcast during live preview
                 widthValue = String(format: "%.2f", document.scalePreviewDimensions.width)
                 heightValue = String(format: "%.2f", document.scalePreviewDimensions.height)
-                // X,Y will update at the end when scaling completes via updateValuesFromSelection
             }
         }
     }
 
-    // PERFORMANCE OPTIMIZATION: New function to update only X,Y positions during drag
     private func updatePositionOnly() {
-        // PERFORMANCE: Use cached bounds if available during drag
         let bounds = document.cachedSelectionBounds ?? getSelectionBounds()
-        
+
         guard let bounds = bounds else {
             xValue = ""
             yValue = ""
             return
         }
 
-        // X,Y should show the position of the selected origin point
-        // Account for current drag offset to show live position during dragging
         let origin = document.transformOrigin.point
         let pageOrigin = document.settings.pageOrigin ?? .zero
         let x = bounds.minX + bounds.width * origin.x + document.currentDragOffset.x - pageOrigin.x
@@ -294,7 +265,6 @@ struct TransformationControls: View {
 
         xValue = String(format: "%.2f", x)
         yValue = String(format: "%.2f", y)
-        // DO NOT update widthValue or heightValue during drag - they don't change!
     }
 
     private func updateValuesFromSelection() {
@@ -307,8 +277,6 @@ struct TransformationControls: View {
             return
         }
 
-        // X,Y should show the position of the selected origin point
-        // Account for current drag offset to show live position during dragging
         let origin = document.transformOrigin.point
         let pageOrigin = document.settings.pageOrigin ?? .zero
         let x = bounds.minX + bounds.width * origin.x + document.currentDragOffset.x - pageOrigin.x
@@ -334,15 +302,12 @@ struct TransformationControls: View {
     }
 
     private func transformPoint(_ point: CGPoint, currentOrigin: CGPoint, newOrigin: CGPoint, scaleX: CGFloat, scaleY: CGFloat) -> CGPoint {
-        // Translate to origin
         let dx = point.x - currentOrigin.x
         let dy = point.y - currentOrigin.y
 
-        // Scale
         let scaledX = dx * scaleX
         let scaledY = dy * scaleY
 
-        // Translate to new position
         return CGPoint(x: scaledX + newOrigin.x, y: scaledY + newOrigin.y)
     }
 
@@ -355,11 +320,8 @@ struct TransformationControls: View {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
-                    // CRITICAL FIX: For text objects, use position + bounds, not just bounds
                     var shapeBounds: CGRect
                     if shape.isTextObject {
-                        // Text objects store position separately from bounds
-                        // Use textPosition if available, otherwise use transform
                         let position = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
                         shapeBounds = CGRect(
                             x: position.x,
@@ -368,10 +330,8 @@ struct TransformationControls: View {
                             height: shape.bounds.height
                         )
                     } else if shape.isGroupContainer {
-                        // Use group bounds for groups
                         shapeBounds = shape.groupBounds
                     } else {
-                        // Regular shapes - bounds already include position
                         shapeBounds = shape.bounds
                     }
                     combinedBounds = combinedBounds.map { $0.union(shapeBounds) } ?? shapeBounds
@@ -393,29 +353,22 @@ struct TransformationControls: View {
 
         document.saveToUndoStack()
 
-        // Calculate the origin point based on selected origin
         let originOffset = document.transformOrigin.point
         let currentOriginX = currentBounds.minX + currentBounds.width * originOffset.x
         let currentOriginY = currentBounds.minY + currentBounds.height * originOffset.y
 
-        // The X,Y values ARE the position of the selected origin point relative to page origin
-        // Add page origin back to convert to canvas coordinates
         let pageOrigin = document.settings.pageOrigin ?? .zero
         let newOriginX = newX + pageOrigin.x
         let newOriginY = newY + pageOrigin.y
 
-        // Calculate scale
         let scaleX = newWidth / currentBounds.width
         let scaleY = newHeight / currentBounds.height
 
-        // Apply transformation to each selected object
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID),
                case .shape(var shape) = unifiedObject.objectType {
 
-                // Check if this is a group - handle grouped shapes specially
                 if shape.isGroupContainer {
-                    // Transform each grouped shape
                     var transformedGroupedShapes: [VectorShape] = []
                     for var groupedShape in shape.groupedShapes {
                         var transformedElements: [PathElement] = []
@@ -471,30 +424,25 @@ struct TransformationControls: View {
                     shape.groupedShapes = transformedGroupedShapes
                     shape.updateBounds()
                 } else if shape.isTextObject {
-                    // CRITICAL FIX: Handle text objects differently - transform position, not path
                     let currentPosition = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
                     let newPosition = transformPoint(currentPosition,
                                                     currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
                                                     newOrigin: CGPoint(x: newOriginX, y: newOriginY),
                                                     scaleX: scaleX, scaleY: scaleY)
 
-                    // Update both textPosition and transform
                     shape.textPosition = newPosition
                     shape.transform = CGAffineTransform(translationX: newPosition.x, y: newPosition.y)
 
-                    // Also update bounds size if scaled
                     if scaleX != 1.0 || scaleY != 1.0 {
                         let newWidth = shape.bounds.width * scaleX
                         let newHeight = shape.bounds.height * scaleY
                         shape.bounds = CGRect(x: 0, y: 0, width: newWidth, height: newHeight)
 
-                        // Update area size if text object has one
                         if let areaSize = shape.areaSize {
                             shape.areaSize = CGSize(width: areaSize.width * scaleX, height: areaSize.height * scaleY)
                         }
                     }
                 } else {
-                    // Transform regular shape
                     var transformedElements: [PathElement] = []
                     for element in shape.path.elements {
                         switch element {
@@ -545,13 +493,11 @@ struct TransformationControls: View {
                     shape.updateBounds()
                 }
 
-                // Update in layers using proper accessor methods
                 for layerIndex in document.layers.indices {
                     let shapes = document.getShapesForLayer(layerIndex)
                     if let shapeIndex = shapes.firstIndex(where: { $0.id == objectID }) {
                         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
 
-                        // CRITICAL FIX: Also update text objects in unified system
                         if shape.isTextObject {
                             if let position = shape.textPosition {
                                 document.updateTextPositionInUnified(id: shape.id, position: position)
@@ -567,11 +513,9 @@ struct TransformationControls: View {
             }
         }
 
-        // Update document
         document.updateUnifiedObjectsOptimized()
         document.objectWillChange.send()
 
-        // Refresh values
         updateValuesFromSelection()
     }
 }

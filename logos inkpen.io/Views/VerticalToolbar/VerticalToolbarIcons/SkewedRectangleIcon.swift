@@ -1,16 +1,9 @@
-//
-//  SkewedRectangleIcon.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 
-// MARK: - Custom Skewed Rectangle Icon
 struct SkewedRectangleIcon: View {
     let isSelected: Bool
-    
+
     var body: some View {
         Image(systemName: "rectangle")
             .font(.system(size: 16))

@@ -1,72 +1,52 @@
-//
-//  ScaleHandles.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/20/25.
-//
 
 import SwiftUI
 import Combine
 
-// MARK: - Scale Tool Handles
 struct ScaleHandles: View {
     @ObservedObject var document: VectorDocument
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
-    let isShiftPressed: Bool  // Passed from DrawingCanvas for transform tool constraints
-    
-    // Professional scaling state management - FIXED IMPLEMENTATION
+    let isShiftPressed: Bool
+
     @State var isScaling = false
     @State var scalingStarted = false
     @State var initialBounds: CGRect = .zero
     @State var initialTransform: CGAffineTransform = .identity
     @State var startLocation: CGPoint = .zero
     @State var previewTransform: CGAffineTransform = .identity
-    @State var scalingAnchorPoint: CGPoint = .zero  // This is the LOCKED/PIN point (RED)
+    @State var scalingAnchorPoint: CGPoint = .zero
     @State var finalMarqueeBounds: CGRect = .zero
-    @State var isCapsLockPressed = false  // NEW: Track caps-lock for locking pin point
+    @State var isCapsLockPressed = false
 
-    // CORRECTED POINT SYSTEM: Lock point vs scale points
-    @State var lockedPinPointIndex: Int? = nil // Which point is LOCKED (RED) - set by single click
-    @State var pathPoints: [VectorPoint] = []  // All path points for display
-    @State var centerPoint: VectorPoint = VectorPoint(CGPoint.zero) // Center point
+    @State var lockedPinPointIndex: Int? = nil
+    @State var pathPoints: [VectorPoint] = []
+    @State var centerPoint: VectorPoint = VectorPoint(CGPoint.zero)
     @State var pointsRefreshTrigger: Int = 0
 
     let handleSize: CGFloat = 10
-    
-    // CRITICAL FIX: Calculate bounds outside body property to avoid build errors
+
     private var calculatedBounds: CGRect {
         if ImageContentRegistry.containsImage(shape) {
-            // For ALL images, calculate bounds the same way as ShapeView renders them
-            // This matches the actual image positioning: pathBounds.applying(shape.transform)
             let pathBounds = shape.path.cgPath.boundingBoxOfPath
             return pathBounds.applying(shape.transform)
         } else {
-            // For regular shapes, use existing logic
             return shape.isGroupContainer ? shape.groupBounds : shape.bounds
         }
     }
-    
+
     private var calculatedCenter: CGPoint {
-        // Use true geometric centroid from common helper
         return shape.calculateCentroid()
     }
-    
+
     var body: some View {
-        // SCALE TOOL: Show all path points + center point with correct colors
-        // CRITICAL FIX: For images with transforms, use the same bounds calculation as transform box handles
-        // This ensures the scale tool aligns properly with transformed images
         let bounds = calculatedBounds
         let center = calculatedCenter
-        
+
         ZStack {
-            // ACTUAL OBJECT OUTLINE: Show the real shape paths
             if shape.isGroup && !shape.groupedShapes.isEmpty {
-                // GROUP/FLATTENED SHAPE: Show outline of each individual shape
                 ForEach(shape.groupedShapes.indices, id: \.self) { index in
                     let groupedShape = shape.groupedShapes[index]
-                    // PERFORMANCE OPTIMIZATION: Use cached path creation
                     let cachedPath = Path { path in
                         for element in groupedShape.path.elements {
                             switch element {
@@ -97,8 +77,6 @@ struct ScaleHandles: View {
                     }
                 }
             } else {
-                // REGULAR SHAPE: Show single path outline with cached path
-                // PERFORMANCE OPTIMIZATION: Use cached path creation
                 let cachedPath = Path { path in
                     for element in shape.path.elements {
                         switch element {
@@ -128,13 +106,10 @@ struct ScaleHandles: View {
                         .transformEffect(shape.transform)
                 }
             }
-            
-            // SHOW ALL PATH POINTS + CENTER POINT with correct colors
+
             pathPointsView()
-            
-            // GROUP BOUNDS FEATURES: For groups/flattened objects, also show bounds points
+
             if shape.isGroup && !shape.groupedShapes.isEmpty {
-                // GREEN BOUNDS MARQUEE: Show the overall bounding box
                 Rectangle()
                     .stroke(Color.green, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [3.0 / zoomLevel, 3.0 / zoomLevel]))
                     .frame(width: bounds.width, height: bounds.height)
@@ -142,13 +117,12 @@ struct ScaleHandles: View {
                     .scaleEffect(zoomLevel, anchor: .topLeading)
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
                     .transformEffect(shape.transform)
-                
-                // BOUNDS CORNER POINTS: Show the 4 corner points of the bounding box
+
                 ForEach(0..<4) { i in
                     let cornerPos = cornerPosition(for: i, in: bounds, center: center)
-                    let cornerIndex = pathPoints.count + i // Offset to avoid conflicts with path points
+                    let cornerIndex = pathPoints.count + i
                     let isLockedPin = lockedPinPointIndex == cornerIndex
-                    
+
                     Circle()
                         .fill(isLockedPin ? Color.red : Color.green)
                         .stroke(Color.white, lineWidth: 1.0)
@@ -159,14 +133,12 @@ struct ScaleHandles: View {
                         )
                         .onTapGesture {
                             if !isScaling {
-                                // SINGLE CLICK: Set this as the locked pin point (RED)
                                 setLockedPinPoint(cornerIndex)
                             }
                         }
                         .highPriorityGesture(
                             DragGesture(minimumDistance: 3)
                                 .onChanged { value in
-                                    // DRAG: Scale away from the locked pin point
                                     handleScalingFromPoint(draggedPointIndex: cornerIndex, dragValue: value, bounds: bounds, center: center)
                                 }
                                 .onEnded { _ in
@@ -175,28 +147,25 @@ struct ScaleHandles: View {
                         )
                 }
             }
-            
-            // CENTER POINT: Always available (GREEN if not locked, RED if locked)
-            let isCenterLockedPin = (lockedPinPointIndex == nil) // nil represents center as locked pin
+
+            let isCenterLockedPin = (lockedPinPointIndex == nil)
             Circle()
-                .fill(isCenterLockedPin ? Color.red : Color.green)  // RED = locked pin, GREEN = scalable
+                .fill(isCenterLockedPin ? Color.red : Color.green)
                 .stroke(Color.white, lineWidth: 1.0)
-                .frame(width: handleSize, height: handleSize) // Fixed UI size - does not scale with artwork
+                .frame(width: handleSize, height: handleSize)
                 .position(CGPoint(
                     x: center.x * zoomLevel + canvasOffset.x,
                     y: center.y * zoomLevel + canvasOffset.y
                 ))
-                .zIndex(100) // Ensure center point is on top
+                .zIndex(100)
                 .onTapGesture {
                     if !isScaling {
-                        // SINGLE CLICK: Set center as the locked pin point (RED)
-                        setLockedPinPoint(nil) // nil = center
+                        setLockedPinPoint(nil)
                     }
                 }
                 .gesture(
                     DragGesture(minimumDistance: 3)
                         .onChanged { value in
-                            // When dragging center point, calculate scale based on drag distance
                             if !scalingStarted {
                                 scalingStarted = true
                                 isScaling = true
@@ -213,7 +182,6 @@ struct ScaleHandles: View {
                                 height: value.location.y - value.startLocation.y
                             )
 
-                            // Calculate scale based on drag distance
                             let sensitivity: CGFloat = 0.005 / zoomLevel
                             var scaleX = 1.0 + (translation.width * sensitivity)
                             var scaleY = 1.0 + (translation.height * sensitivity)
@@ -233,11 +201,9 @@ struct ScaleHandles: View {
                             finishScaling()
                         }
                 )
-            
-            // MARQUEE PREVIEW: Show ACTUAL SCALED SHAPE OUTLINE (EXACTLY like the final object will be)
+
             if isScaling && !previewTransform.isIdentity {
                 if shape.isGroup && !shape.groupedShapes.isEmpty {
-                    // GROUP/FLATTENED SHAPE: Show marquee preview for each individual shape
                     ForEach(shape.groupedShapes.indices, id: \.self) { index in
                         let groupedShape = shape.groupedShapes[index]
                         Path { path in
@@ -266,11 +232,9 @@ struct ScaleHandles: View {
                         .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
                         .scaleEffect(zoomLevel, anchor: .topLeading)
                         .offset(x: canvasOffset.x, y: canvasOffset.y)
-                        // NO .transformEffect! Coordinates already transformed above (same as actual object)
                         .opacity(0.8)
                     }
                 } else {
-                    // REGULAR SHAPE: Show single marquee preview
                     Path { path in
                         for element in shape.path.elements {
                             switch element {
@@ -297,52 +261,42 @@ struct ScaleHandles: View {
                     .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
                     .scaleEffect(zoomLevel, anchor: .topLeading)
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    // NO .transformEffect! Coordinates already transformed above (same as actual object)
                     .opacity(0.8)
                 }
-                
-                // GREEN BOUNDS MARQUEE PREVIEW: Show live scaling bounds for groups/flattened objects
+
                 if shape.isGroup && !shape.groupedShapes.isEmpty {
-                    // Calculate transformed bounds for the green marquee preview
                     let transformedBounds = bounds.applying(previewTransform)
                     let transformedCenter = CGPoint(x: transformedBounds.midX, y: transformedBounds.midY)
-                    
+
                     Rectangle()
                         .stroke(Color.green, style: SwiftUI.StrokeStyle(lineWidth: 1.5 / zoomLevel, dash: [3.0 / zoomLevel, 3.0 / zoomLevel]))
                         .frame(width: transformedBounds.width, height: transformedBounds.height)
                         .position(transformedCenter)
                         .scaleEffect(zoomLevel, anchor: .topLeading)
                         .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    // NO .transformEffect! Bounds already transformed above
                         .opacity(0.6)
                 }
-                
-                // Marquee shows scaling preview without additional handles (handled by point system below)
+
             }
         }
         .onAppear {
             initialBounds = shape.bounds
             initialTransform = shape.transform
             extractPathPoints()
-            
-            // Set default locked pin point to center if none is set
+
             if lockedPinPointIndex == nil && scalingAnchorPoint == .zero {
-                setLockedPinPoint(nil) // nil = center point
+                setLockedPinPoint(nil)
             }
         }
         .onChange(of: shape.bounds) { oldBounds, newBounds in
-            // MOVEMENT FIX: When shape bounds change (e.g., after moving), refresh the scale points
             if !isScaling && oldBounds != newBounds {
                 extractPathPoints()
                 pointsRefreshTrigger += 1
             }
         }
-        .id("scale-handles-\(pointsRefreshTrigger)") // Force view rebuild when points update
+        .id("scale-handles-\(pointsRefreshTrigger)")
     }
 
-    // MARK: - Key Event Monitoring
-    // NOTE: Shift key monitoring is now handled by the centralized keyEventMonitor in DrawingCanvas
-    // to avoid multiple NSEvent monitors and ensure consistent behavior across all transform tools
 
     @State var keyEventMonitor: Any?
 }

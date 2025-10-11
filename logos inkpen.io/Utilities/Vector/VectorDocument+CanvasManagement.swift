@@ -1,49 +1,35 @@
-//
-//  VectorDocument+CanvasManagement.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 import Combine
 
-// MARK: - Canvas Management
 extension VectorDocument {
-    /// Creates Pasteboard, Canvas, and working layers in correct order (pasteboard behind everything)
     internal func createCanvasAndWorkingLayers() {
-        // CRITICAL DEBUG: Clear any existing layers first to ensure proper order
         layers.removeAll()
-        
-        // Create Pasteboard layer FIRST (index 0) - working area behind everything
+
         var pasteboardLayer = VectorLayer(name: "Pasteboard", color: .gray)
-        pasteboardLayer.isLocked = true  // Pasteboard should be LOCKED to prevent interference
-        
-        // Calculate pasteboard size (10x larger than canvas, same aspect ratio)
+        pasteboardLayer.isLocked = true
+
         let canvasSize = settings.sizeInPoints
         let pasteboardSize = CGSize(width: canvasSize.width * 10, height: canvasSize.height * 10)
-        
-        // Calculate pasteboard position (canvas centered within pasteboard)
+
         let pasteboardOrigin = CGPoint(
             x: -(pasteboardSize.width - canvasSize.width) / 2,
             y: -(pasteboardSize.height - canvasSize.height) / 2
         )
-        
+
         let pasteboardRect = VectorShape.rectangle(
             at: pasteboardOrigin,
             size: pasteboardSize
         )
         var pasteboardShape = pasteboardRect
-        pasteboardShape.fillStyle = FillStyle(color: .black, opacity: 0.2)  // 20% black
+        pasteboardShape.fillStyle = FillStyle(color: .black, opacity: 0.2)
         pasteboardShape.strokeStyle = nil
         pasteboardShape.name = "Pasteboard Background"
         layers.append(pasteboardLayer)
-        // Add pasteboard background directly to unified objects
         addShapeToUnifiedSystem(pasteboardShape, layerIndex: 0)
-        
-        // Create Canvas layer SECOND (index 1) - canvas layer, LOCKED by default
+
         var canvasLayer = VectorLayer(name: "Canvas", color: .blue)
-        canvasLayer.isLocked = true  // Canvas should be locked by default
+        canvasLayer.isLocked = true
         let canvasRect = VectorShape.rectangle(
             at: CGPoint(x: 0, y: 0),
             size: settings.sizeInPoints
@@ -53,28 +39,22 @@ extension VectorDocument {
         backgroundShape.strokeStyle = nil
         backgroundShape.name = "Canvas Background"
         layers.append(canvasLayer)
-        // Add canvas background directly to unified objects
         addShapeToUnifiedSystem(backgroundShape, layerIndex: 1)
-        
-        // Create working layer THIRD (index 2) - for actual drawing
+
         layers.append(VectorLayer(name: "Layer 1", color: .green))
-        
-        // DEBUG: Print actual layer order to verify
+
         debugLayerOrder()
     }
-    
-    /// Debug function to print current layer order
+
     func debugLayerOrder() {
     }
-    
-    /// Update pasteboard layer to match canvas size and center it
+
     func updatePasteboardLayer() {
         guard layers.count > 0,
               layers[0].name == "Pasteboard" else {
             return
         }
 
-        // Use unified objects to find pasteboard shape
         let pasteboardShape = unifiedObjects
             .filter { $0.layerIndex == 0 }
             .compactMap { object -> VectorShape? in
@@ -93,20 +73,17 @@ extension VectorDocument {
         let canvasSize = settings.sizeInPoints
         let pasteboardSize = CGSize(width: canvasSize.width * 10, height: canvasSize.height * 10)
 
-        // Calculate pasteboard position (canvas centered within pasteboard)
         let pasteboardOrigin = CGPoint(
             x: -(pasteboardSize.width - canvasSize.width) / 2,
             y: -(pasteboardSize.height - canvasSize.height) / 2
         )
 
-        // Find the pasteboard shape index in unified objects and update it
         if unifiedObjects.contains(where: { object in
             if case .shape(let shape) = object.objectType {
                 return shape.name == "Pasteboard Background" && object.layerIndex == 0
             }
             return false
         }) {
-            // Get the shape index within the layer for setShapeAtIndex
             let shapesInLayer = getShapesForLayer(0)
             guard let pasteboardIndex = shapesInLayer.firstIndex(where: { $0.name == "Pasteboard Background" }) else { return }
             let newPasteboardRect = VectorShape.rectangle(
@@ -114,33 +91,29 @@ extension VectorDocument {
                 size: pasteboardSize
             )
             var updatedPasteboardShape = newPasteboardRect
-            updatedPasteboardShape.fillStyle = FillStyle(color: .black, opacity: 0.2)  // 20% black
+            updatedPasteboardShape.fillStyle = FillStyle(color: .black, opacity: 0.2)
             updatedPasteboardShape.strokeStyle = nil
             updatedPasteboardShape.name = "Pasteboard Background"
-            updatedPasteboardShape.id = pasteboardShape.id  // Keep the same ID
+            updatedPasteboardShape.id = pasteboardShape.id
 
             setShapeAtIndex(layerIndex: 0, shapeIndex: pasteboardIndex, shape: updatedPasteboardShape)
 
         }
     }
-    
-    /// Gets document bounds using standard document size (no Canvas-specific logic)
+
     var documentBounds: CGRect {
         return CGRect(origin: .zero, size: settings.sizeInPoints)
     }
-    
-    /// Debug function to print current document state
+
     func debugCurrentState() {
     }
-    
-    /// Update canvas layer rectangle to match current `settings.sizeInPoints`
+
     func updateCanvasLayer() {
         guard layers.count > 1,
               layers[1].name == "Canvas" else {
             return
         }
-        
-        // Use unified objects to find canvas shape index
+
         let shapesInLayer = getShapesForLayer(1)
         guard let canvasIndex = shapesInLayer.firstIndex(where: { $0.name == "Canvas Background" }) else {
             return
@@ -157,20 +130,17 @@ extension VectorDocument {
         updatedCanvasShape.id = existingCanvas.id
         setShapeAtIndex(layerIndex: 1, shapeIndex: canvasIndex, shape: updatedCanvasShape)
     }
-    
-    /// Translate all content in the document by a delta. Skips background shapes by default.
+
     func translateAllContent(by delta: CGPoint, includeBackgrounds: Bool = false) {
         guard delta != .zero else { return }
         let backgroundNames: Set<String> = ["Canvas Background", "Pasteboard Background"]
 
-        // Translate shapes across all layers
         for layerIndex in layers.indices {
             let shapes = getShapesForLayer(layerIndex)
             for (shapeIndex, shape) in shapes.enumerated() {
                 let shapeName = shape.name
                 if !includeBackgrounds && backgroundNames.contains(shapeName) { continue }
 
-                // Apply translation via transform, then bake into coordinates
                 var updatedShape = shape
                 updatedShape.transform = updatedShape.transform.translatedBy(x: delta.x, y: delta.y)
                 setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
@@ -178,27 +148,19 @@ extension VectorDocument {
             }
         }
 
-        // Translate text objects' positions using unified helper
         translateAllTextInUnified(delta: delta)
 
         objectWillChange.send()
     }
-    
-    /// Set up observation for settings changes to update pasteboard
+
     internal func setupSettingsObservation() {
-        // Since settings is a struct, we can't directly observe individual properties
-        // Instead, we'll provide a method that should be called when settings change
     }
-    
-    /// Call this method whenever document settings change to update pasteboard
+
     func onSettingsChanged() {
-        // Update pasteboard when canvas size changes
         updatePasteboardLayer()
-        // Update canvas layer to match new document size
         updateCanvasLayer()
-        
-        // Update any other dependent elements
+
         objectWillChange.send()
-        
+
     }
 }

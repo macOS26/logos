@@ -1,22 +1,14 @@
-//
-//  TextRotateHandles.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/20/25.
-//
 
 import SwiftUI
 import SwiftUI
 
-// MARK: - Text Rotation and Shear Handles
 struct TextRotateHandles: View {
     @ObservedObject var document: VectorDocument
     let textObject: VectorText
     let zoomLevel: Double
     let canvasOffset: CGPoint
-    
+
     var body: some View {
-        // SIMPLIFIED: Use text object position and bounds directly (no legacy calculation)
         let bounds = textObject.bounds
         let absoluteBounds = CGRect(
             x: textObject.position.x,
@@ -25,7 +17,7 @@ struct TextRotateHandles: View {
             height: bounds.height
         )
         let center = CGPoint(x: absoluteBounds.midX, y: absoluteBounds.midY)
-        
+
         Rectangle()
             .stroke(Color.orange, lineWidth: 1.0 / zoomLevel)
             .frame(width: absoluteBounds.width, height: absoluteBounds.height)

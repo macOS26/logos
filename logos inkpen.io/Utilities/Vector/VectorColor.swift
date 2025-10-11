@@ -1,25 +1,18 @@
-//
-//  VectorColor.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 
-// MARK: - Vector Color
 enum VectorColor: Hashable {
     case rgb(RGBColor)
     case cmyk(CMYKColor)
     case hsb(HSBColorModel)
-    case pantone(PantoneLibraryColor) // Pantone library colors
-    case spot(SPOTColor)              // New SPOT colors
+    case pantone(PantoneLibraryColor)
+    case spot(SPOTColor)
     case appleSystem(AppleSystemColor)
-    case gradient(VectorGradient)     // Gradient support
+    case gradient(VectorGradient)
     case clear
     case black
     case white
-    
+
     var color: Color {
         switch self {
         case .rgb(let rgb):
@@ -35,7 +28,6 @@ enum VectorColor: Hashable {
         case .appleSystem(let systemColor):
             return systemColor.color
         case .gradient(let gradient):
-            // For gradients, return the first stop color as a fallback (already VectorColor → Color path will hit working space)
             return gradient.stops.first?.color.color ?? Color.black
         case .clear:
             return Color.clear
@@ -45,7 +37,7 @@ enum VectorColor: Hashable {
             return Color.white
         }
     }
-    
+
     var cgColor: CGColor {
         switch self {
         case .rgb(let rgb):
@@ -61,11 +53,9 @@ enum VectorColor: Hashable {
         case .appleSystem(let systemColor):
             return systemColor.rgbEquivalent.cgColor
         case .gradient(let gradient):
-            // For gradients, return the first stop color as a fallback
             if let firstStop = gradient.stops.first {
                 return firstStop.color.cgColor
             }
-            // Fallback to black using ColorManager
             let comps: [CGFloat] = [0, 0, 0, 1]
             return CGColor(colorSpace: ColorManager.shared.workingCGColorSpace, components: comps) ?? CGColor(red: 0, green: 0, blue: 0, alpha: 1)
         case .clear:
@@ -79,14 +69,12 @@ enum VectorColor: Hashable {
             return CGColor(colorSpace: ColorManager.shared.workingCGColorSpace, components: comps) ?? CGColor(red: 1, green: 1, blue: 1, alpha: 1)
         }
     }
-    
-    // Basic colors available in all modes
+
     static let basicColors: [VectorColor] = [
         .black, .white, .clear
     ]
-    
+
     var svgColor: String {
-        // Check user preference for export color space
         let useDisplayP3 = AppState.shared.exportColorSpace == .displayP3
 
         switch self {
@@ -98,19 +86,15 @@ enum VectorColor: Hashable {
             return "#FFFFFF"
         case .rgb(let rgbColor):
             if useDisplayP3 {
-                // Export as hex in Display P3 space (not converted to sRGB)
-                // SVG viewers will interpret these values in their native color space
                 let r = Int(rgbColor.red * 255)
                 let g = Int(rgbColor.green * 255)
                 let b = Int(rgbColor.blue * 255)
                 return String(format: "#%02X%02X%02X", r, g, b)
             } else {
-                // Convert Display P3 to sRGB for maximum compatibility
                 return ColorManager.shared.cgColorToSRGBHex(rgbColor.cgColor)
             }
         case .cmyk(let cmykColor):
             if useDisplayP3 {
-                // Convert CMYK to RGB, export as hex in P3 space
                 let r = Int((1 - cmykColor.cyan) * (1 - cmykColor.black) * 255)
                 let g = Int((1 - cmykColor.magenta) * (1 - cmykColor.black) * 255)
                 let b = Int((1 - cmykColor.yellow) * (1 - cmykColor.black) * 255)
@@ -120,10 +104,8 @@ enum VectorColor: Hashable {
             }
         case .hsb(let hsbColor):
             if useDisplayP3 {
-                // Convert HSB to RGB, export as hex in P3 space
                 let color = Color(hue: hsbColor.hue / 360.0, saturation: hsbColor.saturation, brightness: hsbColor.brightness)
                 let nsColor = NSColor(color)
-                // Get P3 components
                 if let p3Color = nsColor.usingColorSpace(.displayP3) {
                     let r = Int(p3Color.redComponent * 255)
                     let g = Int(p3Color.greenComponent * 255)
@@ -136,7 +118,6 @@ enum VectorColor: Hashable {
             }
         case .pantone(let pantoneColor):
             if useDisplayP3 {
-                // Export Pantone as hex in P3 space
                 let rgb = pantoneColor.rgbEquivalent
                 let r = Int(rgb.red * 255)
                 let g = Int(rgb.green * 255)
@@ -147,7 +128,6 @@ enum VectorColor: Hashable {
             }
         case .spot(let spotColor):
             if useDisplayP3 {
-                // Export SPOT color as hex in P3 space
                 let rgb = spotColor.rgbEquivalent
                 let r = Int(rgb.red * 255)
                 let g = Int(rgb.green * 255)
@@ -158,7 +138,6 @@ enum VectorColor: Hashable {
             }
         case .appleSystem(let systemColor):
             if useDisplayP3 {
-                // Export Apple System color as hex in P3 space
                 let rgb = systemColor.rgbEquivalent
                 let r = Int(rgb.red * 255)
                 let g = Int(rgb.green * 255)
@@ -168,22 +147,21 @@ enum VectorColor: Hashable {
                 return ColorManager.shared.cgColorToSRGBHex(systemColor.rgbEquivalent.cgColor)
             }
         case .gradient(let gradient):
-            // For gradients, return the first stop color as a fallback
             return gradient.stops.first?.color.svgColor ?? "#000000"
         }
     }
-    
+
     private func hsbToRgb(h: Double, s: Double, b: Double) -> (r: Double, g: Double, b: Double) {
         let hue = h * 360
         let saturation = s
         let brightness = b
-        
+
         let c = brightness * saturation
         let x = c * (1 - abs((hue / 60).truncatingRemainder(dividingBy: 2) - 1))
         let m = brightness - c
-        
+
         let (r, g, b): (Double, Double, Double)
-        
+
         switch Int(hue) / 60 {
         case 0:
             (r, g, b) = (c, x, 0)
@@ -200,12 +178,11 @@ enum VectorColor: Hashable {
         default:
             (r, g, b) = (0, 0, 0)
         }
-        
+
         return (r + m, g + m, b + m)
     }
 }
 
-// MARK: - VectorColor Codable Implementation
 extension VectorColor: Codable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
@@ -237,7 +214,6 @@ extension VectorColor: Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
 
-        // First try to decode as a simple string for black/white/clear
         if let simpleColor = try? container.decode(String.self) {
             switch simpleColor {
             case "black":
@@ -253,7 +229,6 @@ extension VectorColor: Codable {
                 ))
             }
         } else {
-            // Decode as a dictionary with a single key
             let dict = try container.decode([String: AnyCodable].self)
 
             guard let (key, value) = dict.first, dict.count == 1 else {
@@ -295,7 +270,6 @@ extension VectorColor: Codable {
     }
 }
 
-// Helper for type-erased decoding
 private struct AnyCodable: Codable {
     let value: Any
 

@@ -1,18 +1,9 @@
-//
-//  PDFColorHandlers.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 9/1/25.
-//  Extracted from PDFContent.swift - Color handling functions
-//
 
 import SwiftUI
 
-// MARK: - PDF Color Handlers Extension
 extension PDFCommandParser {
-    
-    // MARK: - Color Handlers
-    
+
+
     func handleRGBFillColor(scanner: CGPDFScannerRef) {
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
 
@@ -23,7 +14,6 @@ extension PDFCommandParser {
             return
         }
 
-        // Create color in ColorManager's working color space (Display P3)
         let colorSpace = ColorManager.shared.workingCGColorSpace
         guard let color = CGColor(colorSpace: colorSpace,
                                   components: [r, g, b, 1.0]) else {
@@ -32,7 +22,7 @@ extension PDFCommandParser {
         }
         currentFillColor = color
     }
-    
+
     func handleRGBStrokeColor(scanner: CGPDFScannerRef) {
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
 
@@ -40,7 +30,6 @@ extension PDFCommandParser {
               CGPDFScannerPopNumber(scanner, &g),
               CGPDFScannerPopNumber(scanner, &r) else { return }
 
-        // Create color in ColorManager's working color space (Display P3)
         let colorSpace = ColorManager.shared.workingCGColorSpace
         guard let color = CGColor(colorSpace: colorSpace,
                                   components: [r, g, b, 1.0]) else {
@@ -49,13 +38,12 @@ extension PDFCommandParser {
         }
         currentStrokeColor = color
     }
-    
+
     func handleGrayFillColor(scanner: CGPDFScannerRef) {
         var gray: CGFloat = 0
 
         guard CGPDFScannerPopNumber(scanner, &gray) else { return }
 
-        // Create color in ColorManager's working color space (Display P3)
         let colorSpace = ColorManager.shared.workingCGColorSpace
         guard let color = CGColor(colorSpace: colorSpace,
                                   components: [gray, gray, gray, 1.0]) else {
@@ -64,13 +52,12 @@ extension PDFCommandParser {
         }
         currentFillColor = color
     }
-    
+
     func handleGrayStrokeColor(scanner: CGPDFScannerRef) {
         var gray: CGFloat = 0
 
         guard CGPDFScannerPopNumber(scanner, &gray) else { return }
 
-        // Create color in ColorManager's working color space (Display P3)
         let colorSpace = ColorManager.shared.workingCGColorSpace
         guard let color = CGColor(colorSpace: colorSpace,
                                   components: [gray, gray, gray, 1.0]) else {
@@ -79,24 +66,22 @@ extension PDFCommandParser {
         }
         currentStrokeColor = color
     }
-    
+
     func handleCMYKFillColor(scanner: CGPDFScannerRef) {
         var c: CGFloat = 0, m: CGFloat = 0, y: CGFloat = 0, k: CGFloat = 0
-        
+
         guard CGPDFScannerPopNumber(scanner, &k),
               CGPDFScannerPopNumber(scanner, &y),
               CGPDFScannerPopNumber(scanner, &m),
-              CGPDFScannerPopNumber(scanner, &c) else { 
+              CGPDFScannerPopNumber(scanner, &c) else {
             Log.error("PDF: Failed to read CMYK fill color", category: .error)
-            return 
+            return
         }
-        
-        // Convert CMYK to RGB
+
         let r = (1.0 - c) * (1.0 - k)
         let g = (1.0 - m) * (1.0 - k)
         let b = (1.0 - y) * (1.0 - k)
 
-        // Create color in ColorManager's working color space (Display P3)
         let colorSpace = ColorManager.shared.workingCGColorSpace
         guard let color = CGColor(colorSpace: colorSpace,
                                   components: [r, g, b, 1.0]) else {
@@ -105,24 +90,22 @@ extension PDFCommandParser {
         }
         currentFillColor = color
     }
-    
+
     func handleCMYKStrokeColor(scanner: CGPDFScannerRef) {
         var c: CGFloat = 0, m: CGFloat = 0, y: CGFloat = 0, k: CGFloat = 0
-        
+
         guard CGPDFScannerPopNumber(scanner, &k),
               CGPDFScannerPopNumber(scanner, &y),
               CGPDFScannerPopNumber(scanner, &m),
-              CGPDFScannerPopNumber(scanner, &c) else { 
+              CGPDFScannerPopNumber(scanner, &c) else {
             Log.error("PDF: Failed to read CMYK stroke color", category: .error)
-            return 
+            return
         }
-        
-        // Convert CMYK to RGB
+
         let r = (1.0 - c) * (1.0 - k)
         let g = (1.0 - m) * (1.0 - k)
         let b = (1.0 - y) * (1.0 - k)
 
-        // Create color in ColorManager's working color space (Display P3)
         let colorSpace = ColorManager.shared.workingCGColorSpace
         guard let color = CGColor(colorSpace: colorSpace,
                                   components: [r, g, b, 1.0]) else {
@@ -131,31 +114,27 @@ extension PDFCommandParser {
         }
         currentStrokeColor = color
     }
-    
+
     func handleGenericFillColor(scanner: CGPDFScannerRef) {
-        // Try to read as RGB first, but also check for RGBA or other formats
         var values: [CGFloat] = []
         var value: CGFloat = 0
-        
-        // Read all available numeric values
+
         while CGPDFScannerPopNumber(scanner, &value) {
-            values.insert(value, at: 0) // Insert at beginning to reverse stack order
+            values.insert(value, at: 0)
         }
-        
-        
+
+
         if values.count >= 3 {
             let r = values[0]
-            let g = values[1] 
+            let g = values[1]
             let b = values[2]
             let a = values.count >= 4 ? values[3] : 1.0
-            
-            // Check if this might be transparency encoded in a different way
+
             if values.count == 4 {
                 Log.warning("PDF: ⚠️ FOUND 4-component color - might be RGBA or transparency: \(values)", category: .general)
                 currentFillOpacity = Double(a)
             }
-            
-            // Create color in ColorManager's working color space (Display P3)
+
             let colorSpace = ColorManager.shared.workingCGColorSpace
             guard let color = CGColor(colorSpace: colorSpace,
                                       components: [r, g, b, 1.0]) else {
@@ -165,15 +144,13 @@ extension PDFCommandParser {
             currentFillColor = color
         }
     }
-    
+
     func handleGenericStrokeColor(scanner: CGPDFScannerRef) {
-        // Try to read as RGB first
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
-        
+
         if CGPDFScannerPopNumber(scanner, &b) &&
            CGPDFScannerPopNumber(scanner, &g) &&
            CGPDFScannerPopNumber(scanner, &r) {
-            // Create color in ColorManager's working color space (Display P3)
             let colorSpace = ColorManager.shared.workingCGColorSpace
             guard let color = CGColor(colorSpace: colorSpace,
                                       components: [r, g, b, 1.0]) else {
@@ -184,7 +161,6 @@ extension PDFCommandParser {
         }
     }
 
-    // MARK: - Alpha/Opacity Handlers
 
     func handleFillAlpha(scanner: CGPDFScannerRef) {
         var alpha: CGFloat = 0

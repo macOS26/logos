@@ -1,31 +1,24 @@
-//
-//  ProfessionalQuickSizeButton.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/22/25.
-//
 
 import SwiftUI
 
-// MARK: - Professional Quick Size Button Component
 struct ProfessionalQuickSizeButton: View {
     let size: QuickSize
     let displayUnit: MeasurementUnit
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             VStack(spacing: 6) {
                 Image(systemName: iconName)
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.blue)
-                
+
                 VStack(spacing: 2) {
                     Text(size.name)
                         .font(.system(size: 11, weight: .medium))
                         .lineLimit(1)
                         .foregroundColor(.primary)
-                    
+
                     Text(displayText)
                         .font(.system(size: 9))
                         .foregroundColor(.secondary)
@@ -46,7 +39,7 @@ struct ProfessionalQuickSizeButton: View {
         .buttonStyle(BorderlessButtonStyle())
         .help("\(displayText) \(displayUnit.rawValue)")
     }
-    
+
     private var iconName: String {
         switch size.name {
         case "Letter", "Legal", "Letter Wide":

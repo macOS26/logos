@@ -1,9 +1,3 @@
-//
-//  TextShearHandles.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/20/25.
-//
 
 import SwiftUI
 import SwiftUI
@@ -13,9 +7,8 @@ struct TextShearHandles: View {
     let textObject: VectorText
     let zoomLevel: Double
     let canvasOffset: CGPoint
-    
+
     var body: some View {
-        // SIMPLIFIED: Use text object position and bounds directly (no legacy calculation)
         let bounds = textObject.bounds
         let absoluteBounds = CGRect(
             x: textObject.position.x,
@@ -24,7 +17,7 @@ struct TextShearHandles: View {
             height: bounds.height
         )
         let center = CGPoint(x: absoluteBounds.midX, y: absoluteBounds.midY)
-        
+
         Rectangle()
             .stroke(Color.purple, lineWidth: 1.0 / zoomLevel)
             .frame(width: absoluteBounds.width, height: absoluteBounds.height)

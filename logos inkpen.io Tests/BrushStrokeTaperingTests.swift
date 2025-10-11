@@ -1,9 +1,3 @@
-//
-//  BrushStrokeTaperingTests.swift
-//  logos inkpen.io Tests
-//
-//  Tests for brush stroke tapering to ensure no bulbous/phallic appearance at stroke beginnings
-//
 
 import XCTest
 @testable import logos_inkpen_io
@@ -19,12 +13,10 @@ class BrushStrokeTaperingTests: XCTestCase {
         document = Document()
         appState = AppState()
 
-        // Add a layer for testing
         guard let doc = document, let state = appState else { return }
         doc.layers.append(Layer(name: "Test Layer", isVisible: true, isLocked: false, opacity: 1.0))
         doc.selectedLayerIndex = 0
 
-        // Create canvas
         canvas = DrawingCanvas(
             document: doc,
             appState: state,
@@ -40,9 +32,7 @@ class BrushStrokeTaperingTests: XCTestCase {
         super.tearDown()
     }
 
-    // Test that stroke starts very thin (not bulbous)
     func testStrokeStartsThin() {
-        // Create test points for a straight line
         let startPoint = CGPoint(x: 100, y: 100)
         let endPoint = CGPoint(x: 200, y: 100)
 
@@ -52,7 +42,6 @@ class BrushStrokeTaperingTests: XCTestCase {
             BrushPoint(location: endPoint, pressure: 1.0)
         ]
 
-        // Generate path with our tapering algorithm
         let path = canvas.generateSmoothVariableWidthPath(
             centerPoints: centerPoints,
             rawPoints: rawPoints,
@@ -61,17 +50,13 @@ class BrushStrokeTaperingTests: XCTestCase {
             taper: 1.0
         )
 
-        // Extract the first few points from the generated path
         let cgPath = path.cgPath
         var firstPointThickness: CGFloat = 0
 
-        // Measure thickness at the beginning
         cgPath.applyWithBlock { element in
             switch element.pointee.type {
             case .moveToPoint:
                 let point = element.pointee.points[0]
-                // The initial point should be very close to the center line
-                // indicating a very thin start
                 let distanceFromCenter = abs(point.y - startPoint.y)
                 firstPointThickness = distanceFromCenter
             default:
@@ -79,13 +64,10 @@ class BrushStrokeTaperingTests: XCTestCase {
             }
         }
 
-        // Assert that the beginning is thin (less than 20% of max thickness)
         XCTAssertLessThan(firstPointThickness, 4.0, "Stroke beginning should be very thin, not bulbous")
     }
 
-    // Test curved stroke tapering
     func testCurvedStrokeTapering() {
-        // Create test points for a curved line
         let points = [
             CGPoint(x: 100, y: 100),
             CGPoint(x: 120, y: 105),
@@ -99,7 +81,6 @@ class BrushStrokeTaperingTests: XCTestCase {
             BrushPoint(location: $0, pressure: 1.0)
         }
 
-        // Generate path
         let path = canvas.generateSmoothVariableWidthPath(
             centerPoints: points,
             rawPoints: rawPoints,
@@ -108,20 +89,16 @@ class BrushStrokeTaperingTests: XCTestCase {
             taper: 1.0
         )
 
-        // Verify the path is not empty
         XCTAssertFalse(path.cgPath.isEmpty, "Generated path should not be empty")
 
-        // Check that bounds are reasonable
         let bounds = path.cgPath.boundingBox
         XCTAssertTrue(bounds.width > 0 && bounds.height > 0, "Path should have valid bounds")
     }
 
-    // Test that straight lines get aggressive tapering
     func testStraightLineTapering() {
         let startPoint = CGPoint(x: 100, y: 100)
         let endPoint = CGPoint(x: 300, y: 100)
 
-        // Add interpolated points for proper tapering
         var interpolatedPoints: [CGPoint] = [startPoint]
         for i in 1...5 {
             let t = Double(i) / 6.0
@@ -136,7 +113,6 @@ class BrushStrokeTaperingTests: XCTestCase {
             BrushPoint(location: $0, pressure: 1.0)
         }
 
-        // Generate path
         let path = canvas.generateSmoothVariableWidthPath(
             centerPoints: interpolatedPoints,
             rawPoints: rawPoints,
@@ -145,17 +121,14 @@ class BrushStrokeTaperingTests: XCTestCase {
             taper: 1.0
         )
 
-        // Verify path generation
         XCTAssertFalse(path.cgPath.isEmpty, "Straight line path should not be empty")
 
-        // Check that the path has reasonable bounds
         let bounds = path.cgPath.boundingBox
         XCTAssertGreaterThan(bounds.width, 100, "Path should span horizontally")
         XCTAssertGreaterThan(bounds.height, 0, "Path should have some thickness")
         XCTAssertLessThan(bounds.height, 25, "Path thickness should be controlled")
     }
 
-    // Test preview matches final path
     func testPreviewMatchesFinal() {
         let points = [
             CGPoint(x: 100, y: 100),
@@ -167,11 +140,9 @@ class BrushStrokeTaperingTests: XCTestCase {
             BrushPoint(location: $0, pressure: 0.8)
         }
 
-        // Generate preview path
         canvas.brushRawPoints = rawPoints
         let previewPath = canvas.generateLivePreviewPath()
 
-        // Generate final path
         let finalPath = canvas.generateSmoothVariableWidthPath(
             centerPoints: points,
             rawPoints: rawPoints,
@@ -180,7 +151,6 @@ class BrushStrokeTaperingTests: XCTestCase {
             taper: 1.0
         )
 
-        // Both paths should have similar bounds
         let previewBounds = previewPath.cgPath.boundingBox
         let finalBounds = finalPath.cgPath.boundingBox
 

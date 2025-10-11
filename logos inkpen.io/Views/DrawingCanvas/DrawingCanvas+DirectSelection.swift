@@ -1,29 +1,18 @@
-//
-//  DrawingCanvas+DirectSelection.swift
-//  logos inkpen.io
-//
-//  Direct selection functionality
-//
 
 import SwiftUI
 import Combine
 
 extension DrawingCanvas {
-    // MARK: - PROFESSIONAL ANCHOR POINT AND HANDLE SELECTION
-    
-    /// STAGE 1: Select individual anchor points or handles (when shape already direct-selected)
+
     internal func selectIndividualAnchorPointOrHandle(at location: CGPoint, tolerance: Double) -> Bool {
-        // Search through all direct-selected shapes for individual anchor points and handles
         for shapeID in directSelectedShapeIDs {
-            // PERFORMANCE: Use O(1) UUID lookup instead of searching all layers
             if let unifiedObject = document.findObject(by: shapeID),
                case .shape(let shape) = unifiedObject.objectType {
                 let layerIndex = unifiedObject.layerIndex
                 let layer = document.layers[layerIndex]
-                    
-                    // IMPROVED LOCKED BEHAVIOR: Instead of preventing interaction, deselect current selection
+
                     if layer.isLocked || shape.isLocked {
-                        
+
                         directSelectedShapeIDs.removeAll()
                         selectedPoints.removeAll()
                         selectedHandles.removeAll()
@@ -31,20 +20,16 @@ extension DrawingCanvas {
                         document.objectWillChange.send()
                         return true
                     }
-                    
-                    // GROUP ANCHOR POINT SELECTION FIX: Handle groups differently
+
                     if shape.isGroupContainer {
-                        // For groups, check anchor points in all grouped shapes
                         for groupedShape in shape.groupedShapes {
                             if !groupedShape.isVisible { continue }
-                            
-                            // Check each path element for points and handles in grouped shapes
+
                             if checkAnchorPointsInShape(groupedShape, at: location, tolerance: tolerance) {
                                 return true
                             }
                         }
                     } else {
-                        // For individual shapes, check anchor points normally
                         if checkAnchorPointsInShape(shape, at: location, tolerance: tolerance) {
                             return true
                         }
@@ -54,17 +39,11 @@ extension DrawingCanvas {
 
         return false
     }
-    
-    /// Helper function to check anchor points in a specific shape
-    private func checkAnchorPointsInShape(_ shape: VectorShape, at location: CGPoint, tolerance: Double) -> Bool {
-        // IMPROVED SELECTION: Expanded hit areas for easier selection
-        // Points: 4x4 pixel square with 1-2px border = 5-6px radius for easier selection
-        // Handles: 8x8 pixel circle = 4px radius for precise selection
-        let pointSelectionRadius: Double = 6.0 / document.zoomLevel  // Includes border for easier selection
-        let handleSelectionRadius: Double = 4.0 / document.zoomLevel  // Scale with zoom
 
-        // FIRST PASS: Check all anchor points (higher priority than handles)
-        // GPU ACCELERATION: Use Metal compute shader for ultra-fast point selection on objects with many points
+    private func checkAnchorPointsInShape(_ shape: VectorShape, at location: CGPoint, tolerance: Double) -> Bool {
+        let pointSelectionRadius: Double = 6.0 / document.zoomLevel
+        let handleSelectionRadius: Double = 4.0 / document.zoomLevel
+
         let pointCount = shape.path.elements.filter {
             switch $0 {
             case .close: return false
@@ -72,9 +51,7 @@ extension DrawingCanvas {
             }
         }.count
 
-        // Use GPU for objects with 50+ points (massive speedup)
         if pointCount >= 50 {
-            // Extract all point positions
             var points: [CGPoint] = []
             var elementIndices: [Int] = []
 
@@ -88,7 +65,6 @@ extension DrawingCanvas {
                 }
             }
 
-            // GPU-accelerated nearest point search
             if let nearestIndex = MetalComputeEngine.shared.findNearestPointGPU(
                 points: points,
                 tapLocation: location,
@@ -103,7 +79,6 @@ extension DrawingCanvas {
                 )
 
                 if isShiftPressed && selectedPoints.contains(pointID) {
-                    // Shift+Click on selected point: deselect it and all coincident points
                     let coincidentPoints = findCoincidentPoints(to: pointID, tolerance: coincidentPointTolerance)
                     let closedPathEndpoints = findClosedPathEndpoints(for: pointID)
                     selectedPoints.remove(pointID)
@@ -114,13 +89,11 @@ extension DrawingCanvas {
                         selectedPoints.remove(endpointID)
                     }
                 } else {
-                    // Select point with all coincident points for unified movement
                     selectPointWithCoincidents(pointID, addToSelection: isShiftPressed)
                 }
                 return true
             }
         } else {
-            // CPU path for small shapes (< 50 points)
             for (elementIndex, element) in shape.path.elements.enumerated() {
                 let point: VectorPoint
 
@@ -135,7 +108,6 @@ extension DrawingCanvas {
                     continue
                 }
 
-                // Check if tap is near the anchor point with PRECISE radius
                 let pointLocation = CGPoint(x: point.x, y: point.y).applying(shape.transform)
                 if distance(location, pointLocation) <= pointSelectionRadius {
                     let pointID = PointID(
@@ -145,7 +117,6 @@ extension DrawingCanvas {
                     )
 
                     if isShiftPressed && selectedPoints.contains(pointID) {
-                        // Shift+Click on selected point: deselect it and all coincident points
                         let coincidentPoints = findCoincidentPoints(to: pointID, tolerance: coincidentPointTolerance)
                         let closedPathEndpoints = findClosedPathEndpoints(for: pointID)
                         selectedPoints.remove(pointID)
@@ -156,7 +127,6 @@ extension DrawingCanvas {
                             selectedPoints.remove(endpointID)
                         }
                     } else {
-                        // Select point with all coincident points for unified movement
                         selectPointWithCoincidents(pointID, addToSelection: isShiftPressed)
                     }
                     return true
@@ -164,8 +134,6 @@ extension DrawingCanvas {
             }
         }
 
-        // SECOND PASS: Check handles (lower priority than points)
-        // GPU ACCELERATION: Use Metal compute shader for ultra-fast handle selection on objects with many handles
         let handleCount = shape.path.elements.filter {
             switch $0 {
             case .curve: return true
@@ -174,9 +142,7 @@ extension DrawingCanvas {
             }
         }.count
 
-        // Use GPU for objects with 50+ handles (massive speedup)
         if handleCount >= 50 {
-            // Extract all handle positions and their corresponding anchor points
             var handlePoints: [CGPoint] = []
             var anchorPoints: [CGPoint] = []
             var handleMetadata: [(elementIndex: Int, handleType: HandleType)] = []
@@ -184,12 +150,10 @@ extension DrawingCanvas {
             for (elementIndex, element) in shape.path.elements.enumerated() {
                 switch element {
                 case .curve(let to, _, let control2):
-                    // Incoming handle (control2)
                     handlePoints.append(CGPoint(x: control2.x, y: control2.y))
                     anchorPoints.append(CGPoint(x: to.x, y: to.y))
                     handleMetadata.append((elementIndex: elementIndex, handleType: .control2))
 
-                    // Outgoing handle (control1 from next element)
                     if elementIndex + 1 < shape.path.elements.count,
                        case .curve(_, let nextControl1, _) = shape.path.elements[elementIndex + 1] {
                         handlePoints.append(CGPoint(x: nextControl1.x, y: nextControl1.y))
@@ -203,7 +167,6 @@ extension DrawingCanvas {
                     handleMetadata.append((elementIndex: elementIndex, handleType: .control1))
 
                 case .move(let to), .line(let to):
-                    // Outgoing handle for move/line points
                     if elementIndex + 1 < shape.path.elements.count,
                        case .curve(_, let nextControl1, _) = shape.path.elements[elementIndex + 1] {
                         handlePoints.append(CGPoint(x: nextControl1.x, y: nextControl1.y))
@@ -216,7 +179,6 @@ extension DrawingCanvas {
                 }
             }
 
-            // GPU-accelerated nearest handle search
             if let nearestIndex = MetalComputeEngine.shared.findNearestHandleGPU(
                 handlePoints: handlePoints,
                 anchorPoints: anchorPoints,
@@ -237,17 +199,14 @@ extension DrawingCanvas {
                     }
                     selectedHandles.insert(handleID)
 
-                    // CRITICAL: Also select corresponding handles on coincident points
                     selectCoincidentHandles(for: handleID, shape: shape)
                 }
                 return true
             }
         } else {
-            // CPU path for small shapes (< 50 handles)
             for (elementIndex, element) in shape.path.elements.enumerated() {
                 switch element {
                 case .curve(let to, _, let control2):
-                // Check INCOMING handle (control2)
                 let handle2Collapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
                 if !handle2Collapsed {
                     let handle2Location = CGPoint(x: control2.x, y: control2.y).applying(shape.transform)
@@ -263,7 +222,6 @@ extension DrawingCanvas {
                             }
                             selectedHandles.insert(handleID)
 
-                            // CRITICAL: Also select corresponding handles on coincident points
                             selectCoincidentHandles(for: handleID, shape: shape)
 
                         }
@@ -271,7 +229,6 @@ extension DrawingCanvas {
                     }
                 }
 
-                // Check OUTGOING handle (control1 from NEXT element)
                 if elementIndex + 1 < shape.path.elements.count {
                     if case .curve(_, let nextControl1, _) = shape.path.elements[elementIndex + 1] {
                         let outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
@@ -289,7 +246,6 @@ extension DrawingCanvas {
                                     }
                                     selectedHandles.insert(handleID)
 
-                                    // CRITICAL: Also select corresponding handles on coincident points
                                     selectCoincidentHandles(for: handleID, shape: shape)
 
                                 }
@@ -300,7 +256,6 @@ extension DrawingCanvas {
                 }
 
             case .quadCurve(let to, let control):
-                // Check quad curve handle
                 let quadHandleCollapsed = (abs(control.x - to.x) < 0.1 && abs(control.y - to.y) < 0.1)
                 if !quadHandleCollapsed {
                     let handleLocation = CGPoint(x: control.x, y: control.y).applying(shape.transform)
@@ -316,7 +271,6 @@ extension DrawingCanvas {
                             }
                             selectedHandles.insert(handleID)
 
-                            // CRITICAL: Also select corresponding handles on coincident points
                             selectCoincidentHandles(for: handleID, shape: shape)
 
                         }
@@ -325,7 +279,6 @@ extension DrawingCanvas {
                 }
 
             case .move(let to), .line(let to):
-                // Check OUTGOING handle for move/line points
                 if elementIndex + 1 < shape.path.elements.count {
                     if case .curve(_, let nextControl1, _) = shape.path.elements[elementIndex + 1] {
                         let outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
@@ -343,7 +296,6 @@ extension DrawingCanvas {
                                     }
                                     selectedHandles.insert(handleID)
 
-                                    // CRITICAL: Also select corresponding handles on coincident points
                                     selectCoincidentHandles(for: handleID, shape: shape)
 
                                 }
@@ -359,45 +311,34 @@ extension DrawingCanvas {
             }
         }
 
-        // No third pass needed - all checks complete
         return false
     }
-    
-            /// STAGE 2: Direct-select whole shape (Professional: shows all anchor points)
+
     internal func directSelectWholeShape(at location: CGPoint) -> Bool {
-        // Search for any shape at the click location
         for layerIndex in document.layers.indices.reversed() {
             let layer = document.layers[layerIndex]
             if !layer.isVisible { continue }
-            // CRITICAL: Prevent direct selection on locked layers
             if layer.isLocked { continue }
-            
+
             let shapes = document.getShapesForLayer(layerIndex)
             for shape in shapes.reversed() {
                 if !shape.isVisible { continue }
-                
-                // PASTEBOARD BEHAVES EXACTLY LIKE CANVAS: Allow hit testing, handle via locked behavior
-                
+
+
                 var isHit = false
-                
-                // PROFESSIONAL HIT TESTING (same logic as regular selection)
-                // CRITICAL FIX: Background shapes (Canvas/Pasteboard) need special handling
+
                 let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
-                
+
                 if isBackgroundShape {
-                    // Background shapes: Use EXACT bounds checking - no tolerance!
                     let shapeBounds = shape.bounds.applying(shape.transform)
                     isHit = shapeBounds.contains(location)
                 } else if shape.isGroupContainer {
-                    // GROUP HIT TESTING FIX: Check if we hit any of the grouped shapes
                     for groupedShape in shape.groupedShapes {
                         if !groupedShape.isVisible { continue }
-                        
-                        // Apply the same hit testing logic to grouped shapes
+
                         let isStrokeOnly = groupedShape.fillStyle?.color == .clear || groupedShape.fillStyle == nil
-                        
+
                         if isStrokeOnly && groupedShape.strokeStyle != nil {
-                            // Stroke-only shapes: Use stroke-based hit testing
                             let strokeWidth = groupedShape.strokeStyle?.width ?? 1.0
                             let strokeTolerance = max(15.0, strokeWidth + 10.0)
                             if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: strokeTolerance) {
@@ -405,11 +346,9 @@ extension DrawingCanvas {
                                 break
                             }
                         } else {
-                            // Regular grouped shapes: Use path-based hit testing for object-precise selection
-                            // ZOOM-AWARE PATH HIT TEST TOLERANCE: Scale tolerance based on zoom level
-                            let basePathTolerance: Double = 8.0 // Base tolerance in screen pixels
-                            let pathTolerance = max(2.0, basePathTolerance / document.zoomLevel) // Minimum 2px, scales with zoom
-                            
+                            let basePathTolerance: Double = 8.0
+                            let pathTolerance = max(2.0, basePathTolerance / document.zoomLevel)
+
                             if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: pathTolerance) {
                                 isHit = true
                                 break
@@ -417,28 +356,23 @@ extension DrawingCanvas {
                         }
                     }
                 } else {
-                    // Regular shapes: Use path-based hit testing for object-precise selection
                     let isStrokeOnly = shape.fillStyle?.color == .clear || shape.fillStyle == nil
-                    
+
                     if isStrokeOnly && shape.strokeStyle != nil {
-                        // Stroke-only shapes: Use stroke-based hit testing
                         let strokeWidth = shape.strokeStyle?.width ?? 1.0
                         let strokeTolerance = max(15.0, strokeWidth + 10.0)
                         isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
                     } else {
-                        // Regular shapes: Use path-based hit testing for object-precise selection
-                        // ZOOM-AWARE PATH HIT TEST TOLERANCE: Scale tolerance based on zoom level
-                        let basePathTolerance: Double = 8.0 // Base tolerance in screen pixels
-                        let pathTolerance = max(2.0, basePathTolerance / document.zoomLevel) // Minimum 2px, scales with zoom
-                        
+                        let basePathTolerance: Double = 8.0
+                        let pathTolerance = max(2.0, basePathTolerance / document.zoomLevel)
+
                         isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: pathTolerance)
                     }
                 }
-                
+
                 if isHit {
-                    // IMPROVED LOCKED BEHAVIOR: Instead of preventing interaction, deselect current selection
                     if layer.isLocked || shape.isLocked {
-                        
+
                         directSelectedShapeIDs.removeAll()
                         selectedPoints.removeAll()
                         selectedHandles.removeAll()
@@ -446,46 +380,36 @@ extension DrawingCanvas {
                         document.objectWillChange.send()
                         return true
                     }
-                    
-                    // PROFESSIONAL: Direct-select the whole shape
+
                     directSelectedShapeIDs.removeAll()
                     directSelectedShapeIDs.insert(shape.id)
-                    selectedPoints.removeAll() // Clear individual selections
+                    selectedPoints.removeAll()
                     selectedHandles.removeAll()
                     syncDirectSelectionWithDocument()
-                    
+
                     return true
                 }
             }
         }
-        
+
         return false
     }
-    
-    // TEXT TOOL COMPLETELY REMOVED - Starting over with simple approach
+
     internal func handleDirectSelectionTap(at location: CGPoint) {
-        
-        // TEXT EDITING REMOVED
-        
-        // IMPROVED: Scale tolerance with zoom level for consistent screen-space tolerance
-        // At 1x zoom: 15 canvas units = 15 screen pixels
-        // At 2x zoom: 7.5 canvas units = 15 screen pixels
-        // At 0.5x zoom: 30 canvas units = 15 screen pixels
+
+
         let screenTolerance: Double = 15.0
         let tolerance: Double = screenTolerance / document.zoomLevel
         var foundSelection = false
-        
-        // STAGE 1: Check if clicking on individual anchor points/handles (for already direct-selected shapes)
+
         if !directSelectedShapeIDs.isEmpty {
             foundSelection = selectIndividualAnchorPointOrHandle(at: location, tolerance: tolerance)
         }
-        
-        // STAGE 2: If no anchor point selected, try to direct-select a whole shape (professional behavior)
+
         if !foundSelection {
             foundSelection = directSelectWholeShape(at: location)
         }
-        
-        // STAGE 3: If nothing found, clear all selections (clicked empty space)
+
         if !foundSelection {
             Log.error("❌ Clicked empty space - clearing all direct selections", category: .error)
             selectedPoints.removeAll()
@@ -494,22 +418,17 @@ extension DrawingCanvas {
             directSelectedShapeIDs.removeAll()
             syncDirectSelectionWithDocument()
         }
-        
-        
-        // Force UI update to show selections
+
+
         document.objectWillChange.send()
     }
 
-    // MARK: - Helper for Coincident Handle Selection
 
-    /// When selecting a handle, make OTHER handles at coincident points visible (but not selected)
     private func selectCoincidentHandles(for handleID: HandleID, shape: VectorShape) {
-        // Get the anchor point for this handle
         let anchorPoint: CGPoint?
         let pointIndex: Int
 
         if handleID.handleType == .control1 {
-            // control1 belongs to the anchor at the END of the PREVIOUS element
             pointIndex = handleID.elementIndex - 1
             if pointIndex >= 0 && pointIndex < shape.path.elements.count {
                 switch shape.path.elements[pointIndex] {
@@ -524,7 +443,6 @@ extension DrawingCanvas {
                 return
             }
         } else if handleID.handleType == .control2 {
-            // control2 belongs to the anchor at the END of the CURRENT element
             pointIndex = handleID.elementIndex
             if pointIndex < shape.path.elements.count {
                 switch shape.path.elements[pointIndex] {
@@ -544,13 +462,10 @@ extension DrawingCanvas {
 
         guard let anchor = anchorPoint else { return }
 
-        // Find coincident points at this anchor position
         let tolerance = 1.0
         for (index, element) in shape.path.elements.enumerated() {
-            // Skip the point we're already working with
             if index == pointIndex { continue }
 
-            // Get the point position from this element
             let elementPoint: CGPoint?
             switch element {
             case .move(let to), .line(let to):
@@ -561,13 +476,10 @@ extension DrawingCanvas {
                 elementPoint = nil
             }
 
-            // Check if this point is coincident with our anchor
             if let point = elementPoint {
                 let distance = sqrt(pow(anchor.x - point.x, 2) + pow(anchor.y - point.y, 2))
                 if distance <= tolerance {
-                    // This is a coincident point! Add BOTH its handles if they exist
 
-                    // Add incoming handle if it exists (but NOT if it's the handle we just clicked!)
                     if case .curve(_, _, let control2) = element {
                         let handle2Collapsed = (abs(control2.x - point.x) < 0.1 && abs(control2.y - point.y) < 0.1)
                         if !handle2Collapsed {
@@ -577,14 +489,12 @@ extension DrawingCanvas {
                                 elementIndex: index,
                                 handleType: .control2
                             )
-                            // DON'T add to visibleHandles if this is the handle we just selected!
                             if coincidentHandleID != handleID {
                                 visibleHandles.insert(coincidentHandleID)
                             }
                         }
                     }
 
-                    // Add outgoing handle if it exists (but NOT if it's the handle we just clicked!)
                     let nextIndex = index + 1
                     if nextIndex < shape.path.elements.count {
                         if case .curve(_, let control1, _) = shape.path.elements[nextIndex] {
@@ -596,7 +506,6 @@ extension DrawingCanvas {
                                     elementIndex: nextIndex,
                                     handleType: .control1
                                 )
-                                // DON'T add to visibleHandles if this is the handle we just selected!
                                 if coincidentHandleID != handleID {
                                     visibleHandles.insert(coincidentHandleID)
                                 }

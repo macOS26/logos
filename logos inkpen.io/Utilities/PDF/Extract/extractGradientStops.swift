@@ -1,47 +1,35 @@
-//
-//  extractGradientStops.swift
-//  logos inkpen.io
-//
-//  Created by Todd Bruss on 8/31/25.
-//
 
 import SwiftUI
 
 extension PDFCommandParser {
-    
+
     func extractGradientStops(from dict: CGPDFDictionaryRef) -> [GradientStop] {
         var stops: [GradientStop] = []
 
-        // Get the function dictionary
         var functionObj: CGPDFObjectRef?
         if !CGPDFDictionaryGetObject(dict, "Function", &functionObj) || functionObj == nil {
-            // Try to extract colors directly from the shading if no function
             Log.error("PDF: ❌ No Function found in shading dictionary", category: .error)
 
-            // No function found - try to extract colors from other parts of the shading
             stops = [
                 GradientStop(position: 0.0, color: .black, opacity: 1.0),
                 GradientStop(position: 1.0, color: .white, opacity: 1.0)
             ]
             return stops
         }
-        
-        // Check if it's an array of functions (multiple stops)
+
         var functionArray: CGPDFArrayRef?
         if CGPDFObjectGetValue(functionObj!, .array, &functionArray),
            let functions = functionArray {
 
             let count = CGPDFArrayGetCount(functions)
 
-            // For stitching functions, create stops at regular intervals
             for i in 0..<count {
                 let position = Double(i) / Double(max(1, count - 1))
                 let color = extractColorFromFunctionIndex(functions, index: i)
                 stops.append(GradientStop(position: position, color: color, opacity: 1.0))
             }
-            
+
         } else {
-            // Single function - examine what type it actually is
             let objectType = CGPDFObjectGetType(functionObj!)
 
             var functionDict: CGPDFDictionaryRef?
@@ -52,7 +40,6 @@ extension PDFCommandParser {
 
                 let (startColor, endColor) = extractColorsFromFunction(function)
 
-                // Try to get all colors from the function for multi-stop gradients
                 let allColors = extractAllColorsFromFunction(function)
                 if allColors.count > 2 {
                     stops = createGradientStopsFromColors(allColors)
@@ -68,7 +55,6 @@ extension PDFCommandParser {
 
                 let streamDict = CGPDFStreamGetDictionary(stream)
 
-                // Extract colors from the stream data itself, not the dictionary
                 let allColors = extractColorsFromSampledFunctionStream(stream: stream, dictionary: streamDict!)
                 if allColors.count > 2 {
                     stops = createGradientStopsFromColors(allColors)
@@ -82,14 +68,13 @@ extension PDFCommandParser {
 
             } else {
                 Log.error("PDF: ❌ Failed to extract function (type \(objectType.rawValue)), creating default gradient", category: .error)
-                // Create default gradient stops as fallback
                 stops = [
                     GradientStop(position: 0.0, color: .rgb(RGBColor(red: 1.0, green: 0.0, blue: 0.0, alpha: 1.0)), opacity: 1.0),
                     GradientStop(position: 1.0, color: .rgb(RGBColor(red: 0.0, green: 0.0, blue: 1.0, alpha: 1.0)), opacity: 1.0)
                 ]
             }
         }
-        
+
         return stops
     }
 }
