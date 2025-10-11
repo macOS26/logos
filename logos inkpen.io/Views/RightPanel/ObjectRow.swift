@@ -46,15 +46,15 @@ extension View {
     func objectRowIcon(size: CGFloat) -> some View {
         modifier(ObjectRowIconStyle(size: size))
     }
-    
+
     func objectRowText(size: CGFloat, isSelected: Bool) -> some View {
         modifier(ObjectRowTextStyle(size: size, isSelected: isSelected))
     }
-    
+
     func objectRowChildText(size: CGFloat, isSelected: Bool) -> some View {
         modifier(ObjectRowChildTextStyle(size: size, isSelected: isSelected))
     }
-    
+
     func objectRowIndicator() -> some View {
         modifier(ObjectRowIndicatorStyle())
     }
@@ -77,12 +77,13 @@ struct ObjectRow: View {
     let layerIndex: Int
     let document: VectorDocument
     let groupedShapes: [VectorShape]?
+    let showBottomIndicator: Bool
 
     @State private var isDragging = false
     @State private var isGroupExpanded = false
     @State private var isDropTarget = false
 
-    init(objectType: ObjectType, objectId: UUID, name: String, isSelected: Bool, isVisible: Bool, isLocked: Bool, onSelect: @escaping (_: Bool, _: Bool) -> Void, layerIndex: Int, document: VectorDocument, groupedShapes: [VectorShape]? = nil) {
+    init(objectType: ObjectType, objectId: UUID, name: String, isSelected: Bool, isVisible: Bool, isLocked: Bool, onSelect: @escaping (_: Bool, _: Bool) -> Void, layerIndex: Int, document: VectorDocument, groupedShapes: [VectorShape]? = nil, showBottomIndicator: Bool = false) {
         self.objectType = objectType
         self.objectId = objectId
         self.name = name
@@ -93,6 +94,7 @@ struct ObjectRow: View {
         self.layerIndex = layerIndex
         self.document = document
         self.groupedShapes = groupedShapes
+        self.showBottomIndicator = showBottomIndicator
     }
     
     private var isVisibleBinding: Binding<Bool> {
@@ -350,46 +352,11 @@ struct ObjectRow: View {
                     isLockedBinding.wrappedValue.toggle()
                 }
             }
-            .dropDestination(for: DraggableVectorObject.self) { items, location in
-                guard let droppedObject = items.first else { return false }
-
-                if droppedObject.objectId == objectId {
-                    return false
-                }
-
-                document.saveToUndoStack()
-
-                // If same layer, reorder within layer
-                if droppedObject.sourceLayerIndex == layerIndex {
-                    document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectId)
-                } else {
-                    // Cross-layer drop: move to target layer at target position
-                    guard let sourceIndex = document.unifiedObjects.firstIndex(where: { $0.id == droppedObject.objectId }),
-                          let targetIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) else {
-                        return false
-                    }
-
-                    let sourceObject = document.unifiedObjects[sourceIndex]
-                    let targetObject = document.unifiedObjects[targetIndex]
-
-                    if case .shape(let shape) = sourceObject.objectType {
-                        document.unifiedObjects[sourceIndex] = VectorObject(
-                            shape: shape,
-                            layerIndex: layerIndex,
-                            orderID: targetObject.orderID
-                        )
-                    }
-
-                    document.objectWillChange.send()
-                }
-
-                return true
-            } isTargeted: { isTargeted in
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    isDropTarget = isTargeted
-                }
-            }
+            .objectDropDestination(targetObjectId: objectId, layerIndex: layerIndex, document: document, showIndicator: $isDropTarget)
             .dropIndicator(isActive: isDropTarget, alignment: .top)
+            .if(showBottomIndicator) { view in
+                view.dropIndicator(isActive: isDropTarget, alignment: .bottom)
+            }
             
             if objectType == .group, isGroupExpanded, let shapes = groupedShapes {
                 ForEach(shapes, id: \.id) { childShape in

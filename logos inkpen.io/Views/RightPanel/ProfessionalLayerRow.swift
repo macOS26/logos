@@ -24,6 +24,55 @@ extension View {
     func dropIndicator(isActive: Bool, alignment: Alignment = .top) -> some View {
         modifier(DropIndicator(isDropTarget: isActive, alignment: alignment))
     }
+
+    func objectDropDestination(targetObjectId: UUID, layerIndex: Int, document: VectorDocument, showIndicator: Binding<Bool>? = nil) -> some View {
+        self.dropDestination(for: DraggableVectorObject.self) { items, location in
+            guard let droppedObject = items.first else { return false }
+
+            if droppedObject.objectId == targetObjectId {
+                return false
+            }
+
+            // Find the target object
+            guard let targetObject = document.unifiedObjects.first(where: { $0.id == targetObjectId }) else {
+                return false
+            }
+
+            // Find the object immediately above the target (higher orderID)
+            let objectsAbove = document.unifiedObjects.filter {
+                $0.layerIndex == layerIndex && $0.orderID > targetObject.orderID
+            }.sorted { $0.orderID < $1.orderID }
+
+            // If same layer, reorder within layer
+            if droppedObject.sourceLayerIndex == layerIndex {
+                // If there's an object above, reorder to that object's position
+                // Otherwise reorder to target (will be at target's position)
+                if let objectAbove = objectsAbove.first {
+                    document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectAbove.id)
+                } else {
+                    document.reorderObject(objectId: droppedObject.objectId, targetObjectId: targetObjectId)
+                }
+            } else {
+                // Cross-layer drop: move to target layer
+                document.moveObjectToLayer(objectId: droppedObject.objectId, targetLayerIndex: layerIndex)
+
+                // Now reorder to just above the target
+                if let objectAbove = objectsAbove.first {
+                    document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectAbove.id)
+                } else {
+                    document.reorderObject(objectId: droppedObject.objectId, targetObjectId: targetObjectId)
+                }
+            }
+
+            return true
+        } isTargeted: { isTargeted in
+            if let showIndicator = showIndicator {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    showIndicator.wrappedValue = isTargeted
+                }
+            }
+        }
+    }
 }
 
 struct ProfessionalLayerRow: View {
@@ -287,9 +336,10 @@ struct ProfessionalLayerRow: View {
 
             if isExpanded && !layerObjects.isEmpty {
                 VStack(spacing: 0) {
-                    ForEach(layerObjects, id: \.id) { unifiedObject in
+                    ForEach(Array(layerObjects.enumerated()), id: \.element.id) { index, unifiedObject in
                         switch unifiedObject.objectType {
                         case .shape(let shape):
+                            let isLast = index == layerObjects.count - 1
                             if shape.isTextObject {
                                 ObjectRow(
                                     objectType: .text,
@@ -302,7 +352,8 @@ struct ProfessionalLayerRow: View {
                                         handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
                                     },
                                     layerIndex: layerIndex,
-                                    document: document
+                                    document: document,
+                                    showBottomIndicator: isLast
                                 )
                             } else if shape.isGroupContainer {
                                 ObjectRow(
@@ -317,7 +368,8 @@ struct ProfessionalLayerRow: View {
                                     },
                                     layerIndex: layerIndex,
                                     document: document,
-                                    groupedShapes: shape.groupedShapes
+                                    groupedShapes: shape.groupedShapes,
+                                    showBottomIndicator: isLast
                                 )
                             } else {
                                 ObjectRow(
@@ -331,12 +383,12 @@ struct ProfessionalLayerRow: View {
                                         handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
                                     },
                                     layerIndex: layerIndex,
-                                    document: document
+                                    document: document,
+                                    showBottomIndicator: isLast
                                 )
                             }
                         }
                     }
-                    BottomDropZone(layerIndex: layerIndex, document: document)
                 }
             }
         }
@@ -384,57 +436,5 @@ struct ProfessionalLayerRow: View {
 
         document.syncSelectionArrays()
 
-    }
-}
-
-struct BottomDropZone: View {
-    let layerIndex: Int
-    @ObservedObject var document: VectorDocument
-    @State private var isDropTarget = false
-
-    var body: some View {
-        Color.clear
-            .frame(height: 8)
-            .dropDestination(for: DraggableVectorObject.self) { items, location in
-                guard let droppedObject = items.first else {
-                    print("❌ No dropped object")
-                    return false
-                }
-
-                print("🔵 Bottom drop zone: dropping object \(droppedObject.objectId) from layer \(droppedObject.sourceLayerIndex) to layer \(layerIndex)")
-
-                // Find the object being dropped
-                guard let objectIndex = document.unifiedObjects.firstIndex(where: { $0.id == droppedObject.objectId }) else {
-                    print("❌ Object not found in unifiedObjects")
-                    return false
-                }
-
-                document.saveToUndoStack()
-
-                let object = document.unifiedObjects[objectIndex]
-
-                // Get the lowest orderID in target layer (or use 0 if layer is empty)
-                let layerObjects = document.unifiedObjects.filter { $0.layerIndex == layerIndex }
-                let newOrderID = layerObjects.map({ $0.orderID }).min().map { $0 - 1 } ?? 0
-
-                print("🟢 Moving to bottom of layer \(layerIndex) with orderID \(newOrderID)")
-
-                // Update the object with new layer and orderID
-                if case .shape(let shape) = object.objectType {
-                    document.unifiedObjects[objectIndex] = VectorObject(
-                        shape: shape,
-                        layerIndex: layerIndex,
-                        orderID: newOrderID
-                    )
-                }
-
-                document.objectWillChange.send()
-                return true
-            } isTargeted: { isTargeted in
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    isDropTarget = isTargeted
-                }
-            }
-            .dropIndicator(isActive: isDropTarget, alignment: .bottom)
     }
 }
