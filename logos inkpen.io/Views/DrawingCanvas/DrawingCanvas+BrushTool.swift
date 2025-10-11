@@ -320,7 +320,6 @@ extension DrawingCanvas {
     private func finalizeFromPreview(_ preview: VectorPath) {
         guard document.selectedLayerIndex != nil else { return }
 
-        // Prevent false positives - need at least 2 valid points for a stroke
         guard brushRawPoints.count >= 2 else { return }
 
         var dedupedPoints: [BrushPoint] = []
@@ -339,15 +338,12 @@ extension DrawingCanvas {
 
         let dedupedLocations = dedupedPoints.map { $0.location }
 
-        // After deduplication, ensure we still have enough points for a valid stroke
         guard dedupedLocations.count >= 2 else { return }
 
-        // Check if the stroke actually moved a meaningful distance (prevent click artifacts)
         if dedupedLocations.count == 2 {
             let start = dedupedLocations[0]
             let end = dedupedLocations[1]
             let distance = hypot(end.x - start.x, end.y - start.y)
-            // If the total stroke distance is less than 2 pixels, don't draw anything
             guard distance >= 2.0 else { return }
         }
 

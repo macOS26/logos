@@ -61,9 +61,6 @@ struct LayersPanel: View {
     @State private var expandedLayers: Set<Int> = []
     @State private var renamingLayerIndex: Int?
     @State private var newLayerName: String = ""
-    @State private var draggedLayerIndex: Int? = nil
-    @State private var dragOffset: CGSize = .zero
-    @State private var targetLayerIndex: Int? = nil
     @State private var showColorPicker: Bool = false
 
     private let layerRowHeight: CGFloat = 22.02
@@ -199,48 +196,8 @@ struct LayersPanel: View {
         ScrollView(.vertical, showsIndicators: true) {
             ZStack(alignment: .topLeading) {
                 VStack(spacing: 0) {
-                    ForEach(Array((0..<document.layers.count).reversed().enumerated()), id: \.element) { (index, layerIndex) in
+                    ForEach(Array(document.layers.enumerated()).reversed(), id: \.element.id) { (layerIndex, layer) in
                         layerRowContent(for: layerIndex)
-                            .offset(draggedLayerIndex == layerIndex ? dragOffset : .zero)
-                            .opacity(draggedLayerIndex == layerIndex ? 0.9 : 1.0)
-                            .zIndex(draggedLayerIndex == layerIndex ? 100 : 0)
-                            .gesture(
-                                layerIndex > 1 ?
-                                DragGesture(minimumDistance: 5)
-                                    .onChanged { value in
-                                        if draggedLayerIndex == nil {
-                                            draggedLayerIndex = layerIndex
-                                            document.selectedLayerIndex = layerIndex
-                                        }
-
-                                        dragOffset = value.translation
-
-                                        let dragDistance = value.translation.height
-
-                                        if abs(dragDistance) < layerRowHeight / 2 {
-                                            targetLayerIndex = nil
-                                        } else if dragDistance < 0 {
-                                            let slots = Int(abs(dragDistance) / layerRowHeight)
-                                            targetLayerIndex = max(2, layerIndex + slots + 1)
-                                        } else {
-                                            let slots = Int(abs(dragDistance) / layerRowHeight)
-                                            targetLayerIndex = max(2, layerIndex - slots)
-                                        }
-                                    }
-                                    .onEnded { value in
-                                        dragOffset = .zero
-
-                                        if let target = targetLayerIndex,
-                                           let source = draggedLayerIndex,
-                                           target != source && target >= 2 {
-                                            document.moveLayer(from: source, to: target)
-                                        }
-
-                                        draggedLayerIndex = nil
-                                        targetLayerIndex = nil
-                                    }
-                                : nil
-                            )
                     }
                 }
                 .padding(.horizontal, 4)

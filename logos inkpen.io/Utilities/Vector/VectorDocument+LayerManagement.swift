@@ -69,11 +69,6 @@ extension VectorDocument {
               targetIndex >= 0 && targetIndex <= layers.count,
               sourceIndex != targetIndex else { return }
 
-        if sourceIndex == 0 && layers[sourceIndex].name == "Pasteboard" { return }
-        if sourceIndex == 1 && layers[sourceIndex].name == "Canvas" { return }
-        if targetIndex == 0 { return }
-        if targetIndex == 1 && targetIndex < layers.count && layers[targetIndex].name == "Canvas" { return }
-
         saveToUndoStack()
 
         let movingLayer = layers.remove(at: sourceIndex)
@@ -449,6 +444,82 @@ extension VectorDocument {
             layerIndex: sourceObject.layerIndex,
             orderID: newOrderID
         )
+
+        objectWillChange.send()
+    }
+
+    func reorderLayer(sourceLayerId: UUID, targetLayerId: UUID) {
+        guard let sourceIndex = layers.firstIndex(where: { $0.id == sourceLayerId }),
+              let targetIndex = layers.firstIndex(where: { $0.id == targetLayerId }) else {
+            Log.error("❌ Layers not found for reordering", category: .error)
+            return
+        }
+
+        guard sourceIndex != targetIndex else { return }
+
+        saveToUndoStack()
+
+        // Remove source layer and insert at target position - matches reorderObject behavior
+        let sourceLayer = layers.remove(at: sourceIndex)
+        layers.insert(sourceLayer, at: targetIndex)
+
+        // Calculate the actual new index after insertion
+        let newSourceIndex = targetIndex
+
+        // Update all objects to reflect the layer reordering - shift layers in between
+        var updatedObjects: [VectorObject] = []
+        for object in unifiedObjects {
+            var updatedObject = object
+            let currentLayerIndex = object.layerIndex
+
+            if currentLayerIndex == sourceIndex {
+                // Move source layer's objects to new position
+                updatedObject = VectorObject(
+                    shape: extractShape(from: object),
+                    layerIndex: newSourceIndex,
+                    orderID: object.orderID
+                )
+            } else if sourceIndex < targetIndex {
+                // Moving down: shift layers between source and target up by 1
+                if currentLayerIndex > sourceIndex && currentLayerIndex <= targetIndex {
+                    updatedObject = VectorObject(
+                        shape: extractShape(from: object),
+                        layerIndex: currentLayerIndex - 1,
+                        orderID: object.orderID
+                    )
+                }
+            } else {
+                // Moving up: shift layers between target and source down by 1
+                if currentLayerIndex >= targetIndex && currentLayerIndex < sourceIndex {
+                    updatedObject = VectorObject(
+                        shape: extractShape(from: object),
+                        layerIndex: currentLayerIndex + 1,
+                        orderID: object.orderID
+                    )
+                }
+            }
+
+            updatedObjects.append(updatedObject)
+        }
+
+        unifiedObjects = updatedObjects
+
+        // Update selected layer index accounting for the shift
+        if selectedLayerIndex == sourceIndex {
+            selectedLayerIndex = newSourceIndex
+        } else if let selectedIndex = selectedLayerIndex {
+            if sourceIndex < targetIndex {
+                // Moving down: shift selected index up if it was in between
+                if selectedIndex > sourceIndex && selectedIndex <= targetIndex {
+                    selectedLayerIndex = selectedIndex - 1
+                }
+            } else {
+                // Moving up: shift selected index down if it was in between
+                if selectedIndex >= targetIndex && selectedIndex < sourceIndex {
+                    selectedLayerIndex = selectedIndex + 1
+                }
+            }
+        }
 
         objectWillChange.send()
     }

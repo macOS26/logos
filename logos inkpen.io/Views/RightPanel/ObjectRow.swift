@@ -297,7 +297,20 @@ struct ObjectRow: View {
                 objectType: objectType == .text ? .text : .shape,
                 objectId: objectId,
                 sourceLayerIndex: layerIndex
-            ))
+            )) {
+                HStack(spacing: 4) {
+                    Image(systemName: objectIcon)
+                        .font(.system(size: 10))
+                        .foregroundColor(objectIconColor)
+                    Text(name)
+                        .font(.system(size: 11, weight: .medium))
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.accentColor.opacity(0.1))
+                .cornerRadius(6)
+                .opacity(0.9)
+            }
             .dropDestination(for: DraggableVectorObject.self) { items, location in
                 guard let droppedObject = items.first else { return false }
 
@@ -305,13 +318,10 @@ struct ObjectRow: View {
                     return false
                 }
 
-                // Animate the reorder/move
                 withAnimation(.easeOut(duration: 0.2)) {
-                    // If same layer, reorder within layer
                     if droppedObject.sourceLayerIndex == layerIndex {
                         document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectId)
                     } else {
-                        // Cross-layer drop: move to target layer and reorder
                         document.moveObjectToLayer(objectId: droppedObject.objectId, targetLayerIndex: layerIndex)
                         document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectId)
                     }

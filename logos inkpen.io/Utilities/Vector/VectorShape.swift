@@ -1008,6 +1008,20 @@ struct DraggableVectorObject: Codable, Transferable {
     }
 }
 
+struct DraggableLayer: Codable, Transferable {
+    let layerIndex: Int
+    let layerId: UUID
+
+    init(layerIndex: Int, layerId: UUID) {
+        self.layerIndex = layerIndex
+        self.layerId = layerId
+    }
+
+    static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .draggableLayer)
+    }
+}
+
 extension UTType {
     static var inkpen: UTType {
         UTType(exportedAs: "io.logos.logos-inkpen-io.document")
@@ -1023,5 +1037,9 @@ extension UTType {
 
     static var draggableVectorObject: UTType {
         UTType(exportedAs: "io.logos.logos-inkpen-io.draggableVectorObject")
+    }
+
+    static var draggableLayer: UTType {
+        UTType(exportedAs: "io.logos.logos-inkpen-io.draggableLayer")
     }
 }

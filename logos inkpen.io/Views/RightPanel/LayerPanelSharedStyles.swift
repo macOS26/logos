@@ -1,10 +1,6 @@
 import SwiftUI
 
-// MARK: - Shared Constants
-
 public let kLayerRowHeight: CGFloat = 22.02
-
-// MARK: - Common Button Styles for Eye and Lock Icons
 
 struct VisibilityButtonStyle: ViewModifier {
     let isVisible: Bool

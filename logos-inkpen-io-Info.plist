@@ -161,6 +161,29 @@
 				</array>
 			</dict>
 		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Draggable Layer Object</string>
+			<key>UTTypeIcons</key>
+			<dict>
+				<key>UTTypeIconText</key>
+				<string>DLO</string>
+			</dict>
+			<key>UTTypeIdentifier</key>
+			<string>io.logos.logos-inkpen-io.draggableLayer</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>dlo</string>
+				</array>
+			</dict>
+		</dict>
 	</array>
 </dict>
 </plist>
