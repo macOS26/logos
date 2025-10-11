@@ -148,9 +148,14 @@ struct ObjectRow: View {
                         }
                     }
                 }
+                .padding(.leading, 3)  // Add small left padding to align properly
                 .padding(.trailing, 8)
                 .padding(.vertical, 3)
-                .background(isSelected ? Color.blue.opacity(0.1) : Color.clear)
+                .background(
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(isSelected ? Color.blue.opacity(0.1) : Color.clear)
+                        .padding(.leading, -3)  // Extend background back to proper position
+                )
             }
             .opacity(isDragging ? 0.5 : 1.0)
             .scaleEffect(isDragging ? 0.95 : 1.0)
