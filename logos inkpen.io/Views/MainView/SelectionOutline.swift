@@ -1,6 +1,5 @@
 import SwiftUI
 import AppKit
-import SwiftUI
 
 struct SelectionOutline: View {
     @ObservedObject var document: VectorDocument
