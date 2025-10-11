@@ -2,6 +2,63 @@ import SwiftUI
 import UniformTypeIdentifiers
 import Combine
 
+// MARK: - Style Modifiers
+struct LayerLabelStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 11))
+            .foregroundColor(.secondary)
+    }
+}
+
+struct LayerControlLabelStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 11))
+            .foregroundColor(.secondary)
+            .frame(width: 50, alignment: .leading)
+    }
+}
+
+struct LayerPercentageStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 11))
+            .foregroundColor(.secondary)
+            .frame(width: 35, alignment: .trailing)
+    }
+}
+
+struct DragTargetStyle: ViewModifier {
+    let isActive: Bool
+    
+    func body(content: Content) -> some View {
+        content
+            .frame(width: 20, height: 20)
+            .contentShape(Rectangle())
+    }
+}
+
+// MARK: - View Extensions
+extension View {
+    func layerLabel() -> some View {
+        modifier(LayerLabelStyle())
+    }
+    
+    func layerControlLabel() -> some View {
+        modifier(LayerControlLabelStyle())
+    }
+    
+    func layerPercentage() -> some View {
+        modifier(LayerPercentageStyle())
+    }
+    
+    func dragTarget(isActive: Bool = false) -> some View {
+        modifier(DragTargetStyle(isActive: isActive))
+    }
+}
+
+// MARK: - Main View
 struct LayersPanel: View {
     @ObservedObject var document: VectorDocument
     @State private var expandedLayers: Set<Int> = []
@@ -71,9 +128,7 @@ struct LayersPanel: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Text("Opacity")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
-                    .frame(width: 50, alignment: .leading)
+                    .layerControlLabel()
 
                 Slider(
                     value: Binding(
@@ -94,16 +149,12 @@ struct LayersPanel: View {
                 .frame(maxWidth: .infinity)
 
                 Text("\(Int(document.layers[layerIndex].opacity * 100))%")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
-                    .frame(width: 35, alignment: .trailing)
+                    .layerPercentage()
             }
 
             HStack(spacing: 8) {
                 Text("Blend")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
-                    .frame(width: 50, alignment: .leading)
+                    .layerControlLabel()
 
                 Picker("", selection: Binding(
                     get: { document.layers[layerIndex].blendMode },
@@ -206,8 +257,7 @@ struct LayersPanel: View {
                             let iconCenterY = rowY + (layerRowHeight / 2)
 
                             Color.red.opacity(0.0)
-                                .frame(width: iconSize, height: iconSize)
-                                .contentShape(Rectangle())
+                                .dragTarget()
                                 .position(x: eyeIconX, y: iconCenterY)
                         }
                     }
@@ -253,8 +303,7 @@ struct LayersPanel: View {
                             let iconCenterY = rowY + (layerRowHeight / 2)
 
                             Color.red.opacity(0.0)
-                                .frame(width: iconSize, height: iconSize)
-                                .contentShape(Rectangle())
+                                .dragTarget()
                                 .position(x: lockIconX, y: iconCenterY)
                         }
                     }
@@ -353,18 +402,21 @@ struct ColorSwatchButton: View {
                         showColorPicker = false
                     }) {
                         HStack(spacing: 6) {
-                            RoundedRectangle(cornerRadius: 7)
+                            RoundedRectangle(cornerRadius: 20)
                                 .fill(colorOption.color)
-                                .frame(width: 14, height: 14)
+                                .padding(.horizontal, -3)
+                                .frame(width: 14, height: 16)
                             Text(colorOption.name)
-                                .font(.system(size: 11))
+                                .layerLabel()
                         }
+                        .offset(x: 1)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
             }
-            .padding(6)
+            .padding(.horizontal, 15)
+            .padding(.vertical, 10)
         }
     }
 }
