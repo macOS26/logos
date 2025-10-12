@@ -293,9 +293,19 @@ struct DrawingCanvas: View {
     @State internal var sharedAllRadii: [Double] = []
     @State internal var sharedUpdatedRadii: [Double] = []
 
+    @State internal var hasPerformedInitialFitToPage = false
+
     var body: some View {
         GeometryReader { geometry in
             enhancedCanvasMainContent(geometry: geometry)
+                .onAppear {
+                    if !hasPerformedInitialFitToPage {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            fitToPage(geometry: geometry)
+                            hasPerformedInitialFitToPage = true
+                        }
+                    }
+                }
         }
     }
 }

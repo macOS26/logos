@@ -7,6 +7,7 @@ struct SelectionHandlesView: View {
     let isShiftPressed: Bool
     let isOptionPressed: Bool
     let isCommandPressed: Bool
+    let isTemporarySelectionViaCommand: Bool
     let dragPreviewDelta: CGPoint
 
     var body: some View {
@@ -56,7 +57,7 @@ struct SelectionHandlesView: View {
                                         canvasOffset: document.canvasOffset,
                                         isShiftPressed: isShiftPressed,
                                         transformOrigin: document.transformOrigin,
-                                        strokeColor: (isCommandPressed && document.currentTool == .selection) ? Color.blue : Color.black.opacity(0.5)
+                                        strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5)
                                     )
                                     .offset(x: dragPreviewDelta.x * document.zoomLevel,
                                             y: dragPreviewDelta.y * document.zoomLevel)
@@ -127,7 +128,7 @@ struct SelectionHandlesView: View {
                         canvasOffset: document.canvasOffset,
                         isShiftPressed: isShiftPressed,
                         transformOrigin: document.transformOrigin,
-                        strokeColor: (isCommandPressed && document.currentTool == .selection) ? Color.blue : Color.black.opacity(0.5)
+                        strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5)
                     )
                     .offset(x: dragPreviewDelta.x * document.zoomLevel,
                             y: dragPreviewDelta.y * document.zoomLevel)

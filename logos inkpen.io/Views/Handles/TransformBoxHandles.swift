@@ -26,7 +26,7 @@ struct TransformBoxHandles: View {
         ZStack {
             if shape.isTextObject {
                 Rectangle()
-                    .stroke(strokeColor, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
+                    .stroke(strokeColor, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0]))
                     .frame(width: transformedBounds.width, height: transformedBounds.height)
                     .position(x: transformedBounds.midX, y: transformedBounds.midY)
                     .scaleEffect(zoomLevel, anchor: .topLeading)
@@ -34,7 +34,7 @@ struct TransformBoxHandles: View {
                     .allowsHitTesting(false)
             } else {
                 Path(transformedBounds)
-                    .stroke(strokeColor, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
+                    .stroke(strokeColor, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0]))
                     .scaleEffect(zoomLevel, anchor: .topLeading)
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
                     .allowsHitTesting(false)

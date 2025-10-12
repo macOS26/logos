@@ -383,15 +383,16 @@ extension DrawingCanvas {
                 ], isClosed: true)
             }
 
-            let boundingBox = VectorPath(elements: [
-                .move(to: VectorPoint(triangleRect.minX, triangleRect.minY)),
-                .line(to: VectorPoint(triangleRect.maxX, triangleRect.minY)),
-                .line(to: VectorPoint(triangleRect.maxX, triangleRect.maxY)),
-                .line(to: VectorPoint(triangleRect.minX, triangleRect.maxY)),
-                .close
-            ], isClosed: false)
-
-            tempBoundingBoxPath = boundingBox
+            // Debug bounding box removed
+            // let boundingBox = VectorPath(elements: [
+            //     .move(to: VectorPoint(triangleRect.minX, triangleRect.minY)),
+            //     .line(to: VectorPoint(triangleRect.maxX, triangleRect.minY)),
+            //     .line(to: VectorPoint(triangleRect.maxX, triangleRect.maxY)),
+            //     .line(to: VectorPoint(triangleRect.minX, triangleRect.maxY)),
+            //     .close
+            // ], isClosed: false)
+            //
+            // tempBoundingBoxPath = boundingBox
         case .rightTriangle:
             let dragDeltaX = currentLocation.x - startPoint.x
             let dragDeltaY = currentLocation.y - startPoint.y

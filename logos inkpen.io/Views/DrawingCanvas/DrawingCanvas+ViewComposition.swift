@@ -122,6 +122,7 @@ extension DrawingCanvas {
                 isShiftPressed: self.isShiftPressed,
                 isOptionPressed: self.isOptionPressed,
                 isCommandPressed: self.isCommandPressed,
+                isTemporarySelectionViaCommand: self.isTemporarySelectionViaCommand,
                 dragPreviewDelta: currentDragDelta
             )
         }
