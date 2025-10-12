@@ -157,7 +157,7 @@ struct EnvelopeHandles: View {
             .position(CGPoint(x: cornerPos.x * zoomLevel + canvasOffset.x,
                               y: cornerPos.y * zoomLevel + canvasOffset.y))
             .simultaneousGesture(
-                DragGesture(minimumDistance: 0.5)
+                DragGesture(minimumDistance: 0)
                     .onChanged { value in
                         handleEnvelopeWarp(cornerIndex: cornerIndex, dragValue: value)
                     }
