@@ -81,6 +81,8 @@ extension VectorDocument {
             pasteboard = previousState.pasteboard
             layerIndex = previousState.layerIndex
             directSelectedShapeIDs = previousState.directSelectedShapeIDs
+            warpEnvelopeCorners = previousState.warpEnvelopeCorners
+            warpBounds = previousState.warpBounds
 
             rebuildLookupCache()
         }
@@ -159,6 +161,8 @@ extension VectorDocument {
             pasteboard = nextState.pasteboard
             layerIndex = nextState.layerIndex
             directSelectedShapeIDs = nextState.directSelectedShapeIDs
+            warpEnvelopeCorners = nextState.warpEnvelopeCorners
+            warpBounds = nextState.warpBounds
 
             rebuildLookupCache()
         }

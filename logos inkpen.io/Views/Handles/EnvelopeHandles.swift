@@ -131,6 +131,39 @@ struct EnvelopeHandles: View {
 
             }
         }
+        .onChange(of: shape.warpEnvelope) { _, newEnvelope in
+            if document.currentTool == .warp && !newEnvelope.isEmpty && newEnvelope != warpedCorners {
+                initializeEnvelopeCorners()
+            }
+        }
+        .onChange(of: document.unifiedObjects) { _, _ in
+            // When document changes (like undo), refresh the warp handles from the shape
+            if document.currentTool == .warp && !isWarping {
+                if let updatedShape = document.unifiedObjects.first(where: { obj in
+                    if case .shape(let s) = obj.objectType {
+                        return s.id == shape.id
+                    }
+                    return false
+                }), case .shape(let s) = updatedShape.objectType {
+                    // Reinitialize with the updated shape's warp envelope OR reset to bounds
+                    if s.isWarpObject && !s.warpEnvelope.isEmpty {
+                        warpedCorners = s.warpEnvelope
+                    } else {
+                        // Not a warp object anymore - reset handles to rectangle bounds
+                        let bounds = s.bounds
+                        let resetCorners = [
+                            CGPoint(x: bounds.minX, y: bounds.minY),
+                            CGPoint(x: bounds.maxX, y: bounds.minY),
+                            CGPoint(x: bounds.maxX, y: bounds.maxY),
+                            CGPoint(x: bounds.minX, y: bounds.maxY)
+                        ]
+                        warpedCorners = resetCorners
+                        originalCorners = resetCorners
+                        previewPath = nil
+                    }
+                }
+            }
+        }
     }
 
 
@@ -370,6 +403,17 @@ struct EnvelopeHandles: View {
         initialTransform = shape.transform
         startLocation = dragValue.startLocation
         draggingCornerIndex = cornerIndex
+
+        // Save current warp handle positions to dictionary BEFORE we start dragging
+        if warpedCorners.count == 4 {
+            document.warpEnvelopeCorners[shape.id] = warpedCorners
+            let minX = warpedCorners.map { $0.x }.min() ?? 0
+            let maxX = warpedCorners.map { $0.x }.max() ?? 0
+            let minY = warpedCorners.map { $0.y }.min() ?? 0
+            let maxY = warpedCorners.map { $0.y }.max() ?? 0
+            document.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+        }
+
         document.saveToUndoStack()
 
     }

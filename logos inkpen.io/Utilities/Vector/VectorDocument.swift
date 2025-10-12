@@ -613,7 +613,7 @@ class VectorDocument: ObservableObject, Codable {
 
 
     enum CodingKeys: CodingKey {
-        case settings, layers, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, selectedObjectIDs, currentTool, viewMode, zoomLevel, canvasOffset, unifiedObjects
+        case settings, layers, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, selectedObjectIDs, currentTool, viewMode, zoomLevel, canvasOffset, unifiedObjects, warpEnvelopeCorners, warpBounds
     }
 
     required init(from decoder: Decoder) throws {
@@ -662,8 +662,8 @@ class VectorDocument: ObservableObject, Codable {
         cachedSelectionBounds = nil
         dragPreviewCoordinates = .zero
         scalePreviewDimensions = .zero
-        warpEnvelopeCorners = [:]
-        warpBounds = [:]
+        warpEnvelopeCorners = (try? container.decodeIfPresent([UUID: [CGPoint]].self, forKey: .warpEnvelopeCorners)) ?? [:]
+        warpBounds = (try? container.decodeIfPresent([UUID: CGRect].self, forKey: .warpBounds)) ?? [:]
 
         viewMode = decodedViewMode
         zoomLevel = decodedZoomLevel
@@ -827,6 +827,8 @@ class VectorDocument: ObservableObject, Codable {
         try container.encode(selectedShapeIDs, forKey: .selectedShapeIDs)
         try container.encode(selectedTextIDs, forKey: .selectedTextIDs)
         try container.encode(selectedObjectIDs, forKey: .selectedObjectIDs)
+        try container.encode(warpEnvelopeCorners, forKey: .warpEnvelopeCorners)
+        try container.encode(warpBounds, forKey: .warpBounds)
     }
 
 
