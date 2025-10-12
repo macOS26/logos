@@ -36,11 +36,21 @@ extension DrawingCanvas {
                 self.isCommandPressed = event.modifierFlags.contains(.command)
                 self.isControlPressed = event.modifierFlags.contains(.control)
 
+                let shapeDrawingTools: [DrawingTool] = [.rectangle, .square, .roundedRectangle, .pill,
+                                                         .circle, .ellipse, .oval, .egg, .cone,
+                                                         .equilateralTriangle, .rightTriangle, .acuteTriangle, .isoscelesTriangle,
+                                                         .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon]
 
                 if self.isCommandPressed {
                     if self.document.currentTool == .selection && !self.isTemporaryDirectSelectionViaCommand {
                         self.isTemporaryDirectSelectionViaCommand = true
                         self.temporaryCommandPreviousTool = self.document.currentTool
+                    }
+                    // Temporarily switch to selection tool when command is pressed on shape drawing tools
+                    else if shapeDrawingTools.contains(self.document.currentTool) && !self.isTemporarySelectionViaCommand {
+                        self.isTemporarySelectionViaCommand = true
+                        self.temporaryCommandPreviousTool = self.document.currentTool
+                        self.document.currentTool = .selection
                     }
                 } else {
                     if self.isTemporaryDirectSelectionViaCommand {
@@ -54,6 +64,14 @@ extension DrawingCanvas {
                             self.directSelectedShapeIDs.removeAll()
                             self.syncDirectSelectionWithDocument()
                             self.document.objectWillChange.send()
+                        }
+                        self.temporaryCommandPreviousTool = nil
+                    }
+                    // Switch back from selection tool to previous shape drawing tool
+                    if self.isTemporarySelectionViaCommand {
+                        self.isTemporarySelectionViaCommand = false
+                        if let previousTool = self.temporaryCommandPreviousTool {
+                            self.document.currentTool = previousTool
                         }
                         self.temporaryCommandPreviousTool = nil
                     }

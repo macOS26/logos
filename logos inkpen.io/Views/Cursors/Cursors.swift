@@ -203,6 +203,7 @@ struct DrawingCanvas: View {
     @State internal var temporaryToolPreviousTool: DrawingTool? = nil
 
     @State internal var isTemporaryDirectSelectionViaCommand = false
+    @State internal var isTemporarySelectionViaCommand = false
     @State internal var temporaryCommandPreviousTool: DrawingTool? = nil
 
     @State internal var initialZoomLevel: CGFloat = 1.0

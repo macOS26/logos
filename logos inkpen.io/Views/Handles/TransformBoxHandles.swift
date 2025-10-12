@@ -10,6 +10,7 @@ struct TransformBoxHandles: View {
     let canvasOffset: CGPoint
     let isShiftPressed: Bool
     let transformOrigin: TransformOrigin
+    var strokeColor: Color = Color.black.opacity(0.5)
 
     @State private var isScaling: Bool = false
     @State private var initialTransform: CGAffineTransform = .identity
@@ -25,7 +26,7 @@ struct TransformBoxHandles: View {
         ZStack {
             if shape.isTextObject {
                 Rectangle()
-                    .stroke(Color.black.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
+                    .stroke(strokeColor, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
                     .frame(width: transformedBounds.width, height: transformedBounds.height)
                     .position(x: transformedBounds.midX, y: transformedBounds.midY)
                     .scaleEffect(zoomLevel, anchor: .topLeading)
@@ -33,7 +34,7 @@ struct TransformBoxHandles: View {
                     .allowsHitTesting(false)
             } else {
                 Path(transformedBounds)
-                    .stroke(Color.black.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
+                    .stroke(strokeColor, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
                     .scaleEffect(zoomLevel, anchor: .topLeading)
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
                     .allowsHitTesting(false)
@@ -311,12 +312,19 @@ struct TransformBoxHandles: View {
         let anchorScreenX = anchor.x * zoomLevel + canvasOffset.x
         let anchorScreenY = anchor.y * zoomLevel + canvasOffset.y
 
-        let startDX = startLocation.x - anchorScreenX
-        let startDY = startLocation.y - anchorScreenY
-        let curDX = dragValue.location.x - anchorScreenX
-        let curDY = dragValue.location.y - anchorScreenY
+        let startDistance = CGPoint(
+            x: startLocation.x - anchorScreenX,
+            y: startLocation.y - anchorScreenY
+        )
 
-        let minDist: CGFloat = 2.0
+        let currentDistance = CGPoint(
+            x: dragValue.location.x - anchorScreenX,
+            y: dragValue.location.y - anchorScreenY
+        )
+
+        let baseBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        let adaptiveMinDistanceX = min(20.0, max(2.0, abs(baseBounds.width) * 0.05))
+        let adaptiveMinDistanceY = min(20.0, max(2.0, abs(baseBounds.height) * 0.05))
         let maxScale: CGFloat = 10.0
         let minScale: CGFloat = 0.1
 
@@ -326,25 +334,19 @@ struct TransformBoxHandles: View {
         let isCorner = [0,2,4,6].contains(index)
         let isTopBottom = [1,5].contains(index)
         let isLeftRight = [3,7].contains(index)
+
         if isCorner {
-            let sx = abs(startDX) > minDist ? abs(curDX) / abs(startDX) : 1.0
-            let sy = abs(startDY) > minDist ? abs(curDY) / abs(startDY) : 1.0
+            scaleX = abs(startDistance.x) > adaptiveMinDistanceX ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
+            scaleY = abs(startDistance.y) > adaptiveMinDistanceY ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
             if isShiftPressed {
-                let u = max(sx, sy)
-                scaleX = u
-                scaleY = u
-            } else {
-                scaleX = sx
-                scaleY = sy
+                let uniformScale = max(scaleX, scaleY)
+                scaleX = uniformScale
+                scaleY = uniformScale
             }
         } else if isTopBottom {
-            let sy = abs(startDY) > minDist ? abs(curDY) / abs(startDY) : 1.0
-            scaleX = 1.0
-            scaleY = sy
+            scaleY = abs(startDistance.y) > adaptiveMinDistanceY ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
         } else if isLeftRight {
-            let sx = abs(startDX) > minDist ? abs(curDX) / abs(startDX) : 1.0
-            scaleX = sx
-            scaleY = 1.0
+            scaleX = abs(startDistance.x) > adaptiveMinDistanceX ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
         }
 
         scaleX = min(max(scaleX, minScale), maxScale)
