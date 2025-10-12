@@ -633,7 +633,34 @@ struct EnvelopeHandles: View {
         } else {
             document.addShapeToUnifiedSystem(warpObject, layerIndex: layerIndex)
         }
-    }
+
+            // Force UI refresh for new warp object (icon and handles)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                if let objectIndex = self.document.unifiedObjects.firstIndex(where: { obj in
+                    if case .shape(let s) = obj.objectType {
+                        return s.id == warpObject.id
+                    }
+                    return false
+                }) {
+                    if case .shape(var shape) = self.document.unifiedObjects[objectIndex].objectType {
+                        let wasVisible = shape.isVisible
+                        shape.isVisible = !wasVisible
+                        self.document.unifiedObjects[objectIndex] = VectorObject(
+                            shape: shape,
+                            layerIndex: self.document.unifiedObjects[objectIndex].layerIndex,
+                            orderID: self.document.unifiedObjects[objectIndex].orderID
+                        )
+                        // Toggle it back
+                        shape.isVisible = wasVisible
+                        self.document.unifiedObjects[objectIndex] = VectorObject(
+                            shape: shape,
+                            layerIndex: self.document.unifiedObjects[objectIndex].layerIndex,
+                            orderID: self.document.unifiedObjects[objectIndex].orderID
+                        )
+                    }
+                }
+            }
+        }
 
     document.objectWillChange.send()
     }
