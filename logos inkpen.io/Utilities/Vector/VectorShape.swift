@@ -991,6 +991,21 @@ extension VectorLayer: Codable {
 }
 
 
+enum DraggableItem: Codable, Transferable {
+    case vectorObject(objectType: VectorObjectType, objectId: UUID, sourceLayerIndex: Int)
+    case layer(layerIndex: Int, layerId: UUID)
+
+    enum VectorObjectType: String, Codable {
+        case shape = "shape"
+        case text = "text"
+    }
+
+    static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .draggableItem)
+    }
+}
+
+// Keep these for backwards compatibility
 struct DraggableVectorObject: Codable, Transferable {
     enum ObjectType: String, Codable {
         case shape = "shape"
@@ -1045,5 +1060,9 @@ extension UTType {
 
     static var draggableLayer: UTType {
         UTType(exportedAs: "io.logos.logos-inkpen-io.draggableLayer")
+    }
+
+    static var draggableItem: UTType {
+        UTType(exportedAs: "io.logos.logos-inkpen-io.draggableItem")
     }
 }

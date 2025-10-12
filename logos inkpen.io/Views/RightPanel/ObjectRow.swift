@@ -311,7 +311,7 @@ struct ObjectRow: View {
                 }
                 .padding(.horizontal, 4)
             }
-            .draggable(DraggableVectorObject(
+            .draggable(DraggableItem.vectorObject(
                 objectType: objectType == .text ? .text : .shape,
                 objectId: objectId,
                 sourceLayerIndex: layerIndex
@@ -329,20 +329,23 @@ struct ObjectRow: View {
                 .cornerRadius(6)
                 .opacity(0.9)
             }
-            .dropDestination(for: DraggableVectorObject.self) { items, location in
-                guard let droppedObject = items.first else { return false }
+            .dropDestination(for: DraggableItem.self) { items, location in
+                guard let droppedItem = items.first else { return false }
 
-                if droppedObject.objectId == objectId {
+                // Only handle vectorObject drops on objects
+                guard case .vectorObject(_, let droppedObjectId, let sourceLayerIndex) = droppedItem else {
                     return false
                 }
 
-                withAnimation(.easeOut(duration: 0.2)) {
-                    if droppedObject.sourceLayerIndex == layerIndex {
-                        document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectId)
-                    } else {
-                        document.moveObjectToLayer(objectId: droppedObject.objectId, targetLayerIndex: layerIndex)
-                        document.reorderObject(objectId: droppedObject.objectId, targetObjectId: objectId)
-                    }
+                if droppedObjectId == objectId {
+                    return false
+                }
+
+                if sourceLayerIndex == layerIndex {
+                    document.reorderObject(objectId: droppedObjectId, targetObjectId: objectId)
+                } else {
+                    document.moveObjectToLayer(objectId: droppedObjectId, targetLayerIndex: layerIndex)
+                    document.reorderObject(objectId: droppedObjectId, targetObjectId: objectId)
                 }
 
                 return true

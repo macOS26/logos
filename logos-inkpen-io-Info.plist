@@ -184,6 +184,29 @@
 				</array>
 			</dict>
 		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Draggable Item</string>
+			<key>UTTypeIcons</key>
+			<dict>
+				<key>UTTypeIconText</key>
+				<string>DI</string>
+			</dict>
+			<key>UTTypeIdentifier</key>
+			<string>io.logos.logos-inkpen-io.draggableItem</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>di</string>
+				</array>
+			</dict>
+		</dict>
 	</array>
 </dict>
 </plist>
