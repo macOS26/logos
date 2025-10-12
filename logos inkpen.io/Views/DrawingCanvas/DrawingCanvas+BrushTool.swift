@@ -67,7 +67,7 @@ extension DrawingCanvas {
         }
 
         if brushRawPoints.count % 10 == 0 {
-            print("🔴 PRESSURE: \(String(format: "%.2f", actualPressure)) | Sensitivity: \(appState.pressureSensitivityEnabled) | HasReal: \(PressureManager.shared.hasRealPressureInput)")
+            // print("🔴 PRESSURE: \(String(format: "%.2f", actualPressure)) | Sensitivity: \(appState.pressureSensitivityEnabled) | HasReal: \(PressureManager.shared.hasRealPressureInput)")
         }
 
         let newPoint = BrushPoint(location: location, pressure: actualPressure)
@@ -123,7 +123,7 @@ extension DrawingCanvas {
         guard brushRawPoints.count >= 2 else { return }
 
         let newPreviewPath = generateLivePreviewPath()
-        print("🔵 BRUSH UPDATE: \(brushRawPoints.count) points -> \(newPreviewPath.elements.count) elements")
+        // print("🔵 BRUSH UPDATE: \(brushRawPoints.count) points -> \(newPreviewPath.elements.count) elements")
         brushPreviewPath = newPreviewPath
     }
 
@@ -464,7 +464,7 @@ extension DrawingCanvas {
                 mappedPressure = getThicknessFromPressureCurve(pressure: closestPressure, curve: curve)
 
                 if index < 5 {
-                    print("🟡 PRESSURE MAP [\(index)]: raw=\(String(format: "%.2f", closestPressure)) -> mapped=\(String(format: "%.2f", mappedPressure))")
+                    // print("🟡 PRESSURE MAP [\(index)]: raw=\(String(format: "%.2f", closestPressure)) -> mapped=\(String(format: "%.2f", mappedPressure))")
                 }
             }
 
