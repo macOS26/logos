@@ -341,11 +341,13 @@ struct ObjectRow: View {
                     return false
                 }
 
-                if sourceLayerIndex == layerIndex {
-                    document.reorderObject(objectId: droppedObjectId, targetObjectId: objectId)
-                } else {
-                    document.moveObjectToLayer(objectId: droppedObjectId, targetLayerIndex: layerIndex)
-                    document.reorderObject(objectId: droppedObjectId, targetObjectId: objectId)
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    if sourceLayerIndex == layerIndex {
+                        document.reorderObject(objectId: droppedObjectId, targetObjectId: objectId)
+                    } else {
+                        document.moveObjectToLayer(objectId: droppedObjectId, targetLayerIndex: layerIndex)
+                        document.reorderObject(objectId: droppedObjectId, targetObjectId: objectId)
+                    }
                 }
 
                 return true

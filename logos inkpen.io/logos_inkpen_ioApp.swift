@@ -920,6 +920,21 @@ class ClipboardManager {
 
     private init() {}
 
+    // Helper function to recursively regenerate all UUIDs in a shape and its grouped shapes
+    private func regenerateUUIDs(for shape: VectorShape) -> VectorShape {
+        var newShape = shape
+        newShape.id = UUID()
+
+        // If this shape has grouped shapes, regenerate their UUIDs too
+        if !newShape.groupedShapes.isEmpty {
+            newShape.groupedShapes = newShape.groupedShapes.map { childShape in
+                regenerateUUIDs(for: childShape)
+            }
+        }
+
+        return newShape
+    }
+
     func canPaste() -> Bool {
         return pasteboard.data(forType: vectorObjectsType) != nil
     }
@@ -1003,8 +1018,7 @@ class ClipboardManager {
                 }
 
                 for shape in clipboardData.shapes {
-                    var newShape = shape
-                    newShape.id = UUID()
+                    let newShape = regenerateUUIDs(for: shape)
                     document.addShapeToUnifiedSystem(newShape, layerIndex: layerIndex)
                     document.selectedObjectIDs.insert(newShape.id)
                 }
@@ -1078,8 +1092,7 @@ class ClipboardManager {
                 document.unifiedObjects = updatedUnifiedObjects
 
                 for (offset, shape) in clipboardData.shapes.enumerated() {
-                    var newShape = shape
-                    newShape.id = UUID()
+                    let newShape = regenerateUUIDs(for: shape)
 
                     let newOrderID = insertionPoint + offset
                     let unifiedObject = VectorObject(shape: newShape, layerIndex: layerIndex, orderID: newOrderID)

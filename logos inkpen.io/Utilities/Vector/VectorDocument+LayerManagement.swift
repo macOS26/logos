@@ -448,6 +448,88 @@ extension VectorDocument {
         objectWillChange.send()
     }
 
+    func moveObjectToTop(objectId: UUID) {
+        guard let sourceIndex = unifiedObjects.firstIndex(where: { $0.id == objectId }) else {
+            Log.error("❌ Object not found for moving to top", category: .error)
+            return
+        }
+
+        let sourceObject = unifiedObjects[sourceIndex]
+        let layerObjects = unifiedObjects.filter { $0.layerIndex == sourceObject.layerIndex }
+        let maxOrderID = layerObjects.map { $0.orderID }.max() ?? 0
+
+        // If already at top, do nothing
+        if sourceObject.orderID == maxOrderID {
+            return
+        }
+
+        saveToUndoStack()
+
+        // Shift down all objects above the source
+        for i in 0..<unifiedObjects.count {
+            let obj = unifiedObjects[i]
+            if obj.layerIndex == sourceObject.layerIndex &&
+               obj.orderID > sourceObject.orderID &&
+               obj.id != sourceObject.id {
+                unifiedObjects[i] = VectorObject(
+                    shape: extractShape(from: obj),
+                    layerIndex: obj.layerIndex,
+                    orderID: obj.orderID - 1
+                )
+            }
+        }
+
+        // Move source to top
+        unifiedObjects[sourceIndex] = VectorObject(
+            shape: extractShape(from: sourceObject),
+            layerIndex: sourceObject.layerIndex,
+            orderID: maxOrderID
+        )
+
+        objectWillChange.send()
+    }
+
+    func moveObjectToBottom(objectId: UUID) {
+        guard let sourceIndex = unifiedObjects.firstIndex(where: { $0.id == objectId }) else {
+            Log.error("❌ Object not found for moving to bottom", category: .error)
+            return
+        }
+
+        let sourceObject = unifiedObjects[sourceIndex]
+        let layerObjects = unifiedObjects.filter { $0.layerIndex == sourceObject.layerIndex }
+        let minOrderID = layerObjects.map { $0.orderID }.min() ?? 0
+
+        // If already at bottom, do nothing
+        if sourceObject.orderID == minOrderID {
+            return
+        }
+
+        saveToUndoStack()
+
+        // Shift up all objects below the source
+        for i in 0..<unifiedObjects.count {
+            let obj = unifiedObjects[i]
+            if obj.layerIndex == sourceObject.layerIndex &&
+               obj.orderID < sourceObject.orderID &&
+               obj.id != sourceObject.id {
+                unifiedObjects[i] = VectorObject(
+                    shape: extractShape(from: obj),
+                    layerIndex: obj.layerIndex,
+                    orderID: obj.orderID + 1
+                )
+            }
+        }
+
+        // Move source to bottom
+        unifiedObjects[sourceIndex] = VectorObject(
+            shape: extractShape(from: sourceObject),
+            layerIndex: sourceObject.layerIndex,
+            orderID: minOrderID
+        )
+
+        objectWillChange.send()
+    }
+
     func reorderLayer(sourceLayerId: UUID, targetLayerId: UUID) {
         guard let sourceIndex = layers.firstIndex(where: { $0.id == sourceLayerId }),
               let targetIndex = layers.firstIndex(where: { $0.id == targetLayerId }) else {

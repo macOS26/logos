@@ -344,12 +344,16 @@ struct ProfessionalLayerRow: View {
                     targetLayerId = layer.id
                 }
 
-                document.reorderLayer(sourceLayerId: droppedLayerId, targetLayerId: targetLayerId)
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    document.reorderLayer(sourceLayerId: droppedLayerId, targetLayerId: targetLayerId)
+                }
                 return true
 
             case .vectorObject(_, let objectId, _):
                 // Move object to this layer
-                document.moveObjectToLayer(objectId: objectId, targetLayerIndex: layerIndex)
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    document.moveObjectToLayer(objectId: objectId, targetLayerIndex: layerIndex)
+                }
                 return true
             }
         }
