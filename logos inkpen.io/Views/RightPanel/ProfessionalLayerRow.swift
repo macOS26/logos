@@ -246,36 +246,6 @@ struct ProfessionalLayerRow: View {
                 }
                 .padding(.horizontal, 4)
             }
-            .draggable(DraggableLayer(
-                layerIndex: layerIndex,
-                layerId: layer.id
-            )) {
-                HStack(spacing: 4) {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(layerColor.wrappedValue)
-                        .frame(width: 4, height: 16)
-                    Text(layer.name)
-                        .font(.system(size: 11, weight: .medium))
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.accentColor.opacity(0.1))
-                .cornerRadius(6)
-                .opacity(0.9)
-            }
-            .dropDestination(for: DraggableLayer.self) { items, location in
-                guard let droppedLayer = items.first else { return false }
-
-                if droppedLayer.layerId == layer.id {
-                    return false
-                }
-
-                withAnimation(.easeOut(duration: 0.2)) {
-                    document.reorderLayer(sourceLayerId: droppedLayer.layerId, targetLayerId: layer.id)
-                }
-
-                return true
-            }
 
             let layerObjects = document.unifiedObjects
                 .filter { $0.layerIndex == layerIndex }
@@ -338,6 +308,36 @@ struct ProfessionalLayerRow: View {
                     }
                 }
             }
+        }
+        .draggable(DraggableLayer(
+            layerIndex: layerIndex,
+            layerId: layer.id
+        )) {
+            HStack(spacing: 4) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(layerColor.wrappedValue)
+                    .frame(width: 4, height: 16)
+                Text(layer.name)
+                    .font(.system(size: 11, weight: .medium))
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.accentColor.opacity(0.1))
+            .cornerRadius(6)
+            .opacity(0.9)
+        }
+        .dropDestination(for: DraggableLayer.self) { items, location in
+            guard let droppedLayer = items.first else { return false }
+
+            if droppedLayer.layerId == layer.id {
+                return false
+            }
+
+            withAnimation(.easeOut(duration: 0.2)) {
+                document.reorderLayer(sourceLayerId: droppedLayer.layerId, targetLayerId: layer.id)
+            }
+
+            return true
         }
         .background(Color.clear)
     }
