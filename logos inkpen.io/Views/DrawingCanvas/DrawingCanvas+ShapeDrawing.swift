@@ -360,8 +360,8 @@ extension DrawingCanvas {
                 )
             } else {
                 triangleRect = CGRect(
-                    x: currentLocation.x - (width >= 0 ? triangleWidth : -triangleWidth),
-                    y: currentLocation.y - triangleHeight,
+                    x: startPoint.x,
+                    y: startPoint.y,
                     width: width >= 0 ? triangleWidth : -triangleWidth,
                     height: triangleHeight
                 )
