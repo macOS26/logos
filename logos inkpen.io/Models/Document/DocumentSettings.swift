@@ -16,6 +16,7 @@ struct DocumentSettings: Codable, Hashable {
     var selectedLayerName: String?
 
     var layerExpansionState: [UUID: Bool]
+    var groupExpansionState: [UUID: Bool]
 
     var pageOrigin: CGPoint?
 
@@ -27,7 +28,7 @@ struct DocumentSettings: Codable, Hashable {
 
     private var _sizeInPoints: CGSize?
 
-    init(width: Double = 11.0, height: Double = 8.5, unit: MeasurementUnit = .inches, colorMode: ColorMode = .rgb, resolution: Double = 72.0, showRulers: Bool? = nil, showGrid: Bool? = nil, snapToGrid: Bool? = nil, snapToPoint: Bool? = nil, gridSpacing: Double = 0.125, backgroundColor: VectorColor = .white, selectedLayerId: UUID? = nil, selectedLayerName: String? = "Layer 1", layerExpansionState: [UUID: Bool] = [:], fillColor: VectorColor? = nil, strokeColor: VectorColor? = nil, customRgbSwatches: [VectorColor]? = nil, customCmykSwatches: [VectorColor]? = nil, customHsbSwatches: [VectorColor]? = nil) {
+    init(width: Double = 11.0, height: Double = 8.5, unit: MeasurementUnit = .inches, colorMode: ColorMode = .rgb, resolution: Double = 72.0, showRulers: Bool? = nil, showGrid: Bool? = nil, snapToGrid: Bool? = nil, snapToPoint: Bool? = nil, gridSpacing: Double = 0.125, backgroundColor: VectorColor = .white, selectedLayerId: UUID? = nil, selectedLayerName: String? = "Layer 1", layerExpansionState: [UUID: Bool] = [:], groupExpansionState: [UUID: Bool] = [:], fillColor: VectorColor? = nil, strokeColor: VectorColor? = nil, customRgbSwatches: [VectorColor]? = nil, customCmykSwatches: [VectorColor]? = nil, customHsbSwatches: [VectorColor]? = nil) {
         self.width = width
         self.height = height
         self.unit = unit
@@ -51,6 +52,7 @@ struct DocumentSettings: Codable, Hashable {
         self.selectedLayerId = selectedLayerId
         self.selectedLayerName = selectedLayerName ?? "Layer 1"
         self.layerExpansionState = layerExpansionState
+        self.groupExpansionState = groupExpansionState
 
         self.fillColor = fillColor
         self.strokeColor = strokeColor
@@ -61,7 +63,7 @@ struct DocumentSettings: Codable, Hashable {
 
     enum CodingKeys: String, CodingKey {
         case width, height, unit, colorMode, resolution, showRulers, showGrid, snapToGrid, snapToPoint, gridSpacing, backgroundColor, selectedLayerId, selectedLayerName
-        case layerExpansionState
+        case layerExpansionState, groupExpansionState
         case fillColor, strokeColor, customRgbSwatches, customCmykSwatches, customHsbSwatches
         case pageOrigin
     }
@@ -82,6 +84,7 @@ struct DocumentSettings: Codable, Hashable {
         selectedLayerId = try container.decodeIfPresent(UUID.self, forKey: .selectedLayerId)
         selectedLayerName = try container.decodeIfPresent(String.self, forKey: .selectedLayerName) ?? "Layer 1"
         layerExpansionState = try container.decodeIfPresent([UUID: Bool].self, forKey: .layerExpansionState) ?? [:]
+        groupExpansionState = try container.decodeIfPresent([UUID: Bool].self, forKey: .groupExpansionState) ?? [:]
         pageOrigin = try container.decodeIfPresent(CGPoint.self, forKey: .pageOrigin)
 
         fillColor = try container.decodeIfPresent(VectorColor.self, forKey: .fillColor)
@@ -107,6 +110,7 @@ struct DocumentSettings: Codable, Hashable {
         try container.encode(selectedLayerId, forKey: .selectedLayerId)
         try container.encode(selectedLayerName, forKey: .selectedLayerName)
         try container.encode(layerExpansionState, forKey: .layerExpansionState)
+        try container.encode(groupExpansionState, forKey: .groupExpansionState)
         try container.encodeIfPresent(pageOrigin, forKey: .pageOrigin)
 
         try container.encodeIfPresent(fillColor, forKey: .fillColor)

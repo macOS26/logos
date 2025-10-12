@@ -121,7 +121,7 @@ struct UnifiedObjectContentView: View {
                         renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(unifiedObject.id))
 
                         if shape.isGroupContainer {
-                            ForEach(shape.groupedShapes.filter { $0.isTextObject }, id: \.id) { textShape in
+                            ForEach(shape.groupedShapes.filter { $0.isTextObject && $0.isVisible }, id: \.id) { textShape in
                                 if textShape.textContent != nil, textShape.typography != nil {
                                     StableProfessionalTextCanvas(
                                         document: document,

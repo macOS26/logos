@@ -21,7 +21,7 @@ struct ShapeView: View {
         ZStack {
             if shape.isGroupContainer {
                 ZStack {
-                    ForEach(shape.groupedShapes, id: \.id) { groupedShape in
+                    ForEach(shape.groupedShapes.filter { $0.isVisible }, id: \.id) { groupedShape in
                         if !groupedShape.isTextObject {
                             let cachedPath = Path { path in
                                 addPathElements(groupedShape.path.elements, to: &path)

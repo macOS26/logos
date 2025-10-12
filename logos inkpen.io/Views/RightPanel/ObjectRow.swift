@@ -79,7 +79,14 @@ struct ObjectRow: View {
     let groupedShapes: [VectorShape]?
     let showBottomIndicator: Bool
 
-    @State private var isGroupExpanded = false
+    private var isGroupExpanded: Bool {
+        document.settings.groupExpansionState[objectId] ?? false
+    }
+
+    private func setGroupExpanded(_ value: Bool) {
+        document.settings.groupExpansionState[objectId] = value
+        document.onSettingsChanged()
+    }
 
     init(objectType: ObjectType, objectId: UUID, name: String, isSelected: Bool, isVisible: Bool, isLocked: Bool, onSelect: @escaping (_: Bool, _: Bool) -> Void, layerIndex: Int, document: VectorDocument, groupedShapes: [VectorShape]? = nil, showBottomIndicator: Bool = false) {
         self.objectType = objectType
@@ -241,7 +248,7 @@ struct ObjectRow: View {
                         if objectType == .group {
                             Button(action: {
                                 withAnimation(.easeInOut(duration: 0.15)) {
-                                    isGroupExpanded.toggle()
+                                    setGroupExpanded(!isGroupExpanded)
                                 }
                             }) {
                                 Image(systemName: isGroupExpanded ? "chevron.down" : "chevron.right")

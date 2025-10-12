@@ -98,6 +98,7 @@ struct LayersPanel: View {
     private enum RowType: Hashable {
         case layer(index: Int)
         case object(layerIndex: Int, objectId: UUID)
+        case childObject(layerIndex: Int, parentObjectId: UUID, childShapeId: UUID)
     }
     
     // Calculate all visible rows in display order (top to bottom)
@@ -120,9 +121,18 @@ struct LayersPanel: View {
                 let layerObjects = document.unifiedObjects
                     .filter { $0.layerIndex == layerIndex }
                     .sorted { $0.orderID > $1.orderID }
-                
+
                 for object in layerObjects {
                     rows.append(.object(layerIndex: layerIndex, objectId: object.id))
+
+                    // Check if this is an expanded group and add its children
+                    if case .shape(let shape) = object.objectType,
+                       shape.isGroupContainer,
+                       document.settings.groupExpansionState[object.id] ?? false {
+                        for childShape in shape.groupedShapes {
+                            rows.append(.childObject(layerIndex: layerIndex, parentObjectId: object.id, childShapeId: childShape.id))
+                        }
+                    }
                 }
             }
         }
@@ -381,6 +391,24 @@ struct LayersPanel: View {
                     }
                 }
             }
+        case .childObject(let layerIndex, let parentObjectId, let childShapeId):
+            if !document.processedObjectsDuringDrag.contains(childShapeId) {
+                if let parentObject = document.findObject(by: parentObjectId) {
+                    if case .shape(var parentShape) = parentObject.objectType {
+                        if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
+                            parentShape.groupedShapes[childIndex].isVisible.toggle()
+                            if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == parentObjectId }) {
+                                document.unifiedObjects[objIndex] = VectorObject(
+                                    shape: parentShape,
+                                    layerIndex: layerIndex,
+                                    orderID: parentObject.orderID
+                                )
+                            }
+                            document.processedObjectsDuringDrag.insert(childShapeId)
+                        }
+                    }
+                }
+            }
         }
     }
     
@@ -405,6 +433,24 @@ struct LayersPanel: View {
                             )
                         }
                         document.processedObjectsDuringDrag.insert(objectId)
+                    }
+                }
+            }
+        case .childObject(let layerIndex, let parentObjectId, let childShapeId):
+            if !document.processedObjectsDuringDrag.contains(childShapeId) {
+                if let parentObject = document.findObject(by: parentObjectId) {
+                    if case .shape(var parentShape) = parentObject.objectType {
+                        if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
+                            parentShape.groupedShapes[childIndex].isLocked.toggle()
+                            if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == parentObjectId }) {
+                                document.unifiedObjects[objIndex] = VectorObject(
+                                    shape: parentShape,
+                                    layerIndex: layerIndex,
+                                    orderID: parentObject.orderID
+                                )
+                            }
+                            document.processedObjectsDuringDrag.insert(childShapeId)
+                        }
                     }
                 }
             }
