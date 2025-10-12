@@ -263,8 +263,6 @@ struct ProfessionalLayerRow: View {
                                     objectId: shape.id,
                                     name: shape.textContent?.isEmpty != false ? "Text" : (shape.textContent ?? "Text"),
                                     isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
-                                    isVisible: shape.isVisible,
-                                    isLocked: shape.isLocked,
                                     onSelect: { isShiftPressed, isCommandPressed in
                                         handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
                                     },
@@ -278,8 +276,6 @@ struct ProfessionalLayerRow: View {
                                     objectId: shape.id,
                                     name: shape.name,
                                     isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
-                                    isVisible: shape.isVisible,
-                                    isLocked: shape.isLocked,
                                     onSelect: { isShiftPressed, isCommandPressed in
                                         handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
                                     },
@@ -294,8 +290,6 @@ struct ProfessionalLayerRow: View {
                                     objectId: shape.id,
                                     name: shape.name,
                                     isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
-                                    isVisible: shape.isVisible,
-                                    isLocked: shape.isLocked,
                                     onSelect: { isShiftPressed, isCommandPressed in
                                         handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
                                     },

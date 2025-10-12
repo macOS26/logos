@@ -343,7 +343,7 @@ extension DrawingCanvas {
             finalPath = removeCoincidentPointsFromPath(finalPath, tolerance: 1.0)
         }
 
-        let shape = VectorShape(name: "Marker Stroke", path: finalPath, strokeStyle: finalStrokeStyle, fillStyle: fillStyle)
+        let shape = VectorShape(name: "Marker Stroke", path: finalPath, geometricType: .brushStroke, strokeStyle: finalStrokeStyle, fillStyle: fillStyle)
         guard let layerIndex = document.selectedLayerIndex else { return }
         document.addShapeToFrontOfUnifiedSystem(shape, layerIndex: layerIndex)
     }

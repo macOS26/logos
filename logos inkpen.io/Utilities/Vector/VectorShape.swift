@@ -302,6 +302,7 @@ struct FillStyle: Codable, Hashable {
 
 enum GeometricShapeType: String, CaseIterable, Codable {
     case rectangle = "Rectangle"
+    case square = "Square"
     case roundedRectangle = "Rounded Rectangle"
     case circle = "Circle"
     case ellipse = "Ellipse"
@@ -317,10 +318,12 @@ enum GeometricShapeType: String, CaseIterable, Codable {
     case diamond = "Diamond"
     case heart = "Heart"
     case stopSign = "Stop Sign"
+    case brushStroke = "Brush Stroke"
 
     var iconName: String {
         switch self {
         case .rectangle: return "rectangle"
+        case .square: return "square"
         case .roundedRectangle: return "rectangle.roundedtop"
         case .circle: return "circle"
         case .ellipse: return "oval"
@@ -336,6 +339,7 @@ enum GeometricShapeType: String, CaseIterable, Codable {
         case .diamond: return "diamond"
         case .heart: return "heart"
         case .stopSign: return "octagon.fill"
+        case .brushStroke: return "scribble.variable"
         }
     }
 }

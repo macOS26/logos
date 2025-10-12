@@ -1,6 +1,25 @@
 import SwiftUI
 
 extension DrawingCanvas {
+    private func geometricTypeForTool(_ tool: DrawingTool) -> GeometricShapeType? {
+        switch tool {
+        case .line: return .line
+        case .rectangle: return .rectangle
+        case .square: return .square
+        case .roundedRectangle: return .roundedRectangle
+        case .circle: return .circle
+        case .ellipse, .oval, .egg, .pill: return .ellipse
+        case .star: return .star
+        case .polygon, .hexagon: return .hexagon
+        case .pentagon: return .pentagon
+        case .heptagon: return .heptagon
+        case .octagon, .nonagon: return .octagon
+        case .equilateralTriangle, .rightTriangle, .acuteTriangle, .isoscelesTriangle, .cone: return .triangle
+        case .freehand, .brush, .marker: return .brushStroke
+        default: return nil
+        }
+    }
+
     private func calculateDistanceWithFallback(from point1: CGPoint, to point2: CGPoint) -> Float {
         let metalEngine = MetalComputeEngine.shared
         let distanceResult = metalEngine.calculatePointDistanceGPU(from: point1, to: point2)
@@ -955,9 +974,12 @@ extension DrawingCanvas {
                 cornerRadii = [0.0, 0.0, 0.0, 0.0]
             }
 
+            let geometricType = geometricTypeForTool(document.currentTool)
+
             let shape = VectorShape(
                 name: document.currentTool.rawValue,
                 path: path,
+                geometricType: geometricType,
                 strokeStyle: strokeStyle,
                 fillStyle: fillStyle,
                 isRoundedRectangle: true,
@@ -967,9 +989,12 @@ extension DrawingCanvas {
 
             document.addShape(shape)
         } else {
+            let geometricType = geometricTypeForTool(document.currentTool)
+
             let shape = VectorShape(
                 name: document.currentTool.rawValue,
                 path: path,
+                geometricType: geometricType,
                 strokeStyle: strokeStyle,
                 fillStyle: fillStyle
             )

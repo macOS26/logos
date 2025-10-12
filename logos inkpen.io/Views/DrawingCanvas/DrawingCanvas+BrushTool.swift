@@ -384,7 +384,7 @@ extension DrawingCanvas {
                 finalPath = VectorPath(cgPath: cleanedPath, fillRule: .winding)
             }
         }
-        let shape = VectorShape(name: "Brush Stroke", path: finalPath, strokeStyle: strokeStyle, fillStyle: fillStyle)
+        let shape = VectorShape(name: "Brush Stroke", path: finalPath, geometricType: .brushStroke, strokeStyle: strokeStyle, fillStyle: fillStyle)
         document.addShape(shape)
     }
 

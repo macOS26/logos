@@ -264,14 +264,13 @@ struct LayersPanel: View {
                 let iconSize: CGFloat = 20
                 let iconSpacing: CGFloat = 2
                 let rowPadding: CGFloat = 4
-                
+
                 let eyeIconX = rowPadding + (iconSize / 2)
                 let lockIconX = rowPadding + iconSize + iconSpacing + (iconSize / 2)
-                let rows = visibleRows
-                
+
                 // Eye icon overlay
                 ZStack {
-                    ForEach(Array(rows.enumerated()), id: \.offset) { rowIndex, rowType in
+                    ForEach(Array(visibleRows.enumerated()), id: \.offset) { rowIndex, rowType in
                         let rowY = CGFloat(rowIndex) * kLayerRowHeight
                         let iconCenterY = rowY + (kLayerRowHeight / 2)
                         
@@ -288,20 +287,20 @@ struct LayersPanel: View {
                                 document.processedLayersDuringDrag.removeAll()
                                 document.processedObjectsDuringDrag.removeAll()
                                 document.saveToUndoStack()
-                                
+
                                 let startY = value.startLocation.y
                                 let rowIndex = Int(startY / kLayerRowHeight)
-                                
-                                if rowIndex >= 0 && rowIndex < rows.count {
-                                    toggleVisibility(for: rows[rowIndex])
+
+                                if rowIndex >= 0 && rowIndex < visibleRows.count {
+                                    toggleVisibility(for: visibleRows[rowIndex])
                                 }
                             }
-                            
+
                             let currentY = value.location.y
                             let rowIndex = Int(currentY / kLayerRowHeight)
-                            
-                            if rowIndex >= 0 && rowIndex < rows.count {
-                                toggleVisibility(for: rows[rowIndex])
+
+                            if rowIndex >= 0 && rowIndex < visibleRows.count {
+                                toggleVisibility(for: visibleRows[rowIndex])
                             }
                         }
                         .onEnded { _ in
@@ -314,7 +313,7 @@ struct LayersPanel: View {
                 
                 // Lock icon overlay
                 ZStack {
-                    ForEach(Array(rows.enumerated()), id: \.offset) { rowIndex, rowType in
+                    ForEach(Array(visibleRows.enumerated()), id: \.offset) { rowIndex, rowType in
                         let rowY = CGFloat(rowIndex) * kLayerRowHeight
                         let iconCenterY = rowY + (kLayerRowHeight / 2)
                         
@@ -331,20 +330,20 @@ struct LayersPanel: View {
                                 document.processedLayersDuringDrag.removeAll()
                                 document.processedObjectsDuringDrag.removeAll()
                                 document.saveToUndoStack()
-                                
+
                                 let startY = value.startLocation.y
                                 let rowIndex = Int(startY / kLayerRowHeight)
-                                
-                                if rowIndex >= 0 && rowIndex < rows.count {
-                                    toggleLock(for: rows[rowIndex])
+
+                                if rowIndex >= 0 && rowIndex < visibleRows.count {
+                                    toggleLock(for: visibleRows[rowIndex])
                                 }
                             }
-                            
+
                             let currentY = value.location.y
                             let rowIndex = Int(currentY / kLayerRowHeight)
-                            
-                            if rowIndex >= 0 && rowIndex < rows.count {
-                                toggleLock(for: rows[rowIndex])
+
+                            if rowIndex >= 0 && rowIndex < visibleRows.count {
+                                toggleLock(for: visibleRows[rowIndex])
                             }
                         }
                         .onEnded { _ in
@@ -377,33 +376,29 @@ struct LayersPanel: View {
             }
         case .object(let layerIndex, let objectId):
             if !document.processedObjectsDuringDrag.contains(objectId) {
-                if let object = document.findObject(by: objectId) {
-                    if case .shape(var shape) = object.objectType {
+                if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
+                    if case .shape(var shape) = document.unifiedObjects[objIndex].objectType {
                         shape.isVisible.toggle()
-                        if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
-                            document.unifiedObjects[objIndex] = VectorObject(
-                                shape: shape,
-                                layerIndex: layerIndex,
-                                orderID: object.orderID
-                            )
-                        }
+                        document.unifiedObjects[objIndex] = VectorObject(
+                            shape: shape,
+                            layerIndex: layerIndex,
+                            orderID: document.unifiedObjects[objIndex].orderID
+                        )
                         document.processedObjectsDuringDrag.insert(objectId)
                     }
                 }
             }
         case .childObject(let layerIndex, let parentObjectId, let childShapeId):
             if !document.processedObjectsDuringDrag.contains(childShapeId) {
-                if let parentObject = document.findObject(by: parentObjectId) {
-                    if case .shape(var parentShape) = parentObject.objectType {
+                if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == parentObjectId }) {
+                    if case .shape(var parentShape) = document.unifiedObjects[objIndex].objectType {
                         if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
                             parentShape.groupedShapes[childIndex].isVisible.toggle()
-                            if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == parentObjectId }) {
-                                document.unifiedObjects[objIndex] = VectorObject(
-                                    shape: parentShape,
-                                    layerIndex: layerIndex,
-                                    orderID: parentObject.orderID
-                                )
-                            }
+                            document.unifiedObjects[objIndex] = VectorObject(
+                                shape: parentShape,
+                                layerIndex: layerIndex,
+                                orderID: document.unifiedObjects[objIndex].orderID
+                            )
                             document.processedObjectsDuringDrag.insert(childShapeId)
                         }
                     }
@@ -422,33 +417,29 @@ struct LayersPanel: View {
             }
         case .object(let layerIndex, let objectId):
             if !document.processedObjectsDuringDrag.contains(objectId) {
-                if let object = document.findObject(by: objectId) {
-                    if case .shape(var shape) = object.objectType {
+                if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
+                    if case .shape(var shape) = document.unifiedObjects[objIndex].objectType {
                         shape.isLocked.toggle()
-                        if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
-                            document.unifiedObjects[objIndex] = VectorObject(
-                                shape: shape,
-                                layerIndex: layerIndex,
-                                orderID: object.orderID
-                            )
-                        }
+                        document.unifiedObjects[objIndex] = VectorObject(
+                            shape: shape,
+                            layerIndex: layerIndex,
+                            orderID: document.unifiedObjects[objIndex].orderID
+                        )
                         document.processedObjectsDuringDrag.insert(objectId)
                     }
                 }
             }
         case .childObject(let layerIndex, let parentObjectId, let childShapeId):
             if !document.processedObjectsDuringDrag.contains(childShapeId) {
-                if let parentObject = document.findObject(by: parentObjectId) {
-                    if case .shape(var parentShape) = parentObject.objectType {
+                if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == parentObjectId }) {
+                    if case .shape(var parentShape) = document.unifiedObjects[objIndex].objectType {
                         if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
                             parentShape.groupedShapes[childIndex].isLocked.toggle()
-                            if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == parentObjectId }) {
-                                document.unifiedObjects[objIndex] = VectorObject(
-                                    shape: parentShape,
-                                    layerIndex: layerIndex,
-                                    orderID: parentObject.orderID
-                                )
-                            }
+                            document.unifiedObjects[objIndex] = VectorObject(
+                                shape: parentShape,
+                                layerIndex: layerIndex,
+                                orderID: document.unifiedObjects[objIndex].orderID
+                            )
                             document.processedObjectsDuringDrag.insert(childShapeId)
                         }
                     }

@@ -38,6 +38,7 @@ extension DrawingCanvas {
         activeFreehandShape = VectorShape(
             name: "Freehand Path",
             path: freehandPath!,
+            geometricType: .brushStroke,
             strokeStyle: strokeStyle,
             fillStyle: fillStyle
         )
@@ -201,6 +202,7 @@ extension DrawingCanvas {
                 let expandedShape = VectorShape(
                     name: "Freehand Path",
                     path: VectorPath(cgPath: expandedPath),
+                    geometricType: .brushStroke,
                     strokeStyle: nil,
                     fillStyle: FillStyle(
                         color: strokeStyle.color,
@@ -212,6 +214,7 @@ extension DrawingCanvas {
                 let finalShape = VectorShape(
                     name: "Freehand Path",
                     path: smoothPath,
+                    geometricType: .brushStroke,
                     strokeStyle: strokeStyle,
                     fillStyle: fillStyle
                 )
@@ -221,6 +224,7 @@ extension DrawingCanvas {
             let finalShape = VectorShape(
                 name: "Freehand Path",
                 path: smoothPath,
+                geometricType: .brushStroke,
                 strokeStyle: strokeStyle,
                 fillStyle: fillStyle
             )

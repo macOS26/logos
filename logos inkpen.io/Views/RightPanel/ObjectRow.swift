@@ -71,8 +71,6 @@ struct ObjectRow: View {
     let objectId: UUID
     let name: String
     let isSelected: Bool
-    let isVisible: Bool
-    let isLocked: Bool
     let onSelect: (_ isShiftPressed: Bool, _ isCommandPressed: Bool) -> Void
     let layerIndex: Int
     let document: VectorDocument
@@ -88,13 +86,11 @@ struct ObjectRow: View {
         document.onSettingsChanged()
     }
 
-    init(objectType: ObjectType, objectId: UUID, name: String, isSelected: Bool, isVisible: Bool, isLocked: Bool, onSelect: @escaping (_: Bool, _: Bool) -> Void, layerIndex: Int, document: VectorDocument, groupedShapes: [VectorShape]? = nil, showBottomIndicator: Bool = false) {
+    init(objectType: ObjectType, objectId: UUID, name: String, isSelected: Bool, onSelect: @escaping (_: Bool, _: Bool) -> Void, layerIndex: Int, document: VectorDocument, groupedShapes: [VectorShape]? = nil, showBottomIndicator: Bool = false) {
         self.objectType = objectType
         self.objectId = objectId
         self.name = name
         self.isSelected = isSelected
-        self.isVisible = isVisible
-        self.isLocked = isLocked
         self.onSelect = onSelect
         self.layerIndex = layerIndex
         self.document = document
@@ -104,7 +100,14 @@ struct ObjectRow: View {
     
     private var isVisibleBinding: Binding<Bool> {
         Binding(
-            get: { isVisible },
+            get: {
+                if let object = document.findObject(by: objectId) {
+                    if case .shape(let shape) = object.objectType {
+                        return shape.isVisible
+                    }
+                }
+                return true
+            },
             set: { newValue in
                 if let object = document.findObject(by: objectId) {
                     if case .shape(var shape) = object.objectType {
@@ -127,7 +130,14 @@ struct ObjectRow: View {
     
     private var isLockedBinding: Binding<Bool> {
         Binding(
-            get: { isLocked },
+            get: {
+                if let object = document.findObject(by: objectId) {
+                    if case .shape(let shape) = object.objectType {
+                        return shape.isLocked
+                    }
+                }
+                return false
+            },
             set: { newValue in
                 if let object = document.findObject(by: objectId) {
                     if case .shape(var shape) = object.objectType {
@@ -361,12 +371,12 @@ struct ObjectRow: View {
                 }
                 
                 Divider()
-                
-                Button(isVisible ? "Hide" : "Show") {
+
+                Button(isVisibleBinding.wrappedValue ? "Hide" : "Show") {
                     isVisibleBinding.wrappedValue.toggle()
                 }
-                
-                Button(isLocked ? "Unlock" : "Lock") {
+
+                Button(isLockedBinding.wrappedValue ? "Unlock" : "Lock") {
                     isLockedBinding.wrappedValue.toggle()
                 }
             }
@@ -413,8 +423,8 @@ struct ObjectRow: View {
                             
                             HStack(spacing: 4) {
                                 Color.clear.frame(width: 12, height: 12)
-                                
-                                Image(systemName: childShape.isTextObject ? "textformat" : "square")
+
+                                Image(systemName: childShape.isTextObject ? "textformat" : childIconName(for: childShape))
                                     .font(.system(size: 10))
                                     .foregroundColor(childShape.isTextObject ? .green : .blue)
                                     .frame(width: 12)
@@ -485,10 +495,30 @@ struct ObjectRow: View {
 
     private var objectIcon: String {
         switch objectType {
-        case .shape: return "square"
+        case .shape:
+            if let object = document.findObject(by: objectId),
+               case .shape(let shape) = object.objectType {
+                if shape.isWarpObject {
+                    return "waveform.path"
+                }
+                if let geometricType = shape.geometricType {
+                    return geometricType.iconName
+                }
+            }
+            return "square"
         case .text: return "textformat"
         case .group: return "square.stack"
         }
+    }
+
+    private func childIconName(for shape: VectorShape) -> String {
+        if shape.isWarpObject {
+            return "waveform.path"
+        }
+        if let geometricType = shape.geometricType {
+            return geometricType.iconName
+        }
+        return "square"
     }
 
     private var objectIconColor: Color {
