@@ -928,6 +928,21 @@ extension DrawingCanvas {
             opacity: document.defaultFillOpacity
         )
 
+        // Determine the shape name based on tool and shift key
+        var shapeName = document.currentTool.rawValue
+        var shapeGeometricType = geometricTypeForTool(document.currentTool)
+
+        // If rectangle tool with shift pressed, name it "square"
+        if document.currentTool == .rectangle && isShiftPressed {
+            shapeName = "square"
+            shapeGeometricType = .square
+        }
+        // If ellipse tool with shift pressed, name it "circle"
+        else if document.currentTool == .ellipse && isShiftPressed {
+            shapeName = "circle"
+            shapeGeometricType = .circle
+        }
+
         if document.currentTool == .rectangle || document.currentTool == .square ||
            document.currentTool == .roundedRectangle || document.currentTool == .pill {
 
@@ -974,12 +989,10 @@ extension DrawingCanvas {
                 cornerRadii = [0.0, 0.0, 0.0, 0.0]
             }
 
-            let geometricType = geometricTypeForTool(document.currentTool)
-
             let shape = VectorShape(
-                name: document.currentTool.rawValue,
+                name: shapeName,
                 path: path,
-                geometricType: geometricType,
+                geometricType: shapeGeometricType,
                 strokeStyle: strokeStyle,
                 fillStyle: fillStyle,
                 isRoundedRectangle: true,
@@ -989,12 +1002,10 @@ extension DrawingCanvas {
 
             document.addShape(shape)
         } else {
-            let geometricType = geometricTypeForTool(document.currentTool)
-
             let shape = VectorShape(
-                name: document.currentTool.rawValue,
+                name: shapeName,
                 path: path,
-                geometricType: geometricType,
+                geometricType: shapeGeometricType,
                 strokeStyle: strokeStyle,
                 fillStyle: fillStyle
             )
