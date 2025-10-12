@@ -276,7 +276,6 @@ struct ObjectRow: View {
                             Image(systemName: objectIcon)
                                 .font(.system(size: 10))
                                 .foregroundColor(objectIconColor)
-                                .rotationEffect(.degrees(objectIcon == "hexagon" ? 90 : 0))
                                 .frame(width: 12)
                             
                             Circle()
@@ -428,7 +427,6 @@ struct ObjectRow: View {
                                 Image(systemName: childShape.isTextObject ? "textformat" : childIconName(for: childShape))
                                     .font(.system(size: 10))
                                     .foregroundColor(childShape.isTextObject ? .green : .blue)
-                                    .rotationEffect(.degrees(childIconName(for: childShape) == "hexagon" ? 90 : 0))
                                     .frame(width: 12)
                                 
                                 Circle()

@@ -330,7 +330,7 @@ enum GeometricShapeType: String, CaseIterable, Codable {
         case .triangle: return "triangle"
         case .pentagon: return "pentagon"
         case .hexagon: return "hexagon"
-        case .heptagon: return "octagon"  // SF Symbols doesn't have heptagon, using octagon as fallback
+        case .heptagon: return "heptagon"
         case .octagon: return "octagon"
         case .star: return "star"
         case .polygon: return "octagon"
