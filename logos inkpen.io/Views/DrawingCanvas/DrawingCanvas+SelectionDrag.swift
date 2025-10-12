@@ -45,24 +45,18 @@ extension DrawingCanvas {
         for unifiedObject in selectedObjects {
             switch unifiedObject.objectType {
             case .shape(let shape):
-                Log.error("🚨 DRAG DEBUG: Processing shape id=\(shape.id), isTextObject=\(shape.isTextObject)", category: .debug)
 
                 if shape.isTextObject {
                     if let textObject = document.findText(by: shape.id) {
-                        Log.error("🚨 DRAG DEBUG: Found textObject position=\(textObject.position), bounds=\(textObject.bounds)", category: .debug)
                         let centerX = textObject.position.x + textObject.bounds.width/2
                         let centerY = textObject.position.y + textObject.bounds.height/2
                         let calculatedCenter = CGPoint(x: centerX, y: centerY)
-                        Log.error("🚨 DRAG DEBUG: Calculated text center=\(calculatedCenter)", category: .debug)
                         initialObjectPositions[unifiedObject.id] = calculatedCenter
                     } else {
-                        Log.error("🚨 DRAG DEBUG: NO textObject found! Using shape fallback", category: .debug)
-                        Log.error("🚨 DRAG DEBUG: Shape transform=\(shape.transform), bounds=\(shape.bounds)", category: .debug)
                         let bounds = shape.bounds
                         let centerX = shape.transform.tx + bounds.width/2
                         let centerY = shape.transform.ty + bounds.height/2
                         let fallbackCenter = CGPoint(x: centerX, y: centerY)
-                        Log.error("🚨 DRAG DEBUG: Fallback text center=\(fallbackCenter)", category: .debug)
                         initialObjectPositions[unifiedObject.id] = fallbackCenter
                     }
                 } else {
@@ -72,7 +66,6 @@ extension DrawingCanvas {
                     initialObjectPositions[unifiedObject.id] = CGPoint(x: centerX, y: centerY)
                 }
 
-                Log.error("🚨 DRAG DEBUG: Storing initial transform=\(shape.transform)", category: .debug)
                 initialObjectTransforms[unifiedObject.id] = shape.transform
             }
         }

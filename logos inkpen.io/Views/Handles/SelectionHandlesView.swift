@@ -43,25 +43,23 @@ struct SelectionHandlesView: View {
                                     isEnvelopeTool: false
                                 )
                             } else {
-                                if document.currentTool == .selection {
-                                    if isCommandPressed {
-                                        PathOutline(
-                                            shape: shape,
-                                            zoomLevel: document.zoomLevel,
-                                            canvasOffset: document.canvasOffset
-                                        )
-                                    } else {
-                                        TransformBoxHandles(
-                                            document: document,
-                                            shape: shape,
-                                            zoomLevel: document.zoomLevel,
-                                            canvasOffset: document.canvasOffset,
-                                            isShiftPressed: isShiftPressed,
-                                            transformOrigin: document.transformOrigin
-                                        )
-                                        .offset(x: dragPreviewDelta.x * document.zoomLevel,
-                                                y: dragPreviewDelta.y * document.zoomLevel)
-                                    }
+                                let isShapeDrawingTool = [.rectangle, .square, .roundedRectangle, .pill,
+                                                         .circle, .ellipse, .oval, .egg, .cone,
+                                                         .equilateralTriangle, .rightTriangle, .acuteTriangle, .isoscelesTriangle,
+                                                         .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon].contains(document.currentTool)
+
+                                if document.currentTool == .selection || isShapeDrawingTool {
+                                    TransformBoxHandles(
+                                        document: document,
+                                        shape: shape,
+                                        zoomLevel: document.zoomLevel,
+                                        canvasOffset: document.canvasOffset,
+                                        isShiftPressed: isShiftPressed,
+                                        transformOrigin: document.transformOrigin,
+                                        strokeColor: (isCommandPressed && document.currentTool == .selection) ? Color.blue : Color.black.opacity(0.5)
+                                    )
+                                    .offset(x: dragPreviewDelta.x * document.zoomLevel,
+                                            y: dragPreviewDelta.y * document.zoomLevel)
                                 } else if document.currentTool == .scale {
                                     ScaleHandles(
                                         document: document,
@@ -116,25 +114,23 @@ struct SelectionHandlesView: View {
                     isEnvelopeTool: false
                 )
             } else {
-                if document.currentTool == .selection {
-                    if isCommandPressed {
-                        PathOutline(
-                            shape: shape,
-                            zoomLevel: document.zoomLevel,
-                            canvasOffset: document.canvasOffset
-                        )
-                    } else {
-                        TransformBoxHandles(
-                            document: document,
-                            shape: shape,
-                            zoomLevel: document.zoomLevel,
-                            canvasOffset: document.canvasOffset,
-                            isShiftPressed: isShiftPressed,
-                            transformOrigin: document.transformOrigin
-                        )
-                        .offset(x: dragPreviewDelta.x * document.zoomLevel,
-                                y: dragPreviewDelta.y * document.zoomLevel)
-                    }
+                let isShapeDrawingTool = [.rectangle, .square, .roundedRectangle, .pill,
+                                         .circle, .ellipse, .oval, .egg, .cone,
+                                         .equilateralTriangle, .rightTriangle, .acuteTriangle, .isoscelesTriangle,
+                                         .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon].contains(document.currentTool)
+
+                if document.currentTool == .selection || isShapeDrawingTool {
+                    TransformBoxHandles(
+                        document: document,
+                        shape: shape,
+                        zoomLevel: document.zoomLevel,
+                        canvasOffset: document.canvasOffset,
+                        isShiftPressed: isShiftPressed,
+                        transformOrigin: document.transformOrigin,
+                        strokeColor: (isCommandPressed && document.currentTool == .selection) ? Color.blue : Color.black.opacity(0.5)
+                    )
+                    .offset(x: dragPreviewDelta.x * document.zoomLevel,
+                            y: dragPreviewDelta.y * document.zoomLevel)
                 } else if document.currentTool == .scale {
                     ScaleHandles(
                         document: document,
