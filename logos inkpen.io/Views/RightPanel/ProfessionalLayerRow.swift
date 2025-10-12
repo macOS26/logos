@@ -303,24 +303,15 @@ struct ProfessionalLayerRow: View {
                 }
             }
         }
-        .if(layer.name != "Canvas" && layer.name != "Pasteboard") { view in
-            view.draggable(DraggableLayer(
-                layerIndex: layerIndex,
-                layerId: layer.id
-            )) {
-                HStack(spacing: 4) {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(layerColor.wrappedValue)
-                        .frame(width: 4, height: 16)
-                    Text(layer.name)
-                        .font(.system(size: 11, weight: .medium))
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.accentColor.opacity(0.1))
-                .cornerRadius(6)
-                .opacity(0.9)
+        .dropDestination(for: DraggableVectorObject.self) { items, location in
+            guard let droppedObject = items.first else { return false }
+
+            // Move object to this layer
+            withAnimation(.easeOut(duration: 0.2)) {
+                document.moveObjectToLayer(objectId: droppedObject.objectId, targetLayerIndex: layerIndex)
             }
+
+            return true
         }
         .dropDestination(for: DraggableLayer.self) { items, location in
             guard let droppedLayer = items.first else { return false }
@@ -343,9 +334,30 @@ struct ProfessionalLayerRow: View {
                 targetLayerId = layer.id
             }
 
-            document.reorderLayer(sourceLayerId: droppedLayer.layerId, targetLayerId: targetLayerId)
+            withAnimation(.easeOut(duration: 0.2)) {
+                document.reorderLayer(sourceLayerId: droppedLayer.layerId, targetLayerId: targetLayerId)
+            }
 
             return true
+        }
+        .if(layer.name != "Canvas" && layer.name != "Pasteboard") { view in
+            view.draggable(DraggableLayer(
+                layerIndex: layerIndex,
+                layerId: layer.id
+            )) {
+                HStack(spacing: 4) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(layerColor.wrappedValue)
+                        .frame(width: 4, height: 16)
+                    Text(layer.name)
+                        .font(.system(size: 11, weight: .medium))
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.accentColor.opacity(0.1))
+                .cornerRadius(6)
+                .opacity(0.9)
+            }
         }
         .background(Color.clear)
     }
