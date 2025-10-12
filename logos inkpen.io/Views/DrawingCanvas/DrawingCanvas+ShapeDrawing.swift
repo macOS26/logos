@@ -929,19 +929,18 @@ extension DrawingCanvas {
         )
 
         // Determine the shape name based on tool and shift key
-        var shapeName = document.currentTool.rawValue
         var shapeGeometricType = geometricTypeForTool(document.currentTool)
 
-        // If rectangle tool with shift pressed, name it "square"
+        // If rectangle tool with shift pressed, use square type
         if document.currentTool == .rectangle && isShiftPressed {
-            shapeName = "square"
             shapeGeometricType = .square
         }
-        // If ellipse tool with shift pressed, name it "circle"
+        // If ellipse tool with shift pressed, use circle type
         else if document.currentTool == .ellipse && isShiftPressed {
-            shapeName = "circle"
             shapeGeometricType = .circle
         }
+
+        let shapeName = shapeGeometricType?.rawValue ?? document.currentTool.rawValue
 
         if document.currentTool == .rectangle || document.currentTool == .square ||
            document.currentTool == .roundedRectangle || document.currentTool == .pill {
