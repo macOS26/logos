@@ -2,6 +2,37 @@ import SwiftUI
 import UniformTypeIdentifiers
 import Combine
 
+// Shared layer color palette
+extension Color {
+    static let layerColorPalette: [(name: String, color: Color)] = [
+        ("Maroon", Color(.displayP3, red: 0.75, green: 0.2, blue: 0.2)),
+        ("Red", Color.red),
+        ("Vermillion", Color(.displayP3, red: 0.8, green: 0.38, blue: 0.2)),
+        ("Rust", Color(.displayP3, red: 0.85, green: 0.5, blue: 0.15)),
+        ("Orange", Color.orange),
+        ("Amber", Color(.displayP3, red: 0.82, green: 0.62, blue: 0.2)),
+        ("Yellow", Color.yellow),
+        ("Chartreuse", Color(.displayP3, red: 0.55, green: 0.72, blue: 0.2)),
+        ("Lime", Color(.displayP3, red: 0.4, green: 0.68, blue: 0.28)),
+        ("Green", Color.green),
+        ("Emerald", Color(.displayP3, red: 0.2, green: 0.65, blue: 0.3)),
+        ("Spring", Color(.displayP3, red: 0.2, green: 0.68, blue: 0.5)),
+        ("Ocean", Color(.displayP3, red: 0.15, green: 0.65, blue: 0.72)),
+        ("Cyan", Color.cyan),
+        ("Sky", Color(.displayP3, red: 0.32, green: 0.58, blue: 0.82)),
+        ("Blue", Color.blue),
+        ("Azure", Color(.displayP3, red: 0.18, green: 0.4, blue: 0.78)),
+        ("Indigo", Color(.displayP3, red: 0.2, green: 0.25, blue: 0.75)),
+        ("Violet", Color(.displayP3, red: 0.4, green: 0.25, blue: 0.7)),
+        ("Orchid", Color(.displayP3, red: 0.55, green: 0.25, blue: 0.65)),
+        ("Purple", Color.purple),
+        ("Magenta", Color(.displayP3, red: 0.7, green: 0.2, blue: 0.5)),
+        ("Pink", Color.pink),
+        ("Rose", Color(.displayP3, red: 0.8, green: 0.3, blue: 0.4)),
+        ("Gray", Color.gray)
+    ]
+}
+
 struct LayerLabelStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -178,7 +209,7 @@ struct LayersPanel: View {
                             document.layers[layerIndex].color = newColor
                         }
                     ),
-                    availableColors: availableLayerColors()
+                    availableColors: Color.layerColorPalette
                 )
                 
                 Spacer()
@@ -305,27 +336,6 @@ struct LayersPanel: View {
                 }
             }
         }
-    }
-
-    private func availableLayerColors() -> [(name: String, color: Color)] {
-        return [
-            ("Red", Color(.displayP3, red: 0.75, green: 0.2, blue: 0.2)),
-            ("Vermillion", Color(.displayP3, red: 0.8, green: 0.38, blue: 0.2)),
-            ("Orange", Color(.displayP3, red: 0.85, green: 0.5, blue: 0.15)),
-            ("Amber", Color(.displayP3, red: 0.82, green: 0.62, blue: 0.2)),
-            ("Chartreuse", Color(.displayP3, red: 0.55, green: 0.72, blue: 0.2)),
-            ("Lime", Color(.displayP3, red: 0.4, green: 0.68, blue: 0.28)),
-            ("Green", Color(.displayP3, red: 0.2, green: 0.65, blue: 0.3)),
-            ("Spring", Color(.displayP3, red: 0.2, green: 0.68, blue: 0.5)),
-            ("Cyan", Color(.displayP3, red: 0.15, green: 0.65, blue: 0.72)),
-            ("Sky", Color(.displayP3, red: 0.32, green: 0.58, blue: 0.82)),
-            ("Azure", Color(.displayP3, red: 0.18, green: 0.4, blue: 0.78)),
-            ("Blue", Color(.displayP3, red: 0.2, green: 0.25, blue: 0.75)),
-            ("Violet", Color(.displayP3, red: 0.4, green: 0.25, blue: 0.7)),
-            ("Purple", Color(.displayP3, red: 0.55, green: 0.25, blue: 0.65)),
-            ("Magenta", Color(.displayP3, red: 0.7, green: 0.2, blue: 0.5)),
-            ("Rose", Color(.displayP3, red: 0.8, green: 0.3, blue: 0.4))
-        ]
     }
 
     private func layerRowContent(for layerIndex: Int) -> some View {

@@ -165,7 +165,7 @@ struct ProfessionalLayerRow: View {
                 .buttonStyle(PlainButtonStyle())
                 .popover(isPresented: $showColorPicker, arrowEdge: .bottom) {
                     VStack(alignment: .leading, spacing: 2) {
-                        ForEach(availableLayerColors(), id: \.name) { colorOption in
+                        ForEach(Color.layerColorPalette, id: \.name) { colorOption in
                             Button(action: {
                                 layerColor.wrappedValue = colorOption.color
                                 showColorPicker = false
@@ -309,32 +309,48 @@ struct ProfessionalLayerRow: View {
                 }
             }
         }
-        .draggable(DraggableLayer(
-            layerIndex: layerIndex,
-            layerId: layer.id
-        )) {
-            HStack(spacing: 4) {
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(layerColor.wrappedValue)
-                    .frame(width: 4, height: 16)
-                Text(layer.name)
-                    .font(.system(size: 11, weight: .medium))
+        .if(layer.name != "Canvas" && layer.name != "Pasteboard") { view in
+            view.draggable(DraggableLayer(
+                layerIndex: layerIndex,
+                layerId: layer.id
+            )) {
+                HStack(spacing: 4) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(layerColor.wrappedValue)
+                        .frame(width: 4, height: 16)
+                    Text(layer.name)
+                        .font(.system(size: 11, weight: .medium))
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.accentColor.opacity(0.1))
+                .cornerRadius(6)
+                .opacity(0.9)
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(Color.accentColor.opacity(0.1))
-            .cornerRadius(6)
-            .opacity(0.9)
         }
         .dropDestination(for: DraggableLayer.self) { items, location in
             guard let droppedLayer = items.first else { return false }
 
+            // Don't allow dropping on self
             if droppedLayer.layerId == layer.id {
                 return false
             }
 
+            // If trying to drop at indices 0 or 1, redirect to index 2 (first allowed position)
+            let targetLayerId: UUID
+            if layerIndex <= 1 {
+                // Place at index 2 (above Canvas/Pasteboard)
+                if document.layers.count > 2 {
+                    targetLayerId = document.layers[2].id
+                } else {
+                    return false
+                }
+            } else {
+                targetLayerId = layer.id
+            }
+
             withAnimation(.easeOut(duration: 0.2)) {
-                document.reorderLayer(sourceLayerId: droppedLayer.layerId, targetLayerId: layer.id)
+                document.reorderLayer(sourceLayerId: droppedLayer.layerId, targetLayerId: targetLayerId)
             }
 
             return true
@@ -342,27 +358,6 @@ struct ProfessionalLayerRow: View {
         .background(Color.clear)
     }
 
-
-    private func availableLayerColors() -> [(name: String, color: Color)] {
-        return [
-            ("Red", Color(hue: 0/360, saturation: 1.0, brightness: 1.0)),
-            ("Vermillion", Color(hue: 22.5/360, saturation: 1.0, brightness: 1.0)),
-            ("Orange", Color(hue: 45/360, saturation: 1.0, brightness: 1.0)),
-            ("Amber", Color(hue: 67.5/360, saturation: 1.0, brightness: 1.0)),
-            ("Chartreuse", Color(hue: 90/360, saturation: 1.0, brightness: 1.0)),
-            ("Lime", Color(hue: 112.5/360, saturation: 0.8, brightness: 0.75)),
-            ("Green", Color(hue: 135/360, saturation: 0.7, brightness: 0.65)),
-            ("Spring", Color(hue: 165/360, saturation: 0.6, brightness: 0.6)),
-            ("Cyan", Color(hue: 190/360, saturation: 0.7, brightness: 0.85)),
-            ("Sky", Color(hue: 202.5/360, saturation: 0.85, brightness: 0.85)),
-            ("Azure", Color(hue: 225/360, saturation: 0.9, brightness: 0.9)),
-            ("Blue", Color(hue: 240/360, saturation: 0.8, brightness: 0.95)),
-            ("Violet", Color(hue: 270/360, saturation: 0.75, brightness: 0.75)),
-            ("Purple", Color(hue: 292.5/360, saturation: 0.85, brightness: 0.85)),
-            ("Magenta", Color(hue: 315/360, saturation: 1.0, brightness: 1.0)),
-            ("Rose", Color(hue: 337.5/360, saturation: 1.0, brightness: 1.0))
-        ]
-    }
 
     private func handleObjectSelection(_ objectID: UUID, layerIndex: Int, isShiftPressed: Bool, isCommandPressed: Bool) {
         guard document.findObject(by: objectID) != nil else { return }
