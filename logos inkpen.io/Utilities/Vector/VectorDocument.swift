@@ -760,6 +760,47 @@ class VectorDocument: ObservableObject, Codable {
         loadStrokeStyleDefaults()
 
         migrateLegacyTextObjects()
+
+        // Force UI update after document load by toggling ALL layer items
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            guard let self = self else { return }
+
+            // Force refresh by toggling visibility on any objects we can find
+            var foundObjectToToggle = false
+
+            for layerIndex in self.layers.indices {
+                let objects = self.unifiedObjects.filter { $0.layerIndex == layerIndex }
+                if let firstObject = objects.first {
+                    if case .shape(var shape) = firstObject.objectType {
+                        let wasVisible = shape.isVisible
+                        shape.isVisible = !wasVisible
+                        if let index = self.unifiedObjects.firstIndex(where: { $0.id == firstObject.id }) {
+                            self.unifiedObjects[index] = VectorObject(
+                                shape: shape,
+                                layerIndex: layerIndex,
+                                orderID: firstObject.orderID
+                            )
+                        }
+                        // Toggle it back
+                        shape.isVisible = wasVisible
+                        if let index = self.unifiedObjects.firstIndex(where: { $0.id == firstObject.id }) {
+                            self.unifiedObjects[index] = VectorObject(
+                                shape: shape,
+                                layerIndex: layerIndex,
+                                orderID: firstObject.orderID
+                            )
+                        }
+                        foundObjectToToggle = true
+                        break // Only need to toggle one object
+                    }
+                }
+            }
+
+            // If no objects found to toggle, just trigger objectWillChange
+            if !foundObjectToToggle {
+                self.objectWillChange.send()
+            }
+        }
     }
 
 

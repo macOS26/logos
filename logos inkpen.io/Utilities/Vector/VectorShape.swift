@@ -992,13 +992,8 @@ extension VectorLayer: Codable {
 
 
 enum DraggableItem: Codable, Transferable {
-    case vectorObject(objectType: VectorObjectType, objectId: UUID, sourceLayerIndex: Int)
-    case layer(layerIndex: Int, layerId: UUID)
-
-    enum VectorObjectType: String, Codable {
-        case shape = "shape"
-        case text = "text"
-    }
+    case vectorObject(DraggableVectorObject)
+    case layer(DraggableLayer)
 
     static var transferRepresentation: some TransferRepresentation {
         CodableRepresentation(contentType: .draggableItem)

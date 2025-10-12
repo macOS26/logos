@@ -82,8 +82,9 @@ struct ObjectRow: View {
     }
 
     private func setGroupExpanded(_ value: Bool) {
-        document.settings.groupExpansionState[objectId] = value
-        document.onSettingsChanged()
+        var updatedSettings = document.settings
+        updatedSettings.groupExpansionState[objectId] = value
+        document.settings = updatedSettings
     }
 
     init(objectType: ObjectType, objectId: UUID, name: String, isSelected: Bool, onSelect: @escaping (_: Bool, _: Bool) -> Void, layerIndex: Int, document: VectorDocument, groupedShapes: [VectorShape]? = nil, showBottomIndicator: Bool = false) {
@@ -312,9 +313,11 @@ struct ObjectRow: View {
                 .padding(.horizontal, 4)
             }
             .draggable(DraggableItem.vectorObject(
-                objectType: objectType == .text ? .text : .shape,
-                objectId: objectId,
-                sourceLayerIndex: layerIndex
+                DraggableVectorObject(
+                    objectType: objectType == .text ? .text : .shape,
+                    objectId: objectId,
+                    sourceLayerIndex: layerIndex
+                )
             )) {
                 HStack(spacing: 4) {
                     Image(systemName: objectIcon)
@@ -333,9 +336,12 @@ struct ObjectRow: View {
                 guard let droppedItem = items.first else { return false }
 
                 // Only handle vectorObject drops on objects
-                guard case .vectorObject(_, let droppedObjectId, let sourceLayerIndex) = droppedItem else {
+                guard case .vectorObject(let vectorObj) = droppedItem else {
                     return false
                 }
+
+                let droppedObjectId = vectorObj.objectId
+                let sourceLayerIndex = vectorObj.sourceLayerIndex
 
                 if droppedObjectId == objectId {
                     return false

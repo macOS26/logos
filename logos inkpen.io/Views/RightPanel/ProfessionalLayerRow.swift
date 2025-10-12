@@ -10,6 +10,10 @@ struct ProfessionalLayerRow: View {
     @State private var editedName: String = ""
     @State private var showColorPicker: Bool = false
 
+    // Store expansion state locally and sync with document
+    @State private var isExpanded: Bool
+    @State private var layerObjects: [VectorObject] = []
+
     private var isVisibleBinding: Binding<Bool> {
         Binding(
             get: { document.layers[layerIndex].isVisible },
@@ -34,16 +38,29 @@ struct ProfessionalLayerRow: View {
         )
     }
 
-    private var isExpanded: Bool {
+    init(layerIndex: Int, layer: VectorLayer, document: VectorDocument) {
+        self.layerIndex = layerIndex
+        self.layer = layer
+        self.document = document
+
+        // Initialize expansion state from document
         if layerIndex <= 1 {
-            return document.settings.layerExpansionState[layer.id] ?? false
+            _isExpanded = State(initialValue: document.settings.layerExpansionState[layer.id] ?? false)
+        } else {
+            _isExpanded = State(initialValue: document.settings.layerExpansionState[layer.id] ?? true)
         }
-        return document.settings.layerExpansionState[layer.id] ?? true
+
+        // Initialize layer objects
+        _layerObjects = State(initialValue: document.unifiedObjects
+            .filter { $0.layerIndex == layerIndex }
+            .sorted { $0.orderID > $1.orderID })
     }
 
     private func setExpanded(_ value: Bool) {
-        document.settings.layerExpansionState[layer.id] = value
-        document.onSettingsChanged()
+        isExpanded = value
+        var updatedSettings = document.settings
+        updatedSettings.layerExpansionState[layer.id] = value
+        document.settings = updatedSettings
     }
 
     private var layerColor: Binding<Color> {
@@ -132,11 +149,12 @@ struct ProfessionalLayerRow: View {
                         Button(action: {
                             if NSEvent.modifierFlags.contains(.option) {
                                 withAnimation(.easeInOut(duration: 0.2)) {
+                                    var updatedSettings = document.settings
                                     let shouldExpand = !isExpanded
                                     for layer in document.layers {
-                                        document.settings.layerExpansionState[layer.id] = shouldExpand
+                                        updatedSettings.layerExpansionState[layer.id] = shouldExpand
                                     }
-                                    document.onSettingsChanged()
+                                    document.settings = updatedSettings
                                 }
                             } else {
                                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -245,14 +263,11 @@ struct ProfessionalLayerRow: View {
                 }
                 .padding(.horizontal, 4)
             }
-            
-            let layerObjects = document.unifiedObjects
-                .filter { $0.layerIndex == layerIndex }
-                .sorted { $0.orderID > $1.orderID }
-            
+
             if isExpanded && !layerObjects.isEmpty {
                 VStack(spacing: 0) {
-                    ForEach(Array(layerObjects.enumerated()), id: \.element.id) { index, unifiedObject in
+                    ForEach(layerObjects, id: \.id) { unifiedObject in
+                        let index = layerObjects.firstIndex(where: { $0.id == unifiedObject.id }) ?? 0
                         switch unifiedObject.objectType {
                         case .shape(let shape):
                             let isLast = index == layerObjects.count - 1
@@ -302,10 +317,23 @@ struct ProfessionalLayerRow: View {
                 }
             }
         }
+        .onAppear {
+            // Force refresh layer objects when view appears
+            layerObjects = document.unifiedObjects
+                .filter { $0.layerIndex == layerIndex }
+                .sorted { $0.orderID > $1.orderID }
+        }
+        .onChange(of: document.unifiedObjects) { _, _ in
+            layerObjects = document.unifiedObjects
+                .filter { $0.layerIndex == layerIndex }
+                .sorted { $0.orderID > $1.orderID }
+        }
         .if(layer.name != "Canvas" && layer.name != "Pasteboard") { view in
             view.draggable(DraggableItem.layer(
-                layerIndex: layerIndex,
-                layerId: layer.id
+                DraggableLayer(
+                    layerIndex: layerIndex,
+                    layerId: layer.id
+                )
             )) {
                 HStack(spacing: 4) {
                     RoundedRectangle(cornerRadius: 2)
@@ -325,7 +353,9 @@ struct ProfessionalLayerRow: View {
             guard let droppedItem = items.first else { return false }
 
             switch droppedItem {
-            case .layer(let droppedLayerIndex, let droppedLayerId):
+            case .layer(let draggableLayer):
+                let droppedLayerId = draggableLayer.layerId
+
                 // Don't allow dropping on self
                 if droppedLayerId == layer.id {
                     return false
@@ -349,10 +379,10 @@ struct ProfessionalLayerRow: View {
                 }
                 return true
 
-            case .vectorObject(_, let objectId, _):
+            case .vectorObject(let vectorObj):
                 // Move object to this layer
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    document.moveObjectToLayer(objectId: objectId, targetLayerIndex: layerIndex)
+                    document.moveObjectToLayer(objectId: vectorObj.objectId, targetLayerIndex: layerIndex)
                 }
                 return true
             }
