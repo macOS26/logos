@@ -276,6 +276,7 @@ struct ObjectRow: View {
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 4)
                     .padding(.vertical, 3)
+                    .frame(height: kLayerRowHeight)
                     .background(
                         RoundedRectangle(cornerRadius: 6)
                             .fill(isSelected ? Color.accentColor.opacity(0.08) : Color.clear)
@@ -425,6 +426,7 @@ struct ObjectRow: View {
                             .frame(maxWidth: .infinity)
                             .padding(.horizontal, 4)
                             .padding(.vertical, 3)
+                            .frame(height: kLayerRowHeight)
                             .background(isChildSelected ? Color.blue.opacity(0.08) : Color.clear)
                         }
                         .padding(.horizontal, 4)

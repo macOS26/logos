@@ -35,6 +35,7 @@ class VectorDocument: ObservableObject, Codable {
     @Published var isDraggingVisibility: Bool = false
     @Published var isDraggingLock: Bool = false
     @Published var processedLayersDuringDrag: Set<Int> = []
+    @Published var processedObjectsDuringDrag: Set<UUID> = []
 
     var rgbSwatches: [VectorColor] {
         var swatches = ColorManager.shared.colorDefaults.rgbSwatches

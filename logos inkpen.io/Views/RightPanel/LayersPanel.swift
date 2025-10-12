@@ -93,43 +93,59 @@ struct LayersPanel: View {
     @State private var renamingLayerIndex: Int?
     @State private var newLayerName: String = ""
     @State private var showColorPicker: Bool = false
-
-    private let layerRowHeight: CGFloat = 22.02
-
-    private var allLayersHaveUniformHeight: Bool {
-        for (index, layer) in document.layers.enumerated() {
-            let isExpanded = if index <= 1 {
+    
+    // Structure to represent each visible row in the layers panel
+    private enum RowType: Hashable {
+        case layer(index: Int)
+        case object(layerIndex: Int, objectId: UUID)
+    }
+    
+    // Calculate all visible rows in display order (top to bottom)
+    private var visibleRows: [RowType] {
+        var rows: [RowType] = []
+        
+        // Iterate through layers in reverse order (as they appear in UI)
+        for (layerIndex, layer) in document.layers.enumerated().reversed() {
+            rows.append(.layer(index: layerIndex))
+            
+            // Check if layer is expanded
+            let isExpanded = if layerIndex <= 1 {
                 document.settings.layerExpansionState[layer.id] ?? false
             } else {
                 document.settings.layerExpansionState[layer.id] ?? true
             }
-
+            
+            // Add object rows if expanded
             if isExpanded {
-                let hasObjects = document.unifiedObjects.contains { $0.layerIndex == index }
-                if hasObjects {
-                    return false
+                let layerObjects = document.unifiedObjects
+                    .filter { $0.layerIndex == layerIndex }
+                    .sorted { $0.orderID > $1.orderID }
+                
+                for object in layerObjects {
+                    rows.append(.object(layerIndex: layerIndex, objectId: object.id))
                 }
             }
         }
-        return true
+        
+        return rows
     }
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             layersHeader
             Divider().padding(.horizontal, 6.5)
-
+            
             if let selectedIndex = document.selectedLayerIndex, selectedIndex < document.layers.count {
                 layerControlsSection(for: selectedIndex)
                 Divider().padding(.horizontal, 6.5)
                     .frame(width: 55)
             }
-
+            
             layersScrollContent
             Spacer()
         }
     }
-
+    
     private var layersHeader: some View {
         HStack {
             Text("Layer")
@@ -149,13 +165,13 @@ struct LayersPanel: View {
         .padding(.top, 8)
         .padding(.bottom, 8)
     }
-
+    
     private func layerControlsSection(for layerIndex: Int) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Text("Opacity")
                     .layerControlLabel()
-
+                
                 Slider(
                     value: Binding(
                         get: { document.layers[layerIndex].opacity },
@@ -173,15 +189,15 @@ struct LayersPanel: View {
                     }
                 )
                 .frame(maxWidth: .infinity)
-
+                
                 Text("\(Int(document.layers[layerIndex].opacity * 100))%")
                     .layerPercentage()
             }
-
+            
             HStack(spacing: 8) {
                 Text("Blend")
                     .layerControlLabel()
-
+                
                 Picker("", selection: Binding(
                     get: { document.layers[layerIndex].blendMode },
                     set: { newValue in
@@ -195,12 +211,12 @@ struct LayersPanel: View {
                         Text(mode.displayName).tag(mode)
                     }
                 }
+                .frame(width: 100)
                 .labelsHidden()
                 .pickerStyle(.menu)
-
-                Spacer()
-                    .frame(width: 0)
-
+                
+                Spacer(minLength: 10)
+                    .frame(width: 10)
                 ColorSwatchButton(
                     color: Binding(
                         get: { document.layers[layerIndex].color },
@@ -211,18 +227,19 @@ struct LayersPanel: View {
                     ),
                     availableColors: Color.layerColorPalette
                 )
-                
-                Spacer()
-
-                Text("Swatch")
-                    .offset(x: 10)
+                .offset(x:12)
+                //.padding(.trailing)
+                Text("Color")
                     .layerControlLabel()
+                    .multilineTextAlignment(.trailing)
+                    //.padding(.leading)
+                    .offset(x:20)
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
     }
-
+    
     private var layersScrollContent: some View {
         ScrollView(.vertical, showsIndicators: true) {
             ZStack(alignment: .topLeading) {
@@ -232,112 +249,106 @@ struct LayersPanel: View {
                     }
                 }
                 .padding(.horizontal, 4)
-
-                if allLayersHaveUniformHeight {
-                    let iconSize: CGFloat = 20
-                    let iconSpacing: CGFloat = 2
-                    let rowPadding: CGFloat = 4
-
-                    let eyeIconX = rowPadding + (iconSize / 2)
-                    let lockIconX = rowPadding + iconSize + iconSpacing + (iconSize / 2)
-
-                    ZStack {
-                        ForEach(0..<document.layers.count, id: \.self) { index in
-                            let rowY = CGFloat(document.layers.count - 1 - index) * layerRowHeight
-                            let iconCenterY = rowY + (layerRowHeight / 2)
-
-                            Color.red.opacity(0.0)
-                                .dragTarget()
-                                .position(x: eyeIconX, y: iconCenterY)
-                        }
+                
+                // Overlay system for eye and lock icons
+                let iconSize: CGFloat = 20
+                let iconSpacing: CGFloat = 2
+                let rowPadding: CGFloat = 4
+                
+                let eyeIconX = rowPadding + (iconSize / 2)
+                let lockIconX = rowPadding + iconSize + iconSpacing + (iconSize / 2)
+                let rows = visibleRows
+                
+                // Eye icon overlay
+                ZStack {
+                    ForEach(Array(rows.enumerated()), id: \.offset) { rowIndex, rowType in
+                        let rowY = CGFloat(rowIndex) * kLayerRowHeight
+                        let iconCenterY = rowY + (kLayerRowHeight / 2)
+                        
+                        Color.red.opacity(0.3)
+                            .dragTarget()
+                            .position(x: eyeIconX, y: iconCenterY)
                     }
-                    .highPriorityGesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { value in
-                                if !document.isDraggingVisibility {
-                                    document.isDraggingVisibility = true
-                                    document.processedLayersDuringDrag.removeAll()
-                                    document.saveToUndoStack()
-
-                                    let startY = value.startLocation.y
-                                    let layerIndex = Int(startY / layerRowHeight)
-                                    let reversedIndex = document.layers.count - 1 - layerIndex
-
-                                    if reversedIndex >= 0 && reversedIndex < document.layers.count {
-                                        document.layers[reversedIndex].isVisible.toggle()
-                                        document.processedLayersDuringDrag.insert(reversedIndex)
-                                    }
-                                }
-
-                                let currentY = value.location.y
-                                let layerIndex = Int(currentY / layerRowHeight)
-                                let reversedIndex = document.layers.count - 1 - layerIndex
-
-                                if reversedIndex >= 0 && reversedIndex < document.layers.count {
-                                    if !document.processedLayersDuringDrag.contains(reversedIndex) {
-                                        document.layers[reversedIndex].isVisible.toggle()
-                                        document.processedLayersDuringDrag.insert(reversedIndex)
-                                    }
-                                }
-                            }
-                            .onEnded { _ in
-                                document.isDraggingVisibility = false
-                                document.processedLayersDuringDrag.removeAll()
-                            }
-                    )
-                    .padding(.horizontal, 4)
-
-                    ZStack {
-                        ForEach(0..<document.layers.count, id: \.self) { index in
-                            let rowY = CGFloat(document.layers.count - 1 - index) * layerRowHeight
-                            let iconCenterY = rowY + (layerRowHeight / 2)
-
-                            Color.red.opacity(0.0)
-                                .dragTarget()
-                                .position(x: lockIconX, y: iconCenterY)
-                        }
-                    }
-                    .highPriorityGesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { value in
-                                if !document.isDraggingLock {
-                                    document.isDraggingLock = true
-                                    document.processedLayersDuringDrag.removeAll()
-                                    document.saveToUndoStack()
-
-                                    let startY = value.startLocation.y
-                                    let layerIndex = Int(startY / layerRowHeight)
-                                    let reversedIndex = document.layers.count - 1 - layerIndex
-
-                                    if reversedIndex >= 0 && reversedIndex < document.layers.count {
-                                        document.layers[reversedIndex].isLocked.toggle()
-                                        document.processedLayersDuringDrag.insert(reversedIndex)
-                                    }
-                                }
-
-                                let currentY = value.location.y
-                                let layerIndex = Int(currentY / layerRowHeight)
-                                let reversedIndex = document.layers.count - 1 - layerIndex
-
-                                if reversedIndex >= 0 && reversedIndex < document.layers.count {
-                                    if !document.processedLayersDuringDrag.contains(reversedIndex) {
-                                        document.layers[reversedIndex].isLocked.toggle()
-                                        document.processedLayersDuringDrag.insert(reversedIndex)
-                                    }
-                                }
-                            }
-                            .onEnded { _ in
-                                document.isDraggingLock = false
-                                document.processedLayersDuringDrag.removeAll()
-                            }
-                    )
-                    .padding(.horizontal, 4)
-                    .zIndex(200)
                 }
+                .highPriorityGesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            if !document.isDraggingVisibility {
+                                document.isDraggingVisibility = true
+                                document.processedLayersDuringDrag.removeAll()
+                                document.processedObjectsDuringDrag.removeAll()
+                                document.saveToUndoStack()
+                                
+                                let startY = value.startLocation.y
+                                let rowIndex = Int(startY / kLayerRowHeight)
+                                
+                                if rowIndex >= 0 && rowIndex < rows.count {
+                                    toggleVisibility(for: rows[rowIndex])
+                                }
+                            }
+                            
+                            let currentY = value.location.y
+                            let rowIndex = Int(currentY / kLayerRowHeight)
+                            
+                            if rowIndex >= 0 && rowIndex < rows.count {
+                                toggleVisibility(for: rows[rowIndex])
+                            }
+                        }
+                        .onEnded { _ in
+                            document.isDraggingVisibility = false
+                            document.processedLayersDuringDrag.removeAll()
+                            document.processedObjectsDuringDrag.removeAll()
+                        }
+                )
+                .padding(.horizontal, 4)
+                
+                // Lock icon overlay
+                ZStack {
+                    ForEach(Array(rows.enumerated()), id: \.offset) { rowIndex, rowType in
+                        let rowY = CGFloat(rowIndex) * kLayerRowHeight
+                        let iconCenterY = rowY + (kLayerRowHeight / 2)
+                        
+                        Color.red.opacity(0.3)
+                            .dragTarget()
+                            .position(x: lockIconX, y: iconCenterY)
+                    }
+                }
+                .highPriorityGesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            if !document.isDraggingLock {
+                                document.isDraggingLock = true
+                                document.processedLayersDuringDrag.removeAll()
+                                document.processedObjectsDuringDrag.removeAll()
+                                document.saveToUndoStack()
+                                
+                                let startY = value.startLocation.y
+                                let rowIndex = Int(startY / kLayerRowHeight)
+                                
+                                if rowIndex >= 0 && rowIndex < rows.count {
+                                    toggleLock(for: rows[rowIndex])
+                                }
+                            }
+                            
+                            let currentY = value.location.y
+                            let rowIndex = Int(currentY / kLayerRowHeight)
+                            
+                            if rowIndex >= 0 && rowIndex < rows.count {
+                                toggleLock(for: rows[rowIndex])
+                            }
+                        }
+                        .onEnded { _ in
+                            document.isDraggingLock = false
+                            document.processedLayersDuringDrag.removeAll()
+                            document.processedObjectsDuringDrag.removeAll()
+                        }
+                )
+                .padding(.horizontal, 4)
+                .zIndex(200)
             }
         }
     }
-
+    
     private func layerRowContent(for layerIndex: Int) -> some View {
         ProfessionalLayerRow(
             layerIndex: layerIndex,
@@ -345,13 +356,67 @@ struct LayersPanel: View {
             document: document
         )
     }
+    
+    // Helper function to toggle visibility for a row (layer or object)
+    private func toggleVisibility(for rowType: RowType) {
+        switch rowType {
+        case .layer(let index):
+            if !document.processedLayersDuringDrag.contains(index) {
+                document.layers[index].isVisible.toggle()
+                document.processedLayersDuringDrag.insert(index)
+            }
+        case .object(let layerIndex, let objectId):
+            if !document.processedObjectsDuringDrag.contains(objectId) {
+                if let object = document.findObject(by: objectId) {
+                    if case .shape(var shape) = object.objectType {
+                        shape.isVisible.toggle()
+                        if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
+                            document.unifiedObjects[objIndex] = VectorObject(
+                                shape: shape,
+                                layerIndex: layerIndex,
+                                orderID: object.orderID
+                            )
+                        }
+                        document.processedObjectsDuringDrag.insert(objectId)
+                    }
+                }
+            }
+        }
+    }
+    
+    // Helper function to toggle lock for a row (layer or object)
+    private func toggleLock(for rowType: RowType) {
+        switch rowType {
+        case .layer(let index):
+            if !document.processedLayersDuringDrag.contains(index) {
+                document.layers[index].isLocked.toggle()
+                document.processedLayersDuringDrag.insert(index)
+            }
+        case .object(let layerIndex, let objectId):
+            if !document.processedObjectsDuringDrag.contains(objectId) {
+                if let object = document.findObject(by: objectId) {
+                    if case .shape(var shape) = object.objectType {
+                        shape.isLocked.toggle()
+                        if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
+                            document.unifiedObjects[objIndex] = VectorObject(
+                                shape: shape,
+                                layerIndex: layerIndex,
+                                orderID: object.orderID
+                            )
+                        }
+                        document.processedObjectsDuringDrag.insert(objectId)
+                    }
+                }
+            }
+        }
+    }
 }
 
 struct ColorSwatchButton: View {
     @Binding var color: Color
     let availableColors: [(name: String, color: Color)]
     @State private var showColorPicker: Bool = false
-
+    
     var body: some View {
         Button(action: {
             showColorPicker = true

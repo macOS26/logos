@@ -1,6 +1,6 @@
 import SwiftUI
 
-public let kLayerRowHeight: CGFloat = 22.02
+public let kLayerRowHeight: CGFloat = 22
 
 struct VisibilityButtonStyle: ViewModifier {
     let isVisible: Bool
