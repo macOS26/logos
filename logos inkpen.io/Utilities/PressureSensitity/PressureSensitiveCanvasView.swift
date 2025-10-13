@@ -202,12 +202,6 @@ class PressureSensitiveCanvasView: NSView {
         super.smartMagnify(with: event)
     }
 
-    override func quickLook(with event: NSEvent) {
-        logEvent(event, context: "QUICK_LOOK")
-        super.quickLook(with: event)
-    }
-
-
     private func extractPressure(from event: NSEvent) -> Double {
         var pressure: Double = 1.0
         var foundRealPressure = false
