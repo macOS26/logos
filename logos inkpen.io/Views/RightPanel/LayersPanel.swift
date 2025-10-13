@@ -144,18 +144,21 @@ struct LayersPanel: View {
         VStack(alignment: .leading, spacing: 0) {
             layersHeader
             Divider().padding(.horizontal, 6.5)
-            
+
             if let selectedIndex = document.selectedLayerIndex, selectedIndex < document.layers.count {
                 layerControlsSection(for: selectedIndex)
                 Divider().padding(.horizontal, 6.5)
                     .frame(width: 55)
             }
-            
+
             layersScrollContent
             Spacer()
         }
+        .background(
+            KeyEventHandlerView(document: document)
+        )
     }
-    
+
     private var layersHeader: some View {
         HStack {
             Text("Layer")
@@ -454,7 +457,7 @@ struct ColorSwatchButton: View {
     @Binding var color: Color
     let availableColors: [(name: String, color: Color)]
     @State private var showColorPicker: Bool = false
-    
+
     var body: some View {
         Button(action: {
             showColorPicker = true
@@ -488,6 +491,173 @@ struct ColorSwatchButton: View {
             }
             .padding(.horizontal, 15)
             .padding(.vertical, 10)
+        }
+    }
+}
+
+struct KeyEventHandlerView: NSViewRepresentable {
+    let document: VectorDocument
+
+    func makeNSView(context: Context) -> NSView {
+        let view = KeyEventHandlingNSView()
+        view.document = document
+        DispatchQueue.main.async {
+            view.window?.makeFirstResponder(view)
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
+
+    class KeyEventHandlingNSView: NSView {
+        var document: VectorDocument?
+
+        override var acceptsFirstResponder: Bool { true }
+
+        override func keyDown(with event: NSEvent) {
+            guard let document = document else {
+                super.keyDown(with: event)
+                return
+            }
+
+            let modifiers = event.modifierFlags
+
+            // Cmd+Up/Down: Select next/previous layer
+            if modifiers.contains(.command) && !modifiers.contains(.option) {
+                if event.keyCode == 126 { // Up arrow
+                    selectPreviousLayer(document: document)
+                    return
+                } else if event.keyCode == 125 { // Down arrow
+                    selectNextLayer(document: document)
+                    return
+                }
+            }
+
+            // Opt+Up/Down: Move layer up/down in stack
+            if modifiers.contains(.option) && !modifiers.contains(.command) {
+                if event.keyCode == 126 { // Up arrow
+                    moveSelectedLayerUp(document: document)
+                    return
+                } else if event.keyCode == 125 { // Down arrow
+                    moveSelectedLayerDown(document: document)
+                    return
+                }
+            }
+
+            super.keyDown(with: event)
+        }
+
+        private func selectNextLayer(document: VectorDocument) {
+            // Down arrow = move down in visual order
+            DispatchQueue.main.async {
+                print("selectNextLayer - selectedObjectIDs count: \(document.selectedObjectIDs.count)")
+                print("selectNextLayer - selectedLayerIndex: \(String(describing: document.selectedLayerIndex))")
+
+                // Only navigate objects if objects are actually selected
+                if !document.selectedObjectIDs.isEmpty {
+                    print("Navigating objects (down)")
+                    self.selectNextObject(document: document)
+                } else {
+                    print("Navigating layers (down)")
+                    // Navigate layers when no objects are selected
+                    guard let currentIndex = document.selectedLayerIndex else {
+                        if document.layers.count > 2 {
+                            document.selectedLayerIndex = 2
+                        }
+                        return
+                    }
+
+                    if currentIndex < document.layers.count - 1 {
+                        document.selectedLayerIndex = currentIndex + 1
+                    }
+                }
+            }
+        }
+
+        private func selectPreviousLayer(document: VectorDocument) {
+            // Up arrow = move up in visual order
+            DispatchQueue.main.async {
+                // Only navigate objects if objects are actually selected
+                if !document.selectedObjectIDs.isEmpty {
+                    self.selectPreviousObject(document: document)
+                } else {
+                    // Navigate layers when no objects are selected
+                    guard let currentIndex = document.selectedLayerIndex else {
+                        if document.layers.count > 2 {
+                            document.selectedLayerIndex = document.layers.count - 1
+                        }
+                        return
+                    }
+
+                    if currentIndex > 2 {
+                        document.selectedLayerIndex = currentIndex - 1
+                    }
+                }
+            }
+        }
+
+        private func selectNextObject(document: VectorDocument) {
+            guard let currentLayerIndex = document.selectedLayerIndex,
+                  let firstSelectedId = document.selectedObjectIDs.first else { return }
+
+            let layerObjects = document.unifiedObjects
+                .filter { $0.layerIndex == currentLayerIndex }
+                .sorted { $0.orderID > $1.orderID }
+
+            if let currentIndex = layerObjects.firstIndex(where: { $0.id == firstSelectedId }) {
+                if currentIndex < layerObjects.count - 1 {
+                    let nextObject = layerObjects[currentIndex + 1]
+                    document.selectedObjectIDs = [nextObject.id]
+                    document.syncSelectionArrays()
+                }
+            }
+        }
+
+        private func selectPreviousObject(document: VectorDocument) {
+            guard let currentLayerIndex = document.selectedLayerIndex,
+                  let firstSelectedId = document.selectedObjectIDs.first else { return }
+
+            let layerObjects = document.unifiedObjects
+                .filter { $0.layerIndex == currentLayerIndex }
+                .sorted { $0.orderID > $1.orderID }
+
+            if let currentIndex = layerObjects.firstIndex(where: { $0.id == firstSelectedId }) {
+                if currentIndex > 0 {
+                    let prevObject = layerObjects[currentIndex - 1]
+                    document.selectedObjectIDs = [prevObject.id]
+                    document.syncSelectionArrays()
+                }
+            }
+        }
+
+        private func moveSelectedLayerUp(document: VectorDocument) {
+            DispatchQueue.main.async {
+                guard let currentIndex = document.selectedLayerIndex else { return }
+
+                if currentIndex <= 1 { return }
+
+                if currentIndex < document.layers.count - 1 {
+                    let targetIndex = currentIndex + 1
+                    document.reorderLayer(sourceLayerId: document.layers[currentIndex].id,
+                                          targetLayerId: document.layers[targetIndex].id)
+                    document.selectedLayerIndex = targetIndex
+                }
+            }
+        }
+
+        private func moveSelectedLayerDown(document: VectorDocument) {
+            DispatchQueue.main.async {
+                guard let currentIndex = document.selectedLayerIndex else { return }
+
+                if currentIndex <= 1 { return }
+
+                if currentIndex > 2 {
+                    let targetIndex = currentIndex - 1
+                    document.reorderLayer(sourceLayerId: document.layers[currentIndex].id,
+                                          targetLayerId: document.layers[targetIndex].id)
+                    document.selectedLayerIndex = targetIndex
+                }
+            }
         }
     }
 }

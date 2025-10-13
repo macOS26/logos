@@ -92,12 +92,24 @@ extension DrawingCanvas {
                        !event.modifierFlags.contains(.control) &&
                        !event.modifierFlags.contains(.option) {
 
-                        if characters == arrowUp {
-                            self.document.selectNextObjectUp()
-                            return nil
-                        } else if characters == arrowDown {
-                            self.document.selectNextObjectDown()
-                            return nil
+                        // If objects are selected, navigate between objects
+                        if !self.document.selectedObjectIDs.isEmpty {
+                            if characters == arrowUp {
+                                self.document.selectNextObjectUp()
+                                return nil
+                            } else if characters == arrowDown {
+                                self.document.selectNextObjectDown()
+                                return nil
+                            }
+                        } else {
+                            // If no objects selected, navigate between layers
+                            if characters == arrowUp {
+                                self.selectPreviousLayer()
+                                return nil
+                            } else if characters == arrowDown {
+                                self.selectNextLayer()
+                                return nil
+                            }
                         }
                     }
 
@@ -275,6 +287,34 @@ extension DrawingCanvas {
         }
     }
 
+
+    internal func selectNextLayer() {
+        // Down arrow = move down in visual order = lower index (layers are reversed)
+        guard let currentIndex = document.selectedLayerIndex else {
+            if document.layers.count > 2 {
+                document.selectedLayerIndex = 2
+            }
+            return
+        }
+
+        if currentIndex > 2 {
+            document.selectedLayerIndex = currentIndex - 1
+        }
+    }
+
+    internal func selectPreviousLayer() {
+        // Up arrow = move up in visual order = higher index (layers are reversed)
+        guard let currentIndex = document.selectedLayerIndex else {
+            if document.layers.count > 2 {
+                document.selectedLayerIndex = document.layers.count - 1
+            }
+            return
+        }
+
+        if currentIndex < document.layers.count - 1 {
+            document.selectedLayerIndex = currentIndex + 1
+        }
+    }
 
     internal func nudgeSelectedObjects(by nudgeAmount: CGVector) {
         guard !document.selectedObjectIDs.isEmpty else { return }

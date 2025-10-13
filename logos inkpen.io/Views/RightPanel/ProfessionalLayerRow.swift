@@ -379,8 +379,17 @@ struct ProfessionalLayerRow: View {
                 return true
 
             case .vectorObject(let vectorObj):
-                // Move object to this layer
-                document.moveObjectToLayer(objectId: vectorObj.objectId, targetLayerIndex: layerIndex)
+                // If multiple objects are selected and the dragged object is one of them,
+                // move all selected objects to this layer
+                if document.selectedObjectIDs.contains(vectorObj.objectId) && document.selectedObjectIDs.count > 1 {
+                    // Move all selected objects to this layer
+                    for selectedObjectId in document.selectedObjectIDs {
+                        document.moveObjectToLayer(objectId: selectedObjectId, targetLayerIndex: layerIndex)
+                    }
+                } else {
+                    // Move just the single object to this layer
+                    document.moveObjectToLayer(objectId: vectorObj.objectId, targetLayerIndex: layerIndex)
+                }
                 return true
             }
         }
