@@ -261,7 +261,7 @@ struct ProfessionalLayerRow: View {
                 .padding(.horizontal, 4)
             }
 
-            if isExpanded && !layerObjects.isEmpty {
+            if isExpanded {
                 VStack(spacing: 0) {
                     ForEach(layerObjects, id: \.id) { unifiedObject in
                         let index = layerObjects.firstIndex(where: { $0.id == unifiedObject.id }) ?? 0
@@ -281,6 +281,7 @@ struct ProfessionalLayerRow: View {
                                     document: document,
                                     showBottomIndicator: isLast
                                 )
+                                .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
                             } else if shape.isGroupContainer {
                                 ObjectRow(
                                     objectType: .group,
@@ -295,6 +296,7 @@ struct ProfessionalLayerRow: View {
                                     groupedShapes: shape.groupedShapes,
                                     showBottomIndicator: isLast
                                 )
+                                .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
                             } else {
                                 ObjectRow(
                                     objectType: .shape,
@@ -308,6 +310,7 @@ struct ProfessionalLayerRow: View {
                                     document: document,
                                     showBottomIndicator: isLast
                                 )
+                                .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
                             }
                         }
                     }
