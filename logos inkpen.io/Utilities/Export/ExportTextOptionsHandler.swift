@@ -56,7 +56,6 @@ extension DocumentState {
             document.selectedObjectIDs = savedState.selectedObjectIDs
             document.selectedTextIDs = savedState.selectedTextIDs
             document.selectedShapeIDs = savedState.selectedShapeIDs
-            document.objectWillChange.send()
         }
 
         return exportData
@@ -98,7 +97,6 @@ extension DocumentState {
             document.selectedObjectIDs = savedState.selectedObjectIDs
             document.selectedTextIDs = savedState.selectedTextIDs
             document.selectedShapeIDs = savedState.selectedShapeIDs
-            document.objectWillChange.send()
         }
 
         return svgContent
