@@ -8,17 +8,14 @@ extension VectorDocument {
         case .rgb:
             if !customRgbSwatches.contains(color) {
                 customRgbSwatches.append(color)
-                objectWillChange.send()
             }
         case .cmyk:
             if !customCmykSwatches.contains(color) {
                 customCmykSwatches.append(color)
-                objectWillChange.send()
             }
         case .pms:
             if !customHsbSwatches.contains(color) {
                 customHsbSwatches.append(color)
-                objectWillChange.send()
             }
         }
     }
@@ -40,7 +37,6 @@ extension VectorDocument {
         case .pms:
             customHsbSwatches.removeAll { $0 == color }
         }
-        objectWillChange.send()
     }
 
 

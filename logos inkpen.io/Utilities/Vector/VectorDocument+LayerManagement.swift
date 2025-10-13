@@ -121,8 +121,6 @@ extension VectorDocument {
                 selectedLayerIndex = selectedIndex + 1
             }
         }
-
-        objectWillChange.send()
     }
 
     private func extractShape(from object: VectorObject) -> VectorShape {
@@ -273,8 +271,6 @@ extension VectorDocument {
         )
 
         unifiedObjects[objectIndex] = updatedObject
-
-        objectWillChange.send()
     }
 
     func selectNextObjectUp() {
@@ -297,7 +293,6 @@ extension VectorDocument {
         if selectedObjectIDs.isEmpty {
             selectedObjectIDs = [visibleObjects.first!.id]
             syncSelectionArrays()
-            objectWillChange.send()
             return
         }
 
@@ -305,14 +300,12 @@ extension VectorDocument {
               let currentIndex = visibleObjects.firstIndex(where: { $0.id == currentID }) else {
             selectedObjectIDs = [visibleObjects.first!.id]
             syncSelectionArrays()
-            objectWillChange.send()
             return
         }
 
         let nextIndex = (currentIndex > 0) ? currentIndex - 1 : currentIndex
         selectedObjectIDs = [visibleObjects[nextIndex].id]
         syncSelectionArrays()
-        objectWillChange.send()
     }
 
     func selectNextObjectDown() {
@@ -335,7 +328,6 @@ extension VectorDocument {
         if selectedObjectIDs.isEmpty {
             selectedObjectIDs = [visibleObjects.last!.id]
             syncSelectionArrays()
-            objectWillChange.send()
             return
         }
 
@@ -343,14 +335,12 @@ extension VectorDocument {
               let currentIndex = visibleObjects.firstIndex(where: { $0.id == currentID }) else {
             selectedObjectIDs = [visibleObjects.last!.id]
             syncSelectionArrays()
-            objectWillChange.send()
             return
         }
 
         let nextIndex = (currentIndex < visibleObjects.count - 1) ? currentIndex + 1 : currentIndex
         selectedObjectIDs = [visibleObjects[nextIndex].id]
         syncSelectionArrays()
-        objectWillChange.send()
     }
 
     func moveSelectedObjectsUp() {
@@ -389,8 +379,6 @@ extension VectorDocument {
                 )
             }
         }
-
-        objectWillChange.send()
     }
 
     func moveSelectedObjectsDown() {
@@ -429,8 +417,6 @@ extension VectorDocument {
                 )
             }
         }
-
-        objectWillChange.send()
     }
 
     func reorderObject(objectId: UUID, targetObjectId: UUID) {
@@ -490,8 +476,6 @@ extension VectorDocument {
             layerIndex: sourceObject.layerIndex,
             orderID: newOrderID
         )
-
-        objectWillChange.send()
     }
 
     func moveObjectToTop(objectId: UUID) {
@@ -531,8 +515,6 @@ extension VectorDocument {
             layerIndex: sourceObject.layerIndex,
             orderID: maxOrderID
         )
-
-        objectWillChange.send()
     }
 
     func moveObjectToBottom(objectId: UUID) {
@@ -572,8 +554,6 @@ extension VectorDocument {
             layerIndex: sourceObject.layerIndex,
             orderID: minOrderID
         )
-
-        objectWillChange.send()
     }
 
     func reorderLayer(sourceLayerId: UUID, targetLayerId: UUID) {
@@ -648,7 +628,5 @@ extension VectorDocument {
                 }
             }
         }
-
-        objectWillChange.send()
     }
 }
