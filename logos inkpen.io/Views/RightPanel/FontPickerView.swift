@@ -97,8 +97,6 @@ struct FontPickerView: View {
                         document.updateTextFontFamilyDirect(id: textID, fontFamily: newFamily)
                         document.updateTextFontVariantDirect(id: textID, fontVariant: defaultVariant)
                     }
-
-                    document.objectWillChange.send()
                 }
             )) {
                 ForEach(document.fontManager.availableFonts, id: \.self) { fontFamily in
@@ -124,8 +122,6 @@ struct FontPickerView: View {
                     if let textID = document.selectedTextIDs.first {
                         document.updateTextFontVariantDirect(id: textID, fontVariant: newVariant)
                     }
-
-                    document.objectWillChange.send()
                 }
             )) {
                 ForEach(availableFontVariantNamesState, id: \.self) { variant in
