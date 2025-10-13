@@ -513,7 +513,6 @@ struct TransformationControls: View {
         }
 
         document.updateUnifiedObjectsOptimized()
-        document.objectWillChange.send()
 
         updateValuesFromSelection()
     }
