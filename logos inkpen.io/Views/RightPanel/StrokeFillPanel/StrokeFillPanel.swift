@@ -6,6 +6,12 @@ struct StrokeFillPanel: View {
     @ObservedObject var document: VectorDocument
     @Environment(AppState.self) private var appState
 
+    @State private var fillOpacityState: Double = 1.0
+    @State private var strokeOpacityState: Double = 1.0
+    @State private var strokeWidthState: Double = 1.0
+    @State private var strokeMiterLimitState: Double = 10.0
+    @State private var selectedImageOpacityState: Double = 1.0
+
     private var selectedStrokeColor: VectorColor {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
@@ -192,8 +198,8 @@ struct StrokeFillPanel: View {
                     CurrentColorsView(
                         strokeColor: selectedStrokeColor,
                         fillColor: selectedFillColor,
-                        strokeOpacity: strokeOpacity,
-                        fillOpacity: fillOpacity,
+                        strokeOpacity: strokeOpacityState,
+                        fillOpacity: fillOpacityState,
                         onStrokeColorTap: {
                             document.activeColorTarget = .stroke
                             appState.persistentInkHUD.show(document: document)
@@ -205,9 +211,10 @@ struct StrokeFillPanel: View {
                     )
 
                     FillPropertiesSection(
-                        fillOpacity: fillOpacity,
+                        fillOpacity: fillOpacityState,
                         onApplyFill: applyFillToSelectedShapes,
                         onUpdateFillOpacity: { value in
+                            fillOpacityState = value
                             document.defaultFillOpacity = value
                             document.objectWillChange.send()
                             updateFillOpacity(value)
@@ -216,19 +223,23 @@ struct StrokeFillPanel: View {
 
                     if hasSelectedImages {
                         ImagePropertiesSection(
-                            imageOpacity: selectedImageOpacity,
-                            onUpdateImageOpacity: updateImageOpacity
+                            imageOpacity: selectedImageOpacityState,
+                            onUpdateImageOpacity: { value in
+                                selectedImageOpacityState = value
+                                updateImageOpacity(value)
+                            }
                         )
                     }
 
                     StrokePropertiesSection(
-                        strokeWidth: strokeWidth,
+                        strokeWidth: strokeWidthState,
                         strokePlacement: strokePlacement,
-                        strokeOpacity: strokeOpacity,
+                        strokeOpacity: strokeOpacityState,
                         strokeLineJoin: strokeLineJoin,
                         strokeLineCap: strokeLineCap,
-                        strokeMiterLimit: strokeMiterLimit,
+                        strokeMiterLimit: strokeMiterLimitState,
                         onUpdateStrokeWidth: { value in
+                            strokeWidthState = value
                             document.defaultStrokeWidth = value
                             document.objectWillChange.send()
                             updateStrokeWidth(value)
@@ -238,6 +249,7 @@ struct StrokeFillPanel: View {
                             updateStrokePlacement(value)
                         },
                         onUpdateStrokeOpacity: { value in
+                            strokeOpacityState = value
                             document.defaultStrokeOpacity = value
                             document.objectWillChange.send()
                             updateStrokeOpacity(value)
@@ -253,6 +265,7 @@ struct StrokeFillPanel: View {
                             updateStrokeLineCap(value)
                         },
                         onUpdateMiterLimit: { value in
+                            strokeMiterLimitState = value
                             document.defaultStrokeMiterLimit = value
                             document.objectWillChange.send()
                             updateStrokeMiterLimit(value)
@@ -327,6 +340,20 @@ struct StrokeFillPanel: View {
             }
             .padding()
         }
+        .onAppear {
+            syncOpacityStates()
+        }
+        .onChange(of: document.selectedObjectIDs) { _, _ in
+            syncOpacityStates()
+        }
+    }
+
+    private func syncOpacityStates() {
+        fillOpacityState = fillOpacity
+        strokeOpacityState = strokeOpacity
+        strokeWidthState = strokeWidth
+        strokeMiterLimitState = strokeMiterLimit
+        selectedImageOpacityState = selectedImageOpacity
     }
 
     private func updateFillOpacity(_ opacity: Double) {
