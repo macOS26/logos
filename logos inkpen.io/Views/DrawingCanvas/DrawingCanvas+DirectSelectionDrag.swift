@@ -126,8 +126,6 @@ extension DrawingCanvas {
         }
 
         document.objectPositionUpdateTrigger.toggle()
-
-        document.objectWillChange.send()
     }
 
 
@@ -183,7 +181,5 @@ extension DrawingCanvas {
         }
 
         document.updateUnifiedObjectsOptimized(sendUpdate: false)
-
-        document.objectWillChange.send()
     }
 }
