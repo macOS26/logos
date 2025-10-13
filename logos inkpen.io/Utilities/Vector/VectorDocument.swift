@@ -191,7 +191,6 @@ class VectorDocument: ObservableObject, Codable {
         }
 
         objectPositionUpdateTrigger.toggle()
-        objectWillChange.send()
     }
 
     @Published var currentBrushThickness: Double = 20.0 {
@@ -556,8 +555,6 @@ class VectorDocument: ObservableObject, Codable {
                 setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
 
                 applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex)
-
-                objectWillChange.send()
                 break
             }
         }
