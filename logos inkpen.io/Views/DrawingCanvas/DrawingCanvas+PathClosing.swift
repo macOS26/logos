@@ -30,7 +30,5 @@ extension DrawingCanvas {
                 }
             }
         }
-
-        document.objectWillChange.send()
     }
 }
