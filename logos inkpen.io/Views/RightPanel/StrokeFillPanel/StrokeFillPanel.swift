@@ -403,23 +403,23 @@ struct StrokeFillPanel: View {
     }
 
     private func updateFillOpacityDirectNoUndo(_ opacity: Double) {
+        let indexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
+
         for objectID in document.selectedObjectIDs {
-            if let index = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
-                if case .shape(var shape) = document.unifiedObjects[index].objectType {
-                    if shape.isTextObject {
-                        shape.typography?.fillOpacity = opacity
-                    } else {
-                        shape.fillStyle?.opacity = opacity
-                    }
-                    document.unifiedObjects[index] = VectorObject(
-                        shape: shape,
-                        layerIndex: document.unifiedObjects[index].layerIndex,
-                        orderID: document.unifiedObjects[index].orderID
-                    )
+            guard let index = indexMap[objectID] else { continue }
+            if case .shape(var shape) = document.unifiedObjects[index].objectType {
+                if shape.isTextObject {
+                    shape.typography?.fillOpacity = opacity
+                } else {
+                    shape.fillStyle?.opacity = opacity
                 }
+                document.unifiedObjects[index] = VectorObject(
+                    shape: shape,
+                    layerIndex: document.unifiedObjects[index].layerIndex,
+                    orderID: document.unifiedObjects[index].orderID
+                )
             }
         }
-        //document.objectWillChange.send() // do not use!
     }
 
     private func updateStrokeWidth(_ width: Double) {
@@ -453,23 +453,23 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokeWidthDirectNoUndo(_ width: Double) {
+        let indexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
+
         for objectID in document.selectedObjectIDs {
-            if let index = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
-                if case .shape(var shape) = document.unifiedObjects[index].objectType {
-                    if shape.isTextObject {
-                        shape.typography?.strokeWidth = width
-                    } else {
-                        shape.strokeStyle?.width = width
-                    }
-                    document.unifiedObjects[index] = VectorObject(
-                        shape: shape,
-                        layerIndex: document.unifiedObjects[index].layerIndex,
-                        orderID: document.unifiedObjects[index].orderID
-                    )
+            guard let index = indexMap[objectID] else { continue }
+            if case .shape(var shape) = document.unifiedObjects[index].objectType {
+                if shape.isTextObject {
+                    shape.typography?.strokeWidth = width
+                } else {
+                    shape.strokeStyle?.width = width
                 }
+                document.unifiedObjects[index] = VectorObject(
+                    shape: shape,
+                    layerIndex: document.unifiedObjects[index].layerIndex,
+                    orderID: document.unifiedObjects[index].orderID
+                )
             }
         }
-        document.objectWillChange.send()
     }
 
     private func updateStrokePlacement(_ placement: StrokePlacement) {
@@ -553,19 +553,19 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokeOpacityDirectNoUndo(_ opacity: Double) {
+        let indexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
+
         for objectID in document.selectedObjectIDs {
-            if let index = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
-                if case .shape(var shape) = document.unifiedObjects[index].objectType {
-                    shape.strokeStyle?.opacity = opacity
-                    document.unifiedObjects[index] = VectorObject(
-                        shape: shape,
-                        layerIndex: document.unifiedObjects[index].layerIndex,
-                        orderID: document.unifiedObjects[index].orderID
-                    )
-                }
+            guard let index = indexMap[objectID] else { continue }
+            if case .shape(var shape) = document.unifiedObjects[index].objectType {
+                shape.strokeStyle?.opacity = opacity
+                document.unifiedObjects[index] = VectorObject(
+                    shape: shape,
+                    layerIndex: document.unifiedObjects[index].layerIndex,
+                    orderID: document.unifiedObjects[index].orderID
+                )
             }
         }
-        document.objectWillChange.send()
     }
 
 
@@ -684,19 +684,19 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokeMiterLimitDirectNoUndo(_ miterLimit: Double) {
+        let indexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
+
         for objectID in document.selectedObjectIDs {
-            if let index = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
-                if case .shape(var shape) = document.unifiedObjects[index].objectType {
-                    shape.strokeStyle?.miterLimit = miterLimit
-                    document.unifiedObjects[index] = VectorObject(
-                        shape: shape,
-                        layerIndex: document.unifiedObjects[index].layerIndex,
-                        orderID: document.unifiedObjects[index].orderID
-                    )
-                }
+            guard let index = indexMap[objectID] else { continue }
+            if case .shape(var shape) = document.unifiedObjects[index].objectType {
+                shape.strokeStyle?.miterLimit = miterLimit
+                document.unifiedObjects[index] = VectorObject(
+                    shape: shape,
+                    layerIndex: document.unifiedObjects[index].layerIndex,
+                    orderID: document.unifiedObjects[index].orderID
+                )
             }
         }
-        document.objectWillChange.send()
     }
 
     private func updateImageOpacity(_ opacity: Double) {
