@@ -4,6 +4,7 @@ struct FillPropertiesSection: View {
     let fillOpacity: Double
     let onApplyFill: () -> Void
     let onUpdateFillOpacity: (Double) -> Void
+    let onFillOpacityEditingChanged: (Bool) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -25,7 +26,7 @@ struct FillPropertiesSection: View {
                 Slider(value: Binding(
                     get: { fillOpacity },
                     set: { onUpdateFillOpacity($0) }
-                ), in: 0...1)
+                ), in: 0...1, onEditingChanged: onFillOpacityEditingChanged)
                 .controlSize(.regular)
             }
 

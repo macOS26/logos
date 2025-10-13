@@ -216,8 +216,12 @@ struct StrokeFillPanel: View {
                         onUpdateFillOpacity: { value in
                             fillOpacityState = value
                             document.defaultFillOpacity = value
-                            document.objectWillChange.send()
-                            updateFillOpacity(value)
+                            updateFillOpacityLive(value)
+                        },
+                        onFillOpacityEditingChanged: { isEditing in
+                            if !isEditing {
+                                document.saveToUndoStack()
+                            }
                         }
                     )
 
@@ -241,8 +245,7 @@ struct StrokeFillPanel: View {
                         onUpdateStrokeWidth: { value in
                             strokeWidthState = value
                             document.defaultStrokeWidth = value
-                            document.objectWillChange.send()
-                            updateStrokeWidth(value)
+                            updateStrokeWidthLive(value)
                         },
                         onUpdateStrokePlacement: { value in
                             document.objectWillChange.send()
@@ -251,8 +254,7 @@ struct StrokeFillPanel: View {
                         onUpdateStrokeOpacity: { value in
                             strokeOpacityState = value
                             document.defaultStrokeOpacity = value
-                            document.objectWillChange.send()
-                            updateStrokeOpacity(value)
+                            updateStrokeOpacityLive(value)
                         },
                         onUpdateLineJoin: { value in
                             document.defaultStrokeLineJoin = value
@@ -267,8 +269,22 @@ struct StrokeFillPanel: View {
                         onUpdateMiterLimit: { value in
                             strokeMiterLimitState = value
                             document.defaultStrokeMiterLimit = value
-                            document.objectWillChange.send()
-                            updateStrokeMiterLimit(value)
+                            updateStrokeMiterLimitLive(value)
+                        },
+                        onStrokeWidthEditingChanged: { isEditing in
+                            if !isEditing {
+                                document.saveToUndoStack()
+                            }
+                        },
+                        onStrokeOpacityEditingChanged: { isEditing in
+                            if !isEditing {
+                                document.saveToUndoStack()
+                            }
+                        },
+                        onMiterLimitEditingChanged: { isEditing in
+                            if !isEditing {
+                                document.saveToUndoStack()
+                            }
                         }
                     )
 
@@ -386,6 +402,25 @@ struct StrokeFillPanel: View {
         }
     }
 
+    private func updateFillOpacityLive(_ opacity: Double) {
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.findObject(by: objectID) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    if shape.isTextObject {
+                        document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
+                    } else {
+                        if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                           document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
+                            document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
+                        }
+                    }
+                }
+            }
+        }
+        document.objectWillChange.send()
+    }
+
     private func updateStrokeWidth(_ width: Double) {
         document.defaultStrokeWidth = width
 
@@ -414,6 +449,25 @@ struct StrokeFillPanel: View {
 
             document.objectWillChange.send()
         }
+    }
+
+    private func updateStrokeWidthLive(_ width: Double) {
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.findObject(by: objectID) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    if shape.isTextObject {
+                        document.updateTextStrokeWidthInUnified(id: shape.id, width: width)
+                    } else {
+                        if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                           document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
+                            document.updateShapeStrokeWidthInUnified(id: shape.id, width: width)
+                        }
+                    }
+                }
+            }
+        }
+        document.objectWillChange.send()
     }
 
     private func updateStrokePlacement(_ placement: StrokePlacement) {
@@ -494,8 +548,40 @@ struct StrokeFillPanel: View {
 
             document.objectWillChange.send()
         }
+    }
 
+    private func updateStrokeOpacityLive(_ opacity: Double) {
+        let activeShapeIDs = document.getActiveShapeIDs()
+        if !activeShapeIDs.isEmpty {
+            for shapeID in activeShapeIDs {
+                for layerIndex in document.layers.indices {
+                    if document.getShapesForLayer(layerIndex).contains(where: { $0.id == shapeID }) {
+                        document.updateShapeStrokeOpacityInUnified(id: shapeID, opacity: opacity)
+                        break
+                    }
+                }
+            }
 
+            for shapeID in activeShapeIDs {
+                if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
+                    if case .shape(let unifiedShape) = unifiedObj.objectType {
+                        return unifiedShape.id == shapeID
+                    }
+                    return false
+                }) {
+                    for layerIndex in document.layers.indices {
+                        let shapes = document.getShapesForLayer(layerIndex)
+                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
+                           let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                            break
+                        }
+                    }
+                }
+            }
+
+            document.objectWillChange.send()
+        }
     }
 
 
@@ -582,6 +668,40 @@ struct StrokeFillPanel: View {
         if !activeShapeIDs.isEmpty {
             document.saveToUndoStack()
 
+            for shapeID in activeShapeIDs {
+                for layerIndex in document.layers.indices {
+                    if document.getShapesForLayer(layerIndex).contains(where: { $0.id == shapeID }) {
+                        document.updateShapeStrokeMiterLimitInUnified(id: shapeID, miterLimit: miterLimit)
+                        break
+                    }
+                }
+            }
+
+            for shapeID in activeShapeIDs {
+                if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
+                    if case .shape(let unifiedShape) = unifiedObj.objectType {
+                        return unifiedShape.id == shapeID
+                    }
+                    return false
+                }) {
+                    for layerIndex in document.layers.indices {
+                        let shapes = document.getShapesForLayer(layerIndex)
+                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
+                           let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                            break
+                        }
+                    }
+                }
+            }
+
+            document.objectWillChange.send()
+        }
+    }
+
+    private func updateStrokeMiterLimitLive(_ miterLimit: Double) {
+        let activeShapeIDs = document.getActiveShapeIDs()
+        if !activeShapeIDs.isEmpty {
             for shapeID in activeShapeIDs {
                 for layerIndex in document.layers.indices {
                     if document.getShapesForLayer(layerIndex).contains(where: { $0.id == shapeID }) {

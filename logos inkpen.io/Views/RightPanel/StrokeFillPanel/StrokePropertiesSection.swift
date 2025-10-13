@@ -13,6 +13,9 @@ struct StrokePropertiesSection: View {
     let onUpdateLineJoin: (CGLineJoin) -> Void
     let onUpdateLineCap: (CGLineCap) -> Void
     let onUpdateMiterLimit: (Double) -> Void
+    let onStrokeWidthEditingChanged: (Bool) -> Void
+    let onStrokeOpacityEditingChanged: (Bool) -> Void
+    let onMiterLimitEditingChanged: (Bool) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -34,7 +37,7 @@ struct StrokePropertiesSection: View {
                 Slider(value: Binding(
                     get: { strokeWidth },
                     set: { onUpdateStrokeWidth($0) }
-                ), in: 0...20)
+                ), in: 0...20, onEditingChanged: onStrokeWidthEditingChanged)
                 .controlSize(.regular)
             }
 
@@ -52,7 +55,7 @@ struct StrokePropertiesSection: View {
                 Slider(value: Binding(
                     get: { strokeOpacity },
                     set: { onUpdateStrokeOpacity($0) }
-                ), in: 0...1)
+                ), in: 0...1, onEditingChanged: onStrokeOpacityEditingChanged)
                 .controlSize(.regular)
             }
 
@@ -163,7 +166,7 @@ struct StrokePropertiesSection: View {
                 Slider(value: Binding(
                     get: { strokeMiterLimit },
                     set: { onUpdateMiterLimit($0) }
-                ), in: 1...20)
+                ), in: 1...20, onEditingChanged: onMiterLimitEditingChanged)
                 .controlSize(.regular)
                 .tint(.blue)
             }
