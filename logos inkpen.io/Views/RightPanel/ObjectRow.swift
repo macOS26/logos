@@ -110,19 +110,16 @@ struct ObjectRow: View {
                 return true
             },
             set: { newValue in
-                if let object = document.findObject(by: objectId) {
-                    if case .shape(var shape) = object.objectType {
-                        if shape.isVisible != newValue {
-                            document.saveToUndoStack()
-                            shape.isVisible = newValue
-                            if let index = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
-                                document.unifiedObjects[index] = VectorObject(
-                                    shape: shape,
-                                    layerIndex: layerIndex,
-                                    orderID: object.orderID
-                                )
-                            }
-                        }
+                guard let index = document.findObjectIndex(by: objectId) else { return }
+                if case .shape(var shape) = document.unifiedObjects[index].objectType {
+                    if shape.isVisible != newValue {
+                        document.saveToUndoStack()
+                        shape.isVisible = newValue
+                        document.unifiedObjects[index] = VectorObject(
+                            shape: shape,
+                            layerIndex: layerIndex,
+                            orderID: document.unifiedObjects[index].orderID
+                        )
                     }
                 }
             }
@@ -140,19 +137,16 @@ struct ObjectRow: View {
                 return false
             },
             set: { newValue in
-                if let object = document.findObject(by: objectId) {
-                    if case .shape(var shape) = object.objectType {
-                        if shape.isLocked != newValue {
-                            document.saveToUndoStack()
-                            shape.isLocked = newValue
-                            if let index = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
-                                document.unifiedObjects[index] = VectorObject(
-                                    shape: shape,
-                                    layerIndex: layerIndex,
-                                    orderID: object.orderID
-                                )
-                            }
-                        }
+                guard let index = document.findObjectIndex(by: objectId) else { return }
+                if case .shape(var shape) = document.unifiedObjects[index].objectType {
+                    if shape.isLocked != newValue {
+                        document.saveToUndoStack()
+                        shape.isLocked = newValue
+                        document.unifiedObjects[index] = VectorObject(
+                            shape: shape,
+                            layerIndex: layerIndex,
+                            orderID: document.unifiedObjects[index].orderID
+                        )
                     }
                 }
             }
@@ -170,19 +164,16 @@ struct ObjectRow: View {
                 return true
             },
             set: { newValue in
-                if let object = document.findObject(by: objectId) {
-                    if case .shape(var parentShape) = object.objectType {
-                        if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
-                            parentShape.groupedShapes[childIndex].isVisible = newValue
-                            document.saveToUndoStack()
-                            if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
-                                document.unifiedObjects[objIndex] = VectorObject(
-                                    shape: parentShape,
-                                    layerIndex: layerIndex,
-                                    orderID: document.unifiedObjects[objIndex].orderID
-                                )
-                            }
-                        }
+                guard let objIndex = document.findObjectIndex(by: objectId) else { return }
+                if case .shape(var parentShape) = document.unifiedObjects[objIndex].objectType {
+                    if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
+                        parentShape.groupedShapes[childIndex].isVisible = newValue
+                        document.saveToUndoStack()
+                        document.unifiedObjects[objIndex] = VectorObject(
+                            shape: parentShape,
+                            layerIndex: layerIndex,
+                            orderID: document.unifiedObjects[objIndex].orderID
+                        )
                     }
                 }
             }
@@ -200,19 +191,16 @@ struct ObjectRow: View {
                 return false
             },
             set: { newValue in
-                if let object = document.findObject(by: objectId) {
-                    if case .shape(var parentShape) = object.objectType {
-                        if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
-                            parentShape.groupedShapes[childIndex].isLocked = newValue
-                            document.saveToUndoStack()
-                            if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
-                                document.unifiedObjects[objIndex] = VectorObject(
-                                    shape: parentShape,
-                                    layerIndex: layerIndex,
-                                    orderID: document.unifiedObjects[objIndex].orderID
-                                )
-                            }
-                        }
+                guard let objIndex = document.findObjectIndex(by: objectId) else { return }
+                if case .shape(var parentShape) = document.unifiedObjects[objIndex].objectType {
+                    if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
+                        parentShape.groupedShapes[childIndex].isLocked = newValue
+                        document.saveToUndoStack()
+                        document.unifiedObjects[objIndex] = VectorObject(
+                            shape: parentShape,
+                            layerIndex: layerIndex,
+                            orderID: document.unifiedObjects[objIndex].orderID
+                        )
                     }
                 }
             }

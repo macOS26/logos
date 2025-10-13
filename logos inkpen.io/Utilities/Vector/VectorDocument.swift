@@ -95,6 +95,10 @@ class VectorDocument: ObservableObject, Codable {
         return unifiedObjectLookupCache[id]
     }
 
+    func findObjectIndex(by id: UUID) -> Int? {
+        return unifiedObjects.firstIndex(where: { $0.id == id })
+    }
+
     func findShape(by id: UUID) -> VectorShape? {
         guard let object = unifiedObjectLookupCache[id],
               case .shape(let shape) = object.objectType,
