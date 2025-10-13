@@ -153,7 +153,7 @@ extension DrawingCanvas {
     }
 
 
-    internal func updateActiveBezierShapeInDocument(isLiveDrag: Bool = false, shouldSendUpdate: Bool = true) {
+    internal func updateActiveBezierShapeInDocument(isLiveDrag: Bool = false) {
         guard let activeBezierShape = activeBezierShape,
               let updatedPath = bezierPath,
               let layerIndex = document.selectedLayerIndex else { return }
@@ -183,10 +183,6 @@ extension DrawingCanvas {
                 document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                 break
             }
-        }
-
-        if shouldSendUpdate {
-            document.objectWillChange.send()
         }
     }
 
