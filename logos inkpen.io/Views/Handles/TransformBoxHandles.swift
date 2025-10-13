@@ -257,7 +257,6 @@ struct TransformBoxHandles: View {
 
         if index < handleToOrigin.count {
             document.transformOrigin = handleToOrigin[index]
-            document.objectWillChange.send()
         }
     }
 
@@ -303,7 +302,6 @@ struct TransformBoxHandles: View {
 
             previewTransform = scaleTransform
             document.isHandleScalingActive = true
-            document.objectWillChange.send()
             return
         }
 
@@ -363,8 +361,6 @@ struct TransformBoxHandles: View {
         let currentBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         let newBounds = currentBounds.applying(scaleTransform)
         document.scalePreviewDimensions = CGSize(width: newBounds.width, height: newBounds.height)
-
-        document.objectWillChange.send()
     }
 
     private func endScaling() {
@@ -417,8 +413,6 @@ struct TransformBoxHandles: View {
             previewTransform = .identity
 
             document.updateTransformPanelValues()
-
-            document.objectWillChange.send()
 
             document.updateUnifiedObjectsOptimized()
         }
