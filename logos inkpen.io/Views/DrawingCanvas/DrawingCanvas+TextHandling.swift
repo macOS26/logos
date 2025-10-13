@@ -444,6 +444,11 @@ extension DrawingCanvas {
         isTextEditingMode = false
         NSCursor.arrow.set()
 
+        // Resign first responder to restore key command handling
+        if let window = NSApp.keyWindow {
+            window.makeFirstResponder(nil)
+        }
+
     }
 
     func cancelTextEditing() {
@@ -464,6 +469,11 @@ extension DrawingCanvas {
 
         isTextEditingMode = false
         NSCursor.arrow.set()
+
+        // Resign first responder to restore key command handling
+        if let window = NSApp.keyWindow {
+            window.makeFirstResponder(nil)
+        }
 
         Log.error("❌ Cancelled text editing", category: .error)
     }

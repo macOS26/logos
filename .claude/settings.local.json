@@ -20,7 +20,8 @@
       "WebFetch(domain:avitsadok.medium.com)",
       "Read(//Users/toddbruss/Documents/GitHub/Web-Man/WebWidow/WebWidow/**)",
       "Bash(xcodebuild:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []
