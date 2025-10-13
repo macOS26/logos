@@ -71,7 +71,5 @@ struct FontAlignmentControls: View {
             updatedTypography.alignment = alignment
             document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
         }
-
-        document.objectWillChange.send()
     }
 }
