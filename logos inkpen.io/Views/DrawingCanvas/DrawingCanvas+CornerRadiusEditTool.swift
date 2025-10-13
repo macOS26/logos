@@ -400,13 +400,8 @@ extension DrawingCanvas {
             }) {
                 document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
             }
-
-            document.objectWillChange.send()
         } else {
             document.updateUnifiedObjectsOptimized()
-            DispatchQueue.main.async {
-                self.document.objectWillChange.send()
-            }
         }
     }
 
