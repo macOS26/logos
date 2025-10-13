@@ -51,7 +51,6 @@ struct InkpenDocument: FileDocument {
                 }
 
                 self.document.updateUnifiedObjectsOptimized()
-                self.document.objectWillChange.send()
             } catch {
                 Log.error("❌ Failed to load SVG document: \(error)", category: .error)
                 throw error
@@ -69,7 +68,6 @@ struct InkpenDocument: FileDocument {
                 }
 
                 self.document.updateUnifiedObjectsOptimized()
-                self.document.objectWillChange.send()
             } catch {
                 Log.error("❌ Failed to load PDF document: \(error)", category: .error)
                 throw error
@@ -88,7 +86,6 @@ struct InkpenDocument: FileDocument {
                     self.document.populateUnifiedObjectsFromLayersPreservingOrder()
                 }
                 self.document.updateUnifiedObjectsOptimized()
-                self.document.objectWillChange.send()
             } catch {
                 Log.error("❌ Failed to load JSON document: \(error)", category: .error)
                 throw error
