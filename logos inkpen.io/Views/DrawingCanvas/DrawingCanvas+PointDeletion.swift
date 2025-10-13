@@ -31,8 +31,6 @@ extension DrawingCanvas {
 
         selectedPoints.removeAll()
         selectedHandles.removeAll()
-
-        document.objectWillChange.send()
     }
 
     internal func closeBezierPath() {
@@ -87,10 +85,6 @@ extension DrawingCanvas {
                 document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
             }
         }
-
-
-        document.objectWillChange.send()
-
 
         cancelBezierDrawing()
 
