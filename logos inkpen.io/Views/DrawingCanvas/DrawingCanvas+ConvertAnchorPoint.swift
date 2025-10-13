@@ -212,7 +212,6 @@ extension DrawingCanvas {
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
 
             document.updateUnifiedObjectsOptimized()
-            document.objectWillChange.send()
 
         case .quadCurve(let to, _):
             elements[elementIndex] = .line(to: to)
@@ -223,7 +222,6 @@ extension DrawingCanvas {
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
 
             document.updateUnifiedObjectsOptimized()
-            document.objectWillChange.send()
 
         default:
             break
@@ -254,7 +252,6 @@ extension DrawingCanvas {
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
 
             document.updateUnifiedObjectsOptimized()
-            document.objectWillChange.send()
 
         case .quadCurve(let to, _):
             elements[elementIndex] = .line(to: to)
@@ -265,7 +262,6 @@ extension DrawingCanvas {
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
 
             document.updateUnifiedObjectsOptimized()
-            document.objectWillChange.send()
 
         default:
             break
@@ -307,7 +303,6 @@ extension DrawingCanvas {
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
 
             document.updateUnifiedObjectsOptimized()
-            document.objectWillChange.send()
 
 
         default:
@@ -361,7 +356,6 @@ extension DrawingCanvas {
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
 
             document.updateUnifiedObjectsOptimized()
-            document.objectWillChange.send()
 
         default:
             break
@@ -417,7 +411,6 @@ extension DrawingCanvas {
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
 
             document.updateUnifiedObjectsOptimized()
-            document.objectWillChange.send()
 
         default:
             break
@@ -473,7 +466,6 @@ extension DrawingCanvas {
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
 
             document.updateUnifiedObjectsOptimized()
-            document.objectWillChange.send()
         }
     }
 
@@ -528,7 +520,6 @@ extension DrawingCanvas {
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
 
             document.updateUnifiedObjectsOptimized()
-            document.objectWillChange.send()
         }
     }
 
@@ -577,7 +568,6 @@ extension DrawingCanvas {
                         selectedHandles.removeAll()
                         directSelectedShapeIDs.removeAll()
                         syncDirectSelectionWithDocument()
-                        document.objectWillChange.send()
                         return
                     }
 
@@ -590,8 +580,6 @@ extension DrawingCanvas {
                     directSelectedShapeIDs.insert(shape.id)
                     syncDirectSelectionWithDocument()
 
-                    document.objectWillChange.send()
-
                     return
                 }
             }
@@ -601,7 +589,6 @@ extension DrawingCanvas {
         selectedHandles.removeAll()
         directSelectedShapeIDs.removeAll()
         syncDirectSelectionWithDocument()
-        document.objectWillChange.send()
     }
 
     func enableDirectSelectionForConvertedPoint(shapeID: UUID, elementIndex: Int) {
@@ -621,8 +608,6 @@ extension DrawingCanvas {
             elementIndex: elementIndex
         )
         selectedPoints.insert(pointID)
-
-        document.objectWillChange.send()
 
     }
 }
