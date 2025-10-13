@@ -181,8 +181,6 @@ struct FontSizeControls: View {
                 document.updateTextFontSizePreview(id: textID, fontSize: newSize)
             }
         } else {
-            document.objectWillChange.send()
-
             if let textID = document.selectedTextIDs.first,
                let freshText = document.findText(by: textID) {
                 var updatedTypography = freshText.typography
@@ -207,8 +205,6 @@ struct FontSizeControls: View {
                 document.updateTextLineSpacingPreview(id: textID, lineSpacing: Double(newSpacing))
             }
         } else {
-            document.objectWillChange.send()
-
             if let textID = document.selectedTextIDs.first,
                let freshText = document.findText(by: textID) {
                 var updatedTypography = freshText.typography
@@ -230,8 +226,6 @@ struct FontSizeControls: View {
                 document.updateTextLineHeightPreview(id: textID, lineHeight: Double(newHeight))
             }
         } else {
-            document.objectWillChange.send()
-
             if let textID = document.selectedTextIDs.first,
                let freshText = document.findText(by: textID) {
                 var updatedTypography = freshText.typography
