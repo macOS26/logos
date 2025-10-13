@@ -422,7 +422,6 @@ extension DrawingCanvas {
         }
 
         selectedPoints.removeAll()
-        document.objectWillChange.send()
     }
 
     private func addCornerPoint(at location: CGPoint) {
