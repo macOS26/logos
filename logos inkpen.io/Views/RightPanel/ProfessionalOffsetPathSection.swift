@@ -260,8 +260,6 @@ struct ProfessionalOffsetPathSection: View {
 
         document.updateUnifiedObjectsOptimized()
 
-        document.objectWillChange.send()
-
     }
 
 
