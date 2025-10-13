@@ -129,10 +129,6 @@ extension DrawingCanvas {
 
                 if isLiveDrag {
                     document.unifiedObjects[unifiedIndex] = VectorObject(shape: updatedShape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-
-                    if shouldUpdate {
-                        document.objectWillChange.send()
-                    }
                 } else {
                     updatedShape.updateBounds()
                     let shapesInLayer = document.getShapesForLayer(layerIndex)
@@ -140,9 +136,6 @@ extension DrawingCanvas {
                         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                     }
                     document.updateUnifiedObjectsOptimized(sendUpdate: false)
-                    if shouldUpdate {
-                        document.objectWillChange.send()
-                    }
                 }
                 return
         }
@@ -250,10 +243,6 @@ extension DrawingCanvas {
 
                 if isLiveDrag {
                     document.unifiedObjects[unifiedIndex] = VectorObject(shape: updatedShape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-
-                    if shouldUpdate {
-                        document.objectWillChange.send()
-                    }
                 } else {
                     updatedShape.updateBounds()
                     let shapesInLayer = document.getShapesForLayer(layerIndex)
@@ -261,9 +250,6 @@ extension DrawingCanvas {
                         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                     }
                     document.updateUnifiedObjectsOptimized(sendUpdate: false)
-                    if shouldUpdate {
-                        document.objectWillChange.send()
-                    }
                 }
                 return
         }
