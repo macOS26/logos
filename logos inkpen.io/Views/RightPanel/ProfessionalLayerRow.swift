@@ -148,25 +148,20 @@ struct ProfessionalLayerRow: View {
                     HStack(spacing: 4) {
                         Button(action: {
                             if NSEvent.modifierFlags.contains(.option) {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    var updatedSettings = document.settings
-                                    let shouldExpand = !isExpanded
-                                    for layer in document.layers {
-                                        updatedSettings.layerExpansionState[layer.id] = shouldExpand
-                                    }
-                                    document.settings = updatedSettings
+                                var updatedSettings = document.settings
+                                let shouldExpand = !isExpanded
+                                for layer in document.layers {
+                                    updatedSettings.layerExpansionState[layer.id] = shouldExpand
                                 }
+                                document.settings = updatedSettings
                             } else {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    setExpanded(!isExpanded)
-                                }
+                                setExpanded(!isExpanded)
                             }
                         }) {
                             Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(.secondary)
                                 .rotationEffect(.degrees(0))
-                                .animation(.easeInOut(duration: 0.15), value: isExpanded)
                                 .frame(width: 12, height: 12)
                         }
                         .buttonStyle(BorderlessButtonStyle())
@@ -374,16 +369,12 @@ struct ProfessionalLayerRow: View {
                     targetLayerId = layer.id
                 }
 
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    document.reorderLayer(sourceLayerId: droppedLayerId, targetLayerId: targetLayerId)
-                }
+                document.reorderLayer(sourceLayerId: droppedLayerId, targetLayerId: targetLayerId)
                 return true
 
             case .vectorObject(let vectorObj):
                 // Move object to this layer
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    document.moveObjectToLayer(objectId: vectorObj.objectId, targetLayerIndex: layerIndex)
-                }
+                document.moveObjectToLayer(objectId: vectorObj.objectId, targetLayerIndex: layerIndex)
                 return true
             }
         }

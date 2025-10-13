@@ -258,9 +258,7 @@ struct ObjectRow: View {
                     HStack(spacing: 4) {
                         if objectType == .group {
                             Button(action: {
-                                withAnimation(.easeInOut(duration: 0.15)) {
-                                    setGroupExpanded(!isGroupExpanded)
-                                }
+                                setGroupExpanded(!isGroupExpanded)
                             }) {
                                 Image(systemName: isGroupExpanded ? "chevron.down" : "chevron.right")
                                     .font(.system(size: 11, weight: .medium))
@@ -347,13 +345,11 @@ struct ObjectRow: View {
                     return false
                 }
 
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    if sourceLayerIndex == layerIndex {
-                        document.reorderObject(objectId: droppedObjectId, targetObjectId: objectId)
-                    } else {
-                        document.moveObjectToLayer(objectId: droppedObjectId, targetLayerIndex: layerIndex)
-                        document.reorderObject(objectId: droppedObjectId, targetObjectId: objectId)
-                    }
+                if sourceLayerIndex == layerIndex {
+                    document.reorderObject(objectId: droppedObjectId, targetObjectId: objectId)
+                } else {
+                    document.moveObjectToLayer(objectId: droppedObjectId, targetLayerIndex: layerIndex)
+                    document.reorderObject(objectId: droppedObjectId, targetObjectId: objectId)
                 }
 
                 return true
