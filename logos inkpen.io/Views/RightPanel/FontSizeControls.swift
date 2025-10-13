@@ -14,6 +14,10 @@ struct FontSizeControls: View {
     @State private var previewLineSpacing: CGFloat? = nil
     @State private var previewLineHeight: CGFloat? = nil
 
+    @State private var currentFontSizeState: CGFloat = 12.0
+    @State private var currentLineSpacingState: CGFloat = 0.0
+    @State private var currentLineHeightState: CGFloat = 12.0
+
     private var currentFontSize: CGFloat {
         if let selectedText = selectedText {
             return selectedText.typography.fontSize
@@ -53,13 +57,13 @@ struct FontSizeControls: View {
                         .fontWeight(.semibold)
                         .foregroundColor(.secondary)
                     Spacer()
-                    Text(String(format: "%.1f pt", previewFontSize ?? currentFontSize))
+                    Text(String(format: "%.1f pt", previewFontSize ?? currentFontSizeState))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
 
                 Slider(value: Binding(
-                    get: { previewFontSize ?? currentFontSize },
+                    get: { previewFontSize ?? currentFontSizeState },
                     set: { newSize in
                         let rounded = (newSize * 10).rounded() / 10
                         previewFontSize = rounded
@@ -87,20 +91,20 @@ struct FontSizeControls: View {
                         .fontWeight(.semibold)
                         .foregroundColor(.secondary)
                     Spacer()
-                    let spacing = previewLineSpacing ?? currentLineSpacing
+                    let spacing = previewLineSpacing ?? currentLineSpacingState
                     Text(spacing == 0 ? "0 pt" : String(format: "%.1f pt", spacing))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
 
                 Slider(value: Binding(
-                    get: { previewLineSpacing ?? currentLineSpacing },
+                    get: { previewLineSpacing ?? currentLineSpacingState },
                     set: { newSpacing in
                         let rounded = (newSpacing * 10).rounded() / 10
                         previewLineSpacing = rounded
                         updateLineSpacing(rounded, isPreview: isDraggingLineSpacing)
                     }
-                ), in: 0...(currentFontSize / 2), onEditingChanged: { editing in
+                ), in: 0...(currentFontSizeState / 2), onEditingChanged: { editing in
                     isDraggingLineSpacing = editing
                     if !editing {
                         if let preview = previewLineSpacing {
@@ -122,19 +126,19 @@ struct FontSizeControls: View {
                         .fontWeight(.semibold)
                         .foregroundColor(.secondary)
                     Spacer()
-                    Text(String(format: "%.1f pt", previewLineHeight ?? currentLineHeight))
+                    Text(String(format: "%.1f pt", previewLineHeight ?? currentLineHeightState))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
 
                 Slider(value: Binding(
-                    get: { previewLineHeight ?? currentLineHeight },
+                    get: { previewLineHeight ?? currentLineHeightState },
                     set: { newHeight in
                         let rounded = (newHeight * 10).rounded() / 10
                         previewLineHeight = rounded
                         updateLineHeight(rounded, isPreview: isDraggingLineHeight)
                     }
-                ), in: (currentFontSize / 2)...(currentFontSize * 2), onEditingChanged: { editing in
+                ), in: (currentFontSizeState / 2)...(currentFontSizeState * 2), onEditingChanged: { editing in
                     isDraggingLineHeight = editing
                     if !editing {
                         if let preview = previewLineHeight {
@@ -149,9 +153,26 @@ struct FontSizeControls: View {
                 .controlSize(.regular)
             }
         }
+        .onAppear {
+            syncFontStates()
+        }
+        .onChange(of: selectedText?.id) { _, _ in
+            syncFontStates()
+        }
+        .onChange(of: editingText?.id) { _, _ in
+            syncFontStates()
+        }
+    }
+
+    private func syncFontStates() {
+        currentFontSizeState = currentFontSize
+        currentLineSpacingState = currentLineSpacing
+        currentLineHeightState = currentLineHeight
     }
 
     private func updateFontSize(_ newSize: CGFloat, isPreview: Bool = false) {
+        currentFontSizeState = newSize
+        currentLineHeightState = newSize
         document.fontManager.selectedFontSize = newSize
         document.fontManager.selectedLineHeight = newSize
 
@@ -178,6 +199,7 @@ struct FontSizeControls: View {
     }
 
     private func updateLineSpacing(_ newSpacing: CGFloat, isPreview: Bool = false) {
+        currentLineSpacingState = newSpacing
         document.fontManager.selectedLineSpacing = Double(newSpacing)
 
         if isPreview {
@@ -200,6 +222,7 @@ struct FontSizeControls: View {
     }
 
     private func updateLineHeight(_ newHeight: CGFloat, isPreview: Bool = false) {
+        currentLineHeightState = newHeight
         document.fontManager.selectedLineHeight = Double(newHeight)
 
         if isPreview {

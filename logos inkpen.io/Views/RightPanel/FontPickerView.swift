@@ -36,6 +36,10 @@ struct FontPickerView: View {
     let editingText: VectorText?
     @Binding var fontFamilyUpdateTrigger: Bool
 
+    @State private var currentFontFamilyState: String = "Helvetica"
+    @State private var availableFontVariantNamesState: [String] = ["Regular"]
+    @State private var currentFontVariantState: String = "Regular"
+
     private var currentFontFamily: String {
         if let selectedText = selectedText {
             return selectedText.typography.fontFamily
@@ -51,6 +55,21 @@ struct FontPickerView: View {
         return document.fontManager.getAvailableVariantNames(for: family)
     }
 
+    private var currentFontVariant: String {
+        if let selectedText = selectedText {
+            if let variant = selectedText.typography.fontVariant,
+               !variant.isEmpty {
+                return variant
+            }
+        } else if let editingText = editingText {
+            if let variant = editingText.typography.fontVariant,
+               !variant.isEmpty {
+                return variant
+            }
+        }
+        return document.fontManager.selectedFontVariant
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Font")
@@ -58,17 +77,25 @@ struct FontPickerView: View {
             
             Picker("", selection: Binding(
                 get: {
-                    if let selectedText = selectedText {
-                        return selectedText.typography.fontFamily
-                    }
-                    return selectedTextTypography?.fontFamily ?? document.fontManager.selectedFontFamily
+                    currentFontFamilyState
                 },
                 set: { newFamily in
+                    currentFontFamilyState = newFamily
                     document.fontManager.selectedFontFamily = newFamily
                     fontFamilyUpdateTrigger.toggle()
 
+                    // Update available variants for new family
+                    let newVariants = document.fontManager.getAvailableVariantNames(for: newFamily)
+                    availableFontVariantNamesState = newVariants
+
+                    // Reset to first available variant (usually Regular)
+                    let defaultVariant = newVariants.first ?? "Regular"
+                    currentFontVariantState = defaultVariant
+                    document.fontManager.selectedFontVariant = defaultVariant
+
                     if let textID = document.selectedTextIDs.first {
                         document.updateTextFontFamilyDirect(id: textID, fontFamily: newFamily)
+                        document.updateTextFontVariantDirect(id: textID, fontVariant: defaultVariant)
                     }
 
                     document.objectWillChange.send()
@@ -88,16 +115,10 @@ struct FontPickerView: View {
             
             Picker("", selection: Binding(
                 get: {
-                    if let selectedText = selectedText {
-                        if let variant = selectedText.typography.fontVariant,
-                           availableFontVariantNames.contains(variant) {
-                            return variant
-                        }
-                    }
-
-                    return availableFontVariantNames.first ?? "Regular"
+                    currentFontVariantState
                 },
                 set: { newVariant in
+                    currentFontVariantState = newVariant
                     document.fontManager.selectedFontVariant = newVariant
 
                     if let textID = document.selectedTextIDs.first {
@@ -107,14 +128,42 @@ struct FontPickerView: View {
                     document.objectWillChange.send()
                 }
             )) {
-                ForEach(availableFontVariantNames, id: \.self) { variant in
+                ForEach(availableFontVariantNamesState, id: \.self) { variant in
                     Text(variant)
-                        .font(getFontForVariant(family: currentFontFamily, variantName: variant))
+                        .font(getFontForVariant(family: currentFontFamilyState, variantName: variant))
                         .tag(variant)
                 }
             }
             .fontPickerStyle()
             .id(fontFamilyUpdateTrigger)
+        }
+        .onAppear {
+            syncFontStates()
+        }
+        .onChange(of: selectedText?.id) { _, _ in
+            syncFontStates()
+        }
+        .onChange(of: editingText?.id) { _, _ in
+            syncFontStates()
+        }
+        .onChange(of: fontFamilyUpdateTrigger) { _, _ in
+            syncFontStates()
+        }
+    }
+
+    private func syncFontStates() {
+        let family = currentFontFamily
+        currentFontFamilyState = family
+
+        let variants = document.fontManager.getAvailableVariantNames(for: family)
+        availableFontVariantNamesState = variants
+
+        let variant = currentFontVariant
+        // Make sure the current variant is valid for the available variants
+        if variants.contains(variant) {
+            currentFontVariantState = variant
+        } else {
+            currentFontVariantState = variants.first ?? "Regular"
         }
     }
 
