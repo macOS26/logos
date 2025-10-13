@@ -487,7 +487,6 @@ struct MainView: View {
                         document.selectedObjectIDs = savedState.selectedObjectIDs
                         document.selectedTextIDs = savedState.selectedTextIDs
                         document.selectedShapeIDs = savedState.selectedShapeIDs
-                        document.objectWillChange.send()
                     }
                 } else {
                     pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: true, includeBackground: includeBackground)
