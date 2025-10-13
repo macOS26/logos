@@ -478,8 +478,6 @@ struct StrokeFillPanel: View {
 
     private func updateStrokePlacement(_ placement: StrokePlacement) {
         document.defaultStrokePlacement = placement
-        //document.objectWillChange.send()
-
         let activeShapeIDs = document.getActiveShapeIDs()
         if activeShapeIDs.isEmpty {
             return
@@ -549,8 +547,6 @@ struct StrokeFillPanel: View {
                     }
                 }
             }
-
-            //document.objectWillChange.send()
         }
     }
 
@@ -638,8 +634,6 @@ struct StrokeFillPanel: View {
                     }
                 }
             }
-
-            //document.objectWillChange.send()
         }
     }
 

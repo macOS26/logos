@@ -26,10 +26,6 @@ extension VectorDocument {
                 if let unwrappedShape = shape.unwrapWarpObject() {
                     setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: unwrappedShape)
 
-                    if let unifiedIndex = unifiedObjects.firstIndex(where: { $0.id == shape.id }) {
-                        unifiedObjects[unifiedIndex] = VectorObject(shape: unwrappedShape, layerIndex: layerIndex, orderID: unifiedObjects[unifiedIndex].orderID)
-                    }
-
                     selectedObjectIDs.remove(shape.id)
                     selectedObjectIDs.insert(unwrappedShape.id)
 
@@ -38,7 +34,7 @@ extension VectorDocument {
             }
         }
 
-        updateUnifiedObjectsOptimized()
+        populateUnifiedObjectsFromLayersPreservingOrder()
         objectWillChange.send()
     }
 
@@ -64,10 +60,6 @@ extension VectorDocument {
                 if let expandedShape = shape.expandWarpObject() {
                     setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: expandedShape)
 
-                    if let unifiedIndex = unifiedObjects.firstIndex(where: { $0.id == shape.id }) {
-                        unifiedObjects[unifiedIndex] = VectorObject(shape: expandedShape, layerIndex: layerIndex, orderID: unifiedObjects[unifiedIndex].orderID)
-                    }
-
                     selectedObjectIDs.remove(shape.id)
                     selectedObjectIDs.insert(expandedShape.id)
 
@@ -76,7 +68,7 @@ extension VectorDocument {
             }
         }
 
-        updateUnifiedObjectsOptimized()
+        populateUnifiedObjectsFromLayersPreservingOrder()
         objectWillChange.send()
     }
 }
