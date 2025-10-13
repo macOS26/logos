@@ -215,12 +215,11 @@ struct StrokeFillPanel: View {
                         onApplyFill: applyFillToSelectedShapes,
                         onUpdateFillOpacity: { value in
                             fillOpacityState = value
-                            document.defaultFillOpacity = value
-                            updateFillOpacityLive(value)
                         },
                         onFillOpacityEditingChanged: { isEditing in
                             if !isEditing {
-                                document.saveToUndoStack()
+                                document.defaultFillOpacity = fillOpacityState
+                                updateFillOpacity(fillOpacityState)
                             }
                         }
                     )
@@ -244,8 +243,6 @@ struct StrokeFillPanel: View {
                         strokeMiterLimit: strokeMiterLimitState,
                         onUpdateStrokeWidth: { value in
                             strokeWidthState = value
-                            document.defaultStrokeWidth = value
-                            updateStrokeWidthLive(value)
                         },
                         onUpdateStrokePlacement: { value in
                             document.objectWillChange.send()
@@ -253,8 +250,6 @@ struct StrokeFillPanel: View {
                         },
                         onUpdateStrokeOpacity: { value in
                             strokeOpacityState = value
-                            document.defaultStrokeOpacity = value
-                            updateStrokeOpacityLive(value)
                         },
                         onUpdateLineJoin: { value in
                             document.defaultStrokeLineJoin = value
@@ -268,22 +263,23 @@ struct StrokeFillPanel: View {
                         },
                         onUpdateMiterLimit: { value in
                             strokeMiterLimitState = value
-                            document.defaultStrokeMiterLimit = value
-                            updateStrokeMiterLimitLive(value)
                         },
                         onStrokeWidthEditingChanged: { isEditing in
                             if !isEditing {
-                                document.saveToUndoStack()
+                                document.defaultStrokeWidth = strokeWidthState
+                                updateStrokeWidth(strokeWidthState)
                             }
                         },
                         onStrokeOpacityEditingChanged: { isEditing in
                             if !isEditing {
-                                document.saveToUndoStack()
+                                document.defaultStrokeOpacity = strokeOpacityState
+                                updateStrokeOpacity(strokeOpacityState)
                             }
                         },
                         onMiterLimitEditingChanged: { isEditing in
                             if !isEditing {
-                                document.saveToUndoStack()
+                                document.defaultStrokeMiterLimit = strokeMiterLimitState
+                                updateStrokeMiterLimit(strokeMiterLimitState)
                             }
                         }
                     )

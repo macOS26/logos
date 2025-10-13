@@ -77,6 +77,7 @@ class VectorDocument: ObservableObject, Codable {
     }
 
     var textPreviewTypography: [UUID: TypographyProperties] = [:]
+    var shapePreviewStyles: [UUID: (fillOpacity: Double?, strokeOpacity: Double?, strokeWidth: Double?)] = [:]
 
     var allShapes: [VectorShape] {
         return unifiedObjects.compactMap { unifiedObject in
