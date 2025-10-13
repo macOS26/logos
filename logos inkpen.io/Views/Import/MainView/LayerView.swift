@@ -58,7 +58,8 @@ struct LayerView: View {
                         isCanvasLayer: isCanvasLayer,
                         isPasteboardLayer: isPasteboardLayer,
                         dragPreviewDelta: dragPreviewDelta,
-                        dragPreviewTrigger: dragPreviewTrigger
+                        dragPreviewTrigger: dragPreviewTrigger,
+                        document: document
                     )
                 }
             }

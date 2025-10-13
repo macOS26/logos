@@ -72,6 +72,41 @@ extension VectorDocument {
         textPreviewTypography.removeValue(forKey: id)
     }
 
+    // MARK: - Shape Preview Methods (for smooth sliders)
+
+    func updateShapeFillOpacityPreview(id: UUID, opacity: Double) {
+        shapePreviewFillOpacity[id] = opacity
+        NotificationCenter.default.post(
+            name: Notification.Name("ShapePreviewUpdate"),
+            object: nil,
+            userInfo: ["shapeID": id, "fillOpacity": opacity]
+        )
+    }
+
+    func updateShapeStrokeOpacityPreview(id: UUID, opacity: Double) {
+        shapePreviewStrokeOpacity[id] = opacity
+        NotificationCenter.default.post(
+            name: Notification.Name("ShapePreviewUpdate"),
+            object: nil,
+            userInfo: ["shapeID": id, "strokeOpacity": opacity]
+        )
+    }
+
+    func updateShapeStrokeWidthPreview(id: UUID, width: Double) {
+        shapePreviewStrokeWidth[id] = width
+        NotificationCenter.default.post(
+            name: Notification.Name("ShapePreviewUpdate"),
+            object: nil,
+            userInfo: ["shapeID": id, "strokeWidth": width]
+        )
+    }
+
+    func clearShapePreview(id: UUID) {
+        shapePreviewFillOpacity.removeValue(forKey: id)
+        shapePreviewStrokeOpacity.removeValue(forKey: id)
+        shapePreviewStrokeWidth.removeValue(forKey: id)
+    }
+
     func updateTextFillColorInUnified(id: UUID, color: VectorColor) {
         updateShapeByID(id) { shape in
             if shape.typography != nil {

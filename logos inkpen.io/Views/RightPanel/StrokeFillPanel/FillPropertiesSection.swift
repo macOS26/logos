@@ -2,8 +2,12 @@ import SwiftUI
 
 struct FillPropertiesSection: View {
     let fillOpacity: Double
+    let previewFillOpacity: Double?
     let onApplyFill: () -> Void
-    let onUpdateFillOpacity: (Double) -> Void
+    let onOpacityChange: (Double, Bool) -> Void  // value, isPreview
+    let onClearPreview: () -> Void
+
+    @State private var isDragging = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -17,15 +21,30 @@ struct FillPropertiesSection: View {
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("\(Int(fillOpacity * 100))%")
+                    Text("\(Int((previewFillOpacity ?? fillOpacity) * 100))%")
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                 }
 
-                Slider(value: Binding(
-                    get: { fillOpacity },
-                    set: { onUpdateFillOpacity($0) }
-                ), in: 0...1)
+                Slider(
+                    value: Binding(
+                        get: { previewFillOpacity ?? fillOpacity },
+                        set: { newValue in
+                            onOpacityChange(newValue, isDragging) // ALWAYS call with current isDragging state
+                        }
+                    ),
+                    in: 0...1,
+                    onEditingChanged: { editing in
+                        isDragging = editing
+                        if !editing {
+                            // When released, call again with isPreview: false
+                            if let preview = previewFillOpacity {
+                                onOpacityChange(preview, false)
+                            }
+                            onClearPreview()
+                        }
+                    }
+                )
                 .controlSize(.regular)
             }
 
