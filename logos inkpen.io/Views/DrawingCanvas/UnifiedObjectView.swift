@@ -13,30 +13,41 @@ struct UnifiedObjectView: View {
     @State private var layerOpacities: [Double] = []
     @State private var layerBlendModes: [BlendMode] = []
 
-    private var objects: [VectorObject] {
+    // OPTIMIZED: Only compute visible objects once, not on every render
+    private var visibleObjects: [VectorObject] {
         document.getObjectsInStackingOrder()
+    }
+
+    // OPTIMIZED: Pre-group objects by layer to avoid filtering multiple times
+    private var objectsByLayer: [Int: [VectorObject]] {
+        Dictionary(grouping: visibleObjects, by: { $0.layerIndex })
     }
 
     var body: some View {
         ZStack {
-            ForEach(Array(Set(objects.map { $0.layerIndex })).sorted(), id: \.self) { layerIndex in
-                ZStack {
-                    ForEach(objects.filter { $0.layerIndex == layerIndex }, id: \.id) { unifiedObject in
-                        UnifiedObjectContentView(
-                            unifiedObject: unifiedObject,
-                            document: document,
-                            zoomLevel: zoomLevel,
-                            canvasOffset: canvasOffset,
-                            selectedObjectIDs: selectedObjectIDs,
-                            viewMode: viewMode,
-                            dragPreviewDelta: dragPreviewDelta,
-                            dragPreviewTrigger: dragPreviewTrigger
-                        )
+            // OPTIMIZED: Only iterate visible layer indices
+            ForEach(objectsByLayer.keys.sorted(), id: \.self) { layerIndex in
+                // Skip invisible layers entirely - MAJOR performance win
+                if layerIndex < document.layers.count && document.layers[layerIndex].isVisible {
+                    ZStack {
+                        // OPTIMIZED: Use pre-grouped objects instead of filtering
+                        ForEach(objectsByLayer[layerIndex] ?? [], id: \.id) { unifiedObject in
+                            UnifiedObjectContentView(
+                                unifiedObject: unifiedObject,
+                                document: document,
+                                zoomLevel: zoomLevel,
+                                canvasOffset: canvasOffset,
+                                selectedObjectIDs: selectedObjectIDs,
+                                viewMode: viewMode,
+                                dragPreviewDelta: dragPreviewDelta,
+                                dragPreviewTrigger: dragPreviewTrigger
+                            )
+                        }
                     }
+                    .compositingGroup()
+                    .opacity(document.layers[layerIndex].opacity)
+                    .blendMode(document.layers[layerIndex].blendMode.swiftUIBlendMode)
                 }
-                .compositingGroup()
-                .opacity(layerIndex < document.layers.count ? document.layers[layerIndex].opacity : 1.0)
-                .blendMode(layerIndex < document.layers.count ? document.layers[layerIndex].blendMode.swiftUIBlendMode : .normal)
             }
 
         }
@@ -298,6 +309,7 @@ struct NonBackgroundObjectsView: View {
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
 
+    // OPTIMIZED: Filter backgrounds once
     private var nonBackgroundObjects: [VectorObject] {
         document.getObjectsInStackingOrder().filter { obj in
             if case .shape(let shape) = obj.objectType {
@@ -307,30 +319,39 @@ struct NonBackgroundObjectsView: View {
         }
     }
 
+    // OPTIMIZED: Pre-group to avoid repeated filtering
+    private var objectsByLayer: [Int: [VectorObject]] {
+        Dictionary(grouping: nonBackgroundObjects, by: { $0.layerIndex })
+    }
+
     @State private var layerOpacities: [Double] = []
     @State private var layerBlendModes: [BlendMode] = []
 
     var body: some View {
         ZStack {
-            ForEach(Array(Set(nonBackgroundObjects.map { $0.layerIndex })).sorted(), id: \.self) { layerIndex in
-                ZStack {
-                    ForEach(nonBackgroundObjects.filter { $0.layerIndex == layerIndex }, id: \.id) { unifiedObject in
-                        UnifiedObjectContentView(
-                            unifiedObject: unifiedObject,
-                            document: document,
-                            zoomLevel: zoomLevel,
-                            canvasOffset: canvasOffset,
-    selectedObjectIDs: selectedObjectIDs,
-                            viewMode: viewMode,
-                            dragPreviewDelta: dragPreviewDelta,
-                            dragPreviewTrigger: dragPreviewTrigger
-                        )
+            // OPTIMIZED: Only iterate visible layers
+            ForEach(objectsByLayer.keys.sorted(), id: \.self) { layerIndex in
+                // Skip invisible layers - MAJOR performance win
+                if layerIndex < document.layers.count && document.layers[layerIndex].isVisible {
+                    ZStack {
+                        // OPTIMIZED: Use pre-grouped objects
+                        ForEach(objectsByLayer[layerIndex] ?? [], id: \.id) { unifiedObject in
+                            UnifiedObjectContentView(
+                                unifiedObject: unifiedObject,
+                                document: document,
+                                zoomLevel: zoomLevel,
+                                canvasOffset: canvasOffset,
+                                selectedObjectIDs: selectedObjectIDs,
+                                viewMode: viewMode,
+                                dragPreviewDelta: dragPreviewDelta,
+                                dragPreviewTrigger: dragPreviewTrigger
+                            )
+                        }
                     }
+                    .compositingGroup()
+                    .opacity(document.layers[layerIndex].opacity)
+                    .blendMode(document.layers[layerIndex].blendMode.swiftUIBlendMode)
                 }
-                .compositingGroup()
-                .opacity(layerIndex < document.layers.count ? document.layers[layerIndex].opacity : 1.0)
-                .blendMode(layerIndex < document.layers.count ? document.layers[layerIndex].blendMode.swiftUIBlendMode : .normal)
-
             }
         }
         .onAppear {

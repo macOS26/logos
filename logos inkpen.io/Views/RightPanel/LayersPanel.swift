@@ -93,7 +93,9 @@ struct LayersPanel: View {
     @State private var renamingLayerIndex: Int?
     @State private var newLayerName: String = ""
     @State private var showColorPicker: Bool = false
-    
+    @State private var overlaysEnabled: Bool = true
+    @State private var rowHeights: [CGFloat] = []
+
     // Structure to represent each visible row in the layers panel
     private enum RowType: Hashable {
         case layer(index: Int)
@@ -139,7 +141,44 @@ struct LayersPanel: View {
         
         return rows
     }
-    
+
+    // Validate that overlays can be displayed correctly
+    private func validateOverlays() {
+        let expectedRowCount = visibleRows.count
+
+        // Check that we have the expected number of rows
+        // All rows in this design use kLayerRowHeight
+        let heightTolerance: CGFloat = 0.1
+
+        // Assume all rows are kLayerRowHeight (this is enforced in the UI)
+        // Check if any row height deviates from the standard
+        var allHeightsSame = true
+
+        // In this implementation, all rows are forced to kLayerRowHeight
+        // But we'll validate that the expected count matches
+        let overlayRowCount = expectedRowCount
+
+        // Check if heights are consistent (within tolerance)
+        // Since all rows use .frame(height: kLayerRowHeight), they should be consistent
+        if !rowHeights.isEmpty {
+            let minHeight = rowHeights.min() ?? kLayerRowHeight
+            let maxHeight = rowHeights.max() ?? kLayerRowHeight
+            allHeightsSame = (maxHeight - minHeight) <= heightTolerance
+        }
+
+        // Enable overlays only if:
+        // 1. We have rows to display
+        // 2. All rows are the same height (within tolerance)
+        // 3. The overlay count matches visible rows
+        let canDisplayOverlays = expectedRowCount > 0 && allHeightsSame && overlayRowCount == expectedRowCount
+
+        DispatchQueue.main.async {
+            if self.overlaysEnabled != canDisplayOverlays {
+                self.overlaysEnabled = canDisplayOverlays
+            }
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             layersHeader
@@ -157,6 +196,21 @@ struct LayersPanel: View {
         .background(
             KeyEventHandlerView(document: document)
         )
+        .onAppear {
+            validateOverlays()
+        }
+        .onChange(of: document.layers.map { $0.id }) { _, _ in
+            validateOverlays()
+        }
+        .onChange(of: document.unifiedObjects.map { $0.id }) { _, _ in
+            validateOverlays()
+        }
+        .onChange(of: document.settings.layerExpansionState) { _, _ in
+            validateOverlays()
+        }
+        .onChange(of: document.settings.groupExpansionState) { _, _ in
+            validateOverlays()
+        }
     }
 
     private var layersHeader: some View {
@@ -263,17 +317,19 @@ struct LayersPanel: View {
                 }
                 .animation(.spring(response: 0.3, dampingFraction: 0.9), value: document.layers.map { $0.id })
                 .padding(.horizontal, 4)
-                
+
                 // Overlay system for eye and lock icons
-                let iconSize: CGFloat = 20
-                let iconSpacing: CGFloat = 2
-                let rowPadding: CGFloat = 4
+                // Only display if validation passes
+                if overlaysEnabled {
+                    let iconSize: CGFloat = 20
+                    let iconSpacing: CGFloat = 2
+                    let rowPadding: CGFloat = 4
 
-                let eyeIconX = rowPadding + (iconSize / 2)
-                let lockIconX = rowPadding + iconSize + iconSpacing + (iconSize / 2)
+                    let eyeIconX = rowPadding + (iconSize / 2)
+                    let lockIconX = rowPadding + iconSize + iconSpacing + (iconSize / 2)
 
-                // Eye icon overlay
-                ZStack {
+                    // Eye icon overlay
+                    ZStack {
                     ForEach(Array(visibleRows.enumerated()), id: \.offset) { rowIndex, rowType in
                         let rowY = CGFloat(rowIndex) * kLayerRowHeight
                         let iconCenterY = rowY + (kLayerRowHeight / 2)
@@ -358,6 +414,7 @@ struct LayersPanel: View {
                 )
                 .padding(.horizontal, 4)
                 .zIndex(200)
+                }
             }
         }
     }

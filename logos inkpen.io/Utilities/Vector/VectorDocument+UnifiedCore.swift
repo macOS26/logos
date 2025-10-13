@@ -65,8 +65,8 @@ extension VectorDocument {
     }
 
     func getShapesForLayer(_ layerIndex: Int) -> [VectorShape] {
-        return unifiedObjects
-            .filter { $0.layerIndex == layerIndex }
+        // OPTIMIZATION: Use cached layer objects (O(1) lookup instead of O(n) filter)
+        return getObjectsInLayer(layerIndex)
             .sorted { $0.orderID < $1.orderID }
             .compactMap { object -> VectorShape? in
                 if case .shape(let shape) = object.objectType {
@@ -77,10 +77,8 @@ extension VectorDocument {
     }
 
     private func getNextOrderID(for layerIndex: Int) -> Int {
-        let existingOrderIDs = unifiedObjects
-            .filter { $0.layerIndex == layerIndex }
-            .map { $0.orderID }
-
+        // OPTIMIZATION: Use cached layer objects
+        let existingOrderIDs = getObjectsInLayer(layerIndex).map { $0.orderID }
         return existingOrderIDs.isEmpty ? 0 : (existingOrderIDs.max() ?? -1) + 1
     }
 
@@ -130,10 +128,8 @@ extension VectorDocument {
             }
         }
 
-        let existingOrderIDs = unifiedObjects
-            .filter { $0.layerIndex == layerIndex }
-            .map { $0.orderID }
-
+        // OPTIMIZATION: Use cached layer objects
+        let existingOrderIDs = getObjectsInLayer(layerIndex).map { $0.orderID }
         let highestOrderID = existingOrderIDs.isEmpty ? 0 : (existingOrderIDs.max() ?? 0)
         let orderID = highestOrderID + 1
 
@@ -153,22 +149,20 @@ extension VectorDocument {
             unifiedObjects.remove(at: existingIndex)
         }
 
-        let targetOrderIDs = unifiedObjects
-            .filter { $0.layerIndex == layerIndex }
-            .compactMap { unifiedObj -> Int? in
-                switch unifiedObj.objectType {
-                case .shape(let existingShape):
-                    return behindShapeIDs.contains(existingShape.id) ? unifiedObj.orderID : nil
-                }
+        // OPTIMIZATION: Use cached layer objects
+        let layerObjects = getObjectsInLayer(layerIndex)
+        let targetOrderIDs = layerObjects.compactMap { unifiedObj -> Int? in
+            switch unifiedObj.objectType {
+            case .shape(let existingShape):
+                return behindShapeIDs.contains(existingShape.id) ? unifiedObj.orderID : nil
             }
+        }
 
         let orderID: Int
         if let minTargetOrderID = targetOrderIDs.min() {
             orderID = minTargetOrderID - 1
         } else {
-            let existingOrderIDs = unifiedObjects
-                .filter { $0.layerIndex == layerIndex }
-                .map { $0.orderID }
+            let existingOrderIDs = layerObjects.map { $0.orderID }
             orderID = (existingOrderIDs.min() ?? 0) - 1
         }
 
