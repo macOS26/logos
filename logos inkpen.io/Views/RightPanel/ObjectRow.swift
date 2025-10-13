@@ -258,7 +258,9 @@ struct ObjectRow: View {
                     HStack(spacing: 4) {
                         if objectType == .group {
                             Button(action: {
-                                setGroupExpanded(!isGroupExpanded)
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
+                                    setGroupExpanded(!isGroupExpanded)
+                                }
                             }) {
                                 Image(systemName: isGroupExpanded ? "chevron.down" : "chevron.right")
                                     .font(.system(size: 11, weight: .medium))

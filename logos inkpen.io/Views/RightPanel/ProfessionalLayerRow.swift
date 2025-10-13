@@ -147,15 +147,17 @@ struct ProfessionalLayerRow: View {
                     
                     HStack(spacing: 4) {
                         Button(action: {
-                            if NSEvent.modifierFlags.contains(.option) {
-                                var updatedSettings = document.settings
-                                let shouldExpand = !isExpanded
-                                for layer in document.layers {
-                                    updatedSettings.layerExpansionState[layer.id] = shouldExpand
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
+                                if NSEvent.modifierFlags.contains(.option) {
+                                    var updatedSettings = document.settings
+                                    let shouldExpand = !isExpanded
+                                    for layer in document.layers {
+                                        updatedSettings.layerExpansionState[layer.id] = shouldExpand
+                                    }
+                                    document.settings = updatedSettings
+                                } else {
+                                    setExpanded(!isExpanded)
                                 }
-                                document.settings = updatedSettings
-                            } else {
-                                setExpanded(!isExpanded)
                             }
                         }) {
                             Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
@@ -310,6 +312,7 @@ struct ProfessionalLayerRow: View {
                         }
                     }
                 }
+                .animation(.spring(response: 0.3, dampingFraction: 0.9), value: layerObjects.map { $0.id })
             }
         }
         .onAppear {

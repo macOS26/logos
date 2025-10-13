@@ -258,6 +258,7 @@ struct LayersPanel: View {
                         layerRowContent(for: layerIndex)
                     }
                 }
+                .animation(.spring(response: 0.3, dampingFraction: 0.9), value: document.layers.map { $0.id })
                 .padding(.horizontal, 4)
                 
                 // Overlay system for eye and lock icons
