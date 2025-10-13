@@ -194,13 +194,8 @@ extension DrawingCanvas {
         if shapes.contains(where: { $0.id == shape.id }) {
             document.updateShapeGradientInUnified(id: shape.id, gradient: newGradient, target: .fill)
 
-            if isLiveDrag {
-                document.objectWillChange.send()
-            } else {
+            if !isLiveDrag {
                 document.updateUnifiedObjectsOptimized()
-                DispatchQueue.main.async {
-                    self.document.objectWillChange.send()
-                }
             }
 
         }
