@@ -69,7 +69,6 @@ extension DrawingCanvas {
                             self.selectedHandles.removeAll()
                             self.directSelectedShapeIDs.removeAll()
                             self.syncDirectSelectionWithDocument()
-                            self.document.objectWillChange.send()
                         }
                         self.temporaryCommandPreviousTool = nil
                     }
@@ -199,8 +198,6 @@ extension DrawingCanvas {
                 if self.document.currentTool == .bezierPen && self.isBezierDrawing {
                     self.finishBezierPath()
                 }
-
-                self.document.objectWillChange.send()
 
                 return nil
             }
@@ -397,7 +394,5 @@ extension DrawingCanvas {
         }
 
         document.objectPositionUpdateTrigger.toggle()
-
-        document.objectWillChange.send()
     }
 }
