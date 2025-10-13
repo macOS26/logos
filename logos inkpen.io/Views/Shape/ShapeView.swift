@@ -12,23 +12,9 @@ struct ShapeView: View {
     let isPasteboardLayer: Bool
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
-    @ObservedObject var document: VectorDocument
 
     private var effectiveViewMode: ViewMode {
         return (isCanvasLayer || isPasteboardLayer) ? .color : viewMode
-    }
-
-    // Get preview opacity values like text does with typography
-    private var previewFillOpacity: Double? {
-        document.shapePreviewFillOpacity[shape.id]
-    }
-
-    private var previewStrokeOpacity: Double? {
-        document.shapePreviewStrokeOpacity[shape.id]
-    }
-
-    private var previewStrokeWidth: Double? {
-        document.shapePreviewStrokeWidth[shape.id]
     }
 
     var body: some View {
@@ -139,11 +125,8 @@ struct ShapeView: View {
 
     @ViewBuilder
     private func renderStrokeWithPlacement(shape: VectorShape, strokeStyle: StrokeStyle, viewMode: ViewMode, path: Path) -> some View {
-        let effectiveWidth = previewStrokeWidth ?? strokeStyle.width
-        let effectiveOpacity = previewStrokeOpacity ?? strokeStyle.opacity
-
         let swiftUIStrokeStyle = SwiftUI.StrokeStyle(
-            lineWidth: effectiveWidth,
+            lineWidth: strokeStyle.width,
             lineCap: strokeStyle.lineCap.cgLineCap.swiftUILineCap,
             lineJoin: strokeStyle.lineJoin.cgLineJoin.swiftUILineJoin,
             miterLimit: strokeStyle.miterLimit,
@@ -158,17 +141,17 @@ struct ShapeView: View {
             if strokeStyle.isGradient {
                 let adjustedStrokeStyle = StrokeStyle(
                     color: strokeStyle.color,
-                    width: effectiveWidth * 2,
+                    width: strokeStyle.width * 2,
                     placement: .center,
                     dashPattern: strokeStyle.dashPattern.map { $0 * 2 },
                     lineCap: strokeStyle.lineCap.cgLineCap,
                     lineJoin: strokeStyle.lineJoin.cgLineJoin,
                     miterLimit: strokeStyle.miterLimit,
-                    opacity: effectiveOpacity,
+                    opacity: strokeStyle.opacity,
                     blendMode: strokeStyle.blendMode
                 )
                 let doubleWidthStyle = SwiftUI.StrokeStyle(
-                    lineWidth: effectiveWidth * 2,
+                    lineWidth: strokeStyle.width * 2,
                     lineCap: swiftUIStrokeStyle.lineCap,
                     lineJoin: swiftUIStrokeStyle.lineJoin,
                     miterLimit: swiftUIStrokeStyle.miterLimit,
@@ -180,7 +163,7 @@ struct ShapeView: View {
                     )
             } else {
                 let doubleWidthStyle = SwiftUI.StrokeStyle(
-                    lineWidth: effectiveWidth * 2,
+                    lineWidth: strokeStyle.width * 2,
                     lineCap: swiftUIStrokeStyle.lineCap,
                     lineJoin: swiftUIStrokeStyle.lineJoin,
                     miterLimit: swiftUIStrokeStyle.miterLimit,
@@ -195,7 +178,7 @@ struct ShapeView: View {
         case .outside:
 
             let boundingBox = path.cgPath.boundingBoxOfPath
-            let expansion = max(effectiveWidth * 4, 1000)
+            let expansion = max(strokeStyle.width * 4, 1000)
             let largeRect = boundingBox.insetBy(dx: -expansion, dy: -expansion)
 
             let outsideMask = Path { maskPath in
@@ -207,17 +190,17 @@ struct ShapeView: View {
             if strokeStyle.isGradient {
                 let adjustedStrokeStyle = StrokeStyle(
                     color: strokeStyle.color,
-                    width: effectiveWidth * 2,
+                    width: strokeStyle.width * 2,
                     placement: .center,
                     dashPattern: strokeStyle.dashPattern.map { $0 * 2 },
                     lineCap: strokeStyle.lineCap.cgLineCap,
                     lineJoin: strokeStyle.lineJoin.cgLineJoin,
                     miterLimit: strokeStyle.miterLimit,
-                    opacity: effectiveOpacity,
+                    opacity: strokeStyle.opacity,
                     blendMode: strokeStyle.blendMode
                 )
                 let doubleWidthStrokeStyle = SwiftUI.StrokeStyle(
-                    lineWidth: effectiveWidth * 2,
+                    lineWidth: strokeStyle.width * 2,
                     lineCap: swiftUIStrokeStyle.lineCap,
                     lineJoin: swiftUIStrokeStyle.lineJoin,
                     miterLimit: swiftUIStrokeStyle.miterLimit,
@@ -226,10 +209,10 @@ struct ShapeView: View {
 
                 renderStrokeColor(strokeStyle: adjustedStrokeStyle, path: path, swiftUIStyle: doubleWidthStrokeStyle, shape: shape)
                     .mask(outsideMask)
-                    .opacity(effectiveOpacity)
+                    .opacity(strokeStyle.opacity)
             } else {
                 let doubleWidthStrokeStyle = SwiftUI.StrokeStyle(
-                    lineWidth: effectiveWidth * 2,
+                    lineWidth: strokeStyle.width * 2,
                     lineCap: swiftUIStrokeStyle.lineCap,
                     lineJoin: swiftUIStrokeStyle.lineJoin,
                     miterLimit: swiftUIStrokeStyle.miterLimit,
@@ -238,23 +221,21 @@ struct ShapeView: View {
 
                 renderStrokeColor(strokeStyle: strokeStyle, path: path, swiftUIStyle: doubleWidthStrokeStyle, shape: shape)
                     .mask(outsideMask)
-                    .opacity(effectiveOpacity)
+                    .opacity(strokeStyle.opacity)
             }
         }
     }
 
     @ViewBuilder
     private func renderFill(fillStyle: FillStyle, path: Path, shape: VectorShape) -> some View {
-        let effectiveOpacity = previewFillOpacity ?? fillStyle.opacity
-
         switch fillStyle.color {
         case .gradient(let vectorGradient):
             GradientFillView(gradient: vectorGradient, path: path.cgPath)
-                .opacity(effectiveOpacity)
+                .opacity(fillStyle.opacity)
 
         default:
             path.fill(fillStyle.color.color, style: SwiftUI.FillStyle(eoFill: shape.path.fillRule.cgPathFillRule == .evenOdd))
-                .opacity(effectiveOpacity)
+                .opacity(fillStyle.opacity)
         }
     }
 

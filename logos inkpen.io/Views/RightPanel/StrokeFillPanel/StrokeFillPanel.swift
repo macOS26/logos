@@ -12,13 +12,6 @@ struct StrokeFillPanel: View {
     @State private var strokeMiterLimitState: Double = 10.0
     @State private var selectedImageOpacityState: Double = 1.0
 
-    @State private var previewFillOpacity: Double? = nil
-    @State private var previewStrokeOpacity: Double? = nil
-    @State private var previewStrokeWidth: Double? = nil
-    @State private var isDraggingFillOpacity = false
-    @State private var isDraggingStrokeOpacity = false
-    @State private var isDraggingStrokeWidth = false
-
     private var selectedStrokeColor: VectorColor {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
@@ -218,41 +211,13 @@ struct StrokeFillPanel: View {
                     )
 
                     FillPropertiesSection(
-                        fillOpacity: fillOpacity,
-                        previewFillOpacity: previewFillOpacity,
+                        fillOpacity: fillOpacityState,
                         onApplyFill: applyFillToSelectedShapes,
-                        onOpacityChange: { value, isPreview in
-                            previewFillOpacity = value  // ALWAYS update preview
-                            fillOpacityState = value  // Update state
-
-                            if isPreview {
-                                // PREVIEW ONLY - like FontSizeControls!
-                                if let firstID = document.selectedObjectIDs.first {
-                                    document.updateShapeFillOpacityPreview(id: firstID, opacity: value)
-                                }
-                            } else {
-                                // Apply to ALL selected objects when released
-                                document.objectWillChange.send()
-                                for objectID in document.selectedObjectIDs {
-                                    if let unifiedObject = document.findObject(by: objectID) {
-                                        switch unifiedObject.objectType {
-                                        case .shape(let shape):
-                                            if shape.isTextObject {
-                                                document.updateTextFillOpacityInUnified(id: shape.id, opacity: value)
-                                            } else {
-                                                document.updateShapeFillOpacityInUnified(id: shape.id, opacity: value)
-                                            }
-                                        }
-                                    }
-                                }
-                                document.saveToUndoStack()
-                            }
-                        },
-                        onClearPreview: {
-                            previewFillOpacity = nil
-                            if let firstID = document.selectedObjectIDs.first {
-                                document.clearShapePreview(id: firstID)
-                            }
+                        onUpdateFillOpacity: { value in
+                            fillOpacityState = value
+                            document.defaultFillOpacity = value
+                            document.objectWillChange.send()
+                            updateFillOpacity(value)
                         }
                     )
 
@@ -267,101 +232,43 @@ struct StrokeFillPanel: View {
                     }
 
                     StrokePropertiesSection(
-                        strokeWidth: strokeWidth,
-                        strokeOpacity: strokeOpacity,
-                        strokeMiterLimit: strokeMiterLimit,
+                        strokeWidth: strokeWidthState,
                         strokePlacement: strokePlacement,
+                        strokeOpacity: strokeOpacityState,
                         strokeLineJoin: strokeLineJoin,
                         strokeLineCap: strokeLineCap,
-                        previewStrokeWidth: previewStrokeWidth,
-                        previewStrokeOpacity: previewStrokeOpacity,
-                        onWidthChange: { value, isPreview in
-                            previewStrokeWidth = value  // ALWAYS update preview
-                            strokeWidthState = value  // Update state
-
-                            if isPreview {
-                                // PREVIEW ONLY - like FontSizeControls!
-                                if let firstID = document.selectedObjectIDs.first {
-                                    document.updateShapeStrokeWidthPreview(id: firstID, width: value)
-                                }
-                            } else {
-                                // Apply to ALL when released
-                                document.objectWillChange.send()
-                                for objectID in document.selectedObjectIDs {
-                                    if let unifiedObject = document.findObject(by: objectID) {
-                                        switch unifiedObject.objectType {
-                                        case .shape(let shape):
-                                            if shape.isTextObject {
-                                                document.updateTextStrokeWidthInUnified(id: shape.id, width: value)
-                                            } else {
-                                                document.updateShapeStrokeWidthInUnified(id: shape.id, width: value)
-                                            }
-                                        }
-                                    }
-                                }
-                                document.saveToUndoStack()
-                            }
+                        strokeMiterLimit: strokeMiterLimitState,
+                        onUpdateStrokeWidth: { value in
+                            strokeWidthState = value
+                            document.defaultStrokeWidth = value
+                            document.objectWillChange.send()
+                            updateStrokeWidth(value)
                         },
                         onUpdateStrokePlacement: { value in
+                            document.objectWillChange.send()
                             updateStrokePlacement(value)
                         },
-                        onOpacityChange: { value, isPreview in
-                            previewStrokeOpacity = value  // ALWAYS update preview
-                            strokeOpacityState = value  // Update state
-
-                            if isPreview {
-                                // PREVIEW ONLY - like FontSizeControls!
-                                if let firstID = document.selectedObjectIDs.first {
-                                    document.updateShapeStrokeOpacityPreview(id: firstID, opacity: value)
-                                }
-                            } else {
-                                // Apply to ALL when released
-                                document.objectWillChange.send()
-                                for objectID in document.selectedObjectIDs {
-                                    if let unifiedObject = document.findObject(by: objectID) {
-                                        switch unifiedObject.objectType {
-                                        case .shape(let shape):
-                                            if !shape.isTextObject {
-                                                document.updateShapeStrokeOpacityInUnified(id: shape.id, opacity: value)
-                                            }
-                                        }
-                                    }
-                                }
-                                document.saveToUndoStack()
-                            }
+                        onUpdateStrokeOpacity: { value in
+                            strokeOpacityState = value
+                            document.defaultStrokeOpacity = value
+                            document.objectWillChange.send()
+                            updateStrokeOpacity(value)
                         },
                         onUpdateLineJoin: { value in
                             document.defaultStrokeLineJoin = value
+                            document.objectWillChange.send()
                             updateStrokeLineJoin(value)
                         },
                         onUpdateLineCap: { value in
                             document.defaultStrokeLineCap = value
+                            document.objectWillChange.send()
                             updateStrokeLineCap(value)
                         },
-                        onMiterLimitChange: { value, isPreview in
-                            if isPreview {
-                                // PREVIEW during dragging
-                                for objectID in document.selectedObjectIDs {
-                                    if let unifiedObject = document.findObject(by: objectID) {
-                                        switch unifiedObject.objectType {
-                                        case .shape(let shape):
-                                            if !shape.isTextObject {
-                                                document.updateShapeStrokeMiterLimitInUnified(id: shape.id, miterLimit: value)
-                                            }
-                                        }
-                                    }
-                                }
-                            } else {
-                                // Save undo when released
-                                document.saveToUndoStack()
-                            }
-                        },
-                        onClearPreview: {
-                            previewStrokeWidth = nil
-                            previewStrokeOpacity = nil
-                            if let firstID = document.selectedObjectIDs.first {
-                                document.clearShapePreview(id: firstID)
-                            }
+                        onUpdateMiterLimit: { value in
+                            strokeMiterLimitState = value
+                            document.defaultStrokeMiterLimit = value
+                            document.objectWillChange.send()
+                            updateStrokeMiterLimit(value)
                         }
                     )
 

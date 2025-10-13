@@ -151,8 +151,7 @@ struct UnifiedObjectContentView: View {
             isCanvasLayer: unifiedObject.layerIndex == 1,
             isPasteboardLayer: unifiedObject.layerIndex == 0,
             dragPreviewDelta: dragPreviewDelta,
-            dragPreviewTrigger: dragPreviewTrigger,
-            document: document
+            dragPreviewTrigger: dragPreviewTrigger
         )
         .id("\(shape.id)-\(shape.path.isClosed)-\(shape.bounds.hashValue)-\(shape.isClippingPath)-\(shape.clippedByShapeID?.uuidString ?? "none")")
     }

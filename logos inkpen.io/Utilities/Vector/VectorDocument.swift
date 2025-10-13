@@ -78,11 +78,6 @@ class VectorDocument: ObservableObject, Codable {
 
     var textPreviewTypography: [UUID: TypographyProperties] = [:]
 
-    // Shape preview states for smooth slider updates (like textPreviewTypography)
-    var shapePreviewFillOpacity: [UUID: Double] = [:]
-    var shapePreviewStrokeOpacity: [UUID: Double] = [:]
-    var shapePreviewStrokeWidth: [UUID: Double] = [:]
-
     var allShapes: [VectorShape] {
         return unifiedObjects.compactMap { unifiedObject in
             if case .shape(let shape) = unifiedObject.objectType, !shape.isTextObject {

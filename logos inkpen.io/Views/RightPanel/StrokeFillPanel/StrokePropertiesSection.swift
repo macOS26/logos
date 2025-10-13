@@ -2,24 +2,17 @@ import SwiftUI
 
 struct StrokePropertiesSection: View {
     let strokeWidth: Double
-    let strokeOpacity: Double
-    let strokeMiterLimit: Double
     let strokePlacement: StrokePlacement
+    let strokeOpacity: Double
     let strokeLineJoin: CGLineJoin
     let strokeLineCap: CGLineCap
-    let previewStrokeWidth: Double?
-    let previewStrokeOpacity: Double?
-    let onWidthChange: (Double, Bool) -> Void  // value, isPreview
+    let strokeMiterLimit: Double
+    let onUpdateStrokeWidth: (Double) -> Void
     let onUpdateStrokePlacement: (StrokePlacement) -> Void
-    let onOpacityChange: (Double, Bool) -> Void  // value, isPreview
+    let onUpdateStrokeOpacity: (Double) -> Void
     let onUpdateLineJoin: (CGLineJoin) -> Void
     let onUpdateLineCap: (CGLineCap) -> Void
-    let onMiterLimitChange: (Double, Bool) -> Void  // value, isPreview
-    let onClearPreview: () -> Void
-
-    @State private var isDraggingWidth = false
-    @State private var isDraggingOpacity = false
-    @State private var isDraggingMiterLimit = false
+    let onUpdateMiterLimit: (Double) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -33,30 +26,15 @@ struct StrokePropertiesSection: View {
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("\(String(format: "%.1f", previewStrokeWidth ?? strokeWidth)) pt")
+                    Text("\(String(format: "%.1f", strokeWidth)) pt")
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                 }
 
-                Slider(
-                    value: Binding(
-                        get: { previewStrokeWidth ?? strokeWidth },
-                        set: { newValue in
-                            onWidthChange(newValue, isDraggingWidth) // ALWAYS call with current isDragging
-                        }
-                    ),
-                    in: 0...20,
-                    onEditingChanged: { editing in
-                        isDraggingWidth = editing
-                        if !editing {
-                            // When released, call again with isPreview: false
-                            if let preview = previewStrokeWidth {
-                                onWidthChange(preview, false)
-                            }
-                            onClearPreview()
-                        }
-                    }
-                )
+                Slider(value: Binding(
+                    get: { strokeWidth },
+                    set: { onUpdateStrokeWidth($0) }
+                ), in: 0...20)
                 .controlSize(.regular)
             }
 
@@ -66,30 +44,15 @@ struct StrokePropertiesSection: View {
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("\(Int((previewStrokeOpacity ?? strokeOpacity) * 100))%")
+                    Text("\(Int(strokeOpacity * 100))%")
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                 }
 
-                Slider(
-                    value: Binding(
-                        get: { previewStrokeOpacity ?? strokeOpacity },
-                        set: { newValue in
-                            onOpacityChange(newValue, isDraggingOpacity) // ALWAYS call with current isDragging
-                        }
-                    ),
-                    in: 0...1,
-                    onEditingChanged: { editing in
-                        isDraggingOpacity = editing
-                        if !editing {
-                            // When released, call again with isPreview: false
-                            if let preview = previewStrokeOpacity {
-                                onOpacityChange(preview, false)
-                            }
-                            onClearPreview()
-                        }
-                    }
-                )
+                Slider(value: Binding(
+                    get: { strokeOpacity },
+                    set: { onUpdateStrokeOpacity($0) }
+                ), in: 0...1)
                 .controlSize(.regular)
             }
 
@@ -197,18 +160,10 @@ struct StrokePropertiesSection: View {
                         .foregroundColor(Color.ui.secondaryText)
                 }
 
-                Slider(
-                    value: Binding(
-                        get: { strokeMiterLimit },
-                        set: { newValue in
-                            onMiterLimitChange(newValue, isDraggingMiterLimit) // Pass isDragging like FontSizeControls
-                        }
-                    ),
-                    in: 1...20,
-                    onEditingChanged: { editing in
-                        isDraggingMiterLimit = editing  // Track drag state like FontSizeControls
-                    }
-                )
+                Slider(value: Binding(
+                    get: { strokeMiterLimit },
+                    set: { onUpdateMiterLimit($0) }
+                ), in: 1...20)
                 .controlSize(.regular)
                 .tint(.blue)
             }
