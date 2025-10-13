@@ -6,6 +6,12 @@ extension DrawingCanvas {
     internal func setupKeyEventMonitoring() {
         keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { (event: NSEvent) -> NSEvent? in
 
+            // Only process events for the key window's document
+            guard let keyWindow = NSApp.keyWindow,
+                  keyWindow == event.window else {
+                return event
+            }
+
             if event.type == .keyDown {
 
 
