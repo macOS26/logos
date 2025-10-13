@@ -515,7 +515,6 @@ struct GradientFillSection: View {
                     }
                 }
             }
-            document.objectWillChange.send()
             return
         }
 
@@ -548,9 +547,6 @@ struct GradientFillSection: View {
 
         if hasChanges {
             document.updateUnifiedObjectsOptimized()
-            DispatchQueue.main.async {
-                self.document.objectWillChange.send()
-            }
         }
     }
 
