@@ -5,7 +5,11 @@ extension VectorDocument {
     func removeShapeFromUnifiedSystem(id: UUID) {
         unifiedObjects.removeAll { obj in
             if case .shape(let shape) = obj.objectType {
-                return shape.id == id
+                if shape.id == id {
+                    // Clean up image from registry if it exists
+                    ImageContentRegistry.remove(for: id)
+                    return true
+                }
             }
             return false
         }

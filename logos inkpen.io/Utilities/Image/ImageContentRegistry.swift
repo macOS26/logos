@@ -78,4 +78,31 @@ enum ImageContentRegistry {
             baseDirectoryURL = url
         }
     }
+
+    static func remove(for shapeID: UUID) {
+        queue.async(flags: .barrier) {
+            storage.removeValue(forKey: shapeID)
+        }
+    }
+
+    static func cleanup(keepingShapes shapeIDs: Set<UUID>) {
+        queue.async(flags: .barrier) {
+            let keysToRemove = storage.keys.filter { !shapeIDs.contains($0) }
+            for key in keysToRemove {
+                storage.removeValue(forKey: key)
+            }
+        }
+    }
+
+    static func clearAll() {
+        queue.async(flags: .barrier) {
+            storage.removeAll()
+        }
+    }
+
+    static func storageSize() -> Int {
+        return queue.sync {
+            storage.count
+        }
+    }
 }

@@ -89,6 +89,9 @@ extension VectorDocument {
 
         isUndoRedoOperation = false
         objectWillChange.send()
+
+        // Clean up unused images after undo
+        cleanupImageRegistry()
     }
 
     func redo() {
@@ -169,6 +172,9 @@ extension VectorDocument {
 
         isUndoRedoOperation = false
         objectWillChange.send()
+
+        // Clean up unused images after redo
+        cleanupImageRegistry()
     }
 
     private func fixUnifiedObjectsOrderingAfterUndo() {

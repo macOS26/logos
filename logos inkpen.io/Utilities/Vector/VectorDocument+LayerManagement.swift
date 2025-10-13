@@ -136,9 +136,55 @@ extension VectorDocument {
         let colors: [Color] = [.gray, .blue, .green, .orange, .purple, .red, .pink, .yellow, .cyan]
         let color = colors[layers.count % colors.count]
 
-        let newLayer = VectorLayer(name: name, color: color)
-        layers.append(newLayer)
-        selectedLayerIndex = layers.count - 1
+        // Generate next layer number - fill in gaps
+        var layerName = name
+        if name == "New Layer" {
+            var existingNumbers = Set<Int>()
+
+            for layer in layers {
+                if layer.name.hasPrefix("Layer "),
+                   let numberPart = layer.name.split(separator: " ").last,
+                   let num = Int(numberPart) {
+                    existingNumbers.insert(num)
+                }
+            }
+
+            // Find the first available number starting from 1
+            var layerNumber = 1
+            while existingNumbers.contains(layerNumber) {
+                layerNumber += 1
+            }
+
+            layerName = "Layer \(layerNumber)"
+        }
+
+        let newLayer = VectorLayer(name: layerName, color: color)
+
+        // Insert in front of (above) the currently selected layer
+        if let currentIndex = selectedLayerIndex, currentIndex < layers.count {
+            // Insert right after the current selected layer (which appears above in the UI since layers are reversed)
+            layers.insert(newLayer, at: currentIndex + 1)
+            selectedLayerIndex = currentIndex + 1
+
+            // Update all object indices that are at or above the insertion point
+            var updatedObjects: [VectorObject] = []
+            for object in unifiedObjects {
+                if object.layerIndex > currentIndex {
+                    updatedObjects.append(VectorObject(
+                        shape: extractShape(from: object),
+                        layerIndex: object.layerIndex + 1,
+                        orderID: object.orderID
+                    ))
+                } else {
+                    updatedObjects.append(object)
+                }
+            }
+            unifiedObjects = updatedObjects
+        } else {
+            // No layer selected or invalid index, append to end
+            layers.append(newLayer)
+            selectedLayerIndex = layers.count - 1
+        }
 
         settings.selectedLayerId = newLayer.id
         settings.selectedLayerName = newLayer.name

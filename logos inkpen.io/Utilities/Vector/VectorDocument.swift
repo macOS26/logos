@@ -890,4 +890,25 @@ class VectorDocument: ObservableObject, Codable {
         }
     }
 
+    // Clean up unused images from the registry to prevent memory leaks
+    func cleanupImageRegistry() {
+        var allShapeIDs = Set<UUID>()
+
+        // Collect all shape IDs from unified objects
+        for object in unifiedObjects {
+            if case .shape(let shape) = object.objectType {
+                allShapeIDs.insert(shape.id)
+                // Include grouped shapes
+                if shape.isGroupContainer {
+                    for groupedShape in shape.groupedShapes {
+                        allShapeIDs.insert(groupedShape.id)
+                    }
+                }
+            }
+        }
+
+        // Clean up images that don't belong to any shape
+        ImageContentRegistry.cleanup(keepingShapes: allShapeIDs)
+    }
+
 }
