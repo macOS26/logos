@@ -749,10 +749,6 @@ extension ProfessionalPathOperations {
                 }
             }
         }
-
-        if totalCleaned > 0 {
-            document.objectWillChange.send()
-        }
     }
 
     static func cleanupSelectedShapesDuplicates(_ document: VectorDocument, tolerance: Double = 5.0) {
@@ -779,10 +775,6 @@ extension ProfessionalPathOperations {
                     }
                 }
             }
-        }
-
-        if totalCleaned > 0 {
-            document.objectWillChange.send()
         }
     }
 }
