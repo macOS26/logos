@@ -59,8 +59,6 @@ extension DrawingCanvas {
                 break
             }
         }
-
-        document.objectWillChange.send()
     }
 
 
@@ -623,7 +621,5 @@ extension DrawingCanvas {
                 break
             }
         }
-
-        document.objectWillChange.send()
     }
 }
