@@ -344,6 +344,12 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                     textView.font = newFont
                 }
 
+                // Update text color with opacity
+                let baseColor = NSColor(typography.fillColor.color)
+                let textColor = baseColor.withAlphaComponent(typography.fillOpacity)
+                textView.textColor = textColor
+                textView.insertionPointColor = textColor
+
                 let paragraphStyle = NSMutableParagraphStyle()
                 paragraphStyle.alignment = typography.alignment.nsTextAlignment
                 paragraphStyle.lineSpacing = max(0, typography.lineSpacing)

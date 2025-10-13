@@ -218,15 +218,20 @@ struct StrokeFillPanel: View {
                         onApplyFill: applyFillToSelectedShapes,
                         onUpdateFillOpacity: { value in
                             fillOpacityState = value
-                            updateFillOpacityDirectNoUndo(value)
+                            updateFillOpacityLive(value, isEditing: true)
                         },
                         onFillOpacityEditingChanged: { isEditing in
                             if isEditing {
                                 cachedIndexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
                             } else {
                                 document.defaultFillOpacity = fillOpacityState
+                                updateFillOpacityLive(fillOpacityState, isEditing: false)
                                 document.saveToUndoStack()
                                 cachedIndexMap.removeAll()
+                                // Clear preview for text objects
+                                for objectID in document.selectedObjectIDs {
+                                    document.clearTextPreviewTypography(id: objectID)
+                                }
                             }
                         }
                     )
@@ -426,6 +431,37 @@ struct StrokeFillPanel: View {
                     layerIndex: document.unifiedObjects[index].layerIndex,
                     orderID: document.unifiedObjects[index].orderID
                 )
+            }
+        }
+    }
+
+    private func updateFillOpacityLive(_ opacity: Double, isEditing: Bool) {
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.findObject(by: objectID) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    if shape.isTextObject {
+                        if isEditing {
+                            // Use preview for live updates during dragging
+                            document.updateTextFillOpacityPreview(id: shape.id, opacity: opacity)
+                        } else {
+                            // Commit the final value
+                            document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
+                        }
+                    } else {
+                        // For non-text shapes, update directly
+                        if let index = cachedIndexMap[objectID] {
+                            if case .shape(var shape) = document.unifiedObjects[index].objectType {
+                                shape.fillStyle?.opacity = opacity
+                                document.unifiedObjects[index] = VectorObject(
+                                    shape: shape,
+                                    layerIndex: document.unifiedObjects[index].layerIndex,
+                                    orderID: document.unifiedObjects[index].orderID
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }

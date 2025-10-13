@@ -125,7 +125,7 @@ struct FontPickerView: View {
                 }
             )) {
                 ForEach(availableFontVariantNamesState, id: \.self) { variant in
-                    Text(variant)
+                    Text(cleanVariantName(variant))
                         .font(getFontForVariant(family: currentFontFamilyState, variantName: variant))
                         .tag(variant)
                 }
@@ -176,5 +176,40 @@ struct FontPickerView: View {
         }
 
         return Font.system(size: 12)
+    }
+
+    private func cleanVariantName(_ name: String) -> String {
+        // Convert abbreviated weight names to full names
+        let weightMap: [String: String] = [
+            "W0": "Ultra Thin",
+            "W1": "Ultra Thin",
+            "W2": "Thin",
+            "W3": "Light",
+            "W4": "Regular",
+            "W5": "Medium",
+            "W6": "Semibold",
+            "W7": "Bold",
+            "W8": "Heavy",
+            "W9": "Black"
+        ]
+
+        // Check if it's just a weight code
+        if let fullName = weightMap[name] {
+            return fullName
+        }
+
+        // Check if it starts with a weight code
+        for (code, fullWeight) in weightMap {
+            if name.hasPrefix(code) {
+                let remainder = name.dropFirst(code.count).trimmingCharacters(in: .whitespaces)
+                if remainder.isEmpty {
+                    return fullWeight
+                } else {
+                    return "\(fullWeight) \(remainder)"
+                }
+            }
+        }
+
+        return name
     }
 }

@@ -72,6 +72,21 @@ extension VectorDocument {
         textPreviewTypography.removeValue(forKey: id)
     }
 
+    func updateTextFillOpacityPreview(id: UUID, opacity: Double) {
+        if let textObject = findText(by: id) {
+            var previewTypography = textPreviewTypography[id] ?? textObject.typography
+            previewTypography.fillOpacity = opacity
+
+            textPreviewTypography[id] = previewTypography
+
+            NotificationCenter.default.post(
+                name: Notification.Name("TextPreviewUpdate"),
+                object: nil,
+                userInfo: ["textID": id, "typography": previewTypography]
+            )
+        }
+    }
+
     func updateTextFillColorInUnified(id: UUID, color: VectorColor) {
         updateShapeByID(id) { shape in
             if shape.typography != nil {
