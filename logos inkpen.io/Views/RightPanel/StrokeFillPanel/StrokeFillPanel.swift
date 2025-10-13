@@ -398,7 +398,7 @@ struct StrokeFillPanel: View {
         if hasChanges {
             document.saveToUndoStack()
 
-            document.objectWillChange.send()
+            //document.objectWillChange.send()
         }
     }
 
@@ -419,7 +419,7 @@ struct StrokeFillPanel: View {
                 }
             }
         }
-        document.objectWillChange.send()
+        //document.objectWillChange.send() // do not use!
     }
 
     private func updateStrokeWidth(_ width: Double) {
