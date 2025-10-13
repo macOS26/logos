@@ -54,7 +54,6 @@ extension DrawingCanvas {
                     selectedHandles.removeAll()
                     syncDirectSelectionWithDocument()
                     document.selectedLayerIndex = layerIndex
-                    document.objectWillChange.send()
                 } else {
                     document.selectedTextIDs.removeAll()
                     if isShiftPressed {
@@ -63,7 +62,6 @@ extension DrawingCanvas {
                         document.selectedShapeIDs = [shape.id]
                     }
                     document.selectedLayerIndex = layerIndex
-                    document.objectWillChange.send()
                 }
             }
             return
@@ -217,8 +215,6 @@ extension DrawingCanvas {
                     document.defaultFillColor = selectedColor
                 }
             }
-
-            document.objectWillChange.send()
         } else {
             let hasTextObjects = document.unifiedObjects.contains { obj in
                 if case .shape(let shape) = obj.objectType { return shape.isTextObject }
@@ -245,7 +241,6 @@ extension DrawingCanvas {
                     isCornerRadiusEditMode = false
 
                 }
-                document.objectWillChange.send()
             }
         }
     }
