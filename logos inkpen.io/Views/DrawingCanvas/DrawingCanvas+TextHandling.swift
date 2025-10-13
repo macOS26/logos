@@ -529,7 +529,6 @@ extension DrawingCanvas {
         } else {
             document.selectedTextIDs.remove(textID)
         }
-        document.objectWillChange.send()
     }
 
     func handleTextEditingChange(textID: UUID, isEditing: Bool) {
@@ -564,7 +563,6 @@ extension DrawingCanvas {
             }
 
         }
-        document.objectWillChange.send()
     }
 
     func handleTextContentChange(textID: UUID, newContent: String) {
@@ -573,8 +571,6 @@ extension DrawingCanvas {
         document.updateTextContentInUnified(id: textObj.id, content: newContent)
         textObj.updateBounds()
         document.updateTextInUnified(textObj)
-
-        document.objectWillChange.send()
     }
 
     func handleTextPositionChange(textID: UUID, newPosition: CGPoint) {
@@ -583,8 +579,6 @@ extension DrawingCanvas {
         document.saveToUndoStack()
 
         document.updateTextPositionInUnified(id: textObj.id, position: newPosition)
-
-        document.objectWillChange.send()
     }
 
     func handleTextBoundsChange(textID: UUID, newBounds: CGRect) {
@@ -593,8 +587,6 @@ extension DrawingCanvas {
         document.saveToUndoStack()
 
         document.updateTextBoundsInUnified(id: textObj.id, bounds: newBounds)
-
-        document.objectWillChange.send()
     }
 
 
@@ -677,8 +669,6 @@ extension DrawingCanvas {
             .line(to: VectorPoint(minX, minY + finalHeight)),
             .close
         ])
-
-        document.objectWillChange.send()
     }
 
     func finishTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
