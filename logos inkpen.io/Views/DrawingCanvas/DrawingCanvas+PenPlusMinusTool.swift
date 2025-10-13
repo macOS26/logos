@@ -90,7 +90,6 @@ extension DrawingCanvas {
         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: modifiedShape)
 
         document.updateUnifiedObjectsOptimized()
-        document.objectWillChange.send()
 
     }
 
@@ -143,7 +142,6 @@ extension DrawingCanvas {
         }
 
         document.updateUnifiedObjectsOptimized()
-        document.objectWillChange.send()
     }
 
 
