@@ -39,7 +39,6 @@ struct FontPickerView: View {
     @State private var currentFontFamilyState: String = "Helvetica"
     @State private var availableFontVariantNamesState: [String] = ["Regular"]
     @State private var currentFontVariantState: String = "Regular"
-    @State private var cachedAvailableFonts: [String] = []
 
     private var currentFontFamily: String {
         if let selectedText = selectedText {
@@ -98,14 +97,18 @@ struct FontPickerView: View {
                         document.updateTextFontFamilyDirect(id: textID, fontFamily: newFamily)
                         document.updateTextFontVariantDirect(id: textID, fontVariant: defaultVariant)
                     }
+
+                    document.objectWillChange.send()
                 }
             )) {
-                ForEach(cachedAvailableFonts, id: \.self) { fontFamily in
+                ForEach(document.fontManager.availableFonts, id: \.self) { fontFamily in
                     Text(fontFamily)
+                        .font(.custom(fontFamily, size: 12))
                         .tag(fontFamily)
                 }
             }
             .fontPickerStyle()
+            .id(fontFamilyUpdateTrigger)
 
             Text("Weight")
                 .fontPickerLabel()
@@ -121,17 +124,20 @@ struct FontPickerView: View {
                     if let textID = document.selectedTextIDs.first {
                         document.updateTextFontVariantDirect(id: textID, fontVariant: newVariant)
                     }
+
+                    document.objectWillChange.send()
                 }
             )) {
                 ForEach(availableFontVariantNamesState, id: \.self) { variant in
                     Text(variant)
+                        .font(getFontForVariant(family: currentFontFamilyState, variantName: variant))
                         .tag(variant)
                 }
             }
             .fontPickerStyle()
+            .id(fontFamilyUpdateTrigger)
         }
         .onAppear {
-            cachedAvailableFonts = document.fontManager.availableFonts
             syncFontStates()
         }
         .onChange(of: selectedText?.id) { _, _ in
