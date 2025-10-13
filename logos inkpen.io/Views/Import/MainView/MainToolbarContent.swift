@@ -91,7 +91,6 @@ struct MainToolbarContent: ToolbarContent {
         }
 
         document.populateUnifiedObjectsFromLayersPreservingOrder()
-        document.objectWillChange.send()
     }
 
     var body: some ToolbarContent {
