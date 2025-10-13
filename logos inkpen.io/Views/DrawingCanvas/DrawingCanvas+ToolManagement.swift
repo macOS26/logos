@@ -110,8 +110,6 @@ extension DrawingCanvas {
             selectedHandles.removeAll()
             syncDirectSelectionWithDocument()
         }
-
-        document.objectWillChange.send()
     }
 
 
