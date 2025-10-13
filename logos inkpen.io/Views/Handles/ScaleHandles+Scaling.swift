@@ -167,8 +167,5 @@ extension ScaleHandles {
         finalMarqueeBounds = currentBounds.applying(scaleTransform)
 
         isScaling = true
-
-
-        document.objectWillChange.send()
     }
 }
