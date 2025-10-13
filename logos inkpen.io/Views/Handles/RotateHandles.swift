@@ -430,9 +430,6 @@ struct RotateHandles: View {
         previewTransform = initialTransform.concatenating(rotationTransform)
 
         isRotating = true
-
-
-        document.objectWillChange.send()
     }
 
     private func finishRotation() {
