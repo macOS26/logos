@@ -705,8 +705,6 @@ struct EnvelopeHandles: View {
                 }
             }
         }
-
-    document.objectWillChange.send()
     }
 
     private func commitEnvelopeWarp() {
