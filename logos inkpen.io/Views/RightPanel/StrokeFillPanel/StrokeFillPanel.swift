@@ -12,6 +12,9 @@ struct StrokeFillPanel: View {
     @State private var strokeMiterLimitState: Double = 10.0
     @State private var selectedImageOpacityState: Double = 1.0
 
+    @State private var cachedIndexMap: [UUID: Int] = [:]
+    @State private var isDragging: Bool = false
+
     private var selectedStrokeColor: VectorColor {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
@@ -218,9 +221,12 @@ struct StrokeFillPanel: View {
                             updateFillOpacityDirectNoUndo(value)
                         },
                         onFillOpacityEditingChanged: { isEditing in
-                            if !isEditing {
+                            if isEditing {
+                                cachedIndexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
+                            } else {
                                 document.defaultFillOpacity = fillOpacityState
                                 document.saveToUndoStack()
+                                cachedIndexMap.removeAll()
                             }
                         }
                     )
@@ -266,21 +272,30 @@ struct StrokeFillPanel: View {
                             updateStrokeMiterLimitDirectNoUndo(value)
                         },
                         onStrokeWidthEditingChanged: { isEditing in
-                            if !isEditing {
+                            if isEditing {
+                                cachedIndexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
+                            } else {
                                 document.defaultStrokeWidth = strokeWidthState
                                 document.saveToUndoStack()
+                                cachedIndexMap.removeAll()
                             }
                         },
                         onStrokeOpacityEditingChanged: { isEditing in
-                            if !isEditing {
+                            if isEditing {
+                                cachedIndexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
+                            } else {
                                 document.defaultStrokeOpacity = strokeOpacityState
                                 document.saveToUndoStack()
+                                cachedIndexMap.removeAll()
                             }
                         },
                         onMiterLimitEditingChanged: { isEditing in
-                            if !isEditing {
+                            if isEditing {
+                                cachedIndexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
+                            } else {
                                 document.defaultStrokeMiterLimit = strokeMiterLimitState
                                 document.saveToUndoStack()
+                                cachedIndexMap.removeAll()
                             }
                         }
                     )
@@ -398,10 +413,8 @@ struct StrokeFillPanel: View {
     }
 
     private func updateFillOpacityDirectNoUndo(_ opacity: Double) {
-        let indexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
-
         for objectID in document.selectedObjectIDs {
-            guard let index = indexMap[objectID] else { continue }
+            guard let index = cachedIndexMap[objectID] else { continue }
             if case .shape(var shape) = document.unifiedObjects[index].objectType {
                 if shape.isTextObject {
                     shape.typography?.fillOpacity = opacity
@@ -446,10 +459,8 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokeWidthDirectNoUndo(_ width: Double) {
-        let indexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
-
         for objectID in document.selectedObjectIDs {
-            guard let index = indexMap[objectID] else { continue }
+            guard let index = cachedIndexMap[objectID] else { continue }
             if case .shape(var shape) = document.unifiedObjects[index].objectType {
                 if shape.isTextObject {
                     shape.typography?.strokeWidth = width
@@ -544,10 +555,8 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokeOpacityDirectNoUndo(_ opacity: Double) {
-        let indexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
-
         for objectID in document.selectedObjectIDs {
-            guard let index = indexMap[objectID] else { continue }
+            guard let index = cachedIndexMap[objectID] else { continue }
             if case .shape(var shape) = document.unifiedObjects[index].objectType {
                 shape.strokeStyle?.opacity = opacity
                 document.unifiedObjects[index] = VectorObject(
@@ -671,10 +680,8 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokeMiterLimitDirectNoUndo(_ miterLimit: Double) {
-        let indexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
-
         for objectID in document.selectedObjectIDs {
-            guard let index = indexMap[objectID] else { continue }
+            guard let index = cachedIndexMap[objectID] else { continue }
             if case .shape(var shape) = document.unifiedObjects[index].objectType {
                 shape.strokeStyle?.miterLimit = miterLimit
                 document.unifiedObjects[index] = VectorObject(
