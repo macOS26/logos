@@ -19,7 +19,6 @@ extension VectorDocument {
                 }
                 updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
                 unifiedObjects[index] = updatedObject
-                objectWillChange.send()
             }
         }
     }
@@ -40,7 +39,6 @@ extension VectorDocument {
                 }
                 updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
                 unifiedObjects[index] = updatedObject
-                objectWillChange.send()
             }
         }
     }
@@ -61,7 +59,6 @@ extension VectorDocument {
                 }
                 updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
                 unifiedObjects[index] = updatedObject
-                objectWillChange.send()
             }
         }
     }
@@ -82,7 +79,6 @@ extension VectorDocument {
                 }
                 updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
                 unifiedObjects[index] = updatedObject
-                objectWillChange.send()
             }
         }
     }
@@ -99,7 +95,6 @@ extension VectorDocument {
                 shape.isLocked = true
                 updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
                 unifiedObjects[index] = updatedObject
-                objectWillChange.send()
             }
         }
     }
@@ -116,7 +111,6 @@ extension VectorDocument {
                 shape.isLocked = false
                 updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
                 unifiedObjects[index] = updatedObject
-                objectWillChange.send()
             }
         }
     }
@@ -133,7 +127,6 @@ extension VectorDocument {
                 shape.isVisible = false
                 updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
                 unifiedObjects[index] = updatedObject
-                objectWillChange.send()
             }
         }
     }
@@ -150,7 +143,6 @@ extension VectorDocument {
                 shape.isVisible = true
                 updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
                 unifiedObjects[index] = updatedObject
-                objectWillChange.send()
             }
         }
     }
@@ -171,7 +163,6 @@ extension VectorDocument {
                 }
                 updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
                 unifiedObjects[index] = updatedObject
-                objectWillChange.send()
             }
         }
     }
@@ -188,7 +179,6 @@ extension VectorDocument {
                 shape.opacity = opacity
                 updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
                 unifiedObjects[index] = updatedObject
-                objectWillChange.send()
             }
         }
     }
@@ -209,7 +199,6 @@ extension VectorDocument {
                 }
                 updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
                 unifiedObjects[index] = updatedObject
-                objectWillChange.send()
             }
         }
     }

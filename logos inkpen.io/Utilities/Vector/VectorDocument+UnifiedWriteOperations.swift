@@ -7,12 +7,10 @@ extension VectorDocument {
         guard layerIndex >= 0 && layerIndex < layers.count else { return }
 
         addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
-        objectWillChange.send()
     }
 
     func removeShapeByIdUnified(shapeID: UUID) {
         removeShapeFromUnifiedSystem(id: shapeID)
-        objectWillChange.send()
     }
 
     func removeShapesUnified(layerIndex: Int, where condition: (VectorShape) -> Bool) {
@@ -30,15 +28,12 @@ extension VectorDocument {
         for shapeID in shapesToRemove {
             removeShapeFromUnifiedSystem(id: shapeID)
         }
-
-        objectWillChange.send()
     }
 
     func insertShapeUnified(layerIndex: Int, shape: VectorShape, at index: Int) {
         guard layerIndex >= 0 && layerIndex < layers.count else { return }
 
         addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
-        objectWillChange.send()
     }
 
     func appendShapesUnified(layerIndex: Int, shapes: [VectorShape]) {
@@ -47,8 +42,6 @@ extension VectorDocument {
         for shape in shapes {
             addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
         }
-
-        objectWillChange.send()
     }
 
     func removeShapeAtIndexUnified(layerIndex: Int, shapeIndex: Int) {
@@ -59,8 +52,6 @@ extension VectorDocument {
 
         let shapeToRemove = shapesInLayer[shapeIndex]
         removeShapeFromUnifiedSystem(id: shapeToRemove.id)
-
-        objectWillChange.send()
     }
 
     func setShapesForLayerUnified(layerIndex: Int, shapes: [VectorShape]) {
@@ -74,7 +65,5 @@ extension VectorDocument {
         for shape in shapes {
             addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
         }
-
-        objectWillChange.send()
     }
 }
