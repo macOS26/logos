@@ -16,7 +16,6 @@ extension DrawingCanvas {
                         selectedPoints.removeAll()
                         selectedHandles.removeAll()
                         syncDirectSelectionWithDocument()
-                        document.objectWillChange.send()
                         return true
                     }
 
@@ -376,7 +375,6 @@ extension DrawingCanvas {
                         selectedPoints.removeAll()
                         selectedHandles.removeAll()
                         syncDirectSelectionWithDocument()
-                        document.objectWillChange.send()
                         return true
                     }
 
@@ -417,9 +415,6 @@ extension DrawingCanvas {
             directSelectedShapeIDs.removeAll()
             syncDirectSelectionWithDocument()
         }
-
-
-        document.objectWillChange.send()
     }
 
 
