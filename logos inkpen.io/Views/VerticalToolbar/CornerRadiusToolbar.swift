@@ -246,7 +246,6 @@ struct CornerRadiusToolbar: View {
             }
         }
 
-        document.objectWillChange.send()
         updateCornerValues()
     }
 
