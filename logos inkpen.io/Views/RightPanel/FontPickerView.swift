@@ -180,17 +180,24 @@ struct FontPickerView: View {
 
     private func cleanVariantName(_ name: String) -> String {
         // Convert abbreviated weight names to full names
+        // Based on NSFontManager weight trait system (0-15 scale)
         let weightMap: [String: String] = [
-            "W0": "Ultra Thin",
-            "W1": "Ultra Thin",
+            "W0": "Ultra Light",
+            "W1": "Light",
             "W2": "Thin",
             "W3": "Light",
-            "W4": "Regular",
-            "W5": "Medium",
-            "W6": "Semibold",
-            "W7": "Bold",
-            "W8": "Heavy",
-            "W9": "Black"
+            "W4": "Book",
+            "W5": "Regular",
+            "W6": "Medium",
+            "W7": "Demibold",
+            "W8": "Semibold",
+            "W9": "Bold",
+            "W10": "Extra Bold",
+            "W11": "Heavy",
+            "W12": "Black",
+            "W13": "Ultra Black",
+            "W14": "Extra Black",
+            "W15": "Ultra Black"
         ]
 
         // Check if it's just a weight code

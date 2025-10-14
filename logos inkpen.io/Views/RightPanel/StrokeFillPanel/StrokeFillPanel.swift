@@ -255,14 +255,14 @@ struct StrokeFillPanel: View {
                         strokeMiterLimit: strokeMiterLimitState,
                         onUpdateStrokeWidth: { value in
                             strokeWidthState = value
-                            updateStrokeWidthDirectNoUndo(value)
+                            updateStrokeWidthLive(value, isEditing: true)
                         },
                         onUpdateStrokePlacement: { value in
-                            updateStrokePlacement(value)
+                            updateStrokePlacementLive(value)
                         },
                         onUpdateStrokeOpacity: { value in
                             strokeOpacityState = value
-                            updateStrokeOpacityDirectNoUndo(value)
+                            updateStrokeOpacityLive(value, isEditing: true)
                         },
                         onUpdateLineJoin: { value in
                             document.defaultStrokeLineJoin = value
@@ -281,6 +281,7 @@ struct StrokeFillPanel: View {
                                 cachedIndexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
                             } else {
                                 document.defaultStrokeWidth = strokeWidthState
+                                updateStrokeWidthLive(strokeWidthState, isEditing: false)
                                 document.saveToUndoStack()
                                 cachedIndexMap.removeAll()
                             }
@@ -290,6 +291,7 @@ struct StrokeFillPanel: View {
                                 cachedIndexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
                             } else {
                                 document.defaultStrokeOpacity = strokeOpacityState
+                                updateStrokeOpacityLive(strokeOpacityState, isEditing: false)
                                 document.saveToUndoStack()
                                 cachedIndexMap.removeAll()
                             }
@@ -435,6 +437,11 @@ struct StrokeFillPanel: View {
         }
     }
 
+    /// Updates fill opacity for selected objects using lightweight notifications during dragging.
+    /// This provides fast, responsive UI updates without triggering full document republishing.
+    /// - Parameters:
+    ///   - opacity: The new opacity value (0.0 to 1.0)
+    ///   - isEditing: True during dragging (uses preview), false on release (commits change)
     private func updateFillOpacityLive(_ opacity: Double, isEditing: Bool) {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
@@ -442,25 +449,100 @@ struct StrokeFillPanel: View {
                 case .shape(let shape):
                     if shape.isTextObject {
                         if isEditing {
-                            // Use preview for live updates during dragging
                             document.updateTextFillOpacityPreview(id: shape.id, opacity: opacity)
                         } else {
-                            // Commit the final value
                             document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
                         }
                     } else {
-                        // For non-text shapes, update directly
-                        if let index = cachedIndexMap[objectID] {
-                            if case .shape(var shape) = document.unifiedObjects[index].objectType {
-                                shape.fillStyle?.opacity = opacity
-                                document.unifiedObjects[index] = VectorObject(
-                                    shape: shape,
-                                    layerIndex: document.unifiedObjects[index].layerIndex,
-                                    orderID: document.unifiedObjects[index].orderID
-                                )
-                            }
+                        if isEditing {
+                            document.updateShapeFillOpacityPreview(id: shape.id, opacity: opacity)
+                        } else {
+                            document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
                         }
                     }
+                }
+            }
+        }
+    }
+
+    /// Updates stroke opacity for selected objects using lightweight notifications during dragging.
+    /// This provides fast, responsive UI updates without triggering full document republishing.
+    /// - Parameters:
+    ///   - opacity: The new opacity value (0.0 to 1.0)
+    ///   - isEditing: True during dragging (uses preview), false on release (commits change)
+    private func updateStrokeOpacityLive(_ opacity: Double, isEditing: Bool) {
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.findObject(by: objectID) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    if !shape.isTextObject {
+                        if isEditing {
+                            document.updateShapeStrokeOpacityPreview(id: shape.id, opacity: opacity)
+                        } else {
+                            document.updateShapeStrokeOpacityInUnified(id: shape.id, opacity: opacity)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Updates stroke width for selected objects using lightweight notifications during dragging.
+    /// This provides fast, responsive UI updates without triggering full document republishing.
+    /// - Parameters:
+    ///   - width: The new stroke width value
+    ///   - isEditing: True during dragging (uses preview), false on release (commits change)
+    private func updateStrokeWidthLive(_ width: Double, isEditing: Bool) {
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.findObject(by: objectID) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    if shape.isTextObject {
+                        if !isEditing {
+                            document.updateTextStrokeWidthInUnified(id: shape.id, width: width)
+                        }
+                    } else {
+                        if isEditing {
+                            document.updateShapeStrokeWidthPreview(id: shape.id, width: width)
+                        } else {
+                            document.updateShapeStrokeWidthInUnified(id: shape.id, width: width)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Updates stroke placement for selected shapes using lightweight notifications.
+    /// This provides instant UI updates without triggering full document republishing.
+    /// - Parameter placement: The new stroke placement (center, inside, outside)
+    private func updateStrokePlacementLive(_ placement: StrokePlacement) {
+        document.defaultStrokePlacement = placement
+
+        // Send preview notification for immediate visual update
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.findObject(by: objectID) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    if !shape.isTextObject {
+                        document.updateShapeStrokePlacementPreview(id: shape.id, placement: placement)
+                    }
+                }
+            }
+        }
+
+        // Then commit the change to the document
+        let activeShapeIDs = document.getActiveShapeIDs()
+        if activeShapeIDs.isEmpty { return }
+
+        document.saveToUndoStack()
+
+        for shapeID in activeShapeIDs {
+            for layerIndex in document.layers.indices {
+                let shapes = document.getShapesForLayer(layerIndex)
+                if shapes.firstIndex(where: { $0.id == shapeID }) != nil {
+                    document.updateShapeStrokePlacementInUnified(id: shapeID, placement: placement)
+                    break
                 }
             }
         }

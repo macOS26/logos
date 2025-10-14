@@ -13,8 +13,34 @@ struct ShapeView: View {
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
 
+    /// Preview state for live updates during dragging - avoids triggering @Published document changes
+    @State private var previewFillOpacity: Double? = nil
+    @State private var previewStrokeOpacity: Double? = nil
+    @State private var previewStrokeWidth: Double? = nil
+    @State private var previewStrokePlacement: StrokePlacement? = nil
+
     private var effectiveViewMode: ViewMode {
         return (isCanvasLayer || isPasteboardLayer) ? .color : viewMode
+    }
+
+    /// Returns the fill opacity to use - preview value during dragging, actual value otherwise
+    private var effectiveFillOpacity: Double {
+        return previewFillOpacity ?? shape.fillStyle?.opacity ?? 1.0
+    }
+
+    /// Returns the stroke opacity to use - preview value during dragging, actual value otherwise
+    private var effectiveStrokeOpacity: Double {
+        return previewStrokeOpacity ?? shape.strokeStyle?.opacity ?? 1.0
+    }
+
+    /// Returns the stroke width to use - preview value during dragging, actual value otherwise
+    private var effectiveStrokeWidth: Double {
+        return previewStrokeWidth ?? shape.strokeStyle?.width ?? 1.0
+    }
+
+    /// Returns the stroke placement to use - preview value during selection, actual value otherwise
+    private var effectiveStrokePlacement: StrokePlacement {
+        return previewStrokePlacement ?? shape.strokeStyle?.placement ?? .center
     }
 
     var body: some View {
@@ -38,7 +64,7 @@ struct ShapeView: View {
                                     cachedPath.stroke(Color.black, lineWidth: 1.0 / zoomLevel)
                                 } else if let strokeStyle = groupedShape.strokeStyle, strokeStyle.color != .clear {
                                     renderStrokeWithPlacement(shape: groupedShape, strokeStyle: strokeStyle, viewMode: effectiveViewMode, path: cachedPath)
-                                        .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
+                                        .opacity(strokeStyle.placement == .outside ? 1.0 : effectiveStrokeOpacity)
                                 }
                             }
                             .transformEffect(groupedShape.transform)
@@ -108,7 +134,7 @@ struct ShapeView: View {
                         finalPath.stroke(Color.black, lineWidth: 1.0 / zoomLevel)
                     } else if let strokeStyle = shape.strokeStyle, strokeStyle.color != .clear {
                         renderStrokeWithPlacement(shape: shape, strokeStyle: strokeStyle, viewMode: effectiveViewMode, path: finalPath)
-                            .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
+                            .opacity(strokeStyle.placement == .outside ? 1.0 : effectiveStrokeOpacity)
                     }
                 }
             }
@@ -121,19 +147,39 @@ struct ShapeView: View {
                 y: isSelected && !ImageContentRegistry.containsImage(shape) ? dragPreviewDelta.y * zoomLevel : 0)
         .id(dragPreviewTrigger)
         .opacity(shape.opacity)
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ShapePreviewUpdate"))) { notification in
+            guard let userInfo = notification.userInfo,
+                  let shapeID = userInfo["shapeID"] as? UUID,
+                  shapeID == shape.id else { return }
+
+            // Update whichever property was sent in the notification
+            if let fillOpacity = userInfo["fillOpacity"] as? Double {
+                previewFillOpacity = fillOpacity
+            }
+            if let strokeOpacity = userInfo["strokeOpacity"] as? Double {
+                previewStrokeOpacity = strokeOpacity
+            }
+            if let strokeWidth = userInfo["strokeWidth"] as? Double {
+                previewStrokeWidth = strokeWidth
+            }
+            if let placementRaw = userInfo["strokePlacement"] as? String,
+               let placement = StrokePlacement(rawValue: placementRaw) {
+                previewStrokePlacement = placement
+            }
+        }
     }
 
     @ViewBuilder
     private func renderStrokeWithPlacement(shape: VectorShape, strokeStyle: StrokeStyle, viewMode: ViewMode, path: Path) -> some View {
         let swiftUIStrokeStyle = SwiftUI.StrokeStyle(
-            lineWidth: strokeStyle.width,
+            lineWidth: effectiveStrokeWidth,
             lineCap: strokeStyle.lineCap.cgLineCap.swiftUILineCap,
             lineJoin: strokeStyle.lineJoin.cgLineJoin.swiftUILineJoin,
             miterLimit: strokeStyle.miterLimit,
             dash: strokeStyle.dashPattern.map { CGFloat($0) }
         )
 
-        switch strokeStyle.placement {
+        switch effectiveStrokePlacement {
         case .center:
             renderStrokeColor(strokeStyle: strokeStyle, path: path, swiftUIStyle: swiftUIStrokeStyle, shape: shape)
 
@@ -141,17 +187,17 @@ struct ShapeView: View {
             if strokeStyle.isGradient {
                 let adjustedStrokeStyle = StrokeStyle(
                     color: strokeStyle.color,
-                    width: strokeStyle.width * 2,
+                    width: effectiveStrokeWidth * 2,
                     placement: .center,
                     dashPattern: strokeStyle.dashPattern.map { $0 * 2 },
                     lineCap: strokeStyle.lineCap.cgLineCap,
                     lineJoin: strokeStyle.lineJoin.cgLineJoin,
                     miterLimit: strokeStyle.miterLimit,
-                    opacity: strokeStyle.opacity,
+                    opacity: effectiveStrokeOpacity,
                     blendMode: strokeStyle.blendMode
                 )
                 let doubleWidthStyle = SwiftUI.StrokeStyle(
-                    lineWidth: strokeStyle.width * 2,
+                    lineWidth: effectiveStrokeWidth * 2,
                     lineCap: swiftUIStrokeStyle.lineCap,
                     lineJoin: swiftUIStrokeStyle.lineJoin,
                     miterLimit: swiftUIStrokeStyle.miterLimit,
@@ -163,7 +209,7 @@ struct ShapeView: View {
                     )
             } else {
                 let doubleWidthStyle = SwiftUI.StrokeStyle(
-                    lineWidth: strokeStyle.width * 2,
+                    lineWidth: effectiveStrokeWidth * 2,
                     lineCap: swiftUIStrokeStyle.lineCap,
                     lineJoin: swiftUIStrokeStyle.lineJoin,
                     miterLimit: swiftUIStrokeStyle.miterLimit,
@@ -178,7 +224,7 @@ struct ShapeView: View {
         case .outside:
 
             let boundingBox = path.cgPath.boundingBoxOfPath
-            let expansion = max(strokeStyle.width * 4, 1000)
+            let expansion = max(effectiveStrokeWidth * 4, 1000)
             let largeRect = boundingBox.insetBy(dx: -expansion, dy: -expansion)
 
             let outsideMask = Path { maskPath in
@@ -190,17 +236,17 @@ struct ShapeView: View {
             if strokeStyle.isGradient {
                 let adjustedStrokeStyle = StrokeStyle(
                     color: strokeStyle.color,
-                    width: strokeStyle.width * 2,
+                    width: effectiveStrokeWidth * 2,
                     placement: .center,
                     dashPattern: strokeStyle.dashPattern.map { $0 * 2 },
                     lineCap: strokeStyle.lineCap.cgLineCap,
                     lineJoin: strokeStyle.lineJoin.cgLineJoin,
                     miterLimit: strokeStyle.miterLimit,
-                    opacity: strokeStyle.opacity,
+                    opacity: effectiveStrokeOpacity,
                     blendMode: strokeStyle.blendMode
                 )
                 let doubleWidthStrokeStyle = SwiftUI.StrokeStyle(
-                    lineWidth: strokeStyle.width * 2,
+                    lineWidth: effectiveStrokeWidth * 2,
                     lineCap: swiftUIStrokeStyle.lineCap,
                     lineJoin: swiftUIStrokeStyle.lineJoin,
                     miterLimit: swiftUIStrokeStyle.miterLimit,
@@ -209,10 +255,10 @@ struct ShapeView: View {
 
                 renderStrokeColor(strokeStyle: adjustedStrokeStyle, path: path, swiftUIStyle: doubleWidthStrokeStyle, shape: shape)
                     .mask(outsideMask)
-                    .opacity(strokeStyle.opacity)
+                    .opacity(effectiveStrokeOpacity)
             } else {
                 let doubleWidthStrokeStyle = SwiftUI.StrokeStyle(
-                    lineWidth: strokeStyle.width * 2,
+                    lineWidth: effectiveStrokeWidth * 2,
                     lineCap: swiftUIStrokeStyle.lineCap,
                     lineJoin: swiftUIStrokeStyle.lineJoin,
                     miterLimit: swiftUIStrokeStyle.miterLimit,
@@ -221,7 +267,7 @@ struct ShapeView: View {
 
                 renderStrokeColor(strokeStyle: strokeStyle, path: path, swiftUIStyle: doubleWidthStrokeStyle, shape: shape)
                     .mask(outsideMask)
-                    .opacity(strokeStyle.opacity)
+                    .opacity(effectiveStrokeOpacity)
             }
         }
     }
@@ -231,11 +277,11 @@ struct ShapeView: View {
         switch fillStyle.color {
         case .gradient(let vectorGradient):
             GradientFillView(gradient: vectorGradient, path: path.cgPath)
-                .opacity(fillStyle.opacity)
+                .opacity(effectiveFillOpacity)
 
         default:
             path.fill(fillStyle.color.color, style: SwiftUI.FillStyle(eoFill: shape.path.fillRule.cgPathFillRule == .evenOdd))
-                .opacity(fillStyle.opacity)
+                .opacity(effectiveFillOpacity)
         }
     }
 

@@ -3,17 +3,55 @@ import Combine
 
 extension VectorDocument {
 
+    /// Sends a lightweight notification to update font family instantly.
+    /// Uses preview for immediate visual feedback, then commits to document.
+    /// - Parameters:
+    ///   - id: The UUID of the text object to update
+    ///   - fontFamily: The new font family name
     func updateTextFontFamilyDirect(id: UUID, fontFamily: String) {
-        saveToUndoStack()
+        // Send preview notification first for instant visual update
+        if let textObject = findText(by: id) {
+            var previewTypography = textObject.typography
+            previewTypography.fontFamily = fontFamily
 
+            textPreviewTypography[id] = previewTypography
+
+            NotificationCenter.default.post(
+                name: Notification.Name("TextPreviewUpdate"),
+                object: nil,
+                userInfo: ["textID": id, "typography": previewTypography]
+            )
+        }
+
+        // Then commit to document
+        saveToUndoStack()
         updateShapeByID(id) { shape in
             shape.typography?.fontFamily = fontFamily
         }
     }
 
+    /// Sends a lightweight notification to update font variant instantly.
+    /// Uses preview for immediate visual feedback, then commits to document.
+    /// - Parameters:
+    ///   - id: The UUID of the text object to update
+    ///   - fontVariant: The new font variant name
     func updateTextFontVariantDirect(id: UUID, fontVariant: String) {
-        saveToUndoStack()
+        // Send preview notification first for instant visual update
+        if let textObject = findText(by: id) {
+            var previewTypography = textObject.typography
+            previewTypography.fontVariant = fontVariant
 
+            textPreviewTypography[id] = previewTypography
+
+            NotificationCenter.default.post(
+                name: Notification.Name("TextPreviewUpdate"),
+                object: nil,
+                userInfo: ["textID": id, "typography": previewTypography]
+            )
+        }
+
+        // Then commit to document
+        saveToUndoStack()
         updateShapeByID(id) { shape in
             shape.typography?.fontVariant = fontVariant
         }
@@ -85,6 +123,58 @@ extension VectorDocument {
                 userInfo: ["textID": id, "typography": previewTypography]
             )
         }
+    }
+
+    /// Sends a lightweight notification to update shape fill opacity in real-time during dragging.
+    /// This avoids triggering full document republishing for fast, responsive UI updates.
+    /// - Parameters:
+    ///   - id: The UUID of the shape to update
+    ///   - opacity: The new fill opacity value (0.0 to 1.0)
+    func updateShapeFillOpacityPreview(id: UUID, opacity: Double) {
+        NotificationCenter.default.post(
+            name: Notification.Name("ShapePreviewUpdate"),
+            object: nil,
+            userInfo: ["shapeID": id, "fillOpacity": opacity]
+        )
+    }
+
+    /// Sends a lightweight notification to update shape stroke opacity in real-time during dragging.
+    /// This avoids triggering full document republishing for fast, responsive UI updates.
+    /// - Parameters:
+    ///   - id: The UUID of the shape to update
+    ///   - opacity: The new stroke opacity value (0.0 to 1.0)
+    func updateShapeStrokeOpacityPreview(id: UUID, opacity: Double) {
+        NotificationCenter.default.post(
+            name: Notification.Name("ShapePreviewUpdate"),
+            object: nil,
+            userInfo: ["shapeID": id, "strokeOpacity": opacity]
+        )
+    }
+
+    /// Sends a lightweight notification to update shape stroke width in real-time during dragging.
+    /// This avoids triggering full document republishing for fast, responsive UI updates.
+    /// - Parameters:
+    ///   - id: The UUID of the shape to update
+    ///   - width: The new stroke width value
+    func updateShapeStrokeWidthPreview(id: UUID, width: Double) {
+        NotificationCenter.default.post(
+            name: Notification.Name("ShapePreviewUpdate"),
+            object: nil,
+            userInfo: ["shapeID": id, "strokeWidth": width]
+        )
+    }
+
+    /// Sends a lightweight notification to update shape stroke placement in real-time.
+    /// This avoids triggering full document republishing for fast, responsive UI updates.
+    /// - Parameters:
+    ///   - id: The UUID of the shape to update
+    ///   - placement: The new stroke placement (center, inside, outside)
+    func updateShapeStrokePlacementPreview(id: UUID, placement: StrokePlacement) {
+        NotificationCenter.default.post(
+            name: Notification.Name("ShapePreviewUpdate"),
+            object: nil,
+            userInfo: ["shapeID": id, "strokePlacement": placement.rawValue]
+        )
     }
 
     func updateTextFillColorInUnified(id: UUID, color: VectorColor) {
