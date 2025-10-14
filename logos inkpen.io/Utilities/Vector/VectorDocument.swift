@@ -176,6 +176,11 @@ class VectorDocument: ObservableObject, Codable {
     @Published var currentTool: DrawingTool = .brush {
         didSet {
             UserDefaults.standard.set(currentTool.rawValue, forKey: "lastUsedTool")
+
+            // When switching to freehand tool, ensure stroke color is visible
+            if currentTool == .freehand && defaultStrokeColor == .clear {
+                defaultStrokeColor = defaultFillColor
+            }
         }
     }
     @Published var scalingAnchor: ScalingAnchor = .center
