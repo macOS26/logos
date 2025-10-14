@@ -7,6 +7,7 @@ struct ProfessionalTextCanvas: View {
 
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
+    let viewMode: ViewMode
 
     @State private var dragOffset: CGSize = .zero
     @State private var resizeOffset: CGSize = .zero
@@ -28,13 +29,15 @@ struct ProfessionalTextCanvas: View {
                 textBoxState: textBoxState,
                 isResizeHandleActive: isResizeHandleActive,
                 onTextBoxSelect: handleTextBoxSelect,
-                zoomLevel: CGFloat(document.zoomLevel)
+                zoomLevel: CGFloat(document.zoomLevel),
+                viewMode: viewMode
             )
 
             ProfessionalTextDisplayView(
                 viewModel: viewModel,
                 dragOffset: dragOffset,
-                textBoxState: textBoxState
+                textBoxState: textBoxState,
+                viewMode: viewMode
             )
 
             if textBoxState == .blue {

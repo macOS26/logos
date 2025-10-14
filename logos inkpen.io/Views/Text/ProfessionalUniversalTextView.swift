@@ -5,10 +5,12 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
     @ObservedObject var viewModel: ProfessionalTextViewModel
     @State var isUpdatingFromTyping: Bool = false
     let textBoxState: ProfessionalTextCanvas.TextBoxState
+    let viewMode: ViewMode
 
-    init(viewModel: ProfessionalTextViewModel, textBoxState: ProfessionalTextCanvas.TextBoxState = .gray) {
+    init(viewModel: ProfessionalTextViewModel, textBoxState: ProfessionalTextCanvas.TextBoxState = .gray, viewMode: ViewMode = .color) {
         self.viewModel = viewModel
         self.textBoxState = textBoxState
+        self.viewMode = viewMode
     }
 
     func makeNSView(context: Context) -> DisabledContextMenuTextView {
@@ -64,8 +66,14 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.string = viewModel.text
         textView.font = viewModel.selectedFont
 
-        let baseColor = NSColor(viewModel.textObject.typography.fillColor.color)
-        let textColor = baseColor.withAlphaComponent(viewModel.textObject.typography.fillOpacity)
+        // In keyline view, use black color; otherwise use the text's original color
+        let textColor: NSColor
+        if viewMode == .keyline {
+            textColor = NSColor.black
+        } else {
+            let baseColor = NSColor(viewModel.textObject.typography.fillColor.color)
+            textColor = baseColor.withAlphaComponent(viewModel.textObject.typography.fillOpacity)
+        }
         textView.textColor = textColor
         textView.insertionPointColor = textColor
 
@@ -129,8 +137,14 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             needsFormatUpdate = true
         }
 
-        let baseColor = NSColor(viewModel.textObject.typography.fillColor.color)
-        let newTextColor = baseColor.withAlphaComponent(viewModel.textObject.typography.fillOpacity)
+        // In keyline view, use black color; otherwise use the text's original color
+        let newTextColor: NSColor
+        if viewMode == .keyline {
+            newTextColor = NSColor.black
+        } else {
+            let baseColor = NSColor(viewModel.textObject.typography.fillColor.color)
+            newTextColor = baseColor.withAlphaComponent(viewModel.textObject.typography.fillOpacity)
+        }
         let currentColor = nsView.textColor ?? NSColor.black
 
         if currentColor != newTextColor {
@@ -207,8 +221,14 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         if !isEditingMode {
             nsView.insertionPointColor = NSColor.clear
         } else {
-            let baseColor = NSColor(viewModel.textObject.typography.fillColor.color)
-            let textColor = baseColor.withAlphaComponent(viewModel.textObject.typography.fillOpacity)
+            // In keyline view, use black color; otherwise use the text's original color
+            let textColor: NSColor
+            if viewMode == .keyline {
+                textColor = NSColor.black
+            } else {
+                let baseColor = NSColor(viewModel.textObject.typography.fillColor.color)
+                textColor = baseColor.withAlphaComponent(viewModel.textObject.typography.fillOpacity)
+            }
             nsView.insertionPointColor = textColor
         }
 
@@ -344,9 +364,14 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                     textView.font = newFont
                 }
 
-                // Update text color with opacity
-                let baseColor = NSColor(typography.fillColor.color)
-                let textColor = baseColor.withAlphaComponent(typography.fillOpacity)
+                // In keyline view, use black color; otherwise use the text's original color
+                let textColor: NSColor
+                if self.parent.viewMode == .keyline {
+                    textColor = NSColor.black
+                } else {
+                    let baseColor = NSColor(typography.fillColor.color)
+                    textColor = baseColor.withAlphaComponent(typography.fillOpacity)
+                }
                 textView.textColor = textColor
                 textView.insertionPointColor = textColor
 

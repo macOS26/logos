@@ -8,12 +8,14 @@ struct StableProfessionalTextCanvas: View {
 
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
+    let viewMode: ViewMode
 
-    init(document: VectorDocument, textObjectID: UUID, dragPreviewDelta: CGPoint = .zero, dragPreviewTrigger: Bool = false) {
+    init(document: VectorDocument, textObjectID: UUID, dragPreviewDelta: CGPoint = .zero, dragPreviewTrigger: Bool = false, viewMode: ViewMode = .color) {
         self.document = document
         self.textObjectID = textObjectID
         self.dragPreviewDelta = dragPreviewDelta
         self.dragPreviewTrigger = dragPreviewTrigger
+        self.viewMode = viewMode
 
         let actualText = document.findText(by: textObjectID) ?? VectorText(content: "", typography: TypographyProperties(strokeColor: .black, fillColor: .black))
         self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: actualText, document: document))
@@ -25,7 +27,8 @@ struct StableProfessionalTextCanvas: View {
             viewModel: viewModel,
             textObjectID: textObjectID,
             dragPreviewDelta: dragPreviewDelta,
-            dragPreviewTrigger: dragPreviewTrigger
+            dragPreviewTrigger: dragPreviewTrigger,
+            viewMode: viewMode
         )
             .onAppear {
                 updateViewModelFromDocument()

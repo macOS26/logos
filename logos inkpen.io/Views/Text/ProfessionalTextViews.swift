@@ -8,8 +8,14 @@ struct ProfessionalTextBoxView: View {
     let isResizeHandleActive: Bool
     let onTextBoxSelect: (CGPoint) -> Void
     let zoomLevel: CGFloat
+    let viewMode: ViewMode
 
     private func getBorderColor() -> Color {
+        // In keyline view, always show black outline
+        if viewMode == .keyline {
+            return Color.black
+        }
+
         switch textBoxState {
         case .gray: return Color.clear
         case .green: return Color.clear
@@ -46,12 +52,14 @@ struct ProfessionalTextDisplayView: View {
     @ObservedObject var viewModel: ProfessionalTextViewModel
     let dragOffset: CGSize
     let textBoxState: ProfessionalTextCanvas.TextBoxState
+    let viewMode: ViewMode
 
     var body: some View {
         Group {
             ProfessionalTextContentView(
                 viewModel: viewModel,
-                textBoxState: textBoxState
+                textBoxState: textBoxState,
+                viewMode: viewMode
             )
             .position(
                 x: viewModel.textBoxFrame.minX + dragOffset.width + viewModel.textBoxFrame.width / 2,
@@ -64,10 +72,11 @@ struct ProfessionalTextDisplayView: View {
 struct ProfessionalTextContentView: View {
     @ObservedObject var viewModel: ProfessionalTextViewModel
     let textBoxState: ProfessionalTextCanvas.TextBoxState
+    var viewMode: ViewMode = .color
 
     var body: some View {
         let shouldAllowHitTesting = textBoxState == .blue
-        ProfessionalUniversalTextView(viewModel: viewModel, textBoxState: textBoxState)
+        ProfessionalUniversalTextView(viewModel: viewModel, textBoxState: textBoxState, viewMode: viewMode)
             .allowsHitTesting(shouldAllowHitTesting)
             .frame(
                 width: viewModel.textBoxFrame.width,

@@ -430,9 +430,10 @@ extension DrawingCanvas {
                 textObj.updateBounds()
                 document.updateTextInUnified(textObj)
 
-                if textObj.content.isEmpty {
-                    document.removeTextFromUnifiedSystem(id: editingID)
-                }
+                // Keep empty text boxes - users may want to style them before adding text
+                // if textObj.content.isEmpty {
+                //     document.removeTextFromUnifiedSystem(id: editingID)
+                // }
             }
         }
 
@@ -548,11 +549,12 @@ extension DrawingCanvas {
             if let textObj = document.findText(by: textID) {
                 document.setTextEditingInUnified(id: textObj.id, isEditing: false)
 
-                if textObj.content.isEmpty {
-                    document.unifiedObjects.removeAll { $0.id == textID }
-                    document.removeTextFromUnifiedSystem(id: textID)
-                    document.selectedTextIDs.remove(textID)
-                }
+                // Keep empty text boxes - users may want to style them before adding text
+                // if textObj.content.isEmpty {
+                //     document.unifiedObjects.removeAll { $0.id == textID }
+                //     document.removeTextFromUnifiedSystem(id: textID)
+                //     document.selectedTextIDs.remove(textID)
+                // }
             }
 
             if editingTextID == textID {

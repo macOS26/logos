@@ -92,7 +92,8 @@ struct UnifiedObjectContentView: View {
                             document: document,
                             textObjectID: shape.id,
                             dragPreviewDelta: dragPreviewDelta,
-                            dragPreviewTrigger: dragPreviewTrigger
+                            dragPreviewTrigger: dragPreviewTrigger,
+                            viewMode: viewMode
                         )
                         .allowsHitTesting(true)
                     } else {
@@ -138,7 +139,8 @@ struct UnifiedObjectContentView: View {
                                         document: document,
                                         textObjectID: textShape.id,
                                         dragPreviewDelta: dragPreviewDelta,
-                                        dragPreviewTrigger: dragPreviewTrigger
+                                        dragPreviewTrigger: dragPreviewTrigger,
+                                        viewMode: viewMode
                                     )
                                     .allowsHitTesting(true)
                                 }
