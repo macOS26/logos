@@ -5,6 +5,7 @@ struct ProfessionalResizeHandleView: View {
     let dragOffset: CGSize
     let resizeOffset: CGSize
     let zoomLevel: CGFloat
+    let viewMode: ViewMode
     let onResizeChanged: (DragGesture.Value) -> Void
     let onResizeEnded: () -> Void
     let onResizeStarted: () -> Void
@@ -13,7 +14,7 @@ struct ProfessionalResizeHandleView: View {
 
     var body: some View {
         Circle()
-            .fill(Color.blue)
+            .fill(viewMode == .keyline ? Color.gray : Color.blue)
             .stroke(Color.white, lineWidth: 1.0 / zoomLevel)
             .frame(width: 10 / zoomLevel, height: 10 / zoomLevel)
             .position(

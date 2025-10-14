@@ -410,7 +410,7 @@ struct EnvelopeHandles: View {
             document.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
         }
 
-        document.saveToUndoStack()
+        // Undo will be handled in finishEnvelopeWarp()
 
     }
 
@@ -561,6 +561,12 @@ struct EnvelopeHandles: View {
         document.isHandleScalingActive = false
         draggingCornerIndex = nil
 
+        // Capture old shape for undo
+        var oldShapes: [UUID: VectorShape] = [:]
+        if case .shape(let oldShape) = document.findObject(by: shape.id)?.objectType {
+            oldShapes[shape.id] = oldShape
+        }
+
         if warpedCorners.count == 4 {
             let minX = warpedCorners.map { $0.x }.min() ?? 0
             let maxX = warpedCorners.map { $0.x }.max() ?? 0
@@ -576,6 +582,22 @@ struct EnvelopeHandles: View {
         calculateEnvelopeWarpPreview()
 
         document.updateUnifiedObjectsOptimized()
+
+        // Capture new shape after warp
+        var newShapes: [UUID: VectorShape] = [:]
+        if let warpedShape = document.findShape(by: shape.id) {
+            newShapes[shape.id] = warpedShape
+        }
+
+        // Execute undo command
+        if !oldShapes.isEmpty && !newShapes.isEmpty {
+            let command = ShapeModificationCommand(
+                objectIDs: [shape.id],
+                oldShapes: oldShapes,
+                newShapes: newShapes
+            )
+            document.executeCommand(command)
+        }
     }
 
     private func updateShapeWithCurrentWarp() {

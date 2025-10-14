@@ -285,6 +285,13 @@ class VectorDocument: ObservableObject, Codable {
 
     internal var isUndoRedoOperation: Bool = false
 
+    // New command-based undo system
+    lazy var commandManager: CommandManager = {
+        let manager = CommandManager(maxStackSize: maxUndoStackSize)
+        manager.document = self
+        return manager
+    }()
+
     @Published var fontManager: FontManager = FontManager()
 
     var defaultFillColor: VectorColor {

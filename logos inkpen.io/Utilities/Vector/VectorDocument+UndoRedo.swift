@@ -3,6 +3,7 @@ import Combine
 
 extension VectorDocument {
     func saveToUndoStack() {
+        // Old O(n) snapshot system - fallback for operations not yet migrated to Command Pattern
         do {
             let data = try JSONEncoder().encode(self)
             let copy = try JSONDecoder().decode(VectorDocument.self, from: data)
@@ -14,10 +15,44 @@ extension VectorDocument {
 
             redoStack.removeAll()
         } catch {
+            Log.error("❌ SAVE TO UNDO STACK: Failed to save state - \(error)", category: .error)
         }
     }
 
+    /// Execute a command using the new O(1) command system
+    func executeCommand(_ command: Command) {
+        commandManager.execute(command)
+    }
+
+    /// Execute a complex operation with before/after unified objects capture
+    func executeComplexOperation(oldSelection: Set<UUID>? = nil, operation: () -> Void) {
+        let beforeObjects = unifiedObjects
+        let beforeSelection = oldSelection ?? selectedObjectIDs
+
+        operation()
+
+        let afterObjects = unifiedObjects
+        let afterSelection = selectedObjectIDs
+
+        let command = ComplexObjectCommand(
+            oldUnifiedObjects: beforeObjects,
+            newUnifiedObjects: afterObjects,
+            oldSelection: beforeSelection,
+            newSelection: afterSelection
+        )
+        executeCommand(command)
+    }
+
     func undo() {
+        // Try new command system first
+        if commandManager.canUndo {
+            commandManager.undo()
+            objectWillChange.send()
+            NotificationCenter.default.post(name: Notification.Name("ClearPreviewStates"), object: nil)
+            return
+        }
+
+        // Fall back to old system if no commands available
         guard !undoStack.isEmpty else { return }
 
         do {
@@ -96,6 +131,14 @@ extension VectorDocument {
     }
 
     func redo() {
+        // Try new command system first
+        if commandManager.canRedo {
+            commandManager.redo()
+            objectWillChange.send()
+            return
+        }
+
+        // Fall back to old system if no commands available
         guard !redoStack.isEmpty else { return }
 
         do {

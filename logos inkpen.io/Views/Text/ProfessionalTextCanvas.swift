@@ -46,6 +46,7 @@ struct ProfessionalTextCanvas: View {
                     dragOffset: dragOffset,
                     resizeOffset: resizeOffset,
                     zoomLevel: CGFloat(document.zoomLevel),
+                    viewMode: viewMode,
                     onResizeChanged: handleResizeChanged,
                     onResizeEnded: handleResizeEnded,
                     onResizeStarted: handleResizeStarted

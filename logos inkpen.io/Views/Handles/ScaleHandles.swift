@@ -173,7 +173,7 @@ struct ScaleHandles: View {
                                 initialTransform = shape.transform
                                 startLocation = value.startLocation
                                 scalingAnchorPoint = center
-                                document.saveToUndoStack()
+                                // Undo will be handled in finishScaling()
                             }
 
                             let translation = CGSize(

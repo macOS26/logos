@@ -307,7 +307,33 @@ struct ColorPanel: View {
     private func updateSelectedTextStrokeColor(color: VectorColor, document: VectorDocument) {
         guard !document.selectedTextIDs.isEmpty else { return }
 
-        document.saveToUndoStack()
+        // Capture old colors for undo
+        var oldColors: [UUID: VectorColor] = [:]
+        var newColors: [UUID: VectorColor] = [:]
+        var oldOpacities: [UUID: Double] = [:]
+        var newOpacities: [UUID: Double] = [:]
+
+        for textID in document.selectedTextIDs {
+            if let obj = document.findObject(by: textID),
+               case .shape(let shape) = obj.objectType, shape.isTextObject {
+                oldColors[textID] = shape.typography?.strokeColor ?? .clear
+                newColors[textID] = color
+                oldOpacities[textID] = shape.typography?.strokeOpacity ?? document.defaultStrokeOpacity
+                newOpacities[textID] = document.defaultStrokeOpacity
+            }
+        }
+
+        if !oldColors.isEmpty {
+            let command = ChangeColorCommand(
+                objectIDs: Array(document.selectedTextIDs),
+                target: .stroke,
+                oldColors: oldColors,
+                newColors: newColors,
+                oldOpacities: oldOpacities,
+                newOpacities: newOpacities
+            )
+            document.executeCommand(command)
+        }
 
         for textID in document.selectedTextIDs {
             document.updateTextStrokeColorInUnified(id: textID, color: color)

@@ -1,11 +1,19 @@
 import SwiftUI
 
 extension VectorDocument {
+    private func getNextOrderIDForLayer(_ layerIndex: Int) -> Int {
+        let existingOrderIDs = getObjectsInLayer(layerIndex).map { $0.orderID }
+        return existingOrderIDs.isEmpty ? 0 : (existingOrderIDs.max() ?? -1) + 1
+    }
+
     func addShape(_ shape: VectorShape) {
         guard let layerIndex = selectedLayerIndex else { return }
-        saveToUndoStack()
 
-        addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
+        let orderID = getNextOrderIDForLayer(layerIndex)
+        let obj = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+
+        let command = AddObjectCommand(object: obj)
+        executeCommand(command)
 
         selectedShapeIDs = [shape.id]
         selectedObjectIDs = [shape.id]
@@ -14,9 +22,16 @@ extension VectorDocument {
 
     func addShapeToFront(_ shape: VectorShape) {
         guard let layerIndex = selectedLayerIndex else { return }
-        saveToUndoStack()
 
-        addShapeToFrontOfUnifiedSystem(shape, layerIndex: layerIndex)
+        let layerObjects = getObjectsInLayer(layerIndex)
+        let existingOrderIDs = layerObjects.map { $0.orderID }
+        let highestOrderID = existingOrderIDs.isEmpty ? 0 : (existingOrderIDs.max() ?? 0)
+        let orderID = highestOrderID + 1
+
+        let obj = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+
+        let command = AddObjectCommand(object: obj)
+        executeCommand(command)
 
         selectedShapeIDs = [shape.id]
         selectedObjectIDs = [shape.id]
@@ -25,9 +40,12 @@ extension VectorDocument {
 
     func addShape(_ shape: VectorShape, to layerIndex: Int) {
         guard layerIndex >= 0 && layerIndex < layers.count else { return }
-        saveToUndoStack()
 
-        addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
+        let orderID = getNextOrderIDForLayer(layerIndex)
+        let obj = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+
+        let command = AddObjectCommand(object: obj)
+        executeCommand(command)
     }
 
     func addShapeWithoutUndo(_ shape: VectorShape, to layerIndex: Int) {
@@ -38,7 +56,12 @@ extension VectorDocument {
 
     func removeSelectedShapes() {
         guard let layerIndex = selectedLayerIndex else { return }
-        saveToUndoStack()
+
+        let objectsToRemove = unifiedObjects.filter { selectedShapeIDs.contains($0.id) }
+        if !objectsToRemove.isEmpty {
+            let command = DeleteObjectCommand(objects: objectsToRemove)
+            executeCommand(command)
+        }
 
         let shapesToRemove = getShapesForLayer(layerIndex).filter { shape in
             if selectedShapeIDs.contains(shape.id) {
@@ -60,9 +83,12 @@ extension VectorDocument {
     }
 
     func removeSelectedObjects() {
-        saveToUndoStack()
-
         let objectsToDelete = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
+
+        if !objectsToDelete.isEmpty {
+            let command = DeleteObjectCommand(objects: objectsToDelete)
+            executeCommand(command)
+        }
 
         let protectedObjects = objectsToDelete.filter { objectToDelete in
             switch objectToDelete.objectType {
@@ -207,7 +233,6 @@ extension VectorDocument {
 
     func duplicateSelectedShapes() {
         guard let layerIndex = selectedLayerIndex else { return }
-        saveToUndoStack()
 
         let selectedShapes = unifiedObjects.filter { unifiedObject in
             guard selectedObjectIDs.contains(unifiedObject.id) &&

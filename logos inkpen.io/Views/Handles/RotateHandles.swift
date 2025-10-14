@@ -252,7 +252,7 @@ struct RotateHandles: View {
         startLocation = dragValue.location
         initialBounds = bounds
         initialTransform = shape.transform
-        document.saveToUndoStack()
+        // Undo will be handled in finishRotation()
 
         selectedAnchorPointIndex = anchorPointIndex
 
@@ -415,7 +415,7 @@ struct RotateHandles: View {
         startLocation = dragValue.location
         initialBounds = bounds
         initialTransform = shape.transform
-        document.saveToUndoStack()
+        // Undo will be handled in finishRotation()
 
         let originalBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         rotationAnchorPoint = getRotationAnchorPoint(for: document.rotationAnchor, in: originalBounds, cornerIndex: cornerIndex)
@@ -437,6 +437,11 @@ struct RotateHandles: View {
         isRotating = false
         document.isHandleScalingActive = false
 
+        // Capture old shape for undo
+        var oldShapes: [UUID: VectorShape] = [:]
+        if case .shape(let oldShape) = document.findObject(by: shape.id)?.objectType {
+            oldShapes[shape.id] = oldShape
+        }
 
         if let unifiedObject = document.findObject(by: shape.id),
         let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
@@ -458,6 +463,22 @@ struct RotateHandles: View {
             document.updateUnifiedObjectsOptimized()
 
             document.updateTransformPanelValues()
+
+            // Capture new shape after transformation
+            var newShapes: [UUID: VectorShape] = [:]
+            if let transformedShape = document.findShape(by: shape.id) {
+                newShapes[shape.id] = transformedShape
+            }
+
+            // Execute undo command
+            if !oldShapes.isEmpty && !newShapes.isEmpty {
+                let command = ShapeModificationCommand(
+                    objectIDs: [shape.id],
+                    oldShapes: oldShapes,
+                    newShapes: newShapes
+                )
+                document.executeCommand(command)
+            }
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.updatePathPointsAfterRotation()

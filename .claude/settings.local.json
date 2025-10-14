@@ -1,33 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git branch:*)",
-      "mcp__xcf-server__build_project",
-      "mcp__xcf-server__run_project",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "WebSearch",
-      "Bash(git revert:*)",
-      "mcp__xcf-server__snippet",
-      "mcp__xcf-server__create_diff_from_doc",
-      "mcp__xcf-server__apply_diff_to_doc",
-      "mcp__xcf-server__apply_undo_diff_to_doc",
-      "Bash(git checkout:*)",
-      "mcp__xcf-server__read_doc",
-      "Bash(chmod:*)",
-      "Bash(python3:*)",
-      "WebFetch(domain:canopas.com)",
-      "WebFetch(domain:avitsadok.medium.com)",
-      "Read(//Users/toddbruss/Documents/GitHub/Web-Man/WebWidow/WebWidow/**)",
-      "Bash(xcodebuild:*)",
-      "Bash(find:*)",
-      "Bash(git log:*)",
-      "Bash(swift:*)",
-      "Bash(awk:*)",
-      "Bash({ echo \"=== FINAL VERIFICATION ===\" echo \"\" echo \"1. Files with /// documentation comments:\" find . -name \"*.swift\" -type f -exec grep -l \"\\/\\/\\/\" {})",
-      "Bash(wc -l echo \"\" echo \"2. Files with /* multi-line comments:\" find . -name \"*.swift\" -type f -exec grep -l \"\\/\\*\" {})",
-      "Bash(wc -l echo \"\" echo \"3. Sample of remaining // patterns (should only be URLs and commented-out code):\" find . -name \"*.swift\" -type f -exec grep -h \"\\/\\/\" {})",
-      "Bash(head -15 })"
+      "Bash(for:*)",
+      "Bash(do echo \"=== $file ===\" grep \"document\\.\" \"$file\")"
     ],
     "deny": [],
     "ask": []

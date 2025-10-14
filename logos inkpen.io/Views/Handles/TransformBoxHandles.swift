@@ -265,7 +265,7 @@ struct TransformBoxHandles: View {
         startLocation = startValue.startLocation
         initialTransform = .identity
         document.isHandleScalingActive = true
-        document.saveToUndoStack()
+        // Undo will be handled in endScaling()
     }
 
     private func updateScaling(forHandle index: Int, dragValue: DragGesture.Value, bounds: CGRect) {
@@ -368,6 +368,12 @@ struct TransformBoxHandles: View {
         document.isHandleScalingActive = false
         document.scalePreviewDimensions = .zero
 
+        // Capture old shape for undo
+        var oldShapes: [UUID: VectorShape] = [:]
+        if case .shape(let oldShape) = document.findObject(by: shape.id)?.objectType {
+            oldShapes[shape.id] = oldShape
+        }
+
         if let unifiedObject = document.findObject(by: shape.id),
         let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
 
@@ -415,6 +421,22 @@ struct TransformBoxHandles: View {
             document.updateTransformPanelValues()
 
             document.updateUnifiedObjectsOptimized()
+
+            // Capture new shape after transformation
+            var newShapes: [UUID: VectorShape] = [:]
+            if let transformedShape = document.findShape(by: shape.id) {
+                newShapes[shape.id] = transformedShape
+            }
+
+            // Execute undo command
+            if !oldShapes.isEmpty && !newShapes.isEmpty {
+                let command = ShapeModificationCommand(
+                    objectIDs: [shape.id],
+                    oldShapes: oldShapes,
+                    newShapes: newShapes
+                )
+                document.executeCommand(command)
+            }
         }
         } else {
             Log.error("❌ SCALING FAILED: Could not find shape in unified objects system", category: .error)

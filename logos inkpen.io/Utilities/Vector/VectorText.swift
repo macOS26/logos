@@ -465,10 +465,54 @@ class FontManager: ObservableObject {
         let fontManager = NSFontManager.shared
         systemFonts = fontManager.availableFontFamilies.sorted()
 
+        // Filter out problematic fonts
+        let excludedFontPrefixes = [
+            "Noto ",           // Noto fonts often have display issues
+            ".Apple"           // Hidden system UI fonts (keep "Apple " fonts like Apple Chancery)
+        ]
+
+        // Regional/language suffixes that indicate duplicate locale-specific variants
+        let excludedFontSuffixes = [
+            " HK",             // Hong Kong variants
+            " MO",             // Macau variants
+            " SC",             // Simplified Chinese variants
+            " TC",             // Traditional Chinese variants
+            " MN",             // Mongolian/Myanmar variants
+            " MT",             // Meitei variants
+            " GB",             // GuoBiao (Chinese) variants
+            "Sangam MN"        // Tamil/Telugu/etc Sangam variants
+        ]
+
+        // Dingbat, symbol, and ornament fonts
+        let excludedSymbolFonts = [
+            "Zapf Dingbats",
+            "Webdings",
+            "Wingdings",
+            "Wingdings 2",
+            "Wingdings 3",
+            "Symbol",
+            "Apple Symbols",
+            "Bodoni Ornaments",
+            "GB18030 Bitmap"
+        ]
+
         var orderedFonts: [String] = []
 
         for font in systemFonts {
-            if !orderedFonts.contains(font) {
+            // Skip if font matches excluded prefixes
+            let hasExcludedPrefix = excludedFontPrefixes.contains { prefix in
+                font.hasPrefix(prefix)
+            }
+
+            // Skip if font matches excluded suffixes
+            let hasExcludedSuffix = excludedFontSuffixes.contains { suffix in
+                font.hasSuffix(suffix)
+            }
+
+            // Skip symbol/dingbat fonts
+            let isSymbolFont = excludedSymbolFonts.contains(font)
+
+            if !hasExcludedPrefix && !hasExcludedSuffix && !isSymbolFont && !orderedFonts.contains(font) {
                 orderedFonts.append(font)
             }
         }
@@ -541,8 +585,9 @@ class FontManager: ObservableObject {
     }
 
     func getAvailableVariantNames(for family: String) -> [String] {
-        // Clear cache entry for this family to ensure fresh sort
-        fontVariantsCache.removeValue(forKey: family)
+        if let cached = fontVariantsCache[family] {
+            return cached
+        }
 
         let fontManager = NSFontManager.shared
         let members = fontManager.availableMembers(ofFontFamily: family) ?? []

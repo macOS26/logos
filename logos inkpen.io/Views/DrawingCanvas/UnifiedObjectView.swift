@@ -24,19 +24,24 @@ struct UnifiedObjectView: View {
     var body: some View {
         ZStack {
             ForEach(objectsByLayer.keys.sorted(), id: \.self) { layerIndex in
-                if layerIndex < document.layers.count && document.layers[layerIndex].isVisible {
+                if layerIndex < document.layers.count,
+                   document.layers[layerIndex].isVisible,
+                   let objects = objectsByLayer[layerIndex] {
                     ZStack {
-                        ForEach(objectsByLayer[layerIndex] ?? [], id: \.id) { unifiedObject in
-                            UnifiedObjectContentView(
-                                unifiedObject: unifiedObject,
-                                document: document,
-                                zoomLevel: zoomLevel,
-                                canvasOffset: canvasOffset,
-                                selectedObjectIDs: selectedObjectIDs,
-                                viewMode: viewMode,
-                                dragPreviewDelta: dragPreviewDelta,
-                                dragPreviewTrigger: dragPreviewTrigger
-                            )
+                        ForEach(objects, id: \.id) { unifiedObject in
+                            // Only render if object itself is visible
+                            if unifiedObject.isVisible {
+                                UnifiedObjectContentView(
+                                    unifiedObject: unifiedObject,
+                                    document: document,
+                                    zoomLevel: zoomLevel,
+                                    canvasOffset: canvasOffset,
+                                    selectedObjectIDs: selectedObjectIDs,
+                                    viewMode: viewMode,
+                                    dragPreviewDelta: dragPreviewDelta,
+                                    dragPreviewTrigger: dragPreviewTrigger
+                                )
+                            }
                         }
                     }
                     .compositingGroup()
@@ -325,19 +330,24 @@ struct NonBackgroundObjectsView: View {
     var body: some View {
         ZStack {
             ForEach(objectsByLayer.keys.sorted(), id: \.self) { layerIndex in
-                if layerIndex < document.layers.count && document.layers[layerIndex].isVisible {
+                if layerIndex < document.layers.count,
+                   document.layers[layerIndex].isVisible,
+                   let objects = objectsByLayer[layerIndex] {
                     ZStack {
-                        ForEach(objectsByLayer[layerIndex] ?? [], id: \.id) { unifiedObject in
-                            UnifiedObjectContentView(
-                                unifiedObject: unifiedObject,
-                                document: document,
-                                zoomLevel: zoomLevel,
-                                canvasOffset: canvasOffset,
-                                selectedObjectIDs: selectedObjectIDs,
-                                viewMode: viewMode,
-                                dragPreviewDelta: dragPreviewDelta,
-                                dragPreviewTrigger: dragPreviewTrigger
-                            )
+                        ForEach(objects, id: \.id) { unifiedObject in
+                            // Only render if object itself is visible
+                            if unifiedObject.isVisible {
+                                UnifiedObjectContentView(
+                                    unifiedObject: unifiedObject,
+                                    document: document,
+                                    zoomLevel: zoomLevel,
+                                    canvasOffset: canvasOffset,
+                                    selectedObjectIDs: selectedObjectIDs,
+                                    viewMode: viewMode,
+                                    dragPreviewDelta: dragPreviewDelta,
+                                    dragPreviewTrigger: dragPreviewTrigger
+                                )
+                            }
                         }
                     }
                     .compositingGroup()

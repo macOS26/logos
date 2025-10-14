@@ -457,28 +457,34 @@ struct StrokeFillPanel: View {
     private func updateFillOpacity(_ opacity: Double) {
         document.defaultFillOpacity = opacity
 
-        var hasChanges = false
+        var oldOpacities: [UUID: Double] = [:]
+        var newOpacities: [UUID: Double] = [:]
 
         for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.findObject(by: objectID) {
-                switch unifiedObject.objectType {
-                case .shape(let shape):
-                    if shape.isTextObject {
-                        document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
-                        hasChanges = true
-                    } else {
-                        if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                           document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
-                            document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
-                            hasChanges = true
-                        }
+            if let obj = document.findObject(by: objectID),
+               case .shape(let shape) = obj.objectType {
+                if shape.isTextObject {
+                    oldOpacities[objectID] = shape.typography?.fillOpacity ?? 1.0
+                    document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
+                } else {
+                    oldOpacities[objectID] = shape.fillStyle?.opacity ?? 1.0
+                    if let layerIndex = obj.layerIndex < document.layers.count ? obj.layerIndex : nil,
+                       document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
+                        document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
                     }
                 }
+                newOpacities[objectID] = opacity
             }
         }
 
-        if hasChanges {
-            document.saveToUndoStack()
+        if !oldOpacities.isEmpty {
+            let command = OpacityCommand(
+                objectIDs: Array(document.selectedObjectIDs),
+                target: .fill,
+                oldOpacities: oldOpacities,
+                newOpacities: newOpacities
+            )
+            document.executeCommand(command)
         }
     }
 
@@ -619,28 +625,33 @@ struct StrokeFillPanel: View {
     private func updateStrokeWidth(_ width: Double) {
         document.defaultStrokeWidth = width
 
-        var hasChanges = false
+        var oldWidths: [UUID: Double] = [:]
+        var newWidths: [UUID: Double] = [:]
 
         for objectID in document.selectedObjectIDs {
-            if let unifiedObject = document.findObject(by: objectID) {
-                switch unifiedObject.objectType {
-                case .shape(let shape):
-                    if shape.isTextObject {
-                        document.updateTextStrokeWidthInUnified(id: shape.id, width: width)
-                        hasChanges = true
-                    } else {
-                        if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                           document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
-                            document.updateShapeStrokeWidthInUnified(id: shape.id, width: width)
-                            hasChanges = true
-                        }
+            if let obj = document.findObject(by: objectID),
+               case .shape(let shape) = obj.objectType {
+                if shape.isTextObject {
+                    oldWidths[objectID] = shape.typography?.strokeWidth ?? 1.0
+                    document.updateTextStrokeWidthInUnified(id: shape.id, width: width)
+                } else {
+                    oldWidths[objectID] = shape.strokeStyle?.width ?? 1.0
+                    if let layerIndex = obj.layerIndex < document.layers.count ? obj.layerIndex : nil,
+                       document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
+                        document.updateShapeStrokeWidthInUnified(id: shape.id, width: width)
                     }
                 }
+                newWidths[objectID] = width
             }
         }
 
-        if hasChanges {
-            document.saveToUndoStack()
+        if !oldWidths.isEmpty {
+            let command = StrokeWidthCommand(
+                objectIDs: Array(document.selectedObjectIDs),
+                oldWidths: oldWidths,
+                newWidths: newWidths
+            )
+            document.executeCommand(command)
         }
     }
 
@@ -669,7 +680,25 @@ struct StrokeFillPanel: View {
             return
         }
 
-        document.saveToUndoStack()
+        var oldPlacements: [UUID: StrokePlacement] = [:]
+        var newPlacements: [UUID: StrokePlacement] = [:]
+
+        for shapeID in activeShapeIDs {
+            if let obj = document.findObject(by: shapeID),
+               case .shape(let shape) = obj.objectType, !shape.isTextObject {
+                oldPlacements[shapeID] = shape.strokeStyle?.placement ?? .center
+                newPlacements[shapeID] = placement
+            }
+        }
+
+        if !oldPlacements.isEmpty {
+            let command = StrokePropertiesCommand(
+                objectIDs: Array(activeShapeIDs),
+                placement: oldPlacements,
+                new: newPlacements
+            )
+            document.executeCommand(command)
+        }
 
         for shapeID in activeShapeIDs {
             for layerIndex in document.layers.indices {
@@ -705,7 +734,26 @@ struct StrokeFillPanel: View {
 
         let activeShapeIDs = document.getActiveShapeIDs()
         if !activeShapeIDs.isEmpty {
-            document.saveToUndoStack()
+            // Capture old opacities
+            var oldOpacities: [UUID: Double] = [:]
+            var newOpacities: [UUID: Double] = [:]
+
+            for shapeID in activeShapeIDs {
+                if let obj = document.findObject(by: shapeID),
+                   case .shape(let shape) = obj.objectType {
+                    oldOpacities[shapeID] = shape.strokeStyle?.opacity ?? 1.0
+                    newOpacities[shapeID] = opacity
+                }
+            }
+
+            // Execute command
+            let command = OpacityCommand(
+                objectIDs: Array(activeShapeIDs),
+                target: .stroke,
+                oldOpacities: oldOpacities,
+                newOpacities: newOpacities
+            )
+            document.executeCommand(command)
 
             for shapeID in activeShapeIDs {
                 for layerIndex in document.layers.indices {
@@ -756,7 +804,25 @@ struct StrokeFillPanel: View {
 
         let activeShapeIDs = document.getActiveShapeIDs()
         if !activeShapeIDs.isEmpty {
-            document.saveToUndoStack()
+            var oldLineJoins: [UUID: CGLineJoin] = [:]
+            var newLineJoins: [UUID: CGLineJoin] = [:]
+
+            for shapeID in activeShapeIDs {
+                if let obj = document.findObject(by: shapeID),
+                   case .shape(let shape) = obj.objectType, !shape.isTextObject {
+                    oldLineJoins[shapeID] = shape.strokeStyle?.lineJoin.cgLineJoin ?? .miter
+                    newLineJoins[shapeID] = lineJoin
+                }
+            }
+
+            if !oldLineJoins.isEmpty {
+                let command = StrokePropertiesCommand(
+                    objectIDs: Array(activeShapeIDs),
+                    lineJoin: oldLineJoins,
+                    new: newLineJoins
+                )
+                document.executeCommand(command)
+            }
 
             for shapeID in activeShapeIDs {
                 for layerIndex in document.layers.indices {
@@ -792,7 +858,25 @@ struct StrokeFillPanel: View {
 
         let activeShapeIDs = document.getActiveShapeIDs()
         if !activeShapeIDs.isEmpty {
-            document.saveToUndoStack()
+            var oldLineCaps: [UUID: CGLineCap] = [:]
+            var newLineCaps: [UUID: CGLineCap] = [:]
+
+            for shapeID in activeShapeIDs {
+                if let obj = document.findObject(by: shapeID),
+                   case .shape(let shape) = obj.objectType, !shape.isTextObject {
+                    oldLineCaps[shapeID] = shape.strokeStyle?.lineCap.cgLineCap ?? .butt
+                    newLineCaps[shapeID] = lineCap
+                }
+            }
+
+            if !oldLineCaps.isEmpty {
+                let command = StrokePropertiesCommand(
+                    objectIDs: Array(activeShapeIDs),
+                    lineCap: oldLineCaps,
+                    new: newLineCaps
+                )
+                document.executeCommand(command)
+            }
 
             for shapeID in activeShapeIDs {
                 for layerIndex in document.layers.indices {
@@ -828,7 +912,25 @@ struct StrokeFillPanel: View {
 
         let activeShapeIDs = document.getActiveShapeIDs()
         if !activeShapeIDs.isEmpty {
-            document.saveToUndoStack()
+            var oldMiterLimits: [UUID: Double] = [:]
+            var newMiterLimits: [UUID: Double] = [:]
+
+            for shapeID in activeShapeIDs {
+                if let obj = document.findObject(by: shapeID),
+                   case .shape(let shape) = obj.objectType, !shape.isTextObject {
+                    oldMiterLimits[shapeID] = shape.strokeStyle?.miterLimit ?? 10.0
+                    newMiterLimits[shapeID] = miterLimit
+                }
+            }
+
+            if !oldMiterLimits.isEmpty {
+                let command = StrokePropertiesCommand(
+                    objectIDs: Array(activeShapeIDs),
+                    miterLimit: oldMiterLimits,
+                    new: newMiterLimits
+                )
+                document.executeCommand(command)
+            }
 
             for shapeID in activeShapeIDs {
                 for layerIndex in document.layers.indices {
@@ -876,7 +978,25 @@ struct StrokeFillPanel: View {
     private func updateImageOpacity(_ opacity: Double) {
         guard let layerIndex = document.selectedLayerIndex else { return }
 
-        document.saveToUndoStack()
+        var oldOpacities: [UUID: Double] = [:]
+        var newOpacities: [UUID: Double] = [:]
+
+        for shapeID in document.selectedShapeIDs {
+            if let obj = document.findObject(by: shapeID),
+               case .shape(let shape) = obj.objectType {
+                oldOpacities[shapeID] = shape.opacity
+                newOpacities[shapeID] = opacity
+            }
+        }
+
+        if !oldOpacities.isEmpty {
+            let command = StrokePropertiesCommand(
+                objectIDs: Array(document.selectedShapeIDs),
+                imageOpacity: oldOpacities,
+                new: newOpacities
+            )
+            document.executeCommand(command)
+        }
 
         for shapeID in document.selectedShapeIDs {
             let shapes = document.getShapesForLayer(layerIndex)
@@ -893,7 +1013,32 @@ struct StrokeFillPanel: View {
         let activeShapeIDs = document.getActiveShapeIDs()
         if activeShapeIDs.isEmpty { return }
 
-        document.saveToUndoStack()
+        var oldColors: [UUID: VectorColor] = [:]
+        var newColors: [UUID: VectorColor] = [:]
+        var oldOpacities: [UUID: Double] = [:]
+        var newOpacities: [UUID: Double] = [:]
+
+        for shapeID in activeShapeIDs {
+            if let obj = document.findObject(by: shapeID),
+               case .shape(let shape) = obj.objectType {
+                oldColors[shapeID] = shape.fillStyle?.color ?? .black
+                newColors[shapeID] = selectedFillColor
+                oldOpacities[shapeID] = shape.fillStyle?.opacity ?? 1.0
+                newOpacities[shapeID] = fillOpacity
+            }
+        }
+
+        if !oldColors.isEmpty {
+            let command = ChangeColorCommand(
+                objectIDs: Array(activeShapeIDs),
+                target: .fill,
+                oldColors: oldColors,
+                newColors: newColors,
+                oldOpacities: oldOpacities,
+                newOpacities: newOpacities
+            )
+            document.executeCommand(command)
+        }
 
         for shapeID in activeShapeIDs {
             document.createFillStyleInUnified(id: shapeID, color: selectedFillColor, opacity: fillOpacity)

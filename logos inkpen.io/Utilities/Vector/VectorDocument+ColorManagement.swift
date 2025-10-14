@@ -94,8 +94,58 @@ extension VectorDocument {
 
     func setActiveColor(_ color: VectorColor) {
         let shouldSaveUndo = !selectedObjectIDs.isEmpty
-        if shouldSaveUndo {
-            saveToUndoStack()
+
+        // Capture old colors and opacities for undo
+        var oldColors: [UUID: VectorColor] = [:]
+        var newColors: [UUID: VectorColor] = [:]
+        var oldOpacities: [UUID: Double] = [:]
+        var newOpacities: [UUID: Double] = [:]
+
+        for objectID in selectedObjectIDs {
+            if let unifiedObject = findObject(by: objectID),
+               case .shape(let shape) = unifiedObject.objectType {
+                if shape.isTextObject {
+                    switch activeColorTarget {
+                    case .fill:
+                        oldColors[objectID] = shape.typography?.fillColor ?? .black
+                        newColors[objectID] = color
+                        oldOpacities[objectID] = shape.typography?.fillOpacity ?? defaultFillOpacity
+                        newOpacities[objectID] = defaultFillOpacity
+                    case .stroke:
+                        oldColors[objectID] = shape.typography?.strokeColor ?? .clear
+                        newColors[objectID] = color
+                        oldOpacities[objectID] = shape.typography?.strokeOpacity ?? defaultStrokeOpacity
+                        newOpacities[objectID] = defaultStrokeOpacity
+                    }
+                } else {
+                    switch activeColorTarget {
+                    case .fill:
+                        oldColors[objectID] = shape.fillStyle?.color ?? .black
+                        newColors[objectID] = color
+                        oldOpacities[objectID] = shape.fillStyle?.opacity ?? defaultFillOpacity
+                        newOpacities[objectID] = defaultFillOpacity
+                    case .stroke:
+                        oldColors[objectID] = shape.strokeStyle?.color ?? .clear
+                        newColors[objectID] = color
+                        oldOpacities[objectID] = shape.strokeStyle?.opacity ?? defaultStrokeOpacity
+                        newOpacities[objectID] = defaultStrokeOpacity
+                    }
+                }
+            }
+        }
+
+        // Execute command if there are changes
+        if shouldSaveUndo && !oldColors.isEmpty {
+            let commandTarget: ChangeColorCommand.ColorTarget = (activeColorTarget == .fill) ? .fill : .stroke
+            let command = ChangeColorCommand(
+                objectIDs: Array(selectedObjectIDs),
+                target: commandTarget,
+                oldColors: oldColors,
+                newColors: newColors,
+                oldOpacities: oldOpacities,
+                newOpacities: newOpacities
+            )
+            executeCommand(command)
         }
 
         switch activeColorTarget {

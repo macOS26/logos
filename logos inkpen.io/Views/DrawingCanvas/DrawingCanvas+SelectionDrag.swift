@@ -157,11 +157,16 @@ extension DrawingCanvas {
         }
 
         if !initialObjectPositions.isEmpty && currentDragDelta != .zero {
-            document.saveToUndoStack()
-
             guard document.selectedLayerIndex != nil else { return }
 
+            // Capture old shapes for undo
+            var oldShapes: [UUID: VectorShape] = [:]
             let selectedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
+            for unifiedObject in selectedObjects {
+                if case .shape(let shape) = unifiedObject.objectType {
+                    oldShapes[unifiedObject.id] = shape
+                }
+            }
 
             for unifiedObject in selectedObjects {
                 switch unifiedObject.objectType {
@@ -195,6 +200,28 @@ extension DrawingCanvas {
             }
 
             syncUnifiedObjectsAfterMovement()
+
+            // Capture new shapes after transformation
+            var newShapes: [UUID: VectorShape] = [:]
+            for unifiedObject in selectedObjects {
+                if case .shape(let shape) = unifiedObject.objectType {
+                    if let updatedShape = document.findShape(by: shape.id) {
+                        newShapes[unifiedObject.id] = updatedShape
+                    } else {
+                        newShapes[unifiedObject.id] = shape
+                    }
+                }
+            }
+
+            // Execute undo command
+            if !oldShapes.isEmpty && !newShapes.isEmpty {
+                let command = ShapeModificationCommand(
+                    objectIDs: Array(document.selectedObjectIDs),
+                    oldShapes: oldShapes,
+                    newShapes: newShapes
+                )
+                document.executeCommand(command)
+            }
 
             document.updateTransformPanelValues()
 
