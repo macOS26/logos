@@ -23,8 +23,16 @@ extension DrawingCanvas {
         let startPoint = VectorPoint(location)
         freehandPath = VectorPath(elements: [.move(to: startPoint)])
 
+        var strokeColor = getCurrentStrokeColor()
+        let fillColor = getCurrentFillColor()
+
+        // If stroke color is clear, use fill color instead
+        if strokeColor == .clear {
+            strokeColor = fillColor
+        }
+
         let strokeStyle = StrokeStyle(
-            color: getCurrentStrokeColor(),
+            color: strokeColor,
             width: getCurrentStrokeWidth(),
             lineCap: .round,
             lineJoin: .round,
@@ -32,7 +40,7 @@ extension DrawingCanvas {
             opacity: getCurrentStrokeOpacity()
         )
         let fillStyle: FillStyle? = document.freehandFillMode == .fill
-            ? FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
+            ? FillStyle(color: fillColor, opacity: getCurrentFillOpacity())
             : nil
 
         activeFreehandShape = VectorShape(
