@@ -133,8 +133,19 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         var needsFormatUpdate = false
 
         if nsView.font != newFont {
-            DispatchQueue.main.async {
-                nsView.font = newFont
+            nsView.font = newFont
+
+            // Update font in text storage for existing text
+            if nsView.string.count > 0 {
+                let range = NSRange(location: 0, length: nsView.string.count)
+                nsView.textStorage?.addAttribute(.font, value: newFont, range: range)
+
+                // Force layout and display update
+                if let textContainer = nsView.textContainer {
+                    nsView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
+                    nsView.layoutManager?.ensureLayout(for: textContainer)
+                }
+                nsView.needsDisplay = true
             }
             needsFormatUpdate = true
         }

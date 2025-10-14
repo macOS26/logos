@@ -118,6 +118,7 @@ struct FontPickerView: View {
                     document.fontManager.selectedFontVariant = newVariant
 
                     if let textID = document.selectedTextIDs.first {
+                        document.updateTextFontVariantPreview(id: textID, fontVariant: newVariant)
                         document.updateTextFontVariantDirect(id: textID, fontVariant: newVariant)
                     }
                 }
@@ -126,10 +127,11 @@ struct FontPickerView: View {
                     Text(cleanVariantName(variant))
                         .font(getFontForVariant(family: currentFontFamilyState, variantName: variant))
                         .tag(variant)
+                        .id("\(currentFontFamilyState)-\(variant)")
                 }
             }
             .fontPickerStyle()
-            .id(fontFamilyUpdateTrigger)
+            .id("\(currentFontFamilyState)-\(fontFamilyUpdateTrigger)")
         }
         .onAppear {
             syncFontStates()
@@ -152,11 +154,16 @@ struct FontPickerView: View {
         let variants = document.fontManager.getAvailableVariantNames(for: family)
         availableFontVariantNamesState = variants
 
+        print("📋 SYNCING FONT STATES FOR \(family)")
+        print("   Variants in state: \(variants)")
+
         let variant = currentFontVariant
         if variants.contains(variant) {
             currentFontVariantState = variant
+            print("   Current variant: \(variant) ✅")
         } else {
             currentFontVariantState = variants.first ?? "Regular"
+            print("   Variant not found, using: \(currentFontVariantState) ⚠️")
         }
     }
 

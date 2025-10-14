@@ -457,6 +457,10 @@ class FontManager: ObservableObject {
         loadAvailableFonts()
     }
 
+    func clearVariantsCache() {
+        fontVariantsCache.removeAll()
+    }
+
     private func loadAvailableFonts() {
         let fontManager = NSFontManager.shared
         systemFonts = fontManager.availableFontFamilies.sorted()
@@ -474,48 +478,71 @@ class FontManager: ObservableObject {
 
     private func getWeightOrder(_ variantName: String) -> Int {
         let name = variantName.lowercased()
-
-        let weightOrder: [(String, Int)] = [
-            ("condensed black", 15),
-            ("condensed bold", 14),
-            ("extrablack", 13),
-            ("extra black", 13),
-            ("ultrablack", 12),
-            ("ultra black", 12),
-            ("black", 11),
-            ("heavy", 10),
-            ("extrabold", 9),
-            ("extra bold", 9),
-            ("bold", 8),
-            ("semibold", 7),
-            ("semi bold", 7),
-            ("demibold", 6),
-            ("demi bold", 6),
-            ("medium", 5),
-            ("regular", 4),
-            ("normal", 4),
-            ("book", 3),
-            ("light", 2),
-            ("thin", 1),
-            ("ultralight", 0),
-            ("ultra light", 0)
-        ]
-
         let isItalic = name.contains("italic") || name.contains("oblique")
 
-        for (weight, order) in weightOrder {
-            if name.contains(weight) {
-                return isItalic ? order + 100 : order
-            }
+        // Check for compound patterns first (most specific to least specific)
+        if name.contains("condensed") && name.contains("black") {
+            return isItalic ? 31 : 30
+        }
+        if name.contains("condensed") && name.contains("bold") {
+            return isItalic ? 29 : 28
+        }
+        if name.contains("extra") && name.contains("black") {
+            return isItalic ? 27 : 26
+        }
+        if name.contains("ultra") && name.contains("black") {
+            return isItalic ? 25 : 24
+        }
+        if name.contains("extra") && name.contains("bold") {
+            return isItalic ? 19 : 18
+        }
+        if name.contains("ultra") && name.contains("light") {
+            return isItalic ? 1 : 0
+        }
+        if name.contains("demi") && name.contains("bold") {
+            return isItalic ? 13 : 12
+        }
+        if name.contains("semi") && name.contains("bold") {
+            return isItalic ? 15 : 14
         }
 
-        return isItalic ? 1100 : 1000
+        // Single weight patterns
+        if name.contains("black") {
+            return isItalic ? 23 : 22
+        }
+        if name.contains("heavy") {
+            return isItalic ? 21 : 20
+        }
+        if name.contains("bold") {
+            return isItalic ? 17 : 16
+        }
+        if name.contains("medium") {
+            return isItalic ? 11 : 10
+        }
+        if name.contains("book") {
+            return isItalic ? 7 : 6
+        }
+        if name.contains("light") {
+            return isItalic ? 5 : 4
+        }
+        if name.contains("thin") {
+            return isItalic ? 3 : 2
+        }
+        if name.contains("regular") || name.contains("normal") {
+            return isItalic ? 9 : 8
+        }
+
+        // If only "italic" with no weight, treat as Regular Italic
+        if isItalic {
+            return 9
+        }
+
+        return 1000
     }
 
     func getAvailableVariantNames(for family: String) -> [String] {
-        if let cached = fontVariantsCache[family] {
-            return cached
-        }
+        // Clear cache entry for this family to ensure fresh sort
+        fontVariantsCache.removeValue(forKey: family)
 
         let fontManager = NSFontManager.shared
         let members = fontManager.availableMembers(ofFontFamily: family) ?? []
@@ -563,6 +590,12 @@ class FontManager: ObservableObject {
         }.map { $0.name }
 
         fontVariantsCache[family] = sortedVariants
+
+        print("🔤 FONT VARIANTS FOR \(family):")
+        for (index, variant) in sortedVariants.enumerated() {
+            let order = getWeightOrder(variant)
+            print("  \(index): \(variant) (order: \(order))")
+        }
 
         return sortedVariants
     }
