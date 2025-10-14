@@ -5,12 +5,12 @@ import Combine
 
 struct GradientPanel: View {
     @ObservedObject var document: VectorDocument
-    
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
                 GradientFillSection(document: document)
-                
+
                 Spacer()
             }
             .padding()
@@ -26,19 +26,19 @@ struct GradientFillSection: View {
     @State private var currentGradient: VectorGradient? = nil
     @State private var gradientId: UUID = UUID()
     @State private var isEditingAngle: Bool = false
-    
+
     @State private var showingGradientColorPicker = false
     @State private var editingGradientStopId: UUID?
     @State private var editingGradientStopColor: VectorColor = .black
-    
+
     enum GradientType: String, CaseIterable {
         case linear = "Linear"
         case radial = "Radial"
     }
-    
+
     init(document: VectorDocument) {
         self.document = document
-        
+
         if let selectedGradient = Self.getSelectedShapeGradient(document: document) {
             _currentGradient = State(initialValue: selectedGradient)
             switch selectedGradient {
@@ -51,13 +51,13 @@ struct GradientFillSection: View {
             _currentGradient = State(initialValue: Self.createDefaultGradient(type: .linear))
         }
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Gradient Fill")
                 .font(.headline)
                 .fontWeight(.medium)
-            
+
             GradientTypePickerView(
                 gradientType: $gradientType,
                 currentGradient: $currentGradient,
@@ -67,13 +67,13 @@ struct GradientFillSection: View {
                 createDefaultGradient: Self.createDefaultGradient,
                 onGradientChange: applyGradientToSelectedShapes
             )
-            
+
             GradientAngleControlView(
                 currentGradient: currentGradient,
                 document: document,
                 onAngleChange: updateGradientAngle
             )
-            
+
             GradientOriginControlView(
                 currentGradient: currentGradient,
                 document: document,
@@ -82,7 +82,7 @@ struct GradientFillSection: View {
                 updateOriginX: { updateGradientOriginXOptimized($0, applyToShapes: true, isLiveDrag: true) },
                 updateOriginY: { updateGradientOriginYOptimized($0, applyToShapes: true, isLiveDrag: true) }
             )
-            
+
             GradientScaleControlView(
                 currentGradient: currentGradient,
                 document: document,
@@ -93,7 +93,7 @@ struct GradientFillSection: View {
                 getRadius: getGradientRadius,
                 updateRadius: updateGradientRadius
             )
-            
+
             GradientPreviewAndStopsView(
                 currentGradient: currentGradient,
                 document: document,
@@ -117,7 +117,7 @@ struct GradientFillSection: View {
                 applyGradientToSelectedShapesOptimized: applyGradientToSelectedShapesOptimized,
                 activateGradientStop: activateGradientStop
             )
-            
+
             GradientApplyButtonView(
                 currentGradient: currentGradient,
                 onApply: applyGradientToSelectedShapes,
@@ -129,18 +129,18 @@ struct GradientFillSection: View {
         .cornerRadius(12)
         .onChange(of: document.selectedShapeIDs) { _, _ in updateSelectedGradient() }
         .onChange(of: document.selectedLayerIndex) { _, _ in updateSelectedGradient() }
-        .onReceive(document.objectWillChange) { _ in
-            if editingGradientStopId == nil && !isEditingAngle {
-                updateSelectedGradientDisplay()
-            }
-        }
+        // .onReceive(document.objectWillChange) { _ in
+        //     if editingGradientStopId == nil && !isEditingAngle {
+        //         updateSelectedGradientDisplay()
+        //     }
+        // }
     }
-    
+
     private func turnOffEditingState() {
         appState.gradientEditingState = nil
         appState.persistentGradientHUD.hide()
         editingGradientStopId = nil
-        
+
         DispatchQueue.main.async {
             if self.editingGradientStopId != nil {
                 self.editingGradientStopId = nil
@@ -150,15 +150,15 @@ struct GradientFillSection: View {
             }
         }
     }
-    
-    
+
+
     private func activateGradientStop(_ stopId: UUID, color: VectorColor) {
-        
+
         editingGradientStopId = stopId
         editingGradientStopColor = color
-        
+
         let actualColor = findGradientStopColor(stopId: stopId)
-        
+
         if let gradient = currentGradient {
             let stops: [GradientStop]
             switch gradient {
@@ -168,7 +168,7 @@ struct GradientFillSection: View {
                 stops = radial.stops
             }
             let stopIndex = stops.firstIndex { $0.id == stopId } ?? 0
-            
+
             appState.gradientEditingState = GradientEditingState(
                 gradientId: stopId,
                 stopIndex: stopIndex,
@@ -177,7 +177,7 @@ struct GradientFillSection: View {
                 }
             )
         }
-        
+
         appState.persistentGradientHUD.show(
             stopId: stopId,
             color: actualColor,
@@ -191,10 +191,10 @@ struct GradientFillSection: View {
             }
         )
     }
-    
-    
+
+
     private func updateSelectedGradient() {
-        
+
         if let selectedGradient = Self.getSelectedShapeGradient(document: document) {
             currentGradient = selectedGradient
             switch selectedGradient {
@@ -206,9 +206,9 @@ struct GradientFillSection: View {
             gradientId = UUID()
         }
     }
-    
+
     private func updateSelectedGradientDisplay() {
-        
+
         if let selectedGradient = Self.getSelectedShapeGradient(document: document) {
             currentGradient = selectedGradient
             switch selectedGradient {
@@ -219,10 +219,10 @@ struct GradientFillSection: View {
             }
         }
     }
-    
+
     private func updateGradientAngle(_ newAngle: Double) {
         guard let gradient = currentGradient else { return }
-        
+
         var normalizedAngle = newAngle
         while normalizedAngle > 180 {
             normalizedAngle -= 360
@@ -230,9 +230,9 @@ struct GradientFillSection: View {
         while normalizedAngle < -180 {
             normalizedAngle += 360
         }
-        
+
         isEditingAngle = true
-        
+
         switch gradient {
         case .linear(var linear):
             linear.angle = normalizedAngle
@@ -243,12 +243,12 @@ struct GradientFillSection: View {
             currentGradient = .radial(radial)
             applyGradientToSelectedShapesOptimized(isLiveDrag: true)
         }
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             self.isEditingAngle = false
         }
     }
-    
+
     private func getGradientOriginX(_ gradient: VectorGradient) -> Double {
         switch gradient {
         case .linear(let linear):
@@ -258,7 +258,7 @@ struct GradientFillSection: View {
             return originX
         }
     }
-    
+
     private func getGradientOriginY(_ gradient: VectorGradient) -> Double {
         switch gradient {
         case .linear(let linear):
@@ -268,18 +268,18 @@ struct GradientFillSection: View {
             return originY
         }
     }
-    
+
     private func updateGradientOriginX(_ newX: Double, applyToShapes: Bool = true) {
         updateGradientOriginXOptimized(newX, applyToShapes: applyToShapes, isLiveDrag: false)
     }
-    
+
     private func updateGradientOriginY(_ newY: Double, applyToShapes: Bool = true) {
         updateGradientOriginYOptimized(newY, applyToShapes: applyToShapes, isLiveDrag: false)
     }
-    
+
     private func updateGradientOriginXOptimized(_ newX: Double, applyToShapes: Bool = true, isLiveDrag: Bool) {
         guard let gradient = currentGradient else { return }
-        
+
         switch gradient {
         case .linear(var linear):
             linear.originPoint.x = newX
@@ -293,10 +293,10 @@ struct GradientFillSection: View {
             applyGradientToSelectedShapesOptimized(isLiveDrag: isLiveDrag)
         }
     }
-    
+
     private func updateGradientOriginYOptimized(_ newY: Double, applyToShapes: Bool = true, isLiveDrag: Bool) {
         guard let gradient = currentGradient else { return }
-        
+
         switch gradient {
         case .linear(var linear):
             linear.originPoint.y = newY
@@ -310,7 +310,7 @@ struct GradientFillSection: View {
             applyGradientToSelectedShapesOptimized(isLiveDrag: isLiveDrag)
         }
     }
-    
+
     private func getGradientScale(_ gradient: VectorGradient) -> Double {
         switch gradient {
         case .linear(let linear):
@@ -319,7 +319,7 @@ struct GradientFillSection: View {
             return radial.scaleX
         }
     }
-    
+
     private func getGradientAspectRatio(_ gradient: VectorGradient) -> Double {
         switch gradient {
         case .linear(let linear):
@@ -328,10 +328,10 @@ struct GradientFillSection: View {
             return radial.scaleX != 0 ? radial.scaleY / radial.scaleX : 1.0
         }
     }
-    
+
     private func updateGradientScale(_ newScale: Double) {
         guard let gradient = currentGradient else { return }
-        
+
         switch gradient {
         case .linear(var linear):
             let currentAspectRatio = linear.scaleX != 0 ? linear.scaleY / linear.scaleX : 1.0
@@ -346,10 +346,10 @@ struct GradientFillSection: View {
         }
         applyGradientToSelectedShapesOptimized(isLiveDrag: true)
     }
-    
+
     private func updateGradientAspectRatio(_ newAspectRatio: Double) {
         guard let gradient = currentGradient else { return }
-        
+
         switch gradient {
         case .linear(_):
             return
@@ -359,7 +359,7 @@ struct GradientFillSection: View {
             applyGradientToSelectedShapesOptimized(isLiveDrag: true)
         }
     }
-    
+
     private func getGradientRadius(_ gradient: VectorGradient) -> Double {
         switch gradient {
         case .linear(_):
@@ -368,10 +368,10 @@ struct GradientFillSection: View {
             return radial.radius
         }
     }
-    
+
     private func updateGradientRadius(_ newRadius: Double) {
         guard let gradient = currentGradient else { return }
-        
+
         switch gradient {
         case .linear(_):
             return
@@ -381,8 +381,8 @@ struct GradientFillSection: View {
             applyGradientToSelectedShapesOptimized(isLiveDrag: true)
         }
     }
-    
-    
+
+
     func getGradientStops(_ gradient: VectorGradient) -> [GradientStop] {
         switch gradient {
         case .linear(let linear):
@@ -391,10 +391,10 @@ struct GradientFillSection: View {
             return radial.stops
         }
     }
-    
+
     func updateStopPosition(stopId: UUID, position: Double) {
         guard let gradient = currentGradient else { return }
-        
+
         switch gradient {
         case .linear(var linear):
             if let index = linear.stops.firstIndex(where: { $0.id == stopId }) {
@@ -412,10 +412,10 @@ struct GradientFillSection: View {
             }
         }
     }
-    
+
     func updateStopOpacity(stopId: UUID, opacity: Double) {
         guard let gradient = currentGradient else { return }
-        
+
         switch gradient {
         case .linear(var linear):
             if let index = linear.stops.firstIndex(where: { $0.id == stopId }) {
@@ -431,10 +431,10 @@ struct GradientFillSection: View {
             }
         }
     }
-    
+
     func updateStopColor(stopId: UUID, color: VectorColor) {
         guard let gradient = currentGradient else { return }
-        
+
         switch gradient {
         case .linear(var linear):
             if let index = linear.stops.firstIndex(where: { $0.id == stopId }) {
@@ -450,16 +450,16 @@ struct GradientFillSection: View {
             }
         }
     }
-    
+
     func addColorStop() {
         guard let gradient = currentGradient else { return }
-        
+
         document.saveToUndoStack()
-        
+
         let stops = getGradientStops(gradient)
         let newPosition = stops.count > 1 ? (stops[stops.count-2].position + stops[stops.count-1].position) / 2 : 0.5
         let newStop = GradientStop(position: newPosition, color: .black, opacity: 1.0)
-        
+
         switch gradient {
         case .linear(var linear):
             linear.stops.append(newStop)
@@ -473,12 +473,12 @@ struct GradientFillSection: View {
             applyGradientToSelectedShapes()
         }
     }
-    
+
     func removeColorStop(stopId: UUID) {
         guard let gradient = currentGradient else { return }
-        
+
         document.saveToUndoStack()
-        
+
         switch gradient {
         case .linear(var linear):
             guard linear.stops.count > 2 else { return }
@@ -496,30 +496,30 @@ struct GradientFillSection: View {
             }
         }
     }
-    
+
     func applyGradientToSelectedShapes() {
         applyGradientToSelectedShapesOptimized(isLiveDrag: false)
     }
-    
+
     func applyGradientToSelectedShapesOptimized(isLiveDrag: Bool) {
         guard let gradient = currentGradient else { return }
-        
+
         if isLiveDrag {
             for objectID in document.selectedObjectIDs {
                 if let unifiedObject = document.findObject(by: objectID) {
                     if case .shape(let shape) = unifiedObject.objectType,
                        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
                        document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
-                        
+
                         document.updateShapeGradientInUnified(id: shape.id, gradient: gradient, target: document.activeColorTarget)
                     }
                 }
             }
             return
         }
-        
+
         var hasChanges = false
-        
+
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
@@ -528,7 +528,7 @@ struct GradientFillSection: View {
                         let shapes = document.getShapesForLayer(layerIndex)
                         if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }),
                            let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                            
+
                             var updatedShape = currentShape
                             switch document.activeColorTarget {
                             case .fill:
@@ -540,26 +540,26 @@ struct GradientFillSection: View {
                             hasChanges = true
                         }
                     }
-                    
+
                 }
             }
         }
-        
+
         if hasChanges {
             document.updateUnifiedObjectsOptimized()
         }
     }
-    
+
     func addGradientToSwatches() {
         guard let gradient = currentGradient else { return }
-        
+
         let gradientColor = VectorColor.gradient(gradient)
-        
+
         document.addColorToSwatches(gradientColor)
-        
+
     }
-    
-    
+
+
     static func getSelectedShapeGradient(document: VectorDocument) -> VectorGradient? {
         let activeShapes = document.getActiveShapes()
         guard let firstShape = activeShapes.first,
@@ -569,22 +569,22 @@ struct GradientFillSection: View {
         }
         return gradient
     }
-    
+
     @MainActor static func createDefaultGradient(type: GradientType) -> VectorGradient {
         let stops = [
             GradientStop(position: 0.0, color: .black, opacity: 1.0),
             GradientStop(position: 1.0, color: .white, opacity: 1.0)
         ]
-        
+
         return createGradientWithStops(type: type, stops: stops)
     }
-    
+
     @MainActor static func createGradientWithStops(type: GradientType, stops: [GradientStop]) -> VectorGradient {
         let validStops = stops.isEmpty ? [
             GradientStop(position: 0.0, color: .black, opacity: 1.0),
             GradientStop(position: 1.0, color: .white, opacity: 1.0)
         ] : stops
-        
+
         switch type {
         case .linear:
             var linear = LinearGradient(
@@ -613,13 +613,13 @@ struct GradientFillSection: View {
             return .radial(radial)
         }
     }
-    
+
     @MainActor static func createGradientPreservingProperties(type: GradientType, stops: [GradientStop], from existingGradient: VectorGradient) -> VectorGradient {
         let validStops = stops.isEmpty ? [
             GradientStop(position: 0.0, color: .black, opacity: 1.0),
             GradientStop(position: 1.0, color: .white, opacity: 1.0)
         ] : stops
-        
+
         switch type {
         case .linear:
             var linear = LinearGradient(
@@ -629,7 +629,7 @@ struct GradientFillSection: View {
                 spreadMethod: .pad,
                 units: .objectBoundingBox
             )
-            
+
             switch existingGradient {
             case .linear(let existingLinear):
                 linear.originPoint = existingLinear.originPoint
@@ -646,9 +646,9 @@ struct GradientFillSection: View {
                 linear.units = existingRadial.units
                 linear.spreadMethod = existingRadial.spreadMethod
             }
-            
+
             return .linear(linear)
-            
+
         case .radial:
             let (centerPoint, radius, _) = {
                 switch existingGradient {
@@ -658,7 +658,7 @@ struct GradientFillSection: View {
                     return (CGPoint(x: 0.5, y: 0.5), 0.5, nil as CGPoint?)
                 }
             }()
-            
+
             var radial = RadialGradient(
                 centerPoint: centerPoint,
                 radius: radius,
@@ -667,7 +667,7 @@ struct GradientFillSection: View {
                 spreadMethod: .pad,
                 units: .objectBoundingBox
             )
-            
+
             switch existingGradient {
             case .linear(let existingLinear):
                 radial.originPoint = existingLinear.originPoint
@@ -685,11 +685,11 @@ struct GradientFillSection: View {
                 radial.units = existingRadial.units
                 radial.spreadMethod = existingRadial.spreadMethod
             }
-            
+
             return .radial(radial)
         }
     }
-    
+
     private func findGradientStopColor(stopId: UUID) -> VectorColor {
         if let gradient = currentGradient {
             let stops: [GradientStop]
@@ -699,21 +699,21 @@ struct GradientFillSection: View {
             case .radial(let radial):
                 stops = radial.stops
             }
-            
+
             if let stop = stops.first(where: { $0.id == stopId }) {
                 return stop.color
             }
         }
-        
+
         guard let firstSelectedID = document.selectedShapeIDs.first else {
             return .black
         }
-        
+
         guard let shape = document.findShape(by: firstSelectedID),
               let fillStyle = shape.fillStyle else {
             return .black
         }
-        
+
         switch fillStyle.color {
         case .gradient(let gradient):
             if let stop = gradient.stops.first(where: { $0.id == stopId }) {

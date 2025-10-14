@@ -305,31 +305,9 @@ struct StrokeFillPanel: View {
                             if isEditing {
                                 cachedIndexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
                             } else {
-                                // Save to undo stack BEFORE making any changes
-                                document.saveToUndoStack()
                                 document.defaultStrokeWidth = strokeWidthState
                                 updateStrokeWidthLive(strokeWidthState, isEditing: false)
-
-                                // Sync unifiedObjects changes back to layers for undo to work
-                                let activeShapeIDs = document.getActiveShapeIDs()
-                                for shapeID in activeShapeIDs {
-                                    if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
-                                        if case .shape(let unifiedShape) = unifiedObj.objectType {
-                                            return unifiedShape.id == shapeID
-                                        }
-                                        return false
-                                    }) {
-                                        for layerIndex in document.layers.indices {
-                                            let shapes = document.getShapesForLayer(layerIndex)
-                                            if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
-                                               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                                                break
-                                            }
-                                        }
-                                    }
-                                }
-
+                                document.saveToUndoStack()
                                 cachedIndexMap.removeAll()
                             }
                         },
@@ -447,30 +425,18 @@ struct StrokeFillPanel: View {
         .onAppear {
             syncOpacityStates()
         }
-        .onReceive(document.objectWillChange) { _ in
-            // Sync slider states whenever document changes (including undo/redo)
+        .onChange(of: document.selectedObjectIDs) { _, _ in
             syncOpacityStates()
         }
     }
 
     private func syncOpacityStates() {
-        print("🔶 [SYNC] syncOpacityStates called")
-        print("   fillOpacity from document: \(fillOpacity)")
-        print("   strokeOpacity from document: \(strokeOpacity)")
-        print("   strokeWidth from document: \(strokeWidth)")
-        print("   strokePlacement from document: \(strokePlacement.rawValue)")
-
         fillOpacityState = fillOpacity
         strokeOpacityState = strokeOpacity
         strokeWidthState = strokeWidth
         strokePlacementState = strokePlacement
         strokeMiterLimitState = strokeMiterLimit
         selectedImageOpacityState = selectedImageOpacity
-
-        print("   fillOpacityState set to: \(fillOpacityState)")
-        print("   strokeOpacityState set to: \(strokeOpacityState)")
-        print("   strokeWidthState set to: \(strokeWidthState)")
-        print("   strokePlacementState set to: \(strokePlacementState.rawValue)")
     }
 
     private func updateFillOpacity(_ opacity: Double) {
