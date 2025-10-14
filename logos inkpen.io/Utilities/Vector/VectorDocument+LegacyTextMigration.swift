@@ -5,8 +5,6 @@ import Combine
 extension VectorDocument {
 
     func migrateLegacyTextObjects() {
-        var needsMigration = false
-
         for (index, object) in unifiedObjects.enumerated() {
             if case .shape(var shape) = object.objectType,
                shape.isTextObject,
@@ -47,14 +45,8 @@ extension VectorDocument {
                         layerIndex: object.layerIndex,
                         orderID: object.orderID
                     )
-
-                    needsMigration = true
                 }
             }
-        }
-
-        if needsMigration {
-            objectWillChange.send()
         }
     }
 }

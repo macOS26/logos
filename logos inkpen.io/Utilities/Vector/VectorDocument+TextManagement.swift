@@ -143,8 +143,6 @@ extension VectorDocument {
             selectedShapeIDs = newShapeIDs
 
             syncUnifiedSelectionFromLegacy()
-
-            objectWillChange.send()
         } else {
             Log.error("❌ TEXT TO OUTLINES FAILED: No new shapes were created", category: .error)
         }
