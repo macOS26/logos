@@ -7,8 +7,8 @@ struct FillPropertiesSection: View {
     let onFillOpacityEditingChanged: (Bool) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Fill Properties")
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Fill")
                 .font(.headline)
                 .fontWeight(.medium)
 
@@ -29,27 +29,9 @@ struct FillPropertiesSection: View {
                 ), in: 0...1, onEditingChanged: onFillOpacityEditingChanged)
                 .controlSize(.regular)
             }
-
-            Button("Apply Fill") {
-                onApplyFill()
-            }
-            .font(.system(size: 13, weight: .medium))
-            .foregroundColor(.primary)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .frame(minHeight: 36)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.gray.opacity(0.1))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                    )
-            )
-            .buttonStyle(BorderlessButtonStyle())
-            .contentShape(Rectangle())
         }
-        .padding()
+        .padding(.horizontal, 12)
+        .padding(.bottom, 8)
         .background(Color.ui.semiTransparentControlBackground)
         .cornerRadius(12)
     }

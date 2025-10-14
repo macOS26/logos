@@ -19,8 +19,7 @@ struct ProfessionalTextBoxView: View {
         case .gray: return Color.clear
         case .green: return Color.clear
         case .blue:
-            let fillColor = viewModel.textObject.typography.fillColor
-            return getOppositeHueColor(from: fillColor)
+            return Color.blue.opacity(0.5)
         }
     }
 

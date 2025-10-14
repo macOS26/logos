@@ -46,7 +46,8 @@ struct CurrentColorsView: View {
                 action: onStrokeColorTap
             )
         }
-        .padding(12)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
         .background(Color.ui.semiTransparentControlBackground)
         .cornerRadius(8)
     }

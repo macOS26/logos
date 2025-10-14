@@ -472,6 +472,46 @@ class FontManager: ObservableObject {
         availableFonts = orderedFonts
     }
 
+    private func getWeightOrder(_ variantName: String) -> Int {
+        let name = variantName.lowercased()
+
+        let weightOrder: [(String, Int)] = [
+            ("condensed black", 15),
+            ("condensed bold", 14),
+            ("extrablack", 13),
+            ("extra black", 13),
+            ("ultrablack", 12),
+            ("ultra black", 12),
+            ("black", 11),
+            ("heavy", 10),
+            ("extrabold", 9),
+            ("extra bold", 9),
+            ("bold", 8),
+            ("semibold", 7),
+            ("semi bold", 7),
+            ("demibold", 6),
+            ("demi bold", 6),
+            ("medium", 5),
+            ("regular", 4),
+            ("normal", 4),
+            ("book", 3),
+            ("light", 2),
+            ("thin", 1),
+            ("ultralight", 0),
+            ("ultra light", 0)
+        ]
+
+        let isItalic = name.contains("italic") || name.contains("oblique")
+
+        for (weight, order) in weightOrder {
+            if name.contains(weight) {
+                return isItalic ? order + 100 : order
+            }
+        }
+
+        return isItalic ? 1100 : 1000
+    }
+
     func getAvailableVariantNames(for family: String) -> [String] {
         if let cached = fontVariantsCache[family] {
             return cached
@@ -510,8 +550,11 @@ class FontManager: ObservableObject {
         }
 
         let sortedVariants = variants.sorted { lhs, rhs in
-            if lhs.weight != rhs.weight {
-                return lhs.weight < rhs.weight
+            let lhsOrder = getWeightOrder(lhs.name)
+            let rhsOrder = getWeightOrder(rhs.name)
+
+            if lhsOrder != rhsOrder {
+                return lhsOrder < rhsOrder
             } else if lhs.traits != rhs.traits {
                 return lhs.traits < rhs.traits
             } else {

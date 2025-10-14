@@ -18,8 +18,8 @@ struct StrokePropertiesSection: View {
     let onMiterLimitEditingChanged: (Bool) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Stroke Properties")
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Stroke")
                 .font(.headline)
                 .fontWeight(.medium)
 
@@ -171,7 +171,8 @@ struct StrokePropertiesSection: View {
                 .tint(.blue)
             }
         }
-        .padding()
+        .padding(.horizontal, 12)
+        .padding(.bottom, 8)
         .background(Color.ui.semiTransparentControlBackground)
         .cornerRadius(12)
     }
