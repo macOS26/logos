@@ -26,6 +26,13 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.textContainerInset = NSSize(width: 0, height: 0)
         textView.textContainer?.lineFragmentPadding = 0
 
+        // Auto-focus the text view if in editing mode
+        if isEditingMode {
+            DispatchQueue.main.async {
+                textView.window?.makeFirstResponder(textView)
+            }
+        }
+
         textView.wantsLayer = true
         textView.layer?.masksToBounds = false
 
@@ -86,6 +93,12 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         paragraphStyle.maximumLineHeight = viewModel.textObject.typography.lineHeight
         textView.defaultParagraphStyle = paragraphStyle
 
+        // Set typing attributes to ensure new text uses the correct alignment
+        textView.typingAttributes = [
+            .font: textView.font ?? viewModel.selectedFont,
+            .foregroundColor: textColor,
+            .paragraphStyle: paragraphStyle
+        ]
 
         if textView.string.count > 0 {
             let range = NSRange(location: 0, length: textView.string.count)
@@ -177,6 +190,13 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
 
         DispatchQueue.main.async {
             nsView.defaultParagraphStyle = paragraphStyle
+
+            // Update typing attributes to ensure new text uses the correct alignment
+            nsView.typingAttributes = [
+                .font: nsView.font ?? newFont,
+                .foregroundColor: newTextColor,
+                .paragraphStyle: paragraphStyle
+            ]
         }
 
         DispatchQueue.main.async {
@@ -241,6 +261,13 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                 textColor = baseColor.withAlphaComponent(viewModel.textObject.typography.fillOpacity)
             }
             nsView.insertionPointColor = textColor
+
+            // Auto-focus the text view when entering editing mode
+            DispatchQueue.main.async {
+                if nsView.window?.firstResponder != nsView {
+                    nsView.window?.makeFirstResponder(nsView)
+                }
+            }
         }
 
 
@@ -392,6 +419,13 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                 paragraphStyle.maximumLineHeight = typography.lineHeight
 
                 textView.defaultParagraphStyle = paragraphStyle
+
+                // Update typing attributes to ensure new text uses the correct alignment
+                textView.typingAttributes = [
+                    .font: newFont,
+                    .foregroundColor: textColor,
+                    .paragraphStyle: paragraphStyle
+                ]
 
                 if textView.string.count > 0 {
                     let range = NSRange(location: 0, length: textView.string.count)

@@ -8,7 +8,7 @@ class ProfessionalTextViewModel: ObservableObject {
     @Published var text: String = ""
     @Published var fontSize: CGFloat = 24.0
     @Published var selectedFont: NSFont = NSFont.systemFont(ofSize: 24.0)
-    @Published var textAlignment: NSTextAlignment = .left
+    @Published var textAlignment: NSTextAlignment = .center
     @Published var isEditing: Bool = false
     @Published var textBoxFrame: CGRect = CGRect(x: 100, y: 100, width: 200, height: 100)
     @Published var userInitiatedCursorPosition: Int = 0

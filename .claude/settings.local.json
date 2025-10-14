@@ -19,7 +19,8 @@
       "Bash(\"logos inkpen.io/Views/Handles/ShearHandles.swift\" )",
       "Bash(\"logos inkpen.io/Views/Handles/TransformBoxHandles.swift\" )",
       "Bash(\"logos inkpen.io/Views/Handles/EnvelopeHandles.swift\" )",
-      "Bash(\"logos inkpen.io/Views/DrawingCanvas/DrawingCanvas+SelectionDrag.swift\")"
+      "Bash(\"logos inkpen.io/Views/DrawingCanvas/DrawingCanvas+SelectionDrag.swift\")",
+      "Bash(xcodebuild:*)"
     ],
     "deny": [],
     "ask": []

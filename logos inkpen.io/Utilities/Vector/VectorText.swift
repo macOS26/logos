@@ -128,7 +128,7 @@ struct TypographyProperties: Codable, Hashable {
         lineHeight: Double = 24.0,
         lineSpacing: Double = 0.0,
         letterSpacing: Double = 0.0,
-        alignment: TextAlignment = .left,
+        alignment: TextAlignment = .center,
         hasStroke: Bool = false,
         strokeColor: VectorColor,
         strokeWidth: Double = 1.0,
@@ -400,7 +400,7 @@ struct VectorText: Identifiable, Codable, Hashable {
                 lineHeight: fontSize * 1.2,
                 lineSpacing: lineSpacing,
                 letterSpacing: letterSpacing,
-                alignment: .left,
+                alignment: .center,
                 hasStroke: vectorShape.strokeStyle != nil,
                 strokeColor: vectorShape.strokeStyle?.color ?? .black,
                 strokeWidth: vectorShape.strokeStyle?.width ?? 1.0,
@@ -451,7 +451,7 @@ class FontManager: ObservableObject {
 
     @Published var selectedLineSpacing: Double = 0.0
     @Published var selectedLineHeight: Double = 24.0
-    @Published var selectedTextAlignment: TextAlignment = .left
+    @Published var selectedTextAlignment: TextAlignment = .center
 
     init() {
         loadAvailableFonts()
