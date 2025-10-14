@@ -296,7 +296,6 @@ class VectorDocument: ObservableObject, Codable {
     var defaultFillColor: VectorColor {
         get { documentColorDefaults.fillColor }
         set {
-            objectWillChange.send()
             documentColorDefaults.fillColor = newValue
             documentColorDefaults.saveToUserDefaults()
         }
@@ -304,7 +303,6 @@ class VectorDocument: ObservableObject, Codable {
     var defaultStrokeColor: VectorColor {
         get { documentColorDefaults.strokeColor }
         set {
-            objectWillChange.send()
             documentColorDefaults.strokeColor = newValue
             documentColorDefaults.saveToUserDefaults()
         }
@@ -785,9 +783,9 @@ class VectorDocument: ObservableObject, Codable {
                 }
             }
 
-            // If no objects found to toggle, just trigger objectWillChange
+            // If no objects found to toggle, do nothing
             if !foundObjectToToggle {
-                self.objectWillChange.send()
+                // No action needed - @Published properties handle updates
             }
         }
     }

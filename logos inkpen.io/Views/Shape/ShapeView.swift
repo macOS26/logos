@@ -167,6 +167,14 @@ struct ShapeView: View {
                 previewStrokePlacement = placement
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ClearPreviewStates"))) { _ in
+            // Clear all preview states so ShapeView uses actual shape values
+            previewFillOpacity = nil
+            previewStrokeOpacity = nil
+            previewStrokeWidth = nil
+            previewStrokePlacement = nil
+        }
+        .id(shape.id) // Reset preview state when shape changes
     }
 
     @ViewBuilder

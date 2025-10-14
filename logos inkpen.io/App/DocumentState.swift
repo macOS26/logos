@@ -93,15 +93,15 @@ class DocumentState: ObservableObject {
     }
 
     private func setupDocumentObserversAsync() async {
-        guard let document = document else { return }
-
-        document.objectWillChange.sink { [weak self] _ in
-            guard let self = self else { return }
-            Task { @MainActor in
-                self.updateAllStates()
-            }
-        }
-        .store(in: &cancellables)
+//        guard let document = document else { return }
+//
+//        document.objectWillChange.sink { [weak self] _ in
+//            guard let self = self else { return }
+//            Task { @MainActor in
+//                self.updateAllStates()
+//            }
+//        }
+//        .store(in: &cancellables)
     }
 
     private func updateAllStates() {

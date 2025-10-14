@@ -61,6 +61,9 @@ struct UnifiedObjectView: View {
         .onChange(of: document.layers.map { $0.blendMode }) {
             layerBlendModes = document.layers.map { $0.blendMode }
         }
+        .onChange(of: document.layers.map { $0.isVisible }) { _ in
+            // Force view update when layer visibility changes
+        }
     }
 }
 
@@ -363,6 +366,9 @@ struct NonBackgroundObjectsView: View {
         }
         .onChange(of: document.layers.map { $0.blendMode }) {
             layerBlendModes = document.layers.map { $0.blendMode }
+        }
+        .onChange(of: document.layers.map { $0.isVisible }) { _ in
+            // Force view update when layer visibility changes
         }
     }
 }

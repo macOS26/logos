@@ -9,11 +9,13 @@ struct StrokeFillPanel: View {
     @State private var fillOpacityState: Double = 1.0
     @State private var strokeOpacityState: Double = 1.0
     @State private var strokeWidthState: Double = 1.0
+    @State private var strokePlacementState: StrokePlacement = .center
     @State private var strokeMiterLimitState: Double = 10.0
     @State private var selectedImageOpacityState: Double = 1.0
 
     @State private var cachedIndexMap: [UUID: Int] = [:]
     @State private var isDragging: Bool = false
+    @State private var strokePlacementCommitTask: DispatchWorkItem? = nil
 
     private var selectedStrokeColor: VectorColor {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
@@ -224,9 +226,31 @@ struct StrokeFillPanel: View {
                             if isEditing {
                                 cachedIndexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
                             } else {
+                                // Save to undo stack BEFORE making any changes
+                                document.saveToUndoStack()
                                 document.defaultFillOpacity = fillOpacityState
                                 updateFillOpacityLive(fillOpacityState, isEditing: false)
-                                document.saveToUndoStack()
+
+                                // Sync unifiedObjects changes back to layers for undo to work
+                                let activeShapeIDs = document.getActiveShapeIDs()
+                                for shapeID in activeShapeIDs {
+                                    if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
+                                        if case .shape(let unifiedShape) = unifiedObj.objectType {
+                                            return unifiedShape.id == shapeID
+                                        }
+                                        return false
+                                    }) {
+                                        for layerIndex in document.layers.indices {
+                                            let shapes = document.getShapesForLayer(layerIndex)
+                                            if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
+                                               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                                                break
+                                            }
+                                        }
+                                    }
+                                }
+
                                 cachedIndexMap.removeAll()
                                 // Clear preview for text objects
                                 for objectID in document.selectedObjectIDs {
@@ -248,7 +272,7 @@ struct StrokeFillPanel: View {
 
                     StrokePropertiesSection(
                         strokeWidth: strokeWidthState,
-                        strokePlacement: strokePlacement,
+                        strokePlacement: strokePlacementState,
                         strokeOpacity: strokeOpacityState,
                         strokeLineJoin: strokeLineJoin,
                         strokeLineCap: strokeLineCap,
@@ -258,6 +282,7 @@ struct StrokeFillPanel: View {
                             updateStrokeWidthLive(value, isEditing: true)
                         },
                         onUpdateStrokePlacement: { value in
+                            strokePlacementState = value
                             updateStrokePlacementLive(value)
                         },
                         onUpdateStrokeOpacity: { value in
@@ -290,9 +315,31 @@ struct StrokeFillPanel: View {
                             if isEditing {
                                 cachedIndexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
                             } else {
+                                // Save to undo stack BEFORE making any changes
+                                document.saveToUndoStack()
                                 document.defaultStrokeOpacity = strokeOpacityState
                                 updateStrokeOpacityLive(strokeOpacityState, isEditing: false)
-                                document.saveToUndoStack()
+
+                                // Sync unifiedObjects changes back to layers for undo to work
+                                let activeShapeIDs = document.getActiveShapeIDs()
+                                for shapeID in activeShapeIDs {
+                                    if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
+                                        if case .shape(let unifiedShape) = unifiedObj.objectType {
+                                            return unifiedShape.id == shapeID
+                                        }
+                                        return false
+                                    }) {
+                                        for layerIndex in document.layers.indices {
+                                            let shapes = document.getShapesForLayer(layerIndex)
+                                            if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
+                                               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                                                break
+                                            }
+                                        }
+                                    }
+                                }
+
                                 cachedIndexMap.removeAll()
                             }
                         },
@@ -387,6 +434,7 @@ struct StrokeFillPanel: View {
         fillOpacityState = fillOpacity
         strokeOpacityState = strokeOpacity
         strokeWidthState = strokeWidth
+        strokePlacementState = strokePlacement
         strokeMiterLimitState = strokeMiterLimit
         selectedImageOpacityState = selectedImageOpacity
     }
@@ -514,12 +562,15 @@ struct StrokeFillPanel: View {
     }
 
     /// Updates stroke placement for selected shapes using lightweight notifications.
-    /// This provides instant UI updates without triggering full document republishing.
+    /// Sends preview FIRST for instant visual update, then commits after 2 second debounce delay.
     /// - Parameter placement: The new stroke placement (center, inside, outside)
     private func updateStrokePlacementLive(_ placement: StrokePlacement) {
         document.defaultStrokePlacement = placement
 
-        // Send preview notification for immediate visual update
+        let activeShapeIDs = document.getActiveShapeIDs()
+        if activeShapeIDs.isEmpty { return }
+
+        // Send preview notification FIRST for immediate visual update (NO document modification)
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
@@ -531,21 +582,46 @@ struct StrokeFillPanel: View {
             }
         }
 
-        // Then commit the change to the document
-        let activeShapeIDs = document.getActiveShapeIDs()
-        if activeShapeIDs.isEmpty { return }
+        // Cancel any pending commit
+        strokePlacementCommitTask?.cancel()
 
-        document.saveToUndoStack()
+        // Schedule new commit after 2 second debounce (allows rapid menu changes without blocking)
+        let commitTask = DispatchWorkItem {
+            // Save to undo stack BEFORE making any changes
+            self.document.saveToUndoStack()
 
-        for shapeID in activeShapeIDs {
-            for layerIndex in document.layers.indices {
-                let shapes = document.getShapesForLayer(layerIndex)
-                if shapes.firstIndex(where: { $0.id == shapeID }) != nil {
-                    document.updateShapeStrokePlacementInUnified(id: shapeID, placement: placement)
-                    break
+            for shapeID in activeShapeIDs {
+                for layerIndex in self.document.layers.indices {
+                    let shapes = self.document.getShapesForLayer(layerIndex)
+                    if shapes.firstIndex(where: { $0.id == shapeID }) != nil {
+                        self.document.updateShapeStrokePlacementInUnified(id: shapeID, placement: placement)
+                        break
+                    }
+                }
+            }
+
+            // Sync unifiedObjects changes back to layers for undo to work
+            for shapeID in activeShapeIDs {
+                if let unifiedIndex = self.document.unifiedObjects.firstIndex(where: { unifiedObj in
+                    if case .shape(let unifiedShape) = unifiedObj.objectType {
+                        return unifiedShape.id == shapeID
+                    }
+                    return false
+                }) {
+                    for layerIndex in self.document.layers.indices {
+                        let shapes = self.document.getShapesForLayer(layerIndex)
+                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
+                           let shape = self.document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                            self.document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: self.document.unifiedObjects[unifiedIndex].orderID)
+                            break
+                        }
+                    }
                 }
             }
         }
+
+        strokePlacementCommitTask = commitTask
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: commitTask)
     }
 
     private func updateStrokeWidth(_ width: Double) {
