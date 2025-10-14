@@ -94,16 +94,8 @@ struct FontPickerView: View {
                     document.fontManager.selectedFontVariant = defaultVariant
 
                     if let textID = document.selectedTextIDs.first {
-                        // Send preview notification FIRST for instant visual update
-                        document.updateTextFontFamilyPreview(id: textID, fontFamily: newFamily)
-                        document.updateTextFontVariantPreview(id: textID, fontVariant: defaultVariant)
-
-                        // Then commit to document after a brief delay
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                            document.updateTextFontFamilyDirect(id: textID, fontFamily: newFamily)
-                            document.updateTextFontVariantDirect(id: textID, fontVariant: defaultVariant)
-                            document.clearTextPreviewTypography(id: textID)
-                        }
+                        document.updateTextFontFamilyDirect(id: textID, fontFamily: newFamily)
+                        document.updateTextFontVariantDirect(id: textID, fontVariant: defaultVariant)
                     }
                 }
             )) {
@@ -128,14 +120,7 @@ struct FontPickerView: View {
                     document.fontManager.selectedFontVariant = newVariant
 
                     if let textID = document.selectedTextIDs.first {
-                        // Send preview notification FIRST for instant visual update
-                        document.updateTextFontVariantPreview(id: textID, fontVariant: newVariant)
-
-                        // Then commit to document after a brief delay
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                            document.updateTextFontVariantDirect(id: textID, fontVariant: newVariant)
-                            document.clearTextPreviewTypography(id: textID)
-                        }
+                        document.updateTextFontVariantDirect(id: textID, fontVariant: newVariant)
                     }
                 }
             )) {

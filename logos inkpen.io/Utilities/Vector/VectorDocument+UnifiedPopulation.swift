@@ -63,7 +63,9 @@ extension VectorDocument {
             return
         }
 
-        // No manual objectWillChange needed - @Published properties handle updates
+        if sendUpdate {
+            objectWillChange.send()
+        }
     }
 
     func forceResyncUnifiedObjects() {

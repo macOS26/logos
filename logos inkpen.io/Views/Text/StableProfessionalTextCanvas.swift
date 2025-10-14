@@ -30,11 +30,11 @@ struct StableProfessionalTextCanvas: View {
             .onAppear {
                 updateViewModelFromDocument()
             }
-            // .onReceive(document.objectWillChange) { _ in
-            //     if let currentTextObject = document.findText(by: textObjectID) {
-            //         viewModel.syncFromDocument(currentTextObject)
-            //     }
-            // }
+            .onReceive(document.objectWillChange) { _ in
+                if let currentTextObject = document.findText(by: textObjectID) {
+                    viewModel.syncFromDocument(currentTextObject)
+                }
+            }
             .onChange(of: dragPreviewTrigger) { _, _ in
                 if let currentTextObject = document.findText(by: textObjectID) {
                     viewModel.syncFromDocument(currentTextObject)

@@ -129,11 +129,11 @@ struct GradientFillSection: View {
         .cornerRadius(12)
         .onChange(of: document.selectedShapeIDs) { _, _ in updateSelectedGradient() }
         .onChange(of: document.selectedLayerIndex) { _, _ in updateSelectedGradient() }
-        // .onReceive(document.objectWillChange) { _ in
-        //     if editingGradientStopId == nil && !isEditingAngle {
-        //         updateSelectedGradientDisplay()
-        //     }
-        // }
+        .onReceive(document.objectWillChange) { _ in
+            if editingGradientStopId == nil && !isEditingAngle {
+                updateSelectedGradientDisplay()
+            }
+        }
     }
 
     private func turnOffEditingState() {
