@@ -21,7 +21,8 @@
       "Read(//Users/toddbruss/Documents/GitHub/Web-Man/WebWidow/WebWidow/**)",
       "Bash(xcodebuild:*)",
       "Bash(find:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(swift:*)"
     ],
     "deny": [],
     "ask": []
