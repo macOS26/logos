@@ -6,23 +6,25 @@ extension VectorDocument {
     func lockSelectedObjects() {
         guard !selectedShapeIDs.isEmpty || !selectedTextIDs.isEmpty else { return }
 
-        saveToUndoStack()
+        let allIDs = selectedShapeIDs.union(selectedTextIDs)
+        var oldValues: [UUID: Bool] = [:]
+        var newValues: [UUID: Bool] = [:]
 
-        for layerIndex in layers.indices {
-            let shapes = getShapesForLayer(layerIndex)
-            for (shapeIndex, shape) in shapes.enumerated() {
-                if selectedShapeIDs.contains(shape.id) {
-                    var updatedShape = shape
-                    updatedShape.isLocked = true
-                    setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-                }
+        for id in allIDs {
+            if let obj = unifiedObjects.first(where: { $0.id == id }),
+               case .shape(let shape) = obj.objectType {
+                oldValues[id] = shape.isLocked
+                newValues[id] = true
             }
         }
 
-        for textID in selectedTextIDs {
-            lockTextInUnified(id: textID)
-        }
-
+        let command = VisibilityCommand(
+            objectIDs: Array(allIDs),
+            property: .locked,
+            oldValues: oldValues,
+            newValues: newValues
+        )
+        executeCommand(command)
 
         selectedShapeIDs.removeAll()
         selectedTextIDs.removeAll()
@@ -31,50 +33,52 @@ extension VectorDocument {
     func unlockAllObjects() {
         guard let layerIndex = selectedLayerIndex else { return }
 
-        saveToUndoStack()
+        var affectedIDs: [UUID] = []
+        var oldValues: [UUID: Bool] = [:]
+        var newValues: [UUID: Bool] = [:]
 
-        var unlockedCount = 0
-
-        let shapes = getShapesForLayer(layerIndex)
-        for (shapeIndex, shape) in shapes.enumerated() {
-            if shape.isLocked {
-                var updatedShape = shape
-                updatedShape.isLocked = false
-                setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-                unlockedCount += 1
+        for obj in unifiedObjects where obj.layerIndex == layerIndex {
+            if case .shape(let shape) = obj.objectType, shape.isLocked {
+                affectedIDs.append(obj.id)
+                oldValues[obj.id] = true
+                newValues[obj.id] = false
             }
         }
 
-        for unifiedObj in unifiedObjects {
-            if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject, shape.isLocked == true {
-                unlockTextInUnified(id: shape.id)
-                unlockedCount += 1
-            }
+        if !affectedIDs.isEmpty {
+            let command = VisibilityCommand(
+                objectIDs: affectedIDs,
+                property: .locked,
+                oldValues: oldValues,
+                newValues: newValues
+            )
+            executeCommand(command)
         }
-
     }
 
 
     func hideSelectedObjects() {
         guard !selectedShapeIDs.isEmpty || !selectedTextIDs.isEmpty else { return }
 
-        saveToUndoStack()
+        let allIDs = selectedShapeIDs.union(selectedTextIDs)
+        var oldValues: [UUID: Bool] = [:]
+        var newValues: [UUID: Bool] = [:]
 
-        for layerIndex in layers.indices {
-            let shapes = getShapesForLayer(layerIndex)
-            for (shapeIndex, shape) in shapes.enumerated() {
-                if selectedShapeIDs.contains(shape.id) {
-                    var updatedShape = shape
-                    updatedShape.isVisible = false
-                    setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-                }
+        for id in allIDs {
+            if let obj = unifiedObjects.first(where: { $0.id == id }),
+               case .shape(let shape) = obj.objectType {
+                oldValues[id] = shape.isVisible
+                newValues[id] = false
             }
         }
 
-        for textID in selectedTextIDs {
-            hideTextInUnified(id: textID)
-        }
-
+        let command = VisibilityCommand(
+            objectIDs: Array(allIDs),
+            property: .visibility,
+            oldValues: oldValues,
+            newValues: newValues
+        )
+        executeCommand(command)
 
         selectedShapeIDs.removeAll()
         selectedTextIDs.removeAll()

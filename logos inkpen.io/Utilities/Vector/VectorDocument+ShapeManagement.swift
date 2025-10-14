@@ -9,11 +9,11 @@ extension VectorDocument {
     func addShape(_ shape: VectorShape) {
         guard let layerIndex = selectedLayerIndex else { return }
 
-        saveToUndoStack()
-
         let orderID = getNextOrderIDForLayer(layerIndex)
         let obj = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
-        unifiedObjects.append(obj)
+
+        let command = AddObjectCommand(object: obj)
+        executeCommand(command)
 
         selectedShapeIDs = [shape.id]
         selectedObjectIDs = [shape.id]
