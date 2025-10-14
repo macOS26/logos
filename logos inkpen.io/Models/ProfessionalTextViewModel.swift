@@ -454,8 +454,6 @@ class ProfessionalTextViewModel: ObservableObject {
 
 
         document.removeTextFromUnifiedSystem(id: textObject.id)
-
-        document.objectWillChange.send()
     }
 
     func convertCGPathToVectorPath(_ cgPath: CGPath) -> VectorPath {

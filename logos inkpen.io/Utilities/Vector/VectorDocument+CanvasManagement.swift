@@ -148,8 +148,6 @@ extension VectorDocument {
         }
 
         translateAllTextInUnified(delta: delta)
-
-        objectWillChange.send()
     }
 
     internal func setupSettingsObservation() {
@@ -158,8 +156,5 @@ extension VectorDocument {
     func onSettingsChanged() {
         updatePasteboardLayer()
         updateCanvasLayer()
-
-        objectWillChange.send()
-
     }
 }

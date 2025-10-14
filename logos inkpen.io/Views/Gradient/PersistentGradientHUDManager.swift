@@ -36,8 +36,6 @@ class PersistentGradientHUDManager {
 
         stableColorDocument.defaultFillColor = color
 
-        stableColorDocument.objectWillChange.send()
-
         isVisible = true
 
         var foundExistingWindow = false
@@ -76,8 +74,6 @@ class PersistentGradientHUDManager {
         onColorSelected = nil
         onClose = nil
 
-        stableColorDocument.objectWillChange.send()
-
         onClose?()
 
     }
@@ -97,8 +93,6 @@ class PersistentGradientHUDManager {
         if stopId == editingStopId {
             editingStopColor = color
             stableColorDocument.defaultFillColor = color
-
-            stableColorDocument.objectWillChange.send()
         }
 
         onColorSelected?(stopId, color)
