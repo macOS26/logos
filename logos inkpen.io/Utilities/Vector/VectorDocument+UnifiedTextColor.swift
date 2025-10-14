@@ -3,15 +3,14 @@ import Combine
 
 extension VectorDocument {
 
-    /// Sends a lightweight notification to update font family instantly.
-    /// Uses preview for immediate visual feedback, then commits to document.
+    /// Sends ONLY a lightweight notification to update font family - NO document modification.
+    /// This provides instant visual feedback without triggering @Published changes.
     /// - Parameters:
     ///   - id: The UUID of the text object to update
     ///   - fontFamily: The new font family name
-    func updateTextFontFamilyDirect(id: UUID, fontFamily: String) {
-        // Send preview notification first for instant visual update
+    func updateTextFontFamilyPreview(id: UUID, fontFamily: String) {
         if let textObject = findText(by: id) {
-            var previewTypography = textObject.typography
+            var previewTypography = textPreviewTypography[id] ?? textObject.typography
             previewTypography.fontFamily = fontFamily
 
             textPreviewTypography[id] = previewTypography
@@ -22,23 +21,16 @@ extension VectorDocument {
                 userInfo: ["textID": id, "typography": previewTypography]
             )
         }
-
-        // Then commit to document
-        saveToUndoStack()
-        updateShapeByID(id) { shape in
-            shape.typography?.fontFamily = fontFamily
-        }
     }
 
-    /// Sends a lightweight notification to update font variant instantly.
-    /// Uses preview for immediate visual feedback, then commits to document.
+    /// Sends ONLY a lightweight notification to update font variant - NO document modification.
+    /// This provides instant visual feedback without triggering @Published changes.
     /// - Parameters:
     ///   - id: The UUID of the text object to update
     ///   - fontVariant: The new font variant name
-    func updateTextFontVariantDirect(id: UUID, fontVariant: String) {
-        // Send preview notification first for instant visual update
+    func updateTextFontVariantPreview(id: UUID, fontVariant: String) {
         if let textObject = findText(by: id) {
-            var previewTypography = textObject.typography
+            var previewTypography = textPreviewTypography[id] ?? textObject.typography
             previewTypography.fontVariant = fontVariant
 
             textPreviewTypography[id] = previewTypography
@@ -49,8 +41,24 @@ extension VectorDocument {
                 userInfo: ["textID": id, "typography": previewTypography]
             )
         }
+    }
 
-        // Then commit to document
+    /// Commits font family change to document after preview.
+    /// - Parameters:
+    ///   - id: The UUID of the text object to update
+    ///   - fontFamily: The new font family name
+    func updateTextFontFamilyDirect(id: UUID, fontFamily: String) {
+        saveToUndoStack()
+        updateShapeByID(id) { shape in
+            shape.typography?.fontFamily = fontFamily
+        }
+    }
+
+    /// Commits font variant change to document after preview.
+    /// - Parameters:
+    ///   - id: The UUID of the text object to update
+    ///   - fontVariant: The new font variant name
+    func updateTextFontVariantDirect(id: UUID, fontVariant: String) {
         saveToUndoStack()
         updateShapeByID(id) { shape in
             shape.typography?.fontVariant = fontVariant
