@@ -10,7 +10,16 @@
       "Bash(git commit -m \"$(cat <<''EOF''\nClean command infrastructure - remove all boilerplate from commands\n\nMoved ALL infrastructure (isUndoRedoOperation, objectWillChange, rebuildLookupCache) \nfrom individual commands into CommandManager where it belongs.\n\nChanges:\n- CommandManager now handles isUndoRedoOperation flag for execute/undo/redo\n- CommandManager calls rebuildLookupCache after every command execution\n- CommandManager sends objectWillChange notifications\n- All 12 command classes cleaned - ZERO infrastructure code in commands\n- Commands now ONLY modify data structures (document.unifiedObjects[index], etc.)\n- Deleted ComplexObjectCommand - was creating full array copies (O(n) problem)\n- Deleted executeComplexOperation helper - same O(n) issue\n- Restored ObjectGrouping to use saveToUndoStack (will migrate with proper O(1) commands later)\n\nCommands are now PURE - they only access minimal data, NO deep copies, NO infrastructure.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(do echo \"=== $file ===\")",
       "Bash(done)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(do echo \"=== $f ===\")",
+      "Bash(find:*)",
+      "Bash(\"logos inkpen.io/Utilities/Vector/VectorDocument+ShapeManagement.swift\" )",
+      "Bash(\"logos inkpen.io/Views/Handles/RotateHandles.swift\" )",
+      "Bash(\"logos inkpen.io/Views/Handles/ScaleHandles+Scaling.swift\" )",
+      "Bash(\"logos inkpen.io/Views/Handles/ShearHandles.swift\" )",
+      "Bash(\"logos inkpen.io/Views/Handles/TransformBoxHandles.swift\" )",
+      "Bash(\"logos inkpen.io/Views/Handles/EnvelopeHandles.swift\" )",
+      "Bash(\"logos inkpen.io/Views/DrawingCanvas/DrawingCanvas+SelectionDrag.swift\")"
     ],
     "deny": [],
     "ask": []
