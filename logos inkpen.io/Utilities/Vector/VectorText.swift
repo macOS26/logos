@@ -480,7 +480,6 @@ class FontManager: ObservableObject {
         let fontManager = NSFontManager.shared
         let members = fontManager.availableMembers(ofFontFamily: family) ?? []
 
-        // Keywords to exclude - these are special font features, not usable variants
         let excludeKeywords = ["ornament", "swash", "alternate", "expert", "small cap",
                                "oldstyle", "lining", "tabular", "proportional"]
 
@@ -493,13 +492,11 @@ class FontManager: ObservableObject {
                let weightNumber = member[2] as? NSNumber,
                let traitsNumber = member[3] as? NSNumber {
 
-                // Filter out special font features by checking if the display name contains excluded keywords
                 let lowercasedName = displayName.lowercased()
                 let shouldExclude = excludeKeywords.contains { keyword in
                     lowercasedName.contains(keyword)
                 }
 
-                // Also verify the font can actually be instantiated and not a duplicate
                 if !shouldExclude, !seenNames.contains(displayName), NSFont(name: postScriptName, size: 12) != nil {
                     variants.append((
                         name: displayName,
@@ -512,7 +509,6 @@ class FontManager: ObservableObject {
             }
         }
 
-        // Sort by weight first, then by traits, then by original index
         let sortedVariants = variants.sorted { lhs, rhs in
             if lhs.weight != rhs.weight {
                 return lhs.weight < rhs.weight

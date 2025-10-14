@@ -920,12 +920,10 @@ class ClipboardManager {
 
     private init() {}
 
-    // Helper function to recursively regenerate all UUIDs in a shape and its grouped shapes
     private func regenerateUUIDs(for shape: VectorShape) -> VectorShape {
         var newShape = shape
         newShape.id = UUID()
 
-        // If this shape has grouped shapes, regenerate their UUIDs too
         if !newShape.groupedShapes.isEmpty {
             newShape.groupedShapes = newShape.groupedShapes.map { childShape in
                 regenerateUUIDs(for: childShape)

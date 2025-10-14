@@ -141,7 +141,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 do {
                     if let fileURL = document.fileURL {
                         try document.writeSafely(to: fileURL, ofType: document.fileType ?? "io.logos.logos-inkpen-io", for: .saveOperation)
-                        print("💾 Auto-saved document: \(fileURL.lastPathComponent)")
                     } else {
                         if let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
                             let dateFormatter = DateFormatter()
@@ -150,7 +149,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                             let autoSaveURL = documentsURL.appendingPathComponent("AutoSave_\(timestamp).inkpen")
 
                             try document.writeSafely(to: autoSaveURL, ofType: "io.logos.logos-inkpen-io", for: .saveAsOperation)
-                            print("💾 Auto-saved untitled document to: \(autoSaveURL.lastPathComponent)")
                         }
                     }
                 } catch {

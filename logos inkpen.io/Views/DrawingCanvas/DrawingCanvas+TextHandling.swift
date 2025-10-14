@@ -430,9 +430,7 @@ extension DrawingCanvas {
                 textObj.updateBounds()
                 document.updateTextInUnified(textObj)
 
-                // Keep empty text boxes - users may want to style them before adding text
                 // if textObj.content.isEmpty {
-                //     document.removeTextFromUnifiedSystem(id: editingID)
                 // }
             }
         }
@@ -445,7 +443,6 @@ extension DrawingCanvas {
         isTextEditingMode = false
         NSCursor.arrow.set()
 
-        // Resign first responder to restore key command handling
         if let window = NSApp.keyWindow {
             window.makeFirstResponder(nil)
         }
@@ -471,7 +468,6 @@ extension DrawingCanvas {
         isTextEditingMode = false
         NSCursor.arrow.set()
 
-        // Resign first responder to restore key command handling
         if let window = NSApp.keyWindow {
             window.makeFirstResponder(nil)
         }
@@ -549,11 +545,7 @@ extension DrawingCanvas {
             if let textObj = document.findText(by: textID) {
                 document.setTextEditingInUnified(id: textObj.id, isEditing: false)
 
-                // Keep empty text boxes - users may want to style them before adding text
                 // if textObj.content.isEmpty {
-                //     document.unifiedObjects.removeAll { $0.id == textID }
-                //     document.removeTextFromUnifiedSystem(id: textID)
-                //     document.selectedTextIDs.remove(textID)
                 // }
             }
 

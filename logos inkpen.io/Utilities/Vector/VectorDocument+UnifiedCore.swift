@@ -65,7 +65,6 @@ extension VectorDocument {
     }
 
     func getShapesForLayer(_ layerIndex: Int) -> [VectorShape] {
-        // OPTIMIZATION: Use cached layer objects (O(1) lookup instead of O(n) filter)
         return getObjectsInLayer(layerIndex)
             .sorted { $0.orderID < $1.orderID }
             .compactMap { object -> VectorShape? in
@@ -77,7 +76,6 @@ extension VectorDocument {
     }
 
     private func getNextOrderID(for layerIndex: Int) -> Int {
-        // OPTIMIZATION: Use cached layer objects
         let existingOrderIDs = getObjectsInLayer(layerIndex).map { $0.orderID }
         return existingOrderIDs.isEmpty ? 0 : (existingOrderIDs.max() ?? -1) + 1
     }
@@ -128,7 +126,6 @@ extension VectorDocument {
             }
         }
 
-        // OPTIMIZATION: Use cached layer objects
         let existingOrderIDs = getObjectsInLayer(layerIndex).map { $0.orderID }
         let highestOrderID = existingOrderIDs.isEmpty ? 0 : (existingOrderIDs.max() ?? 0)
         let orderID = highestOrderID + 1
@@ -149,7 +146,6 @@ extension VectorDocument {
             unifiedObjects.remove(at: existingIndex)
         }
 
-        // OPTIMIZATION: Use cached layer objects
         let layerObjects = getObjectsInLayer(layerIndex)
         let targetOrderIDs = layerObjects.compactMap { unifiedObj -> Int? in
             switch unifiedObj.objectType {

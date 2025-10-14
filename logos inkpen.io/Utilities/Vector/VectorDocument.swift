@@ -5,7 +5,6 @@ class VectorDocument: ObservableObject, Codable {
     @Published var settings: DocumentSettings
     @Published var layers: [VectorLayer] = [] {
         didSet {
-            // OPTIMIZATION: Invalidate stacking order cache when layer visibility changes
             cachedStackingOrder = nil
         }
     }
@@ -72,7 +71,6 @@ class VectorDocument: ObservableObject, Codable {
                     }
                 }
             }
-            // OPTIMIZATION: Invalidate caches when objects change
             cachedStackingOrder = nil
             rebuildLayerCache()
         }
@@ -80,10 +78,8 @@ class VectorDocument: ObservableObject, Codable {
 
     private var unifiedObjectLookupCache: [UUID: VectorObject] = [:]
 
-    // OPTIMIZATION: Cache the expensive stacking order calculation
     var cachedStackingOrder: [VectorObject]? = nil
 
-    // OPTIMIZATION: Cache objects by layer index (eliminates 30+ filter operations!)
     private var objectsByLayerCache: [Int: [VectorObject]] = [:]
 
     func rebuildLookupCache() {
@@ -148,7 +144,6 @@ class VectorDocument: ObservableObject, Codable {
     }
 
     func getObjectsInLayer(_ layerIndex: Int) -> [VectorObject] {
-        // OPTIMIZATION: Use cached layer index (O(1) instead of O(n))
         return objectsByLayerCache[layerIndex] ?? []
     }
 
@@ -177,7 +172,6 @@ class VectorDocument: ObservableObject, Codable {
         didSet {
             UserDefaults.standard.set(currentTool.rawValue, forKey: "lastUsedTool")
 
-            // When switching to freehand tool, ensure stroke color is visible
             if currentTool == .freehand && defaultStrokeColor == .clear {
                 defaultStrokeColor = defaultFillColor
             }
@@ -593,7 +587,6 @@ class VectorDocument: ObservableObject, Codable {
             return
         }
 
-        // SIMD OPTIMIZATION: Use hardware-accelerated transform (4-8x faster!)
         shape.path = shape.path.applying(transform)
         shape.transform = .identity
         shape.updateBounds()
@@ -750,11 +743,9 @@ class VectorDocument: ObservableObject, Codable {
 
         migrateLegacyTextObjects()
 
-        // Force UI update after document load by toggling ALL layer items
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             guard let self = self else { return }
 
-            // Force refresh by toggling visibility on any objects we can find
             var foundObjectToToggle = false
 
             for layerIndex in self.layers.indices {
@@ -770,7 +761,6 @@ class VectorDocument: ObservableObject, Codable {
                                 orderID: firstObject.orderID
                             )
                         }
-                        // Toggle it back
                         shape.isVisible = wasVisible
                         if let index = self.unifiedObjects.firstIndex(where: { $0.id == firstObject.id }) {
                             self.unifiedObjects[index] = VectorObject(
@@ -780,12 +770,11 @@ class VectorDocument: ObservableObject, Codable {
                             )
                         }
                         foundObjectToToggle = true
-                        break // Only need to toggle one object
+break
                     }
                 }
             }
 
-            // If no objects found to toggle, just trigger objectWillChange
             if !foundObjectToToggle {
                 self.objectWillChange.send()
             }
@@ -879,15 +868,12 @@ class VectorDocument: ObservableObject, Codable {
         }
     }
 
-    // Clean up unused images from the registry to prevent memory leaks
     func cleanupImageRegistry() {
         var allShapeIDs = Set<UUID>()
 
-        // Collect all shape IDs from unified objects
         for object in unifiedObjects {
             if case .shape(let shape) = object.objectType {
                 allShapeIDs.insert(shape.id)
-                // Include grouped shapes
                 if shape.isGroupContainer {
                     for groupedShape in shape.groupedShapes {
                         allShapeIDs.insert(groupedShape.id)
@@ -896,7 +882,6 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
 
-        // Clean up images that don't belong to any shape
         ImageContentRegistry.cleanup(keepingShapes: allShapeIDs)
     }
 

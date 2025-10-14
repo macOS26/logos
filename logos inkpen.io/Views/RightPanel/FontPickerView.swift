@@ -84,11 +84,9 @@ struct FontPickerView: View {
                     document.fontManager.selectedFontFamily = newFamily
                     fontFamilyUpdateTrigger.toggle()
 
-                    // Update available variants for new family
                     let newVariants = document.fontManager.getAvailableVariantNames(for: newFamily)
                     availableFontVariantNamesState = newVariants
 
-                    // Reset to first available variant (usually Regular)
                     let defaultVariant = newVariants.first ?? "Regular"
                     currentFontVariantState = defaultVariant
                     document.fontManager.selectedFontVariant = defaultVariant
@@ -155,7 +153,6 @@ struct FontPickerView: View {
         availableFontVariantNamesState = variants
 
         let variant = currentFontVariant
-        // Make sure the current variant is valid for the available variants
         if variants.contains(variant) {
             currentFontVariantState = variant
         } else {
@@ -179,8 +176,6 @@ struct FontPickerView: View {
     }
 
     private func cleanVariantName(_ name: String) -> String {
-        // Convert abbreviated weight names to full names
-        // Based on NSFontManager weight trait system (0-15 scale)
         let weightMap: [String: String] = [
             "W0": "Ultra Light",
             "W1": "Light",
@@ -200,12 +195,10 @@ struct FontPickerView: View {
             "W15": "Ultra Black"
         ]
 
-        // Check if it's just a weight code
         if let fullName = weightMap[name] {
             return fullName
         }
 
-        // Check if it starts with a weight code
         for (code, fullWeight) in weightMap {
             if name.hasPrefix(code) {
                 let remainder = name.dropFirst(code.count).trimmingCharacters(in: .whitespaces)

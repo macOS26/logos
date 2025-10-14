@@ -164,34 +164,34 @@ struct PDFSIMDMatrix {
 
 
 extension PDFSIMDMatrix {
-
+    
     static func batchConcatenate(_ matrices: [PDFSIMDMatrix]) -> PDFSIMDMatrix {
         guard !matrices.isEmpty else { return PDFSIMDMatrix() }
         guard matrices.count > 1 else { return matrices[0] }
-
+        
         var pairs = [(PDFSIMDMatrix, PDFSIMDMatrix)]()
         let result = matrices[0]
-
+        
         for i in 1..<matrices.count {
             pairs.append((result, matrices[i]))
         }
-
+        
         if !pairs.isEmpty {
             let results = PDFMetalAccelerator.shared.multiplyMatrices(pairs)
             return results.last ?? result
         }
-
+        
         return result
     }
-
+    
     static func precomputeTextMatrix(fontSize: CGFloat, horizontalScaling: CGFloat) -> PDFSIMDMatrix {
         return PDFSIMDMatrix.scale(sx: fontSize * horizontalScaling / 100.0, sy: fontSize)
     }
-
+    
     static func textMatrix(fontSize: CGFloat, horizontalScaling: CGFloat, tx: CGFloat, ty: CGFloat) -> PDFSIMDMatrix {
         let scaleX = fontSize * horizontalScaling / 100.0
         let scaleY = fontSize
-
+        
         var m = PDFSIMDMatrix()
         m.matrix[0][0] = Float(scaleX)
         m.matrix[1][1] = Float(scaleY)
@@ -199,54 +199,18 @@ extension PDFSIMDMatrix {
         m.matrix[2][1] = Float(ty)
         return m
     }
-
+    
     static func batchTransformTextPositions(positions: [(x: CGFloat, y: CGFloat)],
-                                           fontSize: CGFloat,
-                                           horizontalScaling: CGFloat,
-                                           baseTransform: PDFSIMDMatrix) -> [CGPoint] {
+                                            fontSize: CGFloat,
+                                            horizontalScaling: CGFloat,
+                                            baseTransform: PDFSIMDMatrix) -> [CGPoint] {
         guard !positions.isEmpty else { return [] }
-
+        
         let textScale = PDFSIMDMatrix.scale(sx: fontSize * horizontalScaling / 100.0, sy: fontSize)
         let combinedTransform = baseTransform.concatenating(textScale)
-
+        
         let points = positions.map { CGPoint(x: $0.x, y: $0.y) }
-
+        
         return PDFMetalAccelerator.shared.transformPoints(points, with: combinedTransform)
     }
 }
-
-
-#if DEBUG
-extension PDFSIMDMatrix {
-
-    static func runPerformanceTest() {
-        let iterations = 100000
-
-        let transform1 = CGAffineTransform(a: 1.2, b: 0.5, c: -0.3, d: 0.8, tx: 10, ty: 20)
-        let transform2 = CGAffineTransform(a: 0.9, b: -0.2, c: 0.4, d: 1.1, tx: -5, ty: 15)
-
-        let simd1 = PDFSIMDMatrix(transform1)
-        let simd2 = PDFSIMDMatrix(transform2)
-
-        let start1 = Date()
-        var result1 = transform1
-        for _ in 0..<iterations {
-            result1 = result1.concatenating(transform2)
-        }
-        let time1 = Date().timeIntervalSince(start1)
-
-        let start2 = Date()
-        var result2 = simd1
-        for _ in 0..<iterations {
-            result2.concatenate(simd2)
-        }
-        let time2 = Date().timeIntervalSince(start2)
-
-        let speedup = time1 / time2
-        print("📊 PDF Matrix Performance Test:")
-        print("   Standard: \(String(format: "%.4f", time1))s")
-        print("   SIMD:     \(String(format: "%.4f", time2))s")
-        print("   Speedup:  \(String(format: "%.1f", speedup))x faster")
-    }
-}
-#endif

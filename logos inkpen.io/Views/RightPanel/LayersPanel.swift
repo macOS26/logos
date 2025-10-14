@@ -2,7 +2,6 @@ import SwiftUI
 import UniformTypeIdentifiers
 import Combine
 
-// Shared layer color palette
 extension Color {
     static let layerColorPalette: [(name: String, color: Color)] = [
         ("Maroon", Color(.displayP3, red: 0.75, green: 0.2, blue: 0.2)),
@@ -96,29 +95,24 @@ struct LayersPanel: View {
     @State private var overlaysEnabled: Bool = true
     @State private var rowHeights: [CGFloat] = []
 
-    // Structure to represent each visible row in the layers panel
     private enum RowType: Hashable {
         case layer(index: Int)
         case object(layerIndex: Int, objectId: UUID)
         case childObject(layerIndex: Int, parentObjectId: UUID, childShapeId: UUID)
     }
     
-    // Calculate all visible rows in display order (top to bottom)
     private var visibleRows: [RowType] {
         var rows: [RowType] = []
         
-        // Iterate through layers in reverse order (as they appear in UI)
         for (layerIndex, layer) in document.layers.enumerated().reversed() {
             rows.append(.layer(index: layerIndex))
             
-            // Check if layer is expanded
             let isExpanded = if layerIndex <= 1 {
                 document.settings.layerExpansionState[layer.id] ?? false
             } else {
                 document.settings.layerExpansionState[layer.id] ?? true
             }
             
-            // Add object rows if expanded
             if isExpanded {
                 let layerObjects = document.unifiedObjects
                     .filter { $0.layerIndex == layerIndex }
@@ -127,7 +121,6 @@ struct LayersPanel: View {
                 for object in layerObjects {
                     rows.append(.object(layerIndex: layerIndex, objectId: object.id))
 
-                    // Check if this is an expanded group and add its children
                     if case .shape(let shape) = object.objectType,
                        shape.isGroupContainer,
                        document.settings.groupExpansionState[object.id] ?? false {
@@ -142,34 +135,21 @@ struct LayersPanel: View {
         return rows
     }
 
-    // Validate that overlays can be displayed correctly
     private func validateOverlays() {
         let expectedRowCount = visibleRows.count
 
-        // Check that we have the expected number of rows
-        // All rows in this design use kLayerRowHeight
         let heightTolerance: CGFloat = 0.1
 
-        // Assume all rows are kLayerRowHeight (this is enforced in the UI)
-        // Check if any row height deviates from the standard
         var allHeightsSame = true
 
-        // In this implementation, all rows are forced to kLayerRowHeight
-        // But we'll validate that the expected count matches
         let overlayRowCount = expectedRowCount
 
-        // Check if heights are consistent (within tolerance)
-        // Since all rows use .frame(height: kLayerRowHeight), they should be consistent
         if !rowHeights.isEmpty {
             let minHeight = rowHeights.min() ?? kLayerRowHeight
             let maxHeight = rowHeights.max() ?? kLayerRowHeight
             allHeightsSame = (maxHeight - minHeight) <= heightTolerance
         }
 
-        // Enable overlays only if:
-        // 1. We have rows to display
-        // 2. All rows are the same height (within tolerance)
-        // 3. The overlay count matches visible rows
         let canDisplayOverlays = expectedRowCount > 0 && allHeightsSame && overlayRowCount == expectedRowCount
 
         DispatchQueue.main.async {
@@ -318,8 +298,6 @@ struct LayersPanel: View {
                 .animation(.spring(response: 0.3, dampingFraction: 0.9), value: document.layers.map { $0.id })
                 .padding(.horizontal, 4)
 
-                // Overlay system for eye and lock icons
-                // Only display if validation passes
                 if overlaysEnabled {
                     let iconSize: CGFloat = 20
                     let iconSpacing: CGFloat = 2
@@ -328,13 +306,12 @@ struct LayersPanel: View {
                     let eyeIconX = rowPadding + (iconSize / 2)
                     let lockIconX = rowPadding + iconSize + iconSpacing + (iconSize / 2)
 
-                    // Eye icon overlay
                     ZStack {
                     ForEach(Array(visibleRows.enumerated()), id: \.offset) { rowIndex, rowType in
                         let rowY = CGFloat(rowIndex) * kLayerRowHeight
                         let iconCenterY = rowY + (kLayerRowHeight / 2)
                         
-                        Color.red.opacity(0.0000000) // do not remove
+                        Color.red.opacity(0.0000000)
                             .dragTarget()
                             .position(x: eyeIconX, y: iconCenterY)
                     }
@@ -371,13 +348,12 @@ struct LayersPanel: View {
                 )
                 .padding(.horizontal, 4)
                 
-                // Lock icon overlay
                 ZStack {
                     ForEach(Array(visibleRows.enumerated()), id: \.offset) { rowIndex, rowType in
                         let rowY = CGFloat(rowIndex) * kLayerRowHeight
                         let iconCenterY = rowY + (kLayerRowHeight / 2)
                         
-                        Color.red.opacity(0.0000000) // do remove
+                        Color.red.opacity(0.0000000)
                             .dragTarget()
                             .position(x: lockIconX, y: iconCenterY)
                     }
@@ -427,7 +403,6 @@ struct LayersPanel: View {
         )
     }
     
-    // Helper function to toggle visibility for a row (layer or object)
     private func toggleVisibility(for rowType: RowType) {
         switch rowType {
         case .layer(let index):
@@ -468,7 +443,6 @@ struct LayersPanel: View {
         }
     }
     
-    // Helper function to toggle lock for a row (layer or object)
     private func toggleLock(for rowType: RowType) {
         switch rowType {
         case .layer(let index):
@@ -579,23 +553,21 @@ struct KeyEventHandlerView: NSViewRepresentable {
 
             let modifiers = event.modifierFlags
 
-            // Cmd+Up/Down: Select next/previous layer
             if modifiers.contains(.command) && !modifiers.contains(.option) {
-                if event.keyCode == 126 { // Up arrow
+if event.keyCode == 126 {
                     selectPreviousLayer(document: document)
                     return
-                } else if event.keyCode == 125 { // Down arrow
+} else if event.keyCode == 125 {
                     selectNextLayer(document: document)
                     return
                 }
             }
 
-            // Opt+Up/Down: Move layer up/down in stack
             if modifiers.contains(.option) && !modifiers.contains(.command) {
-                if event.keyCode == 126 { // Up arrow
+if event.keyCode == 126 {
                     moveSelectedLayerUp(document: document)
                     return
-                } else if event.keyCode == 125 { // Down arrow
+} else if event.keyCode == 125 {
                     moveSelectedLayerDown(document: document)
                     return
                 }
@@ -605,18 +577,10 @@ struct KeyEventHandlerView: NSViewRepresentable {
         }
 
         private func selectNextLayer(document: VectorDocument) {
-            // Down arrow = move down in visual order
             DispatchQueue.main.async {
-                print("selectNextLayer - selectedObjectIDs count: \(document.selectedObjectIDs.count)")
-                print("selectNextLayer - selectedLayerIndex: \(String(describing: document.selectedLayerIndex))")
-
-                // Only navigate objects if objects are actually selected
                 if !document.selectedObjectIDs.isEmpty {
-                    print("Navigating objects (down)")
                     self.selectNextObject(document: document)
                 } else {
-                    print("Navigating layers (down)")
-                    // Navigate layers when no objects are selected
                     guard let currentIndex = document.selectedLayerIndex else {
                         if document.layers.count > 2 {
                             document.selectedLayerIndex = 2
@@ -632,13 +596,10 @@ struct KeyEventHandlerView: NSViewRepresentable {
         }
 
         private func selectPreviousLayer(document: VectorDocument) {
-            // Up arrow = move up in visual order
             DispatchQueue.main.async {
-                // Only navigate objects if objects are actually selected
                 if !document.selectedObjectIDs.isEmpty {
                     self.selectPreviousObject(document: document)
                 } else {
-                    // Navigate layers when no objects are selected
                     guard let currentIndex = document.selectedLayerIndex else {
                         if document.layers.count > 2 {
                             document.selectedLayerIndex = document.layers.count - 1

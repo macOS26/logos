@@ -9,7 +9,6 @@ class DisabledContextMenuTextView: NSTextView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        // Extend the dirty rect to allow glyphs to draw outside normal bounds
         let extendedRect = dirtyRect.insetBy(dx: -10, dy: -10)
         super.draw(extendedRect)
     }

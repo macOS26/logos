@@ -13,7 +13,6 @@ struct ShapeView: View {
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
 
-    /// Preview state for live updates during dragging - avoids triggering @Published document changes
     @State private var previewFillOpacity: Double? = nil
     @State private var previewStrokeOpacity: Double? = nil
     @State private var previewStrokeWidth: Double? = nil
@@ -23,22 +22,18 @@ struct ShapeView: View {
         return (isCanvasLayer || isPasteboardLayer) ? .color : viewMode
     }
 
-    /// Returns the fill opacity to use - preview value during dragging, actual value otherwise
     private var effectiveFillOpacity: Double {
         return previewFillOpacity ?? shape.fillStyle?.opacity ?? 1.0
     }
 
-    /// Returns the stroke opacity to use - preview value during dragging, actual value otherwise
     private var effectiveStrokeOpacity: Double {
         return previewStrokeOpacity ?? shape.strokeStyle?.opacity ?? 1.0
     }
 
-    /// Returns the stroke width to use - preview value during dragging, actual value otherwise
     private var effectiveStrokeWidth: Double {
         return previewStrokeWidth ?? shape.strokeStyle?.width ?? 1.0
     }
 
-    /// Returns the stroke placement to use - preview value during selection, actual value otherwise
     private var effectiveStrokePlacement: StrokePlacement {
         return previewStrokePlacement ?? shape.strokeStyle?.placement ?? .center
     }
@@ -152,7 +147,6 @@ struct ShapeView: View {
                   let shapeID = userInfo["shapeID"] as? UUID,
                   shapeID == shape.id else { return }
 
-            // Update whichever property was sent in the notification
             if let fillOpacity = userInfo["fillOpacity"] as? Double {
                 previewFillOpacity = fillOpacity
             }
@@ -168,13 +162,12 @@ struct ShapeView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ClearPreviewStates"))) { _ in
-            // Clear all preview states so ShapeView uses actual shape values
             previewFillOpacity = nil
             previewStrokeOpacity = nil
             previewStrokeWidth = nil
             previewStrokePlacement = nil
         }
-        .id(shape.id) // Reset preview state when shape changes
+.id(shape.id)
     }
 
     @ViewBuilder

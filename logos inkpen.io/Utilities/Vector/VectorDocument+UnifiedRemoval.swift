@@ -6,7 +6,6 @@ extension VectorDocument {
         unifiedObjects.removeAll { obj in
             if case .shape(let shape) = obj.objectType {
                 if shape.id == id {
-                    // Clean up image from registry if it exists
                     ImageContentRegistry.remove(for: id)
                     return true
                 }

@@ -142,12 +142,10 @@ extension VectorDocument {
     }
 
     func getObjectsInStackingOrder() -> [VectorObject] {
-        // OPTIMIZATION: Return cached result if available (massive performance win)
         if let cached = cachedStackingOrder {
             return cached
         }
 
-        // Calculate and cache the result
         let result = unifiedObjects
             .filter { object in
                 guard object.isVisible else { return false }
@@ -246,12 +244,10 @@ extension VectorDocument {
     }
 
     internal func applyTransformToShapeCoordinates(shape: VectorShape, transform: CGAffineTransform) -> VectorShape {
-        // SIMD OPTIMIZATION: Use hardware-accelerated transform (4-8x faster!)
         if transform.isIdentity {
             return shape
         }
 
-        // Use SIMD-accelerated path transformation
         let transformedPath = shape.path.applying(transform)
 
         var newShape = shape

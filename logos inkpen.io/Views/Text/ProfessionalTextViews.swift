@@ -11,16 +11,47 @@ struct ProfessionalTextBoxView: View {
     let viewMode: ViewMode
 
     private func getBorderColor() -> Color {
-        // In keyline view, always show black outline
         if viewMode == .keyline {
-            return Color.black
+            return Color.black.opacity(0.5)
         }
 
         switch textBoxState {
         case .gray: return Color.clear
         case .green: return Color.clear
-        case .blue: return Color.blue.opacity(0.5)  // Faded to 50% to make I-beam cursor more visible
+        case .blue:
+            let fillColor = viewModel.textObject.typography.fillColor
+            return getOppositeHueColor(from: fillColor)
         }
+    }
+
+    private func getOppositeHueColor(from vectorColor: VectorColor) -> Color {
+        switch vectorColor {
+        case .white, .black, .clear:
+            return Color.blue.opacity(0.5)
+        default:
+            break
+        }
+
+        let nsColor = NSColor(vectorColor.color)
+        guard let hsbColor = nsColor.usingColorSpace(.deviceRGB) else {
+            return Color.blue.opacity(0.5)
+        }
+
+        var hue: CGFloat = 0
+        var saturation: CGFloat = 0
+        var brightness: CGFloat = 0
+        var alpha: CGFloat = 0
+
+        hsbColor.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+
+        if saturation < 0.1 {
+            return Color.blue.opacity(0.5)
+        }
+
+        let oppositeHue = (hue + 0.5).truncatingRemainder(dividingBy: 1.0)
+
+        return Color(hue: Double(oppositeHue), saturation: Double(saturation), brightness: Double(brightness))
+            .opacity(0.5)
     }
 
     var body: some View {

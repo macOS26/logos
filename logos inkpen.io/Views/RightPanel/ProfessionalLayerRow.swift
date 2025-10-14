@@ -10,7 +10,6 @@ struct ProfessionalLayerRow: View {
     @State private var editedName: String = ""
     @State private var showColorPicker: Bool = false
 
-    // Store expansion state locally and sync with document
     @State private var isExpanded: Bool
     @State private var layerObjects: [VectorObject] = []
 
@@ -43,14 +42,12 @@ struct ProfessionalLayerRow: View {
         self.layer = layer
         self.document = document
 
-        // Initialize expansion state from document
         if layerIndex <= 1 {
             _isExpanded = State(initialValue: document.settings.layerExpansionState[layer.id] ?? false)
         } else {
             _isExpanded = State(initialValue: document.settings.layerExpansionState[layer.id] ?? true)
         }
 
-        // Initialize layer objects
         _layerObjects = State(initialValue: document.unifiedObjects
             .filter { $0.layerIndex == layerIndex }
             .sorted { $0.orderID > $1.orderID })
@@ -319,7 +316,6 @@ struct ProfessionalLayerRow: View {
             }
         }
         .onAppear {
-            // Force refresh layer objects when view appears
             layerObjects = document.unifiedObjects
                 .filter { $0.layerIndex == layerIndex }
                 .sorted { $0.orderID > $1.orderID }
@@ -357,15 +353,12 @@ struct ProfessionalLayerRow: View {
             case .layer(let draggableLayer):
                 let droppedLayerId = draggableLayer.layerId
 
-                // Don't allow dropping on self
                 if droppedLayerId == layer.id {
                     return false
                 }
 
-                // If trying to drop at indices 0 or 1, redirect to index 2 (first allowed position)
                 let targetLayerId: UUID
                 if layerIndex <= 1 {
-                    // Place at index 2 (above Canvas/Pasteboard)
                     if document.layers.count > 2 {
                         targetLayerId = document.layers[2].id
                     } else {
@@ -379,15 +372,11 @@ struct ProfessionalLayerRow: View {
                 return true
 
             case .vectorObject(let vectorObj):
-                // If multiple objects are selected and the dragged object is one of them,
-                // move all selected objects to this layer
                 if document.selectedObjectIDs.contains(vectorObj.objectId) && document.selectedObjectIDs.count > 1 {
-                    // Move all selected objects to this layer
                     for selectedObjectId in document.selectedObjectIDs {
                         document.moveObjectToLayer(objectId: selectedObjectId, targetLayerIndex: layerIndex)
                     }
                 } else {
-                    // Move just the single object to this layer
                     document.moveObjectToLayer(objectId: vectorObj.objectId, targetLayerIndex: layerIndex)
                 }
                 return true

@@ -26,7 +26,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.textContainerInset = NSSize(width: 0, height: 0)
         textView.textContainer?.lineFragmentPadding = 0
 
-        // Prevent clipping of text and cursor at edges
         textView.wantsLayer = true
         textView.layer?.masksToBounds = false
 
@@ -70,7 +69,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.string = viewModel.text
         textView.font = viewModel.selectedFont
 
-        // In keyline view, use black color; otherwise use the text's original color
         let textColor: NSColor
         if viewMode == .keyline {
             textColor = NSColor.black
@@ -141,7 +139,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             needsFormatUpdate = true
         }
 
-        // In keyline view, use black color; otherwise use the text's original color
         let newTextColor: NSColor
         if viewMode == .keyline {
             newTextColor = NSColor.black
@@ -225,7 +222,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         if !isEditingMode {
             nsView.insertionPointColor = NSColor.clear
         } else {
-            // In keyline view, use black color; otherwise use the text's original color
             let textColor: NSColor
             if viewMode == .keyline {
                 textColor = NSColor.black
@@ -368,7 +364,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                     textView.font = newFont
                 }
 
-                // In keyline view, use black color; otherwise use the text's original color
                 let textColor: NSColor
                 if self.parent.viewMode == .keyline {
                     textColor = NSColor.black

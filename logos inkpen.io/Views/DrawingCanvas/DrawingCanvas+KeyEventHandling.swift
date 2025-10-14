@@ -6,7 +6,6 @@ extension DrawingCanvas {
     internal func setupKeyEventMonitoring() {
         keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { (event: NSEvent) -> NSEvent? in
 
-            // Only process events for the key window's document
             guard let keyWindow = NSApp.keyWindow,
                   keyWindow == event.window else {
                 return event
@@ -52,7 +51,6 @@ extension DrawingCanvas {
                         self.isTemporaryDirectSelectionViaCommand = true
                         self.temporaryCommandPreviousTool = self.document.currentTool
                     }
-                    // Temporarily switch to selection tool when command is pressed on shape drawing tools
                     else if shapeDrawingTools.contains(self.document.currentTool) && !self.isTemporarySelectionViaCommand {
                         self.isTemporarySelectionViaCommand = true
                         self.temporaryCommandPreviousTool = self.document.currentTool
@@ -72,7 +70,6 @@ extension DrawingCanvas {
                         }
                         self.temporaryCommandPreviousTool = nil
                     }
-                    // Switch back from selection tool to previous shape drawing tool
                     if self.isTemporarySelectionViaCommand {
                         self.isTemporarySelectionViaCommand = false
                         if let previousTool = self.temporaryCommandPreviousTool {
@@ -97,7 +94,6 @@ extension DrawingCanvas {
                        !event.modifierFlags.contains(.control) &&
                        !event.modifierFlags.contains(.option) {
 
-                        // If objects are selected, navigate between objects
                         if !self.document.selectedObjectIDs.isEmpty {
                             if characters == arrowUp {
                                 self.document.selectNextObjectUp()
@@ -107,7 +103,6 @@ extension DrawingCanvas {
                                 return nil
                             }
                         } else {
-                            // If no objects selected, navigate between layers
                             if characters == arrowUp {
                                 self.selectPreviousLayer()
                                 return nil
@@ -292,7 +287,6 @@ extension DrawingCanvas {
 
 
     internal func selectNextLayer() {
-        // Down arrow = move down in visual order = lower index (layers are reversed)
         guard let currentIndex = document.selectedLayerIndex else {
             if document.layers.count > 2 {
                 document.selectedLayerIndex = 2
@@ -306,7 +300,6 @@ extension DrawingCanvas {
     }
 
     internal func selectPreviousLayer() {
-        // Up arrow = move up in visual order = higher index (layers are reversed)
         guard let currentIndex = document.selectedLayerIndex else {
             if document.layers.count > 2 {
                 document.selectedLayerIndex = document.layers.count - 1

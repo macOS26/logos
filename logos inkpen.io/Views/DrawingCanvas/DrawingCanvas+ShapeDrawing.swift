@@ -44,7 +44,6 @@ extension DrawingCanvas {
         }
 
         if !isDrawing {
-            // Check if user is clicking on a shape resize handle
             let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
             let isDraggingResizeHandle = isLocationOnShapeResizeHandle(startLocation)
 
@@ -391,16 +390,11 @@ extension DrawingCanvas {
                 ], isClosed: true)
             }
 
-            // Debug bounding box removed
             // let boundingBox = VectorPath(elements: [
             //     .move(to: VectorPoint(triangleRect.minX, triangleRect.minY)),
             //     .line(to: VectorPoint(triangleRect.maxX, triangleRect.minY)),
             //     .line(to: VectorPoint(triangleRect.maxX, triangleRect.maxY)),
             //     .line(to: VectorPoint(triangleRect.minX, triangleRect.maxY)),
-            //     .close
-            // ], isClosed: false)
-            //
-            // tempBoundingBoxPath = boundingBox
         case .rightTriangle:
             let dragDeltaX = currentLocation.x - startPoint.x
             let dragDeltaY = currentLocation.y - startPoint.y
@@ -937,14 +931,11 @@ extension DrawingCanvas {
             opacity: document.defaultFillOpacity
         )
 
-        // Determine the shape name based on tool and shift key
         var shapeGeometricType = geometricTypeForTool(document.currentTool)
 
-        // If rectangle tool with shift pressed, use square type
         if document.currentTool == .rectangle && isShiftPressed {
             shapeGeometricType = .square
         }
-        // If ellipse tool with shift pressed, use circle type
         else if document.currentTool == .ellipse && isShiftPressed {
             shapeGeometricType = .circle
         }
@@ -1032,17 +1023,14 @@ extension DrawingCanvas {
         let tolerance: Double = 15.0
         let totalTolerance = handleRadius + tolerance
 
-        // Check all selected shapes for handle hits
         for objectID in document.selectedObjectIDs {
             guard let unifiedObject = document.findObject(by: objectID),
                   case .shape(let shape) = unifiedObject.objectType else { continue }
 
             if !shape.isVisible || shape.isLocked { continue }
 
-            // Skip text objects (they have their own handle detection)
             if shape.isTextObject { continue }
 
-            // Calculate shape bounds
             let shapeBounds: CGRect
             if shape.isGroupContainer {
                 shapeBounds = shape.groupBounds
@@ -1050,19 +1038,17 @@ extension DrawingCanvas {
                 shapeBounds = shape.bounds.applying(shape.transform)
             }
 
-            // Define handle positions (corners and midpoints)
             let handles = [
-                CGPoint(x: shapeBounds.minX, y: shapeBounds.minY),  // Top-left
-                CGPoint(x: shapeBounds.maxX, y: shapeBounds.minY),  // Top-right
-                CGPoint(x: shapeBounds.minX, y: shapeBounds.maxY),  // Bottom-left
-                CGPoint(x: shapeBounds.maxX, y: shapeBounds.maxY),  // Bottom-right
-                CGPoint(x: shapeBounds.midX, y: shapeBounds.minY),  // Top-middle
-                CGPoint(x: shapeBounds.midX, y: shapeBounds.maxY),  // Bottom-middle
-                CGPoint(x: shapeBounds.minX, y: shapeBounds.midY),  // Left-middle
-                CGPoint(x: shapeBounds.maxX, y: shapeBounds.midY),  // Right-middle
+CGPoint(x: shapeBounds.minX, y: shapeBounds.minY),
+CGPoint(x: shapeBounds.maxX, y: shapeBounds.minY),
+CGPoint(x: shapeBounds.minX, y: shapeBounds.maxY),
+CGPoint(x: shapeBounds.maxX, y: shapeBounds.maxY),
+CGPoint(x: shapeBounds.midX, y: shapeBounds.minY),
+CGPoint(x: shapeBounds.midX, y: shapeBounds.maxY),
+CGPoint(x: shapeBounds.minX, y: shapeBounds.midY),
+CGPoint(x: shapeBounds.maxX, y: shapeBounds.midY),
             ]
 
-            // Check if location is near any handle
             for handle in handles {
                 let distance = sqrt(pow(location.x - handle.x, 2) + pow(location.y - handle.y, 2))
                 if distance <= totalTolerance {
@@ -1070,7 +1056,6 @@ extension DrawingCanvas {
                 }
             }
 
-            // Also check the center handle
             let center = shape.calculateCentroid()
             let centerDistance = sqrt(pow(location.x - center.x, 2) + pow(location.y - center.y, 2))
             if centerDistance <= totalTolerance {

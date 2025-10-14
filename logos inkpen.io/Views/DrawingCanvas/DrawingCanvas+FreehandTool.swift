@@ -26,7 +26,6 @@ extension DrawingCanvas {
         var strokeColor = getCurrentStrokeColor()
         let fillColor = getCurrentFillColor()
 
-        // If stroke color is clear, use fill color instead
         if strokeColor == .clear {
             strokeColor = fillColor
         }

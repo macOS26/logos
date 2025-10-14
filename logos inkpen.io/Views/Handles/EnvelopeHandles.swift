@@ -137,7 +137,6 @@ struct EnvelopeHandles: View {
             }
         }
         .onChange(of: document.unifiedObjects) { _, _ in
-            // When document changes (like undo), refresh the warp handles from the shape
             if document.currentTool == .warp && !isWarping {
                 if let updatedShape = document.unifiedObjects.first(where: { obj in
                     if case .shape(let s) = obj.objectType {
@@ -145,11 +144,9 @@ struct EnvelopeHandles: View {
                     }
                     return false
                 }), case .shape(let s) = updatedShape.objectType {
-                    // Reinitialize with the updated shape's warp envelope OR reset to bounds
                     if s.isWarpObject && !s.warpEnvelope.isEmpty {
                         warpedCorners = s.warpEnvelope
                     } else {
-                        // Not a warp object anymore - reset handles to rectangle bounds
                         let bounds = s.bounds
                         let resetCorners = [
                             CGPoint(x: bounds.minX, y: bounds.minY),
@@ -404,7 +401,6 @@ struct EnvelopeHandles: View {
         startLocation = dragValue.startLocation
         draggingCornerIndex = cornerIndex
 
-        // Save current warp handle positions to dictionary BEFORE we start dragging
         if warpedCorners.count == 4 {
             document.warpEnvelopeCorners[shape.id] = warpedCorners
             let minX = warpedCorners.map { $0.x }.min() ?? 0
@@ -678,7 +674,6 @@ struct EnvelopeHandles: View {
             document.addShapeToUnifiedSystem(warpObject, layerIndex: layerIndex)
         }
 
-            // Force UI refresh for new warp object (icon and handles)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                 if let objectIndex = self.document.unifiedObjects.firstIndex(where: { obj in
                     if case .shape(let s) = obj.objectType {
@@ -694,7 +689,6 @@ struct EnvelopeHandles: View {
                             layerIndex: self.document.unifiedObjects[objectIndex].layerIndex,
                             orderID: self.document.unifiedObjects[objectIndex].orderID
                         )
-                        // Toggle it back
                         shape.isVisible = wasVisible
                         self.document.unifiedObjects[objectIndex] = VectorObject(
                             shape: shape,

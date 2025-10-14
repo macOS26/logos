@@ -37,7 +37,7 @@ struct StrokePropertiesSection: View {
                 Slider(value: Binding(
                     get: { strokeWidth },
                     set: { onUpdateStrokeWidth($0) }
-                ), in: 0...20, onEditingChanged: onStrokeWidthEditingChanged)
+                ), in: 0...72, onEditingChanged: onStrokeWidthEditingChanged)
                 .controlSize(.regular)
             }
 

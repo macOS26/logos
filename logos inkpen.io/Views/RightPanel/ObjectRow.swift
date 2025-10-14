@@ -323,7 +323,6 @@ struct ObjectRow: View {
             .dropDestination(for: DraggableItem.self) { items, location in
                 guard let droppedItem = items.first else { return false }
 
-                // Only handle vectorObject drops on objects
                 guard case .vectorObject(let vectorObj) = droppedItem else {
                     return false
                 }

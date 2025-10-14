@@ -89,11 +89,9 @@ extension VectorDocument {
 
         isUndoRedoOperation = false
 
-        // Force view refresh and clear preview states
         objectWillChange.send()
         NotificationCenter.default.post(name: Notification.Name("ClearPreviewStates"), object: nil)
 
-        // Clean up unused images after undo
         cleanupImageRegistry()
     }
 
@@ -175,7 +173,6 @@ extension VectorDocument {
 
         isUndoRedoOperation = false
 
-        // Clean up unused images after redo
         cleanupImageRegistry()
     }
 

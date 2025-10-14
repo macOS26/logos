@@ -226,12 +226,10 @@ struct StrokeFillPanel: View {
                             if isEditing {
                                 cachedIndexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
                             } else {
-                                // Save to undo stack BEFORE making any changes
                                 document.saveToUndoStack()
                                 document.defaultFillOpacity = fillOpacityState
                                 updateFillOpacityLive(fillOpacityState, isEditing: false)
 
-                                // Sync unifiedObjects changes back to layers for undo to work
                                 let activeShapeIDs = document.getActiveShapeIDs()
                                 for shapeID in activeShapeIDs {
                                     if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
@@ -252,7 +250,6 @@ struct StrokeFillPanel: View {
                                 }
 
                                 cachedIndexMap.removeAll()
-                                // Clear preview for text objects
                                 for objectID in document.selectedObjectIDs {
                                     document.clearTextPreviewTypography(id: objectID)
                                 }
@@ -305,12 +302,10 @@ struct StrokeFillPanel: View {
                             if isEditing {
                                 cachedIndexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
                             } else {
-                                // Save to undo stack BEFORE making any changes
                                 document.saveToUndoStack()
                                 document.defaultStrokeWidth = strokeWidthState
                                 updateStrokeWidthLive(strokeWidthState, isEditing: false)
 
-                                // Sync unifiedObjects changes back to layers for undo to work
                                 let activeShapeIDs = document.getActiveShapeIDs()
                                 for shapeID in activeShapeIDs {
                                     if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
@@ -337,12 +332,10 @@ struct StrokeFillPanel: View {
                             if isEditing {
                                 cachedIndexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
                             } else {
-                                // Save to undo stack BEFORE making any changes
                                 document.saveToUndoStack()
                                 document.defaultStrokeOpacity = strokeOpacityState
                                 updateStrokeOpacityLive(strokeOpacityState, isEditing: false)
 
-                                // Sync unifiedObjects changes back to layers for undo to work
                                 let activeShapeIDs = document.getActiveShapeIDs()
                                 for shapeID in activeShapeIDs {
                                     if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
@@ -448,29 +441,17 @@ struct StrokeFillPanel: View {
             syncOpacityStates()
         }
         .onReceive(document.objectWillChange) { _ in
-            // Sync slider states whenever document changes (including undo/redo)
             syncOpacityStates()
         }
     }
 
     private func syncOpacityStates() {
-        print("🔶 [SYNC] syncOpacityStates called")
-        print("   fillOpacity from document: \(fillOpacity)")
-        print("   strokeOpacity from document: \(strokeOpacity)")
-        print("   strokeWidth from document: \(strokeWidth)")
-        print("   strokePlacement from document: \(strokePlacement.rawValue)")
-
         fillOpacityState = fillOpacity
         strokeOpacityState = strokeOpacity
         strokeWidthState = strokeWidth
         strokePlacementState = strokePlacement
         strokeMiterLimitState = strokeMiterLimit
         selectedImageOpacityState = selectedImageOpacity
-
-        print("   fillOpacityState set to: \(fillOpacityState)")
-        print("   strokeOpacityState set to: \(strokeOpacityState)")
-        print("   strokeWidthState set to: \(strokeWidthState)")
-        print("   strokePlacementState set to: \(strokePlacementState.rawValue)")
     }
 
     private func updateFillOpacity(_ opacity: Double) {
@@ -519,11 +500,6 @@ struct StrokeFillPanel: View {
         }
     }
 
-    /// Updates fill opacity for selected objects using lightweight notifications during dragging.
-    /// This provides fast, responsive UI updates without triggering full document republishing.
-    /// - Parameters:
-    ///   - opacity: The new opacity value (0.0 to 1.0)
-    ///   - isEditing: True during dragging (uses preview), false on release (commits change)
     private func updateFillOpacityLive(_ opacity: Double, isEditing: Bool) {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
@@ -547,11 +523,6 @@ struct StrokeFillPanel: View {
         }
     }
 
-    /// Updates stroke opacity for selected objects using lightweight notifications during dragging.
-    /// This provides fast, responsive UI updates without triggering full document republishing.
-    /// - Parameters:
-    ///   - opacity: The new opacity value (0.0 to 1.0)
-    ///   - isEditing: True during dragging (uses preview), false on release (commits change)
     private func updateStrokeOpacityLive(_ opacity: Double, isEditing: Bool) {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
@@ -569,11 +540,6 @@ struct StrokeFillPanel: View {
         }
     }
 
-    /// Updates stroke width for selected objects using lightweight notifications during dragging.
-    /// This provides fast, responsive UI updates without triggering full document republishing.
-    /// - Parameters:
-    ///   - width: The new stroke width value
-    ///   - isEditing: True during dragging (uses preview), false on release (commits change)
     private func updateStrokeWidthLive(_ width: Double, isEditing: Bool) {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
@@ -595,16 +561,12 @@ struct StrokeFillPanel: View {
         }
     }
 
-    /// Updates stroke placement for selected shapes using lightweight notifications.
-    /// Sends preview FIRST for instant visual update, then commits after 2 second debounce delay.
-    /// - Parameter placement: The new stroke placement (center, inside, outside)
     private func updateStrokePlacementLive(_ placement: StrokePlacement) {
         document.defaultStrokePlacement = placement
 
         let activeShapeIDs = document.getActiveShapeIDs()
         if activeShapeIDs.isEmpty { return }
 
-        // Send preview notification FIRST for immediate visual update (NO document modification)
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
@@ -616,12 +578,9 @@ struct StrokeFillPanel: View {
             }
         }
 
-        // Cancel any pending commit
         strokePlacementCommitTask?.cancel()
 
-        // Schedule new commit after 2 second debounce (allows rapid menu changes without blocking)
         let commitTask = DispatchWorkItem {
-            // Save to undo stack BEFORE making any changes
             self.document.saveToUndoStack()
 
             for shapeID in activeShapeIDs {
@@ -634,7 +593,6 @@ struct StrokeFillPanel: View {
                 }
             }
 
-            // Sync unifiedObjects changes back to layers for undo to work
             for shapeID in activeShapeIDs {
                 if let unifiedIndex = self.document.unifiedObjects.firstIndex(where: { unifiedObj in
                     if case .shape(let unifiedShape) = unifiedObj.objectType {

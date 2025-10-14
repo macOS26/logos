@@ -134,7 +134,6 @@ extension VectorDocument {
         let colors: [Color] = [.gray, .blue, .green, .orange, .purple, .red, .pink, .yellow, .cyan]
         let color = colors[layers.count % colors.count]
 
-        // Generate next layer number - fill in gaps
         var layerName = name
         if name == "New Layer" {
             var existingNumbers = Set<Int>()
@@ -147,7 +146,6 @@ extension VectorDocument {
                 }
             }
 
-            // Find the first available number starting from 1
             var layerNumber = 1
             while existingNumbers.contains(layerNumber) {
                 layerNumber += 1
@@ -158,13 +156,10 @@ extension VectorDocument {
 
         let newLayer = VectorLayer(name: layerName, color: color)
 
-        // Insert in front of (above) the currently selected layer
         if let currentIndex = selectedLayerIndex, currentIndex < layers.count {
-            // Insert right after the current selected layer (which appears above in the UI since layers are reversed)
             layers.insert(newLayer, at: currentIndex + 1)
             selectedLayerIndex = currentIndex + 1
 
-            // Update all object indices that are at or above the insertion point
             var updatedObjects: [VectorObject] = []
             for object in unifiedObjects {
                 if object.layerIndex > currentIndex {
@@ -179,7 +174,6 @@ extension VectorDocument {
             }
             unifiedObjects = updatedObjects
         } else {
-            // No layer selected or invalid index, append to end
             layers.append(newLayer)
             selectedLayerIndex = layers.count - 1
         }
@@ -488,14 +482,12 @@ extension VectorDocument {
         let layerObjects = unifiedObjects.filter { $0.layerIndex == sourceObject.layerIndex }
         let maxOrderID = layerObjects.map { $0.orderID }.max() ?? 0
 
-        // If already at top, do nothing
         if sourceObject.orderID == maxOrderID {
             return
         }
 
         saveToUndoStack()
 
-        // Shift down all objects above the source
         for i in 0..<unifiedObjects.count {
             let obj = unifiedObjects[i]
             if obj.layerIndex == sourceObject.layerIndex &&
@@ -509,7 +501,6 @@ extension VectorDocument {
             }
         }
 
-        // Move source to top
         unifiedObjects[sourceIndex] = VectorObject(
             shape: extractShape(from: sourceObject),
             layerIndex: sourceObject.layerIndex,
@@ -527,14 +518,12 @@ extension VectorDocument {
         let layerObjects = unifiedObjects.filter { $0.layerIndex == sourceObject.layerIndex }
         let minOrderID = layerObjects.map { $0.orderID }.min() ?? 0
 
-        // If already at bottom, do nothing
         if sourceObject.orderID == minOrderID {
             return
         }
 
         saveToUndoStack()
 
-        // Shift up all objects below the source
         for i in 0..<unifiedObjects.count {
             let obj = unifiedObjects[i]
             if obj.layerIndex == sourceObject.layerIndex &&
@@ -548,7 +537,6 @@ extension VectorDocument {
             }
         }
 
-        // Move source to bottom
         unifiedObjects[sourceIndex] = VectorObject(
             shape: extractShape(from: sourceObject),
             layerIndex: sourceObject.layerIndex,
@@ -567,28 +555,23 @@ extension VectorDocument {
 
         saveToUndoStack()
 
-        // Remove source layer and insert at target position - matches reorderObject behavior
         let sourceLayer = layers.remove(at: sourceIndex)
         layers.insert(sourceLayer, at: targetIndex)
 
-        // Calculate the actual new index after insertion
         let newSourceIndex = targetIndex
 
-        // Update all objects to reflect the layer reordering - shift layers in between
         var updatedObjects: [VectorObject] = []
         for object in unifiedObjects {
             var updatedObject = object
             let currentLayerIndex = object.layerIndex
 
             if currentLayerIndex == sourceIndex {
-                // Move source layer's objects to new position
                 updatedObject = VectorObject(
                     shape: extractShape(from: object),
                     layerIndex: newSourceIndex,
                     orderID: object.orderID
                 )
             } else if sourceIndex < targetIndex {
-                // Moving down: shift layers between source and target up by 1
                 if currentLayerIndex > sourceIndex && currentLayerIndex <= targetIndex {
                     updatedObject = VectorObject(
                         shape: extractShape(from: object),
@@ -597,7 +580,6 @@ extension VectorDocument {
                     )
                 }
             } else {
-                // Moving up: shift layers between target and source down by 1
                 if currentLayerIndex >= targetIndex && currentLayerIndex < sourceIndex {
                     updatedObject = VectorObject(
                         shape: extractShape(from: object),
@@ -612,17 +594,14 @@ extension VectorDocument {
 
         unifiedObjects = updatedObjects
 
-        // Update selected layer index accounting for the shift
         if selectedLayerIndex == sourceIndex {
             selectedLayerIndex = newSourceIndex
         } else if let selectedIndex = selectedLayerIndex {
             if sourceIndex < targetIndex {
-                // Moving down: shift selected index up if it was in between
                 if selectedIndex > sourceIndex && selectedIndex <= targetIndex {
                     selectedLayerIndex = selectedIndex - 1
                 }
             } else {
-                // Moving up: shift selected index down if it was in between
                 if selectedIndex >= targetIndex && selectedIndex < sourceIndex {
                     selectedLayerIndex = selectedIndex + 1
                 }

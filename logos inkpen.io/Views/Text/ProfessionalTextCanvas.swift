@@ -126,7 +126,6 @@ struct ProfessionalTextCanvas: View {
 
             document.setTextEditingInUnified(id: viewModel.textObject.id, isEditing: false)
 
-            // Resign first responder to restore key command handling
             if let window = NSApp.keyWindow {
                 window.makeFirstResponder(nil)
             }
@@ -164,7 +163,6 @@ struct ProfessionalTextCanvas: View {
                 viewModel.document.updateTextContent(viewModel.textObject.id, content: viewModel.text)
                 viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
 
-                // Resign first responder when exiting editing mode
                 if let window = NSApp.keyWindow {
                     window.makeFirstResponder(nil)
                 }
@@ -232,7 +230,6 @@ struct ProfessionalTextCanvas: View {
             viewModel.stopEditing()
             document.setTextEditingInUnified(id: viewModel.textObject.id, isEditing: false)
 
-            // Resign first responder to restore key command handling
             if let window = NSApp.keyWindow {
                 window.makeFirstResponder(nil)
             }

@@ -1000,7 +1000,6 @@ enum DraggableItem: Codable, Transferable {
     }
 }
 
-// Keep these for backwards compatibility
 struct DraggableVectorObject: Codable, Transferable {
     enum ObjectType: String, Codable {
         case shape = "shape"

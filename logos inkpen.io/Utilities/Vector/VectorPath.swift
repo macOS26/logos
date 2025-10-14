@@ -41,8 +41,6 @@ struct FillRule: Codable, Hashable {
 }
 
 struct VectorPoint: Codable, Hashable {
-    // SIMD OPTIMIZATION: Use hardware-accelerated SIMD2 for 4-8x faster operations
-    // Works on both Intel and Apple Silicon!
     internal var simdPoint: SIMD2<Double>
 
     var x: Double {
@@ -71,7 +69,6 @@ struct VectorPoint: Codable, Hashable {
         CGPoint(x: simdPoint.x, y: simdPoint.y)
     }
 
-    // SIMD OPTIMIZATION: Fast point arithmetic (hardware accelerated)
     static func + (lhs: VectorPoint, rhs: VectorPoint) -> VectorPoint {
         VectorPoint(simd: lhs.simdPoint + rhs.simdPoint)
     }
@@ -88,7 +85,6 @@ struct VectorPoint: Codable, Hashable {
         VectorPoint(simd: lhs.simdPoint / scalar)
     }
 
-    // Codable conformance - encode as x,y for backward compatibility
     enum CodingKeys: String, CodingKey {
         case x, y
     }

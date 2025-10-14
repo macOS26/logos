@@ -3,11 +3,6 @@ import Combine
 
 extension VectorDocument {
 
-    /// Sends ONLY a lightweight notification to update font family - NO document modification.
-    /// This provides instant visual feedback without triggering @Published changes.
-    /// - Parameters:
-    ///   - id: The UUID of the text object to update
-    ///   - fontFamily: The new font family name
     func updateTextFontFamilyPreview(id: UUID, fontFamily: String) {
         if let textObject = findText(by: id) {
             var previewTypography = textPreviewTypography[id] ?? textObject.typography
@@ -23,11 +18,6 @@ extension VectorDocument {
         }
     }
 
-    /// Sends ONLY a lightweight notification to update font variant - NO document modification.
-    /// This provides instant visual feedback without triggering @Published changes.
-    /// - Parameters:
-    ///   - id: The UUID of the text object to update
-    ///   - fontVariant: The new font variant name
     func updateTextFontVariantPreview(id: UUID, fontVariant: String) {
         if let textObject = findText(by: id) {
             var previewTypography = textPreviewTypography[id] ?? textObject.typography
@@ -43,10 +33,6 @@ extension VectorDocument {
         }
     }
 
-    /// Commits font family change to document after preview.
-    /// - Parameters:
-    ///   - id: The UUID of the text object to update
-    ///   - fontFamily: The new font family name
     func updateTextFontFamilyDirect(id: UUID, fontFamily: String) {
         saveToUndoStack()
         updateShapeByID(id) { shape in
@@ -54,10 +40,6 @@ extension VectorDocument {
         }
     }
 
-    /// Commits font variant change to document after preview.
-    /// - Parameters:
-    ///   - id: The UUID of the text object to update
-    ///   - fontVariant: The new font variant name
     func updateTextFontVariantDirect(id: UUID, fontVariant: String) {
         saveToUndoStack()
         updateShapeByID(id) { shape in
@@ -133,11 +115,6 @@ extension VectorDocument {
         }
     }
 
-    /// Sends a lightweight notification to update shape fill opacity in real-time during dragging.
-    /// This avoids triggering full document republishing for fast, responsive UI updates.
-    /// - Parameters:
-    ///   - id: The UUID of the shape to update
-    ///   - opacity: The new fill opacity value (0.0 to 1.0)
     func updateShapeFillOpacityPreview(id: UUID, opacity: Double) {
         NotificationCenter.default.post(
             name: Notification.Name("ShapePreviewUpdate"),
@@ -146,11 +123,6 @@ extension VectorDocument {
         )
     }
 
-    /// Sends a lightweight notification to update shape stroke opacity in real-time during dragging.
-    /// This avoids triggering full document republishing for fast, responsive UI updates.
-    /// - Parameters:
-    ///   - id: The UUID of the shape to update
-    ///   - opacity: The new stroke opacity value (0.0 to 1.0)
     func updateShapeStrokeOpacityPreview(id: UUID, opacity: Double) {
         NotificationCenter.default.post(
             name: Notification.Name("ShapePreviewUpdate"),
@@ -159,11 +131,6 @@ extension VectorDocument {
         )
     }
 
-    /// Sends a lightweight notification to update shape stroke width in real-time during dragging.
-    /// This avoids triggering full document republishing for fast, responsive UI updates.
-    /// - Parameters:
-    ///   - id: The UUID of the shape to update
-    ///   - width: The new stroke width value
     func updateShapeStrokeWidthPreview(id: UUID, width: Double) {
         NotificationCenter.default.post(
             name: Notification.Name("ShapePreviewUpdate"),
@@ -172,11 +139,6 @@ extension VectorDocument {
         )
     }
 
-    /// Sends a lightweight notification to update shape stroke placement in real-time.
-    /// This avoids triggering full document republishing for fast, responsive UI updates.
-    /// - Parameters:
-    ///   - id: The UUID of the shape to update
-    ///   - placement: The new stroke placement (center, inside, outside)
     func updateShapeStrokePlacementPreview(id: UUID, placement: StrokePlacement) {
         NotificationCenter.default.post(
             name: Notification.Name("ShapePreviewUpdate"),
