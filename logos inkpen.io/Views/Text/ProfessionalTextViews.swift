@@ -19,7 +19,7 @@ struct ProfessionalTextBoxView: View {
         switch textBoxState {
         case .gray: return Color.clear
         case .green: return Color.clear
-        case .blue: return Color.blue
+        case .blue: return Color.blue.opacity(0.5)  // Faded to 50% to make I-beam cursor more visible
         }
     }
 
@@ -83,7 +83,6 @@ struct ProfessionalTextContentView: View {
                 height: viewModel.textBoxFrame.height,
                 alignment: .topLeading
             )
-            .clipped()
             .onAppear {
             }
     }

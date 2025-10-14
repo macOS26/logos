@@ -4,6 +4,16 @@ class DisabledContextMenuTextView: NSTextView {
     var allowsInteraction: Bool = true
     var shouldShowCursor: Bool = true
 
+    override var wantsDefaultClipping: Bool {
+        return false
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        // Extend the dirty rect to allow glyphs to draw outside normal bounds
+        let extendedRect = dirtyRect.insetBy(dx: -10, dy: -10)
+        super.draw(extendedRect)
+    }
+
     override func menu(for event: NSEvent) -> NSMenu? {
         return nil
     }
@@ -26,7 +36,9 @@ class DisabledContextMenuTextView: NSTextView {
 
     override func drawInsertionPoint(in rect: NSRect, color: NSColor, turnedOn flag: Bool) {
         let cursorColor = shouldShowCursor ? color : NSColor.clear
-        super.drawInsertionPoint(in: rect, color: cursorColor, turnedOn: flag)
+        var thickerRect = rect
+        thickerRect.size.width = 1.0
+        super.drawInsertionPoint(in: thickerRect, color: cursorColor, turnedOn: flag)
     }
 
     override func setNeedsDisplay(_ rect: NSRect, avoidAdditionalLayout flag: Bool) {

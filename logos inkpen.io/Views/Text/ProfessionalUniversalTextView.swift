@@ -26,6 +26,10 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.textContainerInset = NSSize(width: 0, height: 0)
         textView.textContainer?.lineFragmentPadding = 0
 
+        // Prevent clipping of text and cursor at edges
+        textView.wantsLayer = true
+        textView.layer?.masksToBounds = false
+
         let fixedWidth = viewModel.textBoxFrame.width
         let fixedHeight = viewModel.textBoxFrame.height
 
