@@ -205,7 +205,15 @@ extension DrawingCanvas {
             var newShapes: [UUID: VectorShape] = [:]
             for unifiedObject in selectedObjects {
                 if case .shape(let shape) = unifiedObject.objectType {
-                    if let updatedShape = document.findShape(by: shape.id) {
+                    // For text objects, get from unifiedObjects directly (findShape excludes text)
+                    if shape.isTextObject {
+                        if let index = document.unifiedObjects.firstIndex(where: { $0.id == shape.id }),
+                           case .shape(let updatedShape) = document.unifiedObjects[index].objectType {
+                            newShapes[unifiedObject.id] = updatedShape
+                        } else {
+                            newShapes[unifiedObject.id] = shape
+                        }
+                    } else if let updatedShape = document.findShape(by: shape.id) {
                         newShapes[unifiedObject.id] = updatedShape
                     } else {
                         newShapes[unifiedObject.id] = shape
