@@ -24,25 +24,6 @@ extension VectorDocument {
         commandManager.execute(command)
     }
 
-    /// Execute a complex operation with before/after unified objects capture
-    func executeComplexOperation(oldSelection: Set<UUID>? = nil, operation: () -> Void) {
-        let beforeObjects = unifiedObjects
-        let beforeSelection = oldSelection ?? selectedObjectIDs
-
-        operation()
-
-        let afterObjects = unifiedObjects
-        let afterSelection = selectedObjectIDs
-
-        let command = ComplexObjectCommand(
-            oldUnifiedObjects: beforeObjects,
-            newUnifiedObjects: afterObjects,
-            oldSelection: beforeSelection,
-            newSelection: afterSelection
-        )
-        executeCommand(command)
-    }
-
     func undo() {
         // Try new command system first
         if commandManager.canUndo {

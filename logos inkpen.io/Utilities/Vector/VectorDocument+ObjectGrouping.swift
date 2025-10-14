@@ -3,67 +3,69 @@ import SwiftUI
 extension VectorDocument {
     func groupSelectedObjects() {
         let allSelectedIDs = selectedShapeIDs.union(selectedTextIDs)
-
+        
         guard let layerIndex = selectedLayerIndex,
               allSelectedIDs.count > 1 else {
             return
         }
-
-        executeComplexOperation {
-            let selectedShapes = getShapesForLayer(layerIndex).filter { allSelectedIDs.contains($0.id) }
-            let groupShape = VectorShape.group(from: selectedShapes, name: "Group")
-            removeShapesUnified(layerIndex: layerIndex, where: { allSelectedIDs.contains($0.id) })
-            appendShapeToLayerUnified(layerIndex: layerIndex, shape: groupShape)
-            selectedShapeIDs = [groupShape.id]
-            selectedTextIDs.removeAll()
-            populateUnifiedObjectsFromLayersPreservingOrder()
-            selectedObjectIDs = [groupShape.id]
-        }
+        
+        saveToUndoStack()
+        
+        let selectedShapes = getShapesForLayer(layerIndex).filter { allSelectedIDs.contains($0.id) }
+        let groupShape = VectorShape.group(from: selectedShapes, name: "Group")
+        removeShapesUnified(layerIndex: layerIndex, where: { allSelectedIDs.contains($0.id) })
+        appendShapeToLayerUnified(layerIndex: layerIndex, shape: groupShape)
+        selectedShapeIDs = [groupShape.id]
+        selectedTextIDs.removeAll()
+        populateUnifiedObjectsFromLayersPreservingOrder()
+        selectedObjectIDs = [groupShape.id]
+        
     }
     
     func flattenSelectedObjects() {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count > 1 else { return }
-
-        executeComplexOperation {
-            let selectedShapes = getSelectedShapesInStackingOrder()
-
-            var combinedBounds = CGRect.zero
-            for shape in selectedShapes {
-                let shapeBounds = shape.bounds
-                if combinedBounds == .zero {
-                    combinedBounds = shapeBounds
-                } else {
-                    combinedBounds = combinedBounds.union(shapeBounds)
-                }
+        
+        saveToUndoStack()
+        
+        let selectedShapes = getSelectedShapesInStackingOrder()
+        
+        var combinedBounds = CGRect.zero
+        for shape in selectedShapes {
+            let shapeBounds = shape.bounds
+            if combinedBounds == .zero {
+                combinedBounds = shapeBounds
+            } else {
+                combinedBounds = combinedBounds.union(shapeBounds)
             }
-
-            let flattenedShape = VectorShape(
-                name: "Flattened Group",
-                path: VectorPath(cgPath: CGPath(rect: combinedBounds, transform: nil)),
-                strokeStyle: nil,
-                fillStyle: nil,
-                transform: .identity,
-                isGroup: true,
-                groupedShapes: selectedShapes,
-                isCompoundPath: false
-            )
-
-            removeSelectedShapes()
-
-            appendShapeToLayerUnified(layerIndex: layerIndex, shape: flattenedShape)
-            selectedShapeIDs = [flattenedShape.id]
-            populateUnifiedObjectsFromLayersPreservingOrder()
-            selectedObjectIDs = [flattenedShape.id]
         }
+        
+        let flattenedShape = VectorShape(
+            name: "Flattened Group",
+            path: VectorPath(cgPath: CGPath(rect: combinedBounds, transform: nil)),
+            strokeStyle: nil,
+            fillStyle: nil,
+            transform: .identity,
+            isGroup: true,
+            groupedShapes: selectedShapes,
+            isCompoundPath: false
+        )
+        
+        removeSelectedShapes()
+        
+        appendShapeToLayerUnified(layerIndex: layerIndex, shape: flattenedShape)
+        selectedShapeIDs = [flattenedShape.id]
+        populateUnifiedObjectsFromLayersPreservingOrder()
+        selectedObjectIDs = [flattenedShape.id]
     }
     
     func ungroupSelectedObjects() {
         guard let layerIndex = selectedLayerIndex,
               !selectedShapeIDs.isEmpty else { return }
         
-        executeComplexOperation {
-            var newSelectedShapeIDs: Set<UUID> = []
+        saveToUndoStack()
+        
+        var newSelectedShapeIDs: Set<UUID> = []
         var shapesToRemove: [UUID] = []
         var shapesToAdd: [VectorShape] = []
         
