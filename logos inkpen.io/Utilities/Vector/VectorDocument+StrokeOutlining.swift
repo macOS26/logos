@@ -68,8 +68,6 @@ extension VectorDocument {
         selectedObjectIDs = newShapeIDs
 
         updateUnifiedObjectsOptimized()
-
-        objectWillChange.send()
     }
 
     var canOutlineStrokes: Bool {

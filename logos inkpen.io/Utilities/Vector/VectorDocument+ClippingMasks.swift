@@ -52,9 +52,6 @@ extension VectorDocument {
                 }
             }
         }
-
-        objectWillChange.send()
-
     }
 
     func releaseClippingMaskForSelection() {
@@ -113,8 +110,6 @@ extension VectorDocument {
         }
 
         forceResyncUnifiedObjects()
-        objectWillChange.send()
-
     }
 
     func moveClippingMask(_ maskID: UUID, by offset: CGPoint) {
@@ -138,8 +133,6 @@ extension VectorDocument {
         }
 
         forceResyncUnifiedObjects()
-        objectWillChange.send()
-
     }
 
     private func moveShapeByPathCoordinates(layerIndex: Int, shapeIndex: Int, by offset: CGPoint) {

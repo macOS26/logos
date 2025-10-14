@@ -35,7 +35,6 @@ extension VectorDocument {
         }
 
         populateUnifiedObjectsFromLayersPreservingOrder()
-        objectWillChange.send()
     }
 
     func expandWarpObject() {
@@ -69,6 +68,5 @@ extension VectorDocument {
         }
 
         populateUnifiedObjectsFromLayersPreservingOrder()
-        objectWillChange.send()
     }
 }
