@@ -120,6 +120,9 @@ struct FontPickerView: View {
                     if let textID = document.selectedTextIDs.first {
                         document.updateTextFontVariantPreview(id: textID, fontVariant: newVariant)
                         document.updateTextFontVariantDirect(id: textID, fontVariant: newVariant)
+
+                        // Clear preview cache so it doesn't show stale values
+                        document.clearTextPreviewTypography(id: textID)
                     }
                 }
             )) {
