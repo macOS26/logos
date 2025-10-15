@@ -133,8 +133,6 @@ extension DrawingCanvas {
 
     func startEditingText(textID: UUID, at location: CGPoint) {
 
-        document.saveToUndoStack()
-
         for unifiedObj in document.unifiedObjects {
             guard case .shape(let shape) = unifiedObj.objectType,
                   shape.isTextObject,
@@ -275,9 +273,6 @@ extension DrawingCanvas {
 
     func createNewTextWithSize(at location: CGPoint, width: CGFloat, height: CGFloat) {
 
-
-        document.saveToUndoStack()
-
         let typography = TypographyProperties(
             fontFamily: document.fontManager.selectedFontFamily,
             fontVariant: document.fontManager.selectedFontVariant,
@@ -317,6 +312,15 @@ extension DrawingCanvas {
         currentCursorPosition = 0
         currentSelectionRange = NSRange(location: 0, length: 0)
 
+        if let textShape = document.findShape(by: newText.id) {
+            let objectIDs = [newText.id]
+            let oldShapes: [UUID: VectorShape] = [:]
+            var newShapes: [UUID: VectorShape] = [:]
+            newShapes[newText.id] = textShape
+
+            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+            document.commandManager.execute(command)
+        }
     }
 
 
@@ -530,7 +534,6 @@ extension DrawingCanvas {
 
     func handleTextEditingChange(textID: UUID, isEditing: Bool) {
         if isEditing {
-            document.saveToUndoStack()
             isEditingText = true
             editingTextID = textID
 
@@ -570,17 +573,43 @@ extension DrawingCanvas {
     func handleTextPositionChange(textID: UUID, newPosition: CGPoint) {
         guard let textObj = document.findText(by: textID) else { return }
 
-        document.saveToUndoStack()
+        let oldShape = document.findShape(by: textID)
+        var oldShapes: [UUID: VectorShape] = [:]
+        if let shape = oldShape {
+            oldShapes[textID] = shape
+        }
 
         document.updateTextPositionInUnified(id: textObj.id, position: newPosition)
+
+        if let updatedShape = document.findShape(by: textID) {
+            let objectIDs = [textID]
+            var newShapes: [UUID: VectorShape] = [:]
+            newShapes[textID] = updatedShape
+
+            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+            document.commandManager.execute(command)
+        }
     }
 
     func handleTextBoundsChange(textID: UUID, newBounds: CGRect) {
         guard let textObj = document.findText(by: textID) else { return }
 
-        document.saveToUndoStack()
+        let oldShape = document.findShape(by: textID)
+        var oldShapes: [UUID: VectorShape] = [:]
+        if let shape = oldShape {
+            oldShapes[textID] = shape
+        }
 
         document.updateTextBoundsInUnified(id: textObj.id, bounds: newBounds)
+
+        if let updatedShape = document.findShape(by: textID) {
+            let objectIDs = [textID]
+            var newShapes: [UUID: VectorShape] = [:]
+            newShapes[textID] = updatedShape
+
+            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+            document.commandManager.execute(command)
+        }
     }
 
 
