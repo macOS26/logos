@@ -350,7 +350,15 @@ struct TransformationControls: View {
               newWidth > 0,
               newHeight > 0 else { return }
 
-        document.saveToUndoStack()
+        var oldShapes: [UUID: VectorShape] = [:]
+        var objectIDs: [UUID] = []
+
+        for objectID in document.selectedObjectIDs {
+            if let shape = document.findShape(by: objectID) {
+                oldShapes[objectID] = shape
+                objectIDs.append(objectID)
+            }
+        }
 
         let originOffset = document.transformOrigin.point
         let currentOriginX = currentBounds.minX + currentBounds.width * originOffset.x
@@ -513,6 +521,18 @@ struct TransformationControls: View {
         }
 
         document.updateUnifiedObjectsOptimized()
+
+        var newShapes: [UUID: VectorShape] = [:]
+        for objectID in objectIDs {
+            if let updatedShape = document.findShape(by: objectID) {
+                newShapes[objectID] = updatedShape
+            }
+        }
+
+        if !objectIDs.isEmpty {
+            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+            document.commandManager.execute(command)
+        }
 
         updateValuesFromSelection()
     }
