@@ -230,7 +230,7 @@ extension DrawingCanvas {
         )
 
         if document.markerRemoveOverlap {
-            let currentPath = finalShape.path.cgPath
+            var currentPath = finalShape.path.cgPath
 
             var cleanedFillPath: CGPath? = nil
             cleanedFillPath = CoreGraphicsPathOperations.normalized(currentPath, using: .winding)
@@ -239,7 +239,30 @@ extension DrawingCanvas {
             if cleanedFillPath == nil { cleanedFillPath = CoreGraphicsPathOperations.union(currentPath, currentPath, using: .evenOdd) }
 
             if let cleaned = cleanedFillPath, !cleaned.isEmpty, isPathBoundsFinite(cleaned.boundingBox) {
+                currentPath = cleaned
                 finalShape.path = VectorPath(cgPath: cleaned)
+            }
+
+            if let stroke = finalShape.strokeStyle, stroke.width > 0 {
+                if let expandedStroke = PathOperations.outlineStroke(path: currentPath, strokeStyle: stroke) {
+                    var unionedStroke: CGPath? = nil
+                    unionedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .winding)
+                    if unionedStroke == nil {
+                        unionedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .evenOdd)
+                    }
+
+                    let strokeToMerge = unionedStroke ?? expandedStroke
+                    var merged: CGPath? = nil
+                    merged = CoreGraphicsPathOperations.union(currentPath, strokeToMerge, using: .winding)
+                    if merged == nil {
+                        merged = CoreGraphicsPathOperations.union(currentPath, strokeToMerge, using: .evenOdd)
+                    }
+
+                    if let mergedPath = merged, !mergedPath.isEmpty, isPathBoundsFinite(mergedPath.boundingBox) {
+                        finalShape.path = VectorPath(cgPath: mergedPath)
+                        finalShape.strokeStyle = nil
+                    }
+                }
             }
 
             finalShape.path = removeCoincidentPointsFromPath(finalShape.path, tolerance: 1.0)
@@ -285,10 +308,10 @@ extension DrawingCanvas {
         )
 
         var finalPath = preview
-        let finalStrokeStyle = strokeStyle
+        var finalStrokeStyle = strokeStyle
 
         if document.markerRemoveOverlap {
-            let currentPath = preview.cgPath
+            var currentPath = preview.cgPath
 
             var cleanedFillPath: CGPath? = nil
             cleanedFillPath = CoreGraphicsPathOperations.normalized(currentPath, using: .winding)
@@ -297,7 +320,30 @@ extension DrawingCanvas {
             if cleanedFillPath == nil { cleanedFillPath = CoreGraphicsPathOperations.union(currentPath, currentPath, using: .evenOdd) }
 
             if let cleaned = cleanedFillPath, !cleaned.isEmpty, isPathBoundsFinite(cleaned.boundingBox) {
+                currentPath = cleaned
                 finalPath = VectorPath(cgPath: cleaned)
+            }
+
+            if let stroke = strokeStyle, stroke.width > 0 {
+                if let expandedStroke = PathOperations.outlineStroke(path: currentPath, strokeStyle: stroke) {
+                    var unionedStroke: CGPath? = nil
+                    unionedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .winding)
+                    if unionedStroke == nil {
+                        unionedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .evenOdd)
+                    }
+
+                    let strokeToMerge = unionedStroke ?? expandedStroke
+                    var merged: CGPath? = nil
+                    merged = CoreGraphicsPathOperations.union(currentPath, strokeToMerge, using: .winding)
+                    if merged == nil {
+                        merged = CoreGraphicsPathOperations.union(currentPath, strokeToMerge, using: .evenOdd)
+                    }
+
+                    if let mergedPath = merged, !mergedPath.isEmpty, isPathBoundsFinite(mergedPath.boundingBox) {
+                        finalPath = VectorPath(cgPath: mergedPath)
+                        finalStrokeStyle = nil
+                    }
+                }
             }
 
             finalPath = removeCoincidentPointsFromPath(finalPath, tolerance: 1.0)
