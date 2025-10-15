@@ -6,11 +6,16 @@ extension VectorDocument {
 
     func outlineSelectedStrokes() {
         guard let layerIndex = selectedLayerIndex else { return }
-        saveToUndoStack()
 
         let shapesToOutline = getShapesForLayer(layerIndex).filter { selectedShapeIDs.contains($0.id) && $0.strokeStyle != nil }
         var newShapeIDs: Set<UUID> = []
         var originalShapeIDs: Set<UUID> = []
+
+        // Capture old shapes for undo
+        var oldShapes: [UUID: VectorShape] = [:]
+        for shape in shapesToOutline {
+            oldShapes[shape.id] = shape
+        }
 
         for shape in shapesToOutline {
             guard let strokeStyle = shape.strokeStyle,
@@ -65,8 +70,26 @@ extension VectorDocument {
             }
         }
 
-        selectedObjectIDs = newShapeIDs
+        // Capture new shapes for undo
+        var newShapes: [UUID: VectorShape] = [:]
+        let allAffectedIDs = Set(oldShapes.keys).union(newShapeIDs)
+        for shapeID in allAffectedIDs {
+            if let shape = getShapesForLayer(layerIndex).first(where: { $0.id == shapeID }) {
+                newShapes[shapeID] = shape
+            }
+        }
 
+        // Create command if shapes were modified
+        if !oldShapes.isEmpty {
+            let command = ShapeModificationCommand(
+                objectIDs: Array(oldShapes.keys),
+                oldShapes: oldShapes,
+                newShapes: newShapes
+            )
+            executeCommand(command)
+        }
+
+        selectedObjectIDs = newShapeIDs
         updateUnifiedObjectsOptimized()
     }
 
