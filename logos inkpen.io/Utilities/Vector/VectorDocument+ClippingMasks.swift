@@ -6,15 +6,11 @@ extension VectorDocument {
         let selectedShapes = getSelectedShapesInStackingOrder()
         guard selectedShapes.count >= 2 else { return }
 
-        // Create a clipping group (Adobe-style)
-        // Last selected shape becomes the mask, rest are content
+        // Create a clipping group: first/top shape is the clipping mask
         var shapesInOrder = selectedShapes
-        let maskShape = shapesInOrder.removeLast()  // Last shape is the mask
-        var groupShapes = shapesInOrder  // Content shapes
-        groupShapes.append(maskShape)  // Add mask as first element
-
-        // Reverse so mask is first
-        groupShapes = [maskShape] + shapesInOrder
+        let maskShape = shapesInOrder.removeFirst()  // First shape is the mask (top object)
+        let contentShapes = shapesInOrder  // Rest are content
+        let groupShapes = [maskShape] + contentShapes  // Mask is first in group
 
         // Create the clipping group
         let clippingGroup = VectorShape.group(from: groupShapes, name: "Clipping Group", isClippingGroup: true)
