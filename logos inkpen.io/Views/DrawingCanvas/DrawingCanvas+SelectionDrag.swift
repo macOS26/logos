@@ -202,15 +202,8 @@ extension DrawingCanvas {
                         let newPositionX = initialCenter.x - textBounds.width/2 + currentDragDelta.x
                         let newPositionY = initialCenter.y - textBounds.height/2 + currentDragDelta.y
 
-                        Log.error("🚨 FINISH DRAG: textID=\(unifiedObject.id)", category: .debug)
-                        Log.error("🚨 FINISH DRAG: OLD position=\(textObj.position)", category: .debug)
-                        Log.error("🚨 FINISH DRAG: NEW position=(\(newPositionX), \(newPositionY))", category: .debug)
-                        Log.error("🚨 FINISH DRAG: initialCenter=\(initialCenter), dragDelta=\(currentDragDelta)", category: .debug)
-
                         let delta = CGPoint(x: newPositionX - textObj.position.x, y: newPositionY - textObj.position.y)
                         document.translateTextInUnified(id: unifiedObject.id, delta: delta)
-
-                        Log.error("🚨 FINISH DRAG: Updated textObject position to (\(newPositionX), \(newPositionY))", category: .debug)
                     }
                 }
             }
@@ -542,20 +535,13 @@ extension DrawingCanvas {
             switch unifiedObject.objectType {
             case .shape(let oldShape):
                 if oldShape.isTextObject {
-                    Log.error("🚨 SYNC DEBUG: Text object - syncing unified objects", category: .debug)
                     if let updatedText = document.findText(by: oldShape.id) {
-                        Log.error("🚨 SYNC DEBUG: Updating unified object position to (\(updatedText.position.x), \(updatedText.position.y))", category: .debug)
-
                         let updatedShape = VectorShape.from(updatedText)
                         document.unifiedObjects[i] = VectorObject(
                             shape: updatedShape,
                             layerIndex: unifiedObject.layerIndex,
                             orderID: unifiedObject.orderID
                         )
-
-                        Log.error("🚨 SYNC DEBUG: Updated unified objects array from textObjects authority", category: .debug)
-                    } else {
-                        Log.error("🚨 SYNC DEBUG: TEXT OBJECT NOT FOUND in textObjects array!", category: .debug)
                     }
                 } else {
                     if let updatedShape = document.findShape(by: oldShape.id) {
