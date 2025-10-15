@@ -2,7 +2,7 @@ import SwiftUI
 
 struct StrokePropertiesSection: View {
     let strokeWidth: Double
-    let strokePlacement: StrokePlacement
+    @Binding var strokePlacement: StrokePlacement
     let strokeOpacity: Double
     let strokeLineJoin: CGLineJoin
     let strokeLineCap: CGLineCap
@@ -66,7 +66,10 @@ struct StrokePropertiesSection: View {
 
                 Picker("Placement", selection: Binding(
                     get: { strokePlacement },
-                    set: { onUpdateStrokePlacement($0) }
+                    set: { newPlacement in
+                        strokePlacement = newPlacement
+                        onUpdateStrokePlacement(newPlacement)
+                    }
                 )) {
                     ForEach(StrokePlacement.allCases, id: \.self) { placement in
                         HStack {

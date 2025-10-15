@@ -289,7 +289,7 @@ struct StrokeFillPanel: View {
 
                     StrokePropertiesSection(
                         strokeWidth: strokeWidthState,
-                        strokePlacement: strokePlacementState,
+                        strokePlacement: $strokePlacementState,
                         strokeOpacity: strokeOpacityState,
                         strokeLineJoin: strokeLineJoin,
                         strokeLineCap: strokeLineCap,
@@ -299,7 +299,6 @@ struct StrokeFillPanel: View {
                             updateStrokeWidthLive(value, isEditing: true)
                         },
                         onUpdateStrokePlacement: { value in
-                            strokePlacementState = value
                             updateStrokePlacementLive(value)
                         },
                         onUpdateStrokeOpacity: { value in
