@@ -217,7 +217,6 @@ class DocumentState: ObservableObject {
                 let result = await VectorImportManager.shared.importVectorFile(from: url)
                 await MainActor.run {
                     if result.success {
-                        document.saveToUndoStack()
                         if let layerIndex = document.selectedLayerIndex ?? (document.layers.indices.first) {
                             var newObjectIDs: Set<UUID> = []
                             for shape in result.shapes {
