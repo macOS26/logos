@@ -4,31 +4,12 @@ extension DrawingCanvas {
     @ViewBuilder
     internal func canvasOverlays(geometry: GeometryProxy) -> some View {
         if let currentPath = currentPath {
-            if document.currentTool == .font {
-                ZStack {
-                    Path { path in
-                        addPathElements(currentPath.elements, to: &path)
-                    }
-                    .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 2.0 / document.zoomLevel, dash: [8 / document.zoomLevel, 4 / document.zoomLevel]))
-                    .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-
-                    Path { path in
-                        addPathElements(currentPath.elements, to: &path)
-                    }
-                    .stroke(Color.white, style: SwiftUI.StrokeStyle(lineWidth: 2.0 / document.zoomLevel, dash: [8 / document.zoomLevel, 4 / document.zoomLevel], dashPhase: 6 / document.zoomLevel))
-                    .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-                }
-            } else {
-                Path { path in
-                    addPathElements(currentPath.elements, to: &path)
-                }
-                .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel)
-                .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+            Path { path in
+                addPathElements(currentPath.elements, to: &path)
             }
-
+            .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel)
+            .scaleEffect(document.zoomLevel, anchor: .topLeading)
+            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
             drawingDimensionsOverlay(for: currentPath)
         }
 
