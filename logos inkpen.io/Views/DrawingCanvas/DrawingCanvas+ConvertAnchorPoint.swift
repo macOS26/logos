@@ -211,7 +211,6 @@ extension DrawingCanvas {
             let newPath = VectorPath(elements: elements, isClosed: shape.path.isClosed)
 
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-            document.updateUnifiedObjectsOptimized()
 
             let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
             document.commandManager.execute(command)
@@ -225,7 +224,6 @@ extension DrawingCanvas {
             let newPath = VectorPath(elements: elements, isClosed: shape.path.isClosed)
 
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-            document.updateUnifiedObjectsOptimized()
 
             let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
             document.commandManager.execute(command)
@@ -258,7 +256,6 @@ extension DrawingCanvas {
             let newPath = VectorPath(elements: elements, isClosed: shape.path.isClosed)
 
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-            document.updateUnifiedObjectsOptimized()
 
             let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
             document.commandManager.execute(command)
@@ -272,7 +269,6 @@ extension DrawingCanvas {
             let newPath = VectorPath(elements: elements, isClosed: shape.path.isClosed)
 
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-            document.updateUnifiedObjectsOptimized()
 
             let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
             document.commandManager.execute(command)
@@ -316,7 +312,6 @@ extension DrawingCanvas {
             let newPath = VectorPath(elements: elements, isClosed: shape.path.isClosed)
 
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-            document.updateUnifiedObjectsOptimized()
 
             let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
             document.commandManager.execute(command)
@@ -371,7 +366,6 @@ extension DrawingCanvas {
             let newPath = VectorPath(elements: elements, isClosed: shape.path.isClosed)
 
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-            document.updateUnifiedObjectsOptimized()
 
             let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
             document.commandManager.execute(command)
@@ -429,7 +423,6 @@ extension DrawingCanvas {
             let newPath = VectorPath(elements: elements, isClosed: shape.path.isClosed)
 
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-            document.updateUnifiedObjectsOptimized()
 
             let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
             document.commandManager.execute(command)
@@ -487,7 +480,6 @@ extension DrawingCanvas {
             let newPath = VectorPath(elements: elements, isClosed: shape.path.isClosed)
 
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-            document.updateUnifiedObjectsOptimized()
 
             let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
             document.commandManager.execute(command)
@@ -544,7 +536,6 @@ extension DrawingCanvas {
             let newPath = VectorPath(elements: elements, isClosed: shape.path.isClosed)
 
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-            document.updateUnifiedObjectsOptimized()
 
             let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
             document.commandManager.execute(command)
