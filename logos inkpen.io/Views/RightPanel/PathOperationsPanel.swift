@@ -2,9 +2,6 @@ import SwiftUI
 
 struct PathOperationsPanel: View {
     @ObservedObject var document: VectorDocument
-    @State private var isMergePointsPressed = false
-    @State private var isRemoveOverlapPressed = false
-    @State private var isRemoveAllOverlapsPressed = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -79,103 +76,25 @@ struct PathOperationsPanel: View {
                     .padding(.horizontal, 16)
 
                 VStack(spacing: 8) {
-                    Button {
-                        mergeCoincidentPointsInSelectedShapes()
-                    } label: {
-                        Text("Merge Points")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.primary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.gray.opacity(isMergePointsPressed ? 0.3 : 0.1))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                    )
-                            )
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(BorderlessButtonStyle())
-                    .simultaneousGesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { _ in
-                                isMergePointsPressed = true
-                            }
-                            .onEnded { _ in
-                                isMergePointsPressed = false
-                            }
-                    )
-                    .onTapGesture {
+                    Button("Merge Points") {
                         mergeCoincidentPointsInSelectedShapes()
                     }
+                    .buttonStyle(ProfessionalSecondaryButtonStyle())
+                    .frame(maxWidth: .infinity)
                     .help("Merge coincident points in selected shapes (excluding start and end points)")
 
-                    Button {
-                        removeOverlapFromSelectedShapes()
-                    } label: {
-                        Text("Remove Overlap")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.primary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.gray.opacity(isRemoveOverlapPressed ? 0.3 : 0.1))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                    )
-                            )
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(BorderlessButtonStyle())
-                    .simultaneousGesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { _ in
-                                isRemoveOverlapPressed = true
-                            }
-                            .onEnded { _ in
-                                isRemoveOverlapPressed = false
-                            }
-                    )
-                    .onTapGesture {
+                    Button("Remove Overlap") {
                         removeOverlapFromSelectedShapes()
                     }
+                    .buttonStyle(ProfessionalSecondaryButtonStyle())
+                    .frame(maxWidth: .infinity)
                     .help("Remove self-intersections and overlapping areas within selected shapes")
 
-                    Button {
-                        removeOverlapFromAllShapes()
-                    } label: {
-                        Text("Remove All Overlaps")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.primary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.gray.opacity(isRemoveAllOverlapsPressed ? 0.3 : 0.1))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                    )
-                            )
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(BorderlessButtonStyle())
-                    .simultaneousGesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { _ in
-                                isRemoveAllOverlapsPressed = true
-                            }
-                            .onEnded { _ in
-                                isRemoveAllOverlapsPressed = false
-                            }
-                    )
-                    .onTapGesture {
+                    Button("Remove All Overlaps") {
                         removeOverlapFromAllShapes()
                     }
+                    .buttonStyle(ProfessionalSecondaryButtonStyle())
+                    .frame(maxWidth: .infinity)
                     .help("Remove overlaps from all shapes in the document")
                 }
                 .padding(.horizontal, 16)
@@ -210,51 +129,17 @@ struct PathOperationsPanel: View {
                 .padding(.horizontal, 16)
 
                 VStack(spacing: 8) {
-                    Button {
-                        document.makeClippingMaskFromSelection()
-                    } label: {
-                        Text("Make Clipping Mask")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.primary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.gray.opacity(0.1))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                    )
-                            )
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(BorderlessButtonStyle())
-                    .onTapGesture {
+                    Button("Make Clipping Mask") {
                         document.makeClippingMaskFromSelection()
                     }
+                    .buttonStyle(ProfessionalSecondaryButtonStyle())
+                    .frame(maxWidth: .infinity)
 
-                    Button {
-                        document.releaseClippingMaskForSelection()
-                    } label: {
-                        Text("Release Clipping Mask")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.primary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.gray.opacity(0.1))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                    )
-                            )
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(BorderlessButtonStyle())
-                    .onTapGesture {
+                    Button("Release Clipping Mask") {
                         document.releaseClippingMaskForSelection()
                     }
+                    .buttonStyle(ProfessionalSecondaryButtonStyle())
+                    .frame(maxWidth: .infinity)
                 }
                 .padding(.horizontal, 16)
             }
