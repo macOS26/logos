@@ -15,7 +15,7 @@ struct CheckerboardPattern: View {
                     ForEach(0..<cols, id: \.self) { col in
                         let isEven = (row + col) % 2 == 0
                                 Rectangle()
-            .fill(isEven ? Color.white : Color.gray.opacity(0.15))
+                            .fill(isEven ? Color.white : Color(nsColor: .lightGray))
                             .frame(width: tileSize, height: tileSize)
                             .position(
                                 x: CGFloat(col) * tileSize + tileSize / 2,
@@ -31,12 +31,13 @@ struct CheckerboardPattern: View {
 
 @ViewBuilder
 func renderColorSwatchRightPanel(_ color: VectorColor, width: CGFloat, height: CGFloat, cornerRadius: CGFloat = 0, borderWidth: CGFloat = 0.5, opacity: Double = 1.0) -> some View {
-    if case .clear = color {
-        ZStack {
-            CheckerboardPattern(size: min(4, width / 4))
-                .frame(width: width, height: height)
-                .clipped()
+    ZStack {
+        // Always show checkerboard behind to display transparency
+        CheckerboardPattern(size: min(4, width / 4))
+            .frame(width: width, height: height)
+            .clipped()
 
+        if case .clear = color {
             if cornerRadius > 0 {
                 RoundedRectangle(cornerRadius: cornerRadius)
                     .fill(Color.clear)
@@ -49,47 +50,47 @@ func renderColorSwatchRightPanel(_ color: VectorColor, width: CGFloat, height: C
                     .border(Color.gray, width: borderWidth)
             }
 
-                    Path { path in
-            path.move(to: CGPoint(x: 0, y: 0))
-            path.addLine(to: CGPoint(x: width, y: height))
-        }
-        .stroke(Color.red, lineWidth: 3)
-        .frame(width: width, height: height)
-        }
-        .allowsHitTesting(true)
-    } else if case .gradient(let gradient) = color {
-        GradientSwatchNSView(gradient: gradient, size: width)
+            Path { path in
+                path.move(to: CGPoint(x: 0, y: 0))
+                path.addLine(to: CGPoint(x: width, y: height))
+            }
+            .stroke(Color.red, lineWidth: 3)
             .frame(width: width, height: height)
-            .overlay(
-                Group {
-                    if cornerRadius > 0 {
-                        RoundedRectangle(cornerRadius: cornerRadius)
-                            .stroke(Color.gray, lineWidth: borderWidth)
-                    } else {
-                        Rectangle()
-                            .stroke(Color.gray, lineWidth: borderWidth)
-                    }
-                }
-            )
-    } else {
-        if cornerRadius > 0 {
-            RoundedRectangle(cornerRadius: cornerRadius)
-                .fill(color.color.opacity(opacity))
+        } else if case .gradient(let gradient) = color {
+            GradientSwatchNSView(gradient: gradient, size: width)
                 .frame(width: width, height: height)
                 .overlay(
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(Color.gray, lineWidth: borderWidth)
+                    Group {
+                        if cornerRadius > 0 {
+                            RoundedRectangle(cornerRadius: cornerRadius)
+                                .stroke(Color.gray, lineWidth: borderWidth)
+                        } else {
+                            Rectangle()
+                                .stroke(Color.gray, lineWidth: borderWidth)
+                        }
+                    }
                 )
         } else {
-            Rectangle()
-                .fill(color.color.opacity(opacity))
-                .frame(width: width, height: height)
-                .overlay(
-                    Rectangle()
-                        .stroke(Color.gray, lineWidth: borderWidth)
-                )
+            if cornerRadius > 0 {
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(color.color.opacity(opacity))
+                    .frame(width: width, height: height)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .stroke(Color.gray, lineWidth: borderWidth)
+                    )
+            } else {
+                Rectangle()
+                    .fill(color.color.opacity(opacity))
+                    .frame(width: width, height: height)
+                    .overlay(
+                        Rectangle()
+                            .stroke(Color.gray, lineWidth: borderWidth)
+                    )
+            }
         }
     }
+    .allowsHitTesting(true)
 }
 
 
