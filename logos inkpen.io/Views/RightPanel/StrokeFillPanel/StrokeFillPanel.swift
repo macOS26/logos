@@ -323,11 +323,20 @@ struct StrokeFillPanel: View {
                             if isEditing {
                                 cachedIndexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
                             } else {
-                                document.saveToUndoStack()
+                                var oldShapes: [UUID: VectorShape] = [:]
+                                var objectIDs: [UUID] = []
+
+                                let activeShapeIDs = document.getActiveShapeIDs()
+                                for shapeID in activeShapeIDs {
+                                    if let shape = document.findShape(by: shapeID) {
+                                        oldShapes[shapeID] = shape
+                                        objectIDs.append(shapeID)
+                                    }
+                                }
+
                                 document.defaultStrokeWidth = strokeWidthState
                                 updateStrokeWidthLive(strokeWidthState, isEditing: false)
 
-                                let activeShapeIDs = document.getActiveShapeIDs()
                                 for shapeID in activeShapeIDs {
                                     if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
                                         if case .shape(let unifiedShape) = unifiedObj.objectType {
@@ -347,6 +356,18 @@ struct StrokeFillPanel: View {
                                 }
 
                                 cachedIndexMap.removeAll()
+
+                                var newShapes: [UUID: VectorShape] = [:]
+                                for shapeID in objectIDs {
+                                    if let shape = document.findShape(by: shapeID) {
+                                        newShapes[shapeID] = shape
+                                    }
+                                }
+
+                                if !objectIDs.isEmpty {
+                                    let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+                                    document.commandManager.execute(command)
+                                }
                             }
                         },
                         onStrokeOpacityEditingChanged: { isEditing in
