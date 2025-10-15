@@ -37,7 +37,7 @@ extension DrawingCanvas {
             return
         }
 
-        // TODO: Add ModifyPathCommand here
+        let oldPath = shape.path
 
         var startPoint: VectorPoint
         if elementIndex > 0 {
@@ -87,10 +87,15 @@ extension DrawingCanvas {
 
         modifiedShape.path.elements = elements
         modifiedShape.updateBounds()
+
+        let newPath = VectorPath(elements: elements, isClosed: shape.path.isClosed)
+
         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: modifiedShape)
 
         document.updateUnifiedObjectsOptimized()
 
+        let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
+        document.commandManager.execute(command)
     }
 
 
@@ -117,7 +122,7 @@ extension DrawingCanvas {
             return
         }
 
-        // TODO: Add ModifyPathCommand here
+        let oldPath = shape.path
 
         let pathPointCount = elements.filter { element in
             switch element {
@@ -137,8 +142,16 @@ extension DrawingCanvas {
             var modifiedShape = shape
             modifiedShape.path.elements = updatedElements
             modifiedShape.updateBounds()
+
+            let newPath = VectorPath(elements: updatedElements, isClosed: shape.path.isClosed)
+
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: modifiedShape)
 
+            document.updateUnifiedObjectsOptimized()
+
+            let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
+            document.commandManager.execute(command)
+            return
         }
 
         document.updateUnifiedObjectsOptimized()
