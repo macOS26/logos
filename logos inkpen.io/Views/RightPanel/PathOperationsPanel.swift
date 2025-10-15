@@ -76,25 +76,40 @@ struct PathOperationsPanel: View {
                     .padding(.horizontal, 16)
 
                 VStack(spacing: 8) {
-                    Button("Merge Points") {
+                    Button {
+                        mergeCoincidentPointsInSelectedShapes()
+                    } label: {
+                        Text("Merge Points")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(ProfessionalSecondaryButtonStyle())
+                    .onTapGesture {
                         mergeCoincidentPointsInSelectedShapes()
                     }
-                    .buttonStyle(ProfessionalSecondaryButtonStyle())
-                    .frame(maxWidth: .infinity)
                     .help("Merge coincident points in selected shapes (excluding start and end points)")
 
-                    Button("Remove Overlap") {
+                    Button {
+                        removeOverlapFromSelectedShapes()
+                    } label: {
+                        Text("Remove Overlap")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(ProfessionalSecondaryButtonStyle())
+                    .onTapGesture {
                         removeOverlapFromSelectedShapes()
                     }
-                    .buttonStyle(ProfessionalSecondaryButtonStyle())
-                    .frame(maxWidth: .infinity)
                     .help("Remove self-intersections and overlapping areas within selected shapes")
 
-                    Button("Remove All Overlaps") {
+                    Button {
                         removeOverlapFromAllShapes()
+                    } label: {
+                        Text("Remove All Overlaps")
+                            .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(ProfessionalSecondaryButtonStyle())
-                    .frame(maxWidth: .infinity)
+                    .onTapGesture {
+                        removeOverlapFromAllShapes()
+                    }
                     .help("Remove overlaps from all shapes in the document")
                 }
                 .padding(.horizontal, 16)
@@ -129,17 +144,27 @@ struct PathOperationsPanel: View {
                 .padding(.horizontal, 16)
 
                 VStack(spacing: 8) {
-                    Button("Make Clipping Mask") {
+                    Button {
+                        document.makeClippingMaskFromSelection()
+                    } label: {
+                        Text("Make Clipping Mask")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(ProfessionalSecondaryButtonStyle())
+                    .onTapGesture {
                         document.makeClippingMaskFromSelection()
                     }
-                    .buttonStyle(ProfessionalSecondaryButtonStyle())
-                    .frame(maxWidth: .infinity)
 
-                    Button("Release Clipping Mask") {
+                    Button {
                         document.releaseClippingMaskForSelection()
+                    } label: {
+                        Text("Release Clipping Mask")
+                            .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(ProfessionalSecondaryButtonStyle())
-                    .frame(maxWidth: .infinity)
+                    .onTapGesture {
+                        document.releaseClippingMaskForSelection()
+                    }
                 }
                 .padding(.horizontal, 16)
             }
