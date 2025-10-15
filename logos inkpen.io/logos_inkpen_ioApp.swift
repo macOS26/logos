@@ -1054,69 +1054,77 @@ class ClipboardManager {
         do {
             let clipboardData = try JSONDecoder().decode(ClipboardData.self, from: data)
 
-            document.saveToUndoStack()
-
             let originalSelectedObjectIDs = document.selectedObjectIDs
             document.selectedObjectIDs.removeAll()
 
-            if let layerIndex = document.selectedLayerIndex {
-                if layerIndex < document.layers.count && document.layers[layerIndex].isLocked {
-                    Log.error("❌ Cannot paste into locked layer '\(document.layers[layerIndex].name)'", category: .error)
+            guard let layerIndex = document.selectedLayerIndex else { return }
+
+            if layerIndex < document.layers.count && document.layers[layerIndex].isLocked {
+                Log.error("❌ Cannot paste into locked layer '\(document.layers[layerIndex].name)'", category: .error)
+                return
+            }
+
+            if layerIndex < document.layers.count {
+                let layerName = document.layers[layerIndex].name
+                if layerName == "Canvas" || layerName == "Pasteboard" {
+                    Log.error("❌ Cannot paste into system layer '\(layerName)'", category: .error)
                     return
                 }
+            }
 
-                if layerIndex < document.layers.count {
-                    let layerName = document.layers[layerIndex].name
-                    if layerName == "Canvas" || layerName == "Pasteboard" {
-                        Log.error("❌ Cannot paste into system layer '\(layerName)'", category: .error)
-                        return
+            var insertionPoint = 0
+
+            if !originalSelectedObjectIDs.isEmpty {
+                let selectedObjectsInLayer = document.unifiedObjects.filter {
+                    originalSelectedObjectIDs.contains($0.id) && $0.layerIndex == layerIndex
+                }
+                if let lowestOrderID = selectedObjectsInLayer.map({ $0.orderID }).min() {
+                    insertionPoint = lowestOrderID
+                }
+            }
+
+            let numNewObjects = clipboardData.shapes.count + clipboardData.texts.count
+
+            var updatedUnifiedObjects: [VectorObject] = []
+            for obj in document.unifiedObjects {
+                if obj.layerIndex == layerIndex && obj.orderID >= insertionPoint {
+                    let newOrderID = obj.orderID + numNewObjects
+                    switch obj.objectType {
+                    case .shape(let shape):
+                        let newObj = VectorObject(shape: shape, layerIndex: obj.layerIndex, orderID: newOrderID)
+                        updatedUnifiedObjects.append(newObj)
                     }
+                } else {
+                    updatedUnifiedObjects.append(obj)
                 }
+            }
+            document.unifiedObjects = updatedUnifiedObjects
 
-                var insertionPoint = 0
+            var objectsToAdd: [VectorObject] = []
+            var currentOrderID = insertionPoint
 
-                if !originalSelectedObjectIDs.isEmpty {
-                    let selectedObjectsInLayer = document.unifiedObjects.filter {
-                        originalSelectedObjectIDs.contains($0.id) && $0.layerIndex == layerIndex
-                    }
-                    if let lowestOrderID = selectedObjectsInLayer.map({ $0.orderID }).min() {
-                        insertionPoint = lowestOrderID
-                    }
-                }
+            for shape in clipboardData.shapes {
+                let newShape = regenerateUUIDs(for: shape)
+                let unifiedObject = VectorObject(shape: newShape, layerIndex: layerIndex, orderID: currentOrderID)
+                objectsToAdd.append(unifiedObject)
+                document.selectedObjectIDs.insert(newShape.id)
+                currentOrderID += 1
+            }
 
-                let numNewObjects = clipboardData.shapes.count + clipboardData.texts.count
+            for text in clipboardData.texts {
+                var newText = text
+                newText.id = UUID()
+                newText.layerIndex = layerIndex
+                let textShape = VectorShape.from(newText)
+                let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex, orderID: currentOrderID)
+                objectsToAdd.append(unifiedObject)
+                document.selectedObjectIDs.insert(newText.id)
+                currentOrderID += 1
+            }
 
-                var updatedUnifiedObjects: [VectorObject] = []
-                for obj in document.unifiedObjects {
-                    if obj.layerIndex == layerIndex && obj.orderID >= insertionPoint {
-                        let newOrderID = obj.orderID + numNewObjects
-                        switch obj.objectType {
-                        case .shape(let shape):
-                            let newObj = VectorObject(shape: shape, layerIndex: obj.layerIndex, orderID: newOrderID)
-                            updatedUnifiedObjects.append(newObj)
-                        }
-                    } else {
-                        updatedUnifiedObjects.append(obj)
-                    }
-                }
-                document.unifiedObjects = updatedUnifiedObjects
-
-                for (offset, shape) in clipboardData.shapes.enumerated() {
-                    let newShape = regenerateUUIDs(for: shape)
-
-                    let newOrderID = insertionPoint + offset
-                    let unifiedObject = VectorObject(shape: newShape, layerIndex: layerIndex, orderID: newOrderID)
-                    document.unifiedObjects.append(unifiedObject)
-                    document.selectedObjectIDs.insert(newShape.id)
-                }
-
-                for text in clipboardData.texts {
-                    var newText = text
-                    newText.id = UUID()
-                    document.addTextToUnifiedSystem(newText, layerIndex: layerIndex)
-
-                    document.selectedObjectIDs.insert(newText.id)
-                }
+            if !objectsToAdd.isEmpty {
+                let command = AddObjectCommand(objects: objectsToAdd)
+                document.commandManager.execute(command)
             }
 
             document.syncSelectionArrays()
