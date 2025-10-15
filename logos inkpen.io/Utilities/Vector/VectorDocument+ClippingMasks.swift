@@ -6,6 +6,9 @@ extension VectorDocument {
         let selectedShapes = getSelectedShapesInStackingOrder()
         guard selectedShapes.count >= 2 else { return }
 
+        let allSelectedIDs = selectedShapeIDs.union(selectedTextIDs)
+        guard let layerIndex = selectedLayerIndex else { return }
+
         // Create a clipping group: top object is the clipping mask
         // getSelectedShapesInStackingOrder returns shapes bottom-to-top, so last is top
         var shapesInOrder = selectedShapes
@@ -16,23 +19,41 @@ extension VectorDocument {
         // Create the clipping group
         let clippingGroup = VectorShape.group(from: groupShapes, name: "Clipping Group", isClippingGroup: true)
 
-        // Use existing group command
-        groupSelectedObjects()
-
-        // Update the group to be a clipping group
-        if let groupIndex = unifiedObjects.firstIndex(where: { $0.id == clippingGroup.id || selectedObjectIDs.contains($0.id) }),
-           case .shape(var group) = unifiedObjects[groupIndex].objectType,
-           group.isGroup {
-            group.isClippingGroup = true
-            group.name = "Clipping Group"
-            unifiedObjects[groupIndex] = VectorObject(
-                shape: group,
-                layerIndex: unifiedObjects[groupIndex].layerIndex,
-                orderID: unifiedObjects[groupIndex].orderID
-            )
+        // Capture old state for undo
+        var removedShapes: [UUID: VectorShape] = [:]
+        var removedOrderIDs: [UUID: Int] = [:]
+        let objectsToRemove = unifiedObjects.filter { allSelectedIDs.contains($0.id) }
+        for obj in objectsToRemove {
+            if case .shape(let shape) = obj.objectType {
+                removedShapes[obj.id] = shape
+                removedOrderIDs[obj.id] = obj.orderID
+            }
         }
 
-        forceResyncUnifiedObjects()
+        // Calculate new orderID for group (use highest orderID from removed objects)
+        let maxOrderID = objectsToRemove.map { $0.orderID }.max() ?? 0
+
+        let newSelectedIDs: Set<UUID> = [clippingGroup.id]
+
+        // Create command
+        let command = GroupCommand(
+            operation: .group,
+            layerIndex: layerIndex,
+            removedObjectIDs: Array(allSelectedIDs),
+            removedShapes: removedShapes,
+            removedOrderIDs: removedOrderIDs,
+            addedObjectIDs: [clippingGroup.id],
+            addedShapes: [clippingGroup.id: clippingGroup],
+            addedOrderIDs: [clippingGroup.id: maxOrderID],
+            oldSelectedObjectIDs: selectedObjectIDs,
+            newSelectedObjectIDs: newSelectedIDs
+        )
+
+        commandManager.execute(command)
+
+        selectedShapeIDs = [clippingGroup.id]
+        selectedTextIDs.removeAll()
+        selectedObjectIDs = [clippingGroup.id]
     }
 
     func releaseClippingMaskForSelection() {
