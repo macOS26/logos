@@ -264,13 +264,34 @@ struct MainToolbarContent: ToolbarContent {
 
     private func onSnapPageToArtwork() {
         guard let bounds = document.getArtworkBounds(), bounds.width > 0, bounds.height > 0 else { return }
-        // TODO: Add appropriate Command here
+
+        var oldShapes: [UUID: VectorShape] = [:]
+        var newShapes: [UUID: VectorShape] = [:]
+        var objectIDs: [UUID] = []
+
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
+                oldShapes[shape.id] = shape
+                objectIDs.append(shape.id)
+            }
+        }
 
         document.settings.setSizeInPoints(CGSize(width: bounds.width, height: bounds.height))
         document.onSettingsChanged()
 
         let delta = CGPoint(x: -bounds.minX, y: -bounds.minY)
         document.translateAllContent(by: delta)
+
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
+                newShapes[shape.id] = shape
+            }
+        }
+
+        if !objectIDs.isEmpty {
+            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+            document.commandManager.execute(command)
+        }
 
         document.requestZoom(to: 0.0, mode: .fitToPage)
     }
