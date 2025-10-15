@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 
-/// Command for text management operations
 class TextManagementCommand: BaseCommand {
     enum Operation {
         case addText(textID: UUID, shape: VectorShape, layerIndex: Int, orderID: Int)
@@ -47,14 +46,12 @@ class TextManagementCommand: BaseCommand {
             document.selectedTextIDs = newSelection
 
         case .convertToOutlines(let removedTextIDs, _, _, let addedObjects):
-            // Remove text objects
             document.unifiedObjects.removeAll { obj in
                 if case .shape(let shape) = obj.objectType {
                     return shape.isTextObject && removedTextIDs.contains(shape.id)
                 }
                 return false
             }
-            // Add shape objects
             for obj in addedObjects {
                 document.unifiedObjects.append(obj)
             }
@@ -82,11 +79,9 @@ class TextManagementCommand: BaseCommand {
             document.selectedObjectIDs = oldSelection
 
         case .convertToOutlines(_, let removedObjects, let addedShapeIDs, _):
-            // Remove added shapes
             document.unifiedObjects.removeAll { obj in
                 addedShapeIDs.contains(obj.id)
             }
-            // Restore text objects
             for obj in removedObjects {
                 document.unifiedObjects.append(obj)
             }

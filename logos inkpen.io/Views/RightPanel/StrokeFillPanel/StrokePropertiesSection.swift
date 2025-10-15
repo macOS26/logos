@@ -82,7 +82,6 @@ struct StrokePropertiesSection: View {
                     .controlSize(.regular)
                     .tint(Color.clear)
 
-                  
                 }
             }
 
@@ -94,11 +93,9 @@ struct StrokePropertiesSection: View {
                 Picker("", selection: Binding(
                     get: { strokePlacement },
                     set: { newPlacement in
-                        // Update state FIRST for immediate UI update
                         strokePlacement = newPlacement
                         document.defaultStrokePlacement = newPlacement
 
-                        // Update selected shapes if any
                         for objectID in document.selectedObjectIDs {
                             if let unifiedObject = document.findObject(by: objectID) {
                                 switch unifiedObject.objectType {

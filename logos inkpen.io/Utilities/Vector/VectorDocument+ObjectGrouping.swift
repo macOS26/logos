@@ -9,7 +9,6 @@ extension VectorDocument {
             return
         }
 
-        // Capture old state for undo
         var removedShapes: [UUID: VectorShape] = [:]
         var removedOrderIDs: [UUID: Int] = [:]
         let objectsToRemove = unifiedObjects.filter { allSelectedIDs.contains($0.id) }
@@ -20,15 +19,12 @@ extension VectorDocument {
             }
         }
 
-        // Get shapes in proper stacking order
         let selectedShapes = getSelectedShapesInStackingOrder()
         let groupShape = VectorShape.group(from: selectedShapes, name: "Group")
 
-        // Calculate new orderID for group (use highest orderID from removed objects)
         let maxOrderID = objectsToRemove.map { $0.orderID }.max() ?? 0
         let newSelectedIDs: Set<UUID> = [groupShape.id]
 
-        // Create command
         let command = GroupCommand(
             operation: .group,
             layerIndex: layerIndex,
@@ -53,7 +49,6 @@ extension VectorDocument {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count > 1 else { return }
 
-        // Capture old state
         var removedShapes: [UUID: VectorShape] = [:]
         var removedOrderIDs: [UUID: Int] = [:]
         let objectsToRemove = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
@@ -89,7 +84,6 @@ extension VectorDocument {
         let maxOrderID = objectsToRemove.map { $0.orderID }.max() ?? 0
         let newSelectedIDs: Set<UUID> = [flattenedShape.id]
 
-        // Create command
         let command = GroupCommand(
             operation: .flatten,
             layerIndex: layerIndex,
@@ -117,7 +111,6 @@ extension VectorDocument {
         var shapesToRemove: [UUID] = []
         var shapesToAdd: [VectorShape] = []
 
-        // Capture old state
         var removedShapes: [UUID: VectorShape] = [:]
         var removedOrderIDs: [UUID: Int] = [:]
 
@@ -127,15 +120,11 @@ extension VectorDocument {
                let shape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
 
                 if shape.isGroupContainer {
-                    // Capture group before removal
                     if let obj = unifiedObjects.first(where: { $0.id == shapeID }) {
                         removedShapes[shapeID] = shape
                         removedOrderIDs[shapeID] = obj.orderID
                     }
 
-                    // For clipping groups, reverse the order to restore original stacking
-                    // Clipping groups have [mask, content1, content2], but visually
-                    // the mask should be on top when ungrouped
                     let shapesToUngroup = shape.isClippingGroup ? shape.groupedShapes.reversed() : shape.groupedShapes
 
                     for groupedShape in shapesToUngroup {
@@ -151,11 +140,9 @@ extension VectorDocument {
             }
         }
 
-        // Capture new state - calculate orderIDs for ungrouped shapes
         var addedShapes: [UUID: VectorShape] = [:]
         var addedOrderIDs: [UUID: Int] = [:]
 
-        // Get the base orderID from the group being ungrouped
         let baseOrderID = removedOrderIDs.values.first ?? 0
 
         for (index, shape) in shapesToAdd.enumerated() {
@@ -163,7 +150,6 @@ extension VectorDocument {
             addedOrderIDs[shape.id] = baseOrderID + index
         }
 
-        // Create command
         let command = GroupCommand(
             operation: .ungroup,
             layerIndex: layerIndex,
@@ -194,7 +180,6 @@ extension VectorDocument {
 
         guard flattenedGroup.isGroup && !flattenedGroup.groupedShapes.isEmpty else { return }
 
-        // Capture old state
         var removedShapes: [UUID: VectorShape] = [:]
         var removedOrderIDs: [UUID: Int] = [:]
         if let obj = unifiedObjects.first(where: { $0.id == selectedShapeID }) {
@@ -212,11 +197,9 @@ extension VectorDocument {
             newSelectedIDs.insert(restoredShape.id)
         }
 
-        // Capture new state - calculate orderIDs for unflattened shapes
         var addedShapes: [UUID: VectorShape] = [:]
         var addedOrderIDs: [UUID: Int] = [:]
 
-        // Get the base orderID from the flattened group being removed
         let baseOrderID = removedOrderIDs.values.first ?? 0
 
         for (index, shape) in shapesToAdd.enumerated() {
@@ -224,7 +207,6 @@ extension VectorDocument {
             addedOrderIDs[shape.id] = baseOrderID + index
         }
 
-        // Create command
         let command = GroupCommand(
             operation: .unflatten,
             layerIndex: layerIndex,
@@ -248,7 +230,6 @@ extension VectorDocument {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count > 1 else { return }
 
-        // Capture old state
         var removedShapes: [UUID: VectorShape] = [:]
         var removedOrderIDs: [UUID: Int] = [:]
         let objectsToRemove = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
@@ -277,7 +258,6 @@ extension VectorDocument {
         let maxOrderID = objectsToRemove.map { $0.orderID }.max() ?? 0
         let newSelectedIDs: Set<UUID> = [compoundShape.id]
 
-        // Create command
         let command = GroupCommand(
             operation: .makeCompound,
             layerIndex: layerIndex,
@@ -301,7 +281,6 @@ extension VectorDocument {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count > 1 else { return }
 
-        // Capture old state
         var removedShapes: [UUID: VectorShape] = [:]
         var removedOrderIDs: [UUID: Int] = [:]
         let objectsToRemove = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
@@ -330,7 +309,6 @@ extension VectorDocument {
         let maxOrderID = objectsToRemove.map { $0.orderID }.max() ?? 0
         let newSelectedIDs: Set<UUID> = [loopingShape.id]
 
-        // Create command
         let command = GroupCommand(
             operation: .makeLooping,
             layerIndex: layerIndex,
@@ -359,7 +337,6 @@ extension VectorDocument {
               let compoundShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               compoundShape.isTrueCompoundPath else { return }
 
-        // Capture old state
         var removedShapes: [UUID: VectorShape] = [:]
         var removedOrderIDs: [UUID: Int] = [:]
         if let obj = unifiedObjects.first(where: { $0.id == selectedShapeID }) {
@@ -384,11 +361,9 @@ extension VectorDocument {
             newSelectedIDs.insert(individualShape.id)
         }
 
-        // Capture new state - calculate orderIDs for released shapes
         var addedShapes: [UUID: VectorShape] = [:]
         var addedOrderIDs: [UUID: Int] = [:]
 
-        // Get the base orderID from the compound being released
         let baseOrderID = removedOrderIDs.values.first ?? 0
 
         for (index, shape) in newShapes.enumerated() {
@@ -396,7 +371,6 @@ extension VectorDocument {
             addedOrderIDs[shape.id] = baseOrderID + index
         }
 
-        // Create command
         let command = GroupCommand(
             operation: .releaseCompound,
             layerIndex: layerIndex,
@@ -425,7 +399,6 @@ extension VectorDocument {
               let loopingShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               loopingShape.isTrueLoopingPath else { return }
 
-        // Capture old state
         var removedShapes: [UUID: VectorShape] = [:]
         var removedOrderIDs: [UUID: Int] = [:]
         if let obj = unifiedObjects.first(where: { $0.id == selectedShapeID }) {
@@ -450,11 +423,9 @@ extension VectorDocument {
             newSelectedIDs.insert(individualShape.id)
         }
 
-        // Capture new state - calculate orderIDs for released shapes
         var addedShapes: [UUID: VectorShape] = [:]
         var addedOrderIDs: [UUID: Int] = [:]
 
-        // Get the base orderID from the looping path being released
         let baseOrderID = removedOrderIDs.values.first ?? 0
 
         for (index, shape) in newShapes.enumerated() {
@@ -462,7 +433,6 @@ extension VectorDocument {
             addedOrderIDs[shape.id] = baseOrderID + index
         }
 
-        // Create command
         let command = GroupCommand(
             operation: .releaseLooping,
             layerIndex: layerIndex,

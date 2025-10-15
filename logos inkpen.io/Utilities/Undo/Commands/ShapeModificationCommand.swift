@@ -1,8 +1,6 @@
 import Foundation
 import Combine
 
-/// Command for any complex shape modifications (move, scale, rotate, path edits, etc.)
-/// This command stores complete shape snapshots for maximum flexibility
 class ShapeModificationCommand: BaseCommand {
     private let objectIDs: [UUID]
     private let oldShapes: [UUID: VectorShape]

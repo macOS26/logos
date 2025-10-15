@@ -10,7 +10,6 @@ extension ScaleHandles {
             initialBounds = bounds
             initialTransform = shape.transform
             startLocation = dragValue.startLocation
-            // Undo will be handled in finishScaling()
 
             scalingAnchorPoint = getAnchorPoint(for: document.scalingAnchor, in: bounds, cornerIndex: index)
         }
@@ -54,7 +53,6 @@ extension ScaleHandles {
         document.isHandleScalingActive = false
         document.scalePreviewDimensions = .zero
 
-        // Capture old shape for undo
         var oldShapes: [UUID: VectorShape] = [:]
         if case .shape(let oldShape) = document.findObject(by: shape.id)?.objectType {
             oldShapes[shape.id] = oldShape
@@ -74,13 +72,11 @@ extension ScaleHandles {
             previewTransform = .identity
             finalMarqueeBounds = .zero
 
-            // Capture new shape after transformation
             var newShapes: [UUID: VectorShape] = [:]
             if let transformedShape = document.findShape(by: shape.id) {
                 newShapes[shape.id] = transformedShape
             }
 
-            // Execute undo command
             if !oldShapes.isEmpty && !newShapes.isEmpty {
                 let command = ShapeModificationCommand(
                     objectIDs: [shape.id],
@@ -151,7 +147,6 @@ extension ScaleHandles {
         initialBounds = bounds
         initialTransform = shape.transform
         startLocation = dragValue.startLocation
-        // Undo will be handled in finishScaling()
 
         if lockedPinPointIndex == nil && scalingAnchorPoint == .zero {
             setLockedPinPoint(nil)

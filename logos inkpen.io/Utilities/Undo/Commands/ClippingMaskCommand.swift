@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 
-/// Command for clipping mask operations
 class ClippingMaskCommand: BaseCommand {
     enum Operation {
         case makeClippingMask(maskID: UUID, clippedShapeIDs: [UUID], oldShapes: [UUID: VectorShape], newShapes: [UUID: VectorShape])

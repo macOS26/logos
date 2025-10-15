@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 
-/// Command for reordering objects within layers
 class ObjectReorderCommand: BaseCommand {
     enum ReorderType {
         case moveObjectToLayer(objectID: UUID, oldLayerIndex: Int, newLayerIndex: Int, oldOrderID: Int, newOrderID: Int)

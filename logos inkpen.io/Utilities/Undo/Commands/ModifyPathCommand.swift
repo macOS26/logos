@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 
-/// Command for modifying vector paths
 class ModifyPathCommand: BaseCommand {
     private let objectID: UUID
     private let oldPath: VectorPath

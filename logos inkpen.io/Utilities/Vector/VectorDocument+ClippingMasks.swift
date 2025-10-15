@@ -9,17 +9,13 @@ extension VectorDocument {
         let allSelectedIDs = selectedShapeIDs.union(selectedTextIDs)
         guard let layerIndex = selectedLayerIndex else { return }
 
-        // Create a clipping group: top object is the clipping mask
-        // getSelectedShapesInStackingOrder returns shapes bottom-to-top, so last is top
         var shapesInOrder = selectedShapes
-        let maskShape = shapesInOrder.removeLast()  // Last shape is the top object (mask)
-        let contentShapes = shapesInOrder  // Rest are content
-        let groupShapes = [maskShape] + contentShapes  // Mask is first in group
+        let maskShape = shapesInOrder.removeLast()
+        let contentShapes = shapesInOrder
+        let groupShapes = [maskShape] + contentShapes
 
-        // Create the clipping group
         let clippingGroup = VectorShape.group(from: groupShapes, name: "Clipping Group", isClippingGroup: true)
 
-        // Capture old state for undo
         var removedShapes: [UUID: VectorShape] = [:]
         var removedOrderIDs: [UUID: Int] = [:]
         let objectsToRemove = unifiedObjects.filter { allSelectedIDs.contains($0.id) }
@@ -30,11 +26,9 @@ extension VectorDocument {
             }
         }
 
-        // Calculate new orderID for group (use highest orderID from removed objects)
         let maxOrderID = objectsToRemove.map { $0.orderID }.max() ?? 0
         let newSelectedIDs: Set<UUID> = [clippingGroup.id]
 
-        // Create command
         let command = GroupCommand(
             operation: .group,
             layerIndex: layerIndex,
@@ -56,7 +50,6 @@ extension VectorDocument {
     }
 
     func releaseClippingMaskForSelection() {
-        // Just ungroup - much simpler with clipping groups!
         ungroupSelectedObjects()
     }
 
@@ -67,7 +60,6 @@ extension VectorDocument {
         guard let maskIndex = shapes.firstIndex(where: { $0.id == maskID }),
               var maskShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: maskIndex) else { return }
 
-        // Capture old state
         var oldShapes: [UUID: VectorShape] = [:]
         var clippedShapeIDs: [UUID] = []
         oldShapes[maskID] = maskShape
@@ -90,7 +82,6 @@ extension VectorDocument {
             }
         }
 
-        // Capture new state and create command
         var newShapes: [UUID: VectorShape] = [:]
         if let shape = findShape(by: maskID) {
             newShapes[maskID] = shape

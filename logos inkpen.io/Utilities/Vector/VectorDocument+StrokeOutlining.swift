@@ -10,7 +10,6 @@ extension VectorDocument {
         var newShapeIDs: Set<UUID> = []
         var originalShapeIDs: Set<UUID> = []
 
-        // Capture old shapes for undo
         var oldShapes: [UUID: VectorShape] = [:]
         for shape in shapesToOutline {
             oldShapes[shape.id] = shape
@@ -69,7 +68,6 @@ extension VectorDocument {
             }
         }
 
-        // Capture new shapes for undo
         var newShapes: [UUID: VectorShape] = [:]
         let allAffectedIDs = Set(oldShapes.keys).union(newShapeIDs)
         for shapeID in allAffectedIDs {
@@ -78,7 +76,6 @@ extension VectorDocument {
             }
         }
 
-        // Create command if shapes were modified
         if !oldShapes.isEmpty {
             let command = ShapeModificationCommand(
                 objectIDs: Array(oldShapes.keys),

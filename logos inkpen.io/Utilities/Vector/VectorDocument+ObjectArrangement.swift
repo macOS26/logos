@@ -37,7 +37,6 @@ extension VectorDocument {
     func bringSelectedToFront() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        // Capture old state
         var oldOrderIDs: [UUID: Int] = [:]
         var affectedObjectIDs: [UUID] = []
 
@@ -92,7 +91,6 @@ extension VectorDocument {
             }
         }
 
-        // Capture new state and create command
         var newOrderIDs: [UUID: Int] = [:]
         for id in affectedObjectIDs {
             if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
@@ -110,7 +108,6 @@ extension VectorDocument {
     func bringSelectedForward() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        // Capture old state
         var oldOrderIDs: [UUID: Int] = [:]
         var affectedObjectIDs: [UUID] = []
 
@@ -170,7 +167,6 @@ extension VectorDocument {
             }
         }
 
-        // Capture new state and create command
         var newOrderIDs: [UUID: Int] = [:]
         for id in affectedObjectIDs {
             if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
@@ -188,7 +184,6 @@ extension VectorDocument {
     func sendSelectedBackward() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        // Capture old state
         var oldOrderIDs: [UUID: Int] = [:]
         var affectedObjectIDs: [UUID] = []
 
@@ -253,7 +248,6 @@ extension VectorDocument {
             }
         }
 
-        // Capture new state and create command
         var newOrderIDs: [UUID: Int] = [:]
         for id in affectedObjectIDs {
             if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
@@ -271,7 +265,6 @@ extension VectorDocument {
     func sendSelectedToBack() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        // Capture old state
         var oldOrderIDs: [UUID: Int] = [:]
         var affectedObjectIDs: [UUID] = []
 
@@ -326,7 +319,6 @@ extension VectorDocument {
             }
         }
 
-        // Capture new state and create command
         var newOrderIDs: [UUID: Int] = [:]
         for id in affectedObjectIDs {
             if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {

@@ -42,10 +42,8 @@ struct ShapeView: View {
         ZStack {
             if shape.isGroupContainer {
                 if shape.isClippingGroup {
-                    // Adobe-style clipping group: first shape is mask, rest are content
                     renderClippingGroup()
                 } else {
-                    // Regular group
                     ZStack {
                         ForEach(shape.groupedShapes.filter { $0.isVisible }, id: \.id) { groupedShape in
                             if !groupedShape.isTextObject {
@@ -177,7 +175,6 @@ struct ShapeView: View {
 
     @ViewBuilder
     private func renderStrokeWithPlacement(shape: VectorShape, strokeStyle: StrokeStyle, viewMode: ViewMode, path: Path) -> some View {
-        // Use the strokeStyle parameter's width, not the outer shape's (important for groups)
         let actualStrokeWidth = previewStrokeWidth ?? strokeStyle.width
         let actualStrokePlacement = previewStrokePlacement ?? strokeStyle.placement
         let swiftUIStrokeStyle = SwiftUI.StrokeStyle(
@@ -282,7 +279,6 @@ struct ShapeView: View {
 
     @ViewBuilder
     private func renderFill(fillStyle: FillStyle, path: Path, shape: VectorShape) -> some View {
-        // Use the fillStyle parameter's opacity, not the outer shape's (important for groups)
         let actualFillOpacity = previewFillOpacity ?? fillStyle.opacity
 
         switch fillStyle.color {
@@ -314,14 +310,11 @@ struct ShapeView: View {
         if visibleShapes.isEmpty {
             EmptyView()
         } else {
-            // First shape is the clipping mask
             let maskShape = visibleShapes.first!
             let contentShapes = Array(visibleShapes.dropFirst())
 
             if effectiveViewMode == .keyline {
-                // In keyline mode, show all shapes as outlines (no clipping)
                 ZStack {
-                    // Render mask shape outline
                     let maskPath = Path { path in
                         addPathElements(maskShape.path.elements, to: &path)
                     }
@@ -329,7 +322,6 @@ struct ShapeView: View {
                         .stroke(Color.black, lineWidth: 1.0 / zoomLevel)
                         .transformEffect(maskShape.transform)
 
-                    // Render content shapes outlines
                     ForEach(contentShapes, id: \.id) { contentShape in
                         if !contentShape.isTextObject {
                             let contentPath = Path { path in
@@ -343,17 +335,14 @@ struct ShapeView: View {
                 }
                 .transformEffect(shape.transform)
             } else {
-                // In color mode, apply the clipping mask
                 let maskPath = Path { path in
                     addPathElements(maskShape.path.elements, to: &path)
                 }
                 .applying(maskShape.transform)
 
-                // Render all content shapes
                 ZStack {
                     ForEach(contentShapes, id: \.id) { contentShape in
                         if !contentShape.isTextObject {
-                            // Check if this is an image
                             if ImageContentRegistry.containsImage(contentShape),
                                let image = ImageContentRegistry.image(for: contentShape.id) {
                                 let pathBounds = contentShape.path.cgPath.boundingBoxOfPath
@@ -379,7 +368,6 @@ struct ShapeView: View {
                                     viewMode: effectiveViewMode
                                 )
                             } else {
-                                // Regular vector shape
                                 let contentPath = Path { path in
                                     addPathElements(contentShape.path.elements, to: &path)
                                 }
@@ -401,7 +389,7 @@ struct ShapeView: View {
                         }
                     }
                 }
-                .mask(maskPath.fill())  // Apply the clipping mask
+                .mask(maskPath.fill())
                 .transformEffect(shape.transform)
             }
         }

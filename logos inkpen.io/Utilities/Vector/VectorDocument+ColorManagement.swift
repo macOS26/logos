@@ -94,7 +94,6 @@ extension VectorDocument {
     func setActiveColor(_ color: VectorColor) {
         let shouldSaveUndo = !selectedObjectIDs.isEmpty
 
-        // Capture old colors and opacities for undo
         var oldColors: [UUID: VectorColor] = [:]
         var newColors: [UUID: VectorColor] = [:]
         var oldOpacities: [UUID: Double] = [:]
@@ -133,7 +132,6 @@ extension VectorDocument {
             }
         }
 
-        // Execute command if there are changes
         if shouldSaveUndo && !oldColors.isEmpty {
             let commandTarget: ChangeColorCommand.ColorTarget = (activeColorTarget == .fill) ? .fill : .stroke
             let command = ChangeColorCommand(

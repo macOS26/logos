@@ -4,7 +4,6 @@ func getWeightOrder(_ variantName: String) -> Int {
     let name = variantName.lowercased()
     let isItalic = name.contains("italic") || name.contains("oblique")
 
-    // Check for compound patterns first (most specific to least specific)
     if name.contains("condensed") && name.contains("black") {
         return isItalic ? 31 : 30
     }
@@ -30,7 +29,6 @@ func getWeightOrder(_ variantName: String) -> Int {
         return isItalic ? 15 : 14
     }
 
-    // Single weight patterns
     if name.contains("black") {
         return isItalic ? 23 : 22
     }
@@ -56,7 +54,6 @@ func getWeightOrder(_ variantName: String) -> Int {
         return isItalic ? 9 : 8
     }
 
-    // If only "italic" with no weight, treat as Regular Italic
     if isItalic {
         return 9
     }

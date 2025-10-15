@@ -415,8 +415,6 @@ extension DrawingCanvas {
                 textObj.updateBounds()
                 document.updateTextInUnified(textObj)
 
-                // if textObj.content.isEmpty {
-                // }
             }
         }
 
@@ -529,8 +527,6 @@ extension DrawingCanvas {
             if let textObj = document.findText(by: textID) {
                 document.setTextEditingInUnified(id: textObj.id, isEditing: false)
 
-                // if textObj.content.isEmpty {
-                // }
             }
 
             if editingTextID == textID {

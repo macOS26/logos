@@ -55,13 +55,6 @@ struct ProfessionalOffsetPathSection: View {
                         }
 
                         ZStack {
-//                            Capsule()
-//                                .fill(Color.white)
-//                                .frame(height: 6)
-//                                .overlay(
-//                                    Capsule()
-//                                        .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
-//                                )
 
                             Slider(value: Binding(
                                 get: { Double(offsetDistance) },

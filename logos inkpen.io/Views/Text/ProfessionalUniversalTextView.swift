@@ -26,7 +26,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.textContainerInset = NSSize(width: 0, height: 0)
         textView.textContainer?.lineFragmentPadding = 0
 
-        // Auto-focus the text view if in editing mode
         if isEditingMode {
             DispatchQueue.main.async {
                 textView.window?.makeFirstResponder(textView)
@@ -93,7 +92,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         paragraphStyle.maximumLineHeight = viewModel.textObject.typography.lineHeight
         textView.defaultParagraphStyle = paragraphStyle
 
-        // Set typing attributes to ensure new text uses the correct alignment
         textView.typingAttributes = [
             .font: textView.font ?? viewModel.selectedFont,
             .foregroundColor: textColor,
@@ -143,12 +141,10 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         if nsView.font != newFont {
             nsView.font = newFont
 
-            // Update font in text storage for existing text
             if nsView.string.count > 0 {
                 let range = NSRange(location: 0, length: nsView.string.count)
                 nsView.textStorage?.addAttribute(.font, value: newFont, range: range)
 
-                // Force layout and display update
                 if let textContainer = nsView.textContainer {
                     nsView.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
                     nsView.layoutManager?.ensureLayout(for: textContainer)
@@ -185,7 +181,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         DispatchQueue.main.async {
             nsView.defaultParagraphStyle = paragraphStyle
 
-            // Update typing attributes to ensure new text uses the correct alignment
             nsView.typingAttributes = [
                 .font: nsView.font ?? newFont,
                 .foregroundColor: newTextColor,
@@ -256,7 +251,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             }
             nsView.insertionPointColor = textColor
 
-            // Auto-focus the text view when entering editing mode
             DispatchQueue.main.async {
                 if nsView.window?.firstResponder != nsView {
                     nsView.window?.makeFirstResponder(nsView)
@@ -411,7 +405,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
 
                 textView.defaultParagraphStyle = paragraphStyle
 
-                // Update typing attributes to ensure new text uses the correct alignment
                 textView.typingAttributes = [
                     .font: newFont,
                     .foregroundColor: textColor,

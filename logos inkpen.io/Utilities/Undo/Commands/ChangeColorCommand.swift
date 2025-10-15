@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 
-/// Command for changing fill or stroke colors
 class ChangeColorCommand: BaseCommand {
     enum ColorTarget {
         case fill
@@ -48,7 +47,6 @@ class ChangeColorCommand: BaseCommand {
                 if case .shape(var shape) = obj.objectType {
                     if let color = colors[id], let opacity = opacities[id] {
                         if shape.isTextObject {
-                            // Text object - update typography
                             if var typography = shape.typography {
                                 switch target {
                                 case .fill:
@@ -61,7 +59,6 @@ class ChangeColorCommand: BaseCommand {
                                 shape.typography = typography
                             }
                         } else {
-                            // Regular shape - update fill/stroke style
                             switch target {
                             case .fill:
                                 shape.fillStyle?.color = color

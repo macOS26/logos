@@ -131,7 +131,6 @@ extension DrawingCanvas {
                     if let shapeIndex = shapesInLayer.firstIndex(where: { $0.id == updatedShape.id }) {
                         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                     }
-                   // document.updateUnifiedObjectsOptimized(sendUpdate: false)
                 }
                 return
         }
@@ -244,7 +243,6 @@ extension DrawingCanvas {
                     if let shapeIndex = shapesInLayer.firstIndex(where: { $0.id == updatedShape.id }) {
                         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                     }
-                    //document.updateUnifiedObjectsOptimized(sendUpdate: false)
                 }
                 return
         }

@@ -302,7 +302,6 @@ struct ColorPanel: View {
     private func updateSelectedTextStrokeColor(color: VectorColor, document: VectorDocument) {
         guard !document.selectedTextIDs.isEmpty else { return }
 
-        // Capture old colors for undo
         var oldColors: [UUID: VectorColor] = [:]
         var newColors: [UUID: VectorColor] = [:]
         var oldOpacities: [UUID: Double] = [:]

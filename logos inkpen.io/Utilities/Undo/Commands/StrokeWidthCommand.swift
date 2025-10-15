@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 
-/// Command for changing stroke width
 class StrokeWidthCommand: BaseCommand {
     private let objectIDs: [UUID]
     private let oldWidths: [UUID: Double]

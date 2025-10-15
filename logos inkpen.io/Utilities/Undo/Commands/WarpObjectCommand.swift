@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 
-/// Command for warp object operations
 class WarpObjectCommand: BaseCommand {
     private let affectedObjectIDs: [UUID]
     private let oldShapes: [UUID: VectorShape]

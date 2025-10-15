@@ -29,7 +29,6 @@ struct CheckerboardPattern: View {
 @ViewBuilder
 func renderColorSwatchRightPanel(_ color: VectorColor, width: CGFloat, height: CGFloat, cornerRadius: CGFloat = 0, borderWidth: CGFloat = 0.5, opacity: Double = 1.0) -> some View {
     ZStack {
-        // Always show checkerboard behind to display transparency
         CheckerboardPattern(size: min(4, width / 4))
             .frame(width: width, height: height)
             .clipped()

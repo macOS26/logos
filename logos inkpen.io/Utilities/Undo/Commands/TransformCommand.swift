@@ -2,7 +2,6 @@ import Foundation
 import CoreGraphics
 import Combine
 
-/// Command for transforming (moving, scaling, rotating) objects
 class TransformCommand: BaseCommand {
     private let objectIDs: [UUID]
     private let oldTransforms: [UUID: CGAffineTransform]

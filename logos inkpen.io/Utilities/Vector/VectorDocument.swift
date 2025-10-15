@@ -274,7 +274,6 @@ class VectorDocument: ObservableObject, Codable {
 
     internal var isUndoRedoOperation: Bool = false
 
-    // New command-based undo system
     lazy var commandManager: CommandManager = {
         let manager = CommandManager(maxStackSize: maxUndoStackSize)
         manager.document = self
@@ -445,8 +444,6 @@ class VectorDocument: ObservableObject, Codable {
         self.snapToPoint = settings.snapToPoint
         self.gridSpacing = settings.gridSpacing
         self.backgroundColor = settings.backgroundColor
-        //self.undoStack = []
-        //self.redoStack = []
 
         createCanvasAndWorkingLayers()
 
@@ -639,8 +636,6 @@ class VectorDocument: ObservableObject, Codable {
         canvasOffset = decodedCanvasOffset
         zoomRequest = nil
 
-        //undoStack = []
-        //redoStack = []
         isUndoRedoOperation = false
         fontManager = FontManager()
 

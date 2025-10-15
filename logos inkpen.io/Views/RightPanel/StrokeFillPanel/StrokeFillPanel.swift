@@ -622,7 +622,6 @@ struct StrokeFillPanel: View {
     private func updateStrokePlacementLive(_ placement: StrokePlacement) {
         document.defaultStrokePlacement = placement
 
-        // Update selected shapes if any
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
@@ -747,7 +746,6 @@ struct StrokeFillPanel: View {
 
         let activeShapeIDs = document.getActiveShapeIDs()
         if !activeShapeIDs.isEmpty {
-            // Capture old opacities
             var oldOpacities: [UUID: Double] = [:]
             var newOpacities: [UUID: Double] = [:]
 
@@ -759,7 +757,6 @@ struct StrokeFillPanel: View {
                 }
             }
 
-            // Execute command
             let command = OpacityCommand(
                 objectIDs: Array(activeShapeIDs),
                 target: .stroke,

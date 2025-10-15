@@ -188,7 +188,6 @@ extension VectorDocument {
     }
 
     func getSelectedShapesInStackingOrder() -> [VectorShape] {
-        // Sort selected objects by layerIndex and orderID to get proper stacking order
         let sortedSelectedObjects = unifiedObjects
             .filter { object in
                 if case .shape(let shape) = object.objectType {

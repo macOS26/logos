@@ -407,8 +407,6 @@ struct EnvelopeHandles: View {
             document.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
         }
 
-        // Undo will be handled in finishEnvelopeWarp()
-
     }
 
     private func calculateEnvelopeWarpPreview() {
@@ -553,7 +551,6 @@ struct EnvelopeHandles: View {
         document.isHandleScalingActive = false
         draggingCornerIndex = nil
 
-        // Capture old shape for undo
         var oldShapes: [UUID: VectorShape] = [:]
         if case .shape(let oldShape) = document.findObject(by: shape.id)?.objectType {
             oldShapes[shape.id] = oldShape
@@ -571,13 +568,11 @@ struct EnvelopeHandles: View {
         updateShapeWithCurrentWarp()
         calculateEnvelopeWarpPreview()
 
-        // Capture new shape after warp
         var newShapes: [UUID: VectorShape] = [:]
         if let warpedShape = document.findShape(by: shape.id) {
             newShapes[shape.id] = warpedShape
         }
 
-        // Execute undo command
         if !oldShapes.isEmpty && !newShapes.isEmpty {
             let command = ShapeModificationCommand(
                 objectIDs: [shape.id],

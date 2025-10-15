@@ -80,7 +80,6 @@ struct FontPickerView: View {
                     currentFontFamilyState
                 },
                 set: { newFamily in
-                    // Update state FIRST for immediate UI update
                     currentFontFamilyState = newFamily
 
                     document.fontManager.selectedFontFamily = newFamily
@@ -99,10 +98,8 @@ struct FontPickerView: View {
                         updatedTypography.fontFamily = newFamily
                         updatedTypography.fontVariant = defaultVariant
 
-                        // Update the object
                         document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
 
-                        // Send preview notification for immediate visual update
                         document.textPreviewTypography[textID] = updatedTypography
                         NotificationCenter.default.post(
                             name: Notification.Name("TextPreviewUpdate"),
@@ -129,7 +126,6 @@ struct FontPickerView: View {
                     currentFontVariantState
                 },
                 set: { newVariant in
-                    // Update state FIRST for immediate UI update
                     currentFontVariantState = newVariant
                     document.fontManager.selectedFontVariant = newVariant
 
@@ -138,10 +134,8 @@ struct FontPickerView: View {
                         var updatedTypography = freshText.typography
                         updatedTypography.fontVariant = newVariant
 
-                        // Update the object
                         document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
 
-                        // Send preview notification for immediate visual update
                         document.textPreviewTypography[textID] = updatedTypography
                         NotificationCenter.default.post(
                             name: Notification.Name("TextPreviewUpdate"),

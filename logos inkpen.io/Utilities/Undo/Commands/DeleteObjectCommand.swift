@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 
-/// Command for deleting objects from the document
 class DeleteObjectCommand: BaseCommand {
     private let objects: [VectorObject]
     private var removedIndices: [Int] = []
@@ -15,7 +14,6 @@ class DeleteObjectCommand: BaseCommand {
     }
 
     override func execute(on document: VectorDocument) {
-        // Store indices for proper restoration
         removedIndices = []
         let idsToRemove = Set(objects.map { $0.id })
 
@@ -29,7 +27,6 @@ class DeleteObjectCommand: BaseCommand {
     }
 
     override func undo(on document: VectorDocument) {
-        // Restore objects at their original indices
         for (obj, index) in zip(objects, removedIndices) {
             if index <= document.unifiedObjects.count {
                 document.unifiedObjects.insert(obj, at: index)

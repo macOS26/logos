@@ -1,6 +1,5 @@
 import Foundation
 
-/// Command for grouping/ungrouping objects
 class GroupCommand: BaseCommand {
     enum GroupOperation {
         case group
@@ -16,7 +15,6 @@ class GroupCommand: BaseCommand {
     private let operation: GroupOperation
     private let layerIndex: Int
 
-    // For group: store removed shapes and created group
     private let removedObjectIDs: [UUID]
     private let removedShapes: [UUID: VectorShape]
     private let removedOrderIDs: [UUID: Int]
@@ -25,7 +23,6 @@ class GroupCommand: BaseCommand {
     private let addedShapes: [UUID: VectorShape]
     private let addedOrderIDs: [UUID: Int]
 
-    // Selection state
     private let oldSelectedObjectIDs: Set<UUID>
     private let newSelectedObjectIDs: Set<UUID>
 
@@ -52,10 +49,8 @@ class GroupCommand: BaseCommand {
     }
 
     override func execute(on document: VectorDocument) {
-        // Remove old objects
         document.unifiedObjects.removeAll { removedObjectIDs.contains($0.id) }
 
-        // Add new objects with proper orderIDs
         for objectID in addedObjectIDs {
             guard let shape = addedShapes[objectID],
                   let orderID = addedOrderIDs[objectID] else { continue }
@@ -67,7 +62,6 @@ class GroupCommand: BaseCommand {
             document.unifiedObjects.append(newObject)
         }
 
-        // Update selection
         document.selectedObjectIDs = newSelectedObjectIDs
         document.selectedShapeIDs = newSelectedObjectIDs.filter { id in
             if let obj = document.unifiedObjects.first(where: { $0.id == id }),
@@ -86,10 +80,8 @@ class GroupCommand: BaseCommand {
     }
 
     override func undo(on document: VectorDocument) {
-        // Remove added objects
         document.unifiedObjects.removeAll { addedObjectIDs.contains($0.id) }
 
-        // Restore removed objects with original orderIDs
         for objectID in removedObjectIDs {
             guard let shape = removedShapes[objectID],
                   let orderID = removedOrderIDs[objectID] else { continue }
@@ -101,7 +93,6 @@ class GroupCommand: BaseCommand {
             document.unifiedObjects.append(restoredObject)
         }
 
-        // Restore selection
         document.selectedObjectIDs = oldSelectedObjectIDs
         document.selectedShapeIDs = oldSelectedObjectIDs.filter { id in
             if let obj = document.unifiedObjects.first(where: { $0.id == id }),

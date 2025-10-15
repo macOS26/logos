@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 
-/// Command for visibility/lock operations - stores only affected object IDs
 class VisibilityCommand: BaseCommand {
     enum Property {
         case visibility

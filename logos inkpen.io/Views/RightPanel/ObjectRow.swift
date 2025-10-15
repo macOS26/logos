@@ -169,8 +169,6 @@ struct ObjectRow: View {
                     if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
                         parentShape.groupedShapes[childIndex].isVisible = newValue
                         
-                        // saveToUndoStack was here
-                        // document.saveToUndoStack()
                         document.unifiedObjects[objIndex] = VectorObject(
                             shape: parentShape,
                             layerIndex: layerIndex,
@@ -197,8 +195,6 @@ struct ObjectRow: View {
                 if case .shape(var parentShape) = document.unifiedObjects[objIndex].objectType {
                     if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
                         parentShape.groupedShapes[childIndex].isLocked = newValue
-                        // saveToUndoStack was here
-                        // document.saveToUndoStack()
                         document.unifiedObjects[objIndex] = VectorObject(
                             shape: parentShape,
                             layerIndex: layerIndex,
@@ -521,7 +517,6 @@ struct ObjectRow: View {
     }
 
     private func childIconFor(_ childShape: VectorShape, index: Int) -> String {
-        // Check if this is a clipping group and this is the first child (the mask)
         if let object = document.findObject(by: objectId),
            case .shape(let parentShape) = object.objectType,
            parentShape.isClippingGroup,
@@ -529,7 +524,6 @@ struct ObjectRow: View {
             return "scissors"
         }
 
-        // Otherwise use default icon
         if childShape.isTextObject {
             return "textformat"
         }
@@ -537,7 +531,6 @@ struct ObjectRow: View {
     }
 
     private func childIconColorFor(_ childShape: VectorShape, index: Int) -> Color {
-        // Check if this is a clipping group and this is the first child (the mask)
         if let object = document.findObject(by: objectId),
            case .shape(let parentShape) = object.objectType,
            parentShape.isClippingGroup,
@@ -545,7 +538,6 @@ struct ObjectRow: View {
             return .orange
         }
 
-        // Otherwise use default color
         if childShape.isTextObject {
             return .green
         }

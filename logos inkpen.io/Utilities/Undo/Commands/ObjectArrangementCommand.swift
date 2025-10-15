@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 
-/// Command for object arrangement operations (bring to front, send to back, etc.)
 class ObjectArrangementCommand: BaseCommand {
     private let affectedObjectIDs: [UUID]
     private let oldOrderIDs: [UUID: Int]

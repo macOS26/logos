@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 
-/// Command for changing fill or stroke opacity
 class OpacityCommand: BaseCommand {
     enum OpacityTarget {
         case fill

@@ -29,7 +29,6 @@ struct UnifiedObjectView: View {
                    let objects = objectsByLayer[layerIndex] {
                     ZStack {
                         ForEach(objects, id: \.id) { unifiedObject in
-                            // Only render if object itself is visible
                             if unifiedObject.isVisible {
                                 UnifiedObjectContentView(
                                     unifiedObject: unifiedObject,
@@ -51,7 +50,7 @@ struct UnifiedObjectView: View {
             }
 
         }
-        .compositingGroup()  // Isolate all content from background UI
+        .compositingGroup()
         .onAppear {
             layerOpacities = document.layers.map { $0.opacity }
             layerBlendModes = document.layers.map { $0.blendMode }
@@ -335,7 +334,6 @@ struct NonBackgroundObjectsView: View {
                    let objects = objectsByLayer[layerIndex] {
                     ZStack {
                         ForEach(objects, id: \.id) { unifiedObject in
-                            // Only render if object itself is visible
                             if unifiedObject.isVisible {
                                 UnifiedObjectContentView(
                                     unifiedObject: unifiedObject,
@@ -356,7 +354,7 @@ struct NonBackgroundObjectsView: View {
                 }
             }
         }
-        .compositingGroup()  // Isolate all content from background UI
+        .compositingGroup()
         .onAppear {
             layerOpacities = document.layers.map { $0.opacity }
             layerBlendModes = document.layers.map { $0.blendMode }

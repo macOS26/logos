@@ -17,7 +17,6 @@ extension VectorDocument {
             return false
         }
 
-        // Capture old shapes and their unified object data for undo
         guard let layerIndex = selectedLayerIndex else { return false }
         var oldShapes: [UUID: VectorShape] = [:]
         var oldOrderIDs: [UUID: Int] = [:]
@@ -318,7 +317,6 @@ extension VectorDocument {
             selectedShapeIDs.insert(resultShape.id)
         }
 
-        // Capture new shapes for undo
         var newShapes: [UUID: VectorShape] = [:]
         var newOrderIDs: [UUID: Int] = [:]
         for shape in resultShapes {
@@ -328,9 +326,8 @@ extension VectorDocument {
             }
         }
 
-        // Create command (remove old, add new)
         let command = GroupCommand(
-            operation: .group, // Reusing enum
+            operation: .group,
             layerIndex: layerIndex,
             removedObjectIDs: Array(oldShapes.keys),
             removedShapes: oldShapes,

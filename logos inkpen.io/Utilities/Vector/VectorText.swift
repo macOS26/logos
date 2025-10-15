@@ -453,25 +453,22 @@ class FontManager: ObservableObject {
         let fontManager = NSFontManager.shared
         systemFonts = fontManager.availableFontFamilies.sorted()
 
-        // Filter out problematic fonts
         let excludedFontPrefixes = [
-            "Noto ",           // Noto fonts often have display issues
-            ".Apple"           // Hidden system UI fonts (keep "Apple " fonts like Apple Chancery)
+            "Noto ",
+            ".Apple"
         ]
 
-        // Regional/language suffixes that indicate duplicate locale-specific variants
         let excludedFontSuffixes = [
-            " HK",             // Hong Kong variants
-            " MO",             // Macau variants
-            " SC",             // Simplified Chinese variants
-            " TC",             // Traditional Chinese variants
-            " MN",             // Mongolian/Myanmar variants
-            " MT",             // Meitei variants
-            " GB",             // GuoBiao (Chinese) variants
-            "Sangam MN"        // Tamil/Telugu/etc Sangam variants
+            " HK",
+            " MO",
+            " SC",
+            " TC",
+            " MN",
+            " MT",
+            " GB",
+            "Sangam MN"
         ]
 
-        // Dingbat, symbol, and ornament fonts
         let excludedSymbolFonts = [
             "Zapf Dingbats",
             "Webdings",
@@ -488,17 +485,14 @@ class FontManager: ObservableObject {
         var orderedFonts: [String] = []
 
         for font in systemFonts {
-            // Skip if font matches excluded prefixes
             let hasExcludedPrefix = excludedFontPrefixes.contains { prefix in
                 font.hasPrefix(prefix)
             }
 
-            // Skip if font matches excluded suffixes
             let hasExcludedSuffix = excludedFontSuffixes.contains { suffix in
                 font.hasSuffix(suffix)
             }
 
-            // Skip symbol/dingbat fonts
             let isSymbolFont = excludedSymbolFonts.contains(font)
 
             if !hasExcludedPrefix && !hasExcludedSuffix && !isSymbolFont && !orderedFonts.contains(font) {
@@ -513,7 +507,6 @@ class FontManager: ObservableObject {
         let name = variantName.lowercased()
         let isItalic = name.contains("italic") || name.contains("oblique")
 
-        // Check for compound patterns first (most specific to least specific)
         if name.contains("condensed") && name.contains("black") {
             return isItalic ? 31 : 30
         }
@@ -539,7 +532,6 @@ class FontManager: ObservableObject {
             return isItalic ? 15 : 14
         }
 
-        // Single weight patterns
         if name.contains("black") {
             return isItalic ? 23 : 22
         }
@@ -565,7 +557,6 @@ class FontManager: ObservableObject {
             return isItalic ? 9 : 8
         }
 
-        // If only "italic" with no weight, treat as Regular Italic
         if isItalic {
             return 9
         }

@@ -156,7 +156,6 @@ extension DrawingCanvas {
         if !initialObjectPositions.isEmpty && currentDragDelta != .zero {
             guard document.selectedLayerIndex != nil else { return }
 
-            // Capture old shapes for undo
             var oldShapes: [UUID: VectorShape] = [:]
             var affectedObjectIDs: Set<UUID> = []
             let selectedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
@@ -166,7 +165,6 @@ extension DrawingCanvas {
                     oldShapes[unifiedObject.id] = shape
                     affectedObjectIDs.insert(unifiedObject.id)
 
-                    // If this is a clipping mask, also capture all clipped shapes
                     if shape.isClippingPath {
                         let allShapes = document.getShapesForLayer(unifiedObject.layerIndex)
                         for clippedShape in allShapes {
@@ -206,12 +204,10 @@ extension DrawingCanvas {
 
             syncUnifiedObjectsAfterMovement()
 
-            // Capture new shapes after transformation (including clipped shapes)
             var newShapes: [UUID: VectorShape] = [:]
             for objectID in affectedObjectIDs {
                 if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }),
                    case .shape(let shape) = unifiedObject.objectType {
-                    // For text objects, get from unifiedObjects directly (findShape excludes text)
                     if shape.isTextObject {
                         if let index = document.unifiedObjects.firstIndex(where: { $0.id == shape.id }),
                            case .shape(let updatedShape) = document.unifiedObjects[index].objectType {
@@ -227,7 +223,6 @@ extension DrawingCanvas {
                 }
             }
 
-            // Execute undo command with ALL affected objects (including clipped shapes)
             if !oldShapes.isEmpty && !newShapes.isEmpty {
                 let command = ShapeModificationCommand(
                     objectIDs: Array(affectedObjectIDs),

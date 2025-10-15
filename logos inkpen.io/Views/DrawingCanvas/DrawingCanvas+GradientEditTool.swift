@@ -3,7 +3,6 @@ import Combine
 
 extension DrawingCanvas {
     
-    
     @ViewBuilder
     func gradientEditTool(geometry: GeometryProxy) -> some View {
         if let selectedGradient = getSelectedShapeGradient(document: document),
@@ -39,7 +38,6 @@ extension DrawingCanvas {
             )
         }
     }
-    
     
     private func getSelectedShapeWithGradient() -> VectorShape? {
         guard let firstSelectedID = document.selectedShapeIDs.first else { return nil }
@@ -109,13 +107,11 @@ extension DrawingCanvas {
             let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
             let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
             
-            
             updateGradientOriginXYOptimized(relativeX, relativeY, shape: shape, applyToShapes: true, isLiveDrag: true)
             
         case .radial(_):
             let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
             let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
-            
             
             updateGradientOriginXYOptimized(relativeX, relativeY, shape: shape, applyToShapes: true, isLiveDrag: true)
         }
@@ -179,7 +175,6 @@ extension DrawingCanvas {
     
     private func updateShapeGradientOptimized(shape: VectorShape, newGradient: VectorGradient, isLiveDrag: Bool) {
         guard let layerIndex = document.selectedLayerIndex else { return }
-        
         
         let shapes = document.getShapesForLayer(layerIndex)
         if shapes.contains(where: { $0.id == shape.id }) {

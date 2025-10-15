@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 
-/// Command for editing text content
 class TextEditCommand: BaseCommand {
     private let textID: UUID
     private let oldContent: String
@@ -36,13 +35,11 @@ class TextEditCommand: BaseCommand {
     }
 
     func mergeWith(_ other: Command) -> Command? {
-        // Merge consecutive text edits on the same text object
         guard let otherTextEdit = other as? TextEditCommand,
               otherTextEdit.textID == self.textID else {
             return nil
         }
 
-        // Create merged command with original old content and new new content
         return TextEditCommand(
             textID: textID,
             oldContent: self.oldContent,

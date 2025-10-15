@@ -14,7 +14,6 @@ extension VectorDocument {
             return false
         }
 
-        // Capture old state
         var oldShapes: [UUID: VectorShape] = [:]
         var affectedIDs: [UUID] = []
         for unifiedObject in selectedWarpObjects {
@@ -43,7 +42,6 @@ extension VectorDocument {
 
         populateUnifiedObjectsFromLayersPreservingOrder()
 
-        // Capture new state and create command
         var newShapes: [UUID: VectorShape] = [:]
         for id in affectedIDs {
             if let shape = findShape(by: id) {
@@ -70,7 +68,6 @@ extension VectorDocument {
             return false
         }
 
-        // Capture old state
         var oldShapes: [UUID: VectorShape] = [:]
         var affectedIDs: [UUID] = []
         for unifiedObject in selectedWarpObjects {
@@ -99,7 +96,6 @@ extension VectorDocument {
 
         populateUnifiedObjectsFromLayersPreservingOrder()
 
-        // Capture new state and create command
         var newShapes: [UUID: VectorShape] = [:]
         for id in affectedIDs {
             if let shape = findShape(by: id) {

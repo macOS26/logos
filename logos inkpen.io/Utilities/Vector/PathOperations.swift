@@ -640,7 +640,6 @@ extension ProfessionalPathOperations {
             return path
         }
 
-        // Find indices of first and last point elements
         var firstPointIndex: Int? = nil
         var lastPointIndex: Int? = nil
 
@@ -656,7 +655,6 @@ extension ProfessionalPathOperations {
             }
         }
 
-        // Build list of all points with their positions
         var pointData: [(index: Int, position: VectorPoint, element: PathElement)] = []
         for (index, element) in path.elements.enumerated() {
             let position: VectorPoint?
@@ -674,7 +672,6 @@ extension ProfessionalPathOperations {
             }
         }
 
-        // Find groups of coincident points
         var processed: Set<Int> = []
         var indicesToRemove: Set<Int> = []
 
@@ -683,7 +680,6 @@ extension ProfessionalPathOperations {
 
             var coincidentGroup: [Int] = [i]
 
-            // Find all points coincident with this one
             for (j, otherData) in pointData.enumerated() {
                 if j <= i { continue }
                 if processed.contains(j) { continue }
@@ -694,18 +690,15 @@ extension ProfessionalPathOperations {
                 }
             }
 
-            // If we have coincident points, remove all but the first (unless it's first/last)
             if coincidentGroup.count > 1 {
                 for pointIndex in coincidentGroup {
                     processed.insert(pointIndex)
                 }
 
-                // Keep the first point in the group, remove the rest (unless they are first/last)
                 for groupIdx in 1..<coincidentGroup.count {
                     let pointDataIdx = coincidentGroup[groupIdx]
                     let actualElementIndex = pointData[pointDataIdx].index
 
-                    // Don't remove if it's the first or last point
                     let isFirstOrLast = (actualElementIndex == firstPointIndex || actualElementIndex == lastPointIndex)
                     if !isFirstOrLast {
                         indicesToRemove.insert(actualElementIndex)
@@ -715,7 +708,6 @@ extension ProfessionalPathOperations {
             }
         }
 
-        // Build cleaned elements
         var cleanedElements: [PathElement] = []
         for (index, element) in path.elements.enumerated() {
             if !indicesToRemove.contains(index) {

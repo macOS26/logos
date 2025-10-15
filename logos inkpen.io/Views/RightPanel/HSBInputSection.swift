@@ -392,7 +392,6 @@ struct HSBInputSection: View {
         }
     }
     
-    
     private func updateHexFromHSB() {
         let userHue = Double(hueValue) ?? 0
         let normalizedHue = userHue >= 360 ? 0 : userHue
@@ -420,7 +419,6 @@ struct HSBInputSection: View {
         if isProgrammaticallyUpdating {
             return
         }
-        
         
         return
         
@@ -511,7 +509,6 @@ struct HSBInputSection: View {
         document.addColorToSwatches(vectorColor)
         
     }
-    
     
     private func performLivePMSSearch(_ query: String) {
         let cleanedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)

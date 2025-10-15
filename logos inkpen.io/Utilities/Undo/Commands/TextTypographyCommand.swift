@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 
-/// Command for text typography property changes
 class TextTypographyCommand: BaseCommand {
     private let textID: UUID
     private let oldTypography: TypographyProperties?

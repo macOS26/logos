@@ -206,7 +206,6 @@ struct CornerRadiusToolbar: View {
     private func updateCornerRadius(index: Int, value: Double) {
         guard let selectedShape = getSelectedShape() else { return }
 
-        // Capture old shape state
         let oldShape = selectedShape
 
         for layerIndex in document.layers.indices {
@@ -242,7 +241,6 @@ struct CornerRadiusToolbar: View {
 
                 document.updateShapeCornerRadiiInUnified(id: shape.id, cornerRadii: updatedRadii, path: newPath)
 
-                // Capture new shape state
                 if let newShape = getSelectedShape() {
                     let command = ShapeModificationCommand(
                         objectIDs: [selectedShape.id],

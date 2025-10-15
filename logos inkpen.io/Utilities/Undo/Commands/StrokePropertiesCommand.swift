@@ -2,7 +2,6 @@ import Foundation
 import Combine
 import CoreGraphics
 
-/// Command for changing stroke properties (placement, line join, line cap, miter limit)
 class StrokePropertiesCommand: BaseCommand {
     enum PropertyType {
         case placement

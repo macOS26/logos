@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 
-/// Command for adding new objects to the document
 class AddObjectCommand: BaseCommand {
     private let objects: [VectorObject]
 

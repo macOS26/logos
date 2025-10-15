@@ -296,11 +296,9 @@ struct LayersPanel: View {
                     availableColors: Color.layerColorPalette
                 )
                 .offset(x:12)
-                //.padding(.trailing)
                 Text("Color")
                     .layerControlLabel()
                     .multilineTextAlignment(.trailing)
-                    //.padding(.leading)
                     .offset(x:20)
             }
         }

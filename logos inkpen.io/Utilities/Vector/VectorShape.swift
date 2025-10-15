@@ -360,11 +360,11 @@ struct VectorShape: Hashable, Identifiable {
     var isGroup: Bool
     var groupedShapes: [VectorShape]
     var groupTransform: CGAffineTransform
-    var isClippingGroup: Bool = false  // Adobe-style clipping group
+    var isClippingGroup: Bool = false
     var isCompoundPath: Bool
 
-    var isClippingPath: Bool = false  // Legacy - will be deprecated
-    var clippedByShapeID: UUID?  // Legacy - will be deprecated
+    var isClippingPath: Bool = false
+    var clippedByShapeID: UUID?
     var isWarpObject: Bool
     var originalPath: VectorPath?
     var warpEnvelope: [CGPoint]

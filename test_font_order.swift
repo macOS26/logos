@@ -3,7 +3,6 @@ import AppKit
 
 let fontManager = NSFontManager.shared
 
-// Test with a common font family
 let family = "Helvetica Neue"
 print("Testing font family: \(family)")
 print(String(repeating: "=", count: 50))

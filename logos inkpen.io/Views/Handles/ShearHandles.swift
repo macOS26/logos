@@ -220,7 +220,6 @@ struct ShearHandles: View {
         isShearing = false
         document.isHandleScalingActive = false
 
-        // Capture old shape for undo
         var oldShapes: [UUID: VectorShape] = [:]
         if case .shape(let oldShape) = document.findObject(by: shape.id)?.objectType {
             oldShapes[shape.id] = oldShape
@@ -241,13 +240,11 @@ struct ShearHandles: View {
 
             document.updateTransformPanelValues()
 
-            // Capture new shape after transformation
             var newShapes: [UUID: VectorShape] = [:]
             if let transformedShape = document.findShape(by: shape.id) {
                 newShapes[shape.id] = transformedShape
             }
 
-            // Execute undo command
             if !oldShapes.isEmpty && !newShapes.isEmpty {
                 let command = ShapeModificationCommand(
                     objectIDs: [shape.id],
@@ -418,7 +415,6 @@ struct ShearHandles: View {
         initialBounds = bounds
         initialTransform = shape.transform
         startLocation = dragValue.location
-        // Undo will be handled in finishShear()
 
         if lockedPinPointIndex == nil && shearAnchorPoint == .zero {
             setLockedPinPoint(nil)

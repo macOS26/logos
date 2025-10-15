@@ -11,18 +11,14 @@ var problematicFonts: [String] = []
 var workingFonts: [String] = []
 
 for fontFamily in allFonts {
-    // Test if font can be created
     if let members = fontManager.availableMembers(ofFontFamily: fontFamily),
        !members.isEmpty {
 
-        // Try to get the first variant
         if let firstMember = members.first,
            let postScriptName = firstMember[0] as? String,
            let displayName = firstMember[1] as? String {
 
-            // Try to create a font with this
             if let testFont = NSFont(name: postScriptName, size: 12) {
-                // Check if it actually returns the font we asked for
                 let actualFontName = testFont.familyName ?? ""
 
                 if actualFontName == fontFamily {
@@ -53,7 +49,6 @@ for font in workingFonts {
     print("  ✅ \(font)")
 }
 
-// Analyze patterns in problematic fonts
 print("\n\nPATTERN ANALYSIS:")
 print(String(repeating: "-", count: 80))
 
@@ -61,7 +56,6 @@ var prefixCounts: [String: Int] = [:]
 for problemFont in problematicFonts {
     let fontName = problemFont.components(separatedBy: " -> ").first ?? ""
 
-    // Check common prefixes
     let prefixes = ["Noto ", ".Apple", "Apple ", ".", "Al ", "Geeza ", "Myanmar "]
     for prefix in prefixes {
         if fontName.hasPrefix(prefix) {
