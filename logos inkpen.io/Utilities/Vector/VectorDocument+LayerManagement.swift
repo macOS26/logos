@@ -13,7 +13,6 @@ extension VectorDocument {
         }
 
 
-        let oldName = layers[index].name
         layers[index].name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if settings.selectedLayerId == layers[index].id {
@@ -21,8 +20,7 @@ extension VectorDocument {
             onSettingsChanged()
         }
 
-        let command = LayerCommand(operation: .rename(index: index, oldName: oldName, newName: newName))
-        executeCommand(command)
+        saveToUndoStack()
     }
 
     func duplicateLayer(at index: Int) {
@@ -71,8 +69,7 @@ extension VectorDocument {
               targetIndex >= 0 && targetIndex <= layers.count,
               sourceIndex != targetIndex else { return }
 
-        let command = LayerCommand(operation: .move(fromIndex: sourceIndex, toIndex: targetIndex))
-        executeCommand(command)
+        saveToUndoStack()
 
         let movingLayer = layers.remove(at: sourceIndex)
 
@@ -259,14 +256,7 @@ extension VectorDocument {
             return
         }
 
-        let command = ObjectReorderCommand(reorderType: .moveObjectToLayer(
-            objectID: objectId,
-            oldLayerIndex: sourceLayerIndex,
-            newLayerIndex: targetLayerIndex,
-            oldOrderID: object.orderID,
-            newOrderID: object.orderID
-        ))
-        executeCommand(command)
+        saveToUndoStack()
 
         let updatedObject = VectorObject(
             shape: extractShape(from: object),
@@ -350,12 +340,7 @@ extension VectorDocument {
     func moveSelectedObjectsUp() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        var oldOrderIDs: [UUID: Int] = [:]
-        for id in selectedObjectIDs {
-            if let obj = findObject(by: id) {
-                oldOrderIDs[id] = obj.orderID
-            }
-        }
+        saveToUndoStack()
 
         var selectedObjects: [VectorObject] = []
         for objectID in selectedObjectIDs {
@@ -388,31 +373,12 @@ extension VectorDocument {
                 )
             }
         }
-
-        var newOrderIDs: [UUID: Int] = [:]
-        for id in selectedObjectIDs {
-            if let obj = findObject(by: id) {
-                newOrderIDs[id] = obj.orderID
-            }
-        }
-
-        let command = ObjectReorderCommand(reorderType: .moveUp(
-            objectIDs: Array(selectedObjectIDs),
-            oldOrderIDs: oldOrderIDs,
-            newOrderIDs: newOrderIDs
-        ))
-        executeCommand(command)
     }
 
     func moveSelectedObjectsDown() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        var oldOrderIDs: [UUID: Int] = [:]
-        for id in selectedObjectIDs {
-            if let obj = findObject(by: id) {
-                oldOrderIDs[id] = obj.orderID
-            }
-        }
+        saveToUndoStack()
 
         var selectedObjects: [VectorObject] = []
         for objectID in selectedObjectIDs {
@@ -445,20 +411,6 @@ extension VectorDocument {
                 )
             }
         }
-
-        var newOrderIDs: [UUID: Int] = [:]
-        for id in selectedObjectIDs {
-            if let obj = findObject(by: id) {
-                newOrderIDs[id] = obj.orderID
-            }
-        }
-
-        let command = ObjectReorderCommand(reorderType: .moveDown(
-            objectIDs: Array(selectedObjectIDs),
-            oldOrderIDs: oldOrderIDs,
-            newOrderIDs: newOrderIDs
-        ))
-        executeCommand(command)
     }
 
     func reorderObject(objectId: UUID, targetObjectId: UUID) {
@@ -475,16 +427,10 @@ extension VectorDocument {
             return
         }
 
+        saveToUndoStack()
+
         let targetOrderID = targetObject.orderID
         let sourceOrderID = sourceObject.orderID
-
-        let command = ObjectReorderCommand(reorderType: .reorderBetween(
-            sourceID: objectId,
-            targetID: targetObjectId,
-            oldOrderID: sourceOrderID,
-            newOrderID: targetOrderID
-        ))
-        executeCommand(command)
 
         let newOrderID: Int
         if sourceOrderID < targetOrderID {
@@ -540,13 +486,7 @@ extension VectorDocument {
             return
         }
 
-        let command = ObjectReorderCommand(reorderType: .bringToFront(
-            objectID: objectId,
-            oldOrderID: sourceObject.orderID,
-            newOrderID: maxOrderID,
-            layerIndex: sourceObject.layerIndex
-        ))
-        executeCommand(command)
+        saveToUndoStack()
 
         for i in 0..<unifiedObjects.count {
             let obj = unifiedObjects[i]
@@ -582,13 +522,7 @@ extension VectorDocument {
             return
         }
 
-        let command = ObjectReorderCommand(reorderType: .sendToBack(
-            objectID: objectId,
-            oldOrderID: sourceObject.orderID,
-            newOrderID: minOrderID,
-            layerIndex: sourceObject.layerIndex
-        ))
-        executeCommand(command)
+        saveToUndoStack()
 
         for i in 0..<unifiedObjects.count {
             let obj = unifiedObjects[i]
@@ -619,8 +553,7 @@ extension VectorDocument {
 
         guard sourceIndex != targetIndex else { return }
 
-        let command = LayerCommand(operation: .reorder(sourceLayerId: sourceLayerId, targetLayerId: targetLayerId))
-        executeCommand(command)
+        saveToUndoStack()
 
         let sourceLayer = layers.remove(at: sourceIndex)
         layers.insert(sourceLayer, at: targetIndex)
