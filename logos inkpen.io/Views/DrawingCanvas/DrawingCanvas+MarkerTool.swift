@@ -24,8 +24,6 @@ extension DrawingCanvas {
     internal func handleMarkerDragStart(at location: CGPoint) {
         guard !isMarkerDrawing else { return }
 
-        document.saveToUndoStack()
-
         isMarkerDrawing = true
         markerRawPoints = [MarkerPoint(location: location, pressure: 1.0)]
         markerSimplifiedPoints = []
@@ -273,6 +271,13 @@ extension DrawingCanvas {
         guard let layerIndex = document.selectedLayerIndex else { return }
         document.addShapeToFrontOfUnifiedSystem(finalShape, layerIndex: layerIndex)
 
+        let objectIDs = [finalShape.id]
+        var oldShapes: [UUID: VectorShape] = [:]
+        var newShapes: [UUID: VectorShape] = [:]
+        newShapes[finalShape.id] = finalShape
+
+        let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+        document.commandManager.execute(command)
     }
 
     private func finalizeMarkerFromPreview(_ preview: VectorPath) {
@@ -346,6 +351,14 @@ extension DrawingCanvas {
         let shape = VectorShape(name: "Marker Stroke", path: finalPath, geometricType: .brushStroke, strokeStyle: finalStrokeStyle, fillStyle: fillStyle)
         guard let layerIndex = document.selectedLayerIndex else { return }
         document.addShapeToFrontOfUnifiedSystem(shape, layerIndex: layerIndex)
+
+        let objectIDs = [shape.id]
+        var oldShapes: [UUID: VectorShape] = [:]
+        var newShapes: [UUID: VectorShape] = [:]
+        newShapes[shape.id] = shape
+
+        let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+        document.commandManager.execute(command)
     }
 
 
