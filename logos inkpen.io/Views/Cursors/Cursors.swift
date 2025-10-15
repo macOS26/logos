@@ -246,6 +246,7 @@ struct DrawingCanvas: View {
     }
     @State internal var originalPointPositions: [PointID: VectorPoint] = [:]
     @State internal var originalHandlePositions: [HandleID: VectorPoint] = [:]
+    @State internal var originalDragShapes: [UUID: VectorShape] = [:]
 
     @State internal var cornerDragStart: CGPoint = .zero
     @State internal var initialCornerRadius: Double = 0.0

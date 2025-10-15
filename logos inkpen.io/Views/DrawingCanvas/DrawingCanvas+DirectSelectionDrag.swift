@@ -59,7 +59,21 @@ extension DrawingCanvas {
         if !isDraggingPoint && !isDraggingHandle {
             isDraggingPoint = !selectedPoints.isEmpty
             isDraggingHandle = !selectedHandles.isEmpty
-            document.saveToUndoStack()
+
+            var affectedShapeIDs = Set<UUID>()
+            for pointID in selectedPoints {
+                affectedShapeIDs.insert(pointID.shapeID)
+            }
+            for handleID in selectedHandles {
+                affectedShapeIDs.insert(handleID.shapeID)
+            }
+
+            originalDragShapes.removeAll()
+            for shapeID in affectedShapeIDs {
+                if let shape = document.findShape(by: shapeID) {
+                    originalDragShapes[shapeID] = shape
+                }
+            }
 
             captureOriginalPositions()
         }
@@ -181,5 +195,22 @@ extension DrawingCanvas {
         }
 
         document.updateUnifiedObjectsOptimized(sendUpdate: false)
+
+        if !originalDragShapes.isEmpty {
+            var newShapes: [UUID: VectorShape] = [:]
+            var objectIDs: [UUID] = []
+
+            for (shapeID, _) in originalDragShapes {
+                objectIDs.append(shapeID)
+                if let updatedShape = document.findShape(by: shapeID) {
+                    newShapes[shapeID] = updatedShape
+                }
+            }
+
+            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: originalDragShapes, newShapes: newShapes)
+            document.commandManager.execute(command)
+
+            originalDragShapes.removeAll()
+        }
     }
 }
