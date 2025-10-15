@@ -207,7 +207,7 @@ extension DrawingCanvas {
             cornerDragStart = value.startLocation
             initialCornerRadius = shape.cornerRadii[safe: cornerIndex] ?? 0.0
 
-
+            sharedOriginalShape = shape
         }
 
         currentMousePosition = value.location
@@ -375,7 +375,20 @@ extension DrawingCanvas {
 
             document.updateUnifiedObjectsOptimized()
 
-            // TODO: Add ShapeModificationCommand here
+            if let originalShape = sharedOriginalShape,
+               let finalShape = getSelectedRectangleShape() {
+                var oldShapes: [UUID: VectorShape] = [:]
+                var newShapes: [UUID: VectorShape] = [:]
+                let objectIDs = [originalShape.id]
+
+                oldShapes[originalShape.id] = originalShape
+                newShapes[finalShape.id] = finalShape
+
+                let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+                document.commandManager.execute(command)
+            }
+
+            sharedOriginalShape = nil
 
             isDraggingCorner = false
             draggedCornerIndex = nil
