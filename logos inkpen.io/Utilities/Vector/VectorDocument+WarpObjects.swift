@@ -7,14 +7,22 @@ extension VectorDocument {
     func unwrapWarpObject() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        saveToUndoStack()
-
         let selectedWarpObjects = unifiedObjects.filter { unifiedObject in
             guard selectedObjectIDs.contains(unifiedObject.id) else { return false }
             if case .shape(let shape) = unifiedObject.objectType {
                 return shape.isWarpObject
             }
             return false
+        }
+
+        // Capture old state
+        var oldShapes: [UUID: VectorShape] = [:]
+        var affectedIDs: [UUID] = []
+        for unifiedObject in selectedWarpObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
+                oldShapes[shape.id] = shape
+                affectedIDs.append(shape.id)
+            }
         }
 
         for unifiedObject in selectedWarpObjects {
@@ -35,12 +43,25 @@ extension VectorDocument {
         }
 
         populateUnifiedObjectsFromLayersPreservingOrder()
+
+        // Capture new state and create command
+        var newShapes: [UUID: VectorShape] = [:]
+        for id in affectedIDs {
+            if let shape = findShape(by: id) {
+                newShapes[id] = shape
+            }
+        }
+
+        let command = WarpObjectCommand(
+            affectedObjectIDs: affectedIDs,
+            oldShapes: oldShapes,
+            newShapes: newShapes
+        )
+        commandManager.execute(command)
     }
 
     func expandWarpObject() {
         guard !selectedObjectIDs.isEmpty else { return }
-
-        saveToUndoStack()
 
         let selectedWarpObjects = unifiedObjects.filter { unifiedObject in
             guard selectedObjectIDs.contains(unifiedObject.id) else { return false }
@@ -48,6 +69,16 @@ extension VectorDocument {
                 return shape.isWarpObject
             }
             return false
+        }
+
+        // Capture old state
+        var oldShapes: [UUID: VectorShape] = [:]
+        var affectedIDs: [UUID] = []
+        for unifiedObject in selectedWarpObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
+                oldShapes[shape.id] = shape
+                affectedIDs.append(shape.id)
+            }
         }
 
         for unifiedObject in selectedWarpObjects {
@@ -68,5 +99,20 @@ extension VectorDocument {
         }
 
         populateUnifiedObjectsFromLayersPreservingOrder()
+
+        // Capture new state and create command
+        var newShapes: [UUID: VectorShape] = [:]
+        for id in affectedIDs {
+            if let shape = findShape(by: id) {
+                newShapes[id] = shape
+            }
+        }
+
+        let command = WarpObjectCommand(
+            affectedObjectIDs: affectedIDs,
+            oldShapes: oldShapes,
+            newShapes: newShapes
+        )
+        commandManager.execute(command)
     }
 }
