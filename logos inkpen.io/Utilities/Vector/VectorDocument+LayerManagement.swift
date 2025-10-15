@@ -51,8 +51,6 @@ extension VectorDocument {
             addShape(duplicatedShape, to: index + 1)
         }
 
-        updateUnifiedObjectsOptimized()
-
         selectedLayerIndex = index + 1
         settings.selectedLayerId = duplicatedLayer.id
         settings.selectedLayerName = duplicatedLayer.name
