@@ -378,26 +378,26 @@ struct ObjectRow: View {
             }
             
             if objectType == .group, isGroupExpanded, let shapes = groupedShapes {
-                ForEach(shapes, id: \.id) { childShape in
+                ForEach(Array(shapes.enumerated()), id: \.element.id) { index, childShape in
                     let isChildSelected = document.selectedObjectIDs.contains(childShape.id)
                     let childVisBinding = childVisibilityBinding(for: childShape.id)
                     let childLockBinding = childLockBinding(for: childShape.id)
-                    
+
                     ZStack(alignment: .bottom) {
                         HStack(spacing: 2) {
                             Rectangle()
                                 .fill(Color.gray.opacity(0.2))
                                 .frame(width: 21, height: 1)
-                            
+
                             Rectangle()
                                 .fill(Color.gray.opacity(0.2))
                                 .frame(width: 19, height: 1)
-                            
+
                             Spacer()
                         }
                         .padding(.leading, 2.5)
                         .padding(.trailing, 4)
-                        
+
                         HStack(spacing: 2) {
                             Button(action: {
                                 childVisBinding.wrappedValue.toggle()
@@ -407,7 +407,7 @@ struct ObjectRow: View {
                             }
                             .buttonStyle(BorderlessButtonStyle())
                             .help(childVisBinding.wrappedValue ? "Hide Object" : "Show Object")
-                            
+
                             Button(action: {
                                 childLockBinding.wrappedValue.toggle()
                             }) {
@@ -416,13 +416,13 @@ struct ObjectRow: View {
                             }
                             .buttonStyle(BorderlessButtonStyle())
                             .help(childLockBinding.wrappedValue ? "Unlock Object" : "Lock Object")
-                            
+
                             HStack(spacing: 4) {
                                 Color.clear.frame(width: 12, height: 12)
 
-                                Image(systemName: childShape.isTextObject ? "textformat" : childIconName(for: childShape))
+                                Image(systemName: childIconFor(childShape, index: index))
                                     .font(.system(size: 10))
-                                    .foregroundColor(childShape.isTextObject ? .green : .blue)
+                                    .foregroundColor(childIconColorFor(childShape, index: index))
                                     .frame(width: 12)
                                 
                                 Circle()
@@ -515,6 +515,38 @@ struct ObjectRow: View {
             return geometricType.iconName
         }
         return "square"
+    }
+
+    private func childIconFor(_ childShape: VectorShape, index: Int) -> String {
+        // Check if this is a clipping group and this is the first child (the mask)
+        if let object = document.findObject(by: objectId),
+           case .shape(let parentShape) = object.objectType,
+           parentShape.isClippingGroup,
+           index == 0 {
+            return "scissors"
+        }
+
+        // Otherwise use default icon
+        if childShape.isTextObject {
+            return "textformat"
+        }
+        return childIconName(for: childShape)
+    }
+
+    private func childIconColorFor(_ childShape: VectorShape, index: Int) -> Color {
+        // Check if this is a clipping group and this is the first child (the mask)
+        if let object = document.findObject(by: objectId),
+           case .shape(let parentShape) = object.objectType,
+           parentShape.isClippingGroup,
+           index == 0 {
+            return .orange
+        }
+
+        // Otherwise use default color
+        if childShape.isTextObject {
+            return .green
+        }
+        return .blue
     }
 
     private var objectIconColor: Color {
