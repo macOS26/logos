@@ -228,7 +228,7 @@ extension DrawingCanvas {
         )
 
         if document.markerRemoveOverlap {
-            var currentPath = finalShape.path.cgPath
+            let currentPath = finalShape.path.cgPath
 
             var cleanedFillPath: CGPath? = nil
             cleanedFillPath = CoreGraphicsPathOperations.normalized(currentPath, using: .winding)
@@ -237,7 +237,6 @@ extension DrawingCanvas {
             if cleanedFillPath == nil { cleanedFillPath = CoreGraphicsPathOperations.union(currentPath, currentPath, using: .evenOdd) }
 
             if let cleaned = cleanedFillPath, !cleaned.isEmpty, isPathBoundsFinite(cleaned.boundingBox) {
-                currentPath = cleaned
                 finalShape.path = VectorPath(cgPath: cleaned)
             }
 
@@ -286,7 +285,7 @@ extension DrawingCanvas {
         let finalStrokeStyle = strokeStyle
 
         if document.markerRemoveOverlap {
-            var currentPath = preview.cgPath
+            let currentPath = preview.cgPath
 
             var cleanedFillPath: CGPath? = nil
             cleanedFillPath = CoreGraphicsPathOperations.normalized(currentPath, using: .winding)
@@ -295,7 +294,6 @@ extension DrawingCanvas {
             if cleanedFillPath == nil { cleanedFillPath = CoreGraphicsPathOperations.union(currentPath, currentPath, using: .evenOdd) }
 
             if let cleaned = cleanedFillPath, !cleaned.isEmpty, isPathBoundsFinite(cleaned.boundingBox) {
-                currentPath = cleaned
                 finalPath = VectorPath(cgPath: cleaned)
             }
 
