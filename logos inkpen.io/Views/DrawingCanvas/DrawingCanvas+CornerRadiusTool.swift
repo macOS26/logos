@@ -192,7 +192,7 @@ extension DrawingCanvas {
                 }
             }
 
-            document.saveToUndoStack()
+            // TODO: Add ShapeModificationCommand here
 
             isDraggingCorner = false
             draggedCornerIndex = nil
