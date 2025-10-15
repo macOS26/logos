@@ -161,10 +161,26 @@ extension DrawingCanvas {
 
             // Capture old shapes for undo
             var oldShapes: [UUID: VectorShape] = [:]
+            var affectedObjectIDs: Set<UUID> = []
             let selectedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
+
             for unifiedObject in selectedObjects {
                 if case .shape(let shape) = unifiedObject.objectType {
                     oldShapes[unifiedObject.id] = shape
+                    affectedObjectIDs.insert(unifiedObject.id)
+
+                    // If this is a clipping mask, also capture all clipped shapes
+                    if shape.isClippingPath {
+                        let allShapes = document.getShapesForLayer(unifiedObject.layerIndex)
+                        for clippedShape in allShapes {
+                            if clippedShape.clippedByShapeID == shape.id {
+                                if let clippedObj = document.unifiedObjects.first(where: { $0.id == clippedShape.id }) {
+                                    oldShapes[clippedObj.id] = clippedShape
+                                    affectedObjectIDs.insert(clippedObj.id)
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -201,30 +217,31 @@ extension DrawingCanvas {
 
             syncUnifiedObjectsAfterMovement()
 
-            // Capture new shapes after transformation
+            // Capture new shapes after transformation (including clipped shapes)
             var newShapes: [UUID: VectorShape] = [:]
-            for unifiedObject in selectedObjects {
-                if case .shape(let shape) = unifiedObject.objectType {
+            for objectID in affectedObjectIDs {
+                if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }),
+                   case .shape(let shape) = unifiedObject.objectType {
                     // For text objects, get from unifiedObjects directly (findShape excludes text)
                     if shape.isTextObject {
                         if let index = document.unifiedObjects.firstIndex(where: { $0.id == shape.id }),
                            case .shape(let updatedShape) = document.unifiedObjects[index].objectType {
-                            newShapes[unifiedObject.id] = updatedShape
+                            newShapes[objectID] = updatedShape
                         } else {
-                            newShapes[unifiedObject.id] = shape
+                            newShapes[objectID] = shape
                         }
                     } else if let updatedShape = document.findShape(by: shape.id) {
-                        newShapes[unifiedObject.id] = updatedShape
+                        newShapes[objectID] = updatedShape
                     } else {
-                        newShapes[unifiedObject.id] = shape
+                        newShapes[objectID] = shape
                     }
                 }
             }
 
-            // Execute undo command
+            // Execute undo command with ALL affected objects (including clipped shapes)
             if !oldShapes.isEmpty && !newShapes.isEmpty {
                 let command = ShapeModificationCommand(
-                    objectIDs: Array(document.selectedObjectIDs),
+                    objectIDs: Array(affectedObjectIDs),
                     oldShapes: oldShapes,
                     newShapes: newShapes
                 )
