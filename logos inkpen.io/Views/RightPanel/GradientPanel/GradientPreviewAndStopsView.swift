@@ -164,7 +164,8 @@ struct GradientPreviewAndStopsView: View {
                                         },
                                         set: { newValue in
                                             if let doubleValue = Double(newValue) {
-                                                updateStopPosition(stop.id, doubleValue / 100.0)
+                                                let clamped = max(0, min(100, doubleValue))
+                                                updateStopPosition(stop.id, clamped / 100.0)
                                             }
                                         }
                                     ))
@@ -181,7 +182,8 @@ struct GradientPreviewAndStopsView: View {
                                         },
                                         set: { newValue in
                                             if let doubleValue = Double(newValue) {
-                                                updateStopOpacity(stop.id, doubleValue / 100.0)
+                                                let clamped = max(0, min(100, doubleValue))
+                                                updateStopOpacity(stop.id, clamped / 100.0)
                                             }
                                         }
                                     ))
