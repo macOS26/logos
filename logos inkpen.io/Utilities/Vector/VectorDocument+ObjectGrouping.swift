@@ -136,7 +136,12 @@ extension VectorDocument {
                         removedOrderIDs[shapeID] = obj.orderID
                     }
 
-                    for groupedShape in shape.groupedShapes {
+                    // For clipping groups, reverse the order to restore original stacking
+                    // Clipping groups have [mask, content1, content2], but visually
+                    // the mask should be on top when ungrouped
+                    let shapesToUngroup = shape.isClippingGroup ? shape.groupedShapes.reversed() : shape.groupedShapes
+
+                    for groupedShape in shapesToUngroup {
                         shapesToAdd.append(groupedShape)
                         newSelectedShapeIDs.insert(groupedShape.id)
                     }
