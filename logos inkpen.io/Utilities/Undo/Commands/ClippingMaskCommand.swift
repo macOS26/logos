@@ -22,7 +22,6 @@ class ClippingMaskCommand: BaseCommand {
              .moveClippingMask(_, _, _, _, let newShapes):
             applyShapes(newShapes, to: document)
         }
-        document.forceResyncUnifiedObjects()
     }
 
     override func undo(on document: VectorDocument) {
@@ -32,7 +31,6 @@ class ClippingMaskCommand: BaseCommand {
              .moveClippingMask(_, _, _, let oldShapes, _):
             applyShapes(oldShapes, to: document)
         }
-        document.forceResyncUnifiedObjects()
     }
 
     private func applyShapes(_ shapes: [UUID: VectorShape], to document: VectorDocument) {
