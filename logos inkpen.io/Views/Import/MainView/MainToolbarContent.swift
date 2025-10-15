@@ -53,7 +53,7 @@ struct MainToolbarContent: ToolbarContent {
     }
 
     private func closeSelectedPaths() {
-        document.saveToUndoStack()
+        // TODO: Add appropriate Command here
 
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
@@ -249,7 +249,7 @@ struct MainToolbarContent: ToolbarContent {
 
     private func onSnapPageToArtwork() {
         guard let bounds = document.getArtworkBounds(), bounds.width > 0, bounds.height > 0 else { return }
-        document.saveToUndoStack()
+        // TODO: Add appropriate Command here
 
         document.settings.setSizeInPoints(CGSize(width: bounds.width, height: bounds.height))
         document.onSettingsChanged()
@@ -262,7 +262,7 @@ struct MainToolbarContent: ToolbarContent {
 
     private func onSnapPageToSelection() {
         guard let selectionBounds = getSelectionBoundsForDocument(), selectionBounds.width > 0, selectionBounds.height > 0 else { return }
-        document.saveToUndoStack()
+        // TODO: Add appropriate Command here
 
         document.settings.setSizeInPoints(CGSize(width: selectionBounds.width, height: selectionBounds.height))
         document.onSettingsChanged()
@@ -313,7 +313,7 @@ struct MainToolbarContent: ToolbarContent {
     }
 
     private func lockSelectedObjects() {
-        document.saveToUndoStack()
+        // TODO: Add appropriate Command here
 
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
@@ -338,7 +338,7 @@ struct MainToolbarContent: ToolbarContent {
     }
 
     private func unlockAllObjects() {
-        document.saveToUndoStack()
+        // TODO: Add appropriate Command here
 
         for unifiedObject in document.unifiedObjects {
             if case .shape(let shape) = unifiedObject.objectType {
@@ -355,7 +355,7 @@ struct MainToolbarContent: ToolbarContent {
     }
 
     private func hideSelectedObjects() {
-        document.saveToUndoStack()
+        // TODO: Add appropriate Command here
 
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
@@ -380,7 +380,7 @@ struct MainToolbarContent: ToolbarContent {
     }
 
     private func showAllObjects() {
-        document.saveToUndoStack()
+        // TODO: Add appropriate Command here
 
         for unifiedObject in document.unifiedObjects {
             if case .shape(let shape) = unifiedObject.objectType {
