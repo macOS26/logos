@@ -44,13 +44,14 @@ struct UnifiedObjectView: View {
                             }
                         }
                     }
-                    .compositingGroup()
                     .opacity(document.layers[layerIndex].opacity)
+                    .compositingGroup()
                     .blendMode(document.layers[layerIndex].blendMode.swiftUIBlendMode)
                 }
             }
 
         }
+        .compositingGroup()  // Isolate all content from background UI
         .onAppear {
             layerOpacities = document.layers.map { $0.opacity }
             layerBlendModes = document.layers.map { $0.blendMode }
@@ -350,12 +351,13 @@ struct NonBackgroundObjectsView: View {
                             }
                         }
                     }
-                    .compositingGroup()
                     .opacity(document.layers[layerIndex].opacity)
+                    .compositingGroup()
                     .blendMode(document.layers[layerIndex].blendMode.swiftUIBlendMode)
                 }
             }
         }
+        .compositingGroup()  // Isolate all content from background UI
         .onAppear {
             layerOpacities = document.layers.map { $0.opacity }
             layerBlendModes = document.layers.map { $0.blendMode }
