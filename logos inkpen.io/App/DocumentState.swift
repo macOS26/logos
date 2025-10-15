@@ -883,10 +883,7 @@ class DocumentState: ObservableObject {
 
     func delete() {
         guard let document = document else { return }
-        document.saveToUndoStack()
-
         document.removeSelectedObjects()
-
         updateAllStates()
     }
 
