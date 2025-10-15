@@ -53,7 +53,9 @@ struct MainToolbarContent: ToolbarContent {
     }
 
     private func closeSelectedPaths() {
-        // TODO: Add appropriate Command here
+        var oldShapes: [UUID: VectorShape] = [:]
+        var newShapes: [UUID: VectorShape] = [:]
+        var objectIDs: [UUID] = []
 
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
@@ -78,11 +80,19 @@ struct MainToolbarContent: ToolbarContent {
                             }.count
 
                             if !hasCloseElement && pointCount >= 3 {
+                                oldShapes[shape.id] = shape
+                                objectIDs.append(shape.id)
+
                                 var newElements = shape.path.elements
                                 newElements.append(.close)
 
                                 let newPath = VectorPath(elements: newElements, isClosed: true)
                                 document.updateShapePathUnified(id: shape.id, path: newPath)
+
+                                if let updatedObject = document.findObject(by: shape.id),
+                                   case .shape(let updatedShape) = updatedObject.objectType {
+                                    newShapes[shape.id] = updatedShape
+                                }
                             }
                         }
                     }
@@ -91,6 +101,11 @@ struct MainToolbarContent: ToolbarContent {
         }
 
         document.populateUnifiedObjectsFromLayersPreservingOrder()
+
+        if !objectIDs.isEmpty {
+            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+            document.commandManager.execute(command)
+        }
     }
 
     var body: some ToolbarContent {
