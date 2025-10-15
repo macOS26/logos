@@ -23,7 +23,7 @@ struct MarkerSettingsSection: View {
                     Spacer()
                     Text("\(Int(document.currentMarkerTipSize))pt")
                         .font(.subheadline)
-                        .foregroundColor(Color.ui.primaryText)
+                        .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
 
@@ -43,7 +43,7 @@ struct MarkerSettingsSection: View {
                     Spacer()
                     Text("\(Int(document.currentMarkerOpacity * 100))%")
                         .font(.subheadline)
-                        .foregroundColor(Color.ui.primaryText)
+                        .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
 
@@ -80,7 +80,7 @@ struct MarkerSettingsSection: View {
                     Spacer()
                     Text("\(Int(document.currentMarkerSmoothingTolerance))%")
                         .font(.subheadline)
-                        .foregroundColor(Color.ui.primaryText)
+                        .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
 
@@ -100,7 +100,7 @@ struct MarkerSettingsSection: View {
                     Spacer()
                     Text("\(Int(document.currentMarkerFeathering * 100))%")
                         .font(.subheadline)
-                        .foregroundColor(Color.ui.primaryText)
+                        .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
 
@@ -120,7 +120,7 @@ struct MarkerSettingsSection: View {
                     Spacer()
                     Text("\(Int(document.currentMarkerTaperStart * 100))%")
                         .font(.subheadline)
-                        .foregroundColor(Color.ui.primaryText)
+                        .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
 
@@ -140,7 +140,7 @@ struct MarkerSettingsSection: View {
                     Spacer()
                     Text("\(Int(document.currentMarkerTaperEnd * 100))%")
                         .font(.subheadline)
-                        .foregroundColor(Color.ui.primaryText)
+                        .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
 
@@ -160,7 +160,7 @@ struct MarkerSettingsSection: View {
                     Spacer()
                     Text("\(formatNumberForDisplay(document.currentMarkerMinTaperThickness))pt")
                         .font(.subheadline)
-                        .foregroundColor(Color.ui.primaryText)
+                        .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
 
