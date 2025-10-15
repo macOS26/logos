@@ -1,0 +1,50 @@
+import Foundation
+import Combine
+
+/// Command for clipping mask operations
+class ClippingMaskCommand: BaseCommand {
+    enum Operation {
+        case makeClippingMask(maskID: UUID, clippedShapeIDs: [UUID], oldShapes: [UUID: VectorShape], newShapes: [UUID: VectorShape])
+        case releaseClippingMask(affectedShapeIDs: [UUID], oldShapes: [UUID: VectorShape], newShapes: [UUID: VectorShape])
+        case moveClippingMask(maskID: UUID, clippedShapeIDs: [UUID], offset: CGPoint, oldShapes: [UUID: VectorShape], newShapes: [UUID: VectorShape])
+    }
+
+    private let operation: Operation
+
+    init(operation: Operation) {
+        self.operation = operation
+    }
+
+    override func execute(on document: VectorDocument) {
+        switch operation {
+        case .makeClippingMask(_, _, _, let newShapes),
+             .releaseClippingMask(_, _, let newShapes),
+             .moveClippingMask(_, _, _, _, let newShapes):
+            applyShapes(newShapes, to: document)
+        }
+        document.forceResyncUnifiedObjects()
+    }
+
+    override func undo(on document: VectorDocument) {
+        switch operation {
+        case .makeClippingMask(_, _, let oldShapes, _),
+             .releaseClippingMask(_, let oldShapes, _),
+             .moveClippingMask(_, _, _, let oldShapes, _):
+            applyShapes(oldShapes, to: document)
+        }
+        document.forceResyncUnifiedObjects()
+    }
+
+    private func applyShapes(_ shapes: [UUID: VectorShape], to document: VectorDocument) {
+        for (id, shape) in shapes {
+            if let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) {
+                let obj = document.unifiedObjects[index]
+                document.unifiedObjects[index] = VectorObject(
+                    shape: shape,
+                    layerIndex: obj.layerIndex,
+                    orderID: obj.orderID
+                )
+            }
+        }
+    }
+}

@@ -14,9 +14,13 @@ extension VectorDocument {
         }
 
         guard selectedShapes.count >= 2 else { return }
-        saveToUndoStack()
-
         guard let maskID = selectedShapes.last?.id else { return }
+
+        // Capture old state
+        var oldShapes: [UUID: VectorShape] = [:]
+        for shape in selectedShapes {
+            oldShapes[shape.id] = shape
+        }
 
         let shapes = getShapesForLayer(layerIndex)
         if let idx = shapes.firstIndex(where: { $0.id == maskID }),
@@ -52,11 +56,26 @@ extension VectorDocument {
                 }
             }
         }
+
+        // Capture new state and create command
+        var newShapes: [UUID: VectorShape] = [:]
+        for shapeID in oldShapes.keys {
+            if let shape = findShape(by: shapeID) {
+                newShapes[shapeID] = shape
+            }
+        }
+        let clippedIDs = selectedShapes.dropLast().map { $0.id }
+        let command = ClippingMaskCommand(operation: .makeClippingMask(
+            maskID: maskID,
+            clippedShapeIDs: clippedIDs,
+            oldShapes: oldShapes,
+            newShapes: newShapes
+        ))
+        commandManager.execute(command)
     }
 
     func releaseClippingMaskForSelection() {
         guard let layerIndex = selectedLayerIndex else { return }
-        saveToUndoStack()
 
         let selectedObjects = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
         let selectedShapes = selectedObjects.compactMap { unifiedObject -> VectorShape? in
@@ -67,6 +86,22 @@ extension VectorDocument {
         }
 
         let maskIDsToRelease: Set<UUID> = Set(selectedShapes.filter { $0.isClippingPath }.map { $0.id })
+
+        // Capture old state
+        var oldShapes: [UUID: VectorShape] = [:]
+        var affectedShapeIDs: [UUID] = []
+        for shape in selectedShapes {
+            oldShapes[shape.id] = shape
+            affectedShapeIDs.append(shape.id)
+        }
+        // Also capture shapes that are clipped by these masks
+        let shapes = getShapesForLayer(layerIndex)
+        for shape in shapes {
+            if let clipID = shape.clippedByShapeID, maskIDsToRelease.contains(clipID) {
+                oldShapes[shape.id] = shape
+                affectedShapeIDs.append(shape.id)
+            }
+        }
 
         for s in selectedShapes {
             let shapes = getShapesForLayer(layerIndex)
@@ -110,15 +145,39 @@ extension VectorDocument {
         }
 
         forceResyncUnifiedObjects()
+
+        // Capture new state and create command
+        var newShapes: [UUID: VectorShape] = [:]
+        for shapeID in affectedShapeIDs {
+            if let shape = findShape(by: shapeID) {
+                newShapes[shapeID] = shape
+            }
+        }
+        let command = ClippingMaskCommand(operation: .releaseClippingMask(
+            affectedShapeIDs: affectedShapeIDs,
+            oldShapes: oldShapes,
+            newShapes: newShapes
+        ))
+        commandManager.execute(command)
     }
 
     func moveClippingMask(_ maskID: UUID, by offset: CGPoint) {
         guard let layerIndex = selectedLayerIndex else { return }
-        saveToUndoStack()
 
         let shapes = getShapesForLayer(layerIndex)
         guard let maskIndex = shapes.firstIndex(where: { $0.id == maskID }),
               var maskShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: maskIndex) else { return }
+
+        // Capture old state
+        var oldShapes: [UUID: VectorShape] = [:]
+        var clippedShapeIDs: [UUID] = []
+        oldShapes[maskID] = maskShape
+        for shape in shapes {
+            if shape.clippedByShapeID == maskID {
+                oldShapes[shape.id] = shape
+                clippedShapeIDs.append(shape.id)
+            }
+        }
 
         maskShape.transform = maskShape.transform.translatedBy(x: offset.x, y: offset.y)
         setShapeAtIndex(layerIndex: layerIndex, shapeIndex: maskIndex, shape: maskShape)
@@ -133,6 +192,25 @@ extension VectorDocument {
         }
 
         forceResyncUnifiedObjects()
+
+        // Capture new state and create command
+        var newShapes: [UUID: VectorShape] = [:]
+        if let shape = findShape(by: maskID) {
+            newShapes[maskID] = shape
+        }
+        for shapeID in clippedShapeIDs {
+            if let shape = findShape(by: shapeID) {
+                newShapes[shapeID] = shape
+            }
+        }
+        let command = ClippingMaskCommand(operation: .moveClippingMask(
+            maskID: maskID,
+            clippedShapeIDs: clippedShapeIDs,
+            offset: offset,
+            oldShapes: oldShapes,
+            newShapes: newShapes
+        ))
+        commandManager.execute(command)
     }
 
     private func moveShapeByPathCoordinates(layerIndex: Int, shapeIndex: Int, by offset: CGPoint) {
