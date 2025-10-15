@@ -26,10 +26,6 @@ extension VectorDocument {
         // Calculate new orderID for group (use highest orderID from removed objects)
         let maxOrderID = objectsToRemove.map { $0.orderID }.max() ?? 0
 
-        // Apply changes
-        removeShapesUnified(layerIndex: layerIndex, where: { allSelectedIDs.contains($0.id) })
-        appendShapeToLayerUnified(layerIndex: layerIndex, shape: groupShape)
-
         let newSelectedIDs: Set<UUID> = [groupShape.id]
 
         // Create command
@@ -46,14 +42,14 @@ extension VectorDocument {
             newSelectedObjectIDs: newSelectedIDs
         )
 
+        commandManager.execute(command)
+
         selectedShapeIDs = [groupShape.id]
         selectedTextIDs.removeAll()
         populateUnifiedObjectsFromLayersPreservingOrder()
         selectedObjectIDs = [groupShape.id]
-
-        executeCommand(command)
     }
-    
+
     func flattenSelectedObjects() {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count > 1 else { return }
@@ -94,9 +90,6 @@ extension VectorDocument {
         
         let maxOrderID = objectsToRemove.map { $0.orderID }.max() ?? 0
 
-        removeSelectedShapes()
-        appendShapeToLayerUnified(layerIndex: layerIndex, shape: flattenedShape)
-
         let newSelectedIDs: Set<UUID> = [flattenedShape.id]
 
         // Create command
@@ -113,13 +106,13 @@ extension VectorDocument {
             newSelectedObjectIDs: newSelectedIDs
         )
 
+        commandManager.execute(command)
+
         selectedShapeIDs = [flattenedShape.id]
         populateUnifiedObjectsFromLayersPreservingOrder()
         selectedObjectIDs = [flattenedShape.id]
-
-        executeCommand(command)
     }
-    
+
     func ungroupSelectedObjects() {
         guard let layerIndex = selectedLayerIndex,
               !selectedShapeIDs.isEmpty else { return }
@@ -157,21 +150,16 @@ extension VectorDocument {
             }
         }
 
-        // Apply changes
-        removeShapesUnified(layerIndex: layerIndex, where: { shapesToRemove.contains($0.id) })
-
-        for shape in shapesToAdd {
-            appendShapeToLayerUnified(layerIndex: layerIndex, shape: shape)
-        }
-
-        // Capture new state
+        // Capture new state - calculate orderIDs for ungrouped shapes
         var addedShapes: [UUID: VectorShape] = [:]
         var addedOrderIDs: [UUID: Int] = [:]
-        for shape in shapesToAdd {
-            if let obj = unifiedObjects.first(where: { $0.id == shape.id }) {
-                addedShapes[shape.id] = shape
-                addedOrderIDs[shape.id] = obj.orderID
-            }
+
+        // Get the base orderID from the group being ungrouped
+        let baseOrderID = removedOrderIDs.values.first ?? 0
+
+        for (index, shape) in shapesToAdd.enumerated() {
+            addedShapes[shape.id] = shape
+            addedOrderIDs[shape.id] = baseOrderID + index
         }
 
         // Create command
@@ -188,13 +176,13 @@ extension VectorDocument {
             newSelectedObjectIDs: newSelectedShapeIDs
         )
 
+        commandManager.execute(command)
+
         selectedShapeIDs = newSelectedShapeIDs
         populateUnifiedObjectsFromLayersPreservingOrder()
         selectedObjectIDs = newSelectedShapeIDs
-
-        executeCommand(command)
     }
-    
+
     func unflattenSelectedObjects() {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count == 1,
@@ -225,21 +213,17 @@ extension VectorDocument {
             shapesToAdd.append(restoredShape)
             newSelectedIDs.insert(restoredShape.id)
         }
-        
-        removeShapeAtIndexUnified(layerIndex: layerIndex, shapeIndex: shapeIndex)
-        
-        for shape in shapesToAdd {
-            appendShapeToLayerUnified(layerIndex: layerIndex, shape: shape)
-        }
 
-        // Capture new state
+        // Capture new state - calculate orderIDs for unflattened shapes
         var addedShapes: [UUID: VectorShape] = [:]
         var addedOrderIDs: [UUID: Int] = [:]
-        for shape in shapesToAdd {
-            if let obj = unifiedObjects.first(where: { $0.id == shape.id }) {
-                addedShapes[shape.id] = shape
-                addedOrderIDs[shape.id] = obj.orderID
-            }
+
+        // Get the base orderID from the flattened group being removed
+        let baseOrderID = removedOrderIDs.values.first ?? 0
+
+        for (index, shape) in shapesToAdd.enumerated() {
+            addedShapes[shape.id] = shape
+            addedOrderIDs[shape.id] = baseOrderID + index
         }
 
         // Create command
@@ -256,13 +240,13 @@ extension VectorDocument {
             newSelectedObjectIDs: newSelectedIDs
         )
 
+        commandManager.execute(command)
+
         selectedShapeIDs = newSelectedIDs
         populateUnifiedObjectsFromLayersPreservingOrder()
         selectedObjectIDs = newSelectedIDs
-
-        executeCommand(command)
     }
-    
+
     func makeCompoundPath() {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count > 1 else { return }
@@ -295,9 +279,6 @@ extension VectorDocument {
 
         let maxOrderID = objectsToRemove.map { $0.orderID }.max() ?? 0
 
-        removeSelectedShapes()
-        appendShapeToLayerUnified(layerIndex: layerIndex, shape: compoundShape)
-
         let newSelectedIDs: Set<UUID> = [compoundShape.id]
 
         // Create command
@@ -314,13 +295,13 @@ extension VectorDocument {
             newSelectedObjectIDs: newSelectedIDs
         )
 
+        commandManager.execute(command)
+
         selectedShapeIDs = [compoundShape.id]
         populateUnifiedObjectsFromLayersPreservingOrder()
         selectedObjectIDs = [compoundShape.id]
-
-        executeCommand(command)
     }
-    
+
     func makeLoopingPath() {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count > 1 else { return }
@@ -354,9 +335,6 @@ extension VectorDocument {
         
         let maxOrderID = objectsToRemove.map { $0.orderID }.max() ?? 0
 
-        removeSelectedShapes()
-        appendShapeToLayerUnified(layerIndex: layerIndex, shape: loopingShape)
-
         let newSelectedIDs: Set<UUID> = [loopingShape.id]
 
         // Create command
@@ -373,13 +351,13 @@ extension VectorDocument {
             newSelectedObjectIDs: newSelectedIDs
         )
 
+        commandManager.execute(command)
+
         selectedShapeIDs = [loopingShape.id]
         populateUnifiedObjectsFromLayersPreservingOrder()
         selectedObjectIDs = [loopingShape.id]
-
-        executeCommand(command)
     }
-    
+
     func releaseCompoundPath() {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count == 1,
@@ -415,20 +393,16 @@ extension VectorDocument {
             newSelectedIDs.insert(individualShape.id)
         }
 
-        removeShapeAtIndexUnified(layerIndex: layerIndex, shapeIndex: shapeIndex)
-
-        for shape in newShapes {
-            appendShapeToLayerUnified(layerIndex: layerIndex, shape: shape)
-        }
-
-        // Capture new state
+        // Capture new state - calculate orderIDs for released shapes
         var addedShapes: [UUID: VectorShape] = [:]
         var addedOrderIDs: [UUID: Int] = [:]
-        for shape in newShapes {
-            if let obj = unifiedObjects.first(where: { $0.id == shape.id }) {
-                addedShapes[shape.id] = shape
-                addedOrderIDs[shape.id] = obj.orderID
-            }
+
+        // Get the base orderID from the compound being released
+        let baseOrderID = removedOrderIDs.values.first ?? 0
+
+        for (index, shape) in newShapes.enumerated() {
+            addedShapes[shape.id] = shape
+            addedOrderIDs[shape.id] = baseOrderID + index
         }
 
         // Create command
@@ -445,13 +419,13 @@ extension VectorDocument {
             newSelectedObjectIDs: newSelectedIDs
         )
 
+        commandManager.execute(command)
+
         selectedShapeIDs = newSelectedIDs
         populateUnifiedObjectsFromLayersPreservingOrder()
         selectedObjectIDs = newSelectedIDs
-
-        executeCommand(command)
     }
-    
+
     func releaseLoopingPath() {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count == 1,
@@ -487,21 +461,17 @@ extension VectorDocument {
             newShapes.append(individualShape)
             newSelectedIDs.insert(individualShape.id)
         }
-        
-        removeShapeAtIndexUnified(layerIndex: layerIndex, shapeIndex: shapeIndex)
-        
-        for shape in newShapes {
-            appendShapeToLayerUnified(layerIndex: layerIndex, shape: shape)
-        }
 
-        // Capture new state
+        // Capture new state - calculate orderIDs for released shapes
         var addedShapes: [UUID: VectorShape] = [:]
         var addedOrderIDs: [UUID: Int] = [:]
-        for shape in newShapes {
-            if let obj = unifiedObjects.first(where: { $0.id == shape.id }) {
-                addedShapes[shape.id] = shape
-                addedOrderIDs[shape.id] = obj.orderID
-            }
+
+        // Get the base orderID from the looping path being released
+        let baseOrderID = removedOrderIDs.values.first ?? 0
+
+        for (index, shape) in newShapes.enumerated() {
+            addedShapes[shape.id] = shape
+            addedOrderIDs[shape.id] = baseOrderID + index
         }
 
         // Create command
@@ -518,13 +488,13 @@ extension VectorDocument {
             newSelectedObjectIDs: newSelectedIDs
         )
 
+        commandManager.execute(command)
+
         selectedShapeIDs = newSelectedIDs
         populateUnifiedObjectsFromLayersPreservingOrder()
         selectedObjectIDs = newSelectedIDs
-
-        executeCommand(command)
     }
-    
+
     private func extractSubpaths(from cgPath: CGPath) -> [CGPath] {
         var subpaths: [CGPath] = []
         var currentPath = CGMutablePath()
