@@ -29,7 +29,6 @@ extension DrawingCanvas {
 
                     let baseTolerance: CGFloat = 8.0
                     let tolerance = max(2.0, baseTolerance / document.zoomLevel)
-
                     let isHit: Bool
                     if shape.isTextObject {
                         let transformedBounds = shape.bounds.applying(shape.transform)
@@ -122,7 +121,6 @@ extension DrawingCanvas {
         }
 
         var hitObject: VectorObject?
-
         let objectsInOrder = document.getObjectsInStackingOrder()
 
         for unifiedObject in objectsInOrder.reversed() {
@@ -153,7 +151,6 @@ extension DrawingCanvas {
                     }
 
                     let textPos = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
-
                     let textContentArea = CGRect(
                         x: textPos.x,
                         y: textPos.y,
@@ -269,7 +266,6 @@ extension DrawingCanvas {
             } else if isStrokeOnly && shape.strokeStyle != nil {
                 let strokeWidth = shape.strokeStyle?.width ?? 1.0
                 let strokeTolerance = max(12.0, strokeWidth + 8.0)
-
                 let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
                 return isHit
             } else {

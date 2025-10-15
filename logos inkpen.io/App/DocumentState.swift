@@ -4,7 +4,6 @@ import UniformTypeIdentifiers
 
 class DocumentState: ObservableObject {
     @Published var document: VectorDocument?
-
     @Published var canUndo = false
     @Published var canRedo = false
     @Published var hasSelection = false
@@ -253,7 +252,6 @@ class DocumentState: ObservableObject {
         panel.message = "Export as SVG (Scalable Vector Graphics)"
 
         let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 250))
-
         let textToOutlinesCheckbox = NSButton(checkboxWithTitle: "Convert text to outlines",
                                               target: nil, action: nil)
         textToOutlinesCheckbox.frame = NSRect(x: 20, y: 210, width: 250, height: 20)
@@ -360,7 +358,6 @@ class DocumentState: ObservableObject {
             let includeBackground = bgCheckbox.state == .on
             let convertTextToOutlines = textToOutlinesCheckbox.state == .on
             let includeInkpenData = includeInkpenCheckbox.state == .on
-
             let textRenderingMode: AppState.SVGTextRenderingMode = glyphsRadio.state == .on ? .glyphs : .lines
             AppState.shared.svgTextRenderingMode = textRenderingMode
 
@@ -415,7 +412,6 @@ class DocumentState: ObservableObject {
         panel.message = "Export as PDF (Portable Document Format)"
 
         let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 250))
-
         let textToOutlinesCheckbox = NSButton(checkboxWithTitle: "Convert text to outlines",
                                               target: nil, action: nil)
         textToOutlinesCheckbox.frame = NSRect(x: 20, y: 210, width: 250, height: 20)
@@ -478,7 +474,6 @@ class DocumentState: ObservableObject {
             let convertTextToOutlines = textToOutlinesCheckbox.state == .on
             let includeInkpenData = includeInkpenCheckbox.state == .on
             let includeBackground = bgCheckbox.state == .on
-
             let textRenderingMode: AppState.PDFTextRenderingMode = linesRadio.state == .on ? .lines : .glyphs
 
             AppState.shared.pdfTextRenderingMode = textRenderingMode
@@ -526,7 +521,6 @@ class DocumentState: ObservableObject {
         panel.message = "Export as PNG (Portable Network Graphics)"
 
         let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 350, height: 170))
-
         let textToOutlinesCheckbox = NSButton(checkboxWithTitle: "Convert text to outlines",
                                               target: nil, action: nil)
         textToOutlinesCheckbox.frame = NSRect(x: 20, y: 130, width: 250, height: 20)
@@ -739,7 +733,6 @@ class DocumentState: ObservableObject {
         panel.message = "Export SVG at 96 DPI for AutoDesk applications"
 
         let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 180))
-
         let textToOutlinesCheckbox = NSButton(checkboxWithTitle: "Convert text to outlines",
                                               target: nil, action: nil)
         textToOutlinesCheckbox.frame = NSRect(x: 20, y: 140, width: 250, height: 20)
@@ -797,7 +790,6 @@ class DocumentState: ObservableObject {
 
             let includeBackground = bgCheckbox.state == .on
             let convertTextToOutlines = textToOutlinesCheckbox.state == .on
-
             let textRenderingMode: AppState.SVGTextRenderingMode = glyphsRadio.state == .on ? .glyphs : .lines
             AppState.shared.svgTextRenderingMode = textRenderingMode
 

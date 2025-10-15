@@ -4,7 +4,6 @@ struct PathfinderOperationButton: View {
     let operation: PathfinderOperation
     let isEnabled: Bool
     let action: () -> Void
-
     var body: some View {
         Button(action: action) {
             VStack(spacing: 2) {

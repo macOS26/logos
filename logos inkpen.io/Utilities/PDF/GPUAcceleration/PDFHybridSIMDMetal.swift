@@ -50,12 +50,10 @@ class PDFHybridProcessor {
 
         for batch in 0..<fullBatches {
             let baseIndex = batch * stride
-
             let p0 = simd_float3(Float(points[baseIndex + 0].x), Float(points[baseIndex + 0].y), 1.0)
             let p1 = simd_float3(Float(points[baseIndex + 1].x), Float(points[baseIndex + 1].y), 1.0)
             let p2 = simd_float3(Float(points[baseIndex + 2].x), Float(points[baseIndex + 2].y), 1.0)
             let p3 = simd_float3(Float(points[baseIndex + 3].x), Float(points[baseIndex + 3].y), 1.0)
-
             let t0 = matrix.matrix * p0
             let t1 = matrix.matrix * p1
             let t2 = matrix.matrix * p2

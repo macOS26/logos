@@ -132,7 +132,6 @@ class PersistentGradientHUDManager {
 
         if let screen = mainScreen {
             let screenFrame = screen.visibleFrame
-
             var newFrame = currentFrame
             if newFrame.maxX > screenFrame.maxX {
                 newFrame.origin.x = screenFrame.maxX - newFrame.width
@@ -231,7 +230,6 @@ class PersistentInkHUDManager {
 
         if let screen = mainScreen {
             let screenFrame = screen.visibleFrame
-
             var newFrame = currentFrame
             if newFrame.maxX > screenFrame.maxX {
                 newFrame.origin.x = screenFrame.maxX - newFrame.width

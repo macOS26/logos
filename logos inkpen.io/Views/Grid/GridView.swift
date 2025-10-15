@@ -43,7 +43,6 @@ private struct GridLines: View {
     let lineWidth: CGFloat
     let zoomLevel: Double
     let canvasOffset: CGPoint
-    
     var body: some View {
         createGridPath(
             gridSpacing: gridSpacing,
@@ -60,7 +59,6 @@ private struct GridLines: View {
 struct GridView: View {
     let document: VectorDocument
     let geometry: GeometryProxy
-
     var body: some View {
         let baseSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit
         let spacingMultiplier: CGFloat = {

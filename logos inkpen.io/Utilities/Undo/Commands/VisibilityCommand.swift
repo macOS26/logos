@@ -32,7 +32,6 @@ class VisibilityCommand: BaseCommand {
         for id in objectIDs {
             guard let index = document.unifiedObjects.firstIndex(where: { $0.id == id }),
                   let value = values[id] else { continue }
-            
             var obj = document.unifiedObjects[index]
             
             if case .shape(var shape) = obj.objectType {

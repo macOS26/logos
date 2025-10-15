@@ -44,7 +44,6 @@ extension PDFCommandParser {
         var functionDict: CGPDFDictionaryRef?
         if CGPDFObjectGetValue(funcObj, .dictionary, &functionDict),
            let funcDict = functionDict {
-
             var functionType: CGPDFInteger = 0
             CGPDFDictionaryGetInteger(funcDict, "FunctionType", &functionType)
 
@@ -78,7 +77,6 @@ extension PDFCommandParser {
             var functionObj: CGPDFObjectRef?
             if CGPDFDictionaryGetObject(shadingDict, "Function", &functionObj),
                let funcObj = functionObj {
-
                 var functionDict: CGPDFDictionaryRef?
                 if CGPDFObjectGetValue(funcObj, .dictionary, &functionDict),
                    let funcDict = functionDict {
@@ -116,7 +114,6 @@ extension PDFCommandParser {
 
         var c0Array: CGPDFArrayRef?
         var c1Array: CGPDFArrayRef?
-
         var startColor = VectorColor.black
         var endColor = VectorColor.white
 
@@ -156,7 +153,6 @@ extension PDFCommandParser {
         CGPDFDictionaryGetArray(dictionary, "Domain", &domainArray)
 
         let functionCount = CGPDFArrayGetCount(functions)
-
         var bounds: [Double] = [0.0]
         if let boundsArr = boundsArray {
             let boundsCount = CGPDFArrayGetCount(boundsArr)
@@ -182,7 +178,6 @@ extension PDFCommandParser {
             var functionDict: CGPDFDictionaryRef?
             if CGPDFObjectGetValue(funcObj, .dictionary, &functionDict),
                let funcDict = functionDict {
-
                 let subStops = extractExponentialFunctionGradientStops(dictionary: funcDict)
 
                 if subStops.count >= 2 {

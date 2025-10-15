@@ -55,7 +55,6 @@ class SVGToInkPenImporter: ObservableObject {
             let scaleX = targetSize.width / originalSize.width
             let scaleY = targetSize.height / originalSize.height
             let scale = min(scaleX, scaleY)
-
             let scaledWidth = originalSize.width * scale
             let scaledHeight = originalSize.height * scale
             let offsetX = (targetSize.width - scaledWidth) / 2
@@ -132,7 +131,6 @@ class SVGToInkPenImporter: ObservableObject {
 
     private func createVectorDocumentFromSVG(_ svgDoc: SVGDocument, svgData: Data, name: String = "Imported SVG") -> VectorDocument {
         let svgSize = svgDoc.size
-
         let settings = createDocumentSettings(from: svgSize)
 
         let mainLayer = VectorLayer(
@@ -144,7 +142,6 @@ class SVGToInkPenImporter: ObservableObject {
         )
 
         let shapes = extractShapesFromSVG(svgDoc, svgData: svgData)
-
         let document = VectorDocument(settings: settings)
         document.layers = [mainLayer]
 
@@ -160,7 +157,6 @@ class SVGToInkPenImporter: ObservableObject {
     private func createDocumentSettings(from svgSize: CGSize) -> DocumentSettings {
         let widthInPoints = svgSize.width
         let heightInPoints = svgSize.height
-
         let widthInInches = widthInPoints / 72.0
         let heightInInches = heightInPoints / 72.0
 
@@ -378,7 +374,6 @@ struct SVGImportView: View {
 
 struct SVGImportResultView: View {
     let result: SVGToInkPenImporter.ImportResult
-
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {

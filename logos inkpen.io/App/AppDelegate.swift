@@ -80,7 +80,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
         let hasLaunchedBefore = UserDefaults.standard.bool(forKey: "HasLaunchedBefore")
-
         let hasDocuments = NSDocumentController.shared.documents.count > 0
 
         if hasDocuments {

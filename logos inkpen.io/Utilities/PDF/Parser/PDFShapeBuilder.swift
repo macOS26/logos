@@ -85,7 +85,6 @@ extension PDFCommandParser {
                     let r = Double(currentStrokeColor.components?[0] ?? 0.0)
                     let g = Double(currentStrokeColor.components?[1] ?? 0.0)
                     let b = Double(currentStrokeColor.components?[2] ?? 0.0)
-
                     let strokeColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: 1.0))
                     let strokeStyle = StrokeStyle(
                         color: strokeColor,
@@ -201,7 +200,6 @@ extension PDFCommandParser {
         }
 
         let vectorPath = VectorPath(elements: combinedElements, isClosed: combinedElements.contains(.close), fillRule: .evenOdd)
-
         var fillStyle: FillStyle? = nil
         var strokeStyle: StrokeStyle? = nil
 
@@ -213,7 +211,6 @@ extension PDFCommandParser {
                 let r = Double(currentFillColor.components?[0] ?? 0.0)
                 let g = Double(currentFillColor.components?[1] ?? 0.0)
                 let b = Double(currentFillColor.components?[2] ?? 1.0)
-
                 let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: 1.0))
                 fillStyle = FillStyle(color: vectorColor, opacity: currentFillOpacity)
             }
@@ -223,7 +220,6 @@ extension PDFCommandParser {
             let r = Double(currentStrokeColor.components?[0] ?? 0.0)
             let g = Double(currentStrokeColor.components?[1] ?? 0.0)
             let b = Double(currentStrokeColor.components?[2] ?? 1.0)
-
             let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: 1.0))
             strokeStyle = StrokeStyle(
                 color: vectorColor,
@@ -256,7 +252,6 @@ extension PDFCommandParser {
         }
 
         var vectorElements: [PathElement] = []
-
         let shouldApplyFlip = filled && !stroked
 
         for command in currentPath {
@@ -315,7 +310,6 @@ extension PDFCommandParser {
         }
 
         let vectorPath = VectorPath(elements: vectorElements, isClosed: currentPath.contains(.closePath))
-
         var fillStyle: FillStyle? = nil
         var strokeStyle: StrokeStyle? = nil
 
@@ -344,7 +338,6 @@ extension PDFCommandParser {
             let r = Double(currentStrokeColor.components?[0] ?? 0.0)
             let g = Double(currentStrokeColor.components?[1] ?? 0.0)
             let b = Double(currentStrokeColor.components?[2] ?? 0.0)
-
             let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: 1.0))
             strokeStyle = StrokeStyle(
                 color: vectorColor,

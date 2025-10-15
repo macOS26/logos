@@ -42,7 +42,6 @@ struct PDFAdvancedSIMD {
         var xDiffs = [Float](repeating: 0, count: count)
         var yDiffs = [Float](repeating: 0, count: count)
         var distances = [Float](repeating: 0, count: count)
-
         let originX = Float(origin.x)
         let originY = Float(origin.y)
 
@@ -71,25 +70,21 @@ struct PDFAdvancedSIMD {
 
         let count = points.count
         var results = [CGPoint](repeating: .zero, count: count)
-
         let a = Float(transform.a)
         let b = Float(transform.b)
         let c = Float(transform.c)
         let d = Float(transform.d)
         let tx = Float(transform.tx)
         let ty = Float(transform.ty)
-
         let stride = 4
         let fullBatches = count / stride
 
         for batch in 0..<fullBatches {
             let baseIndex = batch * stride
-
             let p0 = simd_float2(Float(points[baseIndex + 0].x), Float(points[baseIndex + 0].y))
             let p1 = simd_float2(Float(points[baseIndex + 1].x), Float(points[baseIndex + 1].y))
             let p2 = simd_float2(Float(points[baseIndex + 2].x), Float(points[baseIndex + 2].y))
             let p3 = simd_float2(Float(points[baseIndex + 3].x), Float(points[baseIndex + 3].y))
-
             let t0 = simd_float2(a * p0.x + c * p0.y + tx, b * p0.x + d * p0.y + ty)
             let t1 = simd_float2(a * p1.x + c * p1.y + tx, b * p1.x + d * p1.y + ty)
             let t2 = simd_float2(a * p2.x + c * p2.y + tx, b * p2.x + d * p2.y + ty)
@@ -115,22 +110,18 @@ struct PDFAdvancedSIMD {
         guard steps > 0 else { return [] }
 
         var results = [CGPoint](repeating: .zero, count: steps)
-
         let startVec = simd_float2(Float(start.x), Float(start.y))
         let endVec = simd_float2(Float(end.x), Float(end.y))
         let delta = endVec - startVec
-
         let stride = 4
         let fullBatches = steps / stride
 
         for batch in 0..<fullBatches {
             let baseIndex = batch * stride
-
             let t0 = Float(baseIndex + 0) / Float(steps - 1)
             let t1 = Float(baseIndex + 1) / Float(steps - 1)
             let t2 = Float(baseIndex + 2) / Float(steps - 1)
             let t3 = Float(baseIndex + 3) / Float(steps - 1)
-
             let p0 = startVec + t0 * delta
             let p1 = startVec + t1 * delta
             let p2 = startVec + t2 * delta
@@ -161,7 +152,6 @@ struct PDFAdvancedSIMD {
         guard !tValues.isEmpty else { return [] }
 
         var results = [CGPoint](repeating: .zero, count: tValues.count)
-
         let p0Vec = simd_float2(Float(p0.x), Float(p0.y))
         let p1Vec = simd_float2(Float(p1.x), Float(p1.y))
         let p2Vec = simd_float2(Float(p2.x), Float(p2.y))
@@ -173,7 +163,6 @@ struct PDFAdvancedSIMD {
             let oneMinusT3 = oneMinusT2 * oneMinusT
             let t2 = t * t
             let t3 = t2 * t
-
             let point = oneMinusT3 * p0Vec +
                        3.0 * oneMinusT2 * t * p1Vec +
                        3.0 * oneMinusT * t2 * p2Vec +
@@ -220,7 +209,6 @@ struct PDFAdvancedSIMD {
         guard !points.isEmpty else { return [] }
 
         let cacheOptimalBatchSize = 1024
-
         var results = [CGPoint](repeating: .zero, count: points.count)
 
         var index = 0
@@ -241,10 +229,8 @@ struct PDFAdvancedSIMD {
         guard !testRects.isEmpty else { return [] }
 
         var results = [Bool](repeating: false, count: testRects.count)
-
         let rectMin = simd_float2(Float(rect.minX), Float(rect.minY))
         let rectMax = simd_float2(Float(rect.maxX), Float(rect.maxY))
-
         let stride = 4
         let fullBatches = testRects.count / stride
 
@@ -255,7 +241,6 @@ struct PDFAdvancedSIMD {
                 let testRect = testRects[baseIndex + i]
                 let testMin = simd_float2(Float(testRect.minX), Float(testRect.minY))
                 let testMax = simd_float2(Float(testRect.maxX), Float(testRect.maxY))
-
                 let intersects = rectMin.x <= testMax.x &&
                                 rectMax.x >= testMin.x &&
                                 rectMin.y <= testMax.y &&
@@ -281,7 +266,6 @@ struct PDFAdvancedSIMD {
         if points.count >= 10000 {
             let coreCount = ProcessInfo.processInfo.processorCount
             let batchSize = (points.count + coreCount - 1) / coreCount
-
             var results = [CGPoint](repeating: .zero, count: points.count)
 
             results.withUnsafeMutableBufferPointer { buffer in

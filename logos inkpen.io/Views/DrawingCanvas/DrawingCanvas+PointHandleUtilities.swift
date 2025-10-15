@@ -80,7 +80,6 @@ extension DrawingCanvas {
 
                 let newPoint = VectorPoint(newPosition.x, newPosition.y)
                 var elements = shape.path.elements
-
                 let originalPosition: CGPoint
                 switch elements[pointID.elementIndex] {
                 case .move(let to), .line(let to):
@@ -103,7 +102,6 @@ extension DrawingCanvas {
                     elements[pointID.elementIndex] = .line(to: newPoint)
                 case .curve(let oldTo, let control1, let control2):
                     let control2Collapsed = (abs(control2.x - oldTo.x) < 0.1 && abs(control2.y - oldTo.y) < 0.1)
-
                     let newControl1 = control1
                     let newControl2 = control2Collapsed ? newPoint : VectorPoint(control2.x + deltaX, control2.y + deltaY)
 
@@ -117,7 +115,6 @@ extension DrawingCanvas {
                 if pointID.elementIndex + 1 < elements.count {
                     if case .curve(let nextTo, let nextControl1, let nextControl2) = elements[pointID.elementIndex + 1] {
                         let outgoingCollapsed = (abs(nextControl1.x - originalPosition.x) < 0.1 && abs(nextControl1.y - originalPosition.y) < 0.1)
-
                         let newNextControl1 = outgoingCollapsed ? newPoint : VectorPoint(nextControl1.x + deltaX, nextControl1.y + deltaY)
                         elements[pointID.elementIndex + 1] = .curve(to: nextTo, control1: newNextControl1, control2: nextControl2)
                     }
@@ -146,7 +143,6 @@ extension DrawingCanvas {
         switch elements[elementIndex] {
         case .curve(let to, _, let control2):
             let incomingHandleCollapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
-
             var outgoingHandleCollapsed = true
             if elementIndex + 1 < elements.count {
                 let nextElement = elements[elementIndex + 1]

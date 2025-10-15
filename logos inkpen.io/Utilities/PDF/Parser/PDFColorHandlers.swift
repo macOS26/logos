@@ -79,7 +79,6 @@ extension PDFCommandParser {
         let r = (1.0 - c) * (1.0 - k)
         let g = (1.0 - m) * (1.0 - k)
         let b = (1.0 - y) * (1.0 - k)
-
         let colorSpace = ColorManager.shared.workingCGColorSpace
         guard let color = CGColor(colorSpace: colorSpace,
                                   components: [r, g, b, 1.0]) else {
@@ -103,7 +102,6 @@ extension PDFCommandParser {
         let r = (1.0 - c) * (1.0 - k)
         let g = (1.0 - m) * (1.0 - k)
         let b = (1.0 - y) * (1.0 - k)
-
         let colorSpace = ColorManager.shared.workingCGColorSpace
         guard let color = CGColor(colorSpace: colorSpace,
                                   components: [r, g, b, 1.0]) else {

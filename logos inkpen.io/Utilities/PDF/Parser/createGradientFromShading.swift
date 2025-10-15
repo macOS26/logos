@@ -21,7 +21,6 @@ extension PDFCommandParser {
 
         let ctmAngle = atan2(currentTransformMatrix.b, currentTransformMatrix.a) * 180.0 / .pi
         let correctedAngle = -ctmAngle
-
         var linearGradient = LinearGradient(
             startPoint: CGPoint(x: 0.0, y: 0.5),
             endPoint: CGPoint(x: 1.0, y: 0.5),

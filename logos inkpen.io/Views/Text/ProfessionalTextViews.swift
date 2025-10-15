@@ -83,7 +83,6 @@ struct ProfessionalTextDisplayView: View {
     let dragOffset: CGSize
     let textBoxState: ProfessionalTextCanvas.TextBoxState
     let viewMode: ViewMode
-
     var body: some View {
         Group {
             ProfessionalTextContentView(
@@ -103,7 +102,6 @@ struct ProfessionalTextContentView: View {
     @ObservedObject var viewModel: ProfessionalTextViewModel
     let textBoxState: ProfessionalTextCanvas.TextBoxState
     var viewMode: ViewMode = .color
-
     var body: some View {
         let shouldAllowHitTesting = textBoxState == .blue
         ProfessionalUniversalTextView(viewModel: viewModel, textBoxState: textBoxState, viewMode: viewMode)

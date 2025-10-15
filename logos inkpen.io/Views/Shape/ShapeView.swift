@@ -180,7 +180,6 @@ struct ShapeView: View {
         // Use the strokeStyle parameter's width, not the outer shape's (important for groups)
         let actualStrokeWidth = previewStrokeWidth ?? strokeStyle.width
         let actualStrokePlacement = previewStrokePlacement ?? strokeStyle.placement
-
         let swiftUIStrokeStyle = SwiftUI.StrokeStyle(
             lineWidth: actualStrokeWidth,
             lineCap: strokeStyle.lineCap.cgLineCap.swiftUILineCap,
@@ -236,7 +235,6 @@ struct ShapeView: View {
             let boundingBox = path.cgPath.boundingBoxOfPath
             let expansion = max(actualStrokeWidth * 4, 1000)
             let largeRect = boundingBox.insetBy(dx: -expansion, dy: -expansion)
-
             let outsideMask = Path { maskPath in
                 maskPath.addRect(largeRect)
                 maskPath.addPath(path)

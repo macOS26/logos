@@ -39,7 +39,6 @@ struct CurveSmoothing {
         for i in 0..<points.count-1 {
             let p0 = points[i]
             let p1 = points[i + 1]
-
             let q = CGPoint(
                 x: p0.x + (p1.x - p0.x) * ratio,
                 y: p0.y + (p1.y - p0.y) * ratio
@@ -114,7 +113,6 @@ struct CurveSmoothing {
             let p1 = points[i - 1]
             let p2 = points[i]
             let p3 = points[min(points.count - 1, i + 1)]
-
             var tension = baseTension
             if adaptiveTension {
                 let curvature = calculateCurvature(p0: p0, p1: p1, p2: p2)
@@ -141,7 +139,6 @@ struct CurveSmoothing {
         let B = point.y - lineStart.y
         let C = lineEnd.x - lineStart.x
         let D = lineEnd.y - lineStart.y
-
         let dot = A * C + B * D
         let lenSq = C * C + D * D
 
@@ -150,7 +147,6 @@ struct CurveSmoothing {
         }
 
         let param = dot / lenSq
-
         let xx, yy: Double
         if param < 0 {
             xx = lineStart.x
@@ -171,7 +167,6 @@ struct CurveSmoothing {
     private static func calculateCurvature(p0: CGPoint, p1: CGPoint, p2: CGPoint) -> Double {
         let v1 = CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
         let v2 = CGPoint(x: p2.x - p1.x, y: p2.y - p1.y)
-
         let len1 = sqrt(v1.x * v1.x + v1.y * v1.y)
         let len2 = sqrt(v2.x * v2.x + v2.y * v2.y)
 
@@ -181,7 +176,6 @@ struct CurveSmoothing {
 
         let n1 = CGPoint(x: v1.x / len1, y: v1.y / len1)
         let n2 = CGPoint(x: v2.x / len2, y: v2.y / len2)
-
         let dotProduct = n1.x * n2.x + n1.y * n2.y
 
         return 1.0 - abs(dotProduct)
@@ -219,11 +213,9 @@ struct CurveSmoothing {
         let d1 = sqrt(pow(p1.x - p0.x, 2) + pow(p1.y - p0.y, 2))
         let d2 = sqrt(pow(p2.x - p1.x, 2) + pow(p2.y - p1.y, 2))
         let d3 = sqrt(pow(p3.x - p2.x, 2) + pow(p3.y - p2.y, 2))
-
         let d1Safe = max(d1, 0.001)
         let d2Safe = max(d2, 0.001)
         let d3Safe = max(d3, 0.001)
-
         let t1 = CGPoint(
             x: (p2.x - p0.x) / (d1Safe + d2Safe),
             y: (p2.y - p0.y) / (d1Safe + d2Safe)

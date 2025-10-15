@@ -30,7 +30,6 @@ extension PDFCommandParser {
 
         let compoundPath = VectorPath(elements: allElements, isClosed: false, fillRule: .evenOdd)
         let fillStyle = FillStyle(gradient: gradient)
-
         let compoundShape = VectorShape(
             name: "PDF Compound Shape (Gradient)",
             path: compoundPath,

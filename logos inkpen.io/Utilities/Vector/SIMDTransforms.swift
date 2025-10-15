@@ -11,7 +11,6 @@ extension VectorPoint {
         )
 
         let homogeneous = SIMD3(simdPoint.x, simdPoint.y, 1.0)
-
         let result = matrix * homogeneous
 
         return VectorPoint(simd: SIMD2(result.x, result.y))

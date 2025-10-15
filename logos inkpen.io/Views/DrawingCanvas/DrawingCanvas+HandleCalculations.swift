@@ -12,7 +12,6 @@ extension DrawingCanvas {
             guard case .curve(let anchorTo, let control1, _) = elements[draggedHandleID.elementIndex] else { return }
 
             let anchorPoint = CGPoint(x: anchorTo.x, y: anchorTo.y)
-
             let nextIndex = draggedHandleID.elementIndex + 1
             if nextIndex < elements.count, case .curve(let nextTo, let currentOutgoing, let nextControl2) = elements[nextIndex] {
 
@@ -32,7 +31,6 @@ extension DrawingCanvas {
             if prevIndex >= 0, case .curve(let anchorTo, let prevControl1, let currentIncoming) = elements[prevIndex] {
 
                 let anchorPoint = CGPoint(x: anchorTo.x, y: anchorTo.y)
-
                 let oppositeHandle = calculateLinkedHandle(
                     anchorPoint: anchorPoint,
                     draggedHandle: newDraggedPosition,

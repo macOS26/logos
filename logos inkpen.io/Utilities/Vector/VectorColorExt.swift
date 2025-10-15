@@ -2,7 +2,6 @@ import SwiftUI
 
 extension VectorColor {
     var autocadColorIndex: Int {
-
         let red = VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 0, alpha: 1))
         let yellow = VectorColor.rgb(RGBColor(red: 1, green: 1, blue: 0, alpha: 1))
         let green = VectorColor.rgb(RGBColor(red: 0, green: 1, blue: 0, alpha: 1))

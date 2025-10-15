@@ -39,7 +39,6 @@ struct HSBInputSection: View {
         let normalizedHue = userHue >= 360 ? 0 : userHue
         let s = (Double(saturationValue) ?? 0) / 100.0
         let b = (Double(brightnessValue) ?? 0) / 100.0
-        
         let matchingColor = HSBColorModel(hue: normalizedHue, saturation: s, brightness: b)
         return pantoneLibrary.findClosestMatch(to: matchingColor)
     }
@@ -399,7 +398,6 @@ struct HSBInputSection: View {
         let normalizedHue = userHue >= 360 ? 0 : userHue
         let s = (Double(saturationValue) ?? 0) / 100.0
         let b = (Double(brightnessValue) ?? 0) / 100.0
-        
         let calculationColor = HSBColorModel(hue: normalizedHue, saturation: s, brightness: b)
         let rgbColor = calculationColor.rgbColor
         let r = Int(rgbColor.red * 255)

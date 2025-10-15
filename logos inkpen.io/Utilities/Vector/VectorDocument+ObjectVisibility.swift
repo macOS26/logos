@@ -88,7 +88,6 @@ extension VectorDocument {
         var affectedIDs: [UUID] = []
         var oldValues: [UUID: Bool] = [:]
         var newValues: [UUID: Bool] = [:]
-
         let shapes = getShapesForLayer(layerIndex)
         for (shapeIndex, shape) in shapes.enumerated() {
             if !shape.isVisible {

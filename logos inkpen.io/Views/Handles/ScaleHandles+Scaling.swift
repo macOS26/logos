@@ -16,10 +16,8 @@ extension ScaleHandles {
         }
 
         let currentLocation = dragValue.location
-
         let anchorScreenX = scalingAnchorPoint.x * zoomLevel + canvasOffset.x
         let anchorScreenY = scalingAnchorPoint.y * zoomLevel + canvasOffset.y
-
         let startDistance = CGPoint(
             x: startLocation.x - anchorScreenX,
             y: startLocation.y - anchorScreenY
@@ -35,7 +33,6 @@ extension ScaleHandles {
         let adaptiveMinDistanceY = min(20.0, max(2.0, abs(baseBounds.height) * 0.05))
         let maxScale: CGFloat = 10.0
         let minScale: CGFloat = 0.1
-
         var scaleX = abs(startDistance.x) > adaptiveMinDistanceX ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
         var scaleY = abs(startDistance.y) > adaptiveMinDistanceY ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
 
@@ -65,7 +62,6 @@ extension ScaleHandles {
 
         if let unifiedObject = document.findObject(by: shape.id),
         let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
-
         let shapes = document.getShapesForLayer(layerIndex)
         if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }),
            var updatedShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
@@ -117,10 +113,8 @@ extension ScaleHandles {
 
         let currentLocation = dragValue.location
         let preciseZoom = Double(zoomLevel)
-
         let anchorScreenX = scalingAnchorPoint.x * preciseZoom + canvasOffset.x
         let anchorScreenY = scalingAnchorPoint.y * preciseZoom + canvasOffset.y
-
         let startDistance = CGPoint(
             x: startLocation.x - anchorScreenX,
             y: startLocation.y - anchorScreenY
@@ -134,7 +128,6 @@ extension ScaleHandles {
         let minDistance: CGFloat = 10.0
         let maxScale: CGFloat = 10.0
         let minScale: CGFloat = 0.1
-
         var scaleX = abs(startDistance.x) > minDistance ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
         var scaleY = abs(startDistance.y) > minDistance ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
 

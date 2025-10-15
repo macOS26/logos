@@ -46,7 +46,6 @@ class MetalDrawingOptimizer {
 
         guard let startPoint = points.first,
               let endPoint = points.last else { return points }
-
         var maxDistance: CGFloat = 0
         var maxIndex = 0
 
@@ -61,7 +60,6 @@ class MetalDrawingOptimizer {
         if maxDistance > tolerance {
             let leftPoints = Array(points[0...maxIndex])
             let rightPoints = Array(points[maxIndex..<points.count])
-
             let leftSimplified = douglasPeuckerOptimized(points: leftPoints, tolerance: tolerance)
             let rightSimplified = douglasPeuckerOptimized(points: rightPoints, tolerance: tolerance)
 
@@ -76,14 +74,12 @@ class MetalDrawingOptimizer {
         let B = point.y - lineStart.y
         let C = lineEnd.x - lineStart.x
         let D = lineEnd.y - lineStart.y
-
         let dot = A * C + B * D
         let lenSq = C * C + D * D
 
         guard lenSq != 0 else { return sqrt(A * A + B * B) }
 
         let param = dot / lenSq
-
         let closestPoint: CGPoint
         if param < 0 {
             closestPoint = lineStart

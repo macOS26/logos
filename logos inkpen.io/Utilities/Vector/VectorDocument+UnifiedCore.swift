@@ -128,7 +128,6 @@ extension VectorDocument {
         let existingOrderIDs = getObjectsInLayer(layerIndex).map { $0.orderID }
         let highestOrderID = existingOrderIDs.isEmpty ? 0 : (existingOrderIDs.max() ?? 0)
         let orderID = highestOrderID + 1
-
         let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
         unifiedObjects.append(unifiedObject)
     }

@@ -42,12 +42,10 @@ struct PDFBoundsCalculator {
 
         for batch in 0..<fullBatches {
             let baseIndex = batch * stride
-
             let b0 = shapes[baseIndex + 0].bounds
             let b1 = shapes[baseIndex + 1].bounds
             let b2 = shapes[baseIndex + 2].bounds
             let b3 = shapes[baseIndex + 3].bounds
-
             let mins = simd_float4(
                 Float(b0.origin.x),
                 Float(b0.origin.y),
@@ -86,7 +84,6 @@ struct PDFBoundsCalculator {
         let minY = min(minVec.y, minVec.w)
         let maxX = max(maxVec.x, maxVec.z)
         let maxY = max(maxVec.y, maxVec.w)
-
         var finalMinX = Double(minX)
         var finalMinY = Double(minY)
         var finalMaxX = Double(maxX)
@@ -195,7 +192,6 @@ struct PDFBoundsCalculator {
             for i in 0..<4 {
                 let point = points[baseIndex + i]
                 let p = simd_float2(Float(point.x), Float(point.y))
-
                 let inside = p.x >= rectMin.x && p.x <= rectMax.x &&
                             p.y >= rectMin.y && p.y <= rectMax.y
                 results.append(inside)

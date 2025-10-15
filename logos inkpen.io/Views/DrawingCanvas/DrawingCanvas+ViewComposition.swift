@@ -222,7 +222,6 @@ extension DrawingCanvas {
             let bounds = path.cgPath.boundingBoxOfPath
             let width = bounds.width
             let height = bounds.height
-
             let labelPosition = CGPoint(
                 x: bounds.maxX + 10,
                 y: bounds.minY - 30
@@ -249,7 +248,6 @@ extension DrawingCanvas {
             let bounds = bezierPath.cgPath.boundingBoxOfPath
             let width = bounds.width
             let height = bounds.height
-
             let labelPosition = CGPoint(
                 x: bounds.maxX + 10,
                 y: bounds.minY - 30

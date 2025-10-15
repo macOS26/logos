@@ -72,7 +72,6 @@ class PDFMetalAccelerator {
         guard !points.isEmpty else { return [] }
 
         let count = points.count
-
         var inputPoints = points.map { simd_float2(Float($0.x), Float($0.y)) }
         var matrixData = matrix.matrix
 

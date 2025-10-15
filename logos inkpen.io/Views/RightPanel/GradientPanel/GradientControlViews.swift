@@ -48,7 +48,6 @@ private struct GradientSliderControl: View {
     let textFieldWidth: CGFloat
     let onChange: (Double) -> Void
     let onEditingChanged: (Bool) -> Void
-    
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label)
@@ -79,7 +78,6 @@ struct GradientTypePickerView: View {
     let createGradientPreservingProperties: (GradientFillSection.GradientType, [GradientStop], VectorGradient) -> VectorGradient
     let createDefaultGradient: (GradientFillSection.GradientType) -> VectorGradient
     let onGradientChange: () -> Void
-
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Type")
@@ -109,7 +107,6 @@ struct GradientAngleControlView: View {
     let currentGradient: VectorGradient?
     let document: VectorDocument
     let onAngleChange: (Double) -> Void
-
     var body: some View {
         if let gradient = currentGradient {
             let angle: Double = {
@@ -157,7 +154,6 @@ struct GradientOriginControlView: View {
     let getOriginY: (VectorGradient) -> Double
     let updateOriginX: (Double) -> Void
     let updateOriginY: (Double) -> Void
-
     var body: some View {
         if currentGradient != nil {
             VStack(alignment: .leading, spacing: 8) {
@@ -210,7 +206,6 @@ struct GradientScaleControlView: View {
     let updateAspectRatio: (Double) -> Void
     let getRadius: (VectorGradient) -> Double
     let updateRadius: (Double) -> Void
-
     var body: some View {
         if currentGradient != nil {
             VStack(alignment: .leading, spacing: 8) {
@@ -304,7 +299,6 @@ struct GradientApplyButtonView: View {
     let currentGradient: VectorGradient?
     let onApply: () -> Void
     let onAddSwatch: () -> Void
-
     var body: some View {
         HStack(spacing: 4) {
             Button {

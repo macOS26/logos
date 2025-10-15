@@ -46,7 +46,6 @@ class GeometricShapes {
         let topRightRadius = min(cornerRadii[1], min(rect.width, rect.height) / 2)
         let bottomRightRadius = min(cornerRadii[2], min(rect.width, rect.height) / 2)
         let bottomLeftRadius = min(cornerRadii[3], min(rect.width, rect.height) / 2)
-
         let topLeftOffset = topLeftRadius * 0.552
         let topRightOffset = topRightRadius * 0.552
         let bottomRightOffset = bottomRightRadius * 0.552
@@ -85,7 +84,6 @@ class GeometricShapes {
 
     static func createCircle(center: CGPoint, radius: CGFloat) -> VectorPath {
         let controlPointOffset = radius * 0.552
-
         let elements: [PathElement] = [
             .move(to: VectorPoint(center.x + radius, center.y)),
             .curve(to: VectorPoint(center.x, center.y + radius),
@@ -109,7 +107,6 @@ class GeometricShapes {
     static func createEllipse(center: CGPoint, radiusX: CGFloat, radiusY: CGFloat) -> VectorPath {
         let controlPointOffsetX = radiusX * 0.552
         let controlPointOffsetY = radiusY * 0.552
-
         let elements: [PathElement] = [
             .move(to: VectorPoint(center.x + radiusX, center.y)),
             .curve(to: VectorPoint(center.x, center.y + radiusY),
@@ -132,7 +129,6 @@ class GeometricShapes {
 
     static func createTriangle(center: CGPoint, radius: CGFloat, orientation: CGFloat = 0) -> VectorPath {
         let points = regularPolygonPoints(center: center, radius: radius, sides: 3, orientation: orientation)
-
         let elements: [PathElement] = [
             .move(to: VectorPoint(points[0])),
             .line(to: VectorPoint(points[1])),
@@ -145,7 +141,6 @@ class GeometricShapes {
 
     static func createRegularPolygon(center: CGPoint, radius: CGFloat, sides: Int, orientation: CGFloat = 0) -> VectorPath {
         let points = regularPolygonPoints(center: center, radius: radius, sides: sides, orientation: orientation)
-
         var elements: [PathElement] = [.move(to: VectorPoint(points[0]))]
 
         for i in 1..<points.count {
@@ -193,7 +188,6 @@ class GeometricShapes {
     static func createDiamond(center: CGPoint, width: CGFloat, height: CGFloat) -> VectorPath {
         let halfWidth = width / 2
         let halfHeight = height / 2
-
         let elements: [PathElement] = [
             .move(to: VectorPoint(center.x, center.y - halfHeight)),
             .line(to: VectorPoint(center.x + halfWidth, center.y)),
@@ -207,7 +201,6 @@ class GeometricShapes {
 
     static func createHeart(center: CGPoint, size: CGFloat) -> VectorPath {
         let scale = size / 100.0
-
         var elements: [PathElement] = []
 
         elements.append(.move(to: VectorPoint(center.x, center.y + 30 * scale)))
@@ -250,11 +243,9 @@ class GeometricShapes {
 
         let unitX = dx / length
         let unitY = dy / length
-
         let headStart = CGPoint(x: end.x - headLength * unitX, y: end.y - headLength * unitY)
         let headPoint1 = CGPoint(x: headStart.x - headWidth * unitY, y: headStart.y + headWidth * unitX)
         let headPoint2 = CGPoint(x: headStart.x + headWidth * unitY, y: headStart.y - headWidth * unitX)
-
         let elements: [PathElement] = [
             .move(to: VectorPoint(start)),
             .line(to: VectorPoint(headStart)),
@@ -320,13 +311,10 @@ class GeometricShapes {
 
         for i in 0..<teeth {
             let baseAngle = Double(i) * angleStep
-
             let outerAngle1 = baseAngle - toothAngle / 2
             let outerAngle2 = baseAngle + toothAngle / 2
-
             let innerAngle1 = baseAngle - angleStep / 2
             let innerAngle2 = baseAngle + angleStep / 2
-
             let outerPoint1 = CGPoint(x: center.x + cos(outerAngle1) * outerRadius, y: center.y + sin(outerAngle1) * outerRadius)
             let outerPoint2 = CGPoint(x: center.x + cos(outerAngle2) * outerRadius, y: center.y + sin(outerAngle2) * outerRadius)
             let innerPoint1 = CGPoint(x: center.x + cos(innerAngle1) * innerRadius, y: center.y + sin(innerAngle1) * innerRadius)
@@ -356,7 +344,6 @@ class GeometricShapes {
             let t = Double(i) / Double(steps - 1)
             let angle = t * turns * 2 * .pi
             let radius = startRadius + (endRadius - startRadius) * t
-
             let x = center.x + cos(angle) * radius
             let y = center.y + sin(angle) * radius
 

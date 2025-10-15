@@ -71,14 +71,11 @@ struct HorizontalRuler: View {
         let zoomLevel = document.zoomLevel
         let canvasOffset = document.canvasOffset
         let pageOrigin = document.settings.pageOrigin ?? .zero
-
         let startX = (-canvasOffset.x) / zoomLevel
         let endX = (size.width - canvasOffset.x) / zoomLevel
-
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
         var loopStep = tickSpacing
         let majorTickInterval = getMajorTickInterval(for: unit, zoomLevel: zoomLevel)
-
         var x = floor(startX / tickSpacing) * tickSpacing
         while x <= endX {
             let rulerX = x * zoomLevel + canvasOffset.x
@@ -86,7 +83,6 @@ struct HorizontalRuler: View {
             if rulerX >= 0 && rulerX <= size.width {
                 var isMajorTick = abs(x.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
                 var labelUsesMajor = isMajorTick
-
                 let tickHeight: CGFloat
                 let lineWidth: CGFloat
                 if unit == .pixels || unit == .points {
@@ -112,7 +108,6 @@ struct HorizontalRuler: View {
                     let quarterStep = majorStep / 4.0
                     let eighthStep = majorStep / 8.0
                     let epsilon = 0.001
-
                     let isMajor = abs(x.truncatingRemainder(dividingBy: majorStep)) < epsilon
                     let isHalf = abs(x.truncatingRemainder(dividingBy: halfStep)) < epsilon
                     let isQuarter = abs(x.truncatingRemainder(dividingBy: quarterStep)) < epsilon
@@ -160,10 +155,8 @@ struct HorizontalRuler: View {
                 } else if unit == .centimeters || unit == .millimeters {
                     let mmPoints = MeasurementUnit.millimeters.pointsPerUnit
                     let mmIndex = Int(round(x / mmPoints))
-
                     let isCentimeter = (mmIndex % 10 == 0)
                     let isHalfCentimeter = (mmIndex % 5 == 0)
-
                     let desiredMinorMm = max(1, Int(round(tickSpacing / mmPoints)))
                     let stepMm: Int = (desiredMinorMm % 5 == 0) ? min(desiredMinorMm, 5) : 1
                     loopStep = Double(stepMm) * mmPoints
@@ -298,14 +291,11 @@ struct VerticalRuler: View {
         let zoomLevel = document.zoomLevel
         let canvasOffset = document.canvasOffset
         let pageOrigin = document.settings.pageOrigin ?? .zero
-
         let startY = (-canvasOffset.y) / zoomLevel
         let endY = (size.height - canvasOffset.y) / zoomLevel
-
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
         var loopStep = tickSpacing
         let majorTickInterval = getMajorTickInterval(for: unit, zoomLevel: zoomLevel)
-
         var y = floor(startY / tickSpacing) * tickSpacing
         while y <= endY {
             let rulerY = y * zoomLevel + canvasOffset.y
@@ -313,7 +303,6 @@ struct VerticalRuler: View {
             if rulerY >= 0 && rulerY <= size.height {
                 var isMajorTick = abs(y.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
                 var labelUsesMajor = isMajorTick
-
                 let tickWidth: CGFloat
                 let lineWidth: CGFloat
                 if unit == .pixels || unit == .points {
@@ -339,7 +328,6 @@ struct VerticalRuler: View {
                     let quarterStep = majorStep / 4.0
                     let eighthStep = majorStep / 8.0
                     let epsilon = 0.001
-
                     let isMajor = abs(y.truncatingRemainder(dividingBy: majorStep)) < epsilon
                     let isHalf = abs(y.truncatingRemainder(dividingBy: halfStep)) < epsilon
                     let isQuarter = abs(y.truncatingRemainder(dividingBy: quarterStep)) < epsilon
@@ -387,10 +375,8 @@ struct VerticalRuler: View {
                 } else if unit == .centimeters || unit == .millimeters {
                     let mmPoints = MeasurementUnit.millimeters.pointsPerUnit
                     let mmIndex = Int(round(y / mmPoints))
-
                     let isCentimeter = (mmIndex % 10 == 0)
                     let isHalfCentimeter = (mmIndex % 5 == 0)
-
                     let desiredMinorMm = max(1, Int(round(tickSpacing / mmPoints)))
                     let stepMm: Int = (desiredMinorMm % 5 == 0) ? min(desiredMinorMm, 5) : 1
                     loopStep = Double(stepMm) * mmPoints
@@ -801,7 +787,6 @@ struct PageOriginCrosshair: View {
     private func applySnapToCanvasPoint(_ canvasPoint: CGPoint) -> CGPoint {
         let canvasWidth = document.settings.sizeInPoints.width
         let canvasHeight = document.settings.sizeInPoints.height
-
         let snapThreshold: CGFloat = 10.0
 
         let snapPoints: [CGPoint] = [
@@ -841,7 +826,6 @@ struct PageOriginCrosshair: View {
     private func getSnapPointsInScreenSpace() -> [CGPoint] {
         let canvasWidth = document.settings.sizeInPoints.width
         let canvasHeight = document.settings.sizeInPoints.height
-
         let canvasSnapPoints: [CGPoint] = [
             CGPoint(x: 0, y: 0),
             CGPoint(x: canvasWidth, y: 0),

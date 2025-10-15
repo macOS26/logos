@@ -35,7 +35,6 @@ struct SVGConsolidationHelpers {
             }
 
             let cgPaths: [CGPath] = shapes.map { $0.path.cgPath }
-
             var combined: CGPath? = cgPaths.first
             for p in cgPaths.dropFirst() {
                 if let c = combined, let u = CoreGraphicsPathOperations.union(c, p, using: .winding) {

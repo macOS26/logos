@@ -953,7 +953,6 @@ class ClipboardManager {
                             let originalText = document.findText(by: objectID)
                             let originalAreaSize = originalText?.areaSize ?? shape.areaSize
                             let typography = originalText?.typography ?? shape.typography ?? TypographyProperties(strokeColor: .black, fillColor: .black)
-
                             let position = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
                             let vectorText = VectorText(
                                 content: textContent,
@@ -1050,7 +1049,6 @@ class ClipboardManager {
 
         do {
             let clipboardData = try JSONDecoder().decode(ClipboardData.self, from: data)
-
             let originalSelectedObjectIDs = document.selectedObjectIDs
             document.selectedObjectIDs.removeAll()
 
@@ -1081,7 +1079,6 @@ class ClipboardManager {
             }
 
             let numNewObjects = clipboardData.shapes.count + clipboardData.texts.count
-
             var updatedUnifiedObjects: [VectorObject] = []
             for obj in document.unifiedObjects {
                 if obj.layerIndex == layerIndex && obj.orderID >= insertionPoint {

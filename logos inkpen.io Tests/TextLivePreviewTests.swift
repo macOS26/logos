@@ -55,7 +55,6 @@ final class TextLivePreviewTests: XCTestCase {
     func testLineSpacingPreviewUpdate() throws {
         let textID = UUID()
         let shape = createTestTextShape(id: textID)
-
         let unifiedObj = UnifiedObject(
             id: textID,
             objectType: .shape(shape),
@@ -72,7 +71,6 @@ final class TextLivePreviewTests: XCTestCase {
     func testLineHeightPreviewUpdate() throws {
         let textID = UUID()
         let shape = createTestTextShape(id: textID)
-
         let unifiedObj = UnifiedObject(
             id: textID,
             objectType: .shape(shape),
@@ -89,7 +87,6 @@ final class TextLivePreviewTests: XCTestCase {
     func testNotificationSentForPreviewUpdate() throws {
         let textID = UUID()
         let shape = createTestTextShape(id: textID)
-
         let unifiedObj = UnifiedObject(
             id: textID,
             objectType: .shape(shape),
@@ -100,7 +97,6 @@ final class TextLivePreviewTests: XCTestCase {
         let expectation = XCTestExpectation(description: "TextPreviewUpdate notification received")
         var receivedTextID: UUID?
         var receivedTypography: TypographyProperties?
-
         let observer = NotificationCenter.default.addObserver(
             forName: Notification.Name("TextPreviewUpdate"),
             object: nil,
@@ -127,10 +123,8 @@ final class TextLivePreviewTests: XCTestCase {
     func testMultipleDocumentPreviewIndependence() throws {
         let document1 = VectorDocument()
         let document2 = VectorDocument()
-
         let textID1 = UUID()
         let textID2 = UUID()
-
         let shape1 = createTestTextShape(id: textID1)
         let shape2 = createTestTextShape(id: textID2)
 

@@ -4,7 +4,6 @@ extension PDFCommandParser {
 
     func extractGradientStops(from dict: CGPDFDictionaryRef) -> [GradientStop] {
         var stops: [GradientStop] = []
-
         var functionObj: CGPDFObjectRef?
         if !CGPDFDictionaryGetObject(dict, "Function", &functionObj) || functionObj == nil {
             Log.error("PDF: ❌ No Function found in shading dictionary", category: .error)
@@ -19,7 +18,6 @@ extension PDFCommandParser {
         var functionArray: CGPDFArrayRef?
         if CGPDFObjectGetValue(functionObj!, .array, &functionArray),
            let functions = functionArray {
-
             let count = CGPDFArrayGetCount(functions)
 
             for i in 0..<count {
@@ -30,13 +28,11 @@ extension PDFCommandParser {
 
         } else {
             let objectType = CGPDFObjectGetType(functionObj!)
-
             var functionDict: CGPDFDictionaryRef?
             var functionStream: CGPDFStreamRef?
 
             if CGPDFObjectGetValue(functionObj!, .dictionary, &functionDict),
                let function = functionDict {
-
                 let (startColor, endColor) = extractColorsFromFunction(function)
 
                 let allColors = extractAllColorsFromFunction(function)
@@ -51,7 +47,6 @@ extension PDFCommandParser {
 
             } else if CGPDFObjectGetValue(functionObj!, .stream, &functionStream),
                       let stream = functionStream {
-
                 let streamDict = CGPDFStreamGetDictionary(stream)
 
                 let allColors = extractColorsFromSampledFunctionStream(stream: stream, dictionary: streamDict!)

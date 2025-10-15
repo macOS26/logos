@@ -9,7 +9,6 @@ struct SelectionHandlesView: View {
     let isCommandPressed: Bool
     let isTemporarySelectionViaCommand: Bool
     let dragPreviewDelta: CGPoint
-
     var body: some View {
         ZStack {
             ForEach(document.unifiedObjects.indices, id: \.self) { unifiedObjectIndex in

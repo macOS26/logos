@@ -100,7 +100,6 @@ extension SVGParser {
         var currentPoint = CGPoint.zero
         var subpathStart = CGPoint.zero
         var lastControlPoint: CGPoint?
-
         let tokens = tokenizeSVGPath(pathData)
 
         var coordinateCount = 0
@@ -256,7 +255,6 @@ extension SVGParser {
                     let dy2 = Double(tokens[i + 3]) ?? 0
                     let dx = Double(tokens[i + 4]) ?? 0
                     let dy = Double(tokens[i + 5]) ?? 0
-
                     let x1 = currentPoint.x + dx1
                     let y1 = currentPoint.y + dy1
                     let x2 = currentPoint.x + dx2
@@ -282,7 +280,6 @@ extension SVGParser {
                     let y2 = Double(tokens[i + 1]) ?? 0
                     let x = Double(tokens[i + 2]) ?? 0
                     let y = Double(tokens[i + 3]) ?? 0
-
                     let x1: Double
                     let y1: Double
 
@@ -311,7 +308,6 @@ extension SVGParser {
                     let dy2 = Double(tokens[i + 1]) ?? 0
                     let dx = Double(tokens[i + 2]) ?? 0
                     let dy = Double(tokens[i + 3]) ?? 0
-
                     let reflectedX: Double
                     let reflectedY: Double
 
@@ -325,10 +321,8 @@ extension SVGParser {
 
                     let secondControlX = currentPoint.x + dx2
                     let secondControlY = currentPoint.y + dy2
-
                     let endX = currentPoint.x + dx
                     let endY = currentPoint.y + dy
-
                     let firstControl = VectorPoint(reflectedX, reflectedY)
                     let secondControl = VectorPoint(secondControlX, secondControlY)
                     let endPointVector = VectorPoint(endX, endY)
@@ -371,7 +365,6 @@ extension SVGParser {
                     let dy1 = Double(tokens[i + 1]) ?? 0
                     let dx = Double(tokens[i + 2]) ?? 0
                     let dy = Double(tokens[i + 3]) ?? 0
-
                     let x1 = currentPoint.x + dx1
                     let y1 = currentPoint.y + dy1
                     currentPoint = CGPoint(x: currentPoint.x + dx, y: currentPoint.y + dy)

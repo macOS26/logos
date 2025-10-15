@@ -5,7 +5,6 @@ struct ColorPickerModal: View {
     @Environment(\.presentationMode) var presentationMode
     let title: String
     let onColorSelected: (VectorColor) -> Void
-
     var body: some View {
         NavigationView {
             ColorPanel(document: document, onColorSelected: onColorSelected)

@@ -15,7 +15,6 @@ extension SVGParser {
 
             let transformType = (transformString as NSString).substring(with: match.range(at: 1))
             let paramsString = (transformString as NSString).substring(with: match.range(at: 2))
-
             let params = paramsString
                 .replacingOccurrences(of: ",", with: " ")
                 .split(separator: " ")

@@ -35,7 +35,6 @@ func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
 
             if CGPDFDictionaryGetStream(catalog, "Metadata", &metadataRef),
                let metadataStream = metadataRef {
-
                 var format: CGPDFDataFormat = .raw
                 if let data = CGPDFStreamCopyData(metadataStream, &format) {
                     if let xmpString = String(data: data as Data, encoding: .utf8) {
@@ -54,7 +53,6 @@ func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
     }
 
     let tempURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("temp_pdf_page.pdf")
-
     var mediaBox = page.getBoxRect(.mediaBox)
     guard let context = CGContext(tempURL as CFURL, mediaBox: &mediaBox, nil) else {
         throw VectorImportError.parsingError("Cannot create PDF context", line: nil)

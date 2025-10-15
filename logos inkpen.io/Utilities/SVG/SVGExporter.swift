@@ -18,21 +18,16 @@ class SVGExporter {
 
     private func exportSVGWithScale(_ document: VectorDocument, dpiScale: CGFloat, isAutoDesk: Bool, includeBackground: Bool = true, textRenderingMode: AppState.SVGTextRenderingMode = .glyphs, includeInkpenData: Bool = false) throws -> String {
         let originalSize = document.settings.sizeInPoints
-
         let scaledWidth = originalSize.width * dpiScale
         let scaledHeight = originalSize.height * dpiScale
-
         let viewBoxWidth = originalSize.width
         let viewBoxHeight = originalSize.height
-
         let widthStr = formatSVGNumber(scaledWidth)
         let heightStr = formatSVGNumber(scaledHeight)
         let viewBoxWidthStr = formatSVGNumber(viewBoxWidth)
         let viewBoxHeightStr = formatSVGNumber(viewBoxHeight)
-
         let widthAttr = isAutoDesk ? "\(widthStr)px" : widthStr
         let heightAttr = isAutoDesk ? "\(heightStr)px" : heightStr
-
         var svg = """
         <?xml version="1.0" encoding="UTF-8"?>
         <svg width="\(widthAttr)" height="\(heightAttr)" viewBox="0 0 \(viewBoxWidthStr) \(viewBoxHeightStr)"
@@ -182,7 +177,6 @@ class SVGExporter {
         ]
 
         let attributedString = NSAttributedString(string: vectorText.content, attributes: attributes)
-
         let textStorage = NSTextStorage(attributedString: attributedString)
         let layoutManager = NSLayoutManager()
         textStorage.addLayoutManager(layoutManager)
@@ -211,7 +205,6 @@ class SVGExporter {
 
         let fillColor = vectorText.typography.fillColor.svgColor
         let fillOpacity = vectorText.typography.fillOpacity
-
         let glyphRange = layoutManager.glyphRange(for: textContainer)
 
         layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { (lineRect, lineUsedRect, container, lineRange, stop) in
@@ -244,12 +237,10 @@ class SVGExporter {
                 }
 
                 let glyphY = vectorText.position.y + actualLineRect.origin.y + glyphLocation.y
-
                 let charIndex = layoutManager.characterIndexForGlyph(at: glyphIndex)
                 if charIndex < vectorText.content.count {
                     let char = (vectorText.content as NSString).substring(with: NSRange(location: charIndex, length: 1))
                     let escapedChar = self.escapeXML(char)
-
                     let x = glyphX * dpiScale
                     let y = glyphY * dpiScale
                     let fontSize = vectorText.typography.fontSize * dpiScale
@@ -312,7 +303,6 @@ class SVGExporter {
         ]
 
         let attributedString = NSAttributedString(string: vectorText.content, attributes: attributes)
-
         let textStorage = NSTextStorage(attributedString: attributedString)
         let layoutManager = NSLayoutManager()
         textStorage.addLayoutManager(layoutManager)
@@ -340,34 +330,27 @@ class SVGExporter {
 
         let fillColor = vectorText.typography.fillColor.svgColor
         let fillOpacity = vectorText.typography.fillOpacity
-
         let glyphRange = layoutManager.glyphRange(for: textContainer)
 
         layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { (lineRect, lineUsedRect, container, lineRange, stop) in
             if vectorText.typography.alignment.nsTextAlignment == .justified {
                 let lineString = (vectorText.content as NSString).substring(with: lineRange)
-
                 let textBoxWidth = vectorText.areaSize?.width ?? vectorText.bounds.width
                 let isActuallyJustified = abs(lineUsedRect.width - textBoxWidth) < 1.0
-
                 let wordCount = lineString.components(separatedBy: .whitespaces).filter { !$0.isEmpty }.count
                 let isSingleWord = wordCount == 1
-
                 let isLastLine = NSMaxRange(lineRange) >= vectorText.content.count ||
                                  lineRange.location + lineRange.length >= vectorText.content.count
 
                 if !isActuallyJustified || (isSingleWord && !isLastLine) {
                     for glyphIndex in lineRange.location..<NSMaxRange(lineRange) {
                         let glyphLocation = layoutManager.location(forGlyphAt: glyphIndex)
-
                         let glyphX = vectorText.position.x + lineUsedRect.origin.x + glyphLocation.x
                         let glyphY = vectorText.position.y + lineRect.origin.y + glyphLocation.y
-
                         let charIndex = layoutManager.characterIndexForGlyph(at: glyphIndex)
                         if charIndex < vectorText.content.count {
                             let char = (vectorText.content as NSString).substring(with: NSRange(location: charIndex, length: 1))
                             let escapedChar = self.escapeXML(char)
-
                             let x = glyphX * dpiScale
                             let y = glyphY * dpiScale
                             let fontSize = vectorText.typography.fontSize * dpiScale
@@ -438,16 +421,13 @@ class SVGExporter {
 
                 for wordInfo in words {
                     let escapedWord = self.escapeXML(wordInfo.word)
-
                     let glyphRange = layoutManager.glyphRange(forCharacterRange: wordInfo.range, actualCharacterRange: nil)
                     guard glyphRange.length > 0 else { continue }
 
                     let firstGlyphIndex = glyphRange.location
                     let glyphLocation = layoutManager.location(forGlyphAt: firstGlyphIndex)
-
                     let wordX = vectorText.position.x + lineUsedRect.origin.x + glyphLocation.x
                     let wordY = vectorText.position.y + lineRect.origin.y + glyphLocation.y
-
                     let x = wordX * dpiScale
                     let y = wordY * dpiScale
                     let fontSize = vectorText.typography.fontSize * dpiScale
@@ -488,10 +468,8 @@ class SVGExporter {
             } else {
                 let lineString = (vectorText.content as NSString).substring(with: lineRange)
                 let escapedLine = self.escapeXML(lineString)
-
                 let firstGlyphIndex = lineRange.location
                 let glyphLocation = layoutManager.location(forGlyphAt: firstGlyphIndex)
-
                 let lineX: CGFloat
                 switch vectorText.typography.alignment.nsTextAlignment {
                 case .left:
@@ -503,7 +481,6 @@ class SVGExporter {
                 }
 
                 let lineY = vectorText.position.y + lineRect.origin.y + glyphLocation.y
-
                 let x = lineX * dpiScale
                 let y = lineY * dpiScale
                 let fontSize = vectorText.typography.fontSize * dpiScale
@@ -553,7 +530,6 @@ class SVGExporter {
     private func exportTextShape_OLD(_ shape: VectorShape, dpiScale: CGFloat) -> String {
         guard let textContent = shape.textContent,
               let typography = shape.typography else { return "" }
-
         var svg = ""
 
         if let areaSize = shape.areaSize, areaSize.width > 0, areaSize.height > 0 {
@@ -576,7 +552,6 @@ class SVGExporter {
             svg += " fill=\"none\" stroke=\"#808080\" stroke-width=\"1\"/>\n"
 
             let fontSize = typography.fontSize * dpiScale
-
             var textX: CGFloat
             switch typography.alignment {
             case .center:
@@ -641,7 +616,6 @@ class SVGExporter {
             }
 
             let x = position.x * dpiScale
-
             let fontSize = typography.fontSize * dpiScale
             let y = (position.y + fontSize) * dpiScale
 
@@ -741,7 +715,6 @@ class SVGExporter {
 
         let bounds1 = boundingBox(of: subpaths[0])
         let bounds2 = boundingBox(of: subpaths[1])
-
         let isNested = (bounds1.contains(bounds2) || bounds2.contains(bounds1))
 
         return isNested
@@ -753,10 +726,8 @@ class SVGExporter {
         for i in 0..<points.count - 1 {
             let p1 = points[i]
             let p2 = points[i + 1]
-
             let dx = abs(p2.x - p1.x)
             let dy = abs(p2.y - p1.y)
-
             let isHorizontal = dy < 0.1 && dx > 0.1
             let isVertical = dx < 0.1 && dy > 0.1
 
@@ -822,7 +793,6 @@ class SVGExporter {
         let y = transformedBounds.minY * dpiScale
         let width = transformedBounds.width * dpiScale
         let height = transformedBounds.height * dpiScale
-
         var href: String
 
         if let embeddedData = shape.embeddedImageData {
@@ -943,7 +913,6 @@ class SVGExporter {
 
     private func generateLinearGradientDef(_ gradient: LinearGradient, id: String) -> String {
         var svg = "<linearGradient id=\"\(id)\""
-
         let angle = gradient.angle * .pi / 180
         let x1 = 0.5 - cos(angle) * 0.5
         let y1 = 0.5 - sin(angle) * 0.5

@@ -4,7 +4,6 @@ struct PathOutline: View {
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
-
     var body: some View {
         ZStack {
             if shape.isGroup && !shape.groupedShapes.isEmpty {

@@ -354,31 +354,25 @@ struct VectorShape: Hashable, Identifiable {
     var opacity: Double
     var blendMode: BlendMode
     var bounds: CGRect
-
     var embeddedImageData: Data? = nil
     var linkedImagePath: String? = nil
     var linkedImageBookmarkData: Data? = nil
-
     var isGroup: Bool
     var groupedShapes: [VectorShape]
     var groupTransform: CGAffineTransform
     var isClippingGroup: Bool = false  // Adobe-style clipping group
-
     var isCompoundPath: Bool
 
     var isClippingPath: Bool = false  // Legacy - will be deprecated
     var clippedByShapeID: UUID?  // Legacy - will be deprecated
-
     var isWarpObject: Bool
     var originalPath: VectorPath?
     var warpEnvelope: [CGPoint]
     var originalEnvelope: [CGPoint]
     var warpedBounds: CGRect?
-
     var isRoundedRectangle: Bool = false
     var originalBounds: CGRect?
     var cornerRadii: [Double] = []
-
     var isTextObject: Bool = false
     var textContent: String? = nil
     var typography: TypographyProperties? = nil
@@ -386,7 +380,6 @@ struct VectorShape: Hashable, Identifiable {
     var areaSize: CGSize? = nil
     var isEditing: Bool? = nil
     var textPosition: CGPoint? = nil
-
     var metadata: [String: String] = [:]
 
     init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isClippingGroup: Bool = false, isCompoundPath: Bool = false, isClippingPath: Bool = false, clippedByShapeID: UUID? = nil, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], warpedBounds: CGRect? = nil, isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = [], isTextObject: Bool = false, textContent: String? = nil, typography: TypographyProperties? = nil, cursorPosition: Int? = nil, areaSize: CGSize? = nil, isEditing: Bool? = nil, textPosition: CGPoint? = nil, metadata: [String: String] = [:]) {
@@ -485,7 +478,6 @@ struct VectorShape: Hashable, Identifiable {
         }
 
         let groupPath = VectorPath(elements: [], isClosed: false)
-
         var groupShape = VectorShape(
             name: name,
             path: groupPath,
@@ -611,7 +603,6 @@ struct VectorShape: Hashable, Identifiable {
 
     static func from(_ vectorText: VectorText) -> VectorShape {
         let emptyPath = VectorPath(elements: [], isClosed: false)
-
         var shape = VectorShape(
             name: "Text: \(vectorText.content.prefix(20))",
             path: emptyPath,

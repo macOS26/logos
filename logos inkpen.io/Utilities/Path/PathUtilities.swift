@@ -2,7 +2,6 @@ import SwiftUI
 
 func deletePointsFromPath(_ path: VectorPath, selectedPoints: [PointID]) -> VectorPath {
     var elements = path.elements
-
     let indicesToDelete = selectedPoints.compactMap { $0.elementIndex }.sorted(by: >)
 
     for index in indicesToDelete {

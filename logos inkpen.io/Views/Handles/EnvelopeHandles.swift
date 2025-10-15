@@ -528,13 +528,11 @@ struct EnvelopeHandles: View {
         let rightVector = CGPoint(x: topRight.x - topLeft.x, y: topRight.y - topLeft.y)
         let downVector = CGPoint(x: bottomLeft.x - topLeft.x, y: bottomLeft.y - topLeft.y)
         let pointVector = CGPoint(x: point.x - topLeft.x, y: point.y - topLeft.y)
-
         let det = rightVector.x * downVector.y - rightVector.y * downVector.x
 
         if abs(det) < 1e-10 {
             let rightLength = sqrt(rightVector.x * rightVector.x + rightVector.y * rightVector.y)
             let downLength = sqrt(downVector.x * downVector.x + downVector.y * downVector.y)
-
             let u: CGFloat = rightLength > 0 ?
             (pointVector.x * rightVector.x + pointVector.y * rightVector.y) / (rightLength * rightLength) : 0
             let v: CGFloat = downLength > 0 ?
@@ -607,7 +605,6 @@ struct EnvelopeHandles: View {
                 for groupedShape in currentShape.groupedShapes {
                     let warpedElements = warpPathElements(groupedShape.path.elements)
                     let warpedPath = VectorPath(elements: warpedElements, isClosed: groupedShape.path.isClosed)
-
                     var warpedGrouped = groupedShape
                     warpedGrouped.path = warpedPath
                     warpedGrouped.updateBounds()
@@ -651,7 +648,6 @@ struct EnvelopeHandles: View {
                 for groupedShape in currentShape.groupedShapes {
                     let warpedElements = warpPathElements(groupedShape.path.elements)
                     let warpedPath = VectorPath(elements: warpedElements, isClosed: groupedShape.path.isClosed)
-
                     var warpedGrouped = groupedShape
                     warpedGrouped.path = warpedPath
                     warpedGrouped.updateBounds()

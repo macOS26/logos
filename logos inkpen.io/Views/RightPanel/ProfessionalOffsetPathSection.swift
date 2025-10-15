@@ -219,7 +219,6 @@ struct ProfessionalOffsetPathSection: View {
         guard !document.selectedShapeIDs.isEmpty else { return }
 
         let selectedShapes = document.getSelectedShapes()
-
         var oldShapes: [UUID: VectorShape] = [:]
         var newShapes: [UUID: VectorShape] = [:]
         var objectIDs: [UUID] = []
@@ -230,7 +229,6 @@ struct ProfessionalOffsetPathSection: View {
         }
 
         var newOffsetShapeIDs: Set<UUID> = []
-
         var originalShapeIndices: [UUID: Int] = [:]
         if let layerIndex = document.selectedLayerIndex {
             let shapes = document.getShapesForLayer(layerIndex)
@@ -244,7 +242,6 @@ struct ProfessionalOffsetPathSection: View {
         for shape in selectedShapes {
 
             let offsetValue = CGFloat(offsetDistance)
-
             let offsetPath = shape.path.cgPath.copy(strokingWithWidth: abs(offsetValue) * 2.0,
                                                     lineCap: .round,
                                                     lineJoin: mapJoinTypeToCoreGraphics(selectedJoinType),
@@ -322,14 +319,12 @@ struct ProfessionalOffsetPathSection: View {
         guard !trimmedPaths.isEmpty else { return nil }
 
         let offsetBounds = offset.boundingBoxOfPath
-
         var bestPath: CGPath?
         var bestScore: CGFloat = 0
 
         for path in trimmedPaths {
             let pathBounds = path.boundingBoxOfPath
             let pathArea = pathBounds.width * pathBounds.height
-
             let areaScore = pathArea
             let proximityScore = pathBounds.intersection(offsetBounds).width * pathBounds.intersection(offsetBounds).height
             let totalScore = areaScore + proximityScore * 2.0

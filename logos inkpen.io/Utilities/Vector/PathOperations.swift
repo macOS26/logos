@@ -468,10 +468,8 @@ class PathOperations {
 		let bounds = path.boundingBoxOfPath
 		let hasClosed = pathHasClosedSubpath(path)
 		let placement = strokeStyle.placement
-
 		let shouldMaskPlacement = hasClosed && placement != .center
 		let effectiveWidth: CGFloat = shouldMaskPlacement ? CGFloat(strokeStyle.width) * 2.0 : CGFloat(strokeStyle.width)
-
 		let expandedBounds = bounds.insetBy(dx: -effectiveWidth * 2, dy: -effectiveWidth * 2)
 		guard !expandedBounds.isEmpty && expandedBounds.width > 0 && expandedBounds.height > 0 else { return nil }
 
@@ -797,7 +795,6 @@ extension ProfessionalPathOperations {
 
     static func mergeDuplicatePoints(in shape: VectorShape, tolerance: Double = 1.0) -> VectorShape {
         let cleanedPath = mergeDuplicatePoints(in: shape.path, tolerance: tolerance)
-
         var cleanedShape = shape
         cleanedShape.path = cleanedPath
         cleanedShape.updateBounds()

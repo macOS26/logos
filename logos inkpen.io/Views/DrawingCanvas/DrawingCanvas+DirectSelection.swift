@@ -41,7 +41,6 @@ extension DrawingCanvas {
     private func checkAnchorPointsInShape(_ shape: VectorShape, at location: CGPoint, tolerance: Double) -> Bool {
         let pointSelectionRadius: Double = 6.0 / document.zoomLevel
         let handleSelectionRadius: Double = 4.0 / document.zoomLevel
-
         let pointCount = shape.path.elements.filter {
             switch $0 {
             case .close: return false
@@ -323,7 +322,6 @@ extension DrawingCanvas {
                 if !shape.isVisible { continue }
 
                 var isHit = false
-
                 let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
 
                 if isBackgroundShape {

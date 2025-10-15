@@ -100,7 +100,6 @@ extension PDFCommandParser {
 
         let savedFillOpacity = xObjectSavedFillOpacity
         let savedStrokeOpacity = xObjectSavedStrokeOpacity
-
         var format = CGPDFDataFormat.raw
         guard let data = CGPDFStreamCopyData(xObjectStream, &format) else {
             Log.error("\(detectedPDFVersion): XObject '\(name)' - FAILED to get stream data", category: .error)

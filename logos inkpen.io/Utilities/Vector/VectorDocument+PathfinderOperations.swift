@@ -59,7 +59,6 @@ extension VectorDocument {
                 return false
             }
             let frontShapes = Array(selectedShapes.dropFirst())
-
             var resultPath = backShape.path.cgPath
 
             for frontShape in frontShapes {
@@ -126,7 +125,6 @@ extension VectorDocument {
 
         case .mosaic:
             let mosaicResults = CoreGraphicsPathOperations.splitWithShapeTracking(paths, using: .winding)
-
             var shapeCounters: [Int: Int] = [:]
 
             for (mosaicPath, originalShapeIndex) in mosaicResults {
@@ -136,7 +134,6 @@ extension VectorDocument {
 
                 shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
                 let pieceNumber = shapeCounters[originalShapeIndex] ?? 1
-
                 let mosaicShape = VectorShape(
                     name: pieceNumber > 1 ? "Mosaic \(originalShape.name) (\(pieceNumber))" : "Mosaic \(originalShape.name)",
                     path: VectorPath(cgPath: mosaicPath),
@@ -150,7 +147,6 @@ extension VectorDocument {
 
         case .cut:
             let cutResults = CoreGraphicsPathOperations.cutWithShapeTracking(paths, using: .winding)
-
             var shapeCounters: [Int: Int] = [:]
 
             for (cutPath, originalShapeIndex) in cutResults {
@@ -160,7 +156,6 @@ extension VectorDocument {
 
                 shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
                 let pieceNumber = shapeCounters[originalShapeIndex] ?? 1
-
                 let cutShape = VectorShape(
                     name: pieceNumber > 1 ? "Cut \(originalShape.name) (\(pieceNumber))" : "Cut \(originalShape.name)",
                     path: VectorPath(cgPath: cutPath),
@@ -181,7 +176,6 @@ extension VectorDocument {
             }
 
             let mergeResults = ProfessionalPathOperations.professionalMergeWithShapeTracking(paths, colors: colors)
-
             var shapeCounters: [Int: Int] = [:]
 
             for (mergedPath, originalShapeIndex) in mergeResults {
@@ -191,7 +185,6 @@ extension VectorDocument {
 
                 shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
                 let pieceNumber = shapeCounters[originalShapeIndex] ?? 1
-
                 let mergedShape = VectorShape(
                     name: pieceNumber > 1 ? "Merged \(originalShape.name) (\(pieceNumber))" : "Merged \(originalShape.name)",
                     path: VectorPath(cgPath: mergedPath),
@@ -205,7 +198,6 @@ extension VectorDocument {
 
         case .crop:
             let cropResults = ProfessionalPathOperations.professionalCropWithShapeTracking(paths)
-
             var shapeCounters: [Int: Int] = [:]
 
             for (croppedPath, originalShapeIndex, isInvisibleCropShape) in cropResults {
@@ -226,7 +218,6 @@ extension VectorDocument {
                 } else {
                     shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
                     let pieceNumber = shapeCounters[originalShapeIndex] ?? 1
-
                     let croppedShape = VectorShape(
                         name: pieceNumber > 1 ? "Cropped \(originalShape.name) (\(pieceNumber))" : "Cropped \(originalShape.name)",
                         path: VectorPath(cgPath: croppedPath),
@@ -296,7 +287,6 @@ extension VectorDocument {
                 return false
             }
             let backShapes = Array(selectedShapes.dropLast())
-
             var resultPath = frontShape.path.cgPath
 
             for backShape in backShapes {

@@ -2,7 +2,6 @@ import SwiftUI
 
 struct CheckerboardPattern: View {
     let size: CGFloat
-
     var body: some View {
         GeometryReader { geometry in
             let tileSize = self.size
@@ -133,7 +132,6 @@ class GradientSwatchNSViewClass: NSView {
 
         let pathBounds = CGRect(x: 0, y: 0, width: size, height: size)
         let path = CGPath(rect: pathBounds, transform: nil)
-
         let colors = gradient.stops.map { stop -> CGColor in
             if case .clear = stop.color {
                 return stop.color.cgColor

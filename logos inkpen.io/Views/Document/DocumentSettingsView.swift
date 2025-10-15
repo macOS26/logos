@@ -67,7 +67,6 @@ extension View {
 private struct SettingsSectionHeader: View {
     let icon: String
     let title: String
-    
     var body: some View {
         HStack {
             Image(systemName: icon)

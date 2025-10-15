@@ -2,7 +2,6 @@ import SwiftUI
 
 struct TemplatePreviewView: View {
     let template: TemplateManager.TemplateType
-
     var body: some View {
         ZStack {
             Rectangle()

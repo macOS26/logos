@@ -31,7 +31,6 @@ struct RealTimeSmoothing {
             let prev = points[i - 1]
             let curr = points[i]
             let next = points[i + 1]
-
             let smoothX = prev.x * 0.25 + curr.x * 0.5 + next.x * 0.25
             let smoothY = prev.y * 0.25 + curr.y * 0.5 + next.y * 0.25
 

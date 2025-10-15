@@ -6,7 +6,6 @@ class ColorManagement {
         let r = rgb.red
         let g = rgb.green
         let b = rgb.blue
-
         let k = 1 - max(r, max(g, b))
 
         if k >= 1.0 {

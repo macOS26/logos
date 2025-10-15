@@ -127,7 +127,6 @@ class VectorImportManager {
                     if let openTagEnd = svgString.range(of: ">", range: range.upperBound..<endRange.lowerBound) {
 
                         let base64Data = String(svgString[openTagEnd.upperBound..<endRange.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-
                         var documentSize = CGSize(width: 8.5 * 72, height: 11 * 72)
                         if let widthRange = svgString.range(of: "width=\""),
                            let widthEnd = svgString.range(of: "\"", range: widthRange.upperBound..<svgString.endIndex),
@@ -296,7 +295,6 @@ class VectorImportManager {
 
             if CGPDFDictionaryGetStream(catalog, "Metadata", &metadataRef),
                let metadataStream = metadataRef {
-
                 var format: CGPDFDataFormat = .raw
                 if let data = CGPDFStreamCopyData(metadataStream, &format) {
                     if let xmpString = String(data: data as Data, encoding: .utf8) {

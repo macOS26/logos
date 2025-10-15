@@ -44,7 +44,6 @@ class GPUMathAcceleratorSimple {
 
             let lineStart = points[startIndex]
             let lineEnd = points[endIndex]
-
             var maxDistance: Float = 0
             var maxIndex = startIndex
 
@@ -77,7 +76,6 @@ class GPUMathAcceleratorSimple {
         let A = Float(lineEnd.y - lineStart.y)
         let B = Float(lineStart.x - lineEnd.x)
         let C = Float(lineEnd.x * lineStart.y - lineStart.x * lineEnd.y)
-
         let numerator = abs(A * Float(point.x) + B * Float(point.y) + C)
         let denominator = sqrt(A * A + B * B)
 

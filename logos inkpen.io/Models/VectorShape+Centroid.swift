@@ -35,7 +35,6 @@ extension VectorShape {
             let yi = vertices[i].y
             let xj = vertices[j].x
             let yj = vertices[j].y
-
             let a = xi * yj - xj * yi
             signedArea += a
             cx += (xi + xj) * a

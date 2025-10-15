@@ -222,7 +222,6 @@ class SVGParser: NSObject, XMLParserDelegate {
 
             let tspanX = parseLength(overlay["x"]) ?? 0
             let tspanY = parseLength(overlay["y"]) ?? 0
-
             var tspanAttributes = currentTextAttributes
             if let fam = overlay["font-family"], !fam.isEmpty { tspanAttributes["font-family"] = fam }
             if let size = overlay["font-size"], !size.isEmpty { tspanAttributes["font-size"] = size }
@@ -337,7 +336,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             if parts.count == 2 {
                 let selector = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
                 let declarations = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
-
                 var styles: [String: String] = [:]
 
                 let declParts = declarations.components(separatedBy: ";")
@@ -400,7 +398,6 @@ class SVGParser: NSObject, XMLParserDelegate {
 
                 let scaleX = viewBoxScale.x
                 let scaleY = viewBoxScale.y
-
                 let is96DPI = abs(scaleX - (4.0/3.0)) < 0.1 && abs(scaleY - (4.0/3.0)) < 0.1
 
                 if is96DPI {
@@ -472,7 +469,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         let pathData = parsePathData(d)
         let hasCloseElement = pathData.contains { if case .close = $0 { return true }; return false }
         let vectorPath = VectorPath(elements: pathData, isClosed: hasCloseElement)
-
         let (shouldClip, clipPathId) = checkForClipPath(attributes)
 
         let shape = createShape(
@@ -511,7 +507,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         let y = parseLength(mergedAttributes["y"]) ?? 0
         let width = parseLength(mergedAttributes["width"]) ?? 100
         let height = parseLength(mergedAttributes["height"]) ?? 100
-
         let imageHref = mergedAttributes["href"] ?? mergedAttributes["xlink:href"] ?? ""
 
         var clipPathId: String? = nil
@@ -747,7 +742,6 @@ class SVGParser: NSObject, XMLParserDelegate {
 
         let stroke = parseStrokeStyle(mergedAttributes)
         let fill = parseFillStyle(mergedAttributes)
-
         let transform: CGAffineTransform
         if mergedAttributes["transform"] != nil {
             let shapeTransform = parseTransform(mergedAttributes["transform"] ?? "")

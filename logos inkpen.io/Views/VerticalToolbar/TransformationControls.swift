@@ -29,7 +29,6 @@ enum TransformOrigin: String, CaseIterable {
 
 struct NinePointOriginSelector: View {
     @Binding var selectedOrigin: TransformOrigin
-
     var body: some View {
         VStack(spacing: 2) {
             ForEach(0..<3) { row in
@@ -303,7 +302,6 @@ struct TransformationControls: View {
     private func transformPoint(_ point: CGPoint, currentOrigin: CGPoint, newOrigin: CGPoint, scaleX: CGFloat, scaleY: CGFloat) -> CGPoint {
         let dx = point.x - currentOrigin.x
         let dy = point.y - currentOrigin.y
-
         let scaledX = dx * scaleX
         let scaledY = dy * scaleY
 
@@ -363,11 +361,9 @@ struct TransformationControls: View {
         let originOffset = document.transformOrigin.point
         let currentOriginX = currentBounds.minX + currentBounds.width * originOffset.x
         let currentOriginY = currentBounds.minY + currentBounds.height * originOffset.y
-
         let pageOrigin = document.settings.pageOrigin ?? .zero
         let newOriginX = newX + pageOrigin.x
         let newOriginY = newY + pageOrigin.y
-
         let scaleX = newWidth / currentBounds.width
         let scaleY = newHeight / currentBounds.height
 

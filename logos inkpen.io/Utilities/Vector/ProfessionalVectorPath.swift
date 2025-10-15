@@ -167,7 +167,6 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
 
         let previousPoint = (index > 0) ? points[index - 1].point : (isClosed ? points.last?.point : nil)
         let nextPoint = (index < points.count - 1) ? points[index + 1].point : (isClosed ? points.first?.point : nil)
-
         let (incomingHandle, outgoingHandle) = ProfessionalBezierMathematics.generateSmoothHandles(
             previousPoint: previousPoint,
             currentPoint: points[index].point,
@@ -281,7 +280,6 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
 
         if let lastOutgoing = lastPoint.outgoingHandle,
            let firstIncoming = firstPoint.incomingHandle {
-
             let direction = lastPoint.point.angle(to: lastOutgoing)
             let incomingLength = firstPoint.point.distance(to: firstIncoming)
 
@@ -451,7 +449,6 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
 
         let p0 = points[index].point
         let p3 = points[index + 1].point
-
         let p1 = points[index].outgoingHandle ?? p0
         let p2 = points[index + 1].incomingHandle ?? p3
 

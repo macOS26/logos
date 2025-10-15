@@ -4,7 +4,6 @@ import Combine
 
 struct GradientPanel: View {
     @ObservedObject var document: VectorDocument
-
     var body: some View {
         ScrollView {
             VStack(spacing: 8) {
@@ -516,7 +515,6 @@ struct GradientFillSection: View {
                         let shapes = document.getShapesForLayer(layerIndex)
                         if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }),
                            let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-
                             var updatedShape = currentShape
                             switch document.activeColorTarget {
                             case .fill:

@@ -30,7 +30,6 @@ extension PDFCommandParser {
 
         let vectorPath = VectorPath(elements: vectorElements, isClosed: true)
         let fillStyle = FillStyle(gradient: gradient)
-
         let shadingShape = VectorShape(
             name: "PDF Shading Shape \(shapes.count + 1)",
             path: vectorPath,

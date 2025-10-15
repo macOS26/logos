@@ -9,7 +9,6 @@ final class ExportTextOptionsHandlerTests: XCTestCase {
         let label = NSTextField()
         let glyphsRadio = NSButton()
         let linesRadio = NSButton()
-
         let handler = ExportTextOptionsHandler(
             textToOutlinesCheckbox: checkbox,
             textModeLabel: label,
@@ -37,7 +36,6 @@ final class ExportTextOptionsHandlerTests: XCTestCase {
         let label = NSTextField()
         let glyphsRadio = NSButton()
         let linesRadio = NSButton()
-
         let handler = ExportTextOptionsHandler(
             textToOutlinesCheckbox: checkbox,
             textModeLabel: label,
@@ -56,7 +54,6 @@ final class ExportTextOptionsHandlerTests: XCTestCase {
         let label = NSTextField()
         let glyphsRadio = NSButton()
         let linesRadio = NSButton()
-
         let handler = ExportTextOptionsHandler(
             textToOutlinesCheckbox: checkbox,
             textModeLabel: label,

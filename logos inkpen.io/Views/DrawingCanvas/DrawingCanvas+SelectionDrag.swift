@@ -111,11 +111,9 @@ extension DrawingCanvas {
 
                 if case .shape(let shape) = firstObject.objectType {
                     let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-
                     let topLeftX = initialCenter.x - bounds.width/2 + canvasDelta.x
                     let topLeftY = initialCenter.y - bounds.height/2 + canvasDelta.y
                     let targetTopLeft = CGPoint(x: topLeftX, y: topLeftY)
-
                     let snappedTopLeft = applySnapping(to: targetTopLeft)
 
                     let snappedCenter = CGPoint(
@@ -200,7 +198,6 @@ extension DrawingCanvas {
                         let textBounds = textObj.bounds
                         let newPositionX = initialCenter.x - textBounds.width/2 + currentDragDelta.x
                         let newPositionY = initialCenter.y - textBounds.height/2 + currentDragDelta.y
-
                         let delta = CGPoint(x: newPositionX - textObj.position.x, y: newPositionY - textObj.position.y)
                         document.translateTextInUnified(id: unifiedObject.id, delta: delta)
                     }
@@ -266,7 +263,6 @@ extension DrawingCanvas {
             } else {
 
                 let currentTransform = updatedShape.transform
-
                 let translationTransform = CGAffineTransform(translationX: delta.x, y: delta.y)
 
                 updatedShape.transform = currentTransform.concatenating(translationTransform)
@@ -383,7 +379,6 @@ extension DrawingCanvas {
         }
 
         let updatedPath = VectorPath(elements: updatedElements, isClosed: shape.path.isClosed)
-
         var movedShape = shape
         movedShape.path = updatedPath
 

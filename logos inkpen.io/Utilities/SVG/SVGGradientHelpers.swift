@@ -6,7 +6,6 @@ extension SVGParser {
         guard let gradientId = currentGradientId, let gradientType = currentGradientType, isParsingGradient else { return }
 
         let attributes = currentGradientAttributes
-
         var inheritedGradient: VectorGradient? = nil
         if let hrefRaw = attributes["xlink:href"] ?? attributes["href"] {
             var refId = hrefRaw.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -163,7 +162,6 @@ extension SVGParser {
 
     internal func parseStyleAttribute(_ style: String) -> [String: String] {
         var styleDict: [String: String] = [:]
-
         let declarations = style.components(separatedBy: ";")
         for declaration in declarations {
             let keyValue = declaration.components(separatedBy: ":")

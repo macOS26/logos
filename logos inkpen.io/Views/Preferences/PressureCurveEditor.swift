@@ -84,7 +84,6 @@ struct PressureCurveEditor: View {
                                 .onChanged { value in
                                     let newX = max(0, min(1, value.location.x / size))
                                     let newY = max(0, min(1, (size - value.location.y) / size))
-
                                     var newCurve = curve
                                     newCurve[index] = CGPoint(x: newX, y: newY)
                                     curve = newCurve
@@ -109,7 +108,6 @@ func getThicknessFromPressureCurve(pressure: Double, curve: [CGPoint]) -> Double
     guard curve.count >= 2 else { return pressure }
 
     let clampedPressure = max(0.0, min(1.0, pressure))
-
     var lowerIndex = 0
     for i in 0..<curve.count {
         if curve[i].x <= clampedPressure {

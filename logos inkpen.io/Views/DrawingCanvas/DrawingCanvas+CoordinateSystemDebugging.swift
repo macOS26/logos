@@ -49,7 +49,6 @@ extension DrawingCanvas {
         let testCanvasPoint = CGPoint(x: 300, y: 200)
         let screenPoint = canvasToScreen(testCanvasPoint, geometry: geometry)
         let backToCanvas = screenToCanvas(screenPoint, geometry: geometry)
-
         let conversionDeltaX = abs(backToCanvas.x - testCanvasPoint.x)
         let conversionDeltaY = abs(backToCanvas.y - testCanvasPoint.y)
 

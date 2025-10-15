@@ -53,7 +53,6 @@ struct ImportResultView: View {
     let result: VectorImportResult
     let onDismiss: () -> Void
     let onRetry: () -> Void
-
     var body: some View {
         VStack(spacing: 20) {
             HStack {

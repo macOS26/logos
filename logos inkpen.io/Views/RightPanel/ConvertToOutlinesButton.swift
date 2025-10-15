@@ -25,7 +25,6 @@ struct FullWidthSecondaryButtonStyle: ButtonStyle {
 struct ConvertToOutlinesButton: View {
     @ObservedObject var document: VectorDocument
     let selectedText: VectorText?
-
     var body: some View {
         Button("Convert to Outlines") {
             convertSelectedTextToOutlines()

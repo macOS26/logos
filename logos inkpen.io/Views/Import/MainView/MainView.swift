@@ -343,7 +343,6 @@ struct MainView: View {
         alert.addButton(withTitle: "Cancel")
 
         let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 60))
-
         let bgCheckbox = NSButton(checkboxWithTitle: "Include background",
                                    target: nil, action: nil)
         bgCheckbox.frame = NSRect(x: 20, y: 20, width: 250, height: 20)
@@ -391,7 +390,6 @@ struct MainView: View {
         alert.addButton(withTitle: "Cancel")
 
         let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 220))
-
         let textToOutlinesCheckbox = NSButton(checkboxWithTitle: "Convert text to outlines",
                                                target: nil, action: nil)
         textToOutlinesCheckbox.frame = NSRect(x: 20, y: 180, width: 250, height: 20)
@@ -447,7 +445,6 @@ struct MainView: View {
         let useCMYK = cmykCheckbox.state == .on
         let convertTextToOutlines = textToOutlinesCheckbox.state == .on
         let includeBackground = bgCheckbox.state == .on
-
         let textRenderingMode: AppState.PDFTextRenderingMode = linesRadio.state == .on ? .lines : .glyphs
 
         AppState.shared.pdfTextRenderingMode = textRenderingMode

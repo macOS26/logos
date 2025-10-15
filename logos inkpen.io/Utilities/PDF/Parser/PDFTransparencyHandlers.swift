@@ -113,7 +113,6 @@ extension PDFCommandParser {
         }
 
         let name = String(cString: namePtr!)
-
         var savedFillOpacity: Double
         var savedStrokeOpacity: Double
 

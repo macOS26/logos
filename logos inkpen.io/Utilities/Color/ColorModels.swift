@@ -99,7 +99,6 @@ struct HSBColorModel: Codable, Hashable {
         let c = brightness * saturation
         let x = c * (1.0 - abs(h.truncatingRemainder(dividingBy: 2.0) - 1.0))
         let m = brightness - c
-
         var rgb: (Double, Double, Double)
 
         if h >= 0 && h < 1 {
@@ -132,7 +131,6 @@ struct HSBColorModel: Codable, Hashable {
         let max = Swift.max(rgb.red, rgb.green, rgb.blue)
         let min = Swift.min(rgb.red, rgb.green, rgb.blue)
         let delta = max - min
-
         var hue: Double = 0
         let saturation: Double = max == 0 ? 0 : delta / max
         let brightness: Double = max

@@ -108,7 +108,6 @@ extension DrawingCanvas {
 
         let scaleX = sqrt(shape.transform.a * shape.transform.a + shape.transform.c * shape.transform.c)
         let scaleY = sqrt(shape.transform.b * shape.transform.b + shape.transform.d * shape.transform.d)
-
         let scaleRatio = max(scaleX, scaleY) / min(scaleX, scaleY)
         let maxReasonableRatio: CGFloat = 3.0
 
@@ -146,7 +145,6 @@ extension DrawingCanvas {
 
     func getCornerScreenPositions(bounds: CGRect, shape: VectorShape, geometry: GeometryProxy) -> [CGPoint] {
         let transformedBounds = bounds
-
         var curvePositions: [CGPoint] = []
 
         let cornerPositions = [
@@ -158,14 +156,12 @@ extension DrawingCanvas {
 
         for (index, corner) in cornerPositions.enumerated() {
             let radius = shape.cornerRadii[safe: index] ?? 0.0
-
             let curvePosition: CGPoint
 
             if radius <= 0.0 {
                 curvePosition = corner
             } else {
                 let curveDistance = radius / sqrt(2.0)
-
                 let direction: CGPoint
                 switch index {
                 case 0:
@@ -212,7 +208,6 @@ extension DrawingCanvas {
 
         let canvasLocation = screenToCanvas(value.location, geometry: geometry)
         let canvasStartLocation = screenToCanvas(cornerDragStart, geometry: geometry)
-
         let direction: CGPoint
         switch cornerIndex {
         case 0:
@@ -234,14 +229,12 @@ extension DrawingCanvas {
 
         let sqrt2: CGFloat = 1.41421356237
         let projectedDistance = (canvasDelta.x * direction.x + canvasDelta.y * direction.y) / sqrt2
-
         let radiusChange = projectedDistance
         let tentativeRadius = initialCornerRadius + radiusChange
 
         if let originalBounds = shape.originalBounds {
             let maxRadius = min(originalBounds.width, originalBounds.height) / 2.0
             let newRadius = max(0.0, min(maxRadius, tentativeRadius))
-
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
                 var allRadii = shape.cornerRadii
@@ -283,7 +276,6 @@ extension DrawingCanvas {
             }
         } else {
             let newRadius = max(0.0, tentativeRadius)
-
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
                 var allRadii = shape.cornerRadii
@@ -426,7 +418,6 @@ extension DrawingCanvas {
 
                 let currentRadius = shape.cornerRadii[safe: cornerIndex] ?? 0.0
                 let newRadius = max(0.0, currentRadius + radiusChange)
-
                 var updatedRadii = shape.cornerRadii
                 if cornerIndex < updatedRadii.count {
                     updatedRadii[cornerIndex] = newRadius
@@ -440,7 +431,6 @@ extension DrawingCanvas {
                 shape.cornerRadii = updatedRadii
 
                 let currentBounds = shape.path.cgPath.boundingBox
-
                 let newPath = createRoundedRectPathWithIndividualCorners(
                     rect: currentBounds,
                     cornerRadii: updatedRadii
@@ -477,7 +467,6 @@ extension DrawingCanvas {
                 shape.cornerRadii = updatedRadii
 
                 let currentBounds = shape.path.cgPath.boundingBox
-
                 let newPath = createRoundedRectPathWithIndividualCorners(
                     rect: currentBounds,
                     cornerRadii: updatedRadii
@@ -512,7 +501,6 @@ extension DrawingCanvas {
                 shape.cornerRadii = updatedRadii
 
                 let currentBounds = shape.path.cgPath.boundingBox
-
                 let newPath = createRoundedRectPathWithIndividualCorners(
                     rect: currentBounds,
                     cornerRadii: updatedRadii

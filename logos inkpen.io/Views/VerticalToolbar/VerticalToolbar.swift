@@ -74,7 +74,6 @@ struct VerticalToolbar: View {
 
     private func getToolsToDisplayByGroup() -> [[ToolItem]] {
         var toolGroups: [[ToolItem]] = []
-
         let allToolGroups = getAllToolGroups()
 
         for toolGroup in allToolGroups {
@@ -120,7 +119,6 @@ struct VerticalToolbar: View {
 
     private func getToolsToDisplay() -> [ToolItem] {
         var toolsToShow: [ToolItem] = []
-
         let allToolGroups = getAllToolGroups()
 
         for toolGroup in allToolGroups {

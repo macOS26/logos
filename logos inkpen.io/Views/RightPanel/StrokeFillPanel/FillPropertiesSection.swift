@@ -6,7 +6,6 @@ struct FillPropertiesSection: View {
     let onApplyFill: () -> Void
     let onUpdateFillOpacity: (Double) -> Void
     let onFillOpacityEditingChanged: (Bool) -> Void
-
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Fill")

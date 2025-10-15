@@ -9,7 +9,6 @@ extension PDFCommandParser {
 
         let targetStops = 11
         let subSampledColors = subsampleColors(colors, targetCount: targetStops)
-
         var stops: [GradientStop] = []
 
         for i in 0..<targetStops {

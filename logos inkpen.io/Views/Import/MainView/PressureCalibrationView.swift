@@ -307,7 +307,6 @@ struct PressureCalibrationView: View {
         guard isDrawing, let path = currentPath else { return }
 
         let strokePath = createVariableWidthStroke(from: path.points)
-
         var completedStroke = VariableStrokePath(points: path.points)
         completedStroke.path = strokePath
         drawingPaths.append(completedStroke)
@@ -342,7 +341,6 @@ struct PressureCalibrationView: View {
         }
 
         var path = Path()
-
         var leftEdgePoints: [CGPoint] = []
         var rightEdgePoints: [CGPoint] = []
 
@@ -390,7 +388,6 @@ struct PressureCalibrationView: View {
             } else {
                 let prevPoint = pressurePoints[i - 1]
                 let nextPoint = pressurePoints[i + 1]
-
                 let prevDirection = CGVector(dx: point.location.x - prevPoint.location.x,
                                            dy: point.location.y - prevPoint.location.y)
                 let nextDirection = CGVector(dx: nextPoint.location.x - point.location.x,

@@ -9,12 +9,10 @@ extension VectorDocument {
             if case .shape(var shape) = object.objectType,
                shape.isTextObject,
                let typography = shape.typography {
-
                 let needsFontVariantMigration = typography.fontVariant == nil || typography.fontVariant?.isEmpty == true
 
                 if needsFontVariantMigration {
                     let nsFont = typography.nsFont
-
                     let actualFontFamily = nsFont.familyName ?? typography.fontFamily
 
                     var fontVariant: String? = nil

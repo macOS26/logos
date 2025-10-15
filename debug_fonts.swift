@@ -5,7 +5,6 @@ import AppKit
 let fontManager = NSFontManager.shared
 let family = "Helvetica Neue"
 let members = fontManager.availableMembers(ofFontFamily: family) ?? []
-
 let excludeKeywords = ["ornament", "swash", "alternate", "expert", "small cap",
                        "oldstyle", "lining", "tabular", "proportional"]
 
@@ -17,7 +16,6 @@ for (index, member) in members.enumerated() {
        let displayName = member[1] as? String,
        let weightNumber = member[2] as? NSNumber,
        let traitsNumber = member[3] as? NSNumber {
-
         let lowercasedName = displayName.lowercased()
         let shouldExclude = excludeKeywords.contains { keyword in
             lowercasedName.contains(keyword)

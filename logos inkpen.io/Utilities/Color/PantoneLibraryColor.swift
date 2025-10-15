@@ -106,7 +106,6 @@ class PantoneLibrary: ObservableObject {
 
     func searchColors(query: String) -> [PantoneLibraryColor] {
         let lowercaseQuery = query.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-
         let exactMatches = allColors.filter { color in
             color.pantone.lowercased().starts(with: lowercaseQuery) ||
             color.pantone.lowercased().starts(with: lowercaseQuery + " c") ||

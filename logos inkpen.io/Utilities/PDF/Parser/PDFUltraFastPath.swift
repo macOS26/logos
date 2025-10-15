@@ -16,7 +16,6 @@ struct PDFUltraFastPath {
 
         let firstPoint = points.first!
         let lastPoint = points.last!
-
         let distances = calculatePerpendicularDistancesSIMD(
             points: points,
             lineStart: firstPoint,
@@ -51,7 +50,6 @@ struct PDFUltraFastPath {
     ) -> [Float] {
         let count = points.count
         var distances = [Float](repeating: 0, count: count)
-
         let dx = Float(lineEnd.x - lineStart.x)
         let dy = Float(lineEnd.y - lineStart.y)
         let lineLengthSquared = dx * dx + dy * dy
@@ -62,7 +60,6 @@ struct PDFUltraFastPath {
 
         var xCoords = points.map { Float($0.x) }
         var yCoords = points.map { Float($0.y) }
-
         let startX = Float(lineStart.x)
         let startY = Float(lineStart.y)
         var negStartX = -startX
@@ -105,7 +102,6 @@ struct PDFUltraFastPath {
 
     static func parallelTessellatePath(path: CGPath, flatness: CGFloat) -> [CGPoint] {
         var segments: [(start: CGPoint, cp1: CGPoint?, cp2: CGPoint?, end: CGPoint)] = []
-
         var currentPoint = CGPoint.zero
 
         path.applyWithBlock { element in
@@ -187,20 +183,17 @@ struct PDFUltraFastPath {
         let p1 = simd_float2(Float(cp1.x), Float(cp1.y))
         let p2 = simd_float2(Float(cp2.x), Float(cp2.y))
         let p3 = simd_float2(Float(end.x), Float(end.y))
-
         let p01 = (p0 + p1) * 0.5
         let p12 = (p1 + p2) * 0.5
         let p23 = (p2 + p3) * 0.5
         let p012 = (p01 + p12) * 0.5
         let p123 = (p12 + p23) * 0.5
         let p0123 = (p012 + p123) * 0.5
-
         let mid = CGPoint(x: CGFloat(p0123.x), y: CGFloat(p0123.y))
         let newCP1Left = CGPoint(x: CGFloat(p01.x), y: CGFloat(p01.y))
         let newCP2Left = CGPoint(x: CGFloat(p012.x), y: CGFloat(p012.y))
         let newCP1Right = CGPoint(x: CGFloat(p123.x), y: CGFloat(p123.y))
         let newCP2Right = CGPoint(x: CGFloat(p23.x), y: CGFloat(p23.y))
-
         let leftPoints = tessellateCubicSIMD(
             start: start,
             cp1: newCP1Left,
@@ -233,15 +226,12 @@ struct PDFUltraFastPath {
         let p0 = simd_float2(Float(start.x), Float(start.y))
         let p1 = simd_float2(Float(cp.x), Float(cp.y))
         let p2 = simd_float2(Float(end.x), Float(end.y))
-
         let p01 = (p0 + p1) * 0.5
         let p12 = (p1 + p2) * 0.5
         let p012 = (p01 + p12) * 0.5
-
         let mid = CGPoint(x: CGFloat(p012.x), y: CGFloat(p012.y))
         let newCPLeft = CGPoint(x: CGFloat(p01.x), y: CGFloat(p01.y))
         let newCPRight = CGPoint(x: CGFloat(p12.x), y: CGFloat(p12.y))
-
         let leftPoints = tessellateQuadraticSIMD(
             start: start,
             cp: newCPLeft,
@@ -281,7 +271,6 @@ struct PDFUltraFastPath {
         }
 
         let transformedPoints = PDFAdvancedSIMD.batchApplyTransform(transform, to: points)
-
         let newPath = CGMutablePath()
         var pointIndex = 0
 

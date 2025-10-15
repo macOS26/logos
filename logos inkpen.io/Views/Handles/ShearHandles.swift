@@ -204,11 +204,9 @@ struct ShearHandles: View {
     private func calculatePreviewShear(shearX: CGFloat, shearY: CGFloat, anchor: CGPoint) {
 
         let baseShearTransform = CGAffineTransform(a: 1, b: shearY, c: shearX, d: 1, tx: 0, ty: 0)
-
         let sheared_anchor = anchor.applying(baseShearTransform)
 
         let compensationTranslation = CGAffineTransform(translationX: anchor.x - sheared_anchor.x, y: anchor.y - sheared_anchor.y)
-
         let pinPointShearTransform = baseShearTransform.concatenating(compensationTranslation)
 
         previewTransform = initialTransform.concatenating(pinPointShearTransform)
@@ -381,10 +379,8 @@ struct ShearHandles: View {
 
         let currentLocation = dragValue.location
         let preciseZoom = Double(zoomLevel)
-
         let anchorScreenX = shearAnchorPoint.x * preciseZoom + canvasOffset.x
         let anchorScreenY = shearAnchorPoint.y * preciseZoom + canvasOffset.y
-
         let startDistance = CGPoint(
             x: startLocation.x - anchorScreenX,
             y: startLocation.y - anchorScreenY
@@ -396,13 +392,10 @@ struct ShearHandles: View {
         )
 
         let sensitivity: CGFloat = 0.002
-
         let deltaX = currentDistance.x - startDistance.x
         let deltaY = currentDistance.y - startDistance.y
-
         let shearFactorX = deltaY * sensitivity
         let shearFactorY = deltaX * sensitivity
-
         var finalShearX = shearFactorX
         var finalShearY = shearFactorY
 
@@ -523,7 +516,6 @@ struct ShearHandles: View {
         }
 
         let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
-
         var updatedShape = shape
         updatedShape.path = transformedPath
         updatedShape.transform = .identity

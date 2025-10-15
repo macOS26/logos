@@ -36,7 +36,6 @@ final class TextBoxResizeTests: XCTestCase {
         let originalFrame = viewModel.textBoxFrame
         let dragOffset = CGSize.zero
         let resizeOffset = CGSize.zero
-
         let centerX = viewModel.textBoxFrame.minX + dragOffset.width + viewModel.textBoxFrame.width / 2 + resizeOffset.width / 2
         let centerY = viewModel.textBoxFrame.minY + dragOffset.height + viewModel.textBoxFrame.height / 2 + resizeOffset.height / 2
 
@@ -48,10 +47,8 @@ final class TextBoxResizeTests: XCTestCase {
         let originalFrame = viewModel.textBoxFrame
         let dragOffset = CGSize.zero
         let resizeOffset = CGSize(width: 50, height: 30)
-
         let centerX = viewModel.textBoxFrame.minX + dragOffset.width + viewModel.textBoxFrame.width / 2 + resizeOffset.width / 2
         let centerY = viewModel.textBoxFrame.minY + dragOffset.height + viewModel.textBoxFrame.height / 2 + resizeOffset.height / 2
-
         let expectedCenterX = originalFrame.midX + resizeOffset.width / 2
         let expectedCenterY = originalFrame.midY + resizeOffset.height / 2
 
@@ -63,13 +60,10 @@ final class TextBoxResizeTests: XCTestCase {
         let originalFrame = viewModel.textBoxFrame
         let dragOffset = CGSize.zero
         let resizeOffset = CGSize(width: 100, height: 50)
-
         let newWidth = originalFrame.width + resizeOffset.width
         let newHeight = originalFrame.height + resizeOffset.height
-
         let centerX = originalFrame.minX + dragOffset.width + originalFrame.width / 2 + resizeOffset.width / 2
         let centerY = originalFrame.minY + dragOffset.height + originalFrame.height / 2 + resizeOffset.height / 2
-
         let topLeftX = centerX - newWidth / 2
         let topLeftY = centerY - newHeight / 2
 
@@ -81,13 +75,10 @@ final class TextBoxResizeTests: XCTestCase {
         let originalFrame = viewModel.textBoxFrame
         let dragOffset = CGSize.zero
         let resizeOffset = CGSize(width: -50, height: -30)
-
         let centerX = originalFrame.minX + dragOffset.width + originalFrame.width / 2 + resizeOffset.width / 2
         let centerY = originalFrame.minY + dragOffset.height + originalFrame.height / 2 + resizeOffset.height / 2
-
         let newWidth = originalFrame.width + resizeOffset.width
         let newHeight = originalFrame.height + resizeOffset.height
-
         let topLeftX = centerX - newWidth / 2
         let topLeftY = centerY - newHeight / 2
 
@@ -99,13 +90,10 @@ final class TextBoxResizeTests: XCTestCase {
         let originalFrame = viewModel.textBoxFrame
         let dragOffset = CGSize(width: 30, height: 20)
         let resizeOffset = CGSize(width: 50, height: 40)
-
         let centerX = originalFrame.minX + dragOffset.width + originalFrame.width / 2 + resizeOffset.width / 2
         let centerY = originalFrame.minY + dragOffset.height + originalFrame.height / 2 + resizeOffset.height / 2
-
         let newWidth = originalFrame.width + resizeOffset.width
         let newHeight = originalFrame.height + resizeOffset.height
-
         let topLeftX = centerX - newWidth / 2
         let topLeftY = centerY - newHeight / 2
 

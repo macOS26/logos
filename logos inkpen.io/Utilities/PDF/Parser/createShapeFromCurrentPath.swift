@@ -46,7 +46,6 @@ extension PDFCommandParser {
         }
 
         let vectorPath = VectorPath(elements: vectorElements, isClosed: currentPath.contains(.closePath))
-
         var fillStyle: FillStyle? = nil
         var strokeStyle: StrokeStyle? = nil
 
@@ -70,7 +69,6 @@ extension PDFCommandParser {
                 let g = Double(currentFillColor.components?[1] ?? 0.0)
                 let b = Double(currentFillColor.components?[2] ?? 1.0)
                 let a = Double(currentFillColor.components?[3] ?? 1.0)
-
                 let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: a))
                 fillStyle = FillStyle(color: vectorColor)
             }
@@ -81,7 +79,6 @@ extension PDFCommandParser {
             let g = Double(currentStrokeColor.components?[1] ?? 0.0)
             let b = Double(currentStrokeColor.components?[2] ?? 0.0)
             let a = Double(currentStrokeColor.components?[3] ?? 1.0)
-
             let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: a))
             strokeStyle = StrokeStyle(color: vectorColor, width: 1.0, placement: .center)
         }
@@ -92,7 +89,6 @@ extension PDFCommandParser {
         }
 
         let isGradientShape = fillStyle?.isGradient ?? false
-
         let shape = VectorShape(
             name: "PDF Shape \(shapes.count + 1)",
             path: vectorPath,

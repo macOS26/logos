@@ -145,7 +145,6 @@ class StrokePropertiesCommand: BaseCommand {
         for id in objectIDs {
             guard let placement = placements[id],
                   let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
-
             var obj = document.unifiedObjects[index]
 
             if case .shape(var shape) = obj.objectType, !shape.isTextObject {
@@ -162,7 +161,6 @@ class StrokePropertiesCommand: BaseCommand {
         for id in objectIDs {
             guard let lineJoin = lineJoins[id],
                   let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
-
             var obj = document.unifiedObjects[index]
 
             if case .shape(var shape) = obj.objectType, !shape.isTextObject {
@@ -179,7 +177,6 @@ class StrokePropertiesCommand: BaseCommand {
         for id in objectIDs {
             guard let lineCap = lineCaps[id],
                   let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
-
             var obj = document.unifiedObjects[index]
 
             if case .shape(var shape) = obj.objectType, !shape.isTextObject {
@@ -196,7 +193,6 @@ class StrokePropertiesCommand: BaseCommand {
         for id in objectIDs {
             guard let miterLimit = miterLimits[id],
                   let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
-
             var obj = document.unifiedObjects[index]
 
             if case .shape(var shape) = obj.objectType, !shape.isTextObject {
@@ -213,7 +209,6 @@ class StrokePropertiesCommand: BaseCommand {
         for id in objectIDs {
             guard let opacity = opacities[id],
                   let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
-
             var obj = document.unifiedObjects[index]
 
             if case .shape(var shape) = obj.objectType, !shape.isTextObject {

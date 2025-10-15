@@ -15,7 +15,6 @@ enum DrawingCanvasPathHelpers {
 
         let startPoint = points[startIndex]
         let endPoint = points[endIndex]
-
         var maxDistance: Double = 0
         var maxIndex = startIndex
 
@@ -41,7 +40,6 @@ enum DrawingCanvasPathHelpers {
         let A = lineEnd.y - lineStart.y
         let B = lineStart.x - lineEnd.x
         let C = lineEnd.x * lineStart.y - lineStart.x * lineEnd.y
-
         let distance = abs(A * point.x + B * point.y + C) / sqrt(A * A + B * B)
         return distance
     }
@@ -70,7 +68,6 @@ enum DrawingCanvasPathHelpers {
         for i in 1..<points.count {
             let p0 = points[i - 1]
             let p1 = points[i]
-
             let isFirstSegment = (i == 1)
             let isLastSegment = (i == points.count - 1)
 
@@ -79,10 +76,8 @@ enum DrawingCanvasPathHelpers {
             } else {
                 let tension: Double = 0.25
                 let distance = sqrt(pow(p1.x - p0.x, 2) + pow(p1.y - p0.y, 2))
-
                 let prevTangent = i > 1 ? calculateTangent(p0: points[i - 2], p1: p0, p2: p1) : CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
                 let nextTangent = i < points.count - 1 ? calculateTangent(p0: p0, p1: p1, p2: points[i + 1]) : CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
-
                 let controlLength = distance * tension
 
                 let control1 = CGPoint(
@@ -111,10 +106,8 @@ enum DrawingCanvasPathHelpers {
         let dy1 = p1.y - p0.y
         let dx2 = p2.x - p1.x
         let dy2 = p2.y - p1.y
-
         let avgDx = (dx1 + dx2) / 2
         let avgDy = (dy1 + dy2) / 2
-
         let length = sqrt(avgDx * avgDx + avgDy * avgDy)
         if length > 0 {
             return CGPoint(x: avgDx / length, y: avgDy / length)

@@ -26,7 +26,6 @@ class StrokeWidthCommand: BaseCommand {
         for id in objectIDs {
             guard let width = widths[id],
                   let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
-
             var obj = document.unifiedObjects[index]
 
             if case .shape(var shape) = obj.objectType {

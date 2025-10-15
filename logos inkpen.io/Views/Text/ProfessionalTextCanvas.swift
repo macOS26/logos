@@ -4,7 +4,6 @@ struct ProfessionalTextCanvas: View {
     @ObservedObject var document: VectorDocument
     @ObservedObject var viewModel: ProfessionalTextViewModel
     let textObjectID: UUID
-
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
     let viewMode: ViewMode

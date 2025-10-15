@@ -112,7 +112,6 @@ struct ProfessionalDirectSelectionView: View {
             elementIndex: elementIndex
         )
         let isPointSelected = selectedPoints.contains(pointID)
-
         let incomingHandleID = HandleID(
             shapeID: shape.id,
             pathIndex: 0,
@@ -121,7 +120,6 @@ struct ProfessionalDirectSelectionView: View {
         )
         let isIncomingHandleSelected = selectedHandles.contains(incomingHandleID)
         let isIncomingHandleVisible = selectedHandles.contains(incomingHandleID) || visibleHandles.contains(incomingHandleID)
-
         let outgoingHandleID: HandleID? = {
             if elementIndex + 1 < shape.path.elements.count {
                 return HandleID(
@@ -135,12 +133,10 @@ struct ProfessionalDirectSelectionView: View {
         }()
         let isOutgoingHandleSelected = outgoingHandleID != nil ? selectedHandles.contains(outgoingHandleID!) : false
         let isOutgoingHandleVisible = outgoingHandleID != nil ? (selectedHandles.contains(outgoingHandleID!) || visibleHandles.contains(outgoingHandleID!)) : false
-
         let shouldShowBothHandlesAtThisPoint = isIncomingHandleVisible || isOutgoingHandleVisible
 
         let coincidentPoints = findCoincidentPoints(to: pointID, in: document, tolerance: 1.0)
         let anyCoincidentPointSelected = !coincidentPoints.isEmpty && coincidentPoints.contains { selectedPoints.contains($0) }
-
         let anyCoincidentHandleSelected: Bool = {
             if shape.path.elements.last == .close {
                 let lastPointIndex = shape.path.elements.count - 2
@@ -171,7 +167,6 @@ struct ProfessionalDirectSelectionView: View {
             if shouldShowHandles {
             let anchorLocation = CGPoint(x: to.x, y: to.y)
             let control2Location = CGPoint(x: control2.x, y: control2.y)
-
             let incomingHandleCollapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
             if !incomingHandleCollapsed {
                 bezierHandleLineAndCircle(from: anchorLocation, to: control2Location, shape: shape, isSelected: isIncomingHandleSelected)
@@ -198,10 +193,8 @@ struct ProfessionalDirectSelectionView: View {
             elementIndex: elementIndex
         )
         let isPointSelected = selectedPoints.contains(pointID)
-
         let coincidentPoints = findCoincidentPoints(to: pointID, in: document, tolerance: 1.0)
         let anyCoincidentPointSelected = !coincidentPoints.isEmpty && coincidentPoints.contains { selectedPoints.contains($0) }
-
         let outgoingHandleID: HandleID? = {
             if elementIndex + 1 < shape.path.elements.count {
                 let nextElement = shape.path.elements[elementIndex + 1]
@@ -219,7 +212,6 @@ struct ProfessionalDirectSelectionView: View {
 
         let isOutgoingHandleSelected = outgoingHandleID != nil && selectedHandles.contains(outgoingHandleID!)
         let isOutgoingHandleVisible = outgoingHandleID != nil && (selectedHandles.contains(outgoingHandleID!) || visibleHandles.contains(outgoingHandleID!))
-
         let anyCoincidentHandleSelected: Bool = {
             if shape.path.elements.last == .close {
                 let lastPointIndex = shape.path.elements.count - 2
@@ -308,14 +300,12 @@ struct ProfessionalDirectSelectionView: View {
         if let point = extractPointFromElement(element) {
             let rawPointLocation = CGPoint(x: point.x + dragOffset.x, y: point.y + dragOffset.y)
             let transformedPointLocation = rawPointLocation.applying(shape.transform)
-
             let pointID = PointID(
                 shapeID: shape.id,
                 pathIndex: 0,
                 elementIndex: elementIndex
             )
             let isPointSelected = selectedPoints.contains(pointID)
-
             let hasCoincidentPoints = !findCoincidentPoints(to: pointID, in: document, tolerance: 1.0).isEmpty
 
             Rectangle()

@@ -17,19 +17,16 @@ extension SVGParser {
 
     internal func finishLinearGradientElement(inheritedGradient: VectorGradient?) -> VectorGradient {
         let attributes = currentGradientAttributes
-
         let gradientUnits = parseGradientUnits(from: attributes)
 
         let x1Raw = attributes["x1"] ?? "0%"
         let y1Raw = attributes["y1"] ?? "0%"
         let x2Raw = attributes["x2"] ?? "100%"
         let y2Raw = attributes["y2"] ?? "0%"
-
         let x1 = parseGradientCoordinate(x1Raw, gradientUnits: gradientUnits, isXCoordinate: true)
         let y1 = parseGradientCoordinate(y1Raw, gradientUnits: gradientUnits, isXCoordinate: false)
         let x2 = parseGradientCoordinate(x2Raw, gradientUnits: gradientUnits, isXCoordinate: true)
         let y2 = parseGradientCoordinate(y2Raw, gradientUnits: gradientUnits, isXCoordinate: false)
-
         let transformInfo = parseGradientTransformFromAttributes(attributes)
 
         let startPoint: CGPoint
@@ -59,12 +56,10 @@ extension SVGParser {
         }
 
         let angleDegrees = computedAngle
-
         let spreadMethod = parseSpreadMethod(from: attributes)
 
         let originX = clamp((startPoint.x + endPoint.x) / 2.0, 0.0, 1.0)
         let originY = clamp((startPoint.y + endPoint.y) / 2.0, 0.0, 1.0)
-
         var linearGradient = LinearGradient(
             startPoint: startPoint,
             endPoint: endPoint,

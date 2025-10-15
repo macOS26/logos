@@ -58,7 +58,6 @@ class GradientNSView: NSView {
         context.saveGState()
 
         let pathBounds = path.boundingBoxOfPath
-
         let colors = gradient.stops.map { stop -> CGColor in
             if case .clear = stop.color {
                 return stop.color.cgColor
@@ -79,25 +78,20 @@ class GradientNSView: NSView {
         case .linear(let linear):
             let originX = linear.originPoint.x
             let originY = linear.originPoint.y
-
             let scale = CGFloat(linear.scaleX)
             let scaledOriginX = originX * scale
             let scaledOriginY = originY * scale
-
             let centerX = pathBounds.minX + pathBounds.width * scaledOriginX
             let centerY = pathBounds.minY + pathBounds.height * scaledOriginY
-
             let gradientAngle = CGFloat(linear.storedAngle * .pi / 180.0)
             let gradientVector = CGPoint(x: linear.endPoint.x - linear.startPoint.x, y: linear.endPoint.y - linear.startPoint.y)
             let gradientLength = sqrt(gradientVector.x * gradientVector.x + gradientVector.y * gradientVector.y)
-
             let scaledLength = gradientLength * CGFloat(scale) * max(pathBounds.width, pathBounds.height)
 
             let startX = centerX - cos(gradientAngle) * scaledLength / 2
             let startY = centerY - sin(gradientAngle) * scaledLength / 2
             let endX = centerX + cos(gradientAngle) * scaledLength / 2
             let endY = centerY + sin(gradientAngle) * scaledLength / 2
-
             let startPoint = CGPoint(x: startX, y: startY)
             let endPoint = CGPoint(x: endX, y: endY)
 
@@ -107,7 +101,6 @@ class GradientNSView: NSView {
 
             let originX = radial.originPoint.x
             let originY = radial.originPoint.y
-
             let center = CGPoint(x: pathBounds.minX + pathBounds.width * originX,
                                  y: pathBounds.minY + pathBounds.height * originY)
 

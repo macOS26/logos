@@ -54,7 +54,6 @@ extension VectorDocument {
             guard !layerObjects.isEmpty else { continue }
 
             let expandedSelectedIDs = expandSelectionForClippingMasks(selectedObjectIDs, in: layerObjects)
-
             let selectedObjects = layerObjects.filter { expandedSelectedIDs.contains($0.id) }
             let unselectedObjects = layerObjects.filter { !expandedSelectedIDs.contains($0.id) }
 
@@ -62,7 +61,6 @@ extension VectorDocument {
 
             let currentOrderIDs = layerObjects.map { $0.orderID }
             let minOrderID = currentOrderIDs.min() ?? 0
-
             var newOrderID = minOrderID
 
             for unselectedObject in unselectedObjects {
@@ -129,7 +127,6 @@ extension VectorDocument {
             guard !layerObjects.isEmpty else { continue }
 
             let expandedSelectedIDs = expandSelectionForClippingMasks(selectedObjectIDs, in: layerObjects)
-
             let selectedObjects = layerObjects.filter { expandedSelectedIDs.contains($0.id) }
 
             guard !selectedObjects.isEmpty else { continue }
@@ -143,7 +140,6 @@ extension VectorDocument {
 
                     if let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObject.id }),
                        let frontIndex = unifiedObjects.firstIndex(where: { $0.id == objectInFront.id }) {
-
                         let selectedOrderID = unifiedObjects[selectedIndex].orderID
                         let frontOrderID = unifiedObjects[frontIndex].orderID
 
@@ -209,7 +205,6 @@ extension VectorDocument {
             guard !layerObjects.isEmpty else { continue }
 
             let expandedSelectedIDs = expandSelectionForClippingMasks(selectedObjectIDs, in: layerObjects)
-
             let selectedObjects = layerObjects.filter { expandedSelectedIDs.contains($0.id) }
 
             guard !selectedObjects.isEmpty else { continue }
@@ -223,7 +218,6 @@ extension VectorDocument {
 
                     if let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObject.id }),
                        let behindIndex = unifiedObjects.firstIndex(where: { $0.id == objectBehind.id }) {
-
                         let selectedOrderID = unifiedObjects[selectedIndex].orderID
                         let behindOrderID = unifiedObjects[behindIndex].orderID
 
@@ -294,7 +288,6 @@ extension VectorDocument {
             guard !layerObjects.isEmpty else { continue }
 
             let expandedSelectedIDs = expandSelectionForClippingMasks(selectedObjectIDs, in: layerObjects)
-
             let selectedObjects = layerObjects.filter { expandedSelectedIDs.contains($0.id) }
             let unselectedObjects = layerObjects.filter { !expandedSelectedIDs.contains($0.id) }
 
@@ -302,7 +295,6 @@ extension VectorDocument {
 
             let currentOrderIDs = layerObjects.map { $0.orderID }
             let minOrderID = currentOrderIDs.min() ?? 0
-
             var newOrderID = minOrderID
 
             for selectedObject in selectedObjects {

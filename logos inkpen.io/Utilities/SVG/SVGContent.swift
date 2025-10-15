@@ -26,7 +26,6 @@ func parseSVGContent(_ data: Data, useExtremeValueHandling: Bool = false) throws
     }
 
     let result = try parser.parse(xmlString)
-
     var allShapes = result.shapes
 
     let maxWidth = parser.maxTextWidth

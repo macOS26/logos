@@ -76,7 +76,6 @@ extension DrawingCanvas {
         if brushRawPoints.count == 2 {
             let startPoint = brushRawPoints[0]
             let endPoint = brushRawPoints[1]
-
             var interpolatedPoints: [BrushPoint] = [startPoint]
 
             let numIntermediatePoints = 4
@@ -127,20 +126,16 @@ extension DrawingCanvas {
         if brushRawPoints.count == 2 {
             let startPoint = brushRawPoints[0]
             let endPoint = brushRawPoints[1]
-
             var interpolatedPoints: [BrushPoint] = [startPoint]
 
             let dx = endPoint.location.x - startPoint.location.x
             let dy = endPoint.location.y - startPoint.location.y
             let lineLength = sqrt(dx * dx + dy * dy)
-
             let perpX = lineLength > 0 ? -dy / lineLength : 0
             let perpY = lineLength > 0 ? dx / lineLength : 0
-
             let numIntermediatePoints = 5
             for i in 1...numIntermediatePoints {
                 let t = Double(i) / Double(numIntermediatePoints + 1)
-
                 let jitterAmount = sin(t * .pi) * 2.0
 
                 let interpolatedLocation = CGPoint(
@@ -191,20 +186,16 @@ extension DrawingCanvas {
         if rawPoints.count == 2 {
             let startPoint = rawPoints[0]
             let endPoint = rawPoints[1]
-
             var interpolatedPoints: [BrushPoint] = [startPoint]
 
             let dx = endPoint.location.x - startPoint.location.x
             let dy = endPoint.location.y - startPoint.location.y
             let lineLength = sqrt(dx * dx + dy * dy)
-
             let perpX = lineLength > 0 ? -dy / lineLength : 0
             let perpY = lineLength > 0 ? dx / lineLength : 0
-
             let numIntermediatePoints = 5
             for i in 1...numIntermediatePoints {
                 let t = Double(i) / Double(numIntermediatePoints + 1)
-
                 let jitterAmount = sin(t * .pi) * 2.0
 
                 let interpolatedLocation = CGPoint(
@@ -365,7 +356,6 @@ extension DrawingCanvas {
 
         if document.brushRemoveOverlap {
             let currentPath = finalPath.cgPath
-
             var cleaned: CGPath? = nil
             cleaned = CoreGraphicsPathOperations.union(currentPath, currentPath, using: .winding)
             if cleaned == nil {
@@ -414,7 +404,6 @@ extension DrawingCanvas {
             }
             
             let cleanedVectorPath = VectorPath(cgPath: cleanedPath)
-            
             var updatedShape = brushStroke
             updatedShape.path = cleanedVectorPath
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
@@ -430,7 +419,6 @@ extension DrawingCanvas {
 
         for (index, point) in centerPoints.enumerated() {
             let progress = Double(index) / Double(centerPoints.count - 1)
-
             var finalThickness = thickness
 
             var mappedPressure = 1.0
@@ -473,7 +461,6 @@ extension DrawingCanvas {
 
         let leftEdgePoints = generateOffsetPoints(centerPoints: thicknessPoints, isLeftSide: true)
         let rightEdgePoints = generateOffsetPoints(centerPoints: thicknessPoints, isLeftSide: false)
-
         let leftEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: leftEdgePoints)
         let rightEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: rightEdgePoints.reversed())
 
@@ -543,15 +530,12 @@ extension DrawingCanvas {
 
         for (index, point) in centerPoints.enumerated() {
             let progress = Double(index) / Double(centerPoints.count - 1)
-
             var finalThickness = thickness
 
             let interpolatedPressure = interpolatePressureForPoint(point, from: rawPoints)
-
             let curve = appState.pressureCurve
 
             let mappedPressure = getThicknessFromPressureCurve(pressure: interpolatedPressure, curve: curve)
-
             let taperZone = 0.15
             var taperMultiplier = 1.0
 
@@ -575,7 +559,6 @@ extension DrawingCanvas {
 
         let leftEdgePoints = generateOffsetPoints(centerPoints: thicknessPoints, isLeftSide: true)
         let rightEdgePoints = generateOffsetPoints(centerPoints: thicknessPoints, isLeftSide: false)
-
         let leftEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: leftEdgePoints)
         let rightEdgePath = DrawingCanvasPathHelpers.createSmoothBezierPath(from: rightEdgePoints.reversed())
 
@@ -588,7 +571,6 @@ extension DrawingCanvas {
         for i in 0..<centerPoints.count {
             let point = centerPoints[i]
             let thickness = point.thickness
-
             var perpendicular: CGPoint
 
             if i == 0 {
@@ -606,10 +588,8 @@ extension DrawingCanvas {
             } else {
                 let prevPoint = centerPoints[i - 1].location
                 let nextPoint = centerPoints[i + 1].location
-
                 let incomingDir = CGPoint(x: point.location.x - prevPoint.x, y: point.location.y - prevPoint.y)
                 let outgoingDir = CGPoint(x: nextPoint.x - point.location.x, y: nextPoint.y - point.location.y)
-
                 let avgDirection = CGPoint(
                     x: (incomingDir.x + outgoingDir.x) / 2,
                     y: (incomingDir.y + outgoingDir.y) / 2
@@ -626,7 +606,6 @@ extension DrawingCanvas {
 
             let offsetDistance = thickness / 2.0
             let multiplier = isLeftSide ? 1.0 : -1.0
-
             let offsetPoint = CGPoint(
                 x: point.location.x + perpendicular.x * offsetDistance * multiplier,
                 y: point.location.y + perpendicular.y * offsetDistance * multiplier

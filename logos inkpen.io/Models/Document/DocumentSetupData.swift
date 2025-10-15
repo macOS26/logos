@@ -11,7 +11,6 @@ struct DocumentSetupData {
     var showGrid: Bool = false
     var snapToGrid: Bool = false
     var backgroundColor: VectorColor = .white
-
     var documentSettings: DocumentSettings {
         DocumentSettings(
             width: width,

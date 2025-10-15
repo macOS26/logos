@@ -69,7 +69,6 @@ extension FileOperations {
         }
 
         let document = VectorDocument()
-
         let pdfDocumentSize = result.metadata.documentSize
         let canvasWidth = pdfDocumentSize.width
         let canvasHeight = pdfDocumentSize.height

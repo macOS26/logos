@@ -191,7 +191,6 @@ struct RotateHandles: View {
         ForEach(pathPoints.indices, id: \.self) { index in
             let point = pathPoints[index]
             let isSelected = selectedAnchorPointIndex == index
-
             let transformedPoint = CGPoint(x: point.x, y: point.y).applying(shape.transform)
             Circle()
                 .fill(isSelected ? Color.red : Color.green)
@@ -224,14 +223,11 @@ struct RotateHandles: View {
         }
 
         let currentLocation = dragValue.location
-
         let anchorScreenX = rotationAnchorPoint.x * zoomLevel + canvasOffset.x
         let anchorScreenY = rotationAnchorPoint.y * zoomLevel + canvasOffset.y
         let rotationCenter = CGPoint(x: anchorScreenX, y: anchorScreenY)
-
         let currentVector = CGPoint(x: currentLocation.x - rotationCenter.x, y: currentLocation.y - rotationCenter.y)
         let startVector = CGPoint(x: startLocation.x - rotationCenter.x, y: startLocation.y - rotationCenter.y)
-
         let currentAngle = atan2(currentVector.y, currentVector.x)
         let initialAngle = atan2(startVector.y, startVector.x)
         var rotationAngle = currentAngle - initialAngle
@@ -566,7 +562,6 @@ struct RotateHandles: View {
         }
 
         let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
-
         var updatedShape = shape
         updatedShape.path = transformedPath
         updatedShape.transform = .identity
@@ -580,7 +575,6 @@ struct RotateHandles: View {
 
         let scaleX = sqrt(transform.a * transform.a + transform.c * transform.c)
         let scaleY = sqrt(transform.b * transform.b + transform.d * transform.d)
-
         let scaleRatio = max(scaleX, scaleY) / min(scaleX, scaleY)
         let maxReasonableRatio: CGFloat = 3.0
 

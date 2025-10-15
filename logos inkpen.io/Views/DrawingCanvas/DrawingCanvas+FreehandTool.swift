@@ -123,7 +123,6 @@ extension DrawingCanvas {
         let cgPoints = processedPoints.map { CGPoint(x: $0.x, y: $0.y) }
         let optimizedCGPoints = MetalDrawingOptimizer.shared.optimizeFreehandDrawing(points: cgPoints, tolerance: tolerance)
         let simplifiedPoints = optimizedCGPoints.map { VectorPoint($0) }
-
         let finalCGPoints = simplifiedPoints.map { CGPoint(x: $0.x, y: $0.y) }
         let smoothPath = document.advancedSmoothingEnabled ?
             createAdvancedSmoothBezierPath(from: finalCGPoints) :

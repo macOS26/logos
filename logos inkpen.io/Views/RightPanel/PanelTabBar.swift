@@ -2,7 +2,6 @@ import SwiftUI
 
 struct PanelTabBar: View {
     @Binding var selectedTab: PanelTab
-
     var body: some View {
         HStack(spacing: 0) {
             ForEach(PanelTab.allCases, id: \.self) { tab in

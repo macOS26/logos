@@ -59,7 +59,6 @@ class GroupCommand: BaseCommand {
         for objectID in addedObjectIDs {
             guard let shape = addedShapes[objectID],
                   let orderID = addedOrderIDs[objectID] else { continue }
-
             let newObject = VectorObject(
                 shape: shape,
                 layerIndex: layerIndex,
@@ -94,7 +93,6 @@ class GroupCommand: BaseCommand {
         for objectID in removedObjectIDs {
             guard let shape = removedShapes[objectID],
                   let orderID = removedOrderIDs[objectID] else { continue }
-
             let restoredObject = VectorObject(
                 shape: shape,
                 layerIndex: layerIndex,

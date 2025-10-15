@@ -143,7 +143,6 @@ class PasteboardDiagnostics {
         let canvasShape = document.getShapeAtIndex(layerIndex: 1, shapeIndex: 0)
         let canvasBounds = canvasShape?.bounds ?? .zero
         let canvasPoint = CGPoint(x: canvasBounds.midX, y: canvasBounds.midY)
-
         let canvasHit = simulateHitTest(document: document, at: canvasPoint)
         test.canvasPriorityHit = canvasHit
         test.canvasPriorityCorrect = (
@@ -164,7 +163,6 @@ class PasteboardDiagnostics {
 
         var test = LayerIterationTest()
         let testPoint = CGPoint(x: 100, y: 100)
-
         var testedLayers: [String] = []
         var testedShapes: [String] = []
 
@@ -211,12 +209,10 @@ class PasteboardDiagnostics {
     private func testRealWorldScenarios(_ document: VectorDocument) -> RealWorldScenariosTest {
 
         var test = RealWorldScenariosTest()
-
         let pasteboardShape = document.getShapeAtIndex(layerIndex: 0, shapeIndex: 0)
         let pasteboardBounds = pasteboardShape?.bounds ?? .zero
         let canvasShape = document.getShapeAtIndex(layerIndex: 1, shapeIndex: 0)
         let canvasBounds = canvasShape?.bounds ?? .zero
-
         let pasteboardObjectLocation = CGPoint(
             x: pasteboardBounds.minX + 50,
             y: pasteboardBounds.minY + 50
@@ -296,7 +292,6 @@ class PasteboardDiagnostics {
     private func testPerformance(_ document: VectorDocument) -> PerformanceTest {
 
         var test = PerformanceTest()
-
         let originalShapeCount = document.getShapesForLayer(2).count
 
         for i in 0..<100 {
@@ -310,7 +305,6 @@ class PasteboardDiagnostics {
         }
 
         let testPoint = CGPoint(x: 250, y: 250)
-
         let startTime = CFAbsoluteTimeGetCurrent()
 
         for _ in 0..<1000 {
@@ -355,7 +349,6 @@ class PasteboardDiagnostics {
                 testedShapes.append("Layer \(layerIndex) - Shape: \(shape.name)")
 
                 let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
-
                 var isHit = false
 
                 if isBackgroundShape {
@@ -389,7 +382,6 @@ struct DiagnosticReport {
     var hitTesting = HitTestingTest()
     var realWorldScenarios = RealWorldScenariosTest()
     var performance = PerformanceTest()
-
     var overallPassed: Bool {
         return layerStructure.passed &&
                backgroundShapes.passed &&
@@ -412,17 +404,14 @@ struct LayerStructureTest {
     var layerCount = 0
     var expectedLayerCount = 3
     var layerCountCorrect = false
-
     var pasteboardLayerName = ""
     var canvasLayerName = ""
     var workingLayerName = ""
     var layerNamesCorrect = false
-
     var pasteboardLocked = false
     var canvasLocked = false
     var workingLayerLocked = false
     var lockStatusCorrect = false
-
     var passed = false
 }
 
@@ -431,25 +420,20 @@ struct BackgroundShapesTest {
     var pasteboardShapeName = ""
     var pasteboardBounds: CGRect?
     var pasteboardShapeCorrect = false
-
     var canvasShapeCount = 0
     var canvasShapeName = ""
     var canvasBounds: CGRect?
     var canvasShapeCorrect = false
-
     var sizingCorrect = false
     var positioningCorrect = false
-
     var passed = false
 }
 
 struct HitTestingTest {
     var pasteboardOnlyHit = HitTestResult()
     var pasteboardHitCorrect = false
-
     var canvasPriorityHit = HitTestResult()
     var canvasPriorityCorrect = false
-
     var layerIterationTest = LayerIterationTest()
 
     var passed = false
@@ -464,13 +448,10 @@ struct LayerIterationTest {
 struct RealWorldScenariosTest {
     var pasteboardObjectHit = HitTestResult()
     var pasteboardObjectHitCorrect = false
-
     var canvasObjectHit = HitTestResult()
     var canvasObjectHitCorrect = false
-
     var emptyPasteboardHit = HitTestResult()
     var emptyPasteboardHitCorrect = false
-
     var passed = false
 }
 

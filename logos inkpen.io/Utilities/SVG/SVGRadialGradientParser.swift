@@ -24,7 +24,6 @@ extension SVGParser {
         isParsingGradient = true
 
         let (cxRaw, cyRaw, rRaw, fxRaw, fyRaw) = parseRadialGradientCoordinates(from: attributes)
-
         let hasExtremeValues = detectExtremeValuesInRadialGradient(
             cx: cxRaw, cy: cyRaw, r: rRaw, fx: fxRaw, fy: fyRaw
         )
@@ -63,20 +62,16 @@ extension SVGParser {
 
     internal func finishRadialGradientElement(inheritedGradient: VectorGradient?) -> VectorGradient {
         let attributes = currentGradientAttributes
-
         let gradientUnits = parseGradientUnits(from: attributes)
 
         let (cxRaw, cyRaw, rRaw, fxRaw, fyRaw) = parseRadialGradientCoordinates(from: attributes)
-
         let useExtremeHandling = useExtremeValueHandling && detectedExtremeValues
 
         let cx = parseGradientCoordinate(cxRaw, gradientUnits: gradientUnits, isXCoordinate: true, useExtremeValueHandling: useExtremeHandling)
         let cy = parseGradientCoordinate(cyRaw, gradientUnits: gradientUnits, isXCoordinate: false, useExtremeValueHandling: useExtremeHandling)
         let r = parseGradientCoordinate(rRaw, gradientUnits: gradientUnits, isXCoordinate: true, useExtremeValueHandling: useExtremeHandling)
-
         let fx = fxRaw != nil ? parseGradientCoordinate(fxRaw!, gradientUnits: gradientUnits, isXCoordinate: true, useExtremeValueHandling: useExtremeHandling) : cx
         let fy = fyRaw != nil ? parseGradientCoordinate(fyRaw!, gradientUnits: gradientUnits, isXCoordinate: false, useExtremeValueHandling: useExtremeHandling) : cy
-
         var centerPoint: CGPoint
         var focalPoint: CGPoint
 
@@ -96,7 +91,6 @@ extension SVGParser {
         }
 
         let spreadMethod = parseSpreadMethod(from: attributes)
-
         let (gradientAngle, gradientScaleX, gradientScaleY) = parseGradientTransformFromAttributes(attributes)
 
         var radialGradient = RadialGradient(

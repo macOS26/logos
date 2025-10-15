@@ -238,7 +238,6 @@ extension VectorDocument {
     static func createDefaultCMYKSwatches() -> [VectorColor] {
         let basicColors: [VectorColor] = [.black, .white, .clear]
         var cmykColors: [VectorColor] = []
-
         let cmykValues = [
             (100, 0, 0, 0),
             (0, 100, 0, 0),
@@ -280,7 +279,6 @@ extension VectorDocument {
 
     static func createDefaultHSBSwatches() -> [VectorColor] {
         let basicColors: [VectorColor] = [.black, .white, .clear]
-
         var hsbColors: [VectorColor] = []
 
         for hue in stride(from: 0, to: 360, by: 30) {

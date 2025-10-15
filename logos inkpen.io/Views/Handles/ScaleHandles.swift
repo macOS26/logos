@@ -7,7 +7,6 @@ struct ScaleHandles: View {
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let isShiftPressed: Bool
-
     @State var isScaling = false
     @State var scalingStarted = false
     @State var initialBounds: CGRect = .zero
@@ -17,12 +16,10 @@ struct ScaleHandles: View {
     @State var scalingAnchorPoint: CGPoint = .zero
     @State var finalMarqueeBounds: CGRect = .zero
     @State var isCapsLockPressed = false
-
     @State var lockedPinPointIndex: Int? = nil
     @State var pathPoints: [VectorPoint] = []
     @State var centerPoint: VectorPoint = VectorPoint(CGPoint.zero)
     @State var pointsRefreshTrigger: Int = 0
-
     let handleSize: CGFloat = 10
 
     private var calculatedBounds: CGRect {

@@ -26,7 +26,6 @@ extension PDFCommandParser {
 
         var sMaskRef: CGPDFStreamRef?
         let hasSMask = CGPDFDictionaryGetStream(streamDict, "SMask", &sMaskRef)
-
         var maskData: Data?
         if hasSMask, let sMask = sMaskRef {
             var maskFormat: CGPDFDataFormat = .raw
@@ -83,7 +82,6 @@ extension PDFCommandParser {
         }
 
         let nsData = imageData as NSData
-
         let debugPath = "/Users/toddbruss/Documents/pdf_raw_image_\(name)_\(width)x\(height).dat"
         try? (nsData as Data).write(to: URL(fileURLWithPath: debugPath))
 
@@ -108,7 +106,6 @@ extension PDFCommandParser {
                     height: height
                 ) {
                     let rgbaData = NSMutableData(data: gpuRGBAData)
-
                 let rgbaDebugPath = "/Users/toddbruss/Documents/pdf_indexed_rgba_image_\(name)_\(width)x\(height).dat"
                 try? (rgbaData as Data).write(to: URL(fileURLWithPath: rgbaDebugPath))
 
@@ -221,7 +218,6 @@ extension PDFCommandParser {
                     height: height
                 ) {
                     let rgbaData = NSMutableData(data: gpuRGBAData)
-
                 let rgbaDebugPath = "/Users/toddbruss/Documents/pdf_rgba_image_\(name)_\(width)x\(height).dat"
                 try? (rgbaData as Data).write(to: URL(fileURLWithPath: rgbaDebugPath))
 
@@ -357,7 +353,6 @@ extension PDFCommandParser {
 
         let unitRect = CGRect(x: 0, y: 0, width: 1.0, height: 1.0)
         let pdfRect = unitRect.applying(currentTransform)
-
         let flippedY = pageSize.height - pdfRect.maxY
         let finalRect = CGRect(x: pdfRect.minX, y: flippedY, width: pdfRect.width, height: pdfRect.height)
 

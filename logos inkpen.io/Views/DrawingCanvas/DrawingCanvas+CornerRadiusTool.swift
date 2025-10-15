@@ -6,7 +6,6 @@ extension DrawingCanvas {
     func cornerRadiusTool(geometry: GeometryProxy) -> some View {
         if document.currentTool == .cornerRadius,
            let selectedShape = getSelectedRectangleShape() {
-
             let boundsToUse = getProperShapeBounds(for: selectedShape)
             let corners = getCornerScreenPositions(bounds: boundsToUse, shape: selectedShape, geometry: geometry)
 
@@ -79,7 +78,6 @@ extension DrawingCanvas {
 
         let canvasLocation = screenToCanvas(value.location, geometry: geometry)
         let canvasStartLocation = screenToCanvas(cornerDragStart, geometry: geometry)
-
         let direction: CGPoint
         switch cornerIndex {
         case 0:
@@ -96,7 +94,6 @@ extension DrawingCanvas {
 
         let deltaX = canvasLocation.x - canvasStartLocation.x
         let deltaY = canvasLocation.y - canvasStartLocation.y
-
         let diagonalMovement = (deltaX * direction.x + deltaY * direction.y) / sqrt(2.0)
 
         let tentativeRadius = initialCornerRadius + diagonalMovement
@@ -104,7 +101,6 @@ extension DrawingCanvas {
         if let originalBounds = shape.originalBounds {
             let maxRadius = min(originalBounds.width, originalBounds.height) / 2.0
             let newRadius = max(0.0, min(maxRadius, tentativeRadius))
-
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
 

@@ -45,7 +45,6 @@ class PressureSensitiveCanvasView: NSView {
 
         let pressure = extractPressure(from: event)
         let canvasLocation = convertToCanvasCoordinates(startLocation)
-
         let isTabletEvent = (event.subtype == .tabletPoint)
         onPressureEvent?(canvasLocation, pressure, .began, isTabletEvent)
 
@@ -60,7 +59,6 @@ class PressureSensitiveCanvasView: NSView {
         let currentLocation = convert(event.locationInWindow, from: nil)
         let pressure = extractPressure(from: event)
         let canvasLocation = convertToCanvasCoordinates(currentLocation)
-
         let isTabletEvent = (event.subtype == .tabletPoint)
         onPressureEvent?(canvasLocation, pressure, .changed, isTabletEvent)
 
@@ -75,7 +73,6 @@ class PressureSensitiveCanvasView: NSView {
         let currentLocation = convert(event.locationInWindow, from: nil)
         let pressure = extractPressure(from: event)
         let canvasLocation = convertToCanvasCoordinates(currentLocation)
-
         let isTabletEvent = (event.subtype == .tabletPoint)
         onPressureEvent?(canvasLocation, pressure, .ended, isTabletEvent)
 
@@ -103,7 +100,6 @@ class PressureSensitiveCanvasView: NSView {
         let currentLocation = convert(event.locationInWindow, from: nil)
         let pressure = extractPressure(from: event)
         let canvasLocation = convertToCanvasCoordinates(currentLocation)
-
         let eventType: PressureEventType
         if !isDragging && pressure > 0.1 {
             isDragging = true

@@ -34,7 +34,6 @@ class BrushStrokeTaperingTests: XCTestCase {
     func testStrokeStartsThin() {
         let startPoint = CGPoint(x: 100, y: 100)
         let endPoint = CGPoint(x: 200, y: 100)
-
         let centerPoints = [startPoint, endPoint]
         let rawPoints = [
             BrushPoint(location: startPoint, pressure: 1.0),
@@ -97,7 +96,6 @@ class BrushStrokeTaperingTests: XCTestCase {
     func testStraightLineTapering() {
         let startPoint = CGPoint(x: 100, y: 100)
         let endPoint = CGPoint(x: 300, y: 100)
-
         var interpolatedPoints: [CGPoint] = [startPoint]
         for i in 1...5 {
             let t = Double(i) / 6.0
@@ -141,7 +139,6 @@ class BrushStrokeTaperingTests: XCTestCase {
 
         canvas.brushRawPoints = rawPoints
         let previewPath = canvas.generateLivePreviewPath()
-
         let finalPath = canvas.generateSmoothVariableWidthPath(
             centerPoints: points,
             rawPoints: rawPoints,

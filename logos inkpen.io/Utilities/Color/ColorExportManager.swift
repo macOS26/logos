@@ -26,11 +26,9 @@ final class ColorExportManager {
     ) throws -> Bool {
 
         let ciImage = CIImage(cgImage: cgImage)
-
         let targetColorSpace = getColorSpace(for: colorSpace)
 
         let convertedCIImage = ciImage.matchedFromWorkingSpace(to: targetColorSpace) ?? ciImage
-
         let context = CIContext(options: [
             .workingColorSpace: targetColorSpace,
             .outputColorSpace: targetColorSpace

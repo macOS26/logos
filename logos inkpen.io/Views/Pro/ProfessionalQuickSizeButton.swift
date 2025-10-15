@@ -4,7 +4,6 @@ struct ProfessionalQuickSizeButton: View {
     let size: QuickSize
     let displayUnit: MeasurementUnit
     let action: () -> Void
-
     var body: some View {
         Button(action: action) {
             VStack(spacing: 6) {

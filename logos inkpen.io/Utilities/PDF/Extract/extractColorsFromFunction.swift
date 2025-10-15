@@ -15,7 +15,6 @@ extension PDFCommandParser {
         case 2:
             var c0Array: CGPDFArrayRef?
             var c1Array: CGPDFArrayRef?
-
             var startColor = VectorColor.black
             var endColor = VectorColor.white
 

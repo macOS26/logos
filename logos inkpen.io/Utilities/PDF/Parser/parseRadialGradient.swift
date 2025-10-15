@@ -22,7 +22,6 @@ extension PDFCommandParser {
         let centerPoint = CGPoint(x: x1 / pageSize.width, y: 1.0 - (y1 / pageSize.height))
         let focalPoint = r0 > 0 ? CGPoint(x: x0 / pageSize.width, y: 1.0 - (y0 / pageSize.height)) : nil
         let radius = Double(r1 / max(pageSize.width, pageSize.height))
-
         let stops = extractGradientStops(from: dict)
 
         let radialGradient = RadialGradient(

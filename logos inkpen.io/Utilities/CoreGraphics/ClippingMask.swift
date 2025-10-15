@@ -11,7 +11,6 @@ struct ClippingMaskShapeView: View {
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
     let viewMode: ViewMode
-
     var body: some View {
         ClippingMaskNSViewRepresentable(
             clippedShape: clippedShape,

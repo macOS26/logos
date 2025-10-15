@@ -6,7 +6,6 @@ let IconStrokeExpand: CGFloat = IconStrokeWidth / 2.0
 struct ToolItem {
     let tool: DrawingTool
     let starVariant: StarVariant?
-
     var toolIdentifier: String {
         if let variant = starVariant {
             return "star_\(variant.rawValue)"

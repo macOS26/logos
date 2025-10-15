@@ -91,7 +91,6 @@ extension SVGParser {
         }
 
         let lines = tspans.map { (x: $0.x, contentLength: $0.content.count) }
-
         let sortedByLength = lines.sorted { $0.contentLength > $1.contentLength }
 
         if sortedByLength.count >= 2 {
@@ -139,7 +138,6 @@ extension SVGParser {
             let baseY = parseLength(currentTextAttributes["y"]) ?? 0
             let textOwnTransform = parseTransform(currentTextAttributes["transform"] ?? "")
             let finalTextTransform = currentTransform.concatenating(textOwnTransform)
-
             var combinedContent: [String] = []
             var firstFontSize: Double = 12
             var firstFontFamily: String = "System Font"
@@ -162,11 +160,9 @@ extension SVGParser {
 
             if !combinedContent.isEmpty {
                 let multiLineContent = combinedContent.joined(separator: "\n")
-
                 let textAlignment = detectTextAlignment(from: currentTextSpans)
 
                 let lineHeight = firstFontSize * 1.2
-
                 let typography = TypographyProperties(
                     fontFamily: firstFontFamily,
                     fontSize: firstFontSize,
@@ -200,7 +196,6 @@ extension SVGParser {
 
                 let nsFont = getCachedFont(family: firstFontFamily, size: firstFontSize)
                 let maxLineWidth = calculateMaxLineWidth(for: multiLineContent, font: nsFont, alignment: textAlignment)
-
                 let actualWidth: CGFloat
                 if let pendingRect = pendingTextBoxRect, pendingRect.width > 0 {
                     actualWidth = pendingRect.width
@@ -212,7 +207,6 @@ extension SVGParser {
 
                 maxTextWidth = max(maxTextWidth, actualWidth)
                 let actualHeight = lineHeight
-
                 let finalY = baseY - (firstFontSize)
 
                 var textObject = VectorText(
@@ -243,7 +237,6 @@ extension SVGParser {
             let fill = currentTextAttributes["fill"] ?? "black"
             let textOwnTransform = parseTransform(currentTextAttributes["transform"] ?? "")
             let finalTextTransform = currentTransform.concatenating(textOwnTransform)
-
             let textAlignment: TextAlignment
             let textAnchor = currentTextAttributes["text-anchor"]?.lowercased() ?? "start"
             switch textAnchor {
@@ -254,7 +247,6 @@ extension SVGParser {
             }
 
             let lineHeight = fontSize * 1.2
-
             let typography = TypographyProperties(
                 fontFamily: fontFamily,
                 fontSize: fontSize,
@@ -271,10 +263,8 @@ extension SVGParser {
             )
 
             let trimmedContent = currentTextContent.trimmingCharacters(in: .whitespacesAndNewlines)
-
             let nsFont = getCachedFont(family: fontFamily, size: fontSize)
             let textWidth = calculateTextWidth(for: trimmedContent, font: nsFont, alignment: textAlignment)
-
             let actualWidth: CGFloat
             if let pendingRect = pendingTextBoxRect, pendingRect.width > 0 {
                 actualWidth = pendingRect.width
@@ -296,7 +286,6 @@ extension SVGParser {
             }
 
             let actualHeight = lineHeight
-
             let finalY = y - (fontSize)
 
             var textObject = VectorText(

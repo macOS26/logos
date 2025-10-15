@@ -12,10 +12,8 @@ class ProfessionalTextViewModel: ObservableObject {
     @Published var isEditing: Bool = false
     @Published var textBoxFrame: CGRect = CGRect(x: 100, y: 100, width: 200, height: 100)
     @Published var userInitiatedCursorPosition: Int = 0
-
     @Published var textObject: VectorText
     let document: VectorDocument
-
     var linePaths: [CGPath] = []
 
     init(textObject: VectorText, document: VectorDocument) {
@@ -84,13 +82,11 @@ class ProfessionalTextViewModel: ObservableObject {
         let contentChanged = self.text != textObject.content
         let documentContentEmpty = textObject.content.isEmpty
         let viewModelContentNotEmpty = !self.text.isEmpty
-
         let shouldSyncContent = contentChanged && !(documentContentEmpty && viewModelContentNotEmpty)
 
         let fontChanged = self.fontSize != CGFloat(textObject.typography.fontSize)
         let editingChanged = self.isEditing != textObject.isEditing
         let colorChanged = self.textObject.typography.fillColor != textObject.typography.fillColor
-
         let typographyChanged = (
             self.textObject.typography.alignment != textObject.typography.alignment ||
             self.textObject.typography.fontFamily != textObject.typography.fontFamily ||
@@ -250,7 +246,6 @@ class ProfessionalTextViewModel: ObservableObject {
 
         let bounds1 = boundingBox(of: subpaths[0])
         let bounds2 = boundingBox(of: subpaths[1])
-
         let isNested = (bounds1.contains(bounds2) || bounds2.contains(bounds1))
 
         if isNested {
@@ -267,10 +262,8 @@ class ProfessionalTextViewModel: ObservableObject {
         for i in 0..<points.count - 1 {
             let p1 = points[i]
             let p2 = points[i + 1]
-
             let dx = abs(p2.x - p1.x)
             let dy = abs(p2.y - p1.y)
-
             let isHorizontal = dy < 0.1 && dx > 0.1
             let isVertical = dx < 0.1 && dy > 0.1
 
@@ -302,7 +295,6 @@ class ProfessionalTextViewModel: ObservableObject {
 
     private func convertUsingNSLayoutManager() {
         let nsFont = selectedFont
-
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = textAlignment
         paragraphStyle.lineSpacing = max(0, textObject.typography.lineSpacing)
@@ -315,7 +307,6 @@ class ProfessionalTextViewModel: ObservableObject {
         ]
 
         let attributedString = NSAttributedString(string: text, attributes: attributes)
-
         let textStorage = NSTextStorage(attributedString: attributedString)
         let layoutManager = NSLayoutManager()
         textStorage.addLayoutManager(layoutManager)
@@ -329,7 +320,6 @@ class ProfessionalTextViewModel: ObservableObject {
         layoutManager.ensureLayout(for: textContainer)
         linePaths = []
         let combinedPath = CGMutablePath()
-
         let ctFont = CTFontCreateWithGraphicsFont(
             CTFontCopyGraphicsFont(nsFont as CTFont, nil),
             nsFont.pointSize,
@@ -338,7 +328,6 @@ class ProfessionalTextViewModel: ObservableObject {
         )
 
         let glyphRange = layoutManager.glyphRange(for: textContainer)
-
         var skippedGlyphCount = 0
 
         layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { (lineRect, lineUsedRect, container, lineRange, stop) in
@@ -347,7 +336,6 @@ class ProfessionalTextViewModel: ObservableObject {
             for glyphIndex in lineRange.location..<NSMaxRange(lineRange) {
                 let glyph = layoutManager.cgGlyph(at: glyphIndex)
                 let glyphLocation = layoutManager.location(forGlyphAt: glyphIndex)
-
                 var actualLineRect = CGRect.zero
                 var actualUsedRect = CGRect.zero
                 var effectiveRange = NSRange()
@@ -422,7 +410,6 @@ class ProfessionalTextViewModel: ObservableObject {
         }
 
         let targetLayerIndex = document.selectedLayerIndex ?? 2
-
         var createdShapeIDs: [UUID] = []
         for (lineIndex, linePath) in linePaths.enumerated() {
             let vectorPath = convertCGPathToVectorPath(linePath)

@@ -199,7 +199,6 @@ class PDFMetalProcessor {
 
         let maxSamples = 1024
         let actualSamples = min(totalSamples, maxSamples)
-
         let outputSize = actualSamples * 3 * MemoryLayout<Float>.size
 
         guard let sampleBuffer = device.makeBuffer(bytes: sampleData.withUnsafeBytes { $0.baseAddress! },

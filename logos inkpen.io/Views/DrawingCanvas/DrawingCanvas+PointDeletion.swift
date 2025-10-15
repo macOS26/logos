@@ -10,7 +10,6 @@ extension DrawingCanvas {
                 let shapes = document.getShapesForLayer(layerIndex)
                 if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
                    let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-
                     let pathPointCount = shape.path.elements.filter { element in
                         switch element {
                         case .move, .line, .curve, .quadCurve: return true
@@ -50,10 +49,8 @@ extension DrawingCanvas {
 
         let firstPoint = bezierPoints[0]
         let lastIndex = bezierPoints.count - 1
-
         let lastPointHandles = bezierHandles[lastIndex]
         let firstPointHandles = bezierHandles[0]
-
         var finalElements = updatedPath.elements
 
         if let lastControl2 = lastPointHandles?.control2, let firstControl1 = firstPointHandles?.control1 {

@@ -66,7 +66,6 @@ extension FileOperations {
 
     static func setFillStyle(_ fillStyle: FillStyle, context: CGContext) {
         let cgColor = fillStyle.color.cgColor
-
         let workingColorSpace = ColorManager.shared.workingCGColorSpace
 
         if let convertedColor = cgColor.converted(to: workingColorSpace, intent: .defaultIntent, options: nil),
@@ -88,7 +87,6 @@ extension FileOperations {
 
     static func setStrokeStyle(_ strokeStyle: StrokeStyle, context: CGContext) {
         let cgColor = strokeStyle.color.cgColor
-
         let workingColorSpace = ColorManager.shared.workingCGColorSpace
 
         if let convertedColor = cgColor.converted(to: workingColorSpace, intent: .defaultIntent, options: nil),
@@ -155,7 +153,6 @@ extension FileOperations {
         case .linear(let linearGradient):
 
             let colorSpace = ColorManager.shared.workingCGColorSpace
-
             var colors: [CGFloat] = []
             var locations: [CGFloat] = []
 
@@ -195,12 +192,10 @@ extension FileOperations {
             let centerX = bounds.midX
             let centerY = bounds.midY
             let radius = max(bounds.width, bounds.height) / 2.0
-
             let startX = centerX - radius * cos(angle)
             let startY = centerY - radius * sin(angle)
             let endX = centerX + radius * cos(angle)
             let endY = centerY + radius * sin(angle)
-
             let startPoint = CGPoint(x: startX, y: startY)
             let endPoint = CGPoint(x: endX, y: endY)
 
@@ -213,7 +208,6 @@ extension FileOperations {
 
         case .radial(let radialGradient):
             let colorSpace = CGColorSpaceCreateDeviceRGB()
-
             var colors: [CGFloat] = []
             var locations: [CGFloat] = []
 
@@ -253,7 +247,6 @@ extension FileOperations {
             let centerY = bounds.minY + bounds.height * radialGradient.centerPoint.y
             let center = CGPoint(x: centerX, y: centerY)
             let radius = min(bounds.width, bounds.height) * radialGradient.radius
-
             let focalCenter: CGPoint
             if let focalPoint = radialGradient.focalPoint {
                 let focalX = bounds.minX + bounds.width * focalPoint.x
@@ -349,22 +342,18 @@ extension FileOperations {
 
     private static func drawLinearGradientWithCGShading(_ linearGradient: LinearGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         let gradientData = GradientData(stops: linearGradient.stops, opacity: opacity)
-
         let colorSpace = ColorManager.shared.workingCGColorSpace
 
         let angle = linearGradient.angle * .pi / 180.0
         let centerX = bounds.midX
         let centerY = bounds.midY
         let radius = max(bounds.width, bounds.height) / 2.0
-
         let startX = centerX - radius * cos(angle)
         let startY = centerY - radius * sin(angle)
         let endX = centerX + radius * cos(angle)
         let endY = centerY + radius * sin(angle)
-
         let startPoint = CGPoint(x: startX, y: startY)
         let endPoint = CGPoint(x: endX, y: endY)
-
         var callbacks = CGFunctionCallbacks(
             version: 0,
             evaluate: { info, input, output in
@@ -411,14 +400,12 @@ extension FileOperations {
 
     private static func drawRadialGradientWithCGShading(_ radialGradient: RadialGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         let gradientData = GradientData(stops: radialGradient.stops, opacity: opacity)
-
         let colorSpace = ColorManager.shared.workingCGColorSpace
 
         let centerX = bounds.minX + bounds.width * radialGradient.centerPoint.x
         let centerY = bounds.minY + bounds.height * radialGradient.centerPoint.y
         let center = CGPoint(x: centerX, y: centerY)
         let radius = min(bounds.width, bounds.height) * radialGradient.radius
-
         let focalCenter: CGPoint
         if let focalPoint = radialGradient.focalPoint {
             let focalX = bounds.minX + bounds.width * focalPoint.x
@@ -476,20 +463,16 @@ extension FileOperations {
 
     private static func drawSimplifiedLinearGradientWithCGGradient(_ linearGradient: LinearGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         let colorSpace = ColorManager.shared.workingCGColorSpace
-
         let angle = linearGradient.angle * .pi / 180.0
         let centerX = bounds.midX
         let centerY = bounds.midY
         let radius = max(bounds.width, bounds.height) / 2.0
-
         let startX = centerX - radius * cos(angle)
         let startY = centerY - radius * sin(angle)
         let endX = centerX + radius * cos(angle)
         let endY = centerY + radius * sin(angle)
-
         let startPoint = CGPoint(x: startX, y: startY)
         let endPoint = CGPoint(x: endX, y: endY)
-
         var colors: [CGFloat] = []
         var locations: [CGFloat] = []
 
@@ -539,12 +522,10 @@ extension FileOperations {
 
     private static func drawSimplifiedRadialGradientWithCGGradient(_ radialGradient: RadialGradient, in context: CGContext, bounds: CGRect, opacity: Double) {
         let colorSpace = ColorManager.shared.workingCGColorSpace
-
         let centerX = bounds.minX + bounds.width * radialGradient.centerPoint.x
         let centerY = bounds.minY + bounds.height * radialGradient.centerPoint.y
         let center = CGPoint(x: centerX, y: centerY)
         let radius = min(bounds.width, bounds.height) * radialGradient.radius
-
         let focalCenter: CGPoint
         if let focalPoint = radialGradient.focalPoint {
             let focalX = bounds.minX + bounds.width * focalPoint.x
@@ -635,7 +616,6 @@ extension FileOperations {
             let t0 = Double(i) / Double(bandCount)
             let t1 = Double(i + 1) / Double(bandCount)
             let tMid = (t0 + t1) / 2.0
-
             let color = interpolateGradientColor(at: tMid, stops: stops, opacity: opacity)
 
             let bandStart = -gradientLength + (2.0 * gradientLength * CGFloat(t0))
@@ -672,7 +652,6 @@ extension FileOperations {
             let t0 = Double(i) / Double(bandCount)
             let t1 = Double(i + 1) / Double(bandCount)
             let tMid = (t0 + t1) / 2.0
-
             let color = interpolateGradientColor(at: tMid, stops: stops, opacity: opacity)
 
             let outerRadius = maxRadius * t1
@@ -724,10 +703,8 @@ extension FileOperations {
                 let x1 = bounds.minX + (bounds.width * CGFloat(col + 1) / CGFloat(gridSizeX))
                 let y0 = bounds.minY + (bounds.height * CGFloat(row) / CGFloat(gridSizeY))
                 let y1 = bounds.minY + (bounds.height * CGFloat(row + 1) / CGFloat(gridSizeY))
-
                 let cellCenterX = (x0 + x1) / 2
                 let cellCenterY = (y0 + y1) / 2
-
                 let dx = cellCenterX - bounds.midX
                 let dy = cellCenterY - bounds.midY
                 let cosAngle = CGFloat(cos(angle))
@@ -735,7 +712,6 @@ extension FileOperations {
                 let maxDim = max(bounds.width, bounds.height)
                 let projection = (dx * cosAngle + dy * sinAngle) / maxDim
                 let t = (projection + 1.0) / 2.0
-
                 let color = interpolateGradientColor(at: t, stops: stops, opacity: opacity)
 
                 context.setFillColor(color.cgColor)
@@ -754,14 +730,12 @@ extension FileOperations {
         let centerY = bounds.minY + bounds.height * radialGradient.centerPoint.y
         let center = CGPoint(x: centerX, y: centerY)
         let maxRadius = min(bounds.width, bounds.height) * radialGradient.radius
-
         let angleStep = (2 * Double.pi) / Double(gridSize)
         let radiusStep = maxRadius / CGFloat(gridSize)
 
         for r in (0..<gridSize).reversed() {
             let innerRadius = CGFloat(r) * radiusStep
             let outerRadius = CGFloat(r + 1) * radiusStep
-
             let t = (Double(r) + 0.5) / Double(gridSize)
             let color = interpolateGradientColor(at: t, stops: stops, opacity: opacity)
 
@@ -833,10 +807,8 @@ extension FileOperations {
         let startY = bounds.minY + bounds.height * linearGradient.startPoint.y
         let endX = bounds.minX + bounds.width * linearGradient.endPoint.x
         let endY = bounds.minY + bounds.height * linearGradient.endPoint.y
-
         let start = CGPoint(x: startX, y: startY)
         let end = CGPoint(x: endX, y: endY)
-
         let colorSpace = CGColorSpace(name: CGColorSpace.genericCMYK)!
 
         var cmykComponents: [CGFloat] = []
@@ -845,7 +817,6 @@ extension FileOperations {
         for stop in stops {
             let color = NSColor(cgColor: stop.color.cgColor) ?? NSColor.black
             let rgb = color.usingColorSpace(.deviceRGB) ?? color
-
             var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
             rgb.getRed(&r, green: &g, blue: &b, alpha: &a)
 
@@ -874,7 +845,6 @@ extension FileOperations {
         let centerY = bounds.minY + bounds.height * radialGradient.centerPoint.y
         let center = CGPoint(x: centerX, y: centerY)
         let maxRadius = min(bounds.width, bounds.height) * radialGradient.radius
-
         let colorSpace = CGColorSpace(name: CGColorSpace.genericCMYK)!
 
         var cmykComponents: [CGFloat] = []
@@ -883,7 +853,6 @@ extension FileOperations {
         for stop in stops {
             let color = NSColor(cgColor: stop.color.cgColor) ?? NSColor.black
             let rgb = color.usingColorSpace(.deviceRGB) ?? color
-
             var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
             rgb.getRed(&r, green: &g, blue: &b, alpha: &a)
 
@@ -932,10 +901,8 @@ extension FileOperations {
 
         let range = upperStop.position - lowerStop.position
         let factor = range > 0 ? (t - lowerStop.position) / range : 0
-
         let color1 = NSColor(cgColor: lowerStop.color.cgColor)!
         let color2 = NSColor(cgColor: upperStop.color.cgColor)!
-
         let r = color1.redComponent * (1 - factor) + color2.redComponent * factor
         let g = color1.greenComponent * (1 - factor) + color2.greenComponent * factor
         let b = color1.blueComponent * (1 - factor) + color2.blueComponent * factor

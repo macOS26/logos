@@ -188,7 +188,6 @@ struct StepView: View {
     let number: Int
     let title: String
     let description: String
-
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             ZStack {

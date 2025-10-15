@@ -31,7 +31,6 @@ private func calculateLinkedHandleCPU(anchorPoint: CGPoint, draggedHandle: CGPoi
         y: originalOppositeHandle.y - anchorPoint.y
     )
     let originalLength = sqrt(originalVector.x * originalVector.x + originalVector.y * originalVector.y)
-
     let draggedLength = sqrt(draggedVector.x * draggedVector.x + draggedVector.y * draggedVector.y)
     guard draggedLength > 0.1 else { return originalOppositeHandle }
 

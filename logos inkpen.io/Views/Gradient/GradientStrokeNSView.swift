@@ -53,7 +53,6 @@ class GradientStrokeNSView: NSView {
             context.replacePathWithStrokedPath()
 
             let strokeBounds = context.boundingBoxOfPath
-
             let startPoint = CGPoint(x: strokeBounds.minX, y: strokeBounds.minY + strokeBounds.height * CGFloat(linear.originPoint.y))
             let endPoint = CGPoint(x: strokeBounds.maxX, y: strokeBounds.minY + strokeBounds.height * CGFloat(linear.originPoint.y))
 
@@ -65,7 +64,6 @@ class GradientStrokeNSView: NSView {
             context.replacePathWithStrokedPath()
 
             let strokeBounds = context.boundingBoxOfPath
-
             let center = CGPoint(x: strokeBounds.minX + strokeBounds.width * CGFloat(radial.originPoint.x),
                                 y: strokeBounds.minY + strokeBounds.height * CGFloat(radial.originPoint.y))
             let radius = max(strokeBounds.width, strokeBounds.height) * CGFloat(radial.radius)
@@ -82,7 +80,6 @@ class GradientStrokeNSView: NSView {
 
         if shape.isGroup || shape.isGroupContainer {
             let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-
             let objectSpaceCorners = [
                 CGPoint(x: bounds.minX, y: bounds.minY),
                 CGPoint(x: bounds.maxX, y: bounds.minY),
@@ -125,7 +122,6 @@ class GradientStrokeNSView: NSView {
         }
 
         let objectSpaceBounds = shape.path.cgPath.boundingBoxOfPath
-
         let objectSpaceCorners = [
             CGPoint(x: objectSpaceBounds.minX, y: objectSpaceBounds.minY),
             CGPoint(x: objectSpaceBounds.maxX, y: objectSpaceBounds.minY),

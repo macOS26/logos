@@ -6,7 +6,6 @@ extension FileOperations {
 
         let artworkBounds = calculateArtworkBounds(from: document)
         let artworkSize = artworkBounds.size
-
         let scaleX = CGFloat(pixelSize) / artworkSize.width
         let scaleY = CGFloat(pixelSize) / artworkSize.height
         let scale = min(scaleX, scaleY)
@@ -73,14 +72,12 @@ extension FileOperations {
     static func exportIconSet(_ document: VectorDocument, folderURL: URL) throws {
 
         let iconSizes: [Int] = [1024, 512, 256, 128, 64, 32, 16]
-
         let artworkBounds = calculateArtworkBounds(from: document)
         let artworkSize = artworkBounds.size
 
         for pixelSize in iconSizes {
             let filename = "icon_\(pixelSize)x\(pixelSize).png"
             let fileURL = folderURL.appendingPathComponent(filename)
-
             let scaleX = CGFloat(pixelSize) / artworkSize.width
             let scaleY = CGFloat(pixelSize) / artworkSize.height
             let scale = min(scaleX, scaleY)
@@ -366,7 +363,6 @@ extension FileOperations {
         }
 
         let path = shape.path.cgPath
-
         var hasValidStroke = false
         if let strokeStyle = shape.strokeStyle {
             if case .clear = strokeStyle.color {
@@ -421,7 +417,6 @@ extension FileOperations {
         ]
 
         let attributedString = NSAttributedString(string: text.content, attributes: attributes)
-
         let textPosition = CGPoint(x: text.position.x, y: text.position.y)
 
         let line = CTLineCreateWithAttributedString(attributedString)

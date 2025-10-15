@@ -3,17 +3,14 @@ import SwiftUI
 private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHotspot: CGPoint) -> NSCursor {
     guard let base = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) else { return .crosshair }
     let baseConfig = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .medium)
-
     let whiteConfig = NSImage.SymbolConfiguration(paletteColors: [NSColor.white])
     let blackConfig = NSImage.SymbolConfiguration(paletteColors: [NSColor.black])
     let whiteSymbol = (base.withSymbolConfiguration(baseConfig.applying(whiteConfig)) ?? base)
     let blackSymbol = (base.withSymbolConfiguration(baseConfig.applying(blackConfig)) ?? base)
-
     let padding: CGFloat = 10
     let symbolSize = blackSymbol.size
     let destRect = NSRect(x: padding, y: padding, width: symbolSize.width, height: symbolSize.height)
     let newSize = NSSize(width: symbolSize.width + padding * 2, height: symbolSize.height + padding * 2)
-
     let composed = NSImage(size: newSize)
     composed.lockFocus()
     NSGraphicsContext.current?.saveGraphicsState()

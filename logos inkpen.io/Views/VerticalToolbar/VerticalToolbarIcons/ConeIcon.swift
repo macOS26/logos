@@ -2,7 +2,6 @@ import SwiftUI
 
 struct ConeIcon: View {
     let isSelected: Bool
-
     var body: some View {
         Path { path in
             let r = CGRect(
@@ -15,20 +14,16 @@ struct ConeIcon: View {
             let apex = CGPoint(x: r.midX, y: r.minY)
             let baseLeft = CGPoint(x: r.minX, y: r.maxY)
             let baseRight = CGPoint(x: r.maxX, y: r.maxY)
-
             let move = CGPoint(x: baseRight.x - r.width * 0.007461, y: baseRight.y - r.height * 0.13586)
             let c1 = CGPoint(x: baseRight.x - r.width * 0.002364, y: baseRight.y - r.height * 0.12957)
             let c2 = CGPoint(x: baseRight.x, y: baseRight.y - r.height * 0.12317)
             let rightStart = CGPoint(x: baseRight.x, y: baseRight.y - r.height * 0.11645)
-
             let c3 = CGPoint(x: baseRight.x, y: baseRight.y - r.height * 0.05216)
             let c4 = CGPoint(x: r.midX + r.width * 0.27608, y: r.maxY)
             let mid = CGPoint(x: r.midX, y: r.maxY)
-
             let c5 = CGPoint(x: r.midX - r.width * 0.27608, y: r.maxY)
             let c6 = CGPoint(x: baseLeft.x, y: baseLeft.y - r.height * 0.05216)
             let leftEnd = CGPoint(x: baseLeft.x, y: baseLeft.y - r.height * 0.11645)
-
             let c7 = CGPoint(x: baseLeft.x, y: baseLeft.y - r.height * 0.12160)
             let c8 = CGPoint(x: baseLeft.x + r.width * 0.00141, y: baseLeft.y - r.height * 0.12660)
             let leftExit = CGPoint(x: baseLeft.x + r.width * 0.00463, y: baseLeft.y - r.height * 0.13147)

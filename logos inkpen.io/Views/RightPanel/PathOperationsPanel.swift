@@ -2,7 +2,6 @@ import SwiftUI
 
 struct PathOperationsPanel: View {
     @ObservedObject var document: VectorDocument
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
@@ -235,7 +234,6 @@ struct PathOperationsPanel: View {
                 return
             }
             let frontShapes = Array(selectedShapes.dropFirst())
-
             var resultPath = backShape.path.cgPath
 
             for frontShape in frontShapes {
@@ -305,7 +303,6 @@ struct PathOperationsPanel: View {
 
             for (index, (mosaicPath, originalShapeIndex)) in mosaicResults.enumerated() {
                 let originalShape = selectedShapes[originalShapeIndex]
-
                                 let mosaicShape = VectorShape(
                 name: "Mosaic Piece \(index + 1)",
                     path: VectorPath(cgPath: mosaicPath),
@@ -319,7 +316,6 @@ struct PathOperationsPanel: View {
 
         case .cut:
             let cutResults = CoreGraphicsPathOperations.cutWithShapeTracking(paths, using: .winding)
-
             var shapeCounters: [Int: Int] = [:]
 
             for (cutPath, originalShapeIndex) in cutResults {
@@ -329,7 +325,6 @@ struct PathOperationsPanel: View {
 
                 shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
                 let pieceNumber = shapeCounters[originalShapeIndex] ?? 1
-
                 let cutShape = VectorShape(
                     name: pieceNumber > 1 ? "Cut \(originalShape.name) (\(pieceNumber))" : "Cut \(originalShape.name)",
                     path: VectorPath(cgPath: cutPath),
@@ -350,7 +345,6 @@ struct PathOperationsPanel: View {
             }
 
             let mergeResults = ProfessionalPathOperations.professionalMergeWithShapeTracking(paths, colors: colors)
-
             var shapeCounters: [Int: Int] = [:]
 
             for (mergedPath, originalShapeIndex) in mergeResults {
@@ -360,7 +354,6 @@ struct PathOperationsPanel: View {
 
                 shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
                 let pieceNumber = shapeCounters[originalShapeIndex] ?? 1
-
                 let mergedShape = VectorShape(
                     name: pieceNumber > 1 ? "Merged \(originalShape.name) (\(pieceNumber))" : "Merged \(originalShape.name)",
                     path: VectorPath(cgPath: mergedPath),
@@ -374,7 +367,6 @@ struct PathOperationsPanel: View {
 
         case .crop:
             let cropResults = ProfessionalPathOperations.professionalCropWithShapeTracking(paths)
-
             var shapeCounters: [Int: Int] = [:]
 
             for (croppedPath, originalShapeIndex, isInvisibleCropShape) in cropResults {
@@ -395,7 +387,6 @@ struct PathOperationsPanel: View {
                 } else {
                     shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
                     let pieceNumber = shapeCounters[originalShapeIndex] ?? 1
-
                     let croppedShape = VectorShape(
                         name: pieceNumber > 1 ? "Cropped \(originalShape.name) (\(pieceNumber))" : "Cropped \(originalShape.name)",
                         path: VectorPath(cgPath: croppedPath),
@@ -464,7 +455,6 @@ struct PathOperationsPanel: View {
                 return
             }
             let backShapes = Array(selectedShapes.dropLast())
-
             var resultPath = frontShape.path.cgPath
 
             for backShape in backShapes {

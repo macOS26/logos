@@ -12,7 +12,6 @@ extension DrawingCanvas {
             let preciseOffsetX = Double(document.canvasOffset.x)
             let preciseOffsetY = Double(document.canvasOffset.y)
             let preciseZoom = Double(document.zoomLevel)
-
             let inverseTransform = CGAffineTransform(
                 a: 1.0 / preciseZoom, b: 0,
                 c: 0, d: 1.0 / preciseZoom,
@@ -39,7 +38,6 @@ extension DrawingCanvas {
         return points.map { point in
             let preciseScreenX = Double(point.x)
             let preciseScreenY = Double(point.y)
-
             let canvasX = (preciseScreenX - preciseOffsetX) / preciseZoom
             let canvasY = (preciseScreenY - preciseOffsetY) / preciseZoom
 
@@ -56,7 +54,6 @@ extension DrawingCanvas {
             let preciseOffsetX = Double(document.canvasOffset.x)
             let preciseOffsetY = Double(document.canvasOffset.y)
             let preciseZoom = Double(document.zoomLevel)
-
             let transform = CGAffineTransform(
                 a: preciseZoom, b: 0,
                 c: 0, d: preciseZoom,
@@ -83,7 +80,6 @@ extension DrawingCanvas {
         return points.map { point in
             let preciseCanvasX = Double(point.x)
             let preciseCanvasY = Double(point.y)
-
             let screenX = (preciseCanvasX * preciseZoom) + preciseOffsetX
             let screenY = (preciseCanvasY * preciseZoom) + preciseOffsetY
 
@@ -95,17 +91,13 @@ extension DrawingCanvas {
 
         let documentBounds = document.documentBounds
         let viewSize = geometry.size
-
         let rulerThickness: CGFloat = 20
         let rulerOffset = document.showRulers ? rulerThickness : 0
-
         let availableWidth = viewSize.width - rulerOffset
         let availableHeight = viewSize.height - rulerOffset
-
         let scaleX = availableWidth / documentBounds.width
         let scaleY = availableHeight / documentBounds.height
         let uniformScale = min(scaleX, scaleY)
-
         let defaultZoom = max(0.25, min(1.5, uniformScale))
         document.zoomLevel = defaultZoom
 
@@ -132,13 +124,10 @@ extension DrawingCanvas {
     internal func fitToPage(geometry: GeometryProxy) {
         let documentBounds = document.documentBounds
         let viewSize = geometry.size
-
         let rulerThickness: CGFloat = 20
         let rulerOffset = document.showRulers ? rulerThickness : 0
-
         let availableWidth = viewSize.width - rulerOffset
         let availableHeight = viewSize.height - rulerOffset
-
         let scaleX = availableWidth / documentBounds.width
         let scaleY = availableHeight / documentBounds.height
         let fitZoom = min(scaleX, scaleY)
@@ -166,10 +155,8 @@ extension DrawingCanvas {
 
     internal func actualSize(geometry: GeometryProxy) {
         let newZoomLevel: Double = 1.0
-
         let rulerThickness: CGFloat = 20
         let rulerOffset = document.showRulers ? rulerThickness : 0
-
         let viewSize = geometry.size
         let rulerBorderCompensationY: CGFloat = document.showRulers ? 0.5 : 0.0
         let visibleCenter = CGPoint(
@@ -205,7 +192,6 @@ extension DrawingCanvas {
         let preciseFocalY = Double(focalPoint.y)
         let preciseOffsetX = Double(document.canvasOffset.x)
         let preciseOffsetY = Double(document.canvasOffset.y)
-
         let canvasPointAtFocus = CGPoint(
             x: (preciseFocalX - preciseOffsetX) / preciseOldZoom,
             y: (preciseFocalY - preciseOffsetY) / preciseOldZoom

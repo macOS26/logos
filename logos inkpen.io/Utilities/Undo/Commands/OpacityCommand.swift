@@ -33,7 +33,6 @@ class OpacityCommand: BaseCommand {
         for id in objectIDs {
             guard let opacity = opacities[id],
                   let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
-
             var obj = document.unifiedObjects[index]
 
             if case .shape(var shape) = obj.objectType {

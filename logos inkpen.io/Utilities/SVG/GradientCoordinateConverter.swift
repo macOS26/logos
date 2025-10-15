@@ -41,7 +41,6 @@ struct GradientCoordinateConverter {
         let newCx = boundingBox.x + (gradient.cx * boundingBox.width)
         let newCy = boundingBox.y + (gradient.cy * boundingBox.height)
         let newR = gradient.r * min(boundingBox.width, boundingBox.height)
-
         let newFx: Double?
         let newFy: Double?
 
@@ -76,7 +75,6 @@ struct GradientCoordinateConverter {
         let newCx = (gradient.cx - boundingBox.x) / boundingBox.width
         let newCy = (gradient.cy - boundingBox.y) / boundingBox.height
         let newR = gradient.r / min(boundingBox.width, boundingBox.height)
-
         let newFx: Double?
         let newFy: Double?
 
@@ -102,7 +100,6 @@ struct GradientCoordinateConverter {
 
     static func parseSVGGradients(from svgContent: String) -> [RadialGradient] {
         var gradients: [RadialGradient] = []
-
         let gradientPattern = #"<radialGradient[^>]*id="([^"]*)"[^>]*gradientUnits="([^"]*)"[^>]*cx="([^"]*)"[^>]*cy="([^"]*)"[^>]*r="([^"]*)"[^>]*>(.*?)</radialGradient>"#
 
         guard let regex = try? NSRegularExpression(pattern: gradientPattern, options: [.dotMatchesLineSeparators]) else {
@@ -136,10 +133,8 @@ struct GradientCoordinateConverter {
 
             let fxMatch = fxRegex.firstMatch(in: svgContent, options: [], range: match.range)
             let fyMatch = fyRegex.firstMatch(in: svgContent, options: [], range: match.range)
-
             let fx = fxMatch.flatMap { Double(extractValue(from: svgContent, range: $0.range(at: 1)) ?? "") }
             let fy = fyMatch.flatMap { Double(extractValue(from: svgContent, range: $0.range(at: 1)) ?? "") }
-
             let stops = parseGradientStops(from: gradientContent)
 
             let gradient = RadialGradient(
@@ -161,7 +156,6 @@ struct GradientCoordinateConverter {
 
     private static func parseGradientStops(from content: String) -> [GradientStop] {
         var stops: [GradientStop] = []
-
         let stopPattern = #"<stop[^>]*offset="([^"]*)"[^>]*stop-color="([^"]*)"[^>]*/>"#
         guard let regex = try? NSRegularExpression(pattern: stopPattern) else {
             Log.error("Failed to create regex for stop pattern", category: .error)
@@ -299,7 +293,6 @@ extension GradientCoordinateConverter {
                 let normalizer = isXCoordinate ? viewBoxWidth : viewBoxHeight
                 if normalizer > 0 {
                     let normalizedValue = absoluteValue / normalizer
-
                     let finalValue: Double
                     if useExtremeValueHandling {
                         if normalizedValue < 0.0 || normalizedValue > 1.0 {

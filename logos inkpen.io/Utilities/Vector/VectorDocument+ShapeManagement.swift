@@ -11,7 +11,6 @@ extension VectorDocument {
 
         let orderID = getNextOrderIDForLayer(layerIndex)
         let obj = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
-
         let command = AddObjectCommand(object: obj)
         executeCommand(command)
 
@@ -27,7 +26,6 @@ extension VectorDocument {
         let existingOrderIDs = layerObjects.map { $0.orderID }
         let highestOrderID = existingOrderIDs.isEmpty ? 0 : (existingOrderIDs.max() ?? 0)
         let orderID = highestOrderID + 1
-
         let obj = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
 
         let command = AddObjectCommand(object: obj)
@@ -43,7 +41,6 @@ extension VectorDocument {
 
         let orderID = getNextOrderIDForLayer(layerIndex)
         let obj = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
-
         let command = AddObjectCommand(object: obj)
         executeCommand(command)
     }
@@ -284,7 +281,6 @@ extension VectorDocument {
         }
 
         let transformedPath = shape.path.applying(transform)
-
         var newShape = shape
         newShape.path = transformedPath
         newShape.transform = .identity

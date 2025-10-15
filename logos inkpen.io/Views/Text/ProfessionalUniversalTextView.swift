@@ -138,7 +138,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         }
 
         let newFont = viewModel.selectedFont
-
         var needsFormatUpdate = false
 
         if nsView.font != newFont {
@@ -177,7 +176,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         let newAlignment = viewModel.textAlignment
         let newLineSpacing = max(0, viewModel.textObject.typography.lineSpacing)
         let newLineHeight = viewModel.textObject.typography.lineHeight
-
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = newAlignment
         paragraphStyle.lineSpacing = newLineSpacing
@@ -277,7 +275,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
 
         let safeWidth = viewModel.textBoxFrame.width
         let safeHeight = viewModel.textBoxFrame.height
-
         let newFrame = CGRect(
             x: 0, y: 0,
             width: safeWidth,

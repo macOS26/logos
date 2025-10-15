@@ -8,7 +8,6 @@ extension DrawingCanvas {
 
         var coincidentPoints: Set<PointID> = []
         let targetPoint = CGPoint(x: targetPosition.x, y: targetPosition.y)
-
 		let allowedShapeIDs: Set<UUID> = {
 			let active = document.getActiveShapeIDs()
 			return active.isEmpty ? [targetPointID.shapeID] : active
@@ -108,7 +107,6 @@ extension DrawingCanvas {
 
                     if let moveIndex = moveToIndex, let lastIndex = lastPointIndex,
                        let firstPoint = moveToPoint, let endPoint = lastPoint {
-
                         let distance = sqrt(pow(firstPoint.x - endPoint.x, 2) + pow(firstPoint.y - endPoint.y, 2))
                         let tolerance = 1.0
 
@@ -219,7 +217,6 @@ extension DrawingCanvas {
         switch elements[elementIndex] {
         case .curve(let to, _, let control2):
             let incomingHandleCollapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
-
             var outgoingHandleCollapsed = true
             if elementIndex + 1 < elements.count {
                 let nextElement = elements[elementIndex + 1]
@@ -241,7 +238,6 @@ extension DrawingCanvas {
         switch elements[elementIndex] {
         case .curve(let to, let control1, let control2):
             let anchorPoint = CGPoint(x: to.x, y: to.y)
-
             let newControl2 = VectorPoint(control2.x + delta.x, control2.y + delta.y)
             elements[elementIndex] = .curve(to: to, control1: control1, control2: newControl2)
 

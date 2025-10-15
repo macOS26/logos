@@ -274,10 +274,8 @@ struct TransformBoxHandles: View {
             let preciseZoom = CGFloat(zoomLevel)
             let dxCanvas = (dragValue.location.x - startLocation.x) / preciseZoom
             let dyCanvas = (dragValue.location.y - startLocation.y) / preciseZoom
-
             let denomX = max(20.0, bounds.width)
             let denomY = max(20.0, bounds.height)
-
             var sx = 1.0 + (dxCanvas / denomX)
             var sy = 1.0 + (dyCanvas / denomY)
 
@@ -306,10 +304,8 @@ struct TransformBoxHandles: View {
         }
 
         let anchor = getTransformAnchor(in: bounds)
-
         let anchorScreenX = anchor.x * zoomLevel + canvasOffset.x
         let anchorScreenY = anchor.y * zoomLevel + canvasOffset.y
-
         let startDistance = CGPoint(
             x: startLocation.x - anchorScreenX,
             y: startLocation.y - anchorScreenY
@@ -325,10 +321,8 @@ struct TransformBoxHandles: View {
         let adaptiveMinDistanceY = min(20.0, max(2.0, abs(baseBounds.height) * 0.05))
         let maxScale: CGFloat = 10.0
         let minScale: CGFloat = 0.1
-
         var scaleX: CGFloat = 1.0
         var scaleY: CGFloat = 1.0
-
         let isCorner = [0,2,4,6].contains(index)
         let isTopBottom = [1,5].contains(index)
         let isLeftRight = [3,7].contains(index)
@@ -376,11 +370,9 @@ struct TransformBoxHandles: View {
 
         if let unifiedObject = document.findObject(by: shape.id),
         let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
-
         let shapes = document.getShapesForLayer(layerIndex)
         if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }),
            let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-
             var updatedShape = currentShape
 
             if currentShape.isTextObject {
@@ -390,10 +382,8 @@ struct TransformBoxHandles: View {
                 if let originalAreaSize = currentShape.areaSize, let originalPosition = currentShape.textPosition {
                     let newWidth = originalAreaSize.width * scaleX
                     let newHeight = originalAreaSize.height * scaleY
-
                     let originalBounds = CGRect(x: originalPosition.x, y: originalPosition.y, width: originalAreaSize.width, height: originalAreaSize.height)
                     let transformedBounds = originalBounds.applying(previewTransform)
-
                     let newPosition = CGPoint(x: transformedBounds.minX, y: transformedBounds.minY)
 
                     updatedShape.areaSize = CGSize(width: newWidth, height: newHeight)

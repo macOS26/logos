@@ -10,7 +10,6 @@ extension VectorDocument {
 
         let canvasSize = settings.sizeInPoints
         let pasteboardSize = CGSize(width: canvasSize.width * 10, height: canvasSize.height * 10)
-
         let pasteboardOrigin = CGPoint(
             x: -(pasteboardSize.width - canvasSize.width) / 2,
             y: -(pasteboardSize.height - canvasSize.height) / 2
@@ -71,7 +70,6 @@ extension VectorDocument {
 
         let canvasSize = settings.sizeInPoints
         let pasteboardSize = CGSize(width: canvasSize.width * 10, height: canvasSize.height * 10)
-
         let pasteboardOrigin = CGPoint(
             x: -(pasteboardSize.width - canvasSize.width) / 2,
             y: -(pasteboardSize.height - canvasSize.height) / 2

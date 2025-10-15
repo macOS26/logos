@@ -86,10 +86,8 @@ final class GroupTextMovementTests: XCTestCase {
         let group = document.getShapesForLayer(0)[0]
         let textObjectInGroup = group.groupedShapes.first { $0.isTextObject }!
         let textID = textObjectInGroup.id
-
         let initialTextObj = document.findText(by: textID)!
         let initialPosition = initialTextObj.position
-
         let moveDelta = CGPoint(x: 50, y: 75)
         document.translateShape(id: group.id, delta: moveDelta)
 
@@ -124,7 +122,6 @@ final class GroupTextMovementTests: XCTestCase {
         document.groupSelectedObjects()
 
         let group = document.getShapesForLayer(0)[0]
-
         let moveDelta = CGPoint(x: 25, y: 50)
         document.translateShape(id: group.id, delta: moveDelta)
 

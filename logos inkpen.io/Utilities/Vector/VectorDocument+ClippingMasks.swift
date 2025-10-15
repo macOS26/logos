@@ -32,7 +32,6 @@ extension VectorDocument {
 
         // Calculate new orderID for group (use highest orderID from removed objects)
         let maxOrderID = objectsToRemove.map { $0.orderID }.max() ?? 0
-
         let newSelectedIDs: Set<UUID> = [clippingGroup.id]
 
         // Create command

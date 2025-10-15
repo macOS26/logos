@@ -108,7 +108,6 @@ struct UnifiedObjectContentView: View {
                     case .shape(let maskShape) = maskUnifiedObject.objectType {
                         let clippedPath = createPreTransformedPath(for: shape)
                         let maskPath = createPreTransformedPath(for: maskShape)
-
                         let isClippedShapeSelected = selectedObjectIDs.contains(unifiedObject.id)
                         let isMaskShapeSelected = selectedObjectIDs.contains(maskUnifiedObject.id)
                         let isSelected = isClippedShapeSelected || isMaskShapeSelected

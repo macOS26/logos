@@ -63,7 +63,6 @@ extension VectorDocument {
               sourceIndex != targetIndex else { return }
 
         let movingLayer = layers.remove(at: sourceIndex)
-
         let adjustedTargetIndex = (sourceIndex < targetIndex) ? targetIndex - 1 : targetIndex
 
         layers.insert(movingLayer, at: adjustedTargetIndex)
@@ -124,7 +123,6 @@ extension VectorDocument {
     func addLayer(name: String = "New Layer") {
         let colors: [Color] = [.gray, .blue, .green, .orange, .purple, .red, .pink, .yellow, .cyan]
         let color = colors[layers.count % colors.count]
-
         var layerName = name
         if name == "New Layer" {
             var existingNumbers = Set<Int>()
@@ -414,7 +412,6 @@ extension VectorDocument {
 
         let targetOrderID = targetObject.orderID
         let sourceOrderID = sourceObject.orderID
-
         let newOrderID: Int
         if sourceOrderID < targetOrderID {
             newOrderID = targetOrderID
@@ -536,7 +533,6 @@ extension VectorDocument {
         layers.insert(sourceLayer, at: targetIndex)
 
         let newSourceIndex = targetIndex
-
         var updatedObjects: [VectorObject] = []
         for object in unifiedObjects {
             var updatedObject = object

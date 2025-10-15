@@ -137,11 +137,9 @@ struct LayersPanel: View {
 
     private func validateOverlays() {
         let expectedRowCount = visibleRows.count
-
         let heightTolerance: CGFloat = 0.1
 
         var allHeightsSame = true
-
         let overlayRowCount = expectedRowCount
 
         if !rowHeights.isEmpty {
@@ -325,7 +323,6 @@ struct LayersPanel: View {
                     let iconSize: CGFloat = 20
                     let iconSpacing: CGFloat = 2
                     let rowPadding: CGFloat = 4
-
                     let eyeIconX = rowPadding + (iconSize / 2)
                     let lockIconX = rowPadding + iconSize + iconSpacing + (iconSize / 2)
 
@@ -638,7 +635,6 @@ if event.keyCode == 126 {
         private func selectNextObject(document: VectorDocument) {
             guard let currentLayerIndex = document.selectedLayerIndex,
                   let firstSelectedId = document.selectedObjectIDs.first else { return }
-
             let layerObjects = document.unifiedObjects
                 .filter { $0.layerIndex == currentLayerIndex }
                 .sorted { $0.orderID > $1.orderID }
@@ -655,7 +651,6 @@ if event.keyCode == 126 {
         private func selectPreviousObject(document: VectorDocument) {
             guard let currentLayerIndex = document.selectedLayerIndex,
                   let firstSelectedId = document.selectedObjectIDs.first else { return }
-
             let layerObjects = document.unifiedObjects
                 .filter { $0.layerIndex == currentLayerIndex }
                 .sorted { $0.orderID > $1.orderID }

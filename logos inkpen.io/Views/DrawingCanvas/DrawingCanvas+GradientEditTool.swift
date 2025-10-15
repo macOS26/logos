@@ -8,7 +8,6 @@ extension DrawingCanvas {
     func gradientEditTool(geometry: GeometryProxy) -> some View {
         if let selectedGradient = getSelectedShapeGradient(document: document),
            let selectedShape = getSelectedShapeWithGradient() {
-            
             let centerPoint = getGradientCenterPoint(gradient: selectedGradient, shape: selectedShape)
             let screenPoint = canvasToScreen(centerPoint, geometry: geometry)
             
@@ -59,7 +58,6 @@ extension DrawingCanvas {
         case .linear(let linear):
             let originX = linear.originPoint.x
             let originY = linear.originPoint.y
-            
             let centerX = shapeBounds.minX + shapeBounds.width * originX
             let centerY = shapeBounds.minY + shapeBounds.height * originY
             
@@ -68,7 +66,6 @@ extension DrawingCanvas {
         case .radial(let radial):
             let originX = radial.originPoint.x
             let originY = radial.originPoint.y
-            
             let centerX = shapeBounds.minX + shapeBounds.width * originX
             let centerY = shapeBounds.minY + shapeBounds.height * originY
             
@@ -105,7 +102,6 @@ extension DrawingCanvas {
     
     private func handleGradientCenterDrag(value: DragGesture.Value, geometry: GeometryProxy, shape: VectorShape, gradient: VectorGradient) {
         let canvasPoint = screenToCanvas(value.location, geometry: geometry)
-        
         let shapeBounds = shape.bounds
         
         switch gradient {

@@ -6,7 +6,6 @@ extension FileOperations {
     static func exportToJSON(_ document: VectorDocument, url: URL) throws {
 
         let jsonData = try exportToJSONData(document)
-
         let baseDir = url.deletingLastPathComponent()
         ImageContentRegistry.setBaseDirectory(baseDir)
 
@@ -21,7 +20,6 @@ extension FileOperations {
     static func exportToJSONData(_ document: VectorDocument) throws -> Data {
 
         let snapshot = DocumentSnapshot(from: document)
-
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         encoder.dateEncodingStrategy = .iso8601

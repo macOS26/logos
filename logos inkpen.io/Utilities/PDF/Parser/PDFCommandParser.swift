@@ -14,45 +14,35 @@ class PDFCommandParser {
     var pathStartPoint = CGPoint.zero
     var pageSize = CGSize.zero
     var pageOrigin = CGPoint.zero
-
     var onShapeCreated: ((VectorShape) -> Void)?
 
     var activeGradient: VectorGradient?
     var gradientShapes: [Int] = []
-
     var currentFillOpacity: Double = 1.0
     var currentStrokeOpacity: Double = 1.0
     var currentPage: CGPDFPage?
-
     var currentLineWidth: Double = 1.0
     var currentLineCap: CGLineCap = .butt
     var currentLineJoin: CGLineJoin = .miter
     var currentMiterLimit: Double = 10.0
     var currentLineDashPattern: [Double] = []
-
     var pageResourcesDict: CGPDFDictionaryRef?
 
     var detectedPDFVersion: String = "PDF 1.4"
-
     var isInCompoundPath = false
     var compoundPathParts: [[PathCommand]] = []
     var moveToCount = 0
-
     var xObjectSavedFillOpacity: Double = 1.0
     var xObjectSavedStrokeOpacity: Double = 1.0
-
     var gs1FillOpacity: Double = 1.0
     var gs1StrokeOpacity: Double = 1.0
     var gs3FillOpacity: Double = 1.0
     var gs3StrokeOpacity: Double = 1.0
-
     var isInsideClippingPath: Bool = false
     var currentClippingPathId: UUID? = nil
     var pendingClippingPath: VectorShape? = nil
-
     var hasUpcomingTransparentImage: Bool = false
     var transparentImageBounds: CGRect? = nil
-
     var hasClipOperatorPending: Bool = false
     var clipOperatorPath: [PathCommand] = []
 
@@ -66,7 +56,6 @@ class PDFCommandParser {
         var pendingClippingPath: VectorShape?
     }
     var graphicsStateStack: [PDFGraphicsState] = []
-
     var isInTextObject: Bool = false
     var currentTextMatrix: CGAffineTransform = .identity
     var currentLineMatrix: CGAffineTransform = .identity
@@ -80,15 +69,12 @@ class PDFCommandParser {
     var textLeading: Double = 0.0
     var textRise: Double = 0.0
     var textRenderingMode: Int = 0
-
     var currentTextContent: String = ""
     var currentTextStartPosition: CGPoint = .zero
     var pendingTextShapes: [VectorShape] = []
-
     var currentFontDict: CGPDFDictionaryRef? = nil
 
     var pdfCreator: String = ""
-
     var usesTextMatrixForPosition: Bool? = nil
     var needsYFlip: Bool? = nil
 
@@ -237,7 +223,6 @@ class PDFCommandParser {
     func shapeMatchesOuterBoundary(_ shape: VectorShape, of compound: VectorShape) -> Bool {
         let shapeBounds = shape.bounds
         let compoundBounds = compound.bounds
-
         let tolerance: CGFloat = 1.0
         return abs(shapeBounds.minX - compoundBounds.minX) < tolerance &&
                abs(shapeBounds.minY - compoundBounds.minY) < tolerance &&

@@ -34,10 +34,8 @@ extension DrawingCanvas {
 
         let strokeColor = document.markerApplyNoStroke ? nil : getCurrentStrokeColor()
         let strokeWidth = getCurrentStrokeWidth()
-
         let markerFillColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
         let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
-
         let markerOpacity = document.currentMarkerOpacity
         let actualStrokeWidth = (document.defaultStrokePlacement == .center) ? strokeWidth : strokeWidth * 2.0
         let strokeStyle = strokeColor != nil ? StrokeStyle(
@@ -68,7 +66,6 @@ extension DrawingCanvas {
         guard isMarkerDrawing else { return }
 
         let actualPressure = pressure ?? PressureManager.shared.currentPressure
-
         let markerPoint = MarkerPoint(location: location, pressure: actualPressure)
 
         markerRawPoints.append(markerPoint)
@@ -103,17 +100,13 @@ extension DrawingCanvas {
 
         guard markerRawPoints.count > 1,
               let lastPointData = markerRawPoints.last else { return 1.0 }
-
         let lastPoint = lastPointData.location
         let distance = sqrt(pow(location.x - lastPoint.x, 2) + pow(location.y - lastPoint.y, 2))
-
         let maxSpeed: Double = 100.0
         let normalizedSpeed = min(distance / maxSpeed, 1.0)
         let basePressure = 1.0 - (normalizedSpeed * 0.5)
-
         let sensitivity = 0.5
         let pressureVariation = (basePressure - 0.5) * sensitivity
-
         let finalPressure = max(0.1, min(1.0, 0.5 + pressureVariation))
 
         return finalPressure
@@ -148,7 +141,6 @@ extension DrawingCanvas {
         }
 
         let rawPointLocations = markerRawPoints.map { $0.location }
-
         var processedPoints = rawPointLocations
 
         if document.advancedSmoothingEnabled {
@@ -194,10 +186,8 @@ extension DrawingCanvas {
 
         let strokeColor = document.markerApplyNoStroke ? nil : getCurrentStrokeColor()
         let strokeWidth = getCurrentStrokeWidth()
-
         let markerFillColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
         let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
-
         let markerOpacity = document.currentMarkerOpacity
         let actualStrokeWidth = (document.defaultStrokePlacement == .center) ? strokeWidth : strokeWidth * 2.0
         let strokeStyle = strokeColor != nil ? StrokeStyle(
@@ -223,7 +213,6 @@ extension DrawingCanvas {
 
         if document.markerRemoveOverlap {
             var currentPath = finalShape.path.cgPath
-
             var cleanedFillPath: CGPath? = nil
             cleanedFillPath = CoreGraphicsPathOperations.normalized(currentPath, using: .winding)
             if cleanedFillPath == nil { cleanedFillPath = CoreGraphicsPathOperations.normalized(currentPath, using: .evenOdd) }
@@ -279,11 +268,9 @@ extension DrawingCanvas {
 
         let strokeColor = document.markerApplyNoStroke ? nil : getCurrentStrokeColor()
         let strokeWidth = getCurrentStrokeWidth()
-
         let markerFillColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
         let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
         let markerOpacity = document.currentMarkerOpacity
-
         let actualStrokeWidth = (document.defaultStrokePlacement == .center) ? strokeWidth : strokeWidth * 2.0
         let strokeStyle = strokeColor != nil ? StrokeStyle(
             color: markerStrokeColor,
@@ -304,7 +291,6 @@ extension DrawingCanvas {
 
         if document.markerRemoveOverlap {
             var currentPath = preview.cgPath
-
             var cleanedFillPath: CGPath? = nil
             cleanedFillPath = CoreGraphicsPathOperations.normalized(currentPath, using: .winding)
             if cleanedFillPath == nil { cleanedFillPath = CoreGraphicsPathOperations.normalized(currentPath, using: .evenOdd) }
@@ -381,11 +367,9 @@ extension DrawingCanvas {
 
         for (index, point) in centerPoints.enumerated() {
             let progress = Double(index) / Double(centerPoints.count - 1)
-
             let pressure = getPressureAtPoint(point, rawPoints: rawPoints)
 
             var finalThickness = document.currentMarkerTipSize
-
             let strokeLength = Double(centerPoints.count)
             let isShortStroke = strokeLength < 5
 
@@ -504,7 +488,6 @@ extension DrawingCanvas {
         for i in 0..<centerPoints.count {
             let point = centerPoints[i]
             let thickness = point.thickness
-
             var perpendicular: CGPoint
 
             if i == 0 {
@@ -533,7 +516,6 @@ extension DrawingCanvas {
 
             let offsetDistance = thickness / 2.0
             let multiplier: Double = isLeftSide ? 1.0 : -1.0
-
             let offsetPoint = CGPoint(
                 x: point.location.x + perpendicular.x * offsetDistance * multiplier,
                 y: point.location.y + perpendicular.y * offsetDistance * multiplier
@@ -606,7 +588,6 @@ extension DrawingCanvas {
     private func createMarkerDot(at center: CGPoint) -> VectorPath {
         let radius = document.currentMarkerTipSize / 2.0
         var elements: [PathElement] = []
-
         let controlPointDistance = radius * 0.552284749831
 
         elements.append(.move(to: VectorPoint(center.x + radius, center.y)))
@@ -646,7 +627,6 @@ extension DrawingCanvas {
         for i in 1..<points.count {
             let p0 = points[i - 1]
             let p1 = points[i]
-
             let isFirstSegment = (i == 1)
             let isLastSegment = (i == points.count - 1)
 
@@ -655,10 +635,8 @@ extension DrawingCanvas {
             } else {
                 let tension: Double = 0.25
                 let distance = sqrt(pow(p1.x - p0.x, 2) + pow(p1.y - p0.y, 2))
-
                 let prevTangent = i > 1 ? calculateTangent(p0: points[i - 2], p1: p0, p2: p1) : CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
                 let nextTangent = i < points.count - 1 ? calculateTangent(p0: p0, p1: p1, p2: points[i + 1]) : CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
-
                 let controlLength = distance * tension
 
                 let control1 = CGPoint(
@@ -687,10 +665,8 @@ extension DrawingCanvas {
         let dy1 = p1.y - p0.y
         let dx2 = p2.x - p1.x
         let dy2 = p2.y - p1.y
-
         let avgDx = (dx1 + dx2) / 2
         let avgDy = (dy1 + dy2) / 2
-
         let length = sqrt(avgDx * avgDx + avgDy * avgDy)
         if length > 0 {
             return CGPoint(x: avgDx / length, y: avgDy / length)
@@ -753,7 +729,6 @@ extension DrawingCanvas {
             }
 
             let cleanedVectorPath = VectorPath(cgPath: cleanedPath)
-
             var updatedShape = markerStroke
             updatedShape.path = cleanedVectorPath
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
@@ -788,7 +763,6 @@ extension DrawingCanvas {
                     }
 
                     let finalVectorPath = VectorPath(cgPath: finalPath)
-
                     var updatedShape = markerStroke
                     updatedShape.path = finalVectorPath
                     updatedShape.strokeStyle = nil
@@ -926,7 +900,6 @@ extension DrawingCanvas {
 
         let normalizedAmount = (simplifyAmount - 50.0) / 50.0
         let tolerance = 2.0 + (normalizedAmount * 8.0)
-
         let simplifiedPoints = DrawingCanvasPathHelpers.douglasPeuckerSimplify(
             points: points,
             tolerance: tolerance

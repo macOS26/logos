@@ -90,7 +90,6 @@ func createOvalPath(rect: CGRect) -> VectorPath {
         let center = CGPoint(x: rect.midX, y: rect.midY)
         let radiusX = rect.width / 2
         let radiusY = rect.height / 2
-
         let controlPointOffsetX = radiusX * 0.58
         let controlPointOffsetY = radiusY * 0.58
 
@@ -122,10 +121,8 @@ func createEggPath(rect: CGRect) -> VectorPath {
         let centerY = rect.midY
         let radiusX = rect.width / 2
         let radiusY = rect.height / 2
-
         let kTop: CGFloat = 0.552 * 0.78
         let kBottom: CGFloat = 0.552 * 1.12
-
         let minX = rect.minX
         let maxX = rect.maxX
         let minY = rect.minY
@@ -210,7 +207,6 @@ func createRoundedRectPathWithIndividualCorners(rect: CGRect, cornerRadii: [Doub
         let topRightRadius = min(cornerRadii[1], min(rect.width, rect.height) / 2)
         let bottomRightRadius = min(cornerRadii[2], min(rect.width, rect.height) / 2)
         let bottomLeftRadius = min(cornerRadii[3], min(rect.width, rect.height) / 2)
-
         let topLeftOffset = topLeftRadius * 0.552
         let topRightOffset = topRightRadius * 0.552
         let bottomRightOffset = bottomRightRadius * 0.552
@@ -305,14 +301,12 @@ func createEquilateralTrianglePathWithGridSnapping(rect: CGRect, gridSpacing: Do
             }
         }()
         let actualGridSpacing = baseSpacing * spacingMultiplier
-
         let topX = round(normalizedRect.midX / actualGridSpacing) * actualGridSpacing
         let topY = round(normalizedRect.minY / actualGridSpacing) * actualGridSpacing
         let bottomLeftX = round(normalizedRect.minX / actualGridSpacing) * actualGridSpacing
         let bottomLeftY = round(normalizedRect.maxY / actualGridSpacing) * actualGridSpacing
         let bottomRightX = round(normalizedRect.maxX / actualGridSpacing) * actualGridSpacing
         let bottomRightY = bottomLeftY
-
         let topPoint = VectorPoint(topX, topY)
         let bottomLeft = VectorPoint(bottomLeftX, bottomLeftY)
         let bottomRight = VectorPoint(bottomRightX, bottomRightY)
@@ -391,7 +385,6 @@ func createAcuteTrianglePath(rect: CGRect) -> VectorPath {
 
         let apexOffsetRatio: CGFloat = 0.2
         let apexX = normalizedRect.minX + normalizedRect.width * apexOffsetRatio
-
         let topPoint = VectorPoint(apexX, normalizedRect.minY)
         let bottomLeft = VectorPoint(normalizedRect.minX, normalizedRect.maxY)
         let bottomRight = VectorPoint(normalizedRect.maxX, normalizedRect.maxY)

@@ -57,7 +57,6 @@ class PDFTextImportTests: XCTestCase {
 
     func testTextRenderingMode() {
         let parser = PDFCommandParser()
-
         let modes = [
             (0, "fill"),
             (1, "stroke"),
@@ -77,7 +76,6 @@ class PDFTextImportTests: XCTestCase {
 
     func testTextMatrixOperations() {
         let parser = PDFCommandParser()
-
         let testMatrix = CGAffineTransform(a: 1, b: 0, c: 0, d: 1, tx: 100, ty: 200)
         parser.currentTextMatrix = testMatrix
         parser.currentLineMatrix = testMatrix

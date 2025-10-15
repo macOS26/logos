@@ -51,7 +51,6 @@ extension SVGParser {
 
         let color = parseColor(fill) ?? .black
         let opacity = parseLength(attributes["fill-opacity"]) ?? 1.0
-
         let fillRule = attributes["fill-rule"] ?? "nonzero"
 
         let fillStyle = FillStyle(color: color, opacity: opacity)

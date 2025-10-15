@@ -146,7 +146,6 @@ struct GradientColorPickerSheet: View {
                 }
 
                 let stopIndex = stops.firstIndex { $0.id == stopId } ?? 0
-
                 let capturedStopId = stopId
                 appState.gradientEditingState = GradientEditingState(
                     gradientId: capturedStopId,

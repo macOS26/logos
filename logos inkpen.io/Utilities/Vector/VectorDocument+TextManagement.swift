@@ -11,7 +11,6 @@ extension VectorDocument {
         let oldSelection = selectedObjectIDs
         let shape = VectorShape.from(text)
         let orderID = (unifiedObjects.filter { $0.layerIndex == layerIndex }.map { $0.orderID }.max() ?? -1) + 1
-
         let command = TextManagementCommand(
             operation: .addText(textID: text.id, shape: shape, layerIndex: layerIndex, orderID: orderID),
             oldSelection: oldSelection,
@@ -39,7 +38,6 @@ extension VectorDocument {
 
         let shape = VectorShape.from(modifiedText)
         let orderID = (unifiedObjects.filter { $0.layerIndex == layerIndex }.map { $0.orderID }.max() ?? -1) + 1
-
         let command = TextManagementCommand(
             operation: .addText(textID: text.id, shape: shape, layerIndex: layerIndex, orderID: orderID),
             oldSelection: oldSelection,
@@ -95,7 +93,6 @@ extension VectorDocument {
                 let shape = VectorShape.from(duplicateText)
                 let layerIndex = obj.layerIndex
                 let orderID = (unifiedObjects.filter { $0.layerIndex == layerIndex }.map { $0.orderID }.max() ?? -1) + 1
-
                 let newObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
                 duplicatedObjects.append(newObject)
                 newTextIDs.insert(duplicateText.id)
@@ -135,7 +132,6 @@ extension VectorDocument {
 
         let selectedTexts = selectedTextIDs.compactMap { textID in findText(by: textID) }
         var newShapeIDs: Set<UUID> = []
-
         let shapesBefore = unifiedObjects.compactMap { obj -> UUID? in
             if case .shape(let shape) = obj.objectType, !shape.isTextObject {
                 return shape.id

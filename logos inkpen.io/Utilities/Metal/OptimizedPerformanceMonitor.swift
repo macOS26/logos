@@ -114,7 +114,6 @@ class OptimizedPerformanceMonitor: ObservableObject {
     private func updateCPUUsage() {
         var cpuLoad = host_cpu_load_info()
         var count = mach_msg_type_number_t(MemoryLayout<host_cpu_load_info>.size) / 4
-
         let result = withUnsafeMutablePointer(to: &cpuLoad) {
             $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
                 host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, $0, &count)
@@ -195,7 +194,6 @@ class OptimizedPerformanceMonitor: ObservableObject {
     private func updateMemoryUsage() {
         var info = mach_task_basic_info()
         var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size) / 4
-
         let kern = withUnsafeMutablePointer(to: &info) {
             $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
                 task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)

@@ -104,7 +104,6 @@ struct PDFSIMDMatrix {
 
     func transform(point: CGPoint) -> CGPoint {
         let p = simd_float3(Float(point.x), Float(point.y), 1.0)
-
         let transformed = matrix * p
 
         return CGPoint(
@@ -145,7 +144,6 @@ struct PDFSIMDMatrix {
     static func rotation(angle: CGFloat) -> PDFSIMDMatrix {
         let cos = Float(Foundation.cos(angle))
         let sin = Float(Foundation.sin(angle))
-
         var m = PDFSIMDMatrix()
         m.matrix[0][0] = cos
         m.matrix[0][1] = sin
@@ -183,7 +181,6 @@ extension PDFSIMDMatrix {
     static func textMatrix(fontSize: CGFloat, horizontalScaling: CGFloat, tx: CGFloat, ty: CGFloat) -> PDFSIMDMatrix {
         let scaleX = fontSize * horizontalScaling / 100.0
         let scaleY = fontSize
-        
         var m = PDFSIMDMatrix()
         m.matrix[0][0] = Float(scaleX)
         m.matrix[1][1] = Float(scaleY)
@@ -200,7 +197,6 @@ extension PDFSIMDMatrix {
         
         let textScale = PDFSIMDMatrix.scale(sx: fontSize * horizontalScaling / 100.0, sy: fontSize)
         let combinedTransform = baseTransform.concatenating(textScale)
-        
         let points = positions.map { CGPoint(x: $0.x, y: $0.y) }
         
         return PDFMetalAccelerator.shared.transformPoints(points, with: combinedTransform)

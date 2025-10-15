@@ -46,7 +46,6 @@ extension FileOperations {
     static func openSVGFile(url: URL) async throws -> VectorDocument {
 
         let document = VectorDocument(settings: DocumentSettings())
-
         let canvasAndPasteboardObjects = document.unifiedObjects.filter { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.name == "Canvas Background" || shape.name == "Pasteboard Background"

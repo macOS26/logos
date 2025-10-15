@@ -123,7 +123,6 @@ class CoreGraphicsPathOperations {
             let areaA = pathA.boundingBox.width * pathA.boundingBox.height
             let areaB = pathB.boundingBox.width * pathB.boundingBox.height
             let unionArea = union.boundingBox.width * union.boundingBox.height
-
             let tolerance: CGFloat = 0.1
             return unionArea < (areaA + areaB) * (1.0 - tolerance)
         }
@@ -293,7 +292,6 @@ class CoreGraphicsPathOperations {
 
         let bounds1 = path1.boundingBoxOfPath
         let bounds2 = path2.boundingBoxOfPath
-
         let boundsEqual = abs(bounds1.minX - bounds2.minX) < tolerance &&
                          abs(bounds1.minY - bounds2.minY) < tolerance &&
                          abs(bounds1.maxX - bounds2.maxX) < tolerance &&
@@ -302,7 +300,6 @@ class CoreGraphicsPathOperations {
         if !boundsEqual { return false }
 
         let midPoint = CGPoint(x: bounds1.midX, y: bounds1.midY)
-
         let path1ContainsMid = path1.contains(midPoint, using: .winding)
         let path2ContainsMid = path2.contains(midPoint, using: .winding)
 
@@ -370,7 +367,6 @@ class CoreGraphicsPathOperations {
         }
 
         let cutResults = cutWithShapeTracking(paths, using: fillRule)
-
         var colorGroups: [VectorColor: [(CGPath, Int)]] = [:]
 
         for (cutPath, originalIndex) in cutResults {
@@ -415,7 +411,6 @@ class CoreGraphicsPathOperations {
         }
         let shapesToCrop = Array(paths.dropLast())
         let cropShapeIndex = paths.count - 1
-
         var croppedPaths: [CGPath] = []
         var originalIndices: [Int] = []
 
@@ -434,7 +429,6 @@ class CoreGraphicsPathOperations {
 
         if croppedPaths.count >= 2 {
             let cutResults = cutWithShapeTracking(croppedPaths, using: fillRule)
-
             var finalResults: [(CGPath, Int, Bool)] = []
             for (cutPath, cutIndex) in cutResults {
                 if cutIndex < originalIndices.count {

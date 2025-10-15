@@ -5,11 +5,9 @@ extension DrawingCanvas {
     internal func fillClosePreview(geometry: GeometryProxy) -> some View {
         if showClosePathHint && bezierPoints.count >= 3,
            let currentBezierPath = bezierPath {
-
             let lastPointIndex = bezierPoints.count - 1
             let firstPoint = bezierPoints[0]
             let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
-
             let lastPointHandles = bezierHandles[lastPointIndex]
             let firstPointHandles = bezierHandles[0]
 
@@ -53,7 +51,6 @@ extension DrawingCanvas {
             let lastPointLocation = CGPoint(x: lastPoint.x, y: lastPoint.y)
             let firstPoint = bezierPoints[0]
             let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
-
             let canvasMouseLocation = isShiftPressed ?
                 constrainToAngle(from: lastPointLocation, to: rawCanvasMouseLocation) :
                 rawCanvasMouseLocation
@@ -92,7 +89,6 @@ extension DrawingCanvas {
             let lastPointIndex = bezierPoints.count - 1
             let lastPoint = bezierPoints[lastPointIndex]
             let lastPointLocation = CGPoint(x: lastPoint.x, y: lastPoint.y)
-
             let canvasMouseLocation = isShiftPressed ?
                 constrainToAngle(from: lastPointLocation, to: rawCanvasMouseLocation) :
                 rawCanvasMouseLocation
@@ -153,7 +149,6 @@ extension DrawingCanvas {
             if showClosePathHint && bezierPoints.count >= 3 {
                 let firstPoint = bezierPoints[0]
                 let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
-
                 let lastPointHandles = bezierHandles[lastPointIndex]
                 let firstPointHandles = bezierHandles[0]
 

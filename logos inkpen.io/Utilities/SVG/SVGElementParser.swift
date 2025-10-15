@@ -9,7 +9,6 @@ extension SVGParser {
         let height = parseLength(attributes["height"]) ?? 0
         let rx = parseLength(attributes["rx"]) ?? 0
         let ry = parseLength(attributes["ry"]) ?? 0
-
         let fill = attributes["fill"] ?? ""
         let opacity = parseLength(attributes["opacity"]) ?? 1.0
         if (fill == "none" || fill.isEmpty) && opacity == 0 && width > 0 && height > 0 {
@@ -58,7 +57,6 @@ extension SVGParser {
         }
 
         let vectorPath = VectorPath(elements: elements, isClosed: true)
-
         let (shouldClip, clipPathId) = checkForClipPath(attributes)
 
         let shape = createShape(
@@ -79,10 +77,8 @@ extension SVGParser {
         let cx = parseLength(attributes["cx"]) ?? 0
         let cy = parseLength(attributes["cy"]) ?? 0
         let r = parseLength(attributes["r"]) ?? 0
-
         let center = CGPoint(x: cx, y: cy)
         let shape = VectorShape.circle(center: center, radius: r)
-
         let (shouldClip, clipPathId) = checkForClipPath(attributes)
 
         let finalShape = createShape(
@@ -104,7 +100,6 @@ extension SVGParser {
         let cy = parseLength(attributes["cy"]) ?? 0
         let rx = parseLength(attributes["rx"]) ?? 0
         let ry = parseLength(attributes["ry"]) ?? 0
-
         let elements: [PathElement] = [
             .move(to: VectorPoint(cx + rx, cy)),
             .curve(to: VectorPoint(cx, cy + ry),
@@ -123,7 +118,6 @@ extension SVGParser {
         ]
 
         let vectorPath = VectorPath(elements: elements, isClosed: true)
-
         let (shouldClip, clipPathId) = checkForClipPath(attributes)
 
         let shape = createShape(
@@ -145,7 +139,6 @@ extension SVGParser {
         let y1 = parseLength(attributes["y1"]) ?? 0
         let x2 = parseLength(attributes["x2"]) ?? 0
         let y2 = parseLength(attributes["y2"]) ?? 0
-
         let elements: [PathElement] = [
             .move(to: VectorPoint(x1, y1)),
             .line(to: VectorPoint(x2, y2))

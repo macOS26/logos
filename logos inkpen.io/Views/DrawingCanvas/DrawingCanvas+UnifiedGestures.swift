@@ -33,7 +33,6 @@ extension DrawingCanvas {
 
     internal func handleUnifiedTap(at location: CGPoint, geometry: GeometryProxy) {
         let canvasLocation = screenToCanvas(location, geometry: geometry)
-
         let currentTime = Date()
         let timeSinceLastClick = currentTime.timeIntervalSince(lastClickTime)
         let distanceFromLastClick = distance(location, lastClickLocation)

@@ -4,15 +4,12 @@ import Combine
 class PressureManager: ObservableObject {
 
     @Published var hasRealPressureInput = false
-
     @Published var currentPressure: Double = 1.0
 
     @Published var isCalibrating = false
-
     @Published var calibrationMinPressure: Double = 0.0
 
     @Published var calibrationMaxPressure: Double = 0.0
-
     @Published var calibrationSampleCount: Int = 0
 
     @Published var tabletOnlyCalibration: Bool = true
@@ -112,12 +109,10 @@ class PressureManager: ObservableObject {
         guard timeInterval > 0 else { return currentPressure }
 
         let speed = distance / timeInterval
-
         let normalizedSpeed = min(speed / maxSpeed, 1.0)
 
         let pressureRange = sensitivity
         let basePressure = 1.0 - (normalizedSpeed * pressureRange)
-
         let finalPressure = max(0.1, min(1.0, basePressure))
 
         let smoothedPressure = (currentPressure * (1.0 - speedSmoothingFactor)) + (finalPressure * speedSmoothingFactor)

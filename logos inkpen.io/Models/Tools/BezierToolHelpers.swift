@@ -75,7 +75,6 @@ extension DrawingCanvas {
         if isBezierDrawing && bezierPoints.count >= 3 && showClosePathHint {
             let firstPoint = bezierPoints[0]
             let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
-
             let baseCloseTolerance: Double = 5.0
             let zoomLevel = document.zoomLevel
             let closeTolerance = max(2.0, baseCloseTolerance / zoomLevel)
@@ -117,7 +116,6 @@ extension DrawingCanvas {
         currentLocation = applySnapping(to: currentLocation)
 
         let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
-
         let baseThreshold: Double = 8.0
         let zoomLevel = document.zoomLevel
         let zoomAwareThreshold = max(2.0, baseThreshold / zoomLevel)
@@ -134,7 +132,6 @@ extension DrawingCanvas {
 
         let basePointTolerance: Double = 8.0
         let tolerance = max(2.0, basePointTolerance / zoomLevel)
-
         var draggedPointIndex: Int? = nil
         for (index, point) in bezierPoints.enumerated() {
             let pointLocation = CGPoint(x: point.x, y: point.y)
@@ -155,7 +152,6 @@ extension DrawingCanvas {
         guard let activeBezierShape = activeBezierShape,
               let updatedPath = bezierPath,
               let layerIndex = document.selectedLayerIndex else { return }
-
         let shapes = document.getShapesForLayer(layerIndex)
         for shapeIndex in shapes.indices {
             if let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
@@ -249,25 +245,21 @@ extension DrawingCanvas {
         }
 
         let angleFromCurrentRad = closestAngleFromCurrent * .pi / 180.0
-
         var bestIntersection: CGPoint?
         var bestScore = Double.infinity
 
         for existingPoint in bezierPoints {
             for constraintAngleFromPoint in constraintAngles {
                 let angleFromPointRad = constraintAngleFromPoint * .pi / 180.0
-
                 let cos1 = cos(angleFromCurrentRad)
                 let sin1 = sin(angleFromCurrentRad)
                 let cos2 = cos(angleFromPointRad)
                 let sin2 = sin(angleFromPointRad)
-
                 let denominator = cos1 * sin2 - sin1 * cos2
 
                 if abs(denominator) > 0.001 {
                     let dx0 = existingPoint.x - currentPoint.x
                     let dy0 = existingPoint.y - currentPoint.y
-
                     let t1 = (dx0 * sin2 - dy0 * cos2) / denominator
                     let t2 = (dx0 * sin1 - dy0 * cos1) / denominator
 
@@ -275,7 +267,6 @@ extension DrawingCanvas {
                         let intersectionX = currentPoint.x + t1 * cos1
                         let intersectionY = currentPoint.y + t1 * sin1
                         let intersection = CGPoint(x: intersectionX, y: intersectionY)
-
                         let distToTarget = sqrt(pow(target.x - intersection.x, 2) +
                                                pow(target.y - intersection.y, 2))
 
@@ -486,7 +477,6 @@ extension DrawingCanvas {
             opacity: document.defaultStrokeOpacity
         )
         let fillStyle: FillStyle? = nil
-
         let newShape = VectorShape(
             name: "Bezier Path",
             path: newPath,
@@ -505,7 +495,6 @@ extension DrawingCanvas {
 
         let point = bezierPoints[pointIndex]
         let pointLocation = CGPoint(x: point.x, y: point.y)
-
         let dragVector = CGPoint(
             x: currentLocation.x - pointLocation.x,
             y: currentLocation.y - pointLocation.y
@@ -536,7 +525,6 @@ extension DrawingCanvas {
 
             let lastPoint = bezierPoints.last
             let distanceToLastPoint = lastPoint.map { distance(startLocation, CGPoint(x: $0.x, y: $0.y)) } ?? Double.infinity
-
             let baseDuplicateTolerance: Double = 5.0
             let zoomLevel = document.zoomLevel
             let duplicateTolerance = max(1.0, baseDuplicateTolerance / zoomLevel)
@@ -554,7 +542,6 @@ extension DrawingCanvas {
         let activeIndex = bezierPoints.count - 1
         let activePoint = bezierPoints[activeIndex]
         let activeLocation = CGPoint(x: activePoint.x, y: activePoint.y)
-
         let dragVector = CGPoint(
             x: currentLocation.x - activeLocation.x,
             y: currentLocation.y - activeLocation.y

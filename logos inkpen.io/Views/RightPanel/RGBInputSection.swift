@@ -60,7 +60,6 @@ struct ColorChannelSlider: View {
     @Binding var textValue: String
     let gradient: SwiftUI.LinearGradient
     let onChange: () -> Void
-    
     var body: some View {
         HStack(spacing: 8) {
             Circle()

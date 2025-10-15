@@ -154,11 +154,9 @@ enum VectorColor: Hashable {
         let hue = h * 360
         let saturation = s
         let brightness = b
-
         let c = brightness * saturation
         let x = c * (1 - abs((hue / 60).truncatingRemainder(dividingBy: 2) - 1))
         let m = brightness - c
-
         let (r, g, b): (Double, Double, Double)
 
         switch Int(hue) / 60 {

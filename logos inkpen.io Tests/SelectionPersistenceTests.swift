@@ -33,7 +33,6 @@ class SelectionPersistenceTests: XCTestCase {
 
         let encoder = JSONEncoder()
         let data = try encoder.encode(document)
-
         let decoder = JSONDecoder()
         let decodedDocument = try decoder.decode(VectorDocument.self, from: data)
 
@@ -86,7 +85,6 @@ class SelectionPersistenceTests: XCTestCase {
 
         let encoder = JSONEncoder()
         let data = try encoder.encode(document)
-
         let decoder = JSONDecoder()
         let decodedDocument = try decoder.decode(VectorDocument.self, from: data)
 
@@ -114,7 +112,6 @@ class SelectionPersistenceTests: XCTestCase {
 
         let encoder = JSONEncoder()
         let data = try encoder.encode(document)
-
         let decoder = JSONDecoder()
         let decodedDocument = try decoder.decode(VectorDocument.self, from: data)
 

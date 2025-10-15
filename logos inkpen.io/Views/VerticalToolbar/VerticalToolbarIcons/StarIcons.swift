@@ -2,14 +2,12 @@ import SwiftUI
 
 struct ThreePointStarIcon: View {
     let isSelected: Bool
-
     var body: some View {
         Path { path in
             let center = CGPoint(x: 10, y: 10)
             let outerRadius: CGFloat = 8 + IconStrokeExpand
             let innerRadius: CGFloat = outerRadius * 0.22
             let points: Int = 3
-
             let angleStep = .pi / Double(points)
             for i in 0..<(points * 2) {
                 let angle = Double(i) * angleStep - .pi / 2
@@ -31,14 +29,12 @@ struct ThreePointStarIcon: View {
 
 struct FourPointStarIcon: View {
     let isSelected: Bool
-
     var body: some View {
         Path { path in
             let center = CGPoint(x: 10, y: 10)
             let outerRadius: CGFloat = 8 + IconStrokeExpand
             let innerRadius: CGFloat = outerRadius * 0.28
             let points: Int = 4
-
             let angleStep = .pi / Double(points)
             for i in 0..<(points * 2) {
                 let angle = Double(i) * angleStep - .pi / 2
@@ -60,14 +56,12 @@ struct FourPointStarIcon: View {
 
 struct FivePointStarIcon: View {
     let isSelected: Bool
-
     var body: some View {
         Path { path in
             let center = CGPoint(x: 10, y: 10)
             let outerRadius: CGFloat = 8 + IconStrokeExpand
             let innerRadius: CGFloat = outerRadius * 0.40
             let points: Int = 5
-
             let angleStep = .pi / Double(points)
             for i in 0..<(points * 2) {
                 let angle = Double(i) * angleStep - .pi / 2
@@ -89,14 +83,12 @@ struct FivePointStarIcon: View {
 
 struct SixPointStarIcon: View {
     let isSelected: Bool
-
     var body: some View {
         Path { path in
             let center = CGPoint(x: 10, y: 10)
             let outerRadius: CGFloat = 8 + IconStrokeExpand
             let innerRadius: CGFloat = outerRadius * 0.40
             let points: Int = 6
-
             let angleStep = .pi / Double(points)
             for i in 0..<(points * 2) {
                 let angle = Double(i) * angleStep - .pi / 2
@@ -118,14 +110,12 @@ struct SixPointStarIcon: View {
 
 struct SevenPointStarIcon: View {
     let isSelected: Bool
-
     var body: some View {
         Path { path in
             let center = CGPoint(x: 10, y: 10)
             let outerRadius: CGFloat = 8 + IconStrokeExpand
             let innerRadius: CGFloat = outerRadius * 0.40
             let points: Int = 7
-
             let angleStep = .pi / Double(points)
             for i in 0..<(points * 2) {
                 let angle = Double(i) * angleStep - .pi / 2

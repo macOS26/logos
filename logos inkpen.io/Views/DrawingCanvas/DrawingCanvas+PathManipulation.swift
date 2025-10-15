@@ -12,10 +12,8 @@ extension DrawingCanvas {
         for i in 1..<bezierPoints.count {
             let currentPoint = bezierPoints[i]
             let previousPoint = bezierPoints[i - 1]
-
             let previousHandles = bezierHandles[i - 1]
             let currentHandles = bezierHandles[i]
-
             let hasOutgoingHandle = previousHandles?.control2 != nil
             let hasIncomingHandle = currentHandles?.control1 != nil
 

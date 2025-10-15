@@ -112,12 +112,10 @@ struct TypographyProperties: Codable, Hashable {
     var lineSpacing: Double
     var letterSpacing: Double
     var alignment: TextAlignment
-
     var hasStroke: Bool
     var strokeColor: VectorColor
     var strokeWidth: Double
     var strokeOpacity: Double
-
     var fillColor: VectorColor
     var fillOpacity: Double
 
@@ -227,7 +225,6 @@ struct VectorText: Identifiable, Codable, Hashable {
     var isLocked: Bool
     var isEditing: Bool
     var layerIndex: Int?
-
     var cursorPosition: Int
     var areaSize: CGSize?
 
@@ -253,14 +250,12 @@ struct VectorText: Identifiable, Codable, Hashable {
     var textBounds: CGRect {
         let font = createCoreTextFont()
         let displayText = content.isEmpty ? "" : content
-
         let attributes: [NSAttributedString.Key: Any] = [
             .font: font,
             .kern: typography.letterSpacing
         ]
 
         let attributedString = NSAttributedString(string: displayText, attributes: attributes)
-
         let line = CTLineCreateWithAttributedString(attributedString)
 
         let textBounds = CTLineGetBoundsWithOptions(line, .useOpticalBounds)
@@ -321,7 +316,6 @@ struct VectorText: Identifiable, Codable, Hashable {
             let attributedString = NSAttributedString(string: displayText, attributes: attributes)
             let line = CTLineCreateWithAttributedString(attributedString)
             let textBounds = CTLineGetBoundsWithOptions(line, .useOpticalBounds)
-
             let ascent = CTFontGetAscent(font)
             let descent = CTFontGetDescent(font)
             let leading = CTFontGetLeading(font)
@@ -348,10 +342,8 @@ struct VectorText: Identifiable, Codable, Hashable {
 
             let attributedString = NSAttributedString(string: displayText, attributes: attributes)
             let framesetter = CTFramesetterCreateWithAttributedString(attributedString)
-
             let defaultWidth: CGFloat = 300.0
             let constraintSize = CGSize(width: defaultWidth, height: CGFloat.greatestFiniteMagnitude)
-
             let suggestedSize = CTFramesetterSuggestFrameSizeWithConstraints(
                 framesetter,
                 CFRangeMake(0, 0),
@@ -388,7 +380,6 @@ struct VectorText: Identifiable, Codable, Hashable {
            let fontFamily = vectorShape.metadata["fontFamily"],
            let fontSizeStr = vectorShape.metadata["fontSize"],
            let fontSize = Double(fontSizeStr) {
-
             let letterSpacing = Double(vectorShape.metadata["letterSpacing"] ?? "0") ?? 0
             let lineSpacing = Double(vectorShape.metadata["lineSpacing"] ?? "0") ?? 0
 
@@ -446,7 +437,6 @@ class FontManager: ObservableObject {
     @Published var selectedFontFamily: String = "Helvetica Neue"
     @Published var selectedFontVariant: String = "Regular"
     @Published var selectedFontSize: Double = 24.0
-
     @Published var selectedLineSpacing: Double = 0.0
     @Published var selectedLineHeight: Double = 24.0
     @Published var selectedTextAlignment: TextAlignment = .center
@@ -590,7 +580,6 @@ class FontManager: ObservableObject {
 
         let fontManager = NSFontManager.shared
         let members = fontManager.availableMembers(ofFontFamily: family) ?? []
-
         let excludeKeywords = ["ornament", "swash", "alternate", "expert", "small cap",
                                "oldstyle", "lining", "tabular", "proportional"]
 
@@ -602,7 +591,6 @@ class FontManager: ObservableObject {
                let displayName = member[1] as? String,
                let weightNumber = member[2] as? NSNumber,
                let traitsNumber = member[3] as? NSNumber {
-
                 let lowercasedName = displayName.lowercased()
                 let shouldExclude = excludeKeywords.contains { keyword in
                     lowercasedName.contains(keyword)

@@ -14,10 +14,8 @@ struct DocumentSettings: Codable, Hashable {
     var backgroundColor: VectorColor
     var selectedLayerId: UUID?
     var selectedLayerName: String?
-
     var layerExpansionState: [UUID: Bool]
     var groupExpansionState: [UUID: Bool]
-
     var pageOrigin: CGPoint?
 
     var fillColor: VectorColor?

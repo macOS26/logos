@@ -10,15 +10,12 @@ class VectorDocument: ObservableObject, Codable {
     }
     @Published var layerIndex: Int = 0
     @Published var pasteboard: VectorLayer = VectorLayer(name: "Pasteboard")
-
     @Published var selectedLayerIndex: Int?
     @Published var selectedShapeIDs: Set<UUID> = []
     @Published var selectedTextIDs: Set<UUID> = []
-
     @Published var selectedObjectIDs: Set<UUID> = []
 
     @Published var directSelectedShapeIDs: Set<UUID> = []
-
     @Published var documentColorDefaults: ColorDefaults = ColorDefaults() {
         didSet {
             settings.fillColor = documentColorDefaults.fillColor
@@ -40,7 +37,6 @@ class VectorDocument: ObservableObject, Codable {
     @Published var isDraggingLock: Bool = false
     @Published var processedLayersDuringDrag: Set<Int> = []
     @Published var processedObjectsDuringDrag: Set<UUID> = []
-
     var rgbSwatches: [VectorColor] {
         var swatches = ColorManager.shared.colorDefaults.rgbSwatches
         swatches.append(contentsOf: customRgbSwatches)
@@ -58,7 +54,6 @@ class VectorDocument: ObservableObject, Codable {
     }
 
     @Published var isHandleScalingActive = false
-
     @Published var unifiedObjects: [VectorObject] = [] {
         didSet {
             if oldValue.count != unifiedObjects.count {
@@ -92,7 +87,6 @@ class VectorDocument: ObservableObject, Codable {
 
     var textPreviewTypography: [UUID: TypographyProperties] = [:]
     var shapePreviewStyles: [UUID: (fillOpacity: Double?, strokeOpacity: Double?, strokeWidth: Double?)] = [:]
-
     var allShapes: [VectorShape] {
         return unifiedObjects.compactMap { unifiedObject in
             if case .shape(let shape) = unifiedObject.objectType, !shape.isTextObject {
@@ -275,7 +269,6 @@ class VectorDocument: ObservableObject, Codable {
     @Published var snapToPoint: Bool = false
     @Published var gridSpacing: Double = 12.0
     @Published var backgroundColor: VectorColor = .white
-
     @Published var undoStackX: [VectorDocument] = []
     @Published var redoStackX: [VectorDocument] = []
 
@@ -289,7 +282,6 @@ class VectorDocument: ObservableObject, Codable {
     }()
 
     @Published var fontManager: FontManager = FontManager()
-
     var defaultFillColor: VectorColor {
         get { documentColorDefaults.fillColor }
         set {
@@ -342,7 +334,6 @@ class VectorDocument: ObservableObject, Codable {
     }
 
     @Published var activeColorTarget: ColorTarget = .fill
-
     @Published var colorChangeNotification: UUID = UUID()
     @Published var lastColorChangeType: ColorChangeType = .fillOpacity
 
@@ -560,7 +551,6 @@ class VectorDocument: ObservableObject, Codable {
             if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeId }) {
                 let centerX = initialBounds.midX
                 let centerY = initialBounds.midY
-
                 let scaleTransform = CGAffineTransform.identity
                     .translatedBy(x: centerX, y: centerY)
                     .scaledBy(x: scaleX, y: scaleY)
@@ -598,7 +588,6 @@ class VectorDocument: ObservableObject, Codable {
 
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-
         let decodedSettings = try container.decode(DocumentSettings.self, forKey: .settings)
         let decodedLayers = try container.decode([VectorLayer].self, forKey: .layers)
         let decodedCurrentTool = try container.decode(DrawingTool.self, forKey: .currentTool)

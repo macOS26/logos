@@ -36,7 +36,6 @@ extension DrawingCanvas {
         }
 
         let oldPath = shape.path
-
         var startPoint: VectorPoint
         if elementIndex > 0 {
             let prevElement = shape.path.elements[elementIndex - 1]
@@ -117,7 +116,6 @@ extension DrawingCanvas {
         }
 
         let oldPath = shape.path
-
         let pathPointCount = elements.filter { element in
             switch element {
             case .move, .line, .curve, .quadCurve: return true
@@ -256,10 +254,8 @@ extension DrawingCanvas {
         let p01 = lerp(p0, p1, t)
         let p12 = lerp(p1, p2, t)
         let p23 = lerp(p2, p3, t)
-
         let p012 = lerp(p01, p12, t)
         let p123 = lerp(p12, p23, t)
-
         let splitPoint = lerp(p012, p123, t)
 
         return (
@@ -283,7 +279,6 @@ extension DrawingCanvas {
         let B = point.y - start.y
         let C = end.x - start.x
         let D = end.y - start.y
-
         let dot = A * C + B * D
         let lenSq = C * C + D * D
 
@@ -292,7 +287,6 @@ extension DrawingCanvas {
         }
 
         let param = dot / lenSq
-
         let xx, yy: Double
         if param < 0 {
             xx = start.x

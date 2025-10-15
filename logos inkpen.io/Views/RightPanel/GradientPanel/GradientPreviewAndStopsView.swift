@@ -30,7 +30,6 @@ struct GradientPreviewAndStopsView: View {
         case .linear:
             let originX = getOriginX(gradient)
             let originY = getOriginY(gradient)
-
             let clampedX = max(0.0, min(1.0, originX))
             let clampedY = max(0.0, min(1.0, originY))
 
@@ -42,7 +41,6 @@ struct GradientPreviewAndStopsView: View {
         case .radial:
             let originX = getOriginX(gradient)
             let originY = getOriginY(gradient)
-
             let clampedX = max(0.0, min(1.0, originX))
             let clampedY = max(0.0, min(1.0, originY))
 

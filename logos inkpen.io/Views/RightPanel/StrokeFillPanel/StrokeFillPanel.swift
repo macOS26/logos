@@ -226,7 +226,6 @@ struct StrokeFillPanel: View {
                             } else {
                                 var oldShapes: [UUID: VectorShape] = [:]
                                 var objectIDs: [UUID] = []
-
                                 let activeShapeIDs = document.getActiveShapeIDs()
                                 for shapeID in activeShapeIDs {
                                     if let shape = document.findShape(by: shapeID) {
@@ -321,7 +320,6 @@ struct StrokeFillPanel: View {
                             } else {
                                 var oldShapes: [UUID: VectorShape] = [:]
                                 var objectIDs: [UUID] = []
-
                                 let activeShapeIDs = document.getActiveShapeIDs()
                                 for shapeID in activeShapeIDs {
                                     if let shape = document.findShape(by: shapeID) {
@@ -372,7 +370,6 @@ struct StrokeFillPanel: View {
                             } else {
                                 var oldShapes: [UUID: VectorShape] = [:]
                                 var objectIDs: [UUID] = []
-
                                 let activeShapeIDs = document.getActiveShapeIDs()
                                 for shapeID in activeShapeIDs {
                                     if let shape = document.findShape(by: shapeID) {

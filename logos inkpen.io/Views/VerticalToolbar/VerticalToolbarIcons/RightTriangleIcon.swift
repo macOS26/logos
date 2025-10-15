@@ -2,7 +2,6 @@ import SwiftUI
 
 struct RightTriangleIcon: View {
     let isSelected: Bool
-
     var body: some View {
         Path { path in
             let topLeft = CGPoint(x: 5 - IconStrokeExpand, y: 5 - IconStrokeExpand)

@@ -5,7 +5,6 @@ class AppState {
     static let shared = AppState()
 
     var selectedPanelTab: PanelTab = .layers
-
     var enableVerboseLogging: Bool = false {
         didSet { UserDefaults.standard.set(enableVerboseLogging, forKey: "enableVerboseLogging") }
     }
@@ -66,7 +65,6 @@ class AppState {
     }
 
     var gradientEditingState: GradientEditingState? = nil
-
     var showingGradientHUD = false
     var gradientHUDData: GradientHUDData? = nil
 
@@ -88,11 +86,9 @@ class AppState {
 
     var openWindowAction: ((String) -> Void)?
     var dismissWindowAction: ((String) -> Void)?
-
     var pendingNewDocument: VectorDocument? = nil
 
     var showSetupOnNewDoc: Bool = false
-
     var shouldShowDocumentSetup: Bool = false
 
     enum BrushPreviewStyle: String, CaseIterable { case outline, fill }

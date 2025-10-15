@@ -217,7 +217,6 @@ extension PDFCommandParser {
 
         if CGPDFScannerPopString(scanner, &stringRef),
            let stringRef = stringRef {
-
             let text = extractTextFromPDFString(stringRef)
             currentTextContent += text
 
@@ -230,7 +229,6 @@ extension PDFCommandParser {
 
         if CGPDFScannerPopArray(scanner, &arrayRef),
            let arrayRef = arrayRef {
-
             let count = CGPDFArrayGetCount(arrayRef)
             var combinedText = ""
 
@@ -339,7 +337,6 @@ extension PDFCommandParser {
         }
 
         let codeToUnicode = parseCMap(cmapString)
-
         let length = CGPDFStringGetLength(pdfString)
         guard length > 0, let bytes = CGPDFStringGetBytePtr(pdfString) else {
             return nil
@@ -360,7 +357,6 @@ extension PDFCommandParser {
 
     private func parseCMap(_ cmapString: String) -> [UInt16: String] {
         var mapping: [UInt16: String] = [:]
-
         let bfcharPattern = "<([0-9A-Fa-f]+)>\\s*<([0-9A-Fa-f]+)>"
         if let regex = try? NSRegularExpression(pattern: bfcharPattern, options: []) {
             let range = NSRange(cmapString.startIndex..., in: cmapString)
@@ -417,7 +413,6 @@ extension PDFCommandParser {
 
                     for charCode in startCode...endCode {
                         let unicodeValue = baseUnicode + UInt32(charCode - startCode)
-
                         var unicodeString = ""
                         let hexChars = String(format: "%04X", unicodeValue)
                         for i in stride(from: 0, to: hexChars.count, by: 4) {
@@ -447,11 +442,9 @@ extension PDFCommandParser {
         var fontDict: CGPDFDictionaryRef?
         if CGPDFDictionaryGetDictionary(resources, "Font", &fontDict),
            let fontDict = fontDict {
-
             var fontRef: CGPDFDictionaryRef?
             if CGPDFDictionaryGetDictionary(fontDict, resourceName, &fontRef),
                let fontRef = fontRef {
-
                 var baseFontName: UnsafePointer<CChar>?
                 if CGPDFDictionaryGetName(fontRef, "BaseFont", &baseFontName),
                    let baseFontName = baseFontName {
@@ -475,16 +468,13 @@ extension PDFCommandParser {
         var fontDict: CGPDFDictionaryRef?
         if CGPDFDictionaryGetDictionary(resources, "Font", &fontDict),
            let fontDict = fontDict {
-
             var fontRef: CGPDFDictionaryRef?
             if CGPDFDictionaryGetDictionary(fontDict, resourceName, &fontRef),
                let fontRef = fontRef {
-
                 var baseFontName: UnsafePointer<CChar>?
                 if CGPDFDictionaryGetName(fontRef, "BaseFont", &baseFontName),
                    let baseFontName = baseFontName {
                     let fontName = String(cString: baseFontName)
-
                     let cleanName: String
                     if let plusIndex = fontName.firstIndex(of: "+") {
                         cleanName = String(fontName[fontName.index(after: plusIndex)...])
@@ -535,7 +525,6 @@ extension PDFCommandParser {
     private func advanceTextPosition(for text: String) {
         let estimatedWidth = Double(text.count) * currentFontSize * 0.5
         let advance = estimatedWidth * (textHorizontalScaling / 100.0)
-
         let translation = CGAffineTransform(translationX: CGFloat(advance), y: 0)
         currentTextMatrix = currentTextMatrix.concatenating(translation)
     }
@@ -545,7 +534,6 @@ extension PDFCommandParser {
 
         var pdfX = currentTextStartPosition.x
         var pdfY = currentTextStartPosition.y
-
         let tm = currentTextMatrix
 
         let matrixFontSize = abs(tm.d)
@@ -568,7 +556,6 @@ extension PDFCommandParser {
         }
 
         let position = CGPoint(x: pdfX, y: finalY)
-
         let fullFontName = currentFontName ?? "Helvetica"
         var fontFamily = fullFontName
         var fontVariant: String? = nil
@@ -604,10 +591,8 @@ extension PDFCommandParser {
         }
 
         let fontSize = actualFontSize
-
         let hasFill = textRenderingMode == 0 || textRenderingMode == 2 || textRenderingMode == 4 || textRenderingMode == 6
         let hasStroke = textRenderingMode == 1 || textRenderingMode == 2 || textRenderingMode == 5 || textRenderingMode == 6
-
         let fillColor: VectorColor
         let strokeColor: VectorColor
 
@@ -643,7 +628,6 @@ extension PDFCommandParser {
         let maxLineLength = lines.map { $0.count }.max() ?? 0
         let estimatedWidth = Double(maxLineLength) * fontSize * 0.6
         let estimatedHeight = Double(lines.count) * fontSize * 1.2
-
         var vectorText = VectorText(
             content: currentTextContent,
             typography: typography,

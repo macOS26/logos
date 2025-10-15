@@ -6,7 +6,6 @@ struct TextShearHandles: View {
     let textObject: VectorText
     let zoomLevel: Double
     let canvasOffset: CGPoint
-
     var body: some View {
         let bounds = textObject.bounds
         let absoluteBounds = CGRect(

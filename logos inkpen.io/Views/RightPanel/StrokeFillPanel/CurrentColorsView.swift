@@ -29,7 +29,6 @@ struct CurrentColorsView: View {
     let fillOpacity: Double
     let onStrokeColorTap: () -> Void
     let onFillColorTap: () -> Void
-
     var body: some View {
         HStack(spacing: 8) {
             ColorSwatchView(
@@ -58,7 +57,6 @@ private struct ColorSwatchView: View {
     let opacity: Double
     let label: String
     let action: () -> Void
-    
     var body: some View {
         VStack(spacing: 4) {
             Button(action: action) {

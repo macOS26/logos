@@ -108,7 +108,6 @@ case independent = "Independent"
             for i in 0..<(currentPoints.count - 1) {
                 let p0 = currentPoints[i]
                 let p1 = currentPoints[i + 1]
-
                 let interpolated = VectorPoint(
                     (1.0 - t) * p0.x + t * p1.x,
                     (1.0 - t) * p0.y + t * p1.y
@@ -159,7 +158,6 @@ case independent = "Independent"
         let u3 = u2 * u
         let t2 = t * t
         let t3 = t2 * t
-
         let x = u3 * p0.x + 3 * u2 * t * p1.x + 3 * u * t2 * p2.x + t3 * p3.x
         let y = u3 * p0.y + 3 * u2 * t * p1.y + 3 * u * t2 * p2.y + t3 * p3.y
 
@@ -170,7 +168,6 @@ case independent = "Independent"
         let u = 1.0 - t
         let u2 = u * u
         let t2 = t * t
-
         let x = u2 * p0.x + 2 * u * t * p1.x + t2 * p2.x
         let y = u2 * p0.y + 2 * u * t * p1.y + t2 * p2.y
 
@@ -179,7 +176,6 @@ case independent = "Independent"
 
     static func cubicBezierFirstDerivative(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> VectorPoint {
         let u = 1.0 - t
-
         let dx = 3 * (u * u * (p1.x - p0.x) + 2 * u * t * (p2.x - p1.x) + t * t * (p3.x - p2.x))
         let dy = 3 * (u * u * (p1.y - p0.y) + 2 * u * t * (p2.y - p1.y) + t * t * (p3.y - p2.y))
 
@@ -188,7 +184,6 @@ case independent = "Independent"
 
     static func cubicBezierSecondDerivative(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> VectorPoint {
         let u = 1.0 - t
-
         let dx = 6 * (u * (p2.x - 2 * p1.x + p0.x) + t * (p3.x - 2 * p2.x + p1.x))
         let dy = 6 * (u * (p2.y - 2 * p1.y + p0.y) + t * (p3.y - 2 * p2.y + p1.y))
 
@@ -198,7 +193,6 @@ case independent = "Independent"
     static func calculateCurvature(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> Double {
         let firstDeriv = cubicBezierFirstDerivative(p0: p0, p1: p1, p2: p2, p3: p3, t: t)
         let secondDeriv = cubicBezierSecondDerivative(p0: p0, p1: p1, p2: p2, p3: p3, t: t)
-
         let crossProduct = firstDeriv.x * secondDeriv.y - firstDeriv.y * secondDeriv.x
         let speedSquared = firstDeriv.x * firstDeriv.x + firstDeriv.y * firstDeriv.y
         let speed = sqrt(speedSquared)
@@ -211,14 +205,11 @@ case independent = "Independent"
     static func splitCubicBezier(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> ([VectorPoint], [VectorPoint]) {
         let q1 = VectorPoint.lerp(p0, p1, t)
         let q2 = VectorPoint.lerp(p1, p2, t)
-
         let r1 = VectorPoint.lerp(q1, q2, t)
         let r2 = VectorPoint.lerp(p2, p3, t)
-
         let s1 = VectorPoint.lerp(r1, r2, t)
 
         let pointOnCurve = VectorPoint.lerp(s1, s1, t)
-
         let leftCurve = [p0, q1, r1, pointOnCurve]
         let rightCurve = [pointOnCurve, s1, r2, p3]
 
@@ -236,15 +227,12 @@ case independent = "Independent"
             guard directionLength > 1e-10 else { return (nil, nil) }
 
             let normalizedDirection = VectorPoint(direction.x / directionLength, direction.y / directionLength)
-
             let prevDistance = sqrt((currentPoint.x - prev.x) * (currentPoint.x - prev.x) + (currentPoint.y - prev.y) * (currentPoint.y - prev.y))
             let nextDistance = sqrt((next.x - currentPoint.x) * (next.x - currentPoint.x) + (next.y - currentPoint.y) * (next.y - currentPoint.y))
-
             let avgDistance = (prevDistance + nextDistance) / 2.0
             let baseTension = tension
             let distanceMultiplier = min(avgDistance / 50.0, 2.0)
             let dynamicTension = baseTension * (1.0 + distanceMultiplier * 0.5)
-
             let incomingLength = prevDistance * dynamicTension
             let outgoingLength = nextDistance * dynamicTension
 
@@ -265,7 +253,6 @@ case independent = "Independent"
                 let distanceMultiplier = min(directionLength / 50.0, 2.0)
                 let dynamicTension = tension * (1.0 + distanceMultiplier * 0.5)
                 let handleLength = directionLength * dynamicTension
-
                 let normalizedDirection = VectorPoint(direction.x / directionLength, direction.y / directionLength)
                 outgoingHandle = VectorPoint(
                     currentPoint.x + normalizedDirection.x * handleLength,
@@ -280,7 +267,6 @@ case independent = "Independent"
                 let distanceMultiplier = min(directionLength / 50.0, 2.0)
                 let dynamicTension = tension * (1.0 + distanceMultiplier * 0.5)
                 let handleLength = directionLength * dynamicTension
-
                 let normalizedDirection = VectorPoint(direction.x / directionLength, direction.y / directionLength)
                 incomingHandle = VectorPoint(
                     currentPoint.x - normalizedDirection.x * handleLength,
@@ -306,13 +292,11 @@ case independent = "Independent"
 
         let p2 = curve1[2], p3 = curve1[3]
         let q0 = curve2[0], q1 = curve2[1]
-
         let positionDiff = sqrt((p3.x - q0.x) * (p3.x - q0.x) + (p3.y - q0.y) * (p3.y - q0.y))
         guard positionDiff < tolerance else { return .none }
 
         let curve1EndTangent = VectorPoint(p3.x - p2.x, p3.y - p2.y)
         let curve2StartTangent = VectorPoint(q1.x - q0.x, q1.y - q0.y)
-
         let tangent1Length = sqrt(curve1EndTangent.x * curve1EndTangent.x + curve1EndTangent.y * curve1EndTangent.y)
         let tangent2Length = sqrt(curve2StartTangent.x * curve2StartTangent.x + curve2StartTangent.y * curve2StartTangent.y)
 
@@ -320,7 +304,6 @@ case independent = "Independent"
 
         let normalizedTangent1 = VectorPoint(curve1EndTangent.x / tangent1Length, curve1EndTangent.y / tangent1Length)
         let normalizedTangent2 = VectorPoint(curve2StartTangent.x / tangent2Length, curve2StartTangent.y / tangent2Length)
-
         let tangentDiff = sqrt((normalizedTangent1.x - normalizedTangent2.x) * (normalizedTangent1.x - normalizedTangent2.x) +
                               (normalizedTangent1.y - normalizedTangent2.y) * (normalizedTangent1.y - normalizedTangent2.y))
 
@@ -341,7 +324,6 @@ case independent = "Independent"
 
         let midIndex1 = points.count / 3
         let midIndex2 = (points.count * 2) / 3
-
         let p1 = points[min(midIndex1, points.count - 1)]
         let p2 = points[min(midIndex2, points.count - 1)]
 
@@ -355,10 +337,8 @@ case independent = "Independent"
         for i in 0..<subdivisions {
             let t1 = Double(i) * dt
             let t2 = Double(i + 1) * dt
-
             let point1 = evaluateCubicBezier(p0: p0, p1: p1, p2: p2, p3: p3, t: t1)
             let point2 = evaluateCubicBezier(p0: p0, p1: p1, p2: p2, p3: p3, t: t2)
-
             let segmentLength = sqrt((point2.x - point1.x) * (point2.x - point1.x) + (point2.y - point1.y) * (point2.y - point1.y))
             totalLength += segmentLength
         }
@@ -380,7 +360,6 @@ extension VectorPoint {
 
         let startCGPoints = startPoints.map { CGPoint(x: $0.x, y: $0.y) }
         let endCGPoints = endPoints.map { CGPoint(x: $0.x, y: $0.y) }
-
         let metalEngine = MetalComputeEngine.shared
         let results = metalEngine.lerpVectorsGPU(from: startCGPoints, to: endCGPoints, t: Float(t))
         switch results {
@@ -404,7 +383,6 @@ extension VectorPoint {
 
         let sourceCGPoints = sourcePoints.map { CGPoint(x: $0.x, y: $0.y) }
         let targetCGPoints = targetPoints.map { CGPoint(x: $0.x, y: $0.y) }
-
         let metalEngine = MetalComputeEngine.shared
         let results = metalEngine.calculateDistancesGPU(from: sourceCGPoints, to: targetCGPoints)
         switch results {
@@ -429,7 +407,6 @@ extension VectorPoint {
 
     static func normalizeBatch(_ vectors: [VectorPoint]) -> [VectorPoint] {
         let cgVectors = vectors.map { CGPoint(x: $0.x, y: $0.y) }
-
         let metalEngine = MetalComputeEngine.shared
         let results = metalEngine.normalizeVectorsGPU(cgVectors)
         switch results {
@@ -460,7 +437,6 @@ struct ProfessionalBezierFactory {
 
     static func createCircularArc(center: VectorPoint, radius: Double, startAngle: Double, endAngle: Double) -> [VectorPoint] {
         let kappa = 0.5522847498307935
-
         let startPoint = VectorPoint(
             center.x + radius * cos(startAngle),
             center.y + radius * sin(startAngle)
@@ -472,7 +448,6 @@ struct ProfessionalBezierFactory {
         )
 
         let handleLength = radius * kappa
-
         let control1 = VectorPoint(
             startPoint.x + handleLength * cos(startAngle + .pi / 2),
             startPoint.y + handleLength * sin(startAngle + .pi / 2)

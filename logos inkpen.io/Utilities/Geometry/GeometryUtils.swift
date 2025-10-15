@@ -10,7 +10,6 @@ struct GeometryUtils {
         guard distance > 0.001 else { return target }
 
         let angle = atan2(dy, dx)
-
         var angleDegrees = angle * 180.0 / .pi
         if angleDegrees < 0 {
             angleDegrees += 360
@@ -29,7 +28,6 @@ struct GeometryUtils {
         }
 
         let constrainedAngleRad = closestAngle * .pi / 180.0
-
         let constrainedX = reference.x + distance * cos(constrainedAngleRad)
         let constrainedY = reference.y + distance * sin(constrainedAngleRad)
 

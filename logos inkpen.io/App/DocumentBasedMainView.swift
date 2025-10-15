@@ -174,7 +174,6 @@ struct DocumentBasedMainView: View {
         let rulerOffset: CGFloat = document.showRulers ? 20 : 0
         let availableWidth = windowSize.width - 48 - 280 - rulerOffset
         let availableHeight = windowSize.height - 24 - rulerOffset
-
         let scaleX = availableWidth / documentBounds.width
         let scaleY = availableHeight / documentBounds.height
         let fitZoom = max(0.1, min(16.0, min(scaleX, scaleY)))

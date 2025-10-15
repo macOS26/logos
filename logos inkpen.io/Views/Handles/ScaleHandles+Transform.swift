@@ -180,7 +180,6 @@ extension ScaleHandles {
 
         let scaleX = sqrt(transform.a * transform.a + transform.c * transform.c)
         let scaleY = sqrt(transform.b * transform.b + transform.d * transform.d)
-
         let scaleRatio = max(scaleX, scaleY) / min(scaleX, scaleY)
         let maxReasonableRatio: CGFloat = 3.0
 

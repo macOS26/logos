@@ -36,12 +36,10 @@ struct LinearGradient: Codable, Hashable, Identifiable {
     var stops: [GradientStop]
     var spreadMethod: GradientSpreadMethod = .pad
     var units: GradientUnits = .objectBoundingBox
-
     var originPoint: CGPoint = CGPoint(x: 0.5, y: 0.5)
     var scale: Double = 1.0
     var scaleX: Double = 1.0
     var scaleY: Double = 1.0
-
     var storedAngle: Double = 0.0
 
     init(startPoint: CGPoint, endPoint: CGPoint, stops: [GradientStop], spreadMethod: GradientSpreadMethod = .pad, units: GradientUnits = .objectBoundingBox, id: UUID = UUID()) {
@@ -76,7 +74,6 @@ struct LinearGradient: Codable, Hashable, Identifiable {
         storedAngle = degrees
 
         let radians = degrees * .pi / 180.0
-
         var centerX = originPoint.x
         var centerY = originPoint.y
 
@@ -89,7 +86,6 @@ struct LinearGradient: Codable, Hashable, Identifiable {
 
         let currentLength = sqrt(pow(endPoint.x - startPoint.x, 2) + pow(endPoint.y - startPoint.y, 2))
         let halfLength = currentLength > 0 ? currentLength / 2.0 : (units == .objectBoundingBox ? 0.25 : 50.0)
-
         let deltaX = cos(radians) * halfLength
         let deltaY = sin(radians) * halfLength
 
@@ -114,12 +110,10 @@ struct RadialGradient: Codable, Hashable, Identifiable {
     var stops: [GradientStop]
     var spreadMethod: GradientSpreadMethod = .pad
     var units: GradientUnits = .objectBoundingBox
-
     var originPoint: CGPoint = CGPoint(x: 0.5, y: 0.5)
     var scale: Double = 1.0
     var scaleX: Double = 1.0
     var scaleY: Double = 1.0
-
     var angle: Double = 0.0
 
     init(centerPoint: CGPoint, radius: Double, stops: [GradientStop], focalPoint: CGPoint? = nil, spreadMethod: GradientSpreadMethod = .pad, units: GradientUnits = .objectBoundingBox, id: UUID = UUID()) {

@@ -26,7 +26,6 @@ extension VectorDocument {
 
         // Calculate new orderID for group (use highest orderID from removed objects)
         let maxOrderID = objectsToRemove.map { $0.orderID }.max() ?? 0
-
         let newSelectedIDs: Set<UUID> = [groupShape.id]
 
         // Create command
@@ -66,7 +65,6 @@ extension VectorDocument {
         }
 
         let selectedShapes = getSelectedShapesInStackingOrder()
-        
         var combinedBounds = CGRect.zero
         for shape in selectedShapes {
             let shapeBounds = shape.bounds
@@ -89,7 +87,6 @@ extension VectorDocument {
         )
         
         let maxOrderID = objectsToRemove.map { $0.orderID }.max() ?? 0
-
         let newSelectedIDs: Set<UUID> = [flattenedShape.id]
 
         // Create command
@@ -190,7 +187,6 @@ extension VectorDocument {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count == 1,
               let selectedShapeID = selectedShapeIDs.first else { return }
-
         let shapes = getShapesForLayer(layerIndex)
         guard let shapeIndex = shapes.firstIndex(where: { $0.id == selectedShapeID }) else { return }
 
@@ -208,7 +204,6 @@ extension VectorDocument {
 
         let restoredShapes = flattenedGroup.groupedShapes
         var newSelectedIDs: Set<UUID> = []
-        
         var shapesToAdd: [VectorShape] = []
         for originalShape in restoredShapes {
             var restoredShape = originalShape
@@ -280,7 +275,6 @@ extension VectorDocument {
         )
 
         let maxOrderID = objectsToRemove.map { $0.orderID }.max() ?? 0
-
         let newSelectedIDs: Set<UUID> = [compoundShape.id]
 
         // Create command
@@ -319,7 +313,6 @@ extension VectorDocument {
         }
 
         let selectedShapes = getSelectedShapesInStackingOrder()
-        
         let loopingPath = CGMutablePath()
         for shape in selectedShapes {
             loopingPath.addPath(shape.path.cgPath)
@@ -335,7 +328,6 @@ extension VectorDocument {
         )
         
         let maxOrderID = objectsToRemove.map { $0.orderID }.max() ?? 0
-
         let newSelectedIDs: Set<UUID> = [loopingShape.id]
 
         // Create command
@@ -362,7 +354,6 @@ extension VectorDocument {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count == 1,
               let selectedShapeID = selectedShapeIDs.first else { return }
-
         let shapes = getShapesForLayer(layerIndex)
         guard let shapeIndex = shapes.firstIndex(where: { $0.id == selectedShapeID }),
               let compoundShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
@@ -429,7 +420,6 @@ extension VectorDocument {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count == 1,
               let selectedShapeID = selectedShapeIDs.first else { return }
-
         let shapes = getShapesForLayer(layerIndex)
         guard let shapeIndex = shapes.firstIndex(where: { $0.id == selectedShapeID }),
               let loopingShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
@@ -444,7 +434,6 @@ extension VectorDocument {
         }
 
         let subpaths = extractSubpaths(from: loopingShape.path.cgPath)
-        
         var newShapes: [VectorShape] = []
         var newSelectedIDs: Set<UUID> = []
         

@@ -15,11 +15,9 @@ extension FileOperations {
 
     static func generatePDFDataWithClippingSupport(from document: VectorDocument, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, includeInkpenData: Bool = false, includeBackground: Bool = true) throws -> Data {
         let documentSize = document.settings.sizeInPoints
-
         let pdfData = NSMutableData()
 
         var mediaBox = CGRect(origin: .zero, size: documentSize)
-
         let auxiliaryDict: [String: Any] = [
             kCGPDFContextCreator as String: "Inkpen.io",
             kCGPDFContextAuthor as String: NSFullUserName(),
@@ -42,7 +40,6 @@ extension FileOperations {
 
             if let jsonData = try? encoder.encode(document) {
                 let base64String = jsonData.base64EncodedString()
-
                 let xmpMetadata = """
                 <?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
                 <x:xmpmeta xmlns:x="adobe:ns:meta/">
@@ -361,7 +358,6 @@ extension FileOperations {
         ]
 
         let attributedString = NSAttributedString(string: vectorText.content, attributes: attributes)
-
         let textStorage = NSTextStorage(attributedString: attributedString)
         let layoutManager = NSLayoutManager()
         textStorage.addLayoutManager(layoutManager)
@@ -396,7 +392,6 @@ extension FileOperations {
         context.setFontSize(nsFont.pointSize)
 
         var skippedGlyphCount = 0
-
         let glyphRange = layoutManager.glyphRange(for: textContainer)
 
         layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { (lineRect, lineUsedRect, container, lineRange, stop) in
@@ -501,7 +496,6 @@ extension FileOperations {
 
         let bounds1 = boundingBox(of: subpaths[0])
         let bounds2 = boundingBox(of: subpaths[1])
-
         let isNested = (bounds1.contains(bounds2) || bounds2.contains(bounds1))
 
         if isNested {
@@ -517,10 +511,8 @@ extension FileOperations {
         for i in 0..<points.count - 1 {
             let p1 = points[i]
             let p2 = points[i + 1]
-
             let dx = abs(p2.x - p1.x)
             let dy = abs(p2.y - p1.y)
-
             let isHorizontal = dy < 0.1 && dx > 0.1
             let isVertical = dx < 0.1 && dy > 0.1
 
@@ -568,7 +560,6 @@ extension FileOperations {
         ]
 
         let attributedString = NSAttributedString(string: vectorText.content, attributes: layoutAttributes)
-
         let textStorage = NSTextStorage(attributedString: attributedString)
         let layoutManager = NSLayoutManager()
         textStorage.addLayoutManager(layoutManager)
@@ -609,7 +600,6 @@ extension FileOperations {
 
             let firstGlyphIndex = lineRange.location
             let glyphLocation = layoutManager.location(forGlyphAt: firstGlyphIndex)
-
             let lineX: CGFloat
             switch vectorText.typography.alignment.nsTextAlignment {
             case .left, .justified:

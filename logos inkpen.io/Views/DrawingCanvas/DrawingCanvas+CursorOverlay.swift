@@ -7,7 +7,6 @@ struct CanvasCursorOverlayView: View {
     let isPanActive: Bool
     let zoomLevel: CGFloat
     let canvasOffset: CGPoint
-
     var body: some View {
         CanvasCursorOverlayRepresentable(
             isHovering: isHovering,

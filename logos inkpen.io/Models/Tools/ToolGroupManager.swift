@@ -22,7 +22,6 @@ class ToolGroupManager: ObservableObject {
     }
     @Published var anchorVariantByGroup: [String: StarVariant?] = [:]
     var toolButtonFrames: [DrawingTool: CGRect] = [:]
-
     @Published var customToolOrder: [String: [DrawingTool]] = [:] {
         didSet {
             saveCustomToolOrder()

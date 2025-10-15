@@ -27,7 +27,6 @@ final class GPUPointSelectionTests: XCTestCase {
 
         let tapLocation = CGPoint(x: 105, y: 105)
         let selectionRadius: CGFloat = 10.0
-
         let result = metalEngine.findNearestPointGPU(
             points: points,
             tapLocation: tapLocation,
@@ -46,10 +45,8 @@ final class GPUPointSelectionTests: XCTestCase {
         ]
 
         let transform = CGAffineTransform(translationX: 50, y: 50)
-
         let tapLocation = CGPoint(x: 150, y: 50)
         let selectionRadius: CGFloat = 10.0
-
         let result = metalEngine.findNearestPointGPU(
             points: points,
             tapLocation: tapLocation,
@@ -70,7 +67,6 @@ final class GPUPointSelectionTests: XCTestCase {
 
         let tapLocation = CGPoint(x: 1000, y: 1000)
         let selectionRadius: CGFloat = 10.0
-
         let result = metalEngine.findNearestPointGPU(
             points: points,
             tapLocation: tapLocation,
@@ -94,7 +90,6 @@ final class GPUPointSelectionTests: XCTestCase {
         let targetPoint = points[targetIndex]
         let tapLocation = CGPoint(x: targetPoint.x + 0.5, y: targetPoint.y + 0.5)
         let selectionRadius: CGFloat = 5.0
-
         let startTime = CFAbsoluteTimeGetCurrent()
 
         let result = metalEngine.findNearestPointGPU(
@@ -130,7 +125,6 @@ final class GPUPointSelectionTests: XCTestCase {
 
         let tapLocation = CGPoint(x: 112, y: 12)
         let selectionRadius: CGFloat = 10.0
-
         let result = metalEngine.findNearestHandleGPU(
             handlePoints: handlePoints,
             anchorPoints: anchorPoints,
@@ -157,7 +151,6 @@ final class GPUPointSelectionTests: XCTestCase {
 
         let tapLocation = CGPoint(x: 100, y: 0)
         let selectionRadius: CGFloat = 10.0
-
         let result = metalEngine.findNearestHandleGPU(
             handlePoints: handlePoints,
             anchorPoints: anchorPoints,
@@ -180,7 +173,6 @@ final class GPUPointSelectionTests: XCTestCase {
 
         let tapLocation = CGPoint(x: 0, y: 0)
         let selectionRadius: CGFloat = 15.0
-
         let results = metalEngine.findPointsInRadiusGPU(
             points: points,
             tapLocation: tapLocation,
@@ -206,7 +198,6 @@ final class GPUPointSelectionTests: XCTestCase {
 
             let tapLocation = CGPoint(x: 100, y: 0)
             let selectionRadius: CGFloat = 10.0
-
             let startTime = CFAbsoluteTimeGetCurrent()
 
             _ = metalEngine.findNearestPointGPU(

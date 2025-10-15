@@ -36,7 +36,6 @@ extension DrawingCanvas {
     internal func handleShapeDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
 
         let dragDistance = calculateDistanceWithFallback(from: value.startLocation, to: value.location)
-
         let minimumDragThreshold: Double = 0.0
 
         if Double(dragDistance) < minimumDragThreshold {
@@ -56,7 +55,6 @@ extension DrawingCanvas {
             shapeDragStart = value.startLocation
 
             var initialPoint = startLocation
-
             let shapeTools: [DrawingTool] = [.line, .rectangle, .square, .roundedRectangle, .pill,
                                               .circle, .ellipse, .oval, .egg, .cone,
                                               .star, .polygon, .pentagon, .hexagon, .heptagon,
@@ -146,11 +144,9 @@ extension DrawingCanvas {
         case .square:
             let dragDeltaX = currentLocation.x - startPoint.x
             let dragDeltaY = currentLocation.y - startPoint.y
-
             let size = max(abs(dragDeltaX), abs(dragDeltaY))
             let signedSizeX = dragDeltaX >= 0 ? size : -size
             let signedSizeY = dragDeltaY >= 0 ? size : -size
-
             var squareRect: CGRect
             if isOptionPressed {
                 squareRect = CGRect(
@@ -210,7 +206,6 @@ extension DrawingCanvas {
         case .pill:
             let dragDeltaX = currentLocation.x - startPoint.x
             let dragDeltaY = currentLocation.y - startPoint.y
-
             var rect: CGRect
             if isOptionPressed {
                 rect = CGRect(
@@ -238,10 +233,8 @@ extension DrawingCanvas {
         case .circle:
             let dragDeltaX = currentLocation.x - startPoint.x
             let dragDeltaY = currentLocation.y - startPoint.y
-
             let size = max(abs(dragDeltaX), abs(dragDeltaY))
             let signedSize = (dragDeltaX >= 0 && dragDeltaY >= 0) || (dragDeltaX < 0 && dragDeltaY < 0) ? size : -size
-
             var circleRect: CGRect
             if isOptionPressed {
                 circleRect = CGRect(
@@ -289,7 +282,6 @@ extension DrawingCanvas {
         case .oval:
             let dragDeltaX = currentLocation.x - startPoint.x
             let dragDeltaY = currentLocation.y - startPoint.y
-
             var rect: CGRect
             if isOptionPressed {
                 rect = CGRect(
@@ -316,7 +308,6 @@ extension DrawingCanvas {
         case .egg:
             let dragDeltaX = currentLocation.x - startPoint.x
             let dragDeltaY = currentLocation.y - startPoint.y
-
             var rect: CGRect
             if isOptionPressed {
                 rect = CGRect(
@@ -343,7 +334,6 @@ extension DrawingCanvas {
         case .equilateralTriangle:
             let width = currentLocation.x - startPoint.x
             let height = currentLocation.y - startPoint.y
-
             let size = max(abs(width), abs(height))
             let triangleHeight = height >= 0 ? size : -size
             let sqrt3: Float
@@ -356,7 +346,6 @@ extension DrawingCanvas {
                 sqrt3 = Float(sqrt(3.0))
             }
             let triangleWidth = CGFloat(abs(triangleHeight) * 2.0 / Double(sqrt3))
-
             var triangleRect: CGRect
             if isOptionPressed {
                 triangleRect = CGRect(
@@ -398,7 +387,6 @@ extension DrawingCanvas {
         case .rightTriangle:
             let dragDeltaX = currentLocation.x - startPoint.x
             let dragDeltaY = currentLocation.y - startPoint.y
-
             var rect: CGRect
             if isOptionPressed {
                 rect = CGRect(
@@ -423,7 +411,6 @@ extension DrawingCanvas {
         case .acuteTriangle:
             let dragDeltaX = currentLocation.x - startPoint.x
             let dragDeltaY = currentLocation.y - startPoint.y
-
             var rect: CGRect
             if isOptionPressed {
                 rect = CGRect(
@@ -444,7 +431,6 @@ extension DrawingCanvas {
         case .isoscelesTriangle:
             let dragDeltaX = currentLocation.x - startPoint.x
             let dragDeltaY = currentLocation.y - startPoint.y
-
             var rect: CGRect
             if isOptionPressed {
                 rect = CGRect(
@@ -465,7 +451,6 @@ extension DrawingCanvas {
         case .cone:
             let dx = currentLocation.x - startPoint.x
             let dy = currentLocation.y - startPoint.y
-
             var raw: CGRect
             if isOptionPressed {
                 raw = CGRect(x: startPoint.x - dx, y: startPoint.y - dy, width: dx * 2, height: dy * 2)
@@ -473,24 +458,19 @@ extension DrawingCanvas {
                 raw = CGRect(x: startPoint.x, y: startPoint.y, width: dx, height: dy)
             }
             let r = CGRect(x: min(raw.minX, raw.maxX), y: min(raw.minY, raw.maxY), width: abs(raw.width), height: abs(raw.height))
-
             let apex = VectorPoint(r.midX, r.minY)
             let baseLeft = VectorPoint(r.minX, r.maxY)
             let baseRight = VectorPoint(r.maxX, r.maxY)
-
             let move = VectorPoint(baseRight.x - r.width * 0.007461, baseRight.y - r.height * 0.13586)
             let c1 = VectorPoint(baseRight.x - r.width * 0.002364, baseRight.y - r.height * 0.12957)
             let c2 = VectorPoint(baseRight.x, baseRight.y - r.height * 0.12317)
             let rightStart = VectorPoint(baseRight.x, baseRight.y - r.height * 0.11645)
-
             let c3 = VectorPoint(baseRight.x, baseRight.y - r.height * 0.05216)
             let c4 = VectorPoint(r.midX + r.width * 0.27608, r.maxY)
             let mid = VectorPoint(r.midX, r.maxY)
-
             let c5 = VectorPoint(r.midX - r.width * 0.27608, r.maxY)
             let c6 = VectorPoint(baseLeft.x, baseLeft.y - r.height * 0.05216)
             let leftEnd = VectorPoint(baseLeft.x, baseLeft.y - r.height * 0.11645)
-
             let c7 = VectorPoint(baseLeft.x, baseLeft.y - r.height * 0.12160)
             let c8 = VectorPoint(baseLeft.x + r.width * 0.00141, baseLeft.y - r.height * 0.12660)
             let leftExit = VectorPoint(baseLeft.x + r.width * 0.00463, baseLeft.y - r.height * 0.13147)
@@ -565,7 +545,6 @@ extension DrawingCanvas {
                     }
                 }()
                 let actualGridSpacing = baseSpacing * spacingMultiplier
-
                 let snappedX = round(center.x / actualGridSpacing) * actualGridSpacing
                 let snappedY = round(center.y / actualGridSpacing) * actualGridSpacing
                 finalCenter = CGPoint(x: snappedX, y: snappedY)
@@ -577,7 +556,6 @@ extension DrawingCanvas {
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
-
 			var rect: CGRect
 			if isOptionPressed {
 				let signedSize = dragDeltaX >= 0 && dragDeltaY >= 0 ? size : -size
@@ -622,7 +600,6 @@ extension DrawingCanvas {
 					}
 				}()
 				let actualGridSpacing = baseSpacing * spacingMultiplier
-
 				let snappedX = round(center.x / actualGridSpacing) * actualGridSpacing
 				let snappedY = round(center.y / actualGridSpacing) * actualGridSpacing
 				finalCenter = CGPoint(x: snappedX, y: snappedY)
@@ -634,7 +611,6 @@ extension DrawingCanvas {
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
-
 			var rect: CGRect
 			if isOptionPressed {
 				let signedSize = dragDeltaX >= 0 && dragDeltaY >= 0 ? size : -size
@@ -678,7 +654,6 @@ extension DrawingCanvas {
 					}
 				}()
 				let actualGridSpacing = baseSpacing * spacingMultiplier
-
 				let snappedX = round(center.x / actualGridSpacing) * actualGridSpacing
 				let snappedY = round(center.y / actualGridSpacing) * actualGridSpacing
 				finalCenter = CGPoint(x: snappedX, y: snappedY)
@@ -690,7 +665,6 @@ extension DrawingCanvas {
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
-
 			var rect: CGRect
 			if isOptionPressed {
 				let signedSize = dragDeltaX >= 0 && dragDeltaY >= 0 ? size : -size
@@ -734,7 +708,6 @@ extension DrawingCanvas {
 					}
 				}()
 				let actualGridSpacing = baseSpacing * spacingMultiplier
-
 				let snappedX = round(center.x / actualGridSpacing) * actualGridSpacing
 				let snappedY = round(center.y / actualGridSpacing) * actualGridSpacing
 				finalCenter = CGPoint(x: snappedX, y: snappedY)
@@ -746,7 +719,6 @@ extension DrawingCanvas {
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
-
 			var rect: CGRect
 			if isOptionPressed {
 				let signedSize = dragDeltaX >= 0 && dragDeltaY >= 0 ? size : -size
@@ -790,7 +762,6 @@ extension DrawingCanvas {
 					}
 				}()
 				let actualGridSpacing = baseSpacing * spacingMultiplier
-
 				let snappedX = round(center.x / actualGridSpacing) * actualGridSpacing
 				let snappedY = round(center.y / actualGridSpacing) * actualGridSpacing
 				finalCenter = CGPoint(x: snappedX, y: snappedY)
@@ -802,7 +773,6 @@ extension DrawingCanvas {
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
-
 			var rect: CGRect
 			if isOptionPressed {
 				let signedSize = dragDeltaX >= 0 && dragDeltaY >= 0 ? size : -size
@@ -846,7 +816,6 @@ extension DrawingCanvas {
 					}
 				}()
 				let actualGridSpacing = baseSpacing * spacingMultiplier
-
 				let snappedX = round(center.x / actualGridSpacing) * actualGridSpacing
 				let snappedY = round(center.y / actualGridSpacing) * actualGridSpacing
 				finalCenter = CGPoint(x: snappedX, y: snappedY)
@@ -858,7 +827,6 @@ extension DrawingCanvas {
 			let dragDeltaX = currentLocation.x - startPoint.x
 			let dragDeltaY = currentLocation.y - startPoint.y
 			let size = max(abs(dragDeltaX), abs(dragDeltaY))
-
 			var rect: CGRect
 			if isOptionPressed {
 				let signedSize = dragDeltaX >= 0 && dragDeltaY >= 0 ? size : -size
@@ -902,7 +870,6 @@ extension DrawingCanvas {
 					}
 				}()
 				let actualGridSpacing = baseSpacing * spacingMultiplier
-
 				let snappedX = round(center.x / actualGridSpacing) * actualGridSpacing
 				let snappedY = round(center.y / actualGridSpacing) * actualGridSpacing
 				finalCenter = CGPoint(x: snappedX, y: snappedY)
@@ -947,7 +914,6 @@ extension DrawingCanvas {
 
             let startPoint = shapeStartPoint
             let currentLocation = screenToCanvas(value.location, geometry: geometry)
-
             let originalBounds: CGRect
             if document.currentTool == .square {
                 let dragDeltaX = currentLocation.x - startPoint.x

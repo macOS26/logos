@@ -42,7 +42,6 @@ extension View {
 private struct DocumentSectionHeader: View {
     let icon: String
     let title: String
-    
     var body: some View {
         HStack {
             Image(systemName: icon)

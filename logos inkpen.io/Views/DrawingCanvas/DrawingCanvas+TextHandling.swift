@@ -222,7 +222,6 @@ extension DrawingCanvas {
         ]
 
         let attributedString = NSAttributedString(string: textObj.content, attributes: attributes)
-
         let textContainer = NSTextContainer(containerSize: CGSize(
             width: textObj.bounds.width,
             height: CGFloat.greatestFiniteMagnitude
@@ -313,7 +312,6 @@ extension DrawingCanvas {
     func insertTextAtCursor(_ text: String) {
         guard let editingID = editingTextID,
               var textObj = document.findText(by: editingID) else { return }
-
         let insertIndex = textObj.content.index(
             textObj.content.startIndex,
             offsetBy: min(currentCursorPosition, textObj.content.count)
@@ -662,7 +660,6 @@ extension DrawingCanvas {
         let minY = min(shapeStartPoint.y, currentLocation.y)
         let width = abs(currentLocation.x - shapeStartPoint.x)
         let height = abs(currentLocation.y - shapeStartPoint.y)
-
         let finalWidth = max(width, 50.0)
         let finalHeight = max(height, 30.0)
 
@@ -688,7 +685,6 @@ extension DrawingCanvas {
 
         let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
         let endLocation = screenToCanvas(value.location, geometry: geometry)
-
         let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
 
         if dragDistance < 12.0 {
@@ -700,10 +696,8 @@ extension DrawingCanvas {
         let minY = min(startLocation.y, endLocation.y)
         let maxX = max(startLocation.x, endLocation.x)
         let maxY = max(startLocation.y, endLocation.y)
-
         let width = maxX - minX
         let height = maxY - minY
-
         let finalWidth = max(width, 50.0)
         let finalHeight = max(height, 30.0)
 

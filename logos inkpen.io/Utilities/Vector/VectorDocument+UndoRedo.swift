@@ -213,7 +213,6 @@ extension VectorDocument {
             guard layerObjects.count > 1 else { continue }
 
             let orderIDs = layerObjects.map { $0.orderID }.sorted()
-
             let expectedOrderIDs = Array(0..<layerObjects.count)
 
             let needsFixing = orderIDs != expectedOrderIDs
