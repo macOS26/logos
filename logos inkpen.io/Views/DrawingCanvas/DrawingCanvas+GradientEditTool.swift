@@ -39,8 +39,6 @@ extension DrawingCanvas {
                     }
                     .onEnded { _ in
                         document.updateUnifiedObjectsOptimized()
-
-                        document.saveToUndoStack()
                     }
             )
         }

@@ -137,7 +137,6 @@ struct GradientAngleControlView: View {
                     ), in: -180...180, onEditingChanged: { editing in
                         if !editing {
                             document.updateUnifiedObjectsOptimized()
-                            document.saveToUndoStack()
                         }
                     })
                     .controlSize(.regular)
@@ -186,7 +185,6 @@ struct GradientOriginControlView: View {
                         onEditingChanged: { editing in
                             if !editing {
                                 document.updateUnifiedObjectsOptimized()
-                                document.saveToUndoStack()
                             }
                         }
                     )
@@ -200,7 +198,6 @@ struct GradientOriginControlView: View {
                         onEditingChanged: { editing in
                             if !editing {
                                 document.updateUnifiedObjectsOptimized()
-                                document.saveToUndoStack()
                             }
                         }
                     )
@@ -236,7 +233,6 @@ struct GradientScaleControlView: View {
                         ), in: 0.01...8.0, onEditingChanged: { editing in
                             if !editing {
                                 document.updateUnifiedObjectsOptimized()
-                                document.saveToUndoStack()
                             }
                         })
                         .controlSize(.regular)
@@ -263,7 +259,6 @@ struct GradientScaleControlView: View {
                             ), in: 0.01...2.0, onEditingChanged: { editing in
                                 if !editing {
                                     document.updateUnifiedObjectsOptimized()
-                                    document.saveToUndoStack()
                                 }
                             })
                             .controlSize(.regular)
@@ -289,7 +284,6 @@ struct GradientScaleControlView: View {
                             ), in: 0.1...2.0, onEditingChanged: { editing in
                                 if !editing {
                                     document.updateUnifiedObjectsOptimized()
-                                    document.saveToUndoStack()
                                 }
                             })
                             .controlSize(.regular)

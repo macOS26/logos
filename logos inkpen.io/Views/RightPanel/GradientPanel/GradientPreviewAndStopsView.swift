@@ -65,7 +65,6 @@ struct GradientPreviewAndStopsView: View {
                         let clampedY = max(0.0, min(1.0, y))
                         updateOriginX(clampedX, true)
                         updateOriginY(clampedY, true)
-                        document.saveToUndoStack()
                     })
             } else {
                 Rectangle()
@@ -92,7 +91,6 @@ struct GradientPreviewAndStopsView: View {
                     }
                     .onEnded { _ in
                         applyGradientToSelectedShapesOptimized(false)
-                        document.saveToUndoStack()
                     }
             )
     }
@@ -109,7 +107,6 @@ struct GradientPreviewAndStopsView: View {
                 let normalizedY = max(0.0, min(1.0, location.y / fullWidth))
                 updateOriginX(normalizedX, true)
                 updateOriginY(normalizedY, true)
-                document.saveToUndoStack()
             }
             .overlay(createDraggableDot(geometry: geometry, squareSize: squareSize, centerX: centerX, centerY: centerY))
     }

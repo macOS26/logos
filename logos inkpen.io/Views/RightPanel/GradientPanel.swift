@@ -454,8 +454,6 @@ struct GradientFillSection: View {
     func addColorStop() {
         guard let gradient = currentGradient else { return }
 
-        document.saveToUndoStack()
-
         let stops = getGradientStops(gradient)
         let newPosition = stops.count > 1 ? (stops[stops.count-2].position + stops[stops.count-1].position) / 2 : 0.5
         let newStop = GradientStop(position: newPosition, color: .black, opacity: 1.0)
@@ -476,8 +474,6 @@ struct GradientFillSection: View {
 
     func removeColorStop(stopId: UUID) {
         guard let gradient = currentGradient else { return }
-
-        document.saveToUndoStack()
 
         switch gradient {
         case .linear(var linear):
