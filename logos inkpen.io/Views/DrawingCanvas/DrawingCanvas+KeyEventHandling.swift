@@ -315,7 +315,16 @@ extension DrawingCanvas {
     internal func nudgeSelectedObjects(by nudgeAmount: CGVector) {
         guard !document.selectedObjectIDs.isEmpty else { return }
 
-        document.saveToUndoStack()
+        var oldShapes: [UUID: VectorShape] = [:]
+        var newShapes: [UUID: VectorShape] = [:]
+        var objectIDs: [UUID] = []
+
+        for objectID in document.selectedObjectIDs {
+            if let shape = document.findShape(by: objectID) {
+                oldShapes[objectID] = shape
+                objectIDs.append(objectID)
+            }
+        }
 
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
@@ -387,5 +396,16 @@ extension DrawingCanvas {
         }
 
         document.objectPositionUpdateTrigger.toggle()
+
+        for objectID in objectIDs {
+            if let updatedShape = document.findShape(by: objectID) {
+                newShapes[objectID] = updatedShape
+            }
+        }
+
+        if !objectIDs.isEmpty {
+            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+            document.commandManager.execute(command)
+        }
     }
 }
