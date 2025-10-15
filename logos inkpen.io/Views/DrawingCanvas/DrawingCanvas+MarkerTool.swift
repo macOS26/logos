@@ -241,27 +241,6 @@ extension DrawingCanvas {
                 finalShape.path = VectorPath(cgPath: cleaned)
             }
 
-            if let stroke = finalShape.strokeStyle, stroke.width > 0 {
-                if let expandedStroke = PathOperations.outlineStroke(path: currentPath, strokeStyle: stroke) {
-                    var unionedStroke: CGPath? = nil
-                    unionedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .winding)
-                    if unionedStroke == nil {
-                        unionedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .evenOdd)
-                    }
-
-                    let strokeToMerge = unionedStroke ?? expandedStroke
-                    var merged: CGPath? = nil
-                    merged = CoreGraphicsPathOperations.union(currentPath, strokeToMerge, using: .winding)
-                    if merged == nil {
-                        merged = CoreGraphicsPathOperations.union(currentPath, strokeToMerge, using: .evenOdd)
-                    }
-
-                    if let mergedPath = merged, !mergedPath.isEmpty, isPathBoundsFinite(mergedPath.boundingBox) {
-                        finalShape.path = VectorPath(cgPath: mergedPath)
-                    }
-                }
-            }
-
             finalShape.path = removeCoincidentPointsFromPath(finalShape.path, tolerance: 1.0)
         } else {
             finalShape.path = removeCoincidentPointsFromPath(finalShape.path, tolerance: 1.0)
@@ -318,27 +297,6 @@ extension DrawingCanvas {
             if let cleaned = cleanedFillPath, !cleaned.isEmpty, isPathBoundsFinite(cleaned.boundingBox) {
                 currentPath = cleaned
                 finalPath = VectorPath(cgPath: cleaned)
-            }
-
-            if let stroke = strokeStyle, stroke.width > 0 {
-                if let expandedStroke = PathOperations.outlineStroke(path: currentPath, strokeStyle: stroke) {
-                    var unionedStroke: CGPath? = nil
-                    unionedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .winding)
-                    if unionedStroke == nil {
-                        unionedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .evenOdd)
-                    }
-
-                    let strokeToMerge = unionedStroke ?? expandedStroke
-                    var merged: CGPath? = nil
-                    merged = CoreGraphicsPathOperations.union(currentPath, strokeToMerge, using: .winding)
-                    if merged == nil {
-                        merged = CoreGraphicsPathOperations.union(currentPath, strokeToMerge, using: .evenOdd)
-                    }
-
-                    if let mergedPath = merged, !mergedPath.isEmpty, isPathBoundsFinite(mergedPath.boundingBox) {
-                        finalPath = VectorPath(cgPath: mergedPath)
-                    }
-                }
             }
 
             finalPath = removeCoincidentPointsFromPath(finalPath, tolerance: 1.0)
