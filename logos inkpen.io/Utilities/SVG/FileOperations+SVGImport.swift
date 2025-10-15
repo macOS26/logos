@@ -169,9 +169,6 @@ extension FileOperations {
             }
         }
 
-
-        document.forceResyncUnifiedObjects()
-
         document.selectedLayerIndex = 2
 
 
