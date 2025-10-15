@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PathOperationsPanel: View {
     @ObservedObject var document: VectorDocument
+    @State private var isMergePointsPressed = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -142,7 +143,7 @@ struct PathOperationsPanel: View {
                             .padding(.vertical, 10)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.gray.opacity(0.1))
+                                    .fill(Color.gray.opacity(isMergePointsPressed ? 0.3 : 0.1))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 8)
                                             .stroke(Color.gray.opacity(0.3), lineWidth: 1)
@@ -151,6 +152,15 @@ struct PathOperationsPanel: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(BorderlessButtonStyle())
+                    .simultaneousGesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { _ in
+                                isMergePointsPressed = true
+                            }
+                            .onEnded { _ in
+                                isMergePointsPressed = false
+                            }
+                    )
                     .onTapGesture {
                         mergeCoincidentPointsInSelectedShapes()
                     }
@@ -686,14 +696,26 @@ struct PathOperationsPanel: View {
     }
 
     private func mergeCoincidentPointsInSelectedShapes() {
-        guard !document.selectedShapeIDs.isEmpty else { return }
+        guard !document.selectedShapeIDs.isEmpty else {
+            Log.info("No shapes selected", category: .general)
+            return
+        }
 
         let selectedShapes = document.getSelectedShapes()
         let tolerance: Double = 0.5
 
+        Log.info("Merging points in \(selectedShapes.count) shapes", category: .general)
+
         for shape in selectedShapes {
+            let originalCount = shape.path.elements.count
             let cleanedPath = mergeCoincidentPoints(in: shape.path, tolerance: tolerance)
-            document.updateShapePathUnified(id: shape.id, path: cleanedPath)
+            let newCount = cleanedPath.elements.count
+
+            Log.info("Shape '\(shape.name)': \(originalCount) -> \(newCount) elements", category: .general)
+
+            if newCount != originalCount {
+                document.updateShapePathUnified(id: shape.id, path: cleanedPath)
+            }
         }
     }
 
@@ -701,64 +723,77 @@ struct PathOperationsPanel: View {
         let elements = path.elements
         guard elements.count > 2 else { return path }
 
+        // Find all actual point elements (not .move or .close)
+        var pointIndices: [Int] = []
+        for (index, element) in elements.enumerated() {
+            switch element {
+            case .line, .curve, .quadCurve:
+                pointIndices.append(index)
+            default:
+                break
+            }
+        }
+
         var cleanedElements: [PathElement] = []
         var lastPosition: CGPoint? = nil
-        var isFirstPoint = true
 
         for (index, element) in elements.enumerated() {
-            let lastElementIsClose = elements.last.map { if case .close = $0 { return true } else { return false } } ?? false
-            let isLastPoint = (index == elements.count - 1) || (index == elements.count - 2 && lastElementIsClose)
+            // Determine if this is the first or last actual point (not .move or .close)
+            let isFirstPointElement = pointIndices.first == index
+            let isLastPointElement = pointIndices.last == index
 
             switch element {
             case .move(let to):
                 cleanedElements.append(element)
                 lastPosition = CGPoint(x: to.x, y: to.y)
-                isFirstPoint = false
 
             case .line(let to):
                 let currentPos = CGPoint(x: to.x, y: to.y)
                 if let last = lastPosition {
                     let distance = sqrt(pow(currentPos.x - last.x, 2) + pow(currentPos.y - last.y, 2))
-                    // Skip coincident points UNLESS it's the first or last point
-                    if distance > tolerance || isFirstPoint || isLastPoint {
+                    // Keep if: distance > tolerance OR it's first/last point
+                    if distance > tolerance || isFirstPointElement || isLastPointElement {
                         cleanedElements.append(element)
                         lastPosition = currentPos
+                    } else {
+                        Log.info("  Skipping coincident line point at distance \(distance)", category: .general)
                     }
                 } else {
                     cleanedElements.append(element)
                     lastPosition = currentPos
                 }
-                isFirstPoint = false
 
             case .curve(let to, _, _):
                 let currentPos = CGPoint(x: to.x, y: to.y)
                 if let last = lastPosition {
                     let distance = sqrt(pow(currentPos.x - last.x, 2) + pow(currentPos.y - last.y, 2))
-                    // Skip coincident points UNLESS it's the first or last point
-                    if distance > tolerance || isFirstPoint || isLastPoint {
+                    // Keep if: distance > tolerance OR it's first/last point
+                    if distance > tolerance || isFirstPointElement || isLastPointElement {
                         cleanedElements.append(element)
                         lastPosition = currentPos
+                    } else {
+                        Log.info("  Skipping coincident curve point at distance \(distance)", category: .general)
                     }
                 } else {
                     cleanedElements.append(element)
                     lastPosition = currentPos
                 }
-                isFirstPoint = false
 
             case .quadCurve(let to, _):
                 let currentPos = CGPoint(x: to.x, y: to.y)
                 if let last = lastPosition {
                     let distance = sqrt(pow(currentPos.x - last.x, 2) + pow(currentPos.y - last.y, 2))
-                    // Skip coincident points UNLESS it's the first or last point
-                    if distance > tolerance || isFirstPoint || isLastPoint {
+                    // Keep if: distance > tolerance OR it's first/last point
+                    if distance > tolerance || isFirstPointElement || isLastPointElement {
                         cleanedElements.append(element)
                         lastPosition = currentPos
+                    } else {
+                        Log.info("  Skipping coincident quadCurve point at distance \(distance)", category: .general)
                     }
                 } else {
                     cleanedElements.append(element)
                     lastPosition = currentPos
                 }
-                isFirstPoint = false
 
             case .close:
                 cleanedElements.append(element)
