@@ -168,34 +168,26 @@ extension VectorDocument {
     }
 
     func getObjectsInStackingOrder() -> [VectorObject] {
-        if let cachedIndices = cachedStackingOrder {
-            return cachedIndices.compactMap { index in
-                index < unifiedObjects.count ? unifiedObjects[index] : nil
-            }
+        if let cached = cachedStackingOrder {
+            return cached
         }
 
-        let sortedIndices = unifiedObjects
-            .enumerated()
-            .filter { (index, object) in
+        let result = unifiedObjects
+            .filter { object in
                 guard object.isVisible else { return false }
                 guard object.layerIndex < layers.count else { return false }
                 let layer = layers[object.layerIndex]
                 return layer.isVisible
             }
-            .sorted { pair1, pair2 in
-                let obj1 = pair1.element
-                let obj2 = pair2.element
+            .sorted { obj1, obj2 in
                 if obj1.layerIndex != obj2.layerIndex {
                     return obj1.layerIndex < obj2.layerIndex
                 }
                 return obj1.orderID < obj2.orderID
             }
-            .map { $0.offset }
 
-        cachedStackingOrder = sortedIndices
-        return sortedIndices.compactMap { index in
-            index < unifiedObjects.count ? unifiedObjects[index] : nil
-        }
+        cachedStackingOrder = result
+        return result
     }
 
     func getSelectedShapesInStackingOrder() -> [VectorShape] {

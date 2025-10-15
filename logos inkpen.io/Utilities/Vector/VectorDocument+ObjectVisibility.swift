@@ -87,41 +87,26 @@ extension VectorDocument {
     func showAllObjects() {
         guard let layerIndex = selectedLayerIndex else { return }
 
-        var affectedIDs: [UUID] = []
-        var oldValues: [UUID: Bool] = [:]
-        var newValues: [UUID: Bool] = [:]
+        saveToUndoStack()
+
+        var shownCount = 0
 
         let shapes = getShapesForLayer(layerIndex)
         for (shapeIndex, shape) in shapes.enumerated() {
             if !shape.isVisible {
-                affectedIDs.append(shape.id)
-                oldValues[shape.id] = false
-                newValues[shape.id] = true
-
                 var updatedShape = shape
                 updatedShape.isVisible = true
                 setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
+                shownCount += 1
             }
         }
 
         for unifiedObj in unifiedObjects {
             if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject, shape.isVisible == false {
-                affectedIDs.append(shape.id)
-                oldValues[shape.id] = false
-                newValues[shape.id] = true
-
                 showTextInUnified(id: shape.id)
+                shownCount += 1
             }
         }
 
-        if !affectedIDs.isEmpty {
-            let command = VisibilityCommand(
-                objectIDs: affectedIDs,
-                property: .visibility,
-                oldValues: oldValues,
-                newValues: newValues
-            )
-            executeCommand(command)
-        }
     }
 }

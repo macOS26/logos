@@ -25,32 +25,19 @@ extension VectorDocument {
             return
         }
 
+        saveToUndoStack()
+
         guard let shape = getShapeAtIndex(layerIndex: fromLayerIndex, shapeIndex: shapeIndex) else {
             Log.error("❌ Failed to get shape from source layer", category: .error)
             return
         }
 
-        // Capture old orderID
-        let oldOrderID = unifiedObjects.first(where: { $0.id == shapeId })?.orderID ?? 0
-
         removeShapeAtIndexUnified(layerIndex: fromLayerIndex, shapeIndex: shapeIndex)
         appendShapeToLayerUnified(layerIndex: toLayerIndex, shape: shape)
 
-        // Capture new orderID
-        let newOrderID = unifiedObjects.first(where: { $0.id == shapeId })?.orderID ?? 0
-
-        // Create command
-        let command = ObjectReorderCommand(reorderType: .moveObjectToLayer(
-            objectID: shapeId,
-            oldLayerIndex: fromLayerIndex,
-            newLayerIndex: toLayerIndex,
-            oldOrderID: oldOrderID,
-            newOrderID: newOrderID
-        ))
-        executeCommand(command)
-
         selectedShapeIDs = [shapeId]
         selectedLayerIndex = toLayerIndex
+
     }
 
     func moveTextToLayer(textId: UUID, toLayerIndex: Int) {
@@ -68,28 +55,14 @@ extension VectorDocument {
             return
         }
 
-        // Capture old state
-        let oldLayerIndex = unifiedObjects.first(where: { $0.id == textId })?.layerIndex ?? 0
-        let oldOrderID = unifiedObjects.first(where: { $0.id == textId })?.orderID ?? 0
+        saveToUndoStack()
 
         updateTextLayerInUnified(id: textId, layerIndex: toLayerIndex)
-
-        // Capture new orderID
-        let newOrderID = unifiedObjects.first(where: { $0.id == textId })?.orderID ?? 0
-
-        // Create command
-        let command = ObjectReorderCommand(reorderType: .moveObjectToLayer(
-            objectID: textId,
-            oldLayerIndex: oldLayerIndex,
-            newLayerIndex: toLayerIndex,
-            oldOrderID: oldOrderID,
-            newOrderID: newOrderID
-        ))
-        executeCommand(command)
 
         selectedTextIDs = [textId]
         selectedShapeIDs.removeAll()
         selectedLayerIndex = toLayerIndex
+
     }
 
     func handleObjectDrop(_ draggableObject: DraggableVectorObject, ontoLayerIndex: Int) {

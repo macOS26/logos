@@ -57,20 +57,11 @@ extension VectorDocument {
     func flattenSelectedObjects() {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count > 1 else { return }
-
-        // Capture old state
-        var removedShapes: [UUID: VectorShape] = [:]
-        var removedOrderIDs: [UUID: Int] = [:]
-        let objectsToRemove = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
-        for obj in objectsToRemove {
-            if case .shape(let shape) = obj.objectType {
-                removedShapes[obj.id] = shape
-                removedOrderIDs[obj.id] = obj.orderID
-            }
-        }
-
+        
+        saveToUndoStack()
+        
         let selectedShapes = getSelectedShapesInStackingOrder()
-
+        
         var combinedBounds = CGRect.zero
         for shape in selectedShapes {
             let shapeBounds = shape.bounds
@@ -80,7 +71,7 @@ extension VectorDocument {
                 combinedBounds = combinedBounds.union(shapeBounds)
             }
         }
-
+        
         let flattenedShape = VectorShape(
             name: "Flattened Group",
             path: VectorPath(cgPath: CGPath(rect: combinedBounds, transform: nil)),
@@ -91,33 +82,13 @@ extension VectorDocument {
             groupedShapes: selectedShapes,
             isCompoundPath: false
         )
-
-        let maxOrderID = objectsToRemove.map { $0.orderID }.max() ?? 0
-
+        
         removeSelectedShapes()
+        
         appendShapeToLayerUnified(layerIndex: layerIndex, shape: flattenedShape)
-
-        let newSelectedIDs: Set<UUID> = [flattenedShape.id]
-
-        // Create command
-        let command = GroupCommand(
-            operation: .flatten,
-            layerIndex: layerIndex,
-            removedObjectIDs: Array(selectedObjectIDs),
-            removedShapes: removedShapes,
-            removedOrderIDs: removedOrderIDs,
-            addedObjectIDs: [flattenedShape.id],
-            addedShapes: [flattenedShape.id: flattenedShape],
-            addedOrderIDs: [flattenedShape.id: maxOrderID],
-            oldSelectedObjectIDs: selectedObjectIDs,
-            newSelectedObjectIDs: newSelectedIDs
-        )
-
         selectedShapeIDs = [flattenedShape.id]
         populateUnifiedObjectsFromLayersPreservingOrder()
         selectedObjectIDs = [flattenedShape.id]
-
-        executeCommand(command)
     }
     
     func ungroupSelectedObjects() {
@@ -199,25 +170,19 @@ extension VectorDocument {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count == 1,
               let selectedShapeID = selectedShapeIDs.first else { return }
-
+        
         let shapes = getShapesForLayer(layerIndex)
         guard let shapeIndex = shapes.firstIndex(where: { $0.id == selectedShapeID }) else { return }
-
+        
         guard let flattenedGroup = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
-
+        
         guard flattenedGroup.isGroup && !flattenedGroup.groupedShapes.isEmpty else { return }
-
-        // Capture old state
-        var removedShapes: [UUID: VectorShape] = [:]
-        var removedOrderIDs: [UUID: Int] = [:]
-        if let obj = unifiedObjects.first(where: { $0.id == selectedShapeID }) {
-            removedShapes[selectedShapeID] = flattenedGroup
-            removedOrderIDs[selectedShapeID] = obj.orderID
-        }
-
+        
+        saveToUndoStack()
+        
         let restoredShapes = flattenedGroup.groupedShapes
         var newSelectedIDs: Set<UUID> = []
-
+        
         var shapesToAdd: [VectorShape] = []
         for originalShape in restoredShapes {
             var restoredShape = originalShape
@@ -225,42 +190,15 @@ extension VectorDocument {
             shapesToAdd.append(restoredShape)
             newSelectedIDs.insert(restoredShape.id)
         }
-
+        
         removeShapeAtIndexUnified(layerIndex: layerIndex, shapeIndex: shapeIndex)
-
+        
         for shape in shapesToAdd {
             appendShapeToLayerUnified(layerIndex: layerIndex, shape: shape)
         }
-
-        // Capture new state
-        var addedShapes: [UUID: VectorShape] = [:]
-        var addedOrderIDs: [UUID: Int] = [:]
-        for shape in shapesToAdd {
-            if let obj = unifiedObjects.first(where: { $0.id == shape.id }) {
-                addedShapes[shape.id] = shape
-                addedOrderIDs[shape.id] = obj.orderID
-            }
-        }
-
-        // Create command
-        let command = GroupCommand(
-            operation: .unflatten,
-            layerIndex: layerIndex,
-            removedObjectIDs: [selectedShapeID],
-            removedShapes: removedShapes,
-            removedOrderIDs: removedOrderIDs,
-            addedObjectIDs: Array(newSelectedIDs),
-            addedShapes: addedShapes,
-            addedOrderIDs: addedOrderIDs,
-            oldSelectedObjectIDs: selectedObjectIDs,
-            newSelectedObjectIDs: newSelectedIDs
-        )
-
         selectedShapeIDs = newSelectedIDs
         populateUnifiedObjectsFromLayersPreservingOrder()
         selectedObjectIDs = newSelectedIDs
-
-        executeCommand(command)
     }
     
     func makeCompoundPath() {
@@ -324,25 +262,16 @@ extension VectorDocument {
     func makeLoopingPath() {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count > 1 else { return }
-
-        // Capture old state
-        var removedShapes: [UUID: VectorShape] = [:]
-        var removedOrderIDs: [UUID: Int] = [:]
-        let objectsToRemove = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
-        for obj in objectsToRemove {
-            if case .shape(let shape) = obj.objectType {
-                removedShapes[obj.id] = shape
-                removedOrderIDs[obj.id] = obj.orderID
-            }
-        }
-
+        
+        saveToUndoStack()
+        
         let selectedShapes = getSelectedShapesInStackingOrder()
-
+        
         let loopingPath = CGMutablePath()
         for shape in selectedShapes {
             loopingPath.addPath(shape.path.cgPath)
         }
-
+        
         let loopingShape = VectorShape(
             name: "Looping Path",
             path: VectorPath(cgPath: loopingPath, fillRule: .winding),
@@ -351,33 +280,13 @@ extension VectorDocument {
             transform: .identity,
             isCompoundPath: true
         )
-
-        let maxOrderID = objectsToRemove.map { $0.orderID }.max() ?? 0
-
+        
         removeSelectedShapes()
+        
         appendShapeToLayerUnified(layerIndex: layerIndex, shape: loopingShape)
-
-        let newSelectedIDs: Set<UUID> = [loopingShape.id]
-
-        // Create command
-        let command = GroupCommand(
-            operation: .makeLooping,
-            layerIndex: layerIndex,
-            removedObjectIDs: Array(selectedObjectIDs),
-            removedShapes: removedShapes,
-            removedOrderIDs: removedOrderIDs,
-            addedObjectIDs: [loopingShape.id],
-            addedShapes: [loopingShape.id: loopingShape],
-            addedOrderIDs: [loopingShape.id: maxOrderID],
-            oldSelectedObjectIDs: selectedObjectIDs,
-            newSelectedObjectIDs: newSelectedIDs
-        )
-
         selectedShapeIDs = [loopingShape.id]
         populateUnifiedObjectsFromLayersPreservingOrder()
         selectedObjectIDs = [loopingShape.id]
-
-        executeCommand(command)
     }
     
     func releaseCompoundPath() {
@@ -456,25 +365,19 @@ extension VectorDocument {
         guard let layerIndex = selectedLayerIndex,
               selectedShapeIDs.count == 1,
               let selectedShapeID = selectedShapeIDs.first else { return }
-
+        
         let shapes = getShapesForLayer(layerIndex)
         guard let shapeIndex = shapes.firstIndex(where: { $0.id == selectedShapeID }),
               let loopingShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               loopingShape.isTrueLoopingPath else { return }
-
-        // Capture old state
-        var removedShapes: [UUID: VectorShape] = [:]
-        var removedOrderIDs: [UUID: Int] = [:]
-        if let obj = unifiedObjects.first(where: { $0.id == selectedShapeID }) {
-            removedShapes[selectedShapeID] = loopingShape
-            removedOrderIDs[selectedShapeID] = obj.orderID
-        }
-
+        
+        saveToUndoStack()
+        
         let subpaths = extractSubpaths(from: loopingShape.path.cgPath)
-
+        
         var newShapes: [VectorShape] = []
         var newSelectedIDs: Set<UUID> = []
-
+        
         for (index, subpath) in subpaths.enumerated() {
             let individualShape = VectorShape(
                 name: "Path \(index + 1)",
@@ -487,42 +390,15 @@ extension VectorDocument {
             newShapes.append(individualShape)
             newSelectedIDs.insert(individualShape.id)
         }
-
+        
         removeShapeAtIndexUnified(layerIndex: layerIndex, shapeIndex: shapeIndex)
-
+        
         for shape in newShapes {
             appendShapeToLayerUnified(layerIndex: layerIndex, shape: shape)
         }
-
-        // Capture new state
-        var addedShapes: [UUID: VectorShape] = [:]
-        var addedOrderIDs: [UUID: Int] = [:]
-        for shape in newShapes {
-            if let obj = unifiedObjects.first(where: { $0.id == shape.id }) {
-                addedShapes[shape.id] = shape
-                addedOrderIDs[shape.id] = obj.orderID
-            }
-        }
-
-        // Create command
-        let command = GroupCommand(
-            operation: .releaseLooping,
-            layerIndex: layerIndex,
-            removedObjectIDs: [selectedShapeID],
-            removedShapes: removedShapes,
-            removedOrderIDs: removedOrderIDs,
-            addedObjectIDs: Array(newSelectedIDs),
-            addedShapes: addedShapes,
-            addedOrderIDs: addedOrderIDs,
-            oldSelectedObjectIDs: selectedObjectIDs,
-            newSelectedObjectIDs: newSelectedIDs
-        )
-
         selectedShapeIDs = newSelectedIDs
         populateUnifiedObjectsFromLayersPreservingOrder()
         selectedObjectIDs = newSelectedIDs
-
-        executeCommand(command)
     }
     
     private func extractSubpaths(from cgPath: CGPath) -> [CGPath] {

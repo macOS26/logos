@@ -35,6 +35,8 @@ extension VectorDocument {
             return
         }
 
+        saveToUndoStack()
+
         let originalLayer = layers[index]
         var duplicatedLayer = VectorLayer(name: "\(originalLayer.name) Copy", color: originalLayer.color)
 
@@ -42,25 +44,9 @@ extension VectorDocument {
         duplicatedLayer.isLocked = originalLayer.isLocked
         duplicatedLayer.opacity = originalLayer.opacity
 
-        // Capture objects to add
-        var objectsToAdd: [VectorObject] = []
-        let originalShapes = getShapesForLayer(index)
-        for shape in originalShapes {
-            var duplicatedShape = shape
-            duplicatedShape.id = UUID()
-            if ImageContentRegistry.containsImage(shape),
-               let image = ImageContentRegistry.image(for: shape.id) {
-                ImageContentRegistry.register(image: image, for: duplicatedShape.id)
-            }
-
-            let orderID = (unifiedObjects.filter { $0.layerIndex == index + 1 }.map { $0.orderID }.max() ?? -1) + 1
-            let newObject = VectorObject(shape: duplicatedShape, layerIndex: index + 1, orderID: orderID)
-            objectsToAdd.append(newObject)
-        }
-
-        // Apply changes
         layers.insert(duplicatedLayer, at: index + 1)
 
+        let originalShapes = getShapesForLayer(index)
         for shape in originalShapes {
             var duplicatedShape = shape
             duplicatedShape.id = UUID()
@@ -73,13 +59,11 @@ extension VectorDocument {
 
         updateUnifiedObjectsOptimized()
 
-        // TODO: Create proper command for layer duplication
-        // For now, this complex operation will use fallback undo system
-
         selectedLayerIndex = index + 1
         settings.selectedLayerId = duplicatedLayer.id
         settings.selectedLayerName = duplicatedLayer.name
         onSettingsChanged()
+
     }
 
     func moveLayer(from sourceIndex: Int, to targetIndex: Int) {

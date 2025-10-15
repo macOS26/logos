@@ -100,14 +100,6 @@ extension VectorDocument {
         textPreviewTypography.removeValue(forKey: id)
     }
 
-    /// Clear all preview caches to free up memory
-    func clearAllPreviewCaches() {
-        textPreviewTypography.removeAll()
-        shapePreviewStyles.removeAll()
-        warpEnvelopeCorners.removeAll()
-        warpBounds.removeAll()
-    }
-
     func updateTextFillOpacityPreview(id: UUID, opacity: Double) {
         if let textObject = findText(by: id) {
             var previewTypography = textPreviewTypography[id] ?? textObject.typography
