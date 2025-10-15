@@ -272,7 +272,7 @@ extension DrawingCanvas {
         document.addShapeToFrontOfUnifiedSystem(finalShape, layerIndex: layerIndex)
 
         let objectIDs = [finalShape.id]
-        var oldShapes: [UUID: VectorShape] = [:]
+        let oldShapes: [UUID: VectorShape] = [:]
         var newShapes: [UUID: VectorShape] = [:]
         newShapes[finalShape.id] = finalShape
 
@@ -353,7 +353,7 @@ extension DrawingCanvas {
         document.addShapeToFrontOfUnifiedSystem(shape, layerIndex: layerIndex)
 
         let objectIDs = [shape.id]
-        var oldShapes: [UUID: VectorShape] = [:]
+        let oldShapes: [UUID: VectorShape] = [:]
         var newShapes: [UUID: VectorShape] = [:]
         newShapes[shape.id] = shape
 
