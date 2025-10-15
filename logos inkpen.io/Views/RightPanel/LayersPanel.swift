@@ -218,24 +218,50 @@ struct LayersPanel: View {
             HStack(spacing: 8) {
                 Text("Opacity")
                     .layerControlLabel()
-                
-                Slider(
-                    value: Binding(
-                        get: { document.layers[layerIndex].opacity },
-                        set: { newValue in
-                            var updatedLayer = document.layers[layerIndex]
-                            updatedLayer.opacity = newValue
-                            document.layers[layerIndex] = updatedLayer
+
+                ZStack {
+                    Capsule()
+                        .fill(Color.white)
+                        .frame(height: 6)
+                        .overlay(
+                            Capsule()
+                                .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
+                        )
+
+                    Slider(
+                        value: Binding(
+                            get: { document.layers[layerIndex].opacity },
+                            set: { newValue in
+                                var updatedLayer = document.layers[layerIndex]
+                                updatedLayer.opacity = newValue
+                                document.layers[layerIndex] = updatedLayer
+                            }
+                        ),
+                        in: 0...1,
+                        onEditingChanged: { editing in
+                            if !editing {
+                            }
                         }
-                    ),
-                    in: 0...1,
-                    onEditingChanged: { editing in
-                        if !editing {
-                        }
-                    }
-                )
+                    )
+                    .controlSize(.regular)
+                    .tint(Color.clear)
+
+                    Capsule()
+                        .fill(
+                            SwiftUI.LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color(white: 0.5),
+                                    Color(white: 1.0)
+                                ]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(height: 6)
+                        .allowsHitTesting(false)
+                }
                 .frame(maxWidth: .infinity)
-                
+
                 Text("\(Int(document.layers[layerIndex].opacity * 100))%")
                     .layerPercentage()
             }
