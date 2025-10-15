@@ -288,7 +288,7 @@ struct PathOperationsPanel: View {
             return
         }
 
-        document.saveToUndoStack()
+        // TODO: Add appropriate Command for path operations
 
         var resultShapes: [VectorShape] = []
 
