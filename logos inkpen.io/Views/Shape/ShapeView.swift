@@ -321,41 +321,64 @@ struct ShapeView: View {
             let maskShape = visibleShapes.first!
             let contentShapes = Array(visibleShapes.dropFirst())
 
-            // Create the mask path
-            let maskPath = Path { path in
-                addPathElements(maskShape.path.elements, to: &path)
-            }
-            .applying(maskShape.transform)
+            if effectiveViewMode == .keyline {
+                // In keyline mode, show all shapes as outlines (no clipping)
+                ZStack {
+                    // Render mask shape outline
+                    let maskPath = Path { path in
+                        addPathElements(maskShape.path.elements, to: &path)
+                    }
+                    maskPath
+                        .stroke(Color.black, lineWidth: 1.0 / zoomLevel)
+                        .transformEffect(maskShape.transform)
 
-            // Render all content shapes
-            ZStack {
-                ForEach(contentShapes, id: \.id) { contentShape in
-                    if !contentShape.isTextObject {
-                        let contentPath = Path { path in
-                            addPathElements(contentShape.path.elements, to: &path)
-                        }
-
-                        ZStack {
-                            if effectiveViewMode == .color,
-                               let fillStyle = contentShape.fillStyle,
-                               fillStyle.color != .clear {
-                                renderFill(fillStyle: fillStyle, path: contentPath, shape: contentShape)
+                    // Render content shapes outlines
+                    ForEach(contentShapes, id: \.id) { contentShape in
+                        if !contentShape.isTextObject {
+                            let contentPath = Path { path in
+                                addPathElements(contentShape.path.elements, to: &path)
                             }
-
-                            if effectiveViewMode == .keyline {
-                                contentPath.stroke(Color.black, lineWidth: 1.0 / zoomLevel)
-                            } else if let strokeStyle = contentShape.strokeStyle, strokeStyle.color != .clear {
-                                renderStrokeWithPlacement(shape: contentShape, strokeStyle: strokeStyle, viewMode: effectiveViewMode, path: contentPath)
-                                    .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
-                            }
+                            contentPath
+                                .stroke(Color.black, lineWidth: 1.0 / zoomLevel)
+                                .transformEffect(contentShape.transform)
                         }
-                        .transformEffect(contentShape.transform)
-                        .opacity(contentShape.opacity)
                     }
                 }
+                .transformEffect(shape.transform)
+            } else {
+                // In color mode, apply the clipping mask
+                let maskPath = Path { path in
+                    addPathElements(maskShape.path.elements, to: &path)
+                }
+                .applying(maskShape.transform)
+
+                // Render all content shapes
+                ZStack {
+                    ForEach(contentShapes, id: \.id) { contentShape in
+                        if !contentShape.isTextObject {
+                            let contentPath = Path { path in
+                                addPathElements(contentShape.path.elements, to: &path)
+                            }
+
+                            ZStack {
+                                if let fillStyle = contentShape.fillStyle,
+                                   fillStyle.color != .clear {
+                                    renderFill(fillStyle: fillStyle, path: contentPath, shape: contentShape)
+                                }
+
+                                if let strokeStyle = contentShape.strokeStyle, strokeStyle.color != .clear {
+                                    renderStrokeWithPlacement(shape: contentShape, strokeStyle: strokeStyle, viewMode: effectiveViewMode, path: contentPath)
+                                        .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
+                                }
+                            }
+                            .transformEffect(contentShape.transform)
+                            .opacity(contentShape.opacity)
+                        }
+                    }
+                }
+                .mask(maskPath.fill())  // Apply the clipping mask
+                .transformEffect(shape.transform)
             }
-            .mask(maskPath.fill())  // Apply the clipping mask
-            .transformEffect(shape.transform)
         }
     }
 

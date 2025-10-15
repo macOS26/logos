@@ -40,7 +40,7 @@ extension VectorDocument {
 
     func releaseClippingMaskForSelection() {
         // Just ungroup - much simpler with clipping groups!
-        flattenSelectedObjects()
+        ungroupSelectedObjects()
     }
 
     func moveClippingMask(_ maskID: UUID, by offset: CGPoint) {
