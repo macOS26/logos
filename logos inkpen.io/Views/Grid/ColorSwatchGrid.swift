@@ -104,6 +104,10 @@ struct ColorSwatchGrid: View {
                         }
                     } else if case .gradient(let gradient) = currentStrokeColor {
                         ZStack {
+                            CheckerboardPattern(size: 4)
+                                .frame(width: 22, height: 22)
+                                .clipped()
+
                             GradientSwatchNSView(gradient: gradient, size: 22)
                                 .frame(width: 22, height: 22)
 
@@ -116,6 +120,10 @@ struct ColorSwatchGrid: View {
                         }
                     } else {
                         ZStack {
+                            CheckerboardPattern(size: 4)
+                                .frame(width: 22, height: 22)
+                                .clipped()
+
                             Rectangle()
                                 .fill(currentStrokeColor.color.opacity(currentStrokeOpacity))
                                 .frame(width: 22, height: 22)
@@ -162,6 +170,10 @@ struct ColorSwatchGrid: View {
                         }
                     } else if case .gradient(let gradient) = currentFillColor {
                         ZStack {
+                            CheckerboardPattern(size: 4)
+                                .frame(width: 22, height: 22)
+                                .clipped()
+
                             GradientSwatchNSView(gradient: gradient, size: 22)
                                 .frame(width: 22, height: 22)
 
@@ -174,6 +186,10 @@ struct ColorSwatchGrid: View {
                         }
                     } else {
                         ZStack {
+                            CheckerboardPattern(size: 4)
+                                .frame(width: 22, height: 22)
+                                .clipped()
+
                             Rectangle()
                                 .fill(currentFillColor.color.opacity(currentFillOpacity))
                                 .frame(width: 22, height: 22)
