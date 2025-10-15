@@ -243,9 +243,6 @@ struct ShearHandles: View {
 
             applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
 
-
-            document.updateUnifiedObjectsOptimized()
-
             document.updateTransformPanelValues()
 
             // Capture new shape after transformation

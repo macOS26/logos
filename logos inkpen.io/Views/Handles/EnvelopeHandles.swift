@@ -576,12 +576,8 @@ struct EnvelopeHandles: View {
             document.warpEnvelopeCorners[shape.id] = warpedCorners
         }
 
-
         updateShapeWithCurrentWarp()
-
         calculateEnvelopeWarpPreview()
-
-        document.updateUnifiedObjectsOptimized()
 
         // Capture new shape after warp
         var newShapes: [UUID: VectorShape] = [:]

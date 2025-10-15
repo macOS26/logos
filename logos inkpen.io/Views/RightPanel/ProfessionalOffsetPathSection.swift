@@ -271,9 +271,6 @@ struct ProfessionalOffsetPathSection: View {
         }
 
         document.selectedShapeIDs = newOffsetShapeIDs
-
-        document.updateUnifiedObjectsOptimized()
-
         let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
         document.commandManager.execute(command)
     }

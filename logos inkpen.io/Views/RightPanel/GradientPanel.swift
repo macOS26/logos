@@ -540,10 +540,6 @@ struct GradientFillSection: View {
                 }
             }
         }
-
-        if hasChanges {
-            document.updateUnifiedObjectsOptimized()
-        }
     }
 
     func addGradientToSwatches() {

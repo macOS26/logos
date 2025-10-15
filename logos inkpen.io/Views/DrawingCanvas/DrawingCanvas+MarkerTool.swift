@@ -770,9 +770,6 @@ extension DrawingCanvas {
             var updatedShape = markerStroke
             updatedShape.path = cleanedVectorPath
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-
-            document.updateUnifiedObjectsOptimized()
-
         }
     }
 
@@ -817,9 +814,6 @@ extension DrawingCanvas {
                         shape.path = updatedShape.path
                         shape.fillStyle = updatedShape.fillStyle
                     }
-
-                    document.updateUnifiedObjectsOptimized()
-
                 }
             }
         } else {

@@ -520,8 +520,6 @@ struct TransformationControls: View {
             }
         }
 
-        document.updateUnifiedObjectsOptimized()
-
         var newShapes: [UUID: VectorShape] = [:]
         for objectID in objectIDs {
             if let updatedShape = document.findShape(by: objectID) {

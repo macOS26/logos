@@ -130,7 +130,8 @@ extension VectorDocument {
     func convertSelectedTextToOutlines() {
         guard !selectedTextIDs.isEmpty else { return }
 
-        saveToUndoStack()
+        // SaveToUndoStack was here
+        // saveToUndoStack()
 
         let selectedTexts = selectedTextIDs.compactMap { textID in findText(by: textID) }
         var newShapeIDs: Set<UUID> = []

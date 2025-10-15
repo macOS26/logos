@@ -220,12 +220,8 @@ extension DrawingCanvas {
                 if case .shape(let shape) = obj.objectType { return shape.isTextObject }
                 return false
             }
-            if hasTextObjects {
-                document.forceResyncUnifiedObjects()
-            }
-
+         
             let isWithinSelectionBox = isLocationWithinSelectionBox(validatedLocation)
-
 
             if !isShiftPressed && !isCommandPressed {
                 if isWithinSelectionBox {

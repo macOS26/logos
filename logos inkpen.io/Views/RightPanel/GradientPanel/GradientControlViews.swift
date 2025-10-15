@@ -134,10 +134,8 @@ struct GradientAngleControlView: View {
                     Slider(value: Binding(
                         get: { angle },
                         set: onAngleChange
-                    ), in: -180...180, onEditingChanged: { editing in
-                        if !editing {
-                            document.updateUnifiedObjectsOptimized()
-                        }
+                    ), in: -180...180, onEditingChanged: { _ in
+                        
                     })
                     .controlSize(.regular)
 
@@ -182,10 +180,8 @@ struct GradientOriginControlView: View {
                         range: 0.0...1.0,
                         textFieldWidth: 50,
                         onChange: updateOriginX,
-                        onEditingChanged: { editing in
-                            if !editing {
-                                document.updateUnifiedObjectsOptimized()
-                            }
+                        onEditingChanged: { _ in
+                          
                         }
                     )
 
@@ -195,10 +191,8 @@ struct GradientOriginControlView: View {
                         range: 0.0...1.0,
                         textFieldWidth: 50,
                         onChange: updateOriginY,
-                        onEditingChanged: { editing in
-                            if !editing {
-                                document.updateUnifiedObjectsOptimized()
-                            }
+                        onEditingChanged: { _ in
+                           
                         }
                     )
                 }
@@ -230,10 +224,8 @@ struct GradientScaleControlView: View {
                             set: { newScale in
                                 updateScale(newScale)
                             }
-                        ), in: 0.01...8.0, onEditingChanged: { editing in
-                            if !editing {
-                                document.updateUnifiedObjectsOptimized()
-                            }
+                        ), in: 0.01...8.0, onEditingChanged: { _ in
+                           
                         })
                         .controlSize(.regular)
 
@@ -256,10 +248,8 @@ struct GradientScaleControlView: View {
                                 set: { newAspectRatio in
                                     updateAspectRatio(newAspectRatio)
                                 }
-                            ), in: 0.01...2.0, onEditingChanged: { editing in
-                                if !editing {
-                                    document.updateUnifiedObjectsOptimized()
-                                }
+                            ), in: 0.01...2.0, onEditingChanged: { _ in
+                            
                             })
                             .controlSize(.regular)
 
@@ -281,10 +271,8 @@ struct GradientScaleControlView: View {
                                 set: { newRadius in
                                     updateRadius(newRadius)
                                 }
-                            ), in: 0.1...2.0, onEditingChanged: { editing in
-                                if !editing {
-                                    document.updateUnifiedObjectsOptimized()
-                                }
+                            ), in: 0.1...2.0, onEditingChanged: { _ in
+                              
                             })
                             .controlSize(.regular)
 

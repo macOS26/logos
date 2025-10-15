@@ -373,7 +373,6 @@ extension DrawingCanvas {
                 }
             }
 
-            document.updateUnifiedObjectsOptimized()
 
             if let originalShape = sharedOriginalShape,
                let finalShape = getSelectedRectangleShape() {
@@ -413,8 +412,6 @@ extension DrawingCanvas {
             }) {
                 document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
             }
-        } else {
-            document.updateUnifiedObjectsOptimized()
         }
     }
 

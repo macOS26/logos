@@ -2,22 +2,22 @@ import SwiftUI
 import Combine
 
 extension VectorDocument {
-    func saveToUndoStack() {
-        // Old O(n) snapshot system - fallback for operations not yet migrated to Command Pattern
-        do {
-            let data = try JSONEncoder().encode(self)
-            let copy = try JSONDecoder().decode(VectorDocument.self, from: data)
-            undoStack.append(copy)
-
-            if undoStack.count > maxUndoStackSize {
-                undoStack.removeFirst()
-            }
-
-            redoStack.removeAll()
-        } catch {
-            Log.error("❌ SAVE TO UNDO STACK: Failed to save state - \(error)", category: .error)
-        }
-    }
+//    func saveToUndoStack() {
+//        // Old O(n) snapshot system - fallback for operations not yet migrated to Command Pattern
+//        do {
+//            let data = try JSONEncoder().encode(self)
+//            let copy = try JSONDecoder().decode(VectorDocument.self, from: data)
+//            undoStack.append(copy)
+//
+//            if undoStack.count > maxUndoStackSize {
+//                undoStack.removeFirst()
+//            }
+//
+//            redoStack.removeAll()
+//        } catch {
+//            Log.error("❌ SAVE TO UNDO STACK: Failed to save state - \(error)", category: .error)
+//        }
+//    }
 
     /// Execute a command using the new O(1) command system
     func executeCommand(_ command: Command) {
@@ -206,7 +206,8 @@ extension VectorDocument {
 
         defer { isUndoRedoOperation = wasUndoRedoOperation }
 
-        fixTextObjectOrderingAfterUndo()
+        // fixTextObjectOrderingAfterUndo was here
+        //fixTextObjectOrderingAfterUndo()
 
         for layerIndex in layers.indices {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
@@ -245,7 +246,7 @@ extension VectorDocument {
 
     }
 
-    private func fixTextObjectOrderingAfterUndo() {
-    }
+//    private func fixTextObjectOrderingAfterUndo() {
+//    }
 
 }

@@ -267,20 +267,15 @@ struct MainView: View {
     private func loadImportedDocument(_ importedDoc: VectorDocument) {
         document.zoomLevel = 1.0
         document.canvasOffset = .zero
-
         document.settings = importedDoc.settings
         document.layers = importedDoc.layers
         document.customRgbSwatches = importedDoc.customRgbSwatches
         document.customCmykSwatches = importedDoc.customCmykSwatches
         document.customHsbSwatches = importedDoc.customHsbSwatches
         document.documentColorDefaults = importedDoc.documentColorDefaults
-
         document.selectedLayerIndex = importedDoc.selectedLayerIndex
         document.selectedShapeIDs = importedDoc.selectedShapeIDs
         document.selectedTextIDs = importedDoc.selectedTextIDs
-
-        document.updateUnifiedObjectsOptimized()
-
         document.currentTool = appState.defaultTool
         document.viewMode = .color
 

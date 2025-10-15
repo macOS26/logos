@@ -419,16 +419,12 @@ extension DrawingCanvas {
             guard !cleanedPath.isEmpty && isPathBoundsFinite(cleanedPath.boundingBox) else {
                 return
             }
-
+            
             let cleanedVectorPath = VectorPath(cgPath: cleanedPath)
-
+            
             var updatedShape = brushStroke
             updatedShape.path = cleanedVectorPath
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-
-            document.updateUnifiedObjectsOptimized()
-        } else {
-
         }
     }
 

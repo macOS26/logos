@@ -50,7 +50,6 @@ struct InkpenDocument: FileDocument {
                     }
                 }
 
-                self.document.updateUnifiedObjectsOptimized()
             } catch {
                 Log.error("❌ Failed to load SVG document: \(error)", category: .error)
                 throw error
@@ -58,7 +57,6 @@ struct InkpenDocument: FileDocument {
         } else if fileExtension == "pdf" {
             do {
                 self.document = try FileOperations.importFromPDFData(data)
-
                 self.document.populateUnifiedObjectsFromLayersPreservingOrder()
 
                 for unifiedObj in self.document.unifiedObjects {
@@ -66,8 +64,6 @@ struct InkpenDocument: FileDocument {
                         self.document.setTextEditingInUnified(id: shape.id, isEditing: false)
                     }
                 }
-
-                self.document.updateUnifiedObjectsOptimized()
             } catch {
                 Log.error("❌ Failed to load PDF document: \(error)", category: .error)
                 throw error
@@ -85,7 +81,6 @@ struct InkpenDocument: FileDocument {
                 if self.document.unifiedObjects.isEmpty {
                     self.document.populateUnifiedObjectsFromLayersPreservingOrder()
                 }
-                self.document.updateUnifiedObjectsOptimized()
             } catch {
                 Log.error("❌ Failed to load JSON document: \(error)", category: .error)
                 throw error

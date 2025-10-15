@@ -612,7 +612,6 @@ extension DrawingCanvas {
                 updatedShape.updateBounds()
                 document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
 
-                document.updateUnifiedObjectsOptimized()
                 break
             }
         }

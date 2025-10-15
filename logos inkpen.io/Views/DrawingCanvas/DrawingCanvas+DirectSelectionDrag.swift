@@ -194,7 +194,7 @@ extension DrawingCanvas {
             }
         }
 
-        document.updateUnifiedObjectsOptimized(sendUpdate: false)
+        //document.updateUnifiedObjectsOptimized(sendUpdate: false)
 
         if !originalDragShapes.isEmpty {
             var newShapes: [UUID: VectorShape] = [:]

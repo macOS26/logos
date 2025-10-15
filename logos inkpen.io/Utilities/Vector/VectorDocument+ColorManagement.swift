@@ -155,8 +155,6 @@ extension VectorDocument {
             defaultStrokeColor = color
         }
 
-        var hasChanges = false
-
         for objectID in selectedObjectIDs {
             if let unifiedObject = findObject(by: objectID),
                case .shape(let groupShape) = unifiedObject.objectType,
@@ -165,13 +163,11 @@ extension VectorDocument {
                     updateShapeByID(childShape.id) { shape in
                         applyColorToShape(&shape, color: color)
                     }
-                    hasChanges = true
                 }
             } else {
                 updateShapeByID(objectID) { shape in
                     applyColorToShape(&shape, color: color)
                 }
-                hasChanges = true
             }
         }
     }

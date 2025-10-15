@@ -420,8 +420,6 @@ struct TransformBoxHandles: View {
 
             document.updateTransformPanelValues()
 
-            document.updateUnifiedObjectsOptimized()
-
             // Capture new shape after transformation
             var newShapes: [UUID: VectorShape] = [:]
             if let transformedShape = document.findShape(by: shape.id) {

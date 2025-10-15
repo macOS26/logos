@@ -168,7 +168,9 @@ struct ObjectRow: View {
                 if case .shape(var parentShape) = document.unifiedObjects[objIndex].objectType {
                     if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
                         parentShape.groupedShapes[childIndex].isVisible = newValue
-                        document.saveToUndoStack()
+                        
+                        // saveToUndoStack was here
+                        // document.saveToUndoStack()
                         document.unifiedObjects[objIndex] = VectorObject(
                             shape: parentShape,
                             layerIndex: layerIndex,
@@ -195,7 +197,8 @@ struct ObjectRow: View {
                 if case .shape(var parentShape) = document.unifiedObjects[objIndex].objectType {
                     if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
                         parentShape.groupedShapes[childIndex].isLocked = newValue
-                        document.saveToUndoStack()
+                        // saveToUndoStack was here
+                        // document.saveToUndoStack()
                         document.unifiedObjects[objIndex] = VectorObject(
                             shape: parentShape,
                             layerIndex: layerIndex,

@@ -89,10 +89,7 @@ extension DrawingCanvas {
         modifiedShape.updateBounds()
 
         let newPath = VectorPath(elements: elements, isClosed: shape.path.isClosed)
-
         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: modifiedShape)
-
-        document.updateUnifiedObjectsOptimized()
 
         let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
         document.commandManager.execute(command)
@@ -144,17 +141,12 @@ extension DrawingCanvas {
             modifiedShape.updateBounds()
 
             let newPath = VectorPath(elements: updatedElements, isClosed: shape.path.isClosed)
-
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: modifiedShape)
-
-            document.updateUnifiedObjectsOptimized()
 
             let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
             document.commandManager.execute(command)
             return
         }
-
-        document.updateUnifiedObjectsOptimized()
     }
 
 
