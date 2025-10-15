@@ -69,7 +69,7 @@ struct ProfessionalOffsetPathSection: View {
                                         gradient: Gradient(colors: [
                                             Color.blue,
                                             Color.clear,
-                                            Color.blue
+                                            Color.red
                                         ]),
                                         startPoint: .leading,
                                         endPoint: .trailing

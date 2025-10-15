@@ -218,20 +218,20 @@ struct LayersPanel: View {
                     .layerControlLabel()
 
                 ZStack {
-                    Capsule()
-                        .fill(Color.white)
-                        .frame(height: 6)
-                        .overlay(
-                            Capsule()
-                                .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
-                        )
+//                    Capsule()
+//                        .fill(Color.white)
+//                        .frame(height: 6)
+//                        .overlay(
+//                            Capsule()
+//                                .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
+//                        )
                     
                     Capsule()
                         .fill(
                             SwiftUI.LinearGradient(
                                 gradient: Gradient(colors: [
-                                    Color(white: 1.0),
-                                    Color(white: 0.0)
+                                    Color(white: 0.00),
+                                    Color(white: 1.00)
                                 ]),
                                 startPoint: .leading,
                                 endPoint: .trailing

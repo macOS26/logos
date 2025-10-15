@@ -25,7 +25,7 @@ struct FillPropertiesSection: View {
 
                 ZStack {
                     Capsule()
-                        .fill(Color.white)
+                        .fill(Color.clear)
                         .frame(height: 6)
                         .overlay(
                             Capsule()
