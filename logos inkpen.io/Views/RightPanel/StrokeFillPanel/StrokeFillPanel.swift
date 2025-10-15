@@ -15,7 +15,6 @@ struct StrokeFillPanel: View {
 
     @State private var cachedIndexMap: [UUID: Int] = [:]
     @State private var isDragging: Bool = false
-    @State private var strokePlacementCommitTask: DispatchWorkItem? = nil
 
     private var selectedStrokeColor: VectorColor {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
@@ -635,73 +634,17 @@ struct StrokeFillPanel: View {
         let activeShapeIDs = document.getActiveShapeIDs()
         if activeShapeIDs.isEmpty { return }
 
+        // Update immediately like Font does
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     if !shape.isTextObject {
-                        document.updateShapeStrokePlacementPreview(id: shape.id, placement: placement)
+                        document.updateShapeStrokePlacementInUnified(id: shape.id, placement: placement)
                     }
                 }
             }
         }
-
-        strokePlacementCommitTask?.cancel()
-
-        let commitTask = DispatchWorkItem {
-            var oldShapes: [UUID: VectorShape] = [:]
-            var objectIDs: [UUID] = []
-
-            for shapeID in activeShapeIDs {
-                if let shape = self.document.findShape(by: shapeID) {
-                    oldShapes[shapeID] = shape
-                    objectIDs.append(shapeID)
-                }
-            }
-
-            for shapeID in activeShapeIDs {
-                for layerIndex in self.document.layers.indices {
-                    let shapes = self.document.getShapesForLayer(layerIndex)
-                    if shapes.firstIndex(where: { $0.id == shapeID }) != nil {
-                        self.document.updateShapeStrokePlacementInUnified(id: shapeID, placement: placement)
-                        break
-                    }
-                }
-            }
-
-            for shapeID in activeShapeIDs {
-                if let unifiedIndex = self.document.unifiedObjects.firstIndex(where: { unifiedObj in
-                    if case .shape(let unifiedShape) = unifiedObj.objectType {
-                        return unifiedShape.id == shapeID
-                    }
-                    return false
-                }) {
-                    for layerIndex in self.document.layers.indices {
-                        let shapes = self.document.getShapesForLayer(layerIndex)
-                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
-                           let shape = self.document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                            self.document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: self.document.unifiedObjects[unifiedIndex].orderID)
-                            break
-                        }
-                    }
-                }
-            }
-
-            var newShapes: [UUID: VectorShape] = [:]
-            for shapeID in objectIDs {
-                if let shape = self.document.findShape(by: shapeID) {
-                    newShapes[shapeID] = shape
-                }
-            }
-
-            if !objectIDs.isEmpty {
-                let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
-                self.document.commandManager.execute(command)
-            }
-        }
-
-        strokePlacementCommitTask = commitTask
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: commitTask)
     }
 
     private func updateStrokeWidth(_ width: Double) {
