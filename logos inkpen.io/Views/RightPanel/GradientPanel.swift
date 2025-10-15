@@ -514,8 +514,6 @@ struct GradientFillSection: View {
             return
         }
 
-        var hasChanges = false
-
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
@@ -533,7 +531,6 @@ struct GradientFillSection: View {
                                 updatedShape.strokeStyle = StrokeStyle(gradient: gradient, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: 1.0)
                             }
                             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-                            hasChanges = true
                         }
                     }
 
