@@ -3,6 +3,8 @@ import SwiftUI
 struct PathOperationsPanel: View {
     @ObservedObject var document: VectorDocument
     @State private var isMergePointsPressed = false
+    @State private var isRemoveOverlapPressed = false
+    @State private var isRemoveAllOverlapsPressed = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -78,62 +80,6 @@ struct PathOperationsPanel: View {
 
                 VStack(spacing: 8) {
                     Button {
-                        if !document.selectedShapeIDs.isEmpty {
-                            ProfessionalPathOperations.cleanupSelectedShapesDuplicates(document, tolerance: 5.0)
-                        } else {
-                            ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
-                        }
-                    } label: {
-                        Text("Clean Duplicate Points")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.primary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.gray.opacity(0.1))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                    )
-                            )
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(BorderlessButtonStyle())
-                    .onTapGesture {
-                        if !document.selectedShapeIDs.isEmpty {
-                            ProfessionalPathOperations.cleanupSelectedShapesDuplicates(document, tolerance: 5.0)
-                        } else {
-                            ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
-                        }
-                    }
-                    .help("Remove overlapping points and merge their curve data smoothly (⌘⇧K)")
-
-                    Button {
-                        ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 1.0)
-                    } label: {
-                        Text("Clean All Paths")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.primary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.gray.opacity(0.1))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                    )
-                            )
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(BorderlessButtonStyle())
-                    .onTapGesture {
-                        ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 1.0)
-                    }
-                    .help("Clean duplicate points in all shapes in the document (⌘⌥K)")
-
-                    Button {
                         mergeCoincidentPointsInSelectedShapes()
                     } label: {
                         Text("Merge Points")
@@ -176,7 +122,7 @@ struct PathOperationsPanel: View {
                             .padding(.vertical, 10)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.gray.opacity(0.1))
+                                    .fill(Color.gray.opacity(isRemoveOverlapPressed ? 0.3 : 0.1))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 8)
                                             .stroke(Color.gray.opacity(0.3), lineWidth: 1)
@@ -185,6 +131,15 @@ struct PathOperationsPanel: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(BorderlessButtonStyle())
+                    .simultaneousGesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { _ in
+                                isRemoveOverlapPressed = true
+                            }
+                            .onEnded { _ in
+                                isRemoveOverlapPressed = false
+                            }
+                    )
                     .onTapGesture {
                         removeOverlapFromSelectedShapes()
                     }
@@ -200,7 +155,7 @@ struct PathOperationsPanel: View {
                             .padding(.vertical, 10)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.gray.opacity(0.1))
+                                    .fill(Color.gray.opacity(isRemoveAllOverlapsPressed ? 0.3 : 0.1))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 8)
                                             .stroke(Color.gray.opacity(0.3), lineWidth: 1)
@@ -209,6 +164,15 @@ struct PathOperationsPanel: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(BorderlessButtonStyle())
+                    .simultaneousGesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { _ in
+                                isRemoveAllOverlapsPressed = true
+                            }
+                            .onEnded { _ in
+                                isRemoveAllOverlapsPressed = false
+                            }
+                    )
                     .onTapGesture {
                         removeOverlapFromAllShapes()
                     }
@@ -702,9 +666,9 @@ struct PathOperationsPanel: View {
         }
 
         let selectedShapes = document.getSelectedShapes()
-        let tolerance: Double = 0.5
+        let tolerance: Double = 1.0
 
-        Log.info("Merging coincident points in \(selectedShapes.count) shapes", category: .general)
+        Log.info("Merging ALL coincident points in \(selectedShapes.count) shapes (tolerance: \(tolerance))", category: .general)
 
         for shape in selectedShapes {
             let originalCount = shape.path.elements.count

@@ -650,12 +650,12 @@ class PathOperations {
 
 extension ProfessionalPathOperations {
 
-    static func mergeAdjacentCoincidentPoints(in path: VectorPath, tolerance: Double = 0.5) -> VectorPath {
+    static func mergeAdjacentCoincidentPoints(in path: VectorPath, tolerance: Double = 1.0) -> VectorPath {
         guard path.elements.count > 2 else {
             return path
         }
 
-        // Find indices of first and last point elements (not .move or .close)
+        // Find indices of first and last point elements
         var firstPointIndex: Int? = nil
         var lastPointIndex: Int? = nil
 
@@ -671,64 +671,69 @@ extension ProfessionalPathOperations {
             }
         }
 
-        var cleanedElements: [PathElement] = []
-        var lastPosition: VectorPoint? = nil
-
+        // Build list of all points with their positions
+        var pointData: [(index: Int, position: VectorPoint, element: PathElement)] = []
         for (index, element) in path.elements.enumerated() {
+            let position: VectorPoint?
             switch element {
-            case .move(let to):
-                cleanedElements.append(element)
-                lastPosition = to
-
-            case .line(let to):
-                if let last = lastPosition {
-                    let distance = last.distance(to: to)
-                    // Keep if: not coincident OR it's first/last point
-                    let isFirstOrLast = (index == firstPointIndex || index == lastPointIndex)
-                    if distance > tolerance || isFirstOrLast {
-                        cleanedElements.append(element)
-                        lastPosition = to
-                    } else {
-                        Log.info("  Removed coincident line at distance \(distance)", category: .general)
-                    }
-                } else {
-                    cleanedElements.append(element)
-                    lastPosition = to
-                }
-
-            case .curve(let to, _, _):
-                if let last = lastPosition {
-                    let distance = last.distance(to: to)
-                    // Keep if: not coincident OR it's first/last point
-                    let isFirstOrLast = (index == firstPointIndex || index == lastPointIndex)
-                    if distance > tolerance || isFirstOrLast {
-                        cleanedElements.append(element)
-                        lastPosition = to
-                    } else {
-                        Log.info("  Removed coincident curve at distance \(distance)", category: .general)
-                    }
-                } else {
-                    cleanedElements.append(element)
-                    lastPosition = to
-                }
-
-            case .quadCurve(let to, _):
-                if let last = lastPosition {
-                    let distance = last.distance(to: to)
-                    // Keep if: not coincident OR it's first/last point
-                    let isFirstOrLast = (index == firstPointIndex || index == lastPointIndex)
-                    if distance > tolerance || isFirstOrLast {
-                        cleanedElements.append(element)
-                        lastPosition = to
-                    } else {
-                        Log.info("  Removed coincident quadCurve at distance \(distance)", category: .general)
-                    }
-                } else {
-                    cleanedElements.append(element)
-                    lastPosition = to
-                }
-
+            case .move(let to), .line(let to):
+                position = to
+            case .curve(let to, _, _), .quadCurve(let to, _):
+                position = to
             case .close:
+                position = nil
+            }
+
+            if let pos = position {
+                pointData.append((index, pos, element))
+            }
+        }
+
+        // Find groups of coincident points
+        var processed: Set<Int> = []
+        var indicesToRemove: Set<Int> = []
+
+        for (i, data) in pointData.enumerated() {
+            if processed.contains(i) { continue }
+
+            var coincidentGroup: [Int] = [i]
+
+            // Find all points coincident with this one
+            for (j, otherData) in pointData.enumerated() {
+                if j <= i { continue }
+                if processed.contains(j) { continue }
+
+                let distance = data.position.distance(to: otherData.position)
+                if distance <= tolerance {
+                    coincidentGroup.append(j)
+                }
+            }
+
+            // If we have coincident points, remove all but the first (unless it's first/last)
+            if coincidentGroup.count > 1 {
+                for pointIndex in coincidentGroup {
+                    processed.insert(pointIndex)
+                }
+
+                // Keep the first point in the group, remove the rest (unless they are first/last)
+                for groupIdx in 1..<coincidentGroup.count {
+                    let pointDataIdx = coincidentGroup[groupIdx]
+                    let actualElementIndex = pointData[pointDataIdx].index
+
+                    // Don't remove if it's the first or last point
+                    let isFirstOrLast = (actualElementIndex == firstPointIndex || actualElementIndex == lastPointIndex)
+                    if !isFirstOrLast {
+                        indicesToRemove.insert(actualElementIndex)
+                        Log.info("  Removing coincident point at index \(actualElementIndex)", category: .general)
+                    }
+                }
+            }
+        }
+
+        // Build cleaned elements
+        var cleanedElements: [PathElement] = []
+        for (index, element) in path.elements.enumerated() {
+            if !indicesToRemove.contains(index) {
                 cleanedElements.append(element)
             }
         }
