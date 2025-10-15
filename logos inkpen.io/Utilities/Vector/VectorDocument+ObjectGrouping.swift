@@ -46,7 +46,6 @@ extension VectorDocument {
 
         selectedShapeIDs = [groupShape.id]
         selectedTextIDs.removeAll()
-        populateUnifiedObjectsFromLayersPreservingOrder()
         selectedObjectIDs = [groupShape.id]
     }
 
@@ -109,7 +108,6 @@ extension VectorDocument {
         commandManager.execute(command)
 
         selectedShapeIDs = [flattenedShape.id]
-        populateUnifiedObjectsFromLayersPreservingOrder()
         selectedObjectIDs = [flattenedShape.id]
     }
 
@@ -179,7 +177,6 @@ extension VectorDocument {
         commandManager.execute(command)
 
         selectedShapeIDs = newSelectedShapeIDs
-        populateUnifiedObjectsFromLayersPreservingOrder()
         selectedObjectIDs = newSelectedShapeIDs
     }
 
@@ -243,7 +240,6 @@ extension VectorDocument {
         commandManager.execute(command)
 
         selectedShapeIDs = newSelectedIDs
-        populateUnifiedObjectsFromLayersPreservingOrder()
         selectedObjectIDs = newSelectedIDs
     }
 
@@ -298,7 +294,6 @@ extension VectorDocument {
         commandManager.execute(command)
 
         selectedShapeIDs = [compoundShape.id]
-        populateUnifiedObjectsFromLayersPreservingOrder()
         selectedObjectIDs = [compoundShape.id]
     }
 
@@ -354,7 +349,6 @@ extension VectorDocument {
         commandManager.execute(command)
 
         selectedShapeIDs = [loopingShape.id]
-        populateUnifiedObjectsFromLayersPreservingOrder()
         selectedObjectIDs = [loopingShape.id]
     }
 
@@ -422,7 +416,6 @@ extension VectorDocument {
         commandManager.execute(command)
 
         selectedShapeIDs = newSelectedIDs
-        populateUnifiedObjectsFromLayersPreservingOrder()
         selectedObjectIDs = newSelectedIDs
     }
 
@@ -491,7 +484,6 @@ extension VectorDocument {
         commandManager.execute(command)
 
         selectedShapeIDs = newSelectedIDs
-        populateUnifiedObjectsFromLayersPreservingOrder()
         selectedObjectIDs = newSelectedIDs
     }
 
