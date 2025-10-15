@@ -190,8 +190,6 @@ class VectorDocument: ObservableObject, Codable {
     @Published var warpBounds: [UUID: CGRect] = [:]
 
     func updateTransformPanelValues() {
-        updateUnifiedObjectsOptimized()
-
         guard !selectedObjectIDs.isEmpty else { return }
 
         var combinedBounds: CGRect?
