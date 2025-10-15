@@ -2,6 +2,7 @@ import SwiftUI
 
 struct FillPropertiesSection: View {
     let fillOpacity: Double
+    let fillColor: VectorColor
     let onApplyFill: () -> Void
     let onUpdateFillOpacity: (Double) -> Void
     let onFillOpacityEditingChanged: (Bool) -> Void
@@ -23,11 +24,36 @@ struct FillPropertiesSection: View {
                         .foregroundColor(Color.ui.secondaryText)
                 }
 
-                Slider(value: Binding(
-                    get: { fillOpacity },
-                    set: { onUpdateFillOpacity($0) }
-                ), in: 0...1, onEditingChanged: onFillOpacityEditingChanged)
-                .controlSize(.regular)
+                ZStack {
+                    Capsule()
+                        .fill(Color.white)
+                        .frame(height: 6)
+                        .overlay(
+                            Capsule()
+                                .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
+                        )
+
+                    Slider(value: Binding(
+                        get: { fillOpacity },
+                        set: { onUpdateFillOpacity($0) }
+                    ), in: 0...1, onEditingChanged: onFillOpacityEditingChanged)
+                    .controlSize(.regular)
+                    .tint(Color.clear)
+
+                    Capsule()
+                        .fill(
+                            SwiftUI.LinearGradient(
+                                gradient: Gradient(colors: [
+                                    fillColor.color.opacity(0),
+                                    fillColor.color.opacity(1)
+                                ]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(height: 6)
+                        .allowsHitTesting(false)
+                }
             }
         }
         .padding(.horizontal, 12)

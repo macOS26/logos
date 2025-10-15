@@ -5,6 +5,7 @@ struct StrokePropertiesSection: View {
     let strokeWidth: Double
     @Binding var strokePlacement: StrokePlacement
     let strokeOpacity: Double
+    let strokeColor: VectorColor
     let strokeLineJoin: CGLineJoin
     let strokeLineCap: CGLineCap
     let strokeMiterLimit: Double
@@ -52,11 +53,36 @@ struct StrokePropertiesSection: View {
                         .foregroundColor(Color.ui.secondaryText)
                 }
 
-                Slider(value: Binding(
-                    get: { strokeOpacity },
-                    set: { onUpdateStrokeOpacity($0) }
-                ), in: 0...1, onEditingChanged: onStrokeOpacityEditingChanged)
-                .controlSize(.regular)
+                ZStack {
+                    Capsule()
+                        .fill(Color.white)
+                        .frame(height: 6)
+                        .overlay(
+                            Capsule()
+                                .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
+                        )
+
+                    Slider(value: Binding(
+                        get: { strokeOpacity },
+                        set: { onUpdateStrokeOpacity($0) }
+                    ), in: 0...1, onEditingChanged: onStrokeOpacityEditingChanged)
+                    .controlSize(.regular)
+                    .tint(Color.clear)
+
+                    Capsule()
+                        .fill(
+                            SwiftUI.LinearGradient(
+                                gradient: Gradient(colors: [
+                                    strokeColor.color.opacity(0),
+                                    strokeColor.color.opacity(1)
+                                ]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(height: 6)
+                        .allowsHitTesting(false)
+                }
             }
 
             VStack(alignment: .leading, spacing: 4) {

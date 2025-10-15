@@ -216,6 +216,7 @@ struct StrokeFillPanel: View {
 
                     FillPropertiesSection(
                         fillOpacity: fillOpacityState,
+                        fillColor: selectedFillColor,
                         onApplyFill: applyFillToSelectedShapes,
                         onUpdateFillOpacity: { value in
                             fillOpacityState = value
@@ -292,6 +293,7 @@ struct StrokeFillPanel: View {
                         strokeWidth: strokeWidthState,
                         strokePlacement: $strokePlacementState,
                         strokeOpacity: strokeOpacityState,
+                        strokeColor: selectedStrokeColor,
                         strokeLineJoin: strokeLineJoin,
                         strokeLineCap: strokeLineCap,
                         strokeMiterLimit: strokeMiterLimitState,
