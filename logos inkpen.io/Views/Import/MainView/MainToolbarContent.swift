@@ -298,13 +298,34 @@ struct MainToolbarContent: ToolbarContent {
 
     private func onSnapPageToSelection() {
         guard let selectionBounds = getSelectionBoundsForDocument(), selectionBounds.width > 0, selectionBounds.height > 0 else { return }
-        // TODO: Add appropriate Command here
+
+        var oldShapes: [UUID: VectorShape] = [:]
+        var newShapes: [UUID: VectorShape] = [:]
+        var objectIDs: [UUID] = []
+
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
+                oldShapes[shape.id] = shape
+                objectIDs.append(shape.id)
+            }
+        }
 
         document.settings.setSizeInPoints(CGSize(width: selectionBounds.width, height: selectionBounds.height))
         document.onSettingsChanged()
 
         let delta = CGPoint(x: -selectionBounds.minX, y: -selectionBounds.minY)
         document.translateAllContent(by: delta)
+
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
+                newShapes[shape.id] = shape
+            }
+        }
+
+        if !objectIDs.isEmpty {
+            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+            document.commandManager.execute(command)
+        }
 
         document.requestZoom(to: 0.0, mode: .fitToPage)
     }
