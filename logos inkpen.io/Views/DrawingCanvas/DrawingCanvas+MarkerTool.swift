@@ -40,10 +40,11 @@ extension DrawingCanvas {
         let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
 
         let markerOpacity = document.currentMarkerOpacity
+        let actualStrokeWidth = (document.defaultStrokePlacement == .center) ? strokeWidth : strokeWidth * 2.0
         let strokeStyle = strokeColor != nil ? StrokeStyle(
             color: markerStrokeColor,
-            width: strokeWidth,
-            placement: document.defaultStrokePlacement,
+            width: actualStrokeWidth,
+            placement: .center,
             lineCap: .round,
             lineJoin: .round,
             opacity: markerOpacity
@@ -206,10 +207,11 @@ extension DrawingCanvas {
         let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
 
         let markerOpacity = document.currentMarkerOpacity
+        let actualStrokeWidth = (document.defaultStrokePlacement == .center) ? strokeWidth : strokeWidth * 2.0
         let strokeStyle = strokeColor != nil ? StrokeStyle(
             color: markerStrokeColor,
-            width: strokeWidth,
-            placement: document.defaultStrokePlacement,
+            width: actualStrokeWidth,
+            placement: .center,
             lineCap: .round,
             lineJoin: .round,
             opacity: markerOpacity
@@ -267,10 +269,11 @@ extension DrawingCanvas {
         let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
         let markerOpacity = document.currentMarkerOpacity
 
+        let actualStrokeWidth = (document.defaultStrokePlacement == .center) ? strokeWidth : strokeWidth * 2.0
         let strokeStyle = strokeColor != nil ? StrokeStyle(
             color: markerStrokeColor,
-            width: strokeWidth,
-            placement: document.defaultStrokePlacement,
+            width: actualStrokeWidth,
+            placement: .center,
             lineCap: .round,
             lineJoin: .round,
             opacity: markerOpacity
