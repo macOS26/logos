@@ -181,8 +181,6 @@ extension DrawingCanvas {
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               elementIndex < shape.path.elements.count else { return }
 
-        document.saveToUndoStack()
-
         let element = shape.path.elements[elementIndex]
         var elements = shape.path.elements
 
@@ -233,7 +231,7 @@ extension DrawingCanvas {
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               elementIndex < shape.path.elements.count else { return }
 
-        document.saveToUndoStack()
+        // TODO: Add ModifyPathCommand here
 
         let element = shape.path.elements[elementIndex]
         var elements = shape.path.elements
@@ -273,7 +271,7 @@ extension DrawingCanvas {
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               elementIndex + 1 < shape.path.elements.count else { return }
 
-        document.saveToUndoStack()
+        // TODO: Add ModifyPathCommand here
 
         let nextElement = shape.path.elements[elementIndex + 1]
         var elements = shape.path.elements
@@ -316,7 +314,7 @@ extension DrawingCanvas {
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               elementIndex < shape.path.elements.count else { return }
 
-        document.saveToUndoStack()
+        // TODO: Add ModifyPathCommand here
 
         let element = shape.path.elements[elementIndex]
         var elements = shape.path.elements
@@ -367,7 +365,7 @@ extension DrawingCanvas {
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               elementIndex + 1 < shape.path.elements.count else { return }
 
-        document.saveToUndoStack()
+        // TODO: Add ModifyPathCommand here
 
         let nextElement = shape.path.elements[elementIndex + 1]
         var elements = shape.path.elements
@@ -422,7 +420,7 @@ extension DrawingCanvas {
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               elementIndex < shape.path.elements.count else { return }
 
-        document.saveToUndoStack()
+        // TODO: Add ModifyPathCommand here
 
         var elements = shape.path.elements
         var needsUpdate = false
@@ -474,7 +472,7 @@ extension DrawingCanvas {
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               elementIndex < shape.path.elements.count else { return }
 
-        document.saveToUndoStack()
+        // TODO: Add ModifyPathCommand here
 
         var elements = shape.path.elements
         var needsUpdate = false
