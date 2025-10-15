@@ -39,7 +39,17 @@ extension VectorDocument {
     func bringSelectedToFront() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        saveToUndoStack()
+        // Capture old state
+        var oldOrderIDs: [UUID: Int] = [:]
+        var affectedObjectIDs: [UUID] = []
+
+        for layerIndex in layers.indices {
+            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
+            for obj in layerObjects {
+                oldOrderIDs[obj.id] = obj.orderID
+                affectedObjectIDs.append(obj.id)
+            }
+        }
 
         for layerIndex in layers.indices {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
@@ -86,13 +96,35 @@ extension VectorDocument {
             }
         }
 
-
+        // Capture new state and create command
+        var newOrderIDs: [UUID: Int] = [:]
+        for id in affectedObjectIDs {
+            if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
+                newOrderIDs[id] = unifiedObjects[index].orderID
+            }
+        }
+        let command = ObjectArrangementCommand(
+            affectedObjectIDs: affectedObjectIDs,
+            oldOrderIDs: oldOrderIDs,
+            newOrderIDs: newOrderIDs
+        )
+        commandManager.execute(command)
     }
 
     func bringSelectedForward() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        saveToUndoStack()
+        // Capture old state
+        var oldOrderIDs: [UUID: Int] = [:]
+        var affectedObjectIDs: [UUID] = []
+
+        for layerIndex in layers.indices {
+            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
+            for obj in layerObjects {
+                oldOrderIDs[obj.id] = obj.orderID
+                affectedObjectIDs.append(obj.id)
+            }
+        }
 
         for layerIndex in layers.indices {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
@@ -144,12 +176,35 @@ extension VectorDocument {
             }
         }
 
+        // Capture new state and create command
+        var newOrderIDs: [UUID: Int] = [:]
+        for id in affectedObjectIDs {
+            if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
+                newOrderIDs[id] = unifiedObjects[index].orderID
+            }
+        }
+        let command = ObjectArrangementCommand(
+            affectedObjectIDs: affectedObjectIDs,
+            oldOrderIDs: oldOrderIDs,
+            newOrderIDs: newOrderIDs
+        )
+        commandManager.execute(command)
     }
 
     func sendSelectedBackward() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        saveToUndoStack()
+        // Capture old state
+        var oldOrderIDs: [UUID: Int] = [:]
+        var affectedObjectIDs: [UUID] = []
+
+        for layerIndex in layers.indices {
+            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
+            for obj in layerObjects {
+                oldOrderIDs[obj.id] = obj.orderID
+                affectedObjectIDs.append(obj.id)
+            }
+        }
 
         for layerIndex in layers.indices {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
@@ -206,12 +261,35 @@ extension VectorDocument {
             }
         }
 
+        // Capture new state and create command
+        var newOrderIDs: [UUID: Int] = [:]
+        for id in affectedObjectIDs {
+            if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
+                newOrderIDs[id] = unifiedObjects[index].orderID
+            }
+        }
+        let command = ObjectArrangementCommand(
+            affectedObjectIDs: affectedObjectIDs,
+            oldOrderIDs: oldOrderIDs,
+            newOrderIDs: newOrderIDs
+        )
+        commandManager.execute(command)
     }
 
     func sendSelectedToBack() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        saveToUndoStack()
+        // Capture old state
+        var oldOrderIDs: [UUID: Int] = [:]
+        var affectedObjectIDs: [UUID] = []
+
+        for layerIndex in layers.indices {
+            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
+            for obj in layerObjects {
+                oldOrderIDs[obj.id] = obj.orderID
+                affectedObjectIDs.append(obj.id)
+            }
+        }
 
         for layerIndex in layers.indices {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
@@ -258,6 +336,18 @@ extension VectorDocument {
             }
         }
 
-
+        // Capture new state and create command
+        var newOrderIDs: [UUID: Int] = [:]
+        for id in affectedObjectIDs {
+            if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
+                newOrderIDs[id] = unifiedObjects[index].orderID
+            }
+        }
+        let command = ObjectArrangementCommand(
+            affectedObjectIDs: affectedObjectIDs,
+            oldOrderIDs: oldOrderIDs,
+            newOrderIDs: newOrderIDs
+        )
+        commandManager.execute(command)
     }
 }
