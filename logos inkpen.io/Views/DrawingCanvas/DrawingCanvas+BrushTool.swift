@@ -306,6 +306,8 @@ extension DrawingCanvas {
             if let cleanedPath = cleaned, !cleanedPath.isEmpty, isPathBoundsFinite(cleanedPath.boundingBox) {
                 finalShape.path = VectorPath(cgPath: cleanedPath)
             }
+
+            finalShape.path = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: finalShape.path, tolerance: 1.0)
         }
 
         document.addShapeToFront(finalShape)
@@ -378,6 +380,8 @@ extension DrawingCanvas {
             if let cleanedPath = cleaned, !cleanedPath.isEmpty, isPathBoundsFinite(cleanedPath.boundingBox) {
                 finalPath = VectorPath(cgPath: cleanedPath, fillRule: .winding)
             }
+
+            finalPath = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: finalPath, tolerance: 1.0)
         }
         let shape = VectorShape(name: "Brush Stroke", path: finalPath, geometricType: .brushStroke, strokeStyle: strokeStyle, fillStyle: fillStyle)
         document.addShape(shape)
