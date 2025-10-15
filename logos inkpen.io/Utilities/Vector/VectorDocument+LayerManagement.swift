@@ -19,8 +19,6 @@ extension VectorDocument {
             settings.selectedLayerName = layers[index].name
             onSettingsChanged()
         }
-
-        saveToUndoStack()
     }
 
     func duplicateLayer(at index: Int) {
@@ -32,8 +30,6 @@ extension VectorDocument {
         if index == 0 && layers[index].name == "Canvas" {
             return
         }
-
-        saveToUndoStack()
 
         let originalLayer = layers[index]
         var duplicatedLayer = VectorLayer(name: "\(originalLayer.name) Copy", color: originalLayer.color)
@@ -68,8 +64,6 @@ extension VectorDocument {
         guard sourceIndex >= 0 && sourceIndex < layers.count,
               targetIndex >= 0 && targetIndex <= layers.count,
               sourceIndex != targetIndex else { return }
-
-        saveToUndoStack()
 
         let movingLayer = layers.remove(at: sourceIndex)
 
@@ -256,8 +250,6 @@ extension VectorDocument {
             return
         }
 
-        saveToUndoStack()
-
         let updatedObject = VectorObject(
             shape: extractShape(from: object),
             layerIndex: targetLayerIndex,
@@ -340,8 +332,6 @@ extension VectorDocument {
     func moveSelectedObjectsUp() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        saveToUndoStack()
-
         var selectedObjects: [VectorObject] = []
         for objectID in selectedObjectIDs {
             if let obj = findObject(by: objectID) {
@@ -377,8 +367,6 @@ extension VectorDocument {
 
     func moveSelectedObjectsDown() {
         guard !selectedObjectIDs.isEmpty else { return }
-
-        saveToUndoStack()
 
         var selectedObjects: [VectorObject] = []
         for objectID in selectedObjectIDs {
@@ -426,8 +414,6 @@ extension VectorDocument {
         guard sourceObject.layerIndex == targetObject.layerIndex else {
             return
         }
-
-        saveToUndoStack()
 
         let targetOrderID = targetObject.orderID
         let sourceOrderID = sourceObject.orderID
@@ -486,8 +472,6 @@ extension VectorDocument {
             return
         }
 
-        saveToUndoStack()
-
         for i in 0..<unifiedObjects.count {
             let obj = unifiedObjects[i]
             if obj.layerIndex == sourceObject.layerIndex &&
@@ -522,8 +506,6 @@ extension VectorDocument {
             return
         }
 
-        saveToUndoStack()
-
         for i in 0..<unifiedObjects.count {
             let obj = unifiedObjects[i]
             if obj.layerIndex == sourceObject.layerIndex &&
@@ -552,8 +534,6 @@ extension VectorDocument {
         }
 
         guard sourceIndex != targetIndex else { return }
-
-        saveToUndoStack()
 
         let sourceLayer = layers.remove(at: sourceIndex)
         layers.insert(sourceLayer, at: targetIndex)
