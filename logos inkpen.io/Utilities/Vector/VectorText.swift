@@ -492,6 +492,7 @@ class FontManager: ObservableObject {
             "Wingdings 3",
             "Symbol",
             "Apple Symbols",
+            "Apple Color Emoji",
             "Bodoni Ornaments",
             "GB18030 Bitmap"
         ]
