@@ -733,9 +733,9 @@ extension ProfessionalPathOperations {
 extension ProfessionalPathOperations {
 
     static func cleanupDocumentDuplicates(_ document: VectorDocument, tolerance: Double = 5.0) {
-        document.saveToUndoStack()
-
-        var totalCleaned = 0
+        var oldShapes: [UUID: VectorShape] = [:]
+        var newShapes: [UUID: VectorShape] = [:]
+        var objectIDs: [UUID] = []
 
         for layerIndex in document.layers.indices {
             let shapes = document.getShapesForLayer(layerIndex)
@@ -744,10 +744,20 @@ extension ProfessionalPathOperations {
                 let cleanedShape = mergeDuplicatePoints(in: originalShape, tolerance: tolerance)
 
                 if cleanedShape.path.elements.count != originalShape.path.elements.count {
-                    document.updateShapePathUnified(id: cleanedShape.id, path: cleanedShape.path)
-                    totalCleaned += 1
+                    oldShapes[originalShape.id] = originalShape
+                    newShapes[cleanedShape.id] = cleanedShape
+                    objectIDs.append(originalShape.id)
                 }
             }
+        }
+
+        if !oldShapes.isEmpty {
+            let command = ShapeModificationCommand(
+                objectIDs: objectIDs,
+                oldShapes: oldShapes,
+                newShapes: newShapes
+            )
+            document.commandManager.execute(command)
         }
     }
 
@@ -756,9 +766,9 @@ extension ProfessionalPathOperations {
             return
         }
 
-        document.saveToUndoStack()
-
-        var totalCleaned = 0
+        var oldShapes: [UUID: VectorShape] = [:]
+        var newShapes: [UUID: VectorShape] = [:]
+        var objectIDs: [UUID] = []
 
         for layerIndex in document.layers.indices {
             let shapes = document.getShapesForLayer(layerIndex)
@@ -770,11 +780,21 @@ extension ProfessionalPathOperations {
                     let cleanedShape = mergeDuplicatePoints(in: originalShape, tolerance: tolerance)
 
                     if cleanedShape.path.elements.count != originalShape.path.elements.count {
-                        document.updateShapePathUnified(id: cleanedShape.id, path: cleanedShape.path)
-                        totalCleaned += 1
+                        oldShapes[originalShape.id] = originalShape
+                        newShapes[cleanedShape.id] = cleanedShape
+                        objectIDs.append(originalShape.id)
                     }
                 }
             }
+        }
+
+        if !oldShapes.isEmpty {
+            let command = ShapeModificationCommand(
+                objectIDs: objectIDs,
+                oldShapes: oldShapes,
+                newShapes: newShapes
+            )
+            document.commandManager.execute(command)
         }
     }
 }
