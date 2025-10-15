@@ -375,7 +375,7 @@ extension DrawingCanvas {
 
             document.updateUnifiedObjectsOptimized()
 
-            document.saveToUndoStack()
+            // TODO: Add ShapeModificationCommand here
 
             isDraggingCorner = false
             draggedCornerIndex = nil
