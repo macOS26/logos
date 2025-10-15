@@ -67,7 +67,8 @@ struct StrokePropertiesSection: View {
                 Picker("Placement", selection: Binding(
                     get: { strokePlacement },
                     set: { newPlacement in
-                        onUpdateStrokePlacement(newPlacement)
+                        strokePlacement = newPlacement  // Update binding FIRST
+                        onUpdateStrokePlacement(newPlacement)  // Then call callback
                     }
                 )) {
                     ForEach(StrokePlacement.allCases, id: \.self) { placement in
