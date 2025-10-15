@@ -258,7 +258,6 @@ extension DrawingCanvas {
 
                     if let mergedPath = merged, !mergedPath.isEmpty, isPathBoundsFinite(mergedPath.boundingBox) {
                         finalShape.path = VectorPath(cgPath: mergedPath)
-                        finalShape.strokeStyle = nil
                     }
                 }
             }
@@ -305,7 +304,7 @@ extension DrawingCanvas {
         )
 
         var finalPath = preview
-        var finalStrokeStyle = strokeStyle
+        let finalStrokeStyle = strokeStyle
 
         if document.markerRemoveOverlap {
             var currentPath = preview.cgPath
@@ -338,7 +337,6 @@ extension DrawingCanvas {
 
                     if let mergedPath = merged, !mergedPath.isEmpty, isPathBoundsFinite(mergedPath.boundingBox) {
                         finalPath = VectorPath(cgPath: mergedPath)
-                        finalStrokeStyle = nil
                     }
                 }
             }
