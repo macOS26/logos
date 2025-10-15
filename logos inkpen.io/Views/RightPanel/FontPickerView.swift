@@ -98,7 +98,17 @@ struct FontPickerView: View {
                         var updatedTypography = freshText.typography
                         updatedTypography.fontFamily = newFamily
                         updatedTypography.fontVariant = defaultVariant
+
+                        // Update the object
                         document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+
+                        // Send preview notification for immediate visual update
+                        document.textPreviewTypography[textID] = updatedTypography
+                        NotificationCenter.default.post(
+                            name: Notification.Name("TextPreviewUpdate"),
+                            object: nil,
+                            userInfo: ["textID": textID, "typography": updatedTypography]
+                        )
                     }
                 }
             )) {
@@ -127,7 +137,17 @@ struct FontPickerView: View {
                        let freshText = document.findText(by: textID) {
                         var updatedTypography = freshText.typography
                         updatedTypography.fontVariant = newVariant
+
+                        // Update the object
                         document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+
+                        // Send preview notification for immediate visual update
+                        document.textPreviewTypography[textID] = updatedTypography
+                        NotificationCenter.default.post(
+                            name: Notification.Name("TextPreviewUpdate"),
+                            object: nil,
+                            userInfo: ["textID": textID, "typography": updatedTypography]
+                        )
                     }
                 }
             )) {
