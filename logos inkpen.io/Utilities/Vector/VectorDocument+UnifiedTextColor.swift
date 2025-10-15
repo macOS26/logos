@@ -34,41 +34,33 @@ extension VectorDocument {
     }
 
     func updateTextFontFamilyDirect(id: UUID, fontFamily: String) {
-        var oldTypography: TypographyProperties?
-        if let shape = findShape(by: id) {
-            oldTypography = shape.typography
-        }
+        if let textObject = findText(by: id) {
+            var previewTypography = textPreviewTypography[id] ?? textObject.typography
+            previewTypography.fontFamily = fontFamily
 
-        updateShapeByID(id) { shape in
-            shape.typography?.fontFamily = fontFamily
-        }
+            textPreviewTypography[id] = previewTypography
 
-        var newTypography: TypographyProperties?
-        if let shape = findShape(by: id) {
-            newTypography = shape.typography
+            NotificationCenter.default.post(
+                name: Notification.Name("TextPreviewUpdate"),
+                object: nil,
+                userInfo: ["textID": id, "typography": previewTypography]
+            )
         }
-
-        let command = TextTypographyCommand(textID: id, oldTypography: oldTypography, newTypography: newTypography)
-        commandManager.execute(command)
     }
 
     func updateTextFontVariantDirect(id: UUID, fontVariant: String) {
-        var oldTypography: TypographyProperties?
-        if let shape = findShape(by: id) {
-            oldTypography = shape.typography
-        }
+        if let textObject = findText(by: id) {
+            var previewTypography = textPreviewTypography[id] ?? textObject.typography
+            previewTypography.fontVariant = fontVariant
 
-        updateShapeByID(id) { shape in
-            shape.typography?.fontVariant = fontVariant
-        }
+            textPreviewTypography[id] = previewTypography
 
-        var newTypography: TypographyProperties?
-        if let shape = findShape(by: id) {
-            newTypography = shape.typography
+            NotificationCenter.default.post(
+                name: Notification.Name("TextPreviewUpdate"),
+                object: nil,
+                userInfo: ["textID": id, "typography": previewTypography]
+            )
         }
-
-        let command = TextTypographyCommand(textID: id, oldTypography: oldTypography, newTypography: newTypography)
-        commandManager.execute(command)
     }
 
 
