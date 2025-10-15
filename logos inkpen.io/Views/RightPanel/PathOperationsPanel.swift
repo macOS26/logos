@@ -288,7 +288,13 @@ struct PathOperationsPanel: View {
             return
         }
 
-        // TODO: Add appropriate Command for path operations
+        var oldShapes: [UUID: VectorShape] = [:]
+        var objectIDs: [UUID] = []
+
+        for shape in selectedShapes {
+            oldShapes[shape.id] = shape
+            objectIDs.append(shape.id)
+        }
 
         var resultShapes: [VectorShape] = []
 
@@ -580,11 +586,17 @@ struct PathOperationsPanel: View {
 
         document.removeSelectedObjects()
 
+        var newShapes: [UUID: VectorShape] = [:]
+
         for resultShape in resultShapes {
             document.addShape(resultShape)
             document.selectShape(resultShape.id)
+            objectIDs.append(resultShape.id)
+            newShapes[resultShape.id] = resultShape
         }
 
+        let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+        document.commandManager.execute(command)
     }
 
 
