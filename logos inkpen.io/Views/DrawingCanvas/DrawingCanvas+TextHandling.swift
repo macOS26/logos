@@ -3,7 +3,6 @@ import Combine
 
 extension DrawingCanvas {
 
-
     func handleFontToolTap(at location: CGPoint) {
         lastTapLocation = location
 
@@ -110,7 +109,6 @@ extension DrawingCanvas {
                     textObj.layerIndex = unifiedObj.layerIndex
                     if !textObj.isVisible || textObj.isLocked { continue }
 
-
                     let textBounds = CGRect(
                         x: textObj.position.x + textObj.bounds.minX,
                         y: textObj.position.y + textObj.bounds.minY,
@@ -119,7 +117,6 @@ extension DrawingCanvas {
                     )
 
                     let hitArea = textBounds
-
 
                     if hitArea.contains(location) {
                         return textObj.id
@@ -144,7 +141,6 @@ extension DrawingCanvas {
 
         if let textObject = document.findText(by: textID) {
 
-
             document.setTextEditingInUnified(id: textObject.id, isEditing: true)
 
             document.selectedShapeIDs.removeAll()
@@ -159,7 +155,6 @@ extension DrawingCanvas {
 
             document.updateTextCursorPositionInUnified(id: textObject.id, cursorPosition: cursorPosition)
 
-
         } else {
             Log.error("❌ TEXT NOT FOUND: Could not find text with ID \(textID)", category: .error)
         }
@@ -172,7 +167,6 @@ extension DrawingCanvas {
             return
         }
         let currentState = textObject.getState(in: document)
-
 
         if textObject.isLocked {
             return
@@ -197,7 +191,6 @@ extension DrawingCanvas {
                     startEditingText(textID: textID, at: .zero)
                 }
 
-
             case .editing:
                 break
             }
@@ -216,13 +209,11 @@ extension DrawingCanvas {
         }
     }
 
-
     func calculateCursorPosition(in textObj: VectorText, at tapLocation: CGPoint) -> Int {
         let relativePoint = CGPoint(
             x: tapLocation.x - textObj.position.x,
             y: tapLocation.y - textObj.position.y
         )
-
 
         let nsFont = textObj.typography.nsFont
         let attributes: [NSAttributedString.Key: Any] = [
@@ -255,17 +246,14 @@ extension DrawingCanvas {
 
         let finalIndex = max(0, min(textObj.content.count, characterIndex))
 
-
         return finalIndex
     }
 
     private func updateTextViewModelCursorPosition(textID: UUID, position: Int, length: Int) {
         if document.findText(by: textID) != nil {
 
-
         }
     }
-
 
     func createNewTextAt(location: CGPoint) {
         createNewTextWithSize(at: location, width: 300, height: 100)
@@ -287,7 +275,6 @@ extension DrawingCanvas {
             fillColor: document.defaultFillColor,
             fillOpacity: document.defaultFillOpacity
         )
-
 
         var newText = VectorText(
             content: "",
@@ -322,7 +309,6 @@ extension DrawingCanvas {
             document.commandManager.execute(command)
         }
     }
-
 
     func insertTextAtCursor(_ text: String) {
         guard let editingID = editingTextID,
@@ -388,7 +374,6 @@ extension DrawingCanvas {
 
     }
 
-
     func selectAll() {
         guard let editingID = editingTextID,
               let textObj = document.findText(by: editingID) else { return }
@@ -396,7 +381,6 @@ extension DrawingCanvas {
         currentCursorPosition = textObj.content.count
 
     }
-
 
     func moveCursorLeft() {
         if currentCursorPosition > 0 {
@@ -425,7 +409,6 @@ extension DrawingCanvas {
         currentCursorPosition = textObj.content.count
         currentSelectionRange = NSRange(location: currentCursorPosition, length: 0)
     }
-
 
     func finishTextEditing() {
         if let editingID = editingTextID {
@@ -612,7 +595,6 @@ extension DrawingCanvas {
         }
     }
 
-
     func handleCanvasBackgroundTap(at location: CGPoint) {
 
         let hitAnyTextBox = document.unifiedObjects.contains { unifiedObj in
@@ -645,7 +627,6 @@ extension DrawingCanvas {
         }
     }
 
-
     func handleTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
         let hasEditingTextBox = document.unifiedObjects.contains { unifiedObj in
             if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject {
@@ -654,7 +635,6 @@ extension DrawingCanvas {
             return false
         }
         if hasEditingTextBox {
-            Log.error("❌ TEXT BOX DRAWING: Early return - has editing text box", category: .error)
             return
         }
 
@@ -662,12 +642,10 @@ extension DrawingCanvas {
         let isDraggingResizeHandle = isLocationOnTextResizeHandle(startLocation)
 
         if isDraggingResizeHandle {
-            Log.error("❌ TEXT BOX DRAWING: Early return - dragging resize handle", category: .error)
             return
         }
 
         if findTextAt(location: startLocation) != nil {
-            Log.error("❌ TEXT BOX DRAWING: Early return - found text at location", category: .error)
             return
         }
 
@@ -678,7 +656,6 @@ extension DrawingCanvas {
             shapeDragStart = startLocation
             shapeStartPoint = startLocation
             drawingStartPoint = startLocation
-            Log.error("✅ TEXT BOX DRAWING: Started drawing at \(startLocation)", category: .error)
         }
 
         let minX = min(shapeStartPoint.x, currentLocation.x)
@@ -696,7 +673,6 @@ extension DrawingCanvas {
             .line(to: VectorPoint(minX, minY + finalHeight)),
             .close
         ])
-        Log.error("✅ TEXT BOX DRAWING: Set currentPath with bounds (\(minX), \(minY), \(finalWidth), \(finalHeight))", category: .error)
     }
 
     func finishTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
@@ -731,7 +707,6 @@ extension DrawingCanvas {
         let finalWidth = max(width, 50.0)
         let finalHeight = max(height, 30.0)
 
-
         createNewTextWithSize(at: CGPoint(x: minX, y: minY), width: finalWidth, height: finalHeight)
     }
 
@@ -748,14 +723,12 @@ extension DrawingCanvas {
         let tolerance: Double = 15.0
         let totalTolerance = handleRadius + tolerance
 
-
         for unifiedObj in document.unifiedObjects {
             guard case .shape(let shape) = unifiedObj.objectType,
                   shape.isTextObject,
                   var textObj = VectorText.from(shape) else { continue }
             textObj.layerIndex = unifiedObj.layerIndex
             if !textObj.isVisible || textObj.isLocked { continue }
-
 
             let textBounds = CGRect(
                 x: textObj.position.x + textObj.bounds.minX,

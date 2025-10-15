@@ -1,7 +1,6 @@
 import SwiftUI
 import Combine
 
-
 struct ProfessionalOffsetPathSection: View {
     @ObservedObject var document: VectorDocument
     @State private var offsetDistance: Int = 10
@@ -9,7 +8,6 @@ struct ProfessionalOffsetPathSection: View {
     @State private var miterLimit: Double = 4.0
     @State private var showAdvanced: Bool = true
     @State private var keepOriginalPath: Bool = true
-
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -57,18 +55,18 @@ struct ProfessionalOffsetPathSection: View {
                         }
 
                         ZStack {
-                            Capsule()
-                                .fill(Color.white)
-                                .frame(height: 6)
-                                .overlay(
-                                    Capsule()
-                                        .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
-                                )
+//                            Capsule()
+//                                .fill(Color.white)
+//                                .frame(height: 6)
+//                                .overlay(
+//                                    Capsule()
+//                                        .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
+//                                )
 
                             Slider(value: Binding(
                                 get: { Double(offsetDistance) },
                                 set: { offsetDistance = Int($0) }
-                            ), in: -30...30)
+                            ), in: -72...72)
                             .controlSize(.regular)
                             .tint(Color.clear)
 
@@ -77,7 +75,7 @@ struct ProfessionalOffsetPathSection: View {
                                     SwiftUI.LinearGradient(
                                         gradient: Gradient(colors: [
                                             Color.blue,
-                                            Color.white,
+                                            Color.clear,
                                             Color.blue
                                         ]),
                                         startPoint: .leading,
@@ -106,7 +104,6 @@ struct ProfessionalOffsetPathSection: View {
                             .controlSize(.small)
                     }
                     .help("Keep the original path when creating offset (Professional default)")
-
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Joins:")
@@ -183,7 +180,6 @@ struct ProfessionalOffsetPathSection: View {
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
 
-
                     Button {
                         performOffsetPath()
                     } label: {
@@ -218,7 +214,6 @@ struct ProfessionalOffsetPathSection: View {
     private func canPerformOffset() -> Bool {
         return !document.selectedShapeIDs.isEmpty
     }
-
 
     private func performOffsetPath() {
         guard !document.selectedShapeIDs.isEmpty else { return }
@@ -313,7 +308,6 @@ struct ProfessionalOffsetPathSection: View {
         let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
         document.commandManager.execute(command)
     }
-
 
     private func mapJoinTypeToCoreGraphics(_ joinType: JoinType) -> CGLineJoin {
         switch joinType {

@@ -2,22 +2,19 @@ import SwiftUI
 import AppKit
 import Combine
 
-
 struct GradientPanel: View {
     @ObservedObject var document: VectorDocument
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
+            VStack(spacing: 8) {
                 GradientFillSection(document: document)
-
-                Spacer()
+  can              Spacer()
             }
             .padding()
         }
     }
 }
-
 
 struct GradientFillSection: View {
     @ObservedObject var document: VectorDocument
@@ -151,7 +148,6 @@ struct GradientFillSection: View {
         }
     }
 
-
     private func activateGradientStop(_ stopId: UUID, color: VectorColor) {
 
         editingGradientStopId = stopId
@@ -191,7 +187,6 @@ struct GradientFillSection: View {
             }
         )
     }
-
 
     private func updateSelectedGradient() {
 
@@ -382,7 +377,6 @@ struct GradientFillSection: View {
         }
     }
 
-
     func getGradientStops(_ gradient: VectorGradient) -> [GradientStop] {
         switch gradient {
         case .linear(let linear):
@@ -547,7 +541,6 @@ struct GradientFillSection: View {
         document.addColorToSwatches(gradientColor)
 
     }
-
 
     static func getSelectedShapeGradient(document: VectorDocument) -> VectorGradient? {
         let activeShapes = document.getActiveShapes()
@@ -715,7 +708,6 @@ struct GradientFillSection: View {
         }
     }
 }
-
 
 struct GradientPanel_Previews: PreviewProvider {
     static var previews: some View {
