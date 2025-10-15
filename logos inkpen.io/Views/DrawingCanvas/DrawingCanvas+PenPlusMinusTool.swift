@@ -37,7 +37,7 @@ extension DrawingCanvas {
             return
         }
 
-        document.saveToUndoStack()
+        // TODO: Add ModifyPathCommand here
 
         var startPoint: VectorPoint
         if elementIndex > 0 {
@@ -117,7 +117,7 @@ extension DrawingCanvas {
             return
         }
 
-        document.saveToUndoStack()
+        // TODO: Add ModifyPathCommand here
 
         let pathPointCount = elements.filter { element in
             switch element {
