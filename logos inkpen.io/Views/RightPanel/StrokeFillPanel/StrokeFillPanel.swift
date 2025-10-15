@@ -631,10 +631,7 @@ struct StrokeFillPanel: View {
     private func updateStrokePlacementLive(_ placement: StrokePlacement) {
         document.defaultStrokePlacement = placement
 
-        let activeShapeIDs = document.getActiveShapeIDs()
-        if activeShapeIDs.isEmpty { return }
-
-        // Update immediately like Font does
+        // Update selected shapes if any
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
