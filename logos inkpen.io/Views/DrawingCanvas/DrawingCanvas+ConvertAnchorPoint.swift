@@ -287,8 +287,7 @@ extension DrawingCanvas {
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               elementIndex + 1 < shape.path.elements.count else { return }
 
-        // TODO: Add ModifyPathCommand here
-
+        let oldPath = shape.path
         let nextElement = shape.path.elements[elementIndex + 1]
         var elements = shape.path.elements
 
@@ -314,10 +313,13 @@ extension DrawingCanvas {
             var updatedShape = shape
             updatedShape.path.elements = elements
             updatedShape.updateBounds()
-            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
+            let newPath = VectorPath(elements: elements, isClosed: shape.path.isClosed)
 
+            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
             document.updateUnifiedObjectsOptimized()
 
+            let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
+            document.commandManager.execute(command)
 
         default:
             break
