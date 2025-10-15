@@ -441,12 +441,17 @@ struct MainToolbarContent: ToolbarContent {
     }
 
     private func hideSelectedObjects() {
-        // TODO: Add appropriate Command here
+        var oldShapes: [UUID: VectorShape] = [:]
+        var newShapes: [UUID: VectorShape] = [:]
+        var objectIDs: [UUID] = []
 
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
+                    oldShapes[shape.id] = shape
+                    objectIDs.append(shape.id)
+
                     if shape.isTextObject {
                         document.hideTextInUnified(id: shape.id)
                     } else {
@@ -457,12 +462,21 @@ struct MainToolbarContent: ToolbarContent {
                             }
                         }
                     }
+
+                    if let updatedObject = document.findObject(by: shape.id),
+                       case .shape(let updatedShape) = updatedObject.objectType {
+                        newShapes[shape.id] = updatedShape
+                    }
                 }
             }
         }
 
         document.selectedObjectIDs.removeAll()
 
+        if !objectIDs.isEmpty {
+            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+            document.commandManager.execute(command)
+        }
     }
 
     private func showAllObjects() {
