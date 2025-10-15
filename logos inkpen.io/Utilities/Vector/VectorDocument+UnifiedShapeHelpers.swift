@@ -199,6 +199,13 @@ extension VectorDocument {
                 }
                 updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
                 unifiedObjects[index] = updatedObject
+
+                // Send preview notification for immediate visual update
+                NotificationCenter.default.post(
+                    name: Notification.Name("ShapePreviewUpdate"),
+                    object: nil,
+                    userInfo: ["shapeID": id, "strokePlacement": placement.rawValue]
+                )
             }
         }
     }
