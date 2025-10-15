@@ -2,7 +2,6 @@ import Foundation
 
 struct GeometryUtils {
 
-
     static func constrainToAngle(from reference: CGPoint, to target: CGPoint, constraintAngles: [Double]) -> CGPoint {
         let dx = target.x - reference.x
         let dy = target.y - reference.y
