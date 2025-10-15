@@ -56,14 +56,29 @@ struct ProfessionalOffsetPathSection: View {
                                 .monospacedDigit()
                         }
 
-                        Slider(value: Binding(
-                            get: { Double(offsetDistance) },
-                            set: { offsetDistance = Int($0) }
-                        ), in: -30...30) {
-                            Text("Offset Distance")
+                        ZStack {
+                            Capsule()
+                                .fill(Color.white)
+                                .frame(height: 6)
+                                .overlay(
+                                    Capsule()
+                                        .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
+                                )
+
+                            Slider(value: Binding(
+                                get: { Double(offsetDistance) },
+                                set: { offsetDistance = Int($0) }
+                            ), in: -30...30) {
+                                Text("Offset Distance")
+                            }
+                            .controlSize(.regular)
+                            .tint(Color.clear)
+
+                            Capsule()
+                                .fill(Color.blue)
+                                .frame(height: 6)
+                                .allowsHitTesting(false)
                         }
-                        .controlSize(.regular)
-                        .tint(.blue)
                     }
 
                     HStack {
@@ -136,10 +151,26 @@ struct ProfessionalOffsetPathSection: View {
                                     .monospacedDigit()
                             }
 
-                            Slider(value: $miterLimit, in: 1.0...20.0) {
-                                Text("Miter Limit")
+                            ZStack {
+                                Capsule()
+                                    .fill(Color.white)
+                                    .frame(height: 6)
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
+                                    )
+
+                                Slider(value: $miterLimit, in: 1.0...20.0) {
+                                    Text("Miter Limit")
+                                }
+                                .controlSize(.regular)
+                                .tint(Color.clear)
+
+                                Capsule()
+                                    .fill(Color.blue)
+                                    .frame(height: 6)
+                                    .allowsHitTesting(false)
                             }
-                            .controlSize(.regular)
                         }
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
