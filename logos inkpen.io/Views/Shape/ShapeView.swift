@@ -41,33 +41,39 @@ struct ShapeView: View {
     var body: some View {
         ZStack {
             if shape.isGroupContainer {
-                ZStack {
-                    ForEach(shape.groupedShapes.filter { $0.isVisible }, id: \.id) { groupedShape in
-                        if !groupedShape.isTextObject {
-                            let cachedPath = Path { path in
-                                addPathElements(groupedShape.path.elements, to: &path)
-                            }
-
-                            ZStack {
-                                if effectiveViewMode == .color,
-                                   let fillStyle = groupedShape.fillStyle,
-                                    fillStyle.color != .clear {
-                                    renderFill(fillStyle: fillStyle, path: cachedPath, shape: groupedShape)
+                if shape.isClippingGroup {
+                    // Adobe-style clipping group: first shape is mask, rest are content
+                    renderClippingGroup()
+                } else {
+                    // Regular group
+                    ZStack {
+                        ForEach(shape.groupedShapes.filter { $0.isVisible }, id: \.id) { groupedShape in
+                            if !groupedShape.isTextObject {
+                                let cachedPath = Path { path in
+                                    addPathElements(groupedShape.path.elements, to: &path)
                                 }
 
-                                if effectiveViewMode == .keyline {
-                                    cachedPath.stroke(Color.black, lineWidth: 1.0 / zoomLevel)
-                                } else if let strokeStyle = groupedShape.strokeStyle, strokeStyle.color != .clear {
-                                    renderStrokeWithPlacement(shape: groupedShape, strokeStyle: strokeStyle, viewMode: effectiveViewMode, path: cachedPath)
-                                        .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
+                                ZStack {
+                                    if effectiveViewMode == .color,
+                                       let fillStyle = groupedShape.fillStyle,
+                                        fillStyle.color != .clear {
+                                        renderFill(fillStyle: fillStyle, path: cachedPath, shape: groupedShape)
+                                    }
+
+                                    if effectiveViewMode == .keyline {
+                                        cachedPath.stroke(Color.black, lineWidth: 1.0 / zoomLevel)
+                                    } else if let strokeStyle = groupedShape.strokeStyle, strokeStyle.color != .clear {
+                                        renderStrokeWithPlacement(shape: groupedShape, strokeStyle: strokeStyle, viewMode: effectiveViewMode, path: cachedPath)
+                                            .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
+                                    }
                                 }
+                                .transformEffect(groupedShape.transform)
+                                .opacity(groupedShape.opacity)
                             }
-                            .transformEffect(groupedShape.transform)
-                            .opacity(groupedShape.opacity)
                         }
                     }
+                    .transformEffect(shape.transform)
                 }
-                .transformEffect(shape.transform)
             } else {
                 if SVGToInkPenImporter.containsSVGContent(shape),
                    let svgData = SVGToInkPenImporter.getSVGData(for: shape) {
@@ -301,6 +307,55 @@ struct ShapeView: View {
 
         default:
             path.stroke(strokeStyle.color.color, style: swiftUIStyle)
+        }
+    }
+
+    @ViewBuilder
+    private func renderClippingGroup() -> some View {
+        let visibleShapes = shape.groupedShapes.filter { $0.isVisible }
+
+        if visibleShapes.isEmpty {
+            EmptyView()
+        } else {
+            // First shape is the clipping mask
+            let maskShape = visibleShapes.first!
+            let contentShapes = Array(visibleShapes.dropFirst())
+
+            // Create the mask path
+            let maskPath = Path { path in
+                addPathElements(maskShape.path.elements, to: &path)
+            }
+            .applying(maskShape.transform)
+
+            // Render all content shapes
+            ZStack {
+                ForEach(contentShapes, id: \.id) { contentShape in
+                    if !contentShape.isTextObject {
+                        let contentPath = Path { path in
+                            addPathElements(contentShape.path.elements, to: &path)
+                        }
+
+                        ZStack {
+                            if effectiveViewMode == .color,
+                               let fillStyle = contentShape.fillStyle,
+                               fillStyle.color != .clear {
+                                renderFill(fillStyle: fillStyle, path: contentPath, shape: contentShape)
+                            }
+
+                            if effectiveViewMode == .keyline {
+                                contentPath.stroke(Color.black, lineWidth: 1.0 / zoomLevel)
+                            } else if let strokeStyle = contentShape.strokeStyle, strokeStyle.color != .clear {
+                                renderStrokeWithPlacement(shape: contentShape, strokeStyle: strokeStyle, viewMode: effectiveViewMode, path: contentPath)
+                                    .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
+                            }
+                        }
+                        .transformEffect(contentShape.transform)
+                        .opacity(contentShape.opacity)
+                    }
+                }
+            }
+            .mask(maskPath.fill())  // Apply the clipping mask
+            .transformEffect(shape.transform)
         }
     }
 

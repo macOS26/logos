@@ -365,11 +365,12 @@ struct VectorShape: Hashable, Identifiable {
     var isGroup: Bool
     var groupedShapes: [VectorShape]
     var groupTransform: CGAffineTransform
+    var isClippingGroup: Bool = false  // Adobe-style clipping group
 
     var isCompoundPath: Bool
 
-    var isClippingPath: Bool = false
-    var clippedByShapeID: UUID?
+    var isClippingPath: Bool = false  // Legacy - will be deprecated
+    var clippedByShapeID: UUID?  // Legacy - will be deprecated
 
     var isWarpObject: Bool
     var originalPath: VectorPath?
@@ -391,7 +392,7 @@ struct VectorShape: Hashable, Identifiable {
 
     var metadata: [String: String] = [:]
 
-    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isCompoundPath: Bool = false, isClippingPath: Bool = false, clippedByShapeID: UUID? = nil, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], warpedBounds: CGRect? = nil, isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = [], isTextObject: Bool = false, textContent: String? = nil, typography: TypographyProperties? = nil, cursorPosition: Int? = nil, areaSize: CGSize? = nil, isEditing: Bool? = nil, textPosition: CGPoint? = nil, metadata: [String: String] = [:]) {
+    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isClippingGroup: Bool = false, isCompoundPath: Bool = false, isClippingPath: Bool = false, clippedByShapeID: UUID? = nil, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], warpedBounds: CGRect? = nil, isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = [], isTextObject: Bool = false, textContent: String? = nil, typography: TypographyProperties? = nil, cursorPosition: Int? = nil, areaSize: CGSize? = nil, isEditing: Bool? = nil, textPosition: CGPoint? = nil, metadata: [String: String] = [:]) {
         self.id = UUID()
         self.name = name
         self.path = path
@@ -407,6 +408,7 @@ struct VectorShape: Hashable, Identifiable {
         self.isGroup = isGroup
         self.groupedShapes = groupedShapes
         self.groupTransform = groupTransform
+        self.isClippingGroup = isClippingGroup
         self.isCompoundPath = isCompoundPath
         self.isClippingPath = isClippingPath
         self.clippedByShapeID = clippedByShapeID
@@ -465,7 +467,7 @@ struct VectorShape: Hashable, Identifiable {
     }
 
 
-    static func group(from shapes: [VectorShape], name: String = "Group") -> VectorShape {
+    static func group(from shapes: [VectorShape], name: String = "Group", isClippingGroup: Bool = false) -> VectorShape {
         var calculatedGroupBounds = CGRect.null
         for shape in shapes {
             let shapeBounds: CGRect
@@ -501,7 +503,8 @@ struct VectorShape: Hashable, Identifiable {
             blendMode: .normal,
             isGroup: true,
             groupedShapes: preservedShapes,
-            groupTransform: .identity
+            groupTransform: .identity,
+            isClippingGroup: isClippingGroup
         )
 
         groupShape.bounds = calculatedGroupBounds
@@ -660,7 +663,7 @@ extension VectorShape: Codable {
         case id, name, path, geometricType, strokeStyle, fillStyle
         case transform, isVisible, isLocked, opacity, blendMode, bounds
         case embeddedImageData, linkedImagePath, linkedImageBookmarkData
-        case isGroup, groupedShapes, groupTransform
+        case isGroup, groupedShapes, groupTransform, isClippingGroup
         case isCompoundPath, isClippingPath, clippedByShapeID
         case isWarpObject, originalPath, warpEnvelope, originalEnvelope, warpedBounds
         case isRoundedRectangle, originalBounds, cornerRadii
@@ -720,6 +723,10 @@ extension VectorShape: Codable {
 
             if groupTransform != .identity {
                 try container.encode(groupTransform, forKey: .groupTransform)
+            }
+
+            if isClippingGroup {
+                try container.encode(isClippingGroup, forKey: .isClippingGroup)
             }
         }
 
@@ -800,6 +807,7 @@ extension VectorShape: Codable {
         isGroup = try container.decodeIfPresent(Bool.self, forKey: .isGroup) ?? false
         groupedShapes = try container.decodeIfPresent([VectorShape].self, forKey: .groupedShapes) ?? []
         groupTransform = try container.decodeIfPresent(CGAffineTransform.self, forKey: .groupTransform) ?? .identity
+        isClippingGroup = try container.decodeIfPresent(Bool.self, forKey: .isClippingGroup) ?? false
 
         isCompoundPath = try container.decodeIfPresent(Bool.self, forKey: .isCompoundPath) ?? false
         isClippingPath = try container.decodeIfPresent(Bool.self, forKey: .isClippingPath) ?? false
