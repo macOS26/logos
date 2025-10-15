@@ -181,6 +181,7 @@ extension DrawingCanvas {
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
               elementIndex < shape.path.elements.count else { return }
 
+        let oldPath = shape.path
         let element = shape.path.elements[elementIndex]
         var elements = shape.path.elements
 
@@ -207,9 +208,13 @@ extension DrawingCanvas {
             var updatedShape = shape
             updatedShape.path.elements = elements
             updatedShape.updateBounds()
-            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
+            let newPath = VectorPath(elements: elements, isClosed: shape.path.isClosed)
 
+            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
             document.updateUnifiedObjectsOptimized()
+
+            let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
+            document.commandManager.execute(command)
 
         case .quadCurve(let to, _):
             elements[elementIndex] = .line(to: to)
@@ -217,9 +222,13 @@ extension DrawingCanvas {
             var updatedShape = shape
             updatedShape.path.elements = elements
             updatedShape.updateBounds()
-            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
+            let newPath = VectorPath(elements: elements, isClosed: shape.path.isClosed)
 
+            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
             document.updateUnifiedObjectsOptimized()
+
+            let command = ModifyPathCommand(objectID: shape.id, oldPath: oldPath, newPath: newPath)
+            document.commandManager.execute(command)
 
         default:
             break
