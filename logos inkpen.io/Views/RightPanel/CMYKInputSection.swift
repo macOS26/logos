@@ -12,12 +12,10 @@ struct CMYKInputSection: View {
     @State private var magentaValue: String = "0"
     @State private var yellowValue: String = "0"
     @State private var blackValue: String = "0"
-
     @State private var cyanSlider: Double = 0
     @State private var magentaSlider: Double = 0
     @State private var yellowSlider: Double = 0
     @State private var blackSlider: Double = 0
-
     @State private var isProgrammaticallyUpdating: Bool = false
     @State private var isDisplayingGradient: Bool = false
 

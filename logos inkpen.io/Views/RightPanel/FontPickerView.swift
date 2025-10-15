@@ -35,7 +35,6 @@ struct FontPickerView: View {
     let selectedText: VectorText?
     let editingText: VectorText?
     @Binding var fontFamilyUpdateTrigger: Bool
-
     @State private var currentFontFamilyState: String = "Helvetica"
     @State private var availableFontVariantNamesState: [String] = ["Regular"]
     @State private var currentFontVariantState: String = "Regular"

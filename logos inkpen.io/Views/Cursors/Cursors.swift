@@ -126,30 +126,24 @@ struct DrawingCanvas: View {
     @State internal var lastPanLocation = CGPoint.zero
     @State internal var drawingStartPoint: CGPoint?
     @State internal var currentDrawingPoints: [CGPoint] = []
-
     @State internal var lastTapTime: Date = Date()
 
     @State internal var initialCanvasOffset = CGPoint.zero
     @State internal var handToolDragStart = CGPoint.zero
-
     @State internal var selectionDragStart = CGPoint.zero
     @State internal var initialObjectPositions: [UUID: CGPoint] = [:]
     @State internal var initialObjectTransforms: [UUID: CGAffineTransform] = [:]
     @State internal var currentDragDelta: CGPoint = .zero
     @State internal var dragPreviewUpdateTrigger: Bool = false
     @State internal var dragUpdateCounter: Int = 0
-
     @State internal var shapeDragStart = CGPoint.zero
     @State internal var shapeStartPoint = CGPoint.zero
-
     @State internal var isShiftPressed = false
     @State internal var isCommandPressed = false
     @State internal var isOptionPressed = false
     @State internal var isControlPressed = false
-
     @State internal var isDraggingDirectSelectedShapes = false
     @State internal var keyEventMonitor: Any?
-
     @State internal var bezierPath: VectorPath?
     @State internal var bezierPoints: [VectorPoint] = []
     @State internal var isBezierDrawing = false
@@ -160,14 +154,11 @@ struct DrawingCanvas: View {
     @State internal var currentMouseLocation: CGPoint? = nil
     @State internal var showClosePathHint = false
     @State internal var closePathHintLocation: CGPoint = .zero
-
     @State internal var showContinuePathHint = false
     @State internal var continuePathHintLocation: CGPoint = .zero
     @State internal var isCanvasHovering: Bool = false
-
     @State internal var currentSnapPoint: CGPoint? = nil
     @State internal var currentShapeId: UUID? = nil
-
     @State internal var activeBezierShape: VectorShape? = nil
 
     @State internal var freehandPath: VectorPath?
@@ -177,44 +168,36 @@ struct DrawingCanvas: View {
     @State internal var isFreehandDrawing = false
     @State internal var activeFreehandShape: VectorShape? = nil
     @State internal var freehandPreviewPath: VectorPath? = nil
-
     @State internal var brushPath: VectorPath?
     @State internal var brushRawPoints: [BrushPoint] = []
     @State internal var brushSimplifiedPoints: [CGPoint] = []
     @State internal var isBrushDrawing = false
     @State internal var activeBrushShape: VectorShape? = nil
     @State internal var brushPreviewPath: VectorPath? = nil
-
     @State internal var markerPath: VectorPath?
     @State internal var markerRawPoints: [MarkerPoint] = []
     @State internal var markerSimplifiedPoints: [CGPoint] = []
     @State internal var isMarkerDrawing = false
     @State internal var activeMarkerShape: VectorShape? = nil
     @State internal var markerPreviewPath: VectorPath? = nil
-
     @State internal var previousTool: DrawingTool = .selection
 
     @State internal var isTemporaryHandToolActive = false
     @State internal var temporaryToolPreviousTool: DrawingTool? = nil
-
     @State internal var isTemporaryDirectSelectionViaCommand = false
     @State internal var isTemporarySelectionViaCommand = false
     @State internal var temporaryCommandPreviousTool: DrawingTool? = nil
-
     @State internal var initialZoomLevel: CGFloat = 1.0
 
     @State internal var isZoomGestureActive = false
     @State internal var isPanGestureActive = false
-
     @State internal var lastClickTime: Date = Date.distantPast
     @State internal var lastClickLocation: CGPoint = .zero
     @State internal var doubleClickTimeout: TimeInterval = 0.3
-
     @State internal var isTextEditingMode = false
 
     @State internal var zoomToolDragStartPoint: CGPoint = .zero
     @State internal var zoomToolInitialZoomLevel: CGFloat = 1.0
-
     @State internal var selectedPoints: Set<PointID> = []
     @State internal var selectedHandles: Set<HandleID> = []
     @State internal var visibleHandles: Set<HandleID> = []
@@ -242,52 +225,40 @@ struct DrawingCanvas: View {
     @State internal var originalPointPositions: [PointID: VectorPoint] = [:]
     @State internal var originalHandlePositions: [HandleID: VectorPoint] = [:]
     @State internal var originalDragShapes: [UUID: VectorShape] = [:]
-
     @State internal var cornerDragStart: CGPoint = .zero
     @State internal var initialCornerRadius: Double = 0.0
     @State internal var isDraggingCorner = false
     @State internal var draggedCornerIndex: Int? = nil
     @State internal var currentMousePosition: CGPoint = .zero
-
     @State internal var coincidentPointClusters: [HashableCGPoint: [PointID]] = [:]
     @State internal var coincidentPointRadius: CGFloat = 2.0
     @State internal var coincidentPointTolerance: Double = 1.0
-
 	@State internal var isHUDDragging = false
 	@State internal var hudDragStartOffsetX: CGFloat = 0
 	@State internal var hudDragStartOffsetY: CGFloat = 0
-
     @State internal var isEditingText = false
     @State internal var editingTextID: UUID? = nil
     @State internal var currentCursorPosition: Int = 0
     @State internal var currentSelectionRange: NSRange = NSRange(location: 0, length: 0)
     @State internal var lastTapLocation: CGPoint = .zero
-
     @State internal var isHit = false
     @State internal var foundPointOrHandle = false
-
     @State internal var sharedElements: [PathElement] = []
     @State internal var sharedNewElements: [PathElement] = []
     @State internal var sharedValidElements: [PathElement] = []
-
     @State internal var sharedMaxDistance: Double = 0
     @State internal var sharedMaxIndex: Int = 0
-
     @State internal var sharedClosestDistance: Double = Double.infinity
     @State internal var sharedClosestPressure: Double = 1.0
-
     @State internal var sharedThicknessPoints: [(location: CGPoint, thickness: Double)] = []
 
     @State internal var sharedOutgoingHandleCollapsed: Bool = true
-
     @State internal var sharedUpdatedShape: VectorShape?
     @State internal var sharedOriginalShape: VectorShape?
-
     @State internal var sharedCurvePositions: [CGPoint] = []
 
     @State internal var sharedAllRadii: [Double] = []
     @State internal var sharedUpdatedRadii: [Double] = []
-
     @State internal var hasPerformedInitialFitToPage = false
 
     var body: some View {

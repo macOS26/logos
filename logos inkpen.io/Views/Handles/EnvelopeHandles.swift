@@ -15,7 +15,6 @@ struct EnvelopeHandles: View {
     @State private var startLocation: CGPoint = .zero
     @State private var previewPath: VectorPath? = nil
     @State private var isShiftPressed = false
-
     @State private var originalCorners: [CGPoint] = []
     @State private var warpedCorners: [CGPoint] = []
     @State private var draggingCornerIndex: Int? = nil

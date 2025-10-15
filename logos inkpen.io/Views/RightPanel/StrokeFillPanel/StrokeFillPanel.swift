@@ -4,14 +4,12 @@ import Combine
 struct StrokeFillPanel: View {
     @ObservedObject var document: VectorDocument
     @Environment(AppState.self) private var appState
-
     @State private var fillOpacityState: Double = 1.0
     @State private var strokeOpacityState: Double = 1.0
     @State private var strokeWidthState: Double = 1.0
     @State private var strokePlacementState: StrokePlacement = .center
     @State private var strokeMiterLimitState: Double = 10.0
     @State private var selectedImageOpacityState: Double = 1.0
-
     @State private var cachedIndexMap: [UUID: Int] = [:]
     @State private var isDragging: Bool = false
 

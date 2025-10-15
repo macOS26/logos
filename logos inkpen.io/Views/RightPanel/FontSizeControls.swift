@@ -9,11 +9,9 @@ struct FontSizeControls: View {
     @State private var isDraggingFontSize = false
     @State private var isDraggingLineSpacing = false
     @State private var isDraggingLineHeight = false
-
     @State private var previewFontSize: CGFloat? = nil
     @State private var previewLineSpacing: CGFloat? = nil
     @State private var previewLineHeight: CGFloat? = nil
-
     @State private var currentFontSizeState: CGFloat = 12.0
     @State private var currentLineSpacingState: CGFloat = 0.0
     @State private var currentLineHeightState: CGFloat = 12.0

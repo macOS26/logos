@@ -18,7 +18,6 @@ struct RotateHandles: View {
     @State private var rotationAnchorPoint: CGPoint = .zero
     @State private var startAngle: CGFloat = 0.0
     @State private var finalMarqueeBounds: CGRect = .zero
-
     @State private var selectedAnchorPointIndex: Int? = nil
     @State private var pathPoints: [VectorPoint] = []
     @State private var centerPoint: VectorPoint = VectorPoint(CGPoint.zero)

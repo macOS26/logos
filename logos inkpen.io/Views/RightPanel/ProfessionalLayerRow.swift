@@ -9,7 +9,6 @@ struct ProfessionalLayerRow: View {
     @State private var isEditingName: Bool = false
     @State private var editedName: String = ""
     @State private var showColorPicker: Bool = false
-
     @State private var isExpanded: Bool
     @State private var layerObjects: [VectorObject] = []
 

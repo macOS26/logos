@@ -694,15 +694,6 @@ private func gcd(_ a: Int, _ b: Int) -> Int {
     return max(1, x)
 }
 
-struct RulersView_Previews: PreviewProvider {
-    static var previews: some View {
-        GeometryReader { geometry in
-            RulersView(document: VectorDocument(), geometry: geometry)
-        }
-        .frame(width: 600, height: 400)
-    }
-}
-
 struct PageOriginCrosshair: View {
     @ObservedObject var document: VectorDocument
     let geometry: GeometryProxy

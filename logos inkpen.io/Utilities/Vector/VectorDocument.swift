@@ -14,7 +14,6 @@ class VectorDocument: ObservableObject, Codable {
     @Published var selectedShapeIDs: Set<UUID> = []
     @Published var selectedTextIDs: Set<UUID> = []
     @Published var selectedObjectIDs: Set<UUID> = []
-
     @Published var directSelectedShapeIDs: Set<UUID> = []
     @Published var documentColorDefaults: ColorDefaults = ColorDefaults() {
         didSet {

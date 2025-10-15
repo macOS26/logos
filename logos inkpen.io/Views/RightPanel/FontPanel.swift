@@ -2,7 +2,6 @@ import SwiftUI
 
 struct FontPanel: View {
     @ObservedObject var document: VectorDocument
-
     @State private var lastLoggedSelection: UUID?
     @State private var lastLoggedEditing: UUID?
     @State private var fontFamilyUpdateTrigger: Bool = false

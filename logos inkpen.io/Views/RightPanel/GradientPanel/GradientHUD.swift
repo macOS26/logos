@@ -78,7 +78,6 @@ struct GradientColorPickerSheet: View {
     let turnOffEditingState: () -> Void
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
-
     @State private var localDocument: VectorDocument
 
     var onClose: (() -> Void)?

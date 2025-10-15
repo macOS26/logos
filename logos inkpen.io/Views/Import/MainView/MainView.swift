@@ -17,10 +17,8 @@ struct MainView: View {
     @State private var showingSVGTestHarness = false
     @State private var showingNewDocumentSetup = false
     @State private var showingPressureCalibration = false
-
     @State private var isBottomDrawerOpen = false
     @State private var isLeftDrawerOpen = false
-
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         ZStack {
@@ -560,11 +558,5 @@ private class SavePanelAccessoryHandler: NSObject {
     }
 
     deinit {
-    }
-}
-
-struct MainView_Previews: PreviewProvider {
-    static var previews: some View {
-        MainView()
     }
 }

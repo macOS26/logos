@@ -5,13 +5,10 @@ class PressureManager: ObservableObject {
 
     @Published var hasRealPressureInput = false
     @Published var currentPressure: Double = 1.0
-
     @Published var isCalibrating = false
     @Published var calibrationMinPressure: Double = 0.0
-
     @Published var calibrationMaxPressure: Double = 0.0
     @Published var calibrationSampleCount: Int = 0
-
     @Published var tabletOnlyCalibration: Bool = true
 
     private var lastLocation: CGPoint?

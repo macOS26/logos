@@ -115,11 +115,9 @@ struct RGBInputSection: View {
     @State private var greenValue: String = "78"
     @State private var blueValue: String = "68"
     @State private var hexValue: String = "854e44"
-
     @State private var redSlider: Double = 133
     @State private var greenSlider: Double = 78
     @State private var blueSlider: Double = 68
-
     @State private var isProgrammaticallyUpdating: Bool = false
     @State private var isDisplayingGradient: Bool = false
 

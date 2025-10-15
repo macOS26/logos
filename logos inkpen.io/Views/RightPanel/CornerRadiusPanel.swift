@@ -206,12 +206,4 @@ struct CornerRadiusPanel: View {
 
         return shape.cornerRadii.count > 0 ? shape : nil
     }
-
-}
-
-struct CornerRadiusPanel_Previews: PreviewProvider {
-    static var previews: some View {
-        CornerRadiusPanel(document: VectorDocument())
-            .frame(width: 280, height: 400)
-    }
 }

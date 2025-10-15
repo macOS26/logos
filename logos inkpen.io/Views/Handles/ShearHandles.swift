@@ -16,7 +16,6 @@ struct ShearHandles: View {
     @State private var previewTransform: CGAffineTransform = .identity
     @State private var shearAnchorPoint: CGPoint = .zero
     @State private var isCapsLockPressed = false
-
     @State private var lockedPinPointIndex: Int? = nil
     @State private var pathPoints: [VectorPoint] = []
     @State private var centerPoint: VectorPoint = VectorPoint(CGPoint.zero)

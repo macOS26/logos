@@ -9,14 +9,12 @@ struct PressureCalibrationView: View {
     @State private var minPressureBarWidth: CGFloat = 0
     @State private var maxPressureBarWidth: CGFloat = 0
     @State private var tabletOnlyMode: Bool = true
-
     @State private var eventLog: [String] = []
     private let maxEventLogEntries = 20
 
     @State private var isDrawing = false
     @State private var currentPath: VariableStrokePath?
     @State private var drawingPaths: [VariableStrokePath] = []
-
     @State private var selectedControlPoint: Int?
 
     private let barMaxWidth: CGFloat = 280

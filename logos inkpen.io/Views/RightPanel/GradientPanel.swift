@@ -6,11 +6,10 @@ struct GradientPanel: View {
     @ObservedObject var document: VectorDocument
     var body: some View {
         ScrollView {
-            VStack(spacing: 8) {
+            VStack() {
                 GradientFillSection(document: document)
                 Spacer()
             }
-            .padding()
         }
     }
 }
@@ -22,7 +21,6 @@ struct GradientFillSection: View {
     @State private var currentGradient: VectorGradient? = nil
     @State private var gradientId: UUID = UUID()
     @State private var isEditingAngle: Bool = false
-
     @State private var showingGradientColorPicker = false
     @State private var editingGradientStopId: UUID?
     @State private var editingGradientStopColor: VectorColor = .black
@@ -49,7 +47,7 @@ struct GradientFillSection: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading) {
             Text("Gradient Fill")
                 .font(.headline)
                 .fontWeight(.medium)
@@ -704,12 +702,5 @@ struct GradientFillSection: View {
         default:
             return .black
         }
-    }
-}
-
-struct GradientPanel_Previews: PreviewProvider {
-    static var previews: some View {
-        GradientPanel(document: VectorDocument())
-            .frame(width: 300, height: 600)
     }
 }

@@ -3,7 +3,6 @@ import SwiftUI
 struct PantoneColorPickerSheet: View {
     @ObservedObject var document: VectorDocument
     @Environment(\.presentationMode) var presentationMode
-
     @State private var searchText = ""
     @State private var selectedCategory: PantoneCategory = .all
     @State private var selectedColor: PantoneLibraryColor?

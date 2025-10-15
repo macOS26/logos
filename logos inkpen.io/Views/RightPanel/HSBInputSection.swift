@@ -12,18 +12,14 @@ struct HSBInputSection: View {
     @State private var brightnessValue: String = "100"
     @State private var hexValue: String = "ff0000"
     @State private var isUpdatingHexFromHSB: Bool = false
-    
     @State private var hueSlider: Double = 0
     @State private var saturationSlider: Double = 100
     @State private var brightnessSlider: Double = 100
-    
     @State private var isProgrammaticallyUpdating: Bool = false
     @State private var isDisplayingGradient: Bool = false
-    
     @State private var pmsEntryText: String = ""
     
     @State private var livePMSPreview: PantoneLibraryColor? = nil
-    
     @ObservedObject private var pantoneLibrary = PantoneLibrary()
     
     private var currentColor: HSBColorModel {
