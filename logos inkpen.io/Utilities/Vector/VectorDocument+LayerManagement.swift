@@ -529,56 +529,37 @@ extension VectorDocument {
 
         guard sourceIndex != targetIndex else { return }
 
-        let sourceLayer = layers.remove(at: sourceIndex)
-        layers.insert(sourceLayer, at: targetIndex)
+        var affectedObjectUpdates: [(objectID: UUID, oldLayerIndex: Int, newLayerIndex: Int)] = []
 
         let newSourceIndex = targetIndex
-        var updatedObjects: [VectorObject] = []
         for object in unifiedObjects {
-            var updatedObject = object
             let currentLayerIndex = object.layerIndex
+            var newLayerIndex = currentLayerIndex
 
             if currentLayerIndex == sourceIndex {
-                updatedObject = VectorObject(
-                    shape: extractShape(from: object),
-                    layerIndex: newSourceIndex,
-                    orderID: object.orderID
-                )
+                newLayerIndex = newSourceIndex
             } else if sourceIndex < targetIndex {
                 if currentLayerIndex > sourceIndex && currentLayerIndex <= targetIndex {
-                    updatedObject = VectorObject(
-                        shape: extractShape(from: object),
-                        layerIndex: currentLayerIndex - 1,
-                        orderID: object.orderID
-                    )
+                    newLayerIndex = currentLayerIndex - 1
                 }
             } else {
                 if currentLayerIndex >= targetIndex && currentLayerIndex < sourceIndex {
-                    updatedObject = VectorObject(
-                        shape: extractShape(from: object),
-                        layerIndex: currentLayerIndex + 1,
-                        orderID: object.orderID
-                    )
+                    newLayerIndex = currentLayerIndex + 1
                 }
             }
 
-            updatedObjects.append(updatedObject)
-        }
-
-        unifiedObjects = updatedObjects
-
-        if selectedLayerIndex == sourceIndex {
-            selectedLayerIndex = newSourceIndex
-        } else if let selectedIndex = selectedLayerIndex {
-            if sourceIndex < targetIndex {
-                if selectedIndex > sourceIndex && selectedIndex <= targetIndex {
-                    selectedLayerIndex = selectedIndex - 1
-                }
-            } else {
-                if selectedIndex >= targetIndex && selectedIndex < sourceIndex {
-                    selectedLayerIndex = selectedIndex + 1
-                }
+            if newLayerIndex != currentLayerIndex {
+                affectedObjectUpdates.append((objectID: object.id, oldLayerIndex: currentLayerIndex, newLayerIndex: newLayerIndex))
             }
         }
+
+        let command = LayerReorderCommand(
+            sourceLayerId: sourceLayerId,
+            targetLayerId: targetLayerId,
+            sourceIndex: sourceIndex,
+            targetIndex: targetIndex,
+            affectedObjectUpdates: affectedObjectUpdates
+        )
+        commandManager.execute(command)
     }
 }
