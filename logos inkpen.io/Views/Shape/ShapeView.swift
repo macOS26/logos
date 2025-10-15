@@ -356,23 +356,51 @@ struct ShapeView: View {
                 ZStack {
                     ForEach(contentShapes, id: \.id) { contentShape in
                         if !contentShape.isTextObject {
-                            let contentPath = Path { path in
-                                addPathElements(contentShape.path.elements, to: &path)
-                            }
+                            // Check if this is an image
+                            if ImageContentRegistry.containsImage(contentShape),
+                               let image = ImageContentRegistry.image(for: contentShape.id) {
+                                let pathBounds = contentShape.path.cgPath.boundingBoxOfPath
+                                let transformedBounds = pathBounds.applying(contentShape.transform)
 
-                            ZStack {
-                                if let fillStyle = contentShape.fillStyle,
-                                   fillStyle.color != .clear {
-                                    renderFill(fillStyle: fillStyle, path: contentPath, shape: contentShape)
+                                ImageNSView(
+                                    image: image,
+                                    bounds: transformedBounds,
+                                    opacity: contentShape.opacity,
+                                    fillStyle: contentShape.fillStyle,
+                                    viewMode: effectiveViewMode
+                                )
+                            } else if contentShape.linkedImagePath != nil || contentShape.embeddedImageData != nil,
+                                      let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: contentShape) {
+                                let pathBounds = contentShape.path.cgPath.boundingBoxOfPath
+                                let transformedBounds = pathBounds.applying(contentShape.transform)
+
+                                ImageNSView(
+                                    image: hydrated,
+                                    bounds: transformedBounds,
+                                    opacity: contentShape.opacity,
+                                    fillStyle: contentShape.fillStyle,
+                                    viewMode: effectiveViewMode
+                                )
+                            } else {
+                                // Regular vector shape
+                                let contentPath = Path { path in
+                                    addPathElements(contentShape.path.elements, to: &path)
                                 }
 
-                                if let strokeStyle = contentShape.strokeStyle, strokeStyle.color != .clear {
-                                    renderStrokeWithPlacement(shape: contentShape, strokeStyle: strokeStyle, viewMode: effectiveViewMode, path: contentPath)
-                                        .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
+                                ZStack {
+                                    if let fillStyle = contentShape.fillStyle,
+                                       fillStyle.color != .clear {
+                                        renderFill(fillStyle: fillStyle, path: contentPath, shape: contentShape)
+                                    }
+
+                                    if let strokeStyle = contentShape.strokeStyle, strokeStyle.color != .clear {
+                                        renderStrokeWithPlacement(shape: contentShape, strokeStyle: strokeStyle, viewMode: effectiveViewMode, path: contentPath)
+                                            .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
+                                    }
                                 }
+                                .transformEffect(contentShape.transform)
+                                .opacity(contentShape.opacity)
                             }
-                            .transformEffect(contentShape.transform)
-                            .opacity(contentShape.opacity)
                         }
                     }
                 }
