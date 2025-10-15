@@ -231,7 +231,6 @@ struct LayersPanel: View {
                     in: 0...1,
                     onEditingChanged: { editing in
                         if !editing {
-                            document.saveToUndoStack()
                         }
                     }
                 )
@@ -251,7 +250,6 @@ struct LayersPanel: View {
                         var updatedLayer = document.layers[layerIndex]
                         updatedLayer.blendMode = newValue
                         document.layers[layerIndex] = updatedLayer
-                        document.saveToUndoStack()
                     }
                 )) {
                     ForEach(BlendMode.allCases, id: \.self) { mode in
@@ -268,7 +266,6 @@ struct LayersPanel: View {
                     color: Binding(
                         get: { document.layers[layerIndex].color },
                         set: { newColor in
-                            document.saveToUndoStack()
                             document.layers[layerIndex].color = newColor
                         }
                     ),
@@ -323,7 +320,6 @@ struct LayersPanel: View {
                                 document.isDraggingVisibility = true
                                 document.processedLayersDuringDrag.removeAll()
                                 document.processedObjectsDuringDrag.removeAll()
-                                document.saveToUndoStack()
 
                                 let startY = value.startLocation.y
                                 let rowIndex = Int(startY / kLayerRowHeight)
@@ -365,7 +361,6 @@ struct LayersPanel: View {
                                 document.isDraggingLock = true
                                 document.processedLayersDuringDrag.removeAll()
                                 document.processedObjectsDuringDrag.removeAll()
-                                document.saveToUndoStack()
 
                                 let startY = value.startLocation.y
                                 let rowIndex = Int(startY / kLayerRowHeight)

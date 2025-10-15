@@ -25,8 +25,6 @@ extension VectorDocument {
             return
         }
 
-        saveToUndoStack()
-
         guard let shape = getShapeAtIndex(layerIndex: fromLayerIndex, shapeIndex: shapeIndex) else {
             Log.error("❌ Failed to get shape from source layer", category: .error)
             return
@@ -54,8 +52,6 @@ extension VectorDocument {
             Log.error("❌ Text object not found", category: .error)
             return
         }
-
-        saveToUndoStack()
 
         updateTextLayerInUnified(id: textId, layerIndex: toLayerIndex)
 

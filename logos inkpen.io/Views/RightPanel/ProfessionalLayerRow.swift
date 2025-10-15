@@ -18,7 +18,6 @@ struct ProfessionalLayerRow: View {
             get: { document.layers[layerIndex].isVisible },
             set: { newValue in
                 if document.layers[layerIndex].isVisible != newValue {
-                    document.saveToUndoStack()
                     document.layers[layerIndex].isVisible = newValue
                 }
             }
@@ -30,7 +29,6 @@ struct ProfessionalLayerRow: View {
             get: { document.layers[layerIndex].isLocked },
             set: { newValue in
                 if document.layers[layerIndex].isLocked != newValue {
-                    document.saveToUndoStack()
                     document.layers[layerIndex].isLocked = newValue
                 }
             }
@@ -64,7 +62,6 @@ struct ProfessionalLayerRow: View {
         Binding(
             get: { document.layers[layerIndex].color },
             set: { newColor in
-                document.saveToUndoStack()
                 document.layers[layerIndex].color = newColor
             }
         )
@@ -104,7 +101,6 @@ struct ProfessionalLayerRow: View {
                                 if !document.isDraggingVisibility {
                                     document.isDraggingVisibility = true
                                     document.processedLayersDuringDrag.removeAll()
-                                    document.saveToUndoStack()
                                     document.layers[layerIndex].isVisible.toggle()
                                     document.processedLayersDuringDrag.insert(layerIndex)
                                 }
@@ -131,7 +127,6 @@ struct ProfessionalLayerRow: View {
                                 if !document.isDraggingLock {
                                     document.isDraggingLock = true
                                     document.processedLayersDuringDrag.removeAll()
-                                    document.saveToUndoStack()
                                     document.layers[layerIndex].isLocked.toggle()
                                     document.processedLayersDuringDrag.insert(layerIndex)
                                 }
@@ -200,7 +195,6 @@ struct ProfessionalLayerRow: View {
                             if isEditingName {
                                 TextField("Layer Name", text: $editedName, onCommit: {
                                     if !editedName.isEmpty {
-                                        document.saveToUndoStack()
                                         document.layers[layerIndex].name = editedName
                                     }
                                     isEditingName = false
