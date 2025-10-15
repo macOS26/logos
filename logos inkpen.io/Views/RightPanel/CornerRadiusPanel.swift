@@ -131,7 +131,11 @@ struct CornerRadiusPanel: View {
     private func applyCornerRadius(index: Int, value: Double) {
         guard let selectedShape = getSelectedRoundedRectangle() else { return }
 
-        document.saveToUndoStack()
+        var oldShapes: [UUID: VectorShape] = [:]
+        var newShapes: [UUID: VectorShape] = [:]
+        let objectIDs = [selectedShape.id]
+
+        oldShapes[selectedShape.id] = selectedShape
 
         if let layerIndex = document.selectedLayerIndex {
             let shapes = document.getShapesForLayer(layerIndex)
@@ -152,6 +156,13 @@ struct CornerRadiusPanel: View {
             )
 
             document.updateShapeCornerRadiiInUnified(id: selectedShape.id, cornerRadii: updatedRadii, path: newPath)
+
+            if let updatedShape = document.findShape(by: selectedShape.id) {
+                newShapes[selectedShape.id] = updatedShape
+            }
+
+            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+            document.commandManager.execute(command)
             }
         }
     }
