@@ -650,6 +650,78 @@ class PathOperations {
 
 extension ProfessionalPathOperations {
 
+    static func mergeAdjacentCoincidentPoints(in path: VectorPath, tolerance: Double = 0.5) -> VectorPath {
+        guard path.elements.count > 2 else {
+            return path
+        }
+
+        var cleanedElements: [PathElement] = []
+        var lastPosition: VectorPoint? = nil
+        var isFirstElement = true
+
+        for (index, element) in path.elements.enumerated() {
+            let isLastElement = (index == path.elements.count - 1) || (index == path.elements.count - 2 && path.elements.last.map { if case .close = $0 { return true } else { return false } } ?? false)
+
+            switch element {
+            case .move(let to):
+                cleanedElements.append(element)
+                lastPosition = to
+                isFirstElement = false
+
+            case .line(let to):
+                if let last = lastPosition {
+                    let distance = last.distance(to: to)
+                    // Keep if: not coincident OR it's first/last point element
+                    if distance > tolerance || isFirstElement || isLastElement {
+                        cleanedElements.append(element)
+                        lastPosition = to
+                    }
+                } else {
+                    cleanedElements.append(element)
+                    lastPosition = to
+                }
+                isFirstElement = false
+
+            case .curve(let to, _, _):
+                if let last = lastPosition {
+                    let distance = last.distance(to: to)
+                    // Keep if: not coincident OR it's first/last point element
+                    if distance > tolerance || isFirstElement || isLastElement {
+                        cleanedElements.append(element)
+                        lastPosition = to
+                    }
+                } else {
+                    cleanedElements.append(element)
+                    lastPosition = to
+                }
+                isFirstElement = false
+
+            case .quadCurve(let to, _):
+                if let last = lastPosition {
+                    let distance = last.distance(to: to)
+                    // Keep if: not coincident OR it's first/last point element
+                    if distance > tolerance || isFirstElement || isLastElement {
+                        cleanedElements.append(element)
+                        lastPosition = to
+                    }
+                } else {
+                    cleanedElements.append(element)
+                    lastPosition = to
+                }
+                isFirstElement = false
+
+            case .close:
+                cleanedElements.append(element)
+            }
+        }
+
+        if cleanedElements.isEmpty {
+            return path
+        }
+
+        return VectorPath(elements: cleanedElements, isClosed: path.isClosed)
+    }
+
     static func mergeDuplicatePoints(in path: VectorPath, tolerance: Double = 5.0) -> VectorPath {
 
         guard path.elements.count > 2 else {

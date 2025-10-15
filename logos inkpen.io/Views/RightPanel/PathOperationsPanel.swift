@@ -704,103 +704,19 @@ struct PathOperationsPanel: View {
         let selectedShapes = document.getSelectedShapes()
         let tolerance: Double = 0.5
 
-        Log.info("Merging points in \(selectedShapes.count) shapes", category: .general)
+        Log.info("Merging coincident points in \(selectedShapes.count) shapes", category: .general)
 
         for shape in selectedShapes {
             let originalCount = shape.path.elements.count
-            let cleanedPath = mergeCoincidentPoints(in: shape.path, tolerance: tolerance)
+            let cleanedPath = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: shape.path, tolerance: tolerance)
             let newCount = cleanedPath.elements.count
 
-            Log.info("Shape '\(shape.name)': \(originalCount) -> \(newCount) elements", category: .general)
+            Log.info("Shape '\(shape.name)': \(originalCount) -> \(newCount) elements (removed \(originalCount - newCount))", category: .general)
 
             if newCount != originalCount {
                 document.updateShapePathUnified(id: shape.id, path: cleanedPath)
             }
         }
-    }
-
-    private func mergeCoincidentPoints(in path: VectorPath, tolerance: Double) -> VectorPath {
-        let elements = path.elements
-        guard elements.count > 2 else { return path }
-
-        // Find all actual point elements (not .move or .close)
-        var pointIndices: [Int] = []
-        for (index, element) in elements.enumerated() {
-            switch element {
-            case .line, .curve, .quadCurve:
-                pointIndices.append(index)
-            default:
-                break
-            }
-        }
-
-        var cleanedElements: [PathElement] = []
-        var lastPosition: CGPoint? = nil
-
-        for (index, element) in elements.enumerated() {
-            // Determine if this is the first or last actual point (not .move or .close)
-            let isFirstPointElement = pointIndices.first == index
-            let isLastPointElement = pointIndices.last == index
-
-            switch element {
-            case .move(let to):
-                cleanedElements.append(element)
-                lastPosition = CGPoint(x: to.x, y: to.y)
-
-            case .line(let to):
-                let currentPos = CGPoint(x: to.x, y: to.y)
-                if let last = lastPosition {
-                    let distance = sqrt(pow(currentPos.x - last.x, 2) + pow(currentPos.y - last.y, 2))
-                    // Keep if: distance > tolerance OR it's first/last point
-                    if distance > tolerance || isFirstPointElement || isLastPointElement {
-                        cleanedElements.append(element)
-                        lastPosition = currentPos
-                    } else {
-                        Log.info("  Skipping coincident line point at distance \(distance)", category: .general)
-                    }
-                } else {
-                    cleanedElements.append(element)
-                    lastPosition = currentPos
-                }
-
-            case .curve(let to, _, _):
-                let currentPos = CGPoint(x: to.x, y: to.y)
-                if let last = lastPosition {
-                    let distance = sqrt(pow(currentPos.x - last.x, 2) + pow(currentPos.y - last.y, 2))
-                    // Keep if: distance > tolerance OR it's first/last point
-                    if distance > tolerance || isFirstPointElement || isLastPointElement {
-                        cleanedElements.append(element)
-                        lastPosition = currentPos
-                    } else {
-                        Log.info("  Skipping coincident curve point at distance \(distance)", category: .general)
-                    }
-                } else {
-                    cleanedElements.append(element)
-                    lastPosition = currentPos
-                }
-
-            case .quadCurve(let to, _):
-                let currentPos = CGPoint(x: to.x, y: to.y)
-                if let last = lastPosition {
-                    let distance = sqrt(pow(currentPos.x - last.x, 2) + pow(currentPos.y - last.y, 2))
-                    // Keep if: distance > tolerance OR it's first/last point
-                    if distance > tolerance || isFirstPointElement || isLastPointElement {
-                        cleanedElements.append(element)
-                        lastPosition = currentPos
-                    } else {
-                        Log.info("  Skipping coincident quadCurve point at distance \(distance)", category: .general)
-                    }
-                } else {
-                    cleanedElements.append(element)
-                    lastPosition = currentPos
-                }
-
-            case .close:
-                cleanedElements.append(element)
-            }
-        }
-
-        return VectorPath(elements: cleanedElements)
     }
 
 }
