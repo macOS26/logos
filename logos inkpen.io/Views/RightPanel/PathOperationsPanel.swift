@@ -133,6 +133,30 @@ struct PathOperationsPanel: View {
                     .help("Clean duplicate points in all shapes in the document (⌘⌥K)")
 
                     Button {
+                        mergeCoincidentPointsInSelectedShapes()
+                    } label: {
+                        Text("Merge Points")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.primary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.gray.opacity(0.1))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
+                            )
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(BorderlessButtonStyle())
+                    .onTapGesture {
+                        mergeCoincidentPointsInSelectedShapes()
+                    }
+                    .help("Merge coincident points in selected shapes (excluding start and end points)")
+
+                    Button {
                         removeOverlapFromSelectedShapes()
                     } label: {
                         Text("Remove Overlap")
@@ -659,6 +683,89 @@ struct PathOperationsPanel: View {
 
         Log.error("❌ REMOVE OVERLAP: Failed to clean shape: \(shape.name)", category: .error)
         return false
+    }
+
+    private func mergeCoincidentPointsInSelectedShapes() {
+        guard !document.selectedShapeIDs.isEmpty else { return }
+
+        let selectedShapes = document.getSelectedShapes()
+        let tolerance: Double = 0.5
+
+        for shape in selectedShapes {
+            let cleanedPath = mergeCoincidentPoints(in: shape.path, tolerance: tolerance)
+            document.updateShapePathUnified(id: shape.id, path: cleanedPath)
+        }
+    }
+
+    private func mergeCoincidentPoints(in path: VectorPath, tolerance: Double) -> VectorPath {
+        let elements = path.elements
+        guard elements.count > 2 else { return path }
+
+        var cleanedElements: [PathElement] = []
+        var lastPosition: CGPoint? = nil
+        var isFirstPoint = true
+
+        for (index, element) in elements.enumerated() {
+            let lastElementIsClose = elements.last.map { if case .close = $0 { return true } else { return false } } ?? false
+            let isLastPoint = (index == elements.count - 1) || (index == elements.count - 2 && lastElementIsClose)
+
+            switch element {
+            case .move(let to):
+                cleanedElements.append(element)
+                lastPosition = CGPoint(x: to.x, y: to.y)
+                isFirstPoint = false
+
+            case .line(let to):
+                let currentPos = CGPoint(x: to.x, y: to.y)
+                if let last = lastPosition {
+                    let distance = sqrt(pow(currentPos.x - last.x, 2) + pow(currentPos.y - last.y, 2))
+                    // Skip coincident points UNLESS it's the first or last point
+                    if distance > tolerance || isFirstPoint || isLastPoint {
+                        cleanedElements.append(element)
+                        lastPosition = currentPos
+                    }
+                } else {
+                    cleanedElements.append(element)
+                    lastPosition = currentPos
+                }
+                isFirstPoint = false
+
+            case .curve(let to, _, _):
+                let currentPos = CGPoint(x: to.x, y: to.y)
+                if let last = lastPosition {
+                    let distance = sqrt(pow(currentPos.x - last.x, 2) + pow(currentPos.y - last.y, 2))
+                    // Skip coincident points UNLESS it's the first or last point
+                    if distance > tolerance || isFirstPoint || isLastPoint {
+                        cleanedElements.append(element)
+                        lastPosition = currentPos
+                    }
+                } else {
+                    cleanedElements.append(element)
+                    lastPosition = currentPos
+                }
+                isFirstPoint = false
+
+            case .quadCurve(let to, _):
+                let currentPos = CGPoint(x: to.x, y: to.y)
+                if let last = lastPosition {
+                    let distance = sqrt(pow(currentPos.x - last.x, 2) + pow(currentPos.y - last.y, 2))
+                    // Skip coincident points UNLESS it's the first or last point
+                    if distance > tolerance || isFirstPoint || isLastPoint {
+                        cleanedElements.append(element)
+                        lastPosition = currentPos
+                    }
+                } else {
+                    cleanedElements.append(element)
+                    lastPosition = currentPos
+                }
+                isFirstPoint = false
+
+            case .close:
+                cleanedElements.append(element)
+            }
+        }
+
+        return VectorPath(elements: cleanedElements)
     }
 
 }
