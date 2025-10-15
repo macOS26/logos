@@ -20,7 +20,13 @@ extension VectorDocument {
             }
         }
 
-        let selectedShapes = getShapesForLayer(layerIndex).filter { allSelectedIDs.contains($0.id) }
+        // Get shapes from unifiedObjects, not from layers
+        let selectedShapes = objectsToRemove.compactMap { obj -> VectorShape? in
+            if case .shape(let shape) = obj.objectType {
+                return shape
+            }
+            return nil
+        }
         let groupShape = VectorShape.group(from: selectedShapes, name: "Group")
 
         // Calculate new orderID for group (use highest orderID from removed objects)
