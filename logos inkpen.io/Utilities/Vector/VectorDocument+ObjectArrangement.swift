@@ -39,7 +39,9 @@ extension VectorDocument {
     func bringSelectedToFront() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        saveToUndoStack()
+        // Capture old orderIDs
+        var oldOrderIDs: [UUID: Int] = [:]
+        var newOrderIDs: [UUID: Int] = [:]
 
         for layerIndex in layers.indices {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
@@ -52,6 +54,11 @@ extension VectorDocument {
 
             guard !selectedObjects.isEmpty else { continue }
 
+            // Capture old orderIDs before changes
+            for obj in layerObjects {
+                oldOrderIDs[obj.id] = obj.orderID
+            }
+
             let currentOrderIDs = layerObjects.map { $0.orderID }
             let minOrderID = currentOrderIDs.min() ?? 0
 
@@ -59,6 +66,7 @@ extension VectorDocument {
 
             for unselectedObject in unselectedObjects {
                 if let index = unifiedObjects.firstIndex(where: { $0.id == unselectedObject.id }) {
+                    newOrderIDs[unselectedObject.id] = newOrderID
                     switch unselectedObject.objectType {
                     case .shape(let shape):
                         unifiedObjects[index] = VectorObject(
@@ -73,6 +81,7 @@ extension VectorDocument {
 
             for selectedObject in selectedObjects {
                 if let index = unifiedObjects.firstIndex(where: { $0.id == selectedObject.id }) {
+                    newOrderIDs[selectedObject.id] = newOrderID
                     switch selectedObject.objectType {
                     case .shape(let shape):
                         unifiedObjects[index] = VectorObject(
@@ -86,13 +95,17 @@ extension VectorDocument {
             }
         }
 
-
+        // Create command
+        let command = BulkReorderCommand(oldOrderIDs: oldOrderIDs, newOrderIDs: newOrderIDs)
+        executeCommand(command)
     }
 
     func bringSelectedForward() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        saveToUndoStack()
+        // Capture old orderIDs
+        var oldOrderIDs: [UUID: Int] = [:]
+        var newOrderIDs: [UUID: Int] = [:]
 
         for layerIndex in layers.indices {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
@@ -105,6 +118,13 @@ extension VectorDocument {
             guard !selectedObjects.isEmpty else { continue }
 
             let sortedLayerObjects = layerObjects.sorted { $0.orderID < $1.orderID }
+
+            // Capture old orderIDs before changes
+            for obj in layerObjects {
+                if oldOrderIDs[obj.id] == nil {
+                    oldOrderIDs[obj.id] = obj.orderID
+                }
+            }
 
             for selectedObject in selectedObjects {
                 if let currentIndex = sortedLayerObjects.firstIndex(where: { $0.id == selectedObject.id }),
@@ -117,6 +137,9 @@ extension VectorDocument {
                         let selectedOrderID = unifiedObjects[selectedIndex].orderID
                         let frontOrderID = unifiedObjects[frontIndex].orderID
 
+                        newOrderIDs[selectedObject.id] = frontOrderID
+                        newOrderIDs[objectInFront.id] = selectedOrderID
+
                         switch selectedObject.objectType {
                         case .shape(let shape):
                             unifiedObjects[selectedIndex] = VectorObject(
@@ -124,16 +147,11 @@ extension VectorDocument {
                                 layerIndex: selectedObject.layerIndex,
                                 orderID: frontOrderID
                             )
-                                                }
+                        }
 
                         switch objectInFront.objectType {
                         case .shape(let shape):
                             unifiedObjects[frontIndex] = VectorObject(
-                                shape: shape,
-                                layerIndex: objectInFront.layerIndex,
-                                orderID: selectedOrderID
-                            )
-                                                    unifiedObjects[frontIndex] = VectorObject(
                                 shape: shape,
                                 layerIndex: objectInFront.layerIndex,
                                 orderID: selectedOrderID
@@ -144,12 +162,17 @@ extension VectorDocument {
             }
         }
 
+        // Create command
+        let command = BulkReorderCommand(oldOrderIDs: oldOrderIDs, newOrderIDs: newOrderIDs)
+        executeCommand(command)
     }
 
     func sendSelectedBackward() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        saveToUndoStack()
+        // Capture old orderIDs
+        var oldOrderIDs: [UUID: Int] = [:]
+        var newOrderIDs: [UUID: Int] = [:]
 
         for layerIndex in layers.indices {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
@@ -163,6 +186,13 @@ extension VectorDocument {
 
             let sortedLayerObjects = layerObjects.sorted { $0.orderID < $1.orderID }
 
+            // Capture old orderIDs before changes
+            for obj in layerObjects {
+                if oldOrderIDs[obj.id] == nil {
+                    oldOrderIDs[obj.id] = obj.orderID
+                }
+            }
+
             for selectedObject in selectedObjects {
                 if let currentIndex = sortedLayerObjects.firstIndex(where: { $0.id == selectedObject.id }),
                    currentIndex > 0 {
@@ -174,14 +204,12 @@ extension VectorDocument {
                         let selectedOrderID = unifiedObjects[selectedIndex].orderID
                         let behindOrderID = unifiedObjects[behindIndex].orderID
 
+                        newOrderIDs[selectedObject.id] = behindOrderID
+                        newOrderIDs[objectBehind.id] = selectedOrderID
+
                         switch selectedObject.objectType {
                         case .shape(let shape):
                             unifiedObjects[selectedIndex] = VectorObject(
-                                shape: shape,
-                                layerIndex: selectedObject.layerIndex,
-                                orderID: behindOrderID
-                            )
-                                                    unifiedObjects[selectedIndex] = VectorObject(
                                 shape: shape,
                                 layerIndex: selectedObject.layerIndex,
                                 orderID: behindOrderID
@@ -195,23 +223,23 @@ extension VectorDocument {
                                 layerIndex: objectBehind.layerIndex,
                                 orderID: selectedOrderID
                             )
-                                                    unifiedObjects[behindIndex] = VectorObject(
-                                shape: shape,
-                                layerIndex: objectBehind.layerIndex,
-                                orderID: selectedOrderID
-                            )
                         }
                     }
                 }
             }
         }
 
+        // Create command
+        let command = BulkReorderCommand(oldOrderIDs: oldOrderIDs, newOrderIDs: newOrderIDs)
+        executeCommand(command)
     }
 
     func sendSelectedToBack() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        saveToUndoStack()
+        // Capture old orderIDs
+        var oldOrderIDs: [UUID: Int] = [:]
+        var newOrderIDs: [UUID: Int] = [:]
 
         for layerIndex in layers.indices {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
@@ -224,6 +252,11 @@ extension VectorDocument {
 
             guard !selectedObjects.isEmpty else { continue }
 
+            // Capture old orderIDs before changes
+            for obj in layerObjects {
+                oldOrderIDs[obj.id] = obj.orderID
+            }
+
             let currentOrderIDs = layerObjects.map { $0.orderID }
             let minOrderID = currentOrderIDs.min() ?? 0
 
@@ -231,6 +264,7 @@ extension VectorDocument {
 
             for selectedObject in selectedObjects {
                 if let index = unifiedObjects.firstIndex(where: { $0.id == selectedObject.id }) {
+                    newOrderIDs[selectedObject.id] = newOrderID
                     switch selectedObject.objectType {
                     case .shape(let shape):
                         unifiedObjects[index] = VectorObject(
@@ -245,6 +279,7 @@ extension VectorDocument {
 
             for unselectedObject in unselectedObjects {
                 if let index = unifiedObjects.firstIndex(where: { $0.id == unselectedObject.id }) {
+                    newOrderIDs[unselectedObject.id] = newOrderID
                     switch unselectedObject.objectType {
                     case .shape(let shape):
                         unifiedObjects[index] = VectorObject(
@@ -258,6 +293,8 @@ extension VectorDocument {
             }
         }
 
-
+        // Create command
+        let command = BulkReorderCommand(oldOrderIDs: oldOrderIDs, newOrderIDs: newOrderIDs)
+        executeCommand(command)
     }
 }

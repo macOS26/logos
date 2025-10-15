@@ -109,6 +109,7 @@ extension VectorDocument {
         NotificationCenter.default.post(name: Notification.Name("ClearPreviewStates"), object: nil)
 
         cleanupImageRegistry()
+        clearAllPreviewCaches()  // Free up preview memory
     }
 
     func redo() {
@@ -198,6 +199,7 @@ extension VectorDocument {
         isUndoRedoOperation = false
 
         cleanupImageRegistry()
+        clearAllPreviewCaches()  // Free up preview memory
     }
 
     private func fixUnifiedObjectsOrderingAfterUndo() {
