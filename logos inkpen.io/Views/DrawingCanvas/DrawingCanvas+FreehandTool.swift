@@ -206,9 +206,12 @@ extension DrawingCanvas {
                 path: smoothPath.cgPath,
                 strokeStyle: strokeStyle
             ) {
+                var cleanedPath = VectorPath(cgPath: expandedPath)
+                cleanedPath = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: cleanedPath, tolerance: 1.0)
+
                 let expandedShape = VectorShape(
                     name: "Freehand Path",
-                    path: VectorPath(cgPath: expandedPath),
+                    path: cleanedPath,
                     geometricType: .brushStroke,
                     strokeStyle: nil,
                     fillStyle: FillStyle(

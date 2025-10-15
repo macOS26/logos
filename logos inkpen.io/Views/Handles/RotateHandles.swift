@@ -456,12 +456,8 @@ struct RotateHandles: View {
 
             applyRotationTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
 
-
             previewTransform = .identity
-
-
             document.updateUnifiedObjectsOptimized()
-
             document.updateTransformPanelValues()
 
             // Capture new shape after transformation
