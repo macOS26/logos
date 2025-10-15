@@ -80,11 +80,17 @@ struct FontPickerView: View {
                     currentFontFamilyState
                 },
                 set: { newFamily in
+                    // Update state FIRST for immediate UI update
+                    currentFontFamilyState = newFamily
+
                     document.fontManager.selectedFontFamily = newFamily
                     fontFamilyUpdateTrigger.toggle()
 
                     let newVariants = document.fontManager.getAvailableVariantNames(for: newFamily)
+                    availableFontVariantNamesState = newVariants
+
                     let defaultVariant = newVariants.first ?? "Regular"
+                    currentFontVariantState = defaultVariant
                     document.fontManager.selectedFontVariant = defaultVariant
 
                     if let textID = document.selectedTextIDs.first,
@@ -94,9 +100,6 @@ struct FontPickerView: View {
                         updatedTypography.fontVariant = defaultVariant
                         document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
                     }
-
-                    // Re-sync state from document after update
-                    syncFontStates()
                 }
             )) {
                 ForEach(document.fontManager.availableFonts, id: \.self) { fontFamily in
@@ -116,6 +119,8 @@ struct FontPickerView: View {
                     currentFontVariantState
                 },
                 set: { newVariant in
+                    // Update state FIRST for immediate UI update
+                    currentFontVariantState = newVariant
                     document.fontManager.selectedFontVariant = newVariant
 
                     if let textID = document.selectedTextIDs.first,
@@ -124,9 +129,6 @@ struct FontPickerView: View {
                         updatedTypography.fontVariant = newVariant
                         document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
                     }
-
-                    // Re-sync state from document after update
-                    syncFontStates()
                 }
             )) {
                 ForEach(availableFontVariantNamesState, id: \.self) { variant in

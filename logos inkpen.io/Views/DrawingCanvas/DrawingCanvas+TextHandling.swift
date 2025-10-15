@@ -654,6 +654,7 @@ extension DrawingCanvas {
             return false
         }
         if hasEditingTextBox {
+            Log.error("❌ TEXT BOX DRAWING: Early return - has editing text box", category: .error)
             return
         }
 
@@ -661,10 +662,12 @@ extension DrawingCanvas {
         let isDraggingResizeHandle = isLocationOnTextResizeHandle(startLocation)
 
         if isDraggingResizeHandle {
+            Log.error("❌ TEXT BOX DRAWING: Early return - dragging resize handle", category: .error)
             return
         }
 
         if findTextAt(location: startLocation) != nil {
+            Log.error("❌ TEXT BOX DRAWING: Early return - found text at location", category: .error)
             return
         }
 
@@ -675,6 +678,7 @@ extension DrawingCanvas {
             shapeDragStart = startLocation
             shapeStartPoint = startLocation
             drawingStartPoint = startLocation
+            Log.error("✅ TEXT BOX DRAWING: Started drawing at \(startLocation)", category: .error)
         }
 
         let minX = min(shapeStartPoint.x, currentLocation.x)
@@ -692,6 +696,7 @@ extension DrawingCanvas {
             .line(to: VectorPoint(minX, minY + finalHeight)),
             .close
         ])
+        Log.error("✅ TEXT BOX DRAWING: Set currentPath with bounds (\(minX), \(minY), \(finalWidth), \(finalHeight))", category: .error)
     }
 
     func finishTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
