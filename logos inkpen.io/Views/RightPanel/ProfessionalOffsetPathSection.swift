@@ -58,10 +58,13 @@ struct ProfessionalOffsetPathSection: View {
 
                         ZStack {
                             Capsule()
-                                .fill(Color.blue)
+                                .fill(Color.white)
                                 .frame(height: 6)
-                                .allowsHitTesting(false)
-                            
+                                .overlay(
+                                    Capsule()
+                                        .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
+                                )
+
                             Slider(value: Binding(
                                 get: { Double(offsetDistance) },
                                 set: { offsetDistance = Int($0) }
@@ -69,7 +72,20 @@ struct ProfessionalOffsetPathSection: View {
                             .controlSize(.regular)
                             .tint(Color.clear)
 
-                           
+                            Capsule()
+                                .fill(
+                                    SwiftUI.LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            Color.blue,
+                                            Color.white,
+                                            Color.blue
+                                        ]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(height: 6)
+                                .allowsHitTesting(false)
                         }
                     }
 
