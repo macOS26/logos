@@ -34,17 +34,41 @@ extension VectorDocument {
     }
 
     func updateTextFontFamilyDirect(id: UUID, fontFamily: String) {
-        saveToUndoStack()
+        var oldTypography: TypographyProperties?
+        if let shape = findShape(by: id) {
+            oldTypography = shape.typography
+        }
+
         updateShapeByID(id) { shape in
             shape.typography?.fontFamily = fontFamily
         }
+
+        var newTypography: TypographyProperties?
+        if let shape = findShape(by: id) {
+            newTypography = shape.typography
+        }
+
+        let command = TextTypographyCommand(textID: id, oldTypography: oldTypography, newTypography: newTypography)
+        commandManager.execute(command)
     }
 
     func updateTextFontVariantDirect(id: UUID, fontVariant: String) {
-        saveToUndoStack()
+        var oldTypography: TypographyProperties?
+        if let shape = findShape(by: id) {
+            oldTypography = shape.typography
+        }
+
         updateShapeByID(id) { shape in
             shape.typography?.fontVariant = fontVariant
         }
+
+        var newTypography: TypographyProperties?
+        if let shape = findShape(by: id) {
+            newTypography = shape.typography
+        }
+
+        let command = TextTypographyCommand(textID: id, oldTypography: oldTypography, newTypography: newTypography)
+        commandManager.execute(command)
     }
 
 
