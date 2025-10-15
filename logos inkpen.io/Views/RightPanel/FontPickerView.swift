@@ -91,9 +91,12 @@ struct FontPickerView: View {
                     currentFontVariantState = defaultVariant
                     document.fontManager.selectedFontVariant = defaultVariant
 
-                    if let textID = document.selectedTextIDs.first {
-                        document.updateTextFontFamilyDirect(id: textID, fontFamily: newFamily)
-                        document.updateTextFontVariantDirect(id: textID, fontVariant: defaultVariant)
+                    if let textID = document.selectedTextIDs.first,
+                       let freshText = document.findText(by: textID) {
+                        var updatedTypography = freshText.typography
+                        updatedTypography.fontFamily = newFamily
+                        updatedTypography.fontVariant = defaultVariant
+                        document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
                     }
                 }
             )) {
@@ -117,12 +120,11 @@ struct FontPickerView: View {
                     currentFontVariantState = newVariant
                     document.fontManager.selectedFontVariant = newVariant
 
-                    if let textID = document.selectedTextIDs.first {
-                        document.updateTextFontVariantPreview(id: textID, fontVariant: newVariant)
-                        document.updateTextFontVariantDirect(id: textID, fontVariant: newVariant)
-
-                        // Clear preview cache so it doesn't show stale values
-                        document.clearTextPreviewTypography(id: textID)
+                    if let textID = document.selectedTextIDs.first,
+                       let freshText = document.findText(by: textID) {
+                        var updatedTypography = freshText.typography
+                        updatedTypography.fontVariant = newVariant
+                        document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
                     }
                 }
             )) {
