@@ -997,37 +997,49 @@ class ClipboardManager {
         do {
             let clipboardData = try JSONDecoder().decode(ClipboardData.self, from: data)
 
-            document.saveToUndoStack()
-
             document.selectedObjectIDs.removeAll()
 
-            if let layerIndex = document.selectedLayerIndex {
-                if layerIndex < document.layers.count && document.layers[layerIndex].isLocked {
-                    Log.error("❌ Cannot paste into locked layer '\(document.layers[layerIndex].name)'", category: .error)
+            guard let layerIndex = document.selectedLayerIndex else { return }
+
+            if layerIndex < document.layers.count && document.layers[layerIndex].isLocked {
+                Log.error("❌ Cannot paste into locked layer '\(document.layers[layerIndex].name)'", category: .error)
+                return
+            }
+
+            if layerIndex < document.layers.count {
+                let layerName = document.layers[layerIndex].name
+                if layerName == "Canvas" || layerName == "Pasteboard" {
+                    Log.error("❌ Cannot paste into system layer '\(layerName)'", category: .error)
                     return
                 }
+            }
 
-                if layerIndex < document.layers.count {
-                    let layerName = document.layers[layerIndex].name
-                    if layerName == "Canvas" || layerName == "Pasteboard" {
-                        Log.error("❌ Cannot paste into system layer '\(layerName)'", category: .error)
-                        return
-                    }
-                }
+            var objectsToAdd: [VectorObject] = []
+            let existingOrderIDs = document.getObjectsInLayer(layerIndex).map { $0.orderID }
+            var nextOrderID = existingOrderIDs.isEmpty ? 0 : (existingOrderIDs.max() ?? -1) + 1
 
-                for shape in clipboardData.shapes {
-                    let newShape = regenerateUUIDs(for: shape)
-                    document.addShapeToUnifiedSystem(newShape, layerIndex: layerIndex)
-                    document.selectedObjectIDs.insert(newShape.id)
-                }
+            for shape in clipboardData.shapes {
+                let newShape = regenerateUUIDs(for: shape)
+                let unifiedObject = VectorObject(shape: newShape, layerIndex: layerIndex, orderID: nextOrderID)
+                objectsToAdd.append(unifiedObject)
+                document.selectedObjectIDs.insert(newShape.id)
+                nextOrderID += 1
             }
 
             for text in clipboardData.texts {
                 var newText = text
                 newText.id = UUID()
-
-                document.addTextToUnifiedSystem(newText, layerIndex: document.selectedLayerIndex ?? 2)
+                newText.layerIndex = layerIndex
+                let textShape = VectorShape.from(newText)
+                let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex, orderID: nextOrderID)
+                objectsToAdd.append(unifiedObject)
                 document.selectedObjectIDs.insert(newText.id)
+                nextOrderID += 1
+            }
+
+            if !objectsToAdd.isEmpty {
+                let command = AddObjectCommand(objects: objectsToAdd)
+                document.commandManager.execute(command)
             }
 
             document.syncSelectionArrays()
