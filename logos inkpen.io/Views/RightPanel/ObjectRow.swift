@@ -111,15 +111,15 @@ struct ObjectRow: View {
             },
             set: { newValue in
                 guard let index = document.findObjectIndex(by: objectId) else { return }
-                if case .shape(var shape) = document.unifiedObjects[index].objectType {
+                if case .shape(let shape) = document.unifiedObjects[index].objectType {
                     if shape.isVisible != newValue {
-                        document.saveToUndoStack()
-                        shape.isVisible = newValue
-                        document.unifiedObjects[index] = VectorObject(
-                            shape: shape,
-                            layerIndex: layerIndex,
-                            orderID: document.unifiedObjects[index].orderID
+                        let command = VisibilityCommand(
+                            objectIDs: [objectId],
+                            property: .visibility,
+                            oldValues: [objectId: shape.isVisible],
+                            newValues: [objectId: newValue]
                         )
+                        document.commandManager.execute(command)
                     }
                 }
             }
@@ -138,15 +138,15 @@ struct ObjectRow: View {
             },
             set: { newValue in
                 guard let index = document.findObjectIndex(by: objectId) else { return }
-                if case .shape(var shape) = document.unifiedObjects[index].objectType {
+                if case .shape(let shape) = document.unifiedObjects[index].objectType {
                     if shape.isLocked != newValue {
-                        document.saveToUndoStack()
-                        shape.isLocked = newValue
-                        document.unifiedObjects[index] = VectorObject(
-                            shape: shape,
-                            layerIndex: layerIndex,
-                            orderID: document.unifiedObjects[index].orderID
+                        let command = VisibilityCommand(
+                            objectIDs: [objectId],
+                            property: .locked,
+                            oldValues: [objectId: shape.isLocked],
+                            newValues: [objectId: newValue]
                         )
+                        document.commandManager.execute(command)
                     }
                 }
             }
