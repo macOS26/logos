@@ -79,6 +79,11 @@ struct ColorChannelSlider: View {
                             .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                     )
                 
+                Capsule()
+                    .fill(gradient)
+                    .frame(height: 6)
+                    .allowsHitTesting(false)
+                
                 Slider(value: $sliderValue, in: 0...255)
                     .controlSize(.regular)
                     .tint(Color.clear)
@@ -86,11 +91,6 @@ struct ColorChannelSlider: View {
                         textValue = String(Int(sliderValue))
                         onChange()
                     }
-                
-                Capsule()
-                    .fill(gradient)
-                    .frame(height: 6)
-                    .allowsHitTesting(false)
             }
             
             TextField("", text: $textValue)

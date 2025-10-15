@@ -128,6 +128,11 @@ struct CMYKInputSection: View {
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
 
+                        Capsule()
+                            .fill(cyanGradient)
+                            .frame(height: 6)
+                            .allowsHitTesting(false)
+                        
                         Slider(value: $cyanSlider, in: 0...100)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -135,11 +140,6 @@ struct CMYKInputSection: View {
                                 cyanValue = String(Int(cyanSlider))
                                 updateSharedColor()
                             }
-
-                        Capsule()
-                            .fill(cyanGradient)
-                            .frame(height: 6)
-                            .allowsHitTesting(false)
                     }
 
                     TextField("", text: $cyanValue)
@@ -174,6 +174,11 @@ struct CMYKInputSection: View {
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
 
+                        Capsule()
+                            .fill(magentaGradient)
+                            .frame(height: 6)
+                            .allowsHitTesting(false)
+                        
                         Slider(value: $magentaSlider, in: 0...100)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -181,11 +186,6 @@ struct CMYKInputSection: View {
                                 magentaValue = String(Int(magentaSlider))
                                 updateSharedColor()
                             }
-
-                        Capsule()
-                            .fill(magentaGradient)
-                            .frame(height: 6)
-                            .allowsHitTesting(false)
                     }
 
                     TextField("", text: $magentaValue)
@@ -220,6 +220,11 @@ struct CMYKInputSection: View {
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
 
+                        Capsule()
+                            .fill(yellowGradient)
+                            .frame(height: 6)
+                            .allowsHitTesting(false)
+                        
                         Slider(value: $yellowSlider, in: 0...100)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -227,11 +232,6 @@ struct CMYKInputSection: View {
                                 yellowValue = String(Int(yellowSlider))
                                 updateSharedColor()
                             }
-
-                        Capsule()
-                            .fill(yellowGradient)
-                            .frame(height: 6)
-                            .allowsHitTesting(false)
                     }
 
                     TextField("", text: $yellowValue)
@@ -265,7 +265,12 @@ struct CMYKInputSection: View {
                                 Capsule()
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
-
+                        
+                        Capsule()
+                            .fill(blackGradient)
+                            .frame(height: 6)
+                            .allowsHitTesting(false)
+                        
                         Slider(value: $blackSlider, in: 0...100)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -273,11 +278,6 @@ struct CMYKInputSection: View {
                                 blackValue = String(Int(blackSlider))
                                 updateSharedColor()
                             }
-
-                        Capsule()
-                            .fill(blackGradient)
-                            .frame(height: 6)
-                            .allowsHitTesting(false)
                     }
 
                     TextField("", text: $blackValue)

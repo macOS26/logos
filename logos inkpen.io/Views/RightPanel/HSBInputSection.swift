@@ -5,46 +5,46 @@ struct HSBInputSection: View {
     @ObservedObject var document: VectorDocument
     @Binding var sharedColor: VectorColor
     @Environment(AppState.self) private var appState
-
+    
     let showGradientEditing: Bool
-
+    
     @State private var hueValue: String = "0"
     @State private var saturationValue: String = "100"
     @State private var brightnessValue: String = "100"
     @State private var hexValue: String = "ff0000"
     @State private var isUpdatingHexFromHSB: Bool = false
-
+    
     @State private var hueSlider: Double = 0
     @State private var saturationSlider: Double = 100
     @State private var brightnessSlider: Double = 100
-
+    
     @State private var isProgrammaticallyUpdating: Bool = false
     @State private var isDisplayingGradient: Bool = false
-
+    
     @State private var pmsEntryText: String = ""
-
+    
     @State private var livePMSPreview: PantoneLibraryColor? = nil
-
+    
     @ObservedObject private var pantoneLibrary = PantoneLibrary()
-
+    
     private var currentColor: HSBColorModel {
         let h = Double(hueValue) ?? 0
         let s = (Double(saturationValue) ?? 0) / 100.0
         let b = (Double(brightnessValue) ?? 0) / 100.0
-
+        
         return HSBColorModel(hue: h, saturation: s, brightness: b)
     }
-
+    
     private var closestPantoneColor: PantoneLibraryColor? {
         let userHue = Double(hueValue) ?? 0
         let normalizedHue = userHue >= 360 ? 0 : userHue
         let s = (Double(saturationValue) ?? 0) / 100.0
         let b = (Double(brightnessValue) ?? 0) / 100.0
-
+        
         let matchingColor = HSBColorModel(hue: normalizedHue, saturation: s, brightness: b)
         return pantoneLibrary.findClosestMatch(to: matchingColor)
     }
-
+    
     private var livePreviewColor: (pms: PantoneLibraryColor?, hsb: HSBColorModel) {
         if let livePMS = livePMSPreview {
             let hsbApproximation = HSBColorModel.fromRGB(livePMS.rgbEquivalent)
@@ -54,33 +54,33 @@ struct HSBInputSection: View {
             let s = (Double(saturationValue) ?? 0) / 100.0
             let b = (Double(brightnessValue) ?? 0) / 100.0
             let preservedHSB = HSBColorModel(hue: userHue, saturation: s, brightness: b)
-
+            
             return (pms: closestPantoneColor, hsb: preservedHSB)
         }
     }
-
+    
     private var currentHueColor: Color {
         Color(hue: (Double(hueValue) ?? 0) / 360.0, saturation: 1.0, brightness: 1.0)
     }
-
+    
     private var currentSaturationColor: Color {
         let h = Double(hueValue) ?? 0
         let s = (Double(saturationValue) ?? 0) / 100.0
         let b = Double(brightnessValue) ?? 100
         return Color(hue: h/360.0, saturation: s, brightness: b/100.0)
     }
-
+    
     private var currentBrightnessColor: Color {
         let h = Double(hueValue) ?? 0
         let s = Double(saturationValue) ?? 100
         let b = (Double(brightnessValue) ?? 0) / 100.0
         return Color(hue: h/360.0, saturation: s/100.0, brightness: b)
     }
-
+    
     private func swiftUIColor(h: Double, s: Double, b: Double) -> Color {
         return Color(hue: h/360.0, saturation: s/100.0, brightness: b/100.0)
     }
-
+    
     private var hueGradient: SwiftUI.LinearGradient {
         SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
@@ -96,7 +96,7 @@ struct HSBInputSection: View {
             endPoint: .trailing
         )
     }
-
+    
     private var saturationGradient: SwiftUI.LinearGradient {
         let h = Double(hueValue) ?? 0
         let b = Double(brightnessValue) ?? 100
@@ -109,7 +109,7 @@ struct HSBInputSection: View {
             endPoint: .trailing
         )
     }
-
+    
     private var brightnessGradient: SwiftUI.LinearGradient {
         let h = Double(hueValue) ?? 0
         let s = Double(saturationValue) ?? 100
@@ -122,7 +122,7 @@ struct HSBInputSection: View {
             endPoint: .trailing
         )
     }
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             VStack(spacing: 6) {
@@ -134,12 +134,12 @@ struct HSBInputSection: View {
                             Circle()
                                 .stroke(Color.gray.opacity(0.1), lineWidth: 1)
                         )
-
+                    
                     Text("H")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.secondary)
                         .frame(width: 12)
-
+                    
                     ZStack {
                         Capsule()
                             .fill(Color.white)
@@ -148,7 +148,12 @@ struct HSBInputSection: View {
                                 Capsule()
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
-
+                        
+                        Capsule()
+                            .fill(hueGradient)
+                            .frame(height: 6)
+                            .allowsHitTesting(false)
+                        
                         Slider(value: $hueSlider, in: 0...360)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -158,28 +163,23 @@ struct HSBInputSection: View {
                                 livePMSPreview = nil
                                 updateSharedColor()
                             }
-
-                        Capsule()
-                            .fill(hueGradient)
-                            .frame(height: 6)
-                            .allowsHitTesting(false)
                     }
-
-                                            TextField("", text: $hueValue)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .frame(width: 45)
-                            .font(.system(size: 11))
-                            .onChange(of: hueValue) { _, _ in
-                                if let intValue = Double(hueValue) {
-                                    hueSlider = min(360, max(0, intValue))
-                                    updateHexFromHSB()
-                                    livePMSPreview = nil
-                                    updateSharedColor()
-                                    updateSharedColor()
-                                }
+                    
+                    TextField("", text: $hueValue)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(width: 45)
+                        .font(.system(size: 11))
+                        .onChange(of: hueValue) { _, _ in
+                            if let intValue = Double(hueValue) {
+                                hueSlider = min(360, max(0, intValue))
+                                updateHexFromHSB()
+                                livePMSPreview = nil
+                                updateSharedColor()
+                                updateSharedColor()
                             }
+                        }
                 }
-
+                
                 HStack(spacing: 6) {
                     Circle()
                         .fill(currentSaturationColor)
@@ -188,12 +188,12 @@ struct HSBInputSection: View {
                             Circle()
                                 .stroke(Color.gray.opacity(0.1), lineWidth: 1)
                         )
-
+                    
                     Text("S")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.secondary)
                         .frame(width: 12)
-
+                    
                     ZStack {
                         Capsule()
                             .fill(Color.white)
@@ -202,7 +202,12 @@ struct HSBInputSection: View {
                                 Capsule()
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
-
+                        
+                        Capsule()
+                            .fill(saturationGradient)
+                            .frame(height: 6)
+                            .allowsHitTesting(false)
+                        
                         Slider(value: $saturationSlider, in: 0...100)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -212,28 +217,23 @@ struct HSBInputSection: View {
                                 livePMSPreview = nil
                                 updateSharedColor()
                             }
-
-                        Capsule()
-                            .fill(saturationGradient)
-                            .frame(height: 6)
-                            .allowsHitTesting(false)
                     }
-
-                                            TextField("", text: $saturationValue)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .frame(width: 45)
-                            .font(.system(size: 11))
-                            .onChange(of: saturationValue) { _, _ in
-                                if let intValue = Double(saturationValue) {
-                                    saturationSlider = min(100, max(0, intValue))
-                                    updateHexFromHSB()
-                                    livePMSPreview = nil
-                                    updateSharedColor()
-                                    updateSharedColor()
-                                }
+                    
+                    TextField("", text: $saturationValue)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(width: 45)
+                        .font(.system(size: 11))
+                        .onChange(of: saturationValue) { _, _ in
+                            if let intValue = Double(saturationValue) {
+                                saturationSlider = min(100, max(0, intValue))
+                                updateHexFromHSB()
+                                livePMSPreview = nil
+                                updateSharedColor()
+                                updateSharedColor()
                             }
+                        }
                 }
-
+                
                 HStack(spacing: 6) {
                     Circle()
                         .fill(currentBrightnessColor)
@@ -242,12 +242,12 @@ struct HSBInputSection: View {
                             Circle()
                                 .stroke(Color.gray.opacity(0.1), lineWidth: 1)
                         )
-
+                    
                     Text("B")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.secondary)
                         .frame(width: 12)
-
+                    
                     ZStack {
                         Capsule()
                             .fill(Color.white)
@@ -256,7 +256,12 @@ struct HSBInputSection: View {
                                 Capsule()
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
-
+                        
+                        Capsule()
+                            .fill(brightnessGradient)
+                            .frame(height: 6)
+                            .allowsHitTesting(false)
+                        
                         Slider(value: $brightnessSlider, in: 0...100)
                             .controlSize(.regular)
                             .tint(Color.clear)
@@ -266,29 +271,25 @@ struct HSBInputSection: View {
                                 livePMSPreview = nil
                                 updateSharedColor()
                             }
-
-                        Capsule()
-                            .fill(brightnessGradient)
-                            .frame(height: 6)
-                            .allowsHitTesting(false)
+                        
                     }
-
-                                            TextField("", text: $brightnessValue)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .frame(width: 45)
-                            .font(.system(size: 11))
-                            .onChange(of: brightnessValue) { _, _ in
-                                if let intValue = Double(brightnessValue) {
-                                    brightnessSlider = min(100, max(0, intValue))
-                                    updateHexFromHSB()
-                                    livePMSPreview = nil
-                                    updateSharedColor()
-                                    updateSharedColor()
-                                }
+                    
+                    TextField("", text: $brightnessValue)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(width: 45)
+                        .font(.system(size: 11))
+                        .onChange(of: brightnessValue) { _, _ in
+                            if let intValue = Double(brightnessValue) {
+                                brightnessSlider = min(100, max(0, intValue))
+                                updateHexFromHSB()
+                                livePMSPreview = nil
+                                updateSharedColor()
+                                updateSharedColor()
                             }
+                        }
                 }
             }
-
+            
             VStack(spacing: 4) {
                 HStack(spacing: 6) {
                     Button(action: {
@@ -309,7 +310,7 @@ struct HSBInputSection: View {
                     }
                     .buttonStyle(BorderlessButtonStyle())
                     .help("Click to apply HSB color to selection")
-
+                    
                     Button(action: {
                         applyPMSColorToActiveSelection()
                     }) {
@@ -322,7 +323,7 @@ struct HSBInputSection: View {
                                         Rectangle()
                                             .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                                     )
-
+                                
                                 if let pantoneColor = livePreviewColor.pms {
                                     Text(pantoneColor.pantone.replacingOccurrences(of: "-c", with: "").replacingOccurrences(of: " C", with: ""))
                                         .font(.system(size: 7, weight: .bold))
@@ -342,10 +343,10 @@ struct HSBInputSection: View {
                     }
                     .buttonStyle(BorderlessButtonStyle())
                     .help("Click to add PMS/Pantone color to swatches (converts to closest Pantone match)")
-
+                    
                     Spacer()
                 }
-
+                
                 HStack(spacing: 6) {
                     TextField("PMS # or Name", text: $pmsEntryText)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -356,7 +357,7 @@ struct HSBInputSection: View {
                         .onChange(of: pmsEntryText) { _, newValue in
                             performLivePMSSearch(newValue)
                         }
-
+                    
                     Button("Add") {
                         if !pmsEntryText.isEmpty {
                             searchAndApplyPMSColor()
@@ -366,11 +367,11 @@ struct HSBInputSection: View {
                     }
                     .font(.system(size: 10))
                     .foregroundColor(.primary)
-
+                    
                     Text("#")
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(.secondary)
-
+                    
                     TextField("ff0000", text: $hexValue)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .font(.system(size: 10))
@@ -382,7 +383,7 @@ struct HSBInputSection: View {
                         }
                 }
             }
-
+            
         }
         .padding(.vertical, 6)
         .onAppear {
@@ -392,47 +393,47 @@ struct HSBInputSection: View {
             loadFromSharedColor()
         }
     }
-
-
+    
+    
     private func updateHexFromHSB() {
         let userHue = Double(hueValue) ?? 0
         let normalizedHue = userHue >= 360 ? 0 : userHue
         let s = (Double(saturationValue) ?? 0) / 100.0
         let b = (Double(brightnessValue) ?? 0) / 100.0
-
+        
         let calculationColor = HSBColorModel(hue: normalizedHue, saturation: s, brightness: b)
         let rgbColor = calculationColor.rgbColor
         let r = Int(rgbColor.red * 255)
         let g = Int(rgbColor.green * 255)
         let b_value = Int(rgbColor.blue * 255)
-
+        
         isUpdatingHexFromHSB = true
         hexValue = String(format: "%02x%02x%02x", r, g, b_value)
         isUpdatingHexFromHSB = false
-
+        
     }
-
+    
     private func updateSharedColor() {
         if isDisplayingGradient {
             return
         }
-
+        
         sharedColor = .hsb(currentColor)
-
+        
         if isProgrammaticallyUpdating {
             return
         }
-
-
+        
+        
         return
-
+        
     }
-
+    
     private func loadFromSharedColor() {
         isDisplayingGradient = false
-
+        
         var hsbColor: HSBColorModel
-
+        
         switch sharedColor {
         case .hsb(let hsb):
             hsbColor = hsb
@@ -468,16 +469,16 @@ struct HSBInputSection: View {
         case .white:
             hsbColor = HSBColorModel(hue: 0, saturation: 0, brightness: 1)
         }
-
+        
         setHSBValues(
             hue: hsbColor.hue,
             saturation: hsbColor.saturation * 100,
             brightness: hsbColor.brightness * 100
         )
     }
-
+    
     private func setHSBValues(hue: Double, saturation: Double, brightness: Double) {
-
+        
         isProgrammaticallyUpdating = true
         hueValue = String(Int(hue))
         saturationValue = String(Int(saturation))
@@ -487,22 +488,22 @@ struct HSBInputSection: View {
         brightnessSlider = brightness
         updateHexFromHSB()
         isProgrammaticallyUpdating = false
-
+        
     }
-
+    
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.hsb(currentColor)
-
+        
         if showGradientEditing, let gradientCallback = appState.gradientEditingState?.onColorSelected {
             gradientCallback(vectorColor)
             return
         }
-
+        
         document.setActiveColor(vectorColor)
-
+        
         updateSharedColor()
     }
-
+    
     private func addColorToSwatches() {
         let exactHSBColor = HSBColorModel(
             hue: Double(hueValue) ?? 0,
@@ -511,76 +512,76 @@ struct HSBInputSection: View {
         )
         let vectorColor = VectorColor.hsb(exactHSBColor)
         document.addColorToSwatches(vectorColor)
-
+        
     }
-
-
+    
+    
     private func performLivePMSSearch(_ query: String) {
         let cleanedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
-
+        
         if cleanedQuery.isEmpty {
             livePMSPreview = nil
             return
         }
-
+        
         let searchResults = pantoneLibrary.searchColors(query: cleanedQuery)
-
+        
         if let foundColor = searchResults.first {
             livePMSPreview = foundColor
-
+            
             let hsbColor = HSBColorModel.fromRGB(foundColor.rgbEquivalent)
-
+            
             hueValue = String(Int(hsbColor.hue))
             saturationValue = String(Int(hsbColor.saturation * 100))
             brightnessValue = String(Int(hsbColor.brightness * 100))
             hueSlider = hsbColor.hue
             saturationSlider = hsbColor.saturation * 100
             brightnessSlider = hsbColor.brightness * 100
-
+            
             updateHexFromHSB()
-
+            
             updateSharedColor()
         } else {
             livePMSPreview = nil
         }
     }
-
+    
     private func searchAndApplyPMSColor() {
         let cleanedEntry = pmsEntryText
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
-
+        
         if cleanedEntry.isEmpty { return }
-
+        
         let searchResults = pantoneLibrary.searchColors(query: cleanedEntry)
-
+        
         if let foundColor = searchResults.first {
             let hsbColor = HSBColorModel.fromRGB(foundColor.rgbEquivalent)
-
+            
             hueValue = String(Int(hsbColor.hue))
             saturationValue = String(Int(hsbColor.saturation * 100))
             brightnessValue = String(Int(hsbColor.brightness * 100))
             hueSlider = hsbColor.hue
             saturationSlider = hsbColor.saturation * 100
             brightnessSlider = hsbColor.brightness * 100
-
+            
             updateHexFromHSB()
-
+            
             updateSharedColor()
-
+            
             pmsEntryText = ""
             livePMSPreview = nil
-
+            
             let pmsColor = VectorColor.pantone(foundColor)
             document.addColorSwatch(pmsColor)
         }
     }
-
+    
     private func applyHSBColorToActiveSelection() {
         applyColorToActiveSelection()
         addColorToSwatches()
     }
-
+    
     private func applyPMSColorToActiveSelection() {
         if let pantoneColor = livePreviewColor.pms {
             let pmsVectorColor = VectorColor.pantone(pantoneColor)
