@@ -184,10 +184,17 @@ struct ProfessionalOffsetPathSection: View {
     private func performOffsetPath() {
         guard !document.selectedShapeIDs.isEmpty else { return }
 
-
-        document.saveToUndoStack()
-
         let selectedShapes = document.getSelectedShapes()
+
+        var oldShapes: [UUID: VectorShape] = [:]
+        var newShapes: [UUID: VectorShape] = [:]
+        var objectIDs: [UUID] = []
+
+        for shape in selectedShapes {
+            oldShapes[shape.id] = shape
+            objectIDs.append(shape.id)
+        }
+
         var newOffsetShapeIDs: Set<UUID> = []
 
         var originalShapeIndices: [UUID: Int] = [:]
@@ -245,12 +252,19 @@ struct ProfessionalOffsetPathSection: View {
                 }
 
                 newOffsetShapeIDs.insert(offsetShape.id)
-
+                objectIDs.append(offsetShape.id)
+                newShapes[offsetShape.id] = offsetShape
         }
 
         if keepOriginalPath {
             if offsetDistance >= 0 {
+                for shape in selectedShapes {
+                    newShapes[shape.id] = shape
+                }
             } else {
+                for shape in selectedShapes {
+                    newShapes[shape.id] = shape
+                }
             }
         } else {
             document.removeSelectedShapes()
@@ -260,6 +274,8 @@ struct ProfessionalOffsetPathSection: View {
 
         document.updateUnifiedObjectsOptimized()
 
+        let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+        document.commandManager.execute(command)
     }
 
 
