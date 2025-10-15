@@ -13,7 +13,6 @@ extension DrawingCanvas {
 
             if event.type == .keyDown {
 
-
             }
 
             if self.isEditingText {
@@ -221,7 +220,6 @@ extension DrawingCanvas {
     internal func updateModifierKeyStates(with event: NSEvent) {
     }
 
-
     internal func activateTemporaryHandTool() {
         guard document.currentTool != .hand && !isTemporaryHandToolActive else { return }
 
@@ -284,7 +282,6 @@ extension DrawingCanvas {
             }
         }
     }
-
 
     internal func selectNextLayer() {
         guard let currentIndex = document.selectedLayerIndex else {

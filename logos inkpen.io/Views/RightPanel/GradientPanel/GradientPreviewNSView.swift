@@ -1,7 +1,6 @@
 import SwiftUI
 import AppKit
 
-
 struct GradientPreviewNSView: NSViewRepresentable {
     let gradient: VectorGradient
     let size: CGFloat

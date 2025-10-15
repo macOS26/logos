@@ -1,10 +1,8 @@
 import SwiftUI
 
-
 class PDFOperatorInterpreter {
 
     static func setupOperatorCallbacks(_ operatorTable: CGPDFOperatorTableRef, parser: PDFCommandParser) {
-
 
         CGPDFOperatorTableSetCallback(operatorTable, "m") { (scanner, info) in
             guard let info = info else { return }
@@ -47,7 +45,6 @@ class PDFOperatorInterpreter {
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
             parser.handleRectangle(scanner: scanner)
         }
-
 
         CGPDFOperatorTableSetCallback(operatorTable, "rg") { (scanner, info) in
             guard let info = info else { return }
@@ -109,7 +106,6 @@ class PDFOperatorInterpreter {
             parser.handleStrokeAlpha(scanner: scanner)
         }
 
-
         CGPDFOperatorTableSetCallback(operatorTable, "f") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
@@ -146,7 +142,6 @@ class PDFOperatorInterpreter {
             parser.handleFillAndStroke()
         }
 
-
         CGPDFOperatorTableSetCallback(operatorTable, "W") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
@@ -158,7 +153,6 @@ class PDFOperatorInterpreter {
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
             parser.handleClipOperator()
         }
-
 
         CGPDFOperatorTableSetCallback(operatorTable, "q") { (scanner, info) in
             guard let info = info else { return }
@@ -178,7 +172,6 @@ class PDFOperatorInterpreter {
             parser.handleGraphicsState(scanner: scanner)
         }
 
-
         CGPDFOperatorTableSetCallback(operatorTable, "ca") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
@@ -191,13 +184,11 @@ class PDFOperatorInterpreter {
             parser.handleStrokeOpacity(scanner: scanner)
         }
 
-
         CGPDFOperatorTableSetCallback(operatorTable, "Do") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
             parser.handleXObjectWithOpacitySaving(scanner: scanner)
         }
-
 
         CGPDFOperatorTableSetCallback(operatorTable, "w") { (scanner, info) in
             guard let info = info else { return }
@@ -241,7 +232,6 @@ class PDFOperatorInterpreter {
             parser.currentLineDashPattern = []
         }
 
-
         CGPDFOperatorTableSetCallback(operatorTable, "n") { (scanner, info) in
         }
 
@@ -269,7 +259,6 @@ class PDFOperatorInterpreter {
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
             parser.handleEndText()
         }
-
 
         CGPDFOperatorTableSetCallback(operatorTable, "Tf") { (scanner, info) in
             guard let info = info else { return }
@@ -313,7 +302,6 @@ class PDFOperatorInterpreter {
             parser.handleSetTextRise(scanner: scanner)
         }
 
-
         CGPDFOperatorTableSetCallback(operatorTable, "Td") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
@@ -337,7 +325,6 @@ class PDFOperatorInterpreter {
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
             parser.handleTextNewLine()
         }
-
 
         CGPDFOperatorTableSetCallback(operatorTable, "Tj") { (scanner, info) in
             guard let info = info else { return }

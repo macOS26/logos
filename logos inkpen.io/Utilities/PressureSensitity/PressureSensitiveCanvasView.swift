@@ -2,7 +2,6 @@ import SwiftUI
 
 class PressureSensitiveCanvasView: NSView {
 
-
     var onPressureEvent: ((CGPoint, Double, PressureEventType, Bool) -> Void)?
 
     private(set) var hasPressureSupport = false
@@ -10,13 +9,11 @@ class PressureSensitiveCanvasView: NSView {
     private var isDragging = false
     private var startLocation: CGPoint = .zero
 
-
     enum PressureEventType {
         case began
         case changed
         case ended
     }
-
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -37,10 +34,8 @@ class PressureSensitiveCanvasView: NSView {
         hasPressureSupport = false
     }
 
-
     private func logEvent(_ event: NSEvent, context: String) {
     }
-
 
     override func mouseDown(with event: NSEvent) {
         logEvent(event, context: "MOUSE_DOWN")
@@ -102,7 +97,6 @@ class PressureSensitiveCanvasView: NSView {
         super.pressureChange(with: event)
     }
 
-
     override func tabletPoint(with event: NSEvent) {
         logEvent(event, context: "TABLET_POINT")
 
@@ -140,7 +134,6 @@ class PressureSensitiveCanvasView: NSView {
         }
         super.tabletProximity(with: event)
     }
-
 
     override func rightMouseDown(with event: NSEvent) {
         logEvent(event, context: "RIGHT_MOUSE_DOWN")

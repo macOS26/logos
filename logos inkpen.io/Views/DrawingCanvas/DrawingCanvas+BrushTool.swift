@@ -2,12 +2,10 @@ import SwiftUI
 
 extension DrawingCanvas {
 
-
     func isPathBoundsFinite(_ rect: CGRect) -> Bool {
         return rect.origin.x.isFinite && rect.origin.y.isFinite &&
                rect.size.width.isFinite && rect.size.height.isFinite
     }
-
 
     internal func cancelBrushDrawing() {
         brushPath = nil
@@ -72,7 +70,6 @@ extension DrawingCanvas {
         updateBrushPreview()
     }
 
-
     internal func handleBrushDragEnd() {
         guard isBrushDrawing else { return }
 
@@ -113,7 +110,6 @@ extension DrawingCanvas {
         document.selectedObjectIDs.removeAll()
         document.selectedTextIDs.removeAll()
     }
-
 
     private func updateBrushPreview() {
         guard brushRawPoints.count >= 2 else { return }
@@ -260,7 +256,6 @@ extension DrawingCanvas {
         }
     }
 
-
     private func processBrushStroke() {
         guard brushRawPoints.count >= 2,
               activeBrushShape != nil,
@@ -387,7 +382,6 @@ extension DrawingCanvas {
         document.addShape(shape)
     }
 
-
     private func applySelfUnionToBrushStroke(shapeIndex: Int, layerIndex: Int) {
 
         let shapes = document.getShapesForLayer(layerIndex)
@@ -402,7 +396,6 @@ extension DrawingCanvas {
         guard brushStroke.id == activeBrushShape?.id else {
             return
         }
-
 
         let originalPath = brushStroke.path.cgPath
 
@@ -427,7 +420,6 @@ extension DrawingCanvas {
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
         }
     }
-
 
     private func generatePreviewVariableWidthPath(centerPoints: [CGPoint], recentRawPoints: [BrushPoint], thickness: Double, pressureSensitivity: Double, taper: Double) -> VectorPath {
         guard centerPoints.count >= 2 else {
@@ -488,7 +480,6 @@ extension DrawingCanvas {
         return createSmoothBrushOutline(leftEdgePath: leftEdgePath, rightEdgePath: rightEdgePath)
     }
 
-
     private func interpolatePressureForPoint(_ targetPoint: CGPoint, from rawPoints: [BrushPoint]) -> Double {
         guard !rawPoints.isEmpty else { return 1.0 }
 
@@ -522,7 +513,6 @@ extension DrawingCanvas {
         return firstClosest.pressure
     }
 
-
     private func detectStraightLine(points: [CGPoint]) -> Bool {
         guard points.count >= 2 else { return false }
 
@@ -543,7 +533,6 @@ extension DrawingCanvas {
 
         return maxDeviation < lineLength * 0.05
     }
-
 
     private func generateSmoothVariableWidthPath(centerPoints: [CGPoint], rawPoints: [BrushPoint], thickness: Double, pressureSensitivity: Double, taper: Double) -> VectorPath {
         guard centerPoints.count >= 2 else {
@@ -703,6 +692,5 @@ extension DrawingCanvas {
 
         return VectorPath(elements: elements)
     }
-
 
 }

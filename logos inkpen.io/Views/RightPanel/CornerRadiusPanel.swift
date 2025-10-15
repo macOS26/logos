@@ -112,7 +112,6 @@ struct CornerRadiusPanel: View {
         .buttonStyle(BorderlessButtonStyle())
     }
 
-
     private func updateCornerValues() {
         guard let selectedShape = getSelectedRoundedRectangle() else {
             cornerValues = [0, 0, 0, 0]
@@ -196,7 +195,6 @@ struct CornerRadiusPanel: View {
         }
     }
 
-
     private func getSelectedRoundedRectangle() -> VectorShape? {
         guard let firstSelectedID = document.selectedShapeIDs.first else {
             return nil
@@ -208,7 +206,6 @@ struct CornerRadiusPanel: View {
 
         return shape.cornerRadii.count > 0 ? shape : nil
     }
-
 
 }
 

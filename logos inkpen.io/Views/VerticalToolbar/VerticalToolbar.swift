@@ -1,16 +1,13 @@
 import SwiftUI
 import AppKit
 
-
 struct VerticalToolbar: View {
     @ObservedObject var document: VectorDocument
     @StateObject private var toolGroupManager = ToolGroupManager.shared
 
-
     private func handleToolLongPress(_ tool: DrawingTool, variantIndex: Int? = nil) {
         toolGroupManager.longPressedTool(tool, variantIndex: variantIndex)
     }
-
 
     @ViewBuilder
     private func toolIconView(for toolItem: ToolItem) -> some View {
@@ -74,7 +71,6 @@ struct VerticalToolbar: View {
                 .foregroundColor(isToolSelected(toolItem) ? .white : .primary)
         }
     }
-
 
     private func getToolsToDisplayByGroup() -> [[ToolItem]] {
         var toolGroups: [[ToolItem]] = []
@@ -202,7 +198,6 @@ struct VerticalToolbar: View {
         return false
     }
 
-
     var body: some View {
         ZStack {
             ScrollView(.vertical, showsIndicators: false) {
@@ -281,7 +276,6 @@ struct VerticalToolbar: View {
             )
         }
     }
-
 
     private func toolTooltip(for tool: DrawingTool, variant: StarVariant? = nil) -> String {
         if let starVariant = variant {

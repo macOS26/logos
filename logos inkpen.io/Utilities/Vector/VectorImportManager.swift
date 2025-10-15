@@ -6,7 +6,6 @@ class VectorImportManager {
 
     private init() {}
 
-
     func importVectorFile(from url: URL) async -> VectorImportResult {
 
         if let raster = detectRaster(from: url) {
@@ -22,7 +21,6 @@ class VectorImportManager {
                 warnings: ["Could not detect file format"]
             )
         }
-
 
         guard format.isCurrentlySupported else {
             return VectorImportResult(
@@ -54,7 +52,6 @@ class VectorImportManager {
             )
         }
 
-
         guard format.isCurrentlySupported else {
             return VectorImportResult(
                 success: false,
@@ -72,7 +69,6 @@ class VectorImportManager {
             return await importPDF(from: url)
         }
     }
-
 
     private func detectFormat(from url: URL) -> VectorFileFormat? {
         let pathExtension = url.pathExtension.lowercased()
@@ -114,12 +110,10 @@ class VectorImportManager {
         return nil
     }
 
-
     private func importSVG(from url: URL, useExtremeValueHandling: Bool = false) async -> VectorImportResult {
         var errors: [VectorImportError] = []
         var warnings: [String] = []
         var shapes: [VectorShape] = []
-
 
         do {
             guard let data = try? Data(contentsOf: url) else {
@@ -134,7 +128,6 @@ class VectorImportManager {
 
                         let base64Data = String(svgString[openTagEnd.upperBound..<endRange.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
 
-
                         var documentSize = CGSize(width: 8.5 * 72, height: 11 * 72)
                         if let widthRange = svgString.range(of: "width=\""),
                            let widthEnd = svgString.range(of: "\"", range: widthRange.upperBound..<svgString.endIndex),
@@ -146,7 +139,6 @@ class VectorImportManager {
                            let height = Double(svgString[heightRange.upperBound..<heightEnd.lowerBound]) {
                             documentSize.height = height
                         }
-
 
                         let metadata = VectorImportMetadata(
                             originalFormat: .svg,
@@ -175,7 +167,6 @@ class VectorImportManager {
                 }
             }
 
-
             let svgContent = try parseSVGContent(data, useExtremeValueHandling: useExtremeValueHandling)
             shapes = svgContent.shapes
 
@@ -198,7 +189,6 @@ class VectorImportManager {
                 documentVersion: svgContent.version,
                 inkpenMetadata: svgContent.inkpenMetadata
             )
-
 
             return VectorImportResult(
                 success: true,
@@ -272,12 +262,10 @@ class VectorImportManager {
         return VectorImportResult(success: true, shapes: [rectShape], metadata: meta, errors: [], warnings: [])
     }
 
-
     private func importPDF(from url: URL) async -> VectorImportResult {
         var errors: [VectorImportError] = []
         let warnings: [String] = []
         var shapes: [VectorShape] = []
-
 
         guard let pdfDocument = CGPDFDocument(url as CFURL) else {
             errors.append(.corruptedFile)
@@ -354,7 +342,6 @@ class VectorImportManager {
             )
         }
 
-
         do {
             let pdfContent = try extractPDFVectorContent(page)
             shapes = pdfContent.shapes
@@ -374,7 +361,6 @@ class VectorImportManager {
                 documentVersion: pdfContent.version,
                 inkpenMetadata: inkpenMetadata
             )
-
 
             return VectorImportResult(
                 success: true,
@@ -397,7 +383,6 @@ class VectorImportManager {
             )
         }
     }
-
 
     private func createDefaultMetadata() -> VectorImportMetadata {
         return VectorImportMetadata(

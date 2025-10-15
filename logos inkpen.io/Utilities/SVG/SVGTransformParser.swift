@@ -2,7 +2,6 @@ import SwiftUI
 
 extension SVGParser {
 
-
     func parseTransform(_ transformString: String) -> CGAffineTransform {
         var transform = CGAffineTransform.identity
 

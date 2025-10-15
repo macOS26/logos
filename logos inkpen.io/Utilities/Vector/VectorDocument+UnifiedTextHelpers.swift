@@ -2,7 +2,6 @@ import SwiftUI
 
 extension VectorDocument {
 
-
     func lockTextInUnified(id: UUID) {
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let shape) = obj.objectType {
@@ -44,7 +43,6 @@ extension VectorDocument {
             }
         }
     }
-
 
     func hideTextInUnified(id: UUID) {
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
@@ -88,7 +86,6 @@ extension VectorDocument {
         }
     }
 
-
     func updateTextFillOpacityInUnified(id: UUID, opacity: Double) {
         updateShapeByID(id) { shape in
             shape.typography?.fillOpacity = opacity
@@ -101,7 +98,6 @@ extension VectorDocument {
             shape.typography?.hasStroke = width > 0
         }
     }
-
 
     func translateTextInUnified(id: UUID, delta: CGPoint) {
         updateShapeByID(id) { shape in
@@ -126,7 +122,6 @@ extension VectorDocument {
             translateTextInUnified(id: textID, delta: delta)
         }
     }
-
 
     func setTextEditingInUnified(id: UUID, isEditing: Bool) {
         updateShapeByID(id) { shape in

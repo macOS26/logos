@@ -379,7 +379,6 @@ struct ProfessionalLayerRow: View {
         .background(Color.clear)
     }
 
-
     private func handleObjectSelection(_ objectID: UUID, layerIndex: Int, isShiftPressed: Bool, isCommandPressed: Bool) {
         guard document.findObject(by: objectID) != nil else { return }
 

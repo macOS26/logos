@@ -18,7 +18,6 @@ final class GroupTextMovementTests: XCTestCase {
         super.tearDown()
     }
 
-
     func testTextObjectIncludedInGroup() {
         let textPosition = CGPoint(x: 100, y: 100)
         let textSize = CGSize(width: 200, height: 50)

@@ -136,7 +136,6 @@ struct MainToolbarContent: ToolbarContent {
             .help("Development Tools")
 #endif
 
-
             TransformationControls(document: document)
 
             CornerRadiusToolbar(document: document)
@@ -251,7 +250,6 @@ struct MainToolbarContent: ToolbarContent {
             .buttonStyle(BorderlessButtonStyle())
             .help("Document Settings")
 
-
             if showingImportProgress {
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle(tint: InkPenUIColors.shared.primaryBlue))
@@ -260,7 +258,6 @@ struct MainToolbarContent: ToolbarContent {
 
         }
     }
-
 
     private func onSnapPageToArtwork() {
         guard let bounds = document.getArtworkBounds(), bounds.width > 0, bounds.height > 0 else { return }
@@ -351,7 +348,6 @@ struct MainToolbarContent: ToolbarContent {
         }
         return combinedBounds
     }
-
 
     private func bringSelectedToFront() {
         document.bringSelectedToFront()

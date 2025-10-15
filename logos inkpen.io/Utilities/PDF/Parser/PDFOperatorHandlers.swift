@@ -2,14 +2,12 @@ import SwiftUI
 
 extension PDFCommandParser {
 
-
     func handleMoveTo(scanner: CGPDFScannerRef) {
         if !currentPath.isEmpty {
 
             compoundPathParts.append(currentPath)
             isInCompoundPath = true
             moveToCount += 1
-
 
         } else {
             moveToCount = 1

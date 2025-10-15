@@ -220,7 +220,6 @@ struct ProfessionalDirectSelectionView: View {
         let isOutgoingHandleSelected = outgoingHandleID != nil && selectedHandles.contains(outgoingHandleID!)
         let isOutgoingHandleVisible = outgoingHandleID != nil && (selectedHandles.contains(outgoingHandleID!) || visibleHandles.contains(outgoingHandleID!))
 
-
         let anyCoincidentHandleSelected: Bool = {
             if shape.path.elements.last == .close {
                 let lastPointIndex = shape.path.elements.count - 2
@@ -350,7 +349,6 @@ struct ProfessionalDirectSelectionView: View {
         return nil
     }
 
-
     private func getPointLocation(_ pointID: PointID) -> CGPoint? {
         for unifiedObject in document.unifiedObjects {
             if case .shape(let shape) = unifiedObject.objectType {
@@ -463,7 +461,6 @@ struct ProfessionalDirectSelectionView: View {
         }
         return nil
     }
-
 
     private func getShapeForHandle(_ handleID: HandleID) -> VectorShape? {
         for unifiedObject in document.unifiedObjects {

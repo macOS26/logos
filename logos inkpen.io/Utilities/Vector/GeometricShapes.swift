@@ -299,7 +299,6 @@ class GeometricShapes {
         return VectorPath(elements: elements, isClosed: false)
     }
 
-
     private static func regularPolygonPoints(center: CGPoint, radius: CGFloat, sides: Int, orientation: CGFloat) -> [CGPoint] {
         var points: [CGPoint] = []
         let angleStep = 2 * .pi / Double(sides)

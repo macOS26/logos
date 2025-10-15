@@ -42,7 +42,6 @@ extension FileOperations {
         }
     }
 
-
     @MainActor
     static func openSVGFile(url: URL) async throws -> VectorDocument {
 
@@ -77,7 +76,6 @@ extension FileOperations {
             return inkpenDocument
         }
 
-
         let metadata = result.metadata
         let docSize = metadata.documentSize
 
@@ -97,7 +95,6 @@ extension FileOperations {
             document.settings.width = docSize.width / 72.0
             document.settings.height = docSize.height / 72.0
         }
-
 
         document.updateCanvasLayer()
         document.updatePasteboardLayer()
@@ -164,13 +161,11 @@ extension FileOperations {
                     document.addShapeToUnifiedSystem(clippedShape, layerIndex: 2)
                 }
 
-
                 document.addShapeToUnifiedSystem(maskGroup.mask, layerIndex: 2)
             }
         }
 
         document.selectedLayerIndex = 2
-
 
         return document
     }

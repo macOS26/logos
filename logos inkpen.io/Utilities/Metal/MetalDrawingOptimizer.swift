@@ -15,7 +15,6 @@ class MetalDrawingOptimizer {
 
     }
 
-
     func optimizePathSimplification(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
         if isMetalAvailable && points.count > 100 {
             return metalAcceleratedSimplification(points, tolerance: tolerance)
@@ -32,11 +31,9 @@ class MetalDrawingOptimizer {
         }
     }
 
-
     private func metalAcceleratedSimplification(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
         return cpuOptimizedSimplification(points, tolerance: tolerance)
     }
-
 
     private func cpuOptimizedSimplification(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
         guard points.count > 2 else { return points }
@@ -101,7 +98,6 @@ class MetalDrawingOptimizer {
         return sqrt(dx * dx + dy * dy)
     }
 
-
     func trackDrawingStart() {
         OptimizedPerformanceMonitor.shared.metalCommandStart()
     }
@@ -118,7 +114,6 @@ class MetalDrawingOptimizer {
         }
     }
 }
-
 
 extension MetalDrawingOptimizer {
 

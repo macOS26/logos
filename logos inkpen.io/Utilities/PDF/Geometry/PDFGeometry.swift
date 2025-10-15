@@ -1,7 +1,6 @@
 import SwiftUI
 import simd
 
-
 struct PDFBoundsCalculator {
 
     static func calculateArtworkBounds(from shapes: [VectorShape], pageSize: CGSize) -> CGRect {
@@ -130,7 +129,6 @@ struct PDFBoundsCalculator {
 
         return false
     }
-
 
     static func calculateCombinedBounds(_ rects: [CGRect]) -> CGRect {
         guard !rects.isEmpty else { return .zero }

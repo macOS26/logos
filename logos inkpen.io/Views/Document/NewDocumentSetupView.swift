@@ -238,7 +238,6 @@ struct NewDocumentSetupView: View {
         }
     }
 
-
     private var previewPanel: some View {
              VStack(spacing: 24) {
             VStack(alignment: .leading, spacing: 16) {
@@ -379,7 +378,6 @@ struct NewDocumentSetupView: View {
         ]
     }
 
-
     private func applyQuickSize(_ size: QuickSize) {
         let targetUnit = setupData.unit
         setupData.width = UnitsConverter.convert(value: size.baseWidth, from: size.baseUnit, to: targetUnit)
@@ -464,7 +462,6 @@ struct NewDocumentSetupView: View {
         isPresented = false
     }
 }
-
 
 #Preview {
     NewDocumentSetupView(

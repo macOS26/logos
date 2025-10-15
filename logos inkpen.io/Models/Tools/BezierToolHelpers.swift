@@ -61,7 +61,6 @@ extension DrawingCanvas {
         }
     }
 
-
     internal func handleBezierPenTap(at location: CGPoint) {
         var constrainedLocation = location
 
@@ -152,7 +151,6 @@ extension DrawingCanvas {
         }
     }
 
-
     internal func updateActiveBezierShapeInDocument(isLiveDrag: Bool = false) {
         guard let activeBezierShape = activeBezierShape,
               let updatedPath = bezierPath,
@@ -211,7 +209,6 @@ extension DrawingCanvas {
         updateActiveBezierShapeInDocument()
     }
 
-
     internal func shouldShowContinuePathHint() -> (Bool, CGPoint?) {
         guard document.currentTool == .bezierPen && !isBezierDrawing else {
             return (false, nil)
@@ -224,7 +221,6 @@ extension DrawingCanvas {
 
         return (false, nil)
     }
-
 
     internal var constraintAngles: [Double] {
         return [0, 45, 90, 135, 180, 225, 270, 315]
@@ -294,7 +290,6 @@ extension DrawingCanvas {
 
         return bestIntersection
     }
-
 
     private func constrainToAngle(from reference: CGPoint, to target: CGPoint) -> CGPoint {
         let dx = target.x - reference.x

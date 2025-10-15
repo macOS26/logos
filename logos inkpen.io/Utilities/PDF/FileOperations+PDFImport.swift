@@ -2,7 +2,6 @@ import SwiftUI
 
 extension FileOperations {
 
-
     static func importFromPDFData(_ data: Data) throws -> VectorDocument {
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("pdf")
 

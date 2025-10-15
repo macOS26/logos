@@ -1,6 +1,5 @@
 import SwiftUI
 
-
 extension ProfessionalPathOperations {
 
     static func professionalUnion(_ paths: [CGPath]) -> CGPath? {
@@ -16,7 +15,6 @@ extension ProfessionalPathOperations {
             return nil
         }
     }
-
 
     static func professionalMinusFront(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
         guard !frontPath.isEmpty && !backPath.isEmpty else { return backPath }
@@ -56,10 +54,8 @@ extension ProfessionalPathOperations {
         return []
     }
 
-
     static func professionalMosaic(_ paths: [CGPath]) -> [CGPath] {
         guard paths.count >= 2 else { return paths }
-
 
         let result = CoreGraphicsPathOperations.split(paths, using: .winding)
 
@@ -73,7 +69,6 @@ extension ProfessionalPathOperations {
     static func professionalCut(_ paths: [CGPath]) -> [CGPath] {
         guard paths.count >= 2 else { return paths }
 
-
         let result = CoreGraphicsPathOperations.cut(paths, using: .winding)
 
         if !result.isEmpty {
@@ -82,7 +77,6 @@ extension ProfessionalPathOperations {
             return []
             }
         }
-
 
     private static func convexHull(_ points: [CGPoint]) -> [CGPoint] {
         guard points.count > 2 else { return points }
@@ -119,7 +113,6 @@ extension ProfessionalPathOperations {
     private static func cross(_ O: CGPoint, _ A: CGPoint, _ B: CGPoint) -> CGFloat {
         return (A.x - O.x) * (B.y - O.y) - (A.y - O.y) * (B.x - O.x)
     }
-
 
     static func extractSubpaths(from cgPath: CGPath) -> [CGPath] {
         var subpaths: [CGPath] = []
@@ -160,12 +153,10 @@ extension ProfessionalPathOperations {
         return subpaths
     }
 
-
     static func professionalMergeWithShapeTracking(_ paths: [CGPath], colors: [VectorColor]) -> [(CGPath, Int)] {
         guard paths.count >= 2 && colors.count == paths.count else {
             return paths.enumerated().map { (index, path) in (path, index) }
         }
-
 
         let result = CoreGraphicsPathOperations.mergeWithShapeTracking(paths, colors: colors, using: .winding)
 
@@ -182,7 +173,6 @@ extension ProfessionalPathOperations {
         let validPaths = paths.filter { !$0.isEmpty }
         guard validPaths.count >= 2 else { return paths }
 
-
         var result = validPaths[0]
         for i in 1..<validPaths.count {
             if let unionResult = CoreGraphicsPathOperations.union(result, validPaths[i], using: .winding) {
@@ -197,7 +187,6 @@ extension ProfessionalPathOperations {
         guard paths.count >= 2 else {
             return paths.enumerated().map { (index, path) in (path, index, false) }
         }
-
 
         let result = CoreGraphicsPathOperations.cropWithShapeTracking(paths, using: .winding)
 
@@ -215,7 +204,6 @@ extension ProfessionalPathOperations {
     static func professionalDieline(_ paths: [CGPath]) -> [CGPath] {
         guard !paths.isEmpty else { return [] }
 
-
         let splitPaths = professionalMosaic(paths)
 
         return splitPaths
@@ -223,7 +211,6 @@ extension ProfessionalPathOperations {
 
     static func professionalSeparate(_ paths: [CGPath]) -> [CGPath] {
         guard !paths.isEmpty else { return [] }
-
 
         var separatedPaths: [CGPath] = []
 

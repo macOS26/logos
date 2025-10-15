@@ -127,7 +127,6 @@ class PDFCommandParser {
 
         removeDuplicateClippingShapes()
 
-
         if !shapes.isEmpty {
             let artworkBounds = calculateArtworkBounds()
             pageSize = artworkBounds.size
@@ -191,7 +190,6 @@ class PDFCommandParser {
     func setupOperatorCallbacks(_ operatorTable: CGPDFOperatorTableRef) {
         PDFOperatorInterpreter.setupOperatorCallbacks(operatorTable, parser: self)
     }
-
 
     func removeDuplicateClippingShapes() {
         let clippingPaths = shapes.filter { $0.isClippingPath }
@@ -282,6 +280,5 @@ class PDFCommandParser {
     func calculateArtworkBounds() -> CGRect {
         return PDFBoundsCalculator.calculateArtworkBounds(from: shapes, pageSize: pageSize)
     }
-
 
 }

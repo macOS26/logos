@@ -12,7 +12,6 @@ extension DrawingCanvas {
             let screenTolerance: Double = 15.0
             let tolerance: Double = screenTolerance / document.zoomLevel
 
-
             var foundPointOrHandle = false
 
             if !directSelectedShapeIDs.isEmpty {
@@ -87,7 +86,6 @@ extension DrawingCanvas {
             y: preciseTranslationY / preciseZoom
         )
 
-
         var snappedDelta = delta
 
         if (document.snapToPoint || document.snapToGrid) && !selectedPoints.isEmpty {
@@ -141,7 +139,6 @@ extension DrawingCanvas {
 
         document.objectPositionUpdateTrigger.toggle()
     }
-
 
     private func handleDirectSelectionShapeDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         if !isDraggingDirectSelectedShapes {

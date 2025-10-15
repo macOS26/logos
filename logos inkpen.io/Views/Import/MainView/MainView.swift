@@ -21,7 +21,6 @@ struct MainView: View {
     @State private var isBottomDrawerOpen = false
     @State private var isLeftDrawerOpen = false
 
-
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         ZStack {
@@ -126,7 +125,6 @@ struct MainView: View {
                     document.snapToGrid = newDocument.snapToGrid
 
                     currentDocumentURL = suggestedURL
-
 
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                         document.requestZoom(to: 0.0, mode: .fitToPage)
@@ -281,7 +279,6 @@ struct MainView: View {
 
         currentDocumentURL = nil
 
-
         Task {
             await performMainViewImportedDocumentSetupAsync()
         }
@@ -325,7 +322,6 @@ struct MainView: View {
                     document.selectedObjectIDs = newShapeIDs
                     document.syncSelectionArrays()
 
-
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                         document.requestZoom(to: 0.0, mode: .fitToPage)
                     }
@@ -337,7 +333,6 @@ struct MainView: View {
             }
         }
     }
-
 
     private func showSVGExportWithBackgroundOption(saveAsURL: URL) {
         let alert = NSAlert()
@@ -518,7 +513,6 @@ struct MainView: View {
         }
     }
 }
-
 
 private class SavePanelAccessoryHandler: NSObject {
     weak var panel: NSSavePanel?

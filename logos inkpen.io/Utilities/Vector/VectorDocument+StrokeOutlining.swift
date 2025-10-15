@@ -3,7 +3,6 @@ import Combine
 
 extension VectorDocument {
 
-
     func outlineSelectedStrokes() {
         guard let layerIndex = selectedLayerIndex else { return }
 

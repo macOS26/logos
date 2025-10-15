@@ -2,7 +2,6 @@ import SwiftUI
 
 extension VectorDocument {
 
-
     private func expandSelectionForClippingMasks(_ selectedIDs: Set<UUID>, in layerObjects: [VectorObject]) -> Set<UUID> {
         var expandedSelectedIDs = selectedIDs
 
@@ -34,7 +33,6 @@ extension VectorDocument {
 
         return expandedSelectedIDs
     }
-
 
     func bringSelectedToFront() {
         guard !selectedObjectIDs.isEmpty else { return }

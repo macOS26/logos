@@ -7,7 +7,6 @@ extension PDFCommandParser {
             return
         }
 
-
         var vectorElements: [PathElement] = []
 
         for command in currentPath {
@@ -93,7 +92,6 @@ extension PDFCommandParser {
         }
 
         let isGradientShape = fillStyle?.isGradient ?? false
-
 
         let shape = VectorShape(
             name: "PDF Shape \(shapes.count + 1)",

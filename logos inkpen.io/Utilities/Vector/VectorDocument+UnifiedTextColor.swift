@@ -63,7 +63,6 @@ extension VectorDocument {
         }
     }
 
-
     func updateTextFontSizePreview(id: UUID, fontSize: CGFloat) {
         if let textObject = findText(by: id) {
             var previewTypography = textObject.typography

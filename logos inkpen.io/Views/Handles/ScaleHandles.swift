@@ -296,6 +296,5 @@ struct ScaleHandles: View {
         .id("scale-handles-\(pointsRefreshTrigger)")
     }
 
-
     @State var keyEventMonitor: Any?
 }

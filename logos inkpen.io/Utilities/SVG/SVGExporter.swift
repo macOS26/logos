@@ -59,7 +59,6 @@ class SVGExporter {
             }
         }
 
-
         for (layerIndex, layer) in document.layers.enumerated() {
             if !layer.isVisible { continue }
             if layer.name == "Pasteboard" { continue }
@@ -92,7 +91,6 @@ class SVGExporter {
 
         return svg
     }
-
 
     private func exportShape(_ shape: VectorShape, dpiScale: CGFloat) -> String {
         var svg = ""
@@ -154,7 +152,6 @@ class SVGExporter {
 
         return svg
     }
-
 
     private func exportTextShape(_ shape: VectorShape, dpiScale: CGFloat, renderingMode: AppState.SVGTextRenderingMode) -> String {
         guard let vectorText = VectorText.from(shape) else { return "" }
@@ -290,7 +287,6 @@ class SVGExporter {
                 }
             }
         }
-
 
         if vectorText.areaSize != nil && vectorText.areaSize!.width > 0 && vectorText.areaSize!.height > 0 {
             svg += "</g>\n"
@@ -690,7 +686,6 @@ class SVGExporter {
         return svg
     }
 
-
     private func isRectangleGlyph(_ path: CGPath) -> Bool {
         var subpaths: [[CGPoint]] = []
         var currentPath: [CGPoint] = []
@@ -815,7 +810,6 @@ class SVGExporter {
         }
     }
 
-
     private func exportImageShape(_ shape: VectorShape, image: NSImage, dpiScale: CGFloat) -> String {
         let transformedBounds: CGRect
         if shape.transform != .identity {
@@ -856,7 +850,6 @@ class SVGExporter {
         return svg
     }
 
-
     private func generatePathData(from path: VectorPath, transform: CGAffineTransform) -> String {
         var pathData = ""
 
@@ -888,7 +881,6 @@ class SVGExporter {
 
         return pathData.trimmingCharacters(in: .whitespaces)
     }
-
 
     private func generateGradientDefs(from document: VectorDocument) -> String {
         var defs = ""
@@ -982,7 +974,6 @@ class SVGExporter {
 
         return svg
     }
-
 
     private func formatSVGNumber(_ value: CGFloat) -> String {
         if value.truncatingRemainder(dividingBy: 1) == 0 {

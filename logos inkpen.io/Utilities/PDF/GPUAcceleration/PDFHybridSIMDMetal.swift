@@ -31,7 +31,6 @@ class PDFHybridProcessor {
 
     }
 
-
     func transformPoints(_ points: [CGPoint], with matrix: PDFSIMDMatrix) -> [CGPoint] {
         if points.count >= gpuThreshold, let gpuResult = transformPointsGPU(points, with: matrix) {
             return gpuResult
@@ -81,7 +80,6 @@ class PDFHybridProcessor {
         return nil
     }
 
-
     func calculateBounds(for shapes: [VectorShape]) -> CGRect? {
         guard !shapes.isEmpty else { return nil }
 
@@ -99,7 +97,6 @@ class PDFHybridProcessor {
     private func calculateBoundsGPU(for shapes: [VectorShape]) -> CGRect? {
         return nil
     }
-
 
     func batchMultiplyMatrices(_ matrices: [(PDFSIMDMatrix, PDFSIMDMatrix)]) -> [PDFSIMDMatrix] {
         guard !matrices.isEmpty else { return [] }
@@ -127,7 +124,6 @@ class PDFHybridProcessor {
         return nil
     }
 
-
     enum ProcessingMethod {
         case gpu
         case simdCPU
@@ -147,7 +143,6 @@ class PDFHybridProcessor {
     }
 }
 
-
 extension simd_float3x3 {
     var metalBufferArray: [Float] {
         return [
@@ -166,7 +161,6 @@ extension simd_float3x3 {
         )
     }
 }
-
 
 extension PDFHybridProcessor {
 

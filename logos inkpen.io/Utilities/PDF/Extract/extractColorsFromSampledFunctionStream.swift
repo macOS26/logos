@@ -12,13 +12,11 @@ extension PDFCommandParser {
         CGPDFDictionaryGetInteger(dictionary, "BitsPerSample", &bitsPerSample)
         CGPDFDictionaryGetArray(dictionary, "Range", &rangeArray)
 
-
         var format: CGPDFDataFormat = CGPDFDataFormat.raw
         if let data = CGPDFStreamCopyData(stream, &format) {
             let cfData = data as CFData
             let dataBytes = CFDataGetBytePtr(cfData)
             let dataLength = CFDataGetLength(cfData)
-
 
             var outputComponents = 3
             if let range = rangeArray {

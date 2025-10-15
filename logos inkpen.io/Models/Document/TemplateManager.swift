@@ -10,7 +10,6 @@ class TemplateManager {
         isInitialized = true
     }
 
-
     enum TemplateType: String, CaseIterable {
         case blank = "blank"
         case businessCard = "business_card"
@@ -21,7 +20,6 @@ class TemplateManager {
         case engineering = "engineering"
         case webGraphics = "web_graphics"
     }
-
 
     private func loadAvailableTemplates() {
     }

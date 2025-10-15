@@ -89,7 +89,6 @@ struct PressureCalibrationView: View {
         }
     }
 
-
     private var pressureCurveEditor: some View {
         VStack(spacing: 8) {
             Text("Pressure Curve")
@@ -175,12 +174,10 @@ struct PressureCalibrationView: View {
         .cornerRadius(8)
     }
 
-
     @discardableResult
     private func getThicknessFromCurve(pressure: Double) -> Double {
         return getThicknessFromPressureCurve(pressure: pressure, curve: appState.pressureCurve)
     }
-
 
     private var pressureTestCanvas: some View {
         VStack(spacing: 6) {
@@ -243,7 +240,6 @@ struct PressureCalibrationView: View {
 
                         handlePressureDrawing(location: location, pressure: pressure, eventType: eventType, isTabletEvent: isTabletEvent)
 
-
                         let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
                         let logEntry = "[\(timestamp)] \(eventType) - Pressure: \(String(format: "%.3f", pressure)) - Tablet: \(isTabletEvent) - Loc: (\(Int(location.x)), \(Int(location.y)))"
 
@@ -264,7 +260,6 @@ struct PressureCalibrationView: View {
         .background(Color(NSColor.controlBackgroundColor))
         .cornerRadius(8)
     }
-
 
     private func handlePressureDrawing(location: CGPoint, pressure: Double, eventType: PressureSensitiveCanvasView.PressureEventType, isTabletEvent: Bool) {
         switch eventType {
@@ -332,7 +327,6 @@ struct PressureCalibrationView: View {
 
     private func updateCanvas() {
     }
-
 
     private func createVariableWidthStroke(from pressurePoints: [PressurePoint]) -> Path {
         guard pressurePoints.count >= 2 else {
@@ -438,7 +432,6 @@ struct PressureCalibrationView: View {
         return path
     }
 
-
     private var currentPressureSection: some View {
         VStack(spacing: 6) {
             Text("Current (0-1)")
@@ -456,7 +449,6 @@ struct PressureCalibrationView: View {
         .background(Color(NSColor.controlBackgroundColor))
         .cornerRadius(8)
     }
-
 
     private var pressureRangeSection: some View {
         VStack(spacing: 8) {
@@ -505,7 +497,6 @@ struct PressureCalibrationView: View {
         .background(Color(NSColor.controlBackgroundColor))
         .cornerRadius(8)
     }
-
 
     private var pressureVisualizationSection: some View {
         VStack(spacing: 12) {
@@ -572,7 +563,6 @@ struct PressureCalibrationView: View {
         .cornerRadius(8)
     }
 
-
     private var eventLogSection: some View {
         VStack(spacing: 8) {
             HStack {
@@ -609,7 +599,6 @@ struct PressureCalibrationView: View {
         .background(Color(NSColor.controlBackgroundColor))
         .cornerRadius(8)
     }
-
 
     private var controlButtonsSection: some View {
         HStack(spacing: 12) {
@@ -677,7 +666,6 @@ struct PressureCalibrationView: View {
         }
     }
 
-
     private func closeCalibration() {
 
         if pressureManager.isCalibrating {
@@ -686,7 +674,6 @@ struct PressureCalibrationView: View {
 
         presentationMode.wrappedValue.dismiss()
     }
-
 
     private func addEventToLog(_ message: String) {
         let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
@@ -700,7 +687,6 @@ struct PressureCalibrationView: View {
         }
     }
 
-
     private func updateVisualization() {
         let rawCurrentPressure = pressureManager.isCalibrating ? pressureManager.currentPressure : 0.0
         let rawMinPressure = pressureManager.isCalibrating ? pressureManager.calibrationMinPressure : 0.0
@@ -712,18 +698,15 @@ struct PressureCalibrationView: View {
     }
 }
 
-
 struct PressurePoint {
     let location: CGPoint
     let pressure: Double
 }
 
-
 struct VariableStrokePath {
     var points: [PressurePoint]
     var path: Path = Path()
 }
-
 
 #Preview {
     PressureCalibrationView()

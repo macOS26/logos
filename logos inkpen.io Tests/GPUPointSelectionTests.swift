@@ -15,7 +15,6 @@ final class GPUPointSelectionTests: XCTestCase {
         super.tearDown()
     }
 
-
     func testGPUPointSelectionBasic() throws {
         let points = [
             CGPoint(x: 0, y: 0),
@@ -116,7 +115,6 @@ final class GPUPointSelectionTests: XCTestCase {
         }
     }
 
-
     func testGPUHandleSelectionBasic() throws {
         let handlePoints = [
             CGPoint(x: 10, y: 10),
@@ -172,7 +170,6 @@ final class GPUPointSelectionTests: XCTestCase {
         }
     }
 
-
     func testGPUFindPointsInRadius() throws {
         let points = [
             CGPoint(x: 0, y: 0),
@@ -196,7 +193,6 @@ final class GPUPointSelectionTests: XCTestCase {
         XCTAssertTrue(results.contains(2), "Should include point 2")
         XCTAssertFalse(results.contains(3), "Should not include distant point 3")
     }
-
 
     func testGPUPointSelectionPerformance() throws {
         let pointCounts = [100, 500, 1000, 5000]

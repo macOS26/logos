@@ -2,7 +2,6 @@ import SwiftUI
 
 extension SVGParser {
 
-
     func parseRectangle(attributes: [String: String]) {
         let x = parseLength(attributes["x"]) ?? 0
         let y = parseLength(attributes["y"]) ?? 0

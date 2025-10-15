@@ -236,7 +236,6 @@ struct PathOperationsPanel: View {
             }
             let frontShapes = Array(selectedShapes.dropFirst())
 
-
             var resultPath = backShape.path.cgPath
 
             for frontShape in frontShapes {
@@ -409,7 +408,6 @@ struct PathOperationsPanel: View {
                 }
             }
 
-
         case .dieline:
             let dielinePaths = ProfessionalPathOperations.dieline(paths)
 
@@ -467,7 +465,6 @@ struct PathOperationsPanel: View {
             }
             let backShapes = Array(selectedShapes.dropLast())
 
-
             var resultPath = frontShape.path.cgPath
 
             for backShape in backShapes {
@@ -506,7 +503,6 @@ struct PathOperationsPanel: View {
         let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
         document.commandManager.execute(command)
     }
-
 
     private func removeOverlapFromSelectedShapes() {
         guard !document.selectedShapeIDs.isEmpty else { return }

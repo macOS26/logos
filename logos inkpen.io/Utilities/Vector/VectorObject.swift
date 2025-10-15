@@ -19,7 +19,6 @@ struct VectorObject: Identifiable, Hashable {
 
     }
 
-
     var isVisible: Bool {
         switch objectType {
         case .shape(let shape):
@@ -55,7 +54,6 @@ extension VectorObject: Codable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-
 
         id = try container.decode(UUID.self, forKey: .id)
         orderID = try container.decode(Int.self, forKey: .orderID)

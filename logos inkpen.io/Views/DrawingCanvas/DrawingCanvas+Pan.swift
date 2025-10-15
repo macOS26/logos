@@ -11,7 +11,6 @@ extension DrawingCanvas {
             handToolDragStart = value.startLocation
             isPanGestureActive = true
 
-
             HandClosedCursor.set()
         }
 
@@ -19,7 +18,6 @@ extension DrawingCanvas {
             x: value.location.x - handToolDragStart.x,
             y: value.location.y - handToolDragStart.y
         )
-
 
         if document.currentTool == .hand {
             HandClosedCursor.set()

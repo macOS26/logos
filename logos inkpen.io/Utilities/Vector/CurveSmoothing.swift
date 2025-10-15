@@ -1,8 +1,6 @@
 import SwiftUI
 
-
 struct CurveSmoothing {
-
 
     static func chaikinSmooth(points: [CGPoint], iterations: Int = 1, ratio: Double = 0.25) -> [CGPoint] {
         guard points.count >= 3 else { return points }
@@ -63,7 +61,6 @@ struct CurveSmoothing {
         return newPoints
     }
 
-
     static func improvedDouglassPeucker(points: [CGPoint], tolerance: Double, preserveSharpCorners: Bool = true) -> [CGPoint] {
         guard points.count > 2 else { return points }
 
@@ -100,7 +97,6 @@ struct CurveSmoothing {
             return [points[startIndex], points[endIndex]]
         }
     }
-
 
     static func adaptiveCurveFitting(points: [CGPoint], adaptiveTension: Bool = true, baseTension: Double = 0.3) -> [PathElement] {
         guard points.count >= 2 else { return [] }
@@ -139,7 +135,6 @@ struct CurveSmoothing {
 
         return elements
     }
-
 
     private static func perpendicularDistance(point: CGPoint, lineStart: CGPoint, lineEnd: CGPoint) -> Double {
         let A = point.x - lineStart.x

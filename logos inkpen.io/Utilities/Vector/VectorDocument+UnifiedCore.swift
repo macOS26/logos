@@ -100,7 +100,6 @@ extension VectorDocument {
             }
         }
 
-
         let orderID = getNextOrderID(for: layerIndex)
         let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
         unifiedObjects.append(unifiedObject)
@@ -182,7 +181,6 @@ extension VectorDocument {
         var textWithLayer = text
         textWithLayer.layerIndex = layerIndex
         let textShape = VectorShape.from(textWithLayer)
-
 
         if isUndoRedoOperation {
             if let existingObject = findObject(by: text.id) {

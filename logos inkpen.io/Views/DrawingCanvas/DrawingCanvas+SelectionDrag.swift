@@ -93,7 +93,6 @@ extension DrawingCanvas {
             }
         }
 
-
         let cursorDelta = CGPoint(
             x: value.location.x - selectionDragStart.x,
             y: value.location.y - selectionDragStart.y
@@ -242,7 +241,6 @@ extension DrawingCanvas {
             }
 
             document.updateTransformPanelValues()
-
 
             initialObjectPositions.removeAll()
             initialObjectTransforms.removeAll()
@@ -419,7 +417,6 @@ extension DrawingCanvas {
         if transform.isIdentity {
             return
         }
-
 
         if shape.isGroupContainer && !shape.groupedShapes.isEmpty {
             var transformedGroupedShapes: [VectorShape] = []

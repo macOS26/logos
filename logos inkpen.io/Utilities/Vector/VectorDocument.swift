@@ -59,7 +59,6 @@ class VectorDocument: ObservableObject, Codable {
 
     @Published var isHandleScalingActive = false
 
-
     @Published var unifiedObjects: [VectorObject] = [] {
         didSet {
             if oldValue.count != unifiedObjects.count {
@@ -166,7 +165,6 @@ class VectorDocument: ObservableObject, Codable {
             } != nil
         }
     }
-
 
     @Published var currentTool: DrawingTool = .brush {
         didSet {
@@ -383,7 +381,6 @@ class VectorDocument: ObservableObject, Codable {
 
     @Published var originalHandlePositions: [String: VectorPoint] = [:]
 
-
     private var _encodableSettings: DocumentSettings
     private var _encodableLayers: [VectorLayer]
     private var _encodableCurrentTool: DrawingTool
@@ -436,7 +433,6 @@ class VectorDocument: ObservableObject, Codable {
         self.markerRemoveOverlap = UserDefaults.standard.object(forKey: "markerRemoveOverlap") as? Bool ?? true
 
         loadStrokeStyleDefaults()
-
 
         self.selectedLayerIndex = nil
         self.selectedShapeIDs = []
@@ -550,9 +546,7 @@ class VectorDocument: ObservableObject, Codable {
         }
     }
 
-
     deinit {}
-
 
     private func applyScalingToShape(
         shapeId: UUID,
@@ -597,7 +591,6 @@ class VectorDocument: ObservableObject, Codable {
         shape.updateBounds()
         setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
     }
-
 
     enum CodingKeys: CodingKey {
         case settings, layers, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, selectedObjectIDs, currentTool, viewMode, zoomLevel, canvasOffset, unifiedObjects, warpEnvelopeCorners, warpBounds
@@ -664,7 +657,6 @@ class VectorDocument: ObservableObject, Codable {
 
         unifiedObjects = decodedUnifiedObjects
 
-
         defaultStrokePlacement = .center
         defaultStrokeLineJoin = .miter
         defaultStrokeLineCap = .butt
@@ -677,7 +669,6 @@ class VectorDocument: ObservableObject, Codable {
         activeColorTarget = .fill
         colorChangeNotification = UUID()
         lastColorChangeType = .fillOpacity
-
 
         originalHandlePositions = [:]
 
@@ -786,7 +777,6 @@ break
         }
     }
 
-
     func encode(to encoder: Encoder) throws {
         syncEncodableStorage()
 
@@ -814,7 +804,6 @@ break
         try container.encode(warpBounds, forKey: .warpBounds)
     }
 
-
     private func collectUsedColors() -> Set<VectorColor> {
         var colors = Set<VectorColor>()
 
@@ -836,7 +825,6 @@ break
 
         return colors
     }
-
 
     static func isPermanentColor(_ color: VectorColor) -> Bool {
         switch color {

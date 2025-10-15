@@ -9,7 +9,6 @@ class PersistentGradientHUDManager {
 
     private weak var appState: AppState?
 
-
     var editingStopId: UUID? = nil
     var editingStopColor: VectorColor = .black
     var currentDocument: VectorDocument? = nil
@@ -157,7 +156,6 @@ class PersistentGradientHUDManager {
     }
 }
 
-
 @Observable
 class PersistentInkHUDManager {
     var isVisible = false
@@ -256,7 +254,6 @@ class PersistentInkHUDManager {
         window.makeKeyAndOrderFront(nil)
     }
 }
-
 
 struct GradientEditingState {
     let gradientId: UUID

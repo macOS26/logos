@@ -2,7 +2,6 @@ import SwiftUI
 
 extension SVGParser {
 
-
     func parsePoints(_ pointsString: String) -> [CGPoint] {
         let coordinates = pointsString
             .replacingOccurrences(of: ",", with: " ")
@@ -101,7 +100,6 @@ extension SVGParser {
         var currentPoint = CGPoint.zero
         var subpathStart = CGPoint.zero
         var lastControlPoint: CGPoint?
-
 
         let tokens = tokenizeSVGPath(pathData)
 
@@ -265,7 +263,6 @@ extension SVGParser {
                     let y2 = currentPoint.y + dy2
                     let newPoint = CGPoint(x: currentPoint.x + dx, y: currentPoint.y + dy)
 
-
                     currentPoint = newPoint
                     lastControlPoint = CGPoint(x: x2, y: y2)
 
@@ -296,7 +293,6 @@ extension SVGParser {
                         x1 = currentPoint.x
                         y1 = currentPoint.y
                     }
-
 
                     currentPoint = CGPoint(x: x, y: y)
                     lastControlPoint = CGPoint(x: x2, y: y2)

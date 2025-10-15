@@ -1,6 +1,5 @@
 import SwiftUI
 
-
 enum VectorGradient: Codable, Hashable {
     case linear(LinearGradient)
     case radial(RadialGradient)

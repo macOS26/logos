@@ -113,7 +113,6 @@ class ProfessionalTextViewModel: ObservableObject {
             return
         }
 
-
         let wasAutoResizing = isAutoResizing
         isAutoResizing = true
         defer { isAutoResizing = wasAutoResizing }
@@ -138,7 +137,6 @@ class ProfessionalTextViewModel: ObservableObject {
 
         self.textAlignment = textObject.typography.alignment.nsTextAlignment
 
-
         self.textBoxFrame = CGRect(
             x: textObject.position.x,
             y: textObject.position.y,
@@ -154,9 +152,7 @@ class ProfessionalTextViewModel: ObservableObject {
         lastTypingTime = Date().timeIntervalSince1970
     }
 
-
     var isAutoResizing = false
-
 
     func startEditing() {
         for unifiedObj in document.unifiedObjects {
@@ -198,7 +194,6 @@ class ProfessionalTextViewModel: ObservableObject {
         ))
         document.updateTextAreaSizeInUnified(id: textObject.id, areaSize: CGSize(width: frame.width, height: frame.height))
     }
-
 
     private func isRectangleGlyph(_ path: CGPath) -> Bool {
         var subpaths: [[CGPoint]] = []
@@ -305,7 +300,6 @@ class ProfessionalTextViewModel: ObservableObject {
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
 
-
     private func convertUsingNSLayoutManager() {
         let nsFont = selectedFont
 
@@ -410,18 +404,15 @@ class ProfessionalTextViewModel: ObservableObject {
         }
     }
 
-
     private func convertToCoreTextPath() {
         convertUsingNSLayoutManager()
     }
-
 
     func convertToPath() {
         guard !text.isEmpty else {
             Log.error("❌ CONVERT TO OUTLINES: Cannot convert empty text", category: .error)
             return
         }
-
 
         convertToCoreTextPath()
 
@@ -451,7 +442,6 @@ class ProfessionalTextViewModel: ObservableObject {
             document.addShapeWithoutUndo(outlineShape, to: targetLayerIndex)
             createdShapeIDs.append(outlineShape.id)
         }
-
 
         document.removeTextFromUnifiedSystem(id: textObject.id)
     }
@@ -560,7 +550,6 @@ class ProfessionalTextViewModel: ObservableObject {
         }
 
         if let textObject = document.findText(by: textID) {
-
 
             document.setTextEditingInUnified(id: textObject.id, isEditing: true)
 

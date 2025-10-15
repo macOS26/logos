@@ -7,7 +7,6 @@ final class ColorExportManager {
 
     private init() {}
 
-
     enum ExportFormat {
         case png
     }
@@ -17,7 +16,6 @@ final class ColorExportManager {
         case sRGB
         case adobeRGB
     }
-
 
     @discardableResult
     func exportImage(
@@ -53,7 +51,6 @@ final class ColorExportManager {
         }
     }
 
-
     private func exportAsPNG(
         _ cgImage: CGImage,
         colorSpace: ColorSpaceOption,
@@ -82,7 +79,6 @@ final class ColorExportManager {
 
         return true
     }
-
 
     private func getColorSpace(for option: ColorSpaceOption) -> CGColorSpace {
         switch option {
@@ -121,7 +117,6 @@ final class ColorExportManager {
         ]
     }
 
-
     enum ExportError: LocalizedError {
         case imageConversionFailed
         case destinationCreationFailed
@@ -139,7 +134,6 @@ final class ColorExportManager {
         }
     }
 }
-
 
 extension ColorExportManager {
 

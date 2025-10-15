@@ -48,7 +48,6 @@ extension ScaleHandles {
             scaleY = uniformScale
         }
 
-
         calculatePreviewTransform(scaleX: scaleX, scaleY: scaleY, anchor: scalingAnchorPoint)
     }
 
@@ -70,7 +69,6 @@ extension ScaleHandles {
         let shapes = document.getShapesForLayer(layerIndex)
         if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }),
            var updatedShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-
 
             updatedShape.transform = initialTransform
             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
@@ -116,7 +114,6 @@ extension ScaleHandles {
 
         if isCapsLockPressed && draggedPointIndex != lockedPinPointIndex {
         }
-
 
         let currentLocation = dragValue.location
         let preciseZoom = Double(zoomLevel)
@@ -166,7 +163,6 @@ extension ScaleHandles {
         if lockedPinPointIndex == nil && scalingAnchorPoint == .zero {
             setLockedPinPoint(nil)
         }
-
 
     }
 

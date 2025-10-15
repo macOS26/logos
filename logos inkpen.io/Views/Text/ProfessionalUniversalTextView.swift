@@ -105,7 +105,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             textView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
         }
 
-
         NotificationCenter.default.addObserver(
             context.coordinator,
             selector: #selector(Coordinator.handleTextPreviewUpdate(_:)),
@@ -118,10 +117,8 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         return textView
     }
 
-
     func updateNSView(_ nsView: DisabledContextMenuTextView, context: Context) {
         let coordinator = context.coordinator
-
 
         if !isUpdatingFromTyping {
             coordinator.isRestoringSelection = true
@@ -129,7 +126,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                 coordinator.isRestoringSelection = false
             }
         }
-
 
         let now = Date()
         if isUpdatingFromTyping && now.timeIntervalSince(coordinator.lastUpdateTime) < 0.1 {
@@ -270,7 +266,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             }
         }
 
-
         nsView.textContainerInset = NSSize(width: 0, height: 0)
         nsView.textContainer?.lineFragmentPadding = 0
 
@@ -302,7 +297,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         if nsView.minSize != newMinSize {
             nsView.minSize = newMinSize
         }
-
 
         if needsFormatUpdate || abs(currentContainerWidth - newWidth) > 1.0 {
             nsView.needsLayout = true

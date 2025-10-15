@@ -10,7 +10,6 @@ struct PDFCurveOptimizer {
         to end: CGPoint
     ) -> PathCommand? {
 
-
         let startVec = simd_float2(Float(start.x), Float(start.y))
         let cp1Vec = simd_float2(Float(cp1.x), Float(cp1.y))
         let cp2Vec = simd_float2(Float(cp2.x), Float(cp2.y))
@@ -38,7 +37,6 @@ struct PDFCurveOptimizer {
 
         return nil
     }
-
 
     static func batchConvertToQuadCurves(curves: [(start: CGPoint, cp1: CGPoint, cp2: CGPoint, end: CGPoint)]) -> [PathCommand?] {
         guard !curves.isEmpty else { return [] }

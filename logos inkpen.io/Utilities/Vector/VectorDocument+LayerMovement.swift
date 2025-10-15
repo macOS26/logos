@@ -2,7 +2,6 @@ import SwiftUI
 
 extension VectorDocument {
 
-
     func moveShapeToLayer(shapeId: UUID, fromLayerIndex: Int, toLayerIndex: Int) {
         guard fromLayerIndex >= 0 && fromLayerIndex < layers.count,
               toLayerIndex >= 0 && toLayerIndex < layers.count,

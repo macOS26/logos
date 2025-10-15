@@ -3,7 +3,6 @@ import SwiftUI
 
 extension DrawingCanvas {
 
-
     internal func cancelFreehandDrawing() {
         freehandPath = nil
         freehandRawPoints.removeAll()
@@ -50,7 +49,6 @@ extension DrawingCanvas {
             fillStyle: fillStyle
         )
 
-
     }
 
     internal func handleFreehandDragUpdate(at location: CGPoint) {
@@ -80,7 +78,6 @@ extension DrawingCanvas {
     internal func handleFreehandDragEnd() {
         guard isFreehandDrawing else { return }
 
-
         processFreehandPath()
 
         freehandPreviewPath = nil
@@ -90,7 +87,6 @@ extension DrawingCanvas {
         document.selectedObjectIDs.removeAll()
 
     }
-
 
     private func updateFreehandPreview(smoothedLocation: CGPoint? = nil) {
         guard freehandRawPoints.count >= 2 else { return }
@@ -107,12 +103,10 @@ extension DrawingCanvas {
 
     }
 
-
     private func processFreehandPath() {
         guard freehandRawPoints.count >= 3 else {
             return
         }
-
 
         var processedPoints = freehandRawPoints
 
@@ -130,7 +124,6 @@ extension DrawingCanvas {
         let optimizedCGPoints = MetalDrawingOptimizer.shared.optimizeFreehandDrawing(points: cgPoints, tolerance: tolerance)
         let simplifiedPoints = optimizedCGPoints.map { VectorPoint($0) }
 
-
         let finalCGPoints = simplifiedPoints.map { CGPoint(x: $0.x, y: $0.y) }
         let smoothPath = document.advancedSmoothingEnabled ?
             createAdvancedSmoothBezierPath(from: finalCGPoints) :
@@ -139,7 +132,6 @@ extension DrawingCanvas {
         updateFinalFreehandShape(with: smoothPath)
 
     }
-
 
     private func createAdvancedSmoothBezierPath(from points: [CGPoint]) -> VectorPath {
         guard points.count >= 2 else {
@@ -170,7 +162,6 @@ extension DrawingCanvas {
     private func createSmoothBezierPath(from points: [CGPoint]) -> VectorPath {
         return DrawingCanvasPathHelpers.createSmoothBezierPath(from: points)
     }
-
 
     private func updateFinalFreehandShape(with smoothPath: VectorPath) {
         var strokeColor = getCurrentStrokeColor()

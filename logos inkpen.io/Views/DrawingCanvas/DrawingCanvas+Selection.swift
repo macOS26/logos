@@ -31,7 +31,6 @@ extension DrawingCanvas {
                         continue
                     }
 
-
                     let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
 
                     if isBackgroundShape {

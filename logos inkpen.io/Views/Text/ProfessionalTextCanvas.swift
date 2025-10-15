@@ -79,7 +79,6 @@ struct ProfessionalTextCanvas: View {
         }
     }
 
-
     private func shouldApplyDragPreview() -> Bool {
         if document.selectedTextIDs.contains(textObjectID) {
             return true
@@ -97,7 +96,6 @@ struct ProfessionalTextCanvas: View {
 
         return false
     }
-
 
     private func handleToolChange(oldTool: DrawingTool, newTool: DrawingTool) {
         let isThisTextSelected = document.selectedTextIDs.contains(textObjectID)
@@ -139,7 +137,6 @@ struct ProfessionalTextCanvas: View {
         }
     }
 
-
     private func updateTextBoxState(selectedIDs: Set<UUID>) {
         let oldState = textBoxState
 
@@ -171,7 +168,6 @@ struct ProfessionalTextCanvas: View {
         }
     }
 
-
     private func handleTextBoxSelect(location: CGPoint) {
         for unifiedObj in document.unifiedObjects {
             guard case .shape(let shape) = unifiedObj.objectType,
@@ -196,7 +192,6 @@ struct ProfessionalTextCanvas: View {
         }
     }
 
-
     private func handleResizeStarted() {
         isResizeHandleActive = true
     }
@@ -212,7 +207,6 @@ struct ProfessionalTextCanvas: View {
             width: max(100, viewModel.textBoxFrame.width + resizeOffset.width),
             height: max(50, viewModel.textBoxFrame.height + resizeOffset.height)
         )
-
 
         viewModel.updateTextBoxFrame(newFrame)
         resizeOffset = .zero

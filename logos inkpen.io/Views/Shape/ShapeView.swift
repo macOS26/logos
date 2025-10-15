@@ -102,7 +102,6 @@ struct ShapeView: View {
                         let pathBounds = shape.path.cgPath.boundingBoxOfPath
                         let transformedBounds = pathBounds.applying(shape.transform)
 
-
                         ImageNSView(
                             image: hydrated,
                             bounds: transformedBounds,

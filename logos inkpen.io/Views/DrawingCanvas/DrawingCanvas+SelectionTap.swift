@@ -121,7 +121,6 @@ extension DrawingCanvas {
             return
         }
 
-
         var hitObject: VectorObject?
 
         let objectsInOrder = document.getObjectsInStackingOrder()
@@ -236,7 +235,6 @@ extension DrawingCanvas {
         }
     }
 
-
     private func performShapeHitTest(shape: VectorShape, at location: CGPoint) -> Bool {
         if shape.isTextObject {
             let textBounds = CGRect(
@@ -288,7 +286,6 @@ extension DrawingCanvas {
             }
         }
     }
-
 
      private func validateAndCorrectLocation(_ location: CGPoint) -> CGPoint {
          if location.x.isNaN || location.y.isNaN || location.x.isInfinite || location.y.isInfinite {

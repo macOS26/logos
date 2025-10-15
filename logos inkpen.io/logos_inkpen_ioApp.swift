@@ -1,6 +1,5 @@
 import SwiftUI
 
-
 @main
 struct logos_inken_ioApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
@@ -160,7 +159,6 @@ struct logos_inken_ioApp: App {
                     .keyboardShortcut(",", modifiers: [.command])
                     .help("Open application preferences")
                 }
-
 
                 CommandGroup(replacing: .undoRedo) {
                     Button("Undo") {
@@ -970,7 +968,6 @@ class ClipboardManager {
                                 areaSize: originalAreaSize
                             )
 
-
                             textToCopy.append(vectorText)
                         }
                     } else {
@@ -1138,7 +1135,6 @@ struct ClipboardData: Codable {
     let shapes: [VectorShape]
     let texts: [VectorText]
 }
-
 
 func openLogosInkPenHelp() {
     let helpBookName = "LogosInkPenHelp"

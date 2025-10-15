@@ -156,7 +156,6 @@ extension PDFCommandParser {
         CGPDFOperatorTableSetCallback(operatorTable, "n") { (scanner, info) in
         }
 
-
         CGPDFOperatorTableSetCallback(operatorTable, "BT") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
@@ -168,7 +167,6 @@ extension PDFCommandParser {
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
             parser.handleEndText()
         }
-
 
         CGPDFOperatorTableSetCallback(operatorTable, "Tf") { (scanner, info) in
             guard let info = info else { return }
@@ -212,7 +210,6 @@ extension PDFCommandParser {
             parser.handleSetTextRise(scanner: scanner)
         }
 
-
         CGPDFOperatorTableSetCallback(operatorTable, "Td") { (scanner, info) in
             guard let info = info else { return }
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
@@ -236,7 +233,6 @@ extension PDFCommandParser {
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info).takeUnretainedValue()
             parser.handleTextNewLine()
         }
-
 
         CGPDFOperatorTableSetCallback(operatorTable, "Tj") { (scanner, info) in
             guard let info = info else { return }

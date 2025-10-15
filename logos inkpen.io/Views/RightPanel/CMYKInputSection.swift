@@ -1,6 +1,5 @@
 import SwiftUI
 
-
 struct CMYKInputSection: View {
     @ObservedObject var document: VectorDocument
     @Binding var sharedColor: VectorColor
@@ -343,7 +342,6 @@ struct CMYKInputSection: View {
         if isProgrammaticallyUpdating {
             return
         }
-
 
         return
 

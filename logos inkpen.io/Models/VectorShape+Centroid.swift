@@ -25,7 +25,6 @@ extension VectorShape {
             return CGPoint(x: shapeBounds.midX, y: shapeBounds.midY)
         }
 
-
         var signedArea: CGFloat = 0.0
         var cx: CGFloat = 0.0
         var cy: CGFloat = 0.0

@@ -56,11 +56,9 @@ class SVGParser: NSObject, XMLParserDelegate {
     private var isInInkpenDocument = false
     private var currentMetadataContent = ""
 
-
     private var viewBoxScale: (x: Double, y: Double) {
         return (documentSize.width / viewBoxWidth, documentSize.height / viewBoxHeight)
     }
-
 
     struct ParseResult {
         let shapes: [VectorShape]
@@ -330,7 +328,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
     }
 
-
     private func parseCSSStyles(_ cssContent: String) {
 
         let rules = cssContent.components(separatedBy: "}")
@@ -381,7 +378,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
     }
 
-
     private func parseSVGRoot(attributes: [String: String]) {
         if let width = attributes["width"], let height = attributes["height"] {
             let w = parseLength(width) ?? 100
@@ -397,7 +393,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                 viewBoxWidth = parts[2]
                 viewBoxHeight = parts[3]
                 hasViewBox = true
-
 
                 if attributes["width"] == nil && attributes["height"] == nil {
                     documentSize = CGSize(width: viewBoxWidth, height: viewBoxHeight)
@@ -474,11 +469,9 @@ class SVGParser: NSObject, XMLParserDelegate {
     private func parsePath(attributes: [String: String]) {
         guard let d = attributes["d"] else { return }
 
-
         let pathData = parsePathData(d)
         let hasCloseElement = pathData.contains { if case .close = $0 { return true }; return false }
         let vectorPath = VectorPath(elements: pathData, isClosed: hasCloseElement)
-
 
         let (shouldClip, clipPathId) = checkForClipPath(attributes)
 
@@ -495,7 +488,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
 
     }
-
 
     private func parseImage(attributes: [String: String]) {
 
@@ -571,7 +563,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             imageShape.linkedImagePath = imageHref
         }
 
-
         if let clipId = clipPathId {
 
             if let clipPath = clipPathDefinitions[clipId] {
@@ -583,7 +574,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                     }
                     closedClipPath = VectorPath(elements: elements, isClosed: true)
                 }
-
 
                 var maskedImageShape = imageShape
                 let clipShapeId = UUID()
@@ -614,7 +604,6 @@ class SVGParser: NSObject, XMLParserDelegate {
 
         shapes.append(imageShape)
     }
-
 
     private func parseClipPath(attributes: [String: String]) {
         isParsingClipPath = true
@@ -718,7 +707,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
     }
 
-
     func createShape(name: String, path: VectorPath, attributes: [String: String], geometricType: GeometricShapeType? = nil) -> VectorShape {
         var mergedAttributes = attributes
 
@@ -777,7 +765,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             transform: transform
         )
     }
-
 
     internal func checkForClipPath(_ attributes: [String: String]) -> (shouldClip: Bool, clipPathId: String?) {
         var mergedAttributes = attributes
@@ -847,7 +834,6 @@ class SVGParser: NSObject, XMLParserDelegate {
 
     }
 
-
     internal func parseGradientCoordinate(_ value: String, gradientUnits: GradientUnits = .objectBoundingBox, isXCoordinate: Bool = true, useExtremeValueHandling: Bool = false) -> Double {
         return GradientCoordinateConverter.parseGradientCoordinate(
             value,
@@ -868,6 +854,5 @@ class SVGParser: NSObject, XMLParserDelegate {
             viewBoxHeight: viewBoxHeight
         )
     }
-
 
 }

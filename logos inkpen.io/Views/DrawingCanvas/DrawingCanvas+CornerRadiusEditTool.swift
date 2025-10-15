@@ -3,7 +3,6 @@ import Combine
 
 extension DrawingCanvas {
 
-
     @ViewBuilder
     func cornerRadiusEditTool(geometry: GeometryProxy) -> some View {
         if let selectedShape = getSelectedRectangleShape() {
@@ -60,7 +59,6 @@ extension DrawingCanvas {
                 }
         )
     }
-
 
     internal func getSelectedRectangleShape() -> VectorShape? {
         guard document.selectedShapeIDs.count == 1 else { return nil }
@@ -324,7 +322,6 @@ extension DrawingCanvas {
             }
         }
 
-
     }
 
     private func finishCornerRadiusDrag() {
@@ -373,7 +370,6 @@ extension DrawingCanvas {
                 }
             }
 
-
             if let originalShape = sharedOriginalShape,
                let finalShape = getSelectedRectangleShape() {
                 var oldShapes: [UUID: VectorShape] = [:]
@@ -395,10 +391,8 @@ extension DrawingCanvas {
             initialCornerRadius = 0.0
             currentMousePosition = .zero
 
-
         }
     }
-
 
     private func updateShapeWithOptimizedSync(_ shape: VectorShape, layerIndex: Int, shapeIndex: Int, isLiveDrag: Bool) {
         document.updateShapeCornerRadiiInUnified(id: shape.id, cornerRadii: shape.cornerRadii, path: shape.path)

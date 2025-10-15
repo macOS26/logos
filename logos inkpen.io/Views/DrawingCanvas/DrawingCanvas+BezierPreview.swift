@@ -83,7 +83,6 @@ extension DrawingCanvas {
         }
     }
 
-
     @ViewBuilder
     internal func rubberBandPreview(geometry: GeometryProxy) -> some View {
         if isBezierDrawing && document.currentTool == .bezierPen,
@@ -325,7 +324,6 @@ extension DrawingCanvas {
             }
         }
     }
-
 
     private func constrainToAngle(from reference: CGPoint, to target: CGPoint) -> CGPoint {
         return GeometryUtils.constrainToAngle(from: reference, to: target, constraintAngles: constraintAngles)

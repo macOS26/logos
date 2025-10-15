@@ -30,7 +30,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             unsetenv("MTL_HUD_ENABLED")
         }
 
-
         setupGlobalErrorHandling()
 
         setupFallbackTimer()
@@ -78,7 +77,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Log.error("📄 GlobalErrorHandler: Allowing exception to propagate", category: .error)
         }
     }
-
 
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
         let hasLaunchedBefore = UserDefaults.standard.bool(forKey: "HasLaunchedBefore")

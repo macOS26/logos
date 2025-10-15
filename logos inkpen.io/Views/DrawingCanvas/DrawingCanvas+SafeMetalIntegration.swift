@@ -154,7 +154,6 @@ extension DrawingCanvas {
     }
 }
 
-
 extension DrawingCanvas {
     private func countActiveDrawElements() -> Int {
         var count = 0

@@ -1,7 +1,6 @@
 import SwiftUI
 import Combine
 
-
 struct StrokeFillPanel: View {
     @ObservedObject var document: VectorDocument
     @Environment(AppState.self) private var appState
@@ -115,7 +114,6 @@ struct StrokeFillPanel: View {
         }
         return document.defaultStrokeOpacity
     }
-
 
     private var strokeLineJoin: CGLineJoin {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
@@ -815,7 +813,6 @@ struct StrokeFillPanel: View {
             }
         }
     }
-
 
     private func updateStrokeLineJoin(_ lineJoin: CGLineJoin) {
         document.defaultStrokeLineJoin = lineJoin

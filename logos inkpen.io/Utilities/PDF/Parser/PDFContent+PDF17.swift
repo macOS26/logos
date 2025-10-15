@@ -48,7 +48,6 @@ extension PDFCommandParser {
                 return
             }
 
-
             pageResourcesDict = resourcesDict
 
             var xObjectDictRef: CGPDFDictionaryRef? = nil
@@ -56,7 +55,6 @@ extension PDFCommandParser {
                   let xObjectDict = xObjectDictRef else {
                 return
             }
-
 
             var xObjectRef: CGPDFObjectRef? = nil
             guard CGPDFDictionaryGetObject(xObjectDict, name, &xObjectRef),
@@ -72,13 +70,11 @@ extension PDFCommandParser {
             return
         }
 
-
         var xObjectStreamRef: CGPDFStreamRef? = nil
         guard CGPDFObjectGetValue(xObject, .stream, &xObjectStreamRef),
               let xObjectStream = xObjectStreamRef else {
             return
         }
-
 
         guard let xObjectStreamDict = CGPDFStreamGetDictionary(xObjectStream) else {
             return
@@ -90,7 +86,6 @@ extension PDFCommandParser {
               String(cString: subtypeName) == "Form" else {
             return
         }
-
 
         var xObjectResourcesDict: CGPDFDictionaryRef? = nil
         if CGPDFDictionaryGetDictionary(xObjectStreamDict, "Resources", &xObjectResourcesDict) {
@@ -118,7 +113,6 @@ extension PDFCommandParser {
             let previewLength = min(dataLength, 200)
             let previewData = Data(bytes: dataPtr, count: previewLength)
 
-
             if String(data: previewData, encoding: .ascii) != nil, dataLength < 1000 {
             }
 
@@ -143,7 +137,6 @@ extension PDFCommandParser {
         guard let contentString = String(data: fullData, encoding: .ascii) else {
             return
         }
-
 
         let operations = contentString.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
 

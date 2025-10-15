@@ -78,9 +78,7 @@ class GradientStrokeNSView: NSView {
     }
 }
 
-
     func calculateOrientedBoundingBox(for shape: VectorShape) -> [CGPoint] {
-
 
         if shape.isGroup || shape.isGroupContainer {
             let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
@@ -96,13 +94,11 @@ class GradientStrokeNSView: NSView {
                 corner.applying(shape.transform)
             }
 
-
             return worldSpaceCorners
         }
 
         let pathElements = shape.path.elements
         var actualCorners: [CGPoint] = []
-
 
         for element in pathElements {
             switch element {

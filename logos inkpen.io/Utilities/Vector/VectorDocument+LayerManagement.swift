@@ -12,7 +12,6 @@ extension VectorDocument {
             return
         }
 
-
         layers[index].name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if settings.selectedLayerId == layers[index].id {

@@ -5,9 +5,7 @@ import simd
 
 struct PDFSIMDMatrix {
 
-
     var matrix: simd_float3x3
-
 
     init() {
         self.matrix = matrix_identity_float3x3
@@ -29,7 +27,6 @@ struct PDFSIMDMatrix {
         )
     }
 
-
     var cgAffineTransform: CGAffineTransform {
         return CGAffineTransform(
             a: CGFloat(matrix[0][0]),
@@ -40,7 +37,6 @@ struct PDFSIMDMatrix {
             ty: CGFloat(matrix[2][1])
         )
     }
-
 
     var tx: CGFloat {
         get { CGFloat(matrix[2][0]) }
@@ -72,7 +68,6 @@ struct PDFSIMDMatrix {
         set { matrix[1][1] = Float(newValue) }
     }
 
-
     var metalBufferArray: [Float] {
         return [
             matrix[0][0], matrix[0][1], matrix[0][2],
@@ -96,7 +91,6 @@ struct PDFSIMDMatrix {
                                 length: array.count * MemoryLayout<Float>.size,
                                 options: .storageModeShared)
     }
-
 
     mutating func concatenate(_ other: PDFSIMDMatrix) {
         self.matrix = self.matrix * other.matrix
@@ -134,7 +128,6 @@ struct PDFSIMDMatrix {
         return result
     }
 
-
     static func translation(tx: CGFloat, ty: CGFloat) -> PDFSIMDMatrix {
         var m = PDFSIMDMatrix()
         m.matrix[2][0] = Float(tx)
@@ -161,7 +154,6 @@ struct PDFSIMDMatrix {
         return m
     }
 }
-
 
 extension PDFSIMDMatrix {
     

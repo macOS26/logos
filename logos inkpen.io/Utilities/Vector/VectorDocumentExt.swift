@@ -1,6 +1,5 @@
 import SwiftUI
 
-
 extension VectorDocument {
 
     func getAllShapes() -> [VectorShape] {

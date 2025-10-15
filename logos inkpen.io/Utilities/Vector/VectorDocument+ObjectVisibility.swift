@@ -2,7 +2,6 @@ import SwiftUI
 
 extension VectorDocument {
 
-
     func lockSelectedObjects() {
         guard !selectedShapeIDs.isEmpty || !selectedTextIDs.isEmpty else { return }
 
@@ -55,7 +54,6 @@ extension VectorDocument {
             executeCommand(command)
         }
     }
-
 
     func hideSelectedObjects() {
         guard !selectedShapeIDs.isEmpty || !selectedTextIDs.isEmpty else { return }

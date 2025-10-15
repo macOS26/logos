@@ -2,7 +2,6 @@ import SwiftUI
 
 extension PDFCommandParser {
 
-
     func handleRGBFillColor(scanner: CGPDFScannerRef) {
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
 
@@ -122,7 +121,6 @@ extension PDFCommandParser {
             values.insert(value, at: 0)
         }
 
-
         if values.count >= 3 {
             let r = values[0]
             let g = values[1]
@@ -159,7 +157,6 @@ extension PDFCommandParser {
             currentStrokeColor = color
         }
     }
-
 
     func handleFillAlpha(scanner: CGPDFScannerRef) {
         var alpha: CGFloat = 0

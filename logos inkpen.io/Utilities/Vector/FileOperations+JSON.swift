@@ -3,7 +3,6 @@ import Combine
 
 extension FileOperations {
 
-
     static func exportToJSON(_ document: VectorDocument, url: URL) throws {
 
         let jsonData = try exportToJSONData(document)
@@ -36,7 +35,6 @@ extension FileOperations {
         }
     }
 
-
     static func importFromJSON(url: URL) throws -> VectorDocument {
 
         do {
@@ -58,7 +56,6 @@ extension FileOperations {
         }
     }
 
-
     static func importFromJSONData(_ data: Data) throws -> VectorDocument {
 
         let decoder = JSONDecoder()
@@ -79,7 +76,6 @@ extension FileOperations {
         }
     }
 }
-
 
 private struct DocumentSnapshot: Codable {
     let settings: DocumentSettings

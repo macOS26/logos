@@ -38,7 +38,6 @@ struct RightPanel: View {
     }
 }
 
-
 #Preview {
     RightPanel(document: VectorDocument())
         .frame(height: 600)

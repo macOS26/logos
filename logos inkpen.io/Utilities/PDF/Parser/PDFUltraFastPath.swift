@@ -5,7 +5,6 @@ import Accelerate
 
 struct PDFUltraFastPath {
 
-
     static func simplifyPath(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
         guard points.count > 2 else { return points }
 
@@ -80,7 +79,6 @@ struct PDFUltraFastPath {
         return distances
     }
 
-
     static func calculateTightBounds(path: CGPath) -> CGRect {
         var points = [CGPoint]()
 
@@ -104,7 +102,6 @@ struct PDFUltraFastPath {
 
         return PDFAdvancedSIMD.calculatePathBounds(points: points)
     }
-
 
     static func parallelTessellatePath(path: CGPath, flatness: CGFloat) -> [CGPoint] {
         var segments: [(start: CGPoint, cp1: CGPoint?, cp2: CGPoint?, end: CGPoint)] = []
@@ -261,7 +258,6 @@ struct PDFUltraFastPath {
 
         return leftPoints + rightPoints.dropFirst()
     }
-
 
     static func transformPath(_ path: CGPath, by transform: CGAffineTransform) -> CGPath {
         var points = [CGPoint]()

@@ -2,7 +2,6 @@ import SwiftUI
 
 extension PDFCommandParser {
 
-
     func handleFill() {
 
         if !isInCompoundPath && currentPath.isEmpty && compoundPathParts.isEmpty {
@@ -120,7 +119,6 @@ extension PDFCommandParser {
         createShapeFromCurrentPath(filled: true, stroked: true)
     }
 
-
     func createCompoundShapeFromParts(filled: Bool, stroked: Bool) {
         defer {
             compoundPathParts.removeAll()
@@ -160,7 +158,6 @@ extension PDFCommandParser {
                 allParts = separateParts
             }
         }
-
 
         var combinedElements: [PathElement] = []
 
@@ -258,9 +255,7 @@ extension PDFCommandParser {
             return
         }
 
-
         var vectorElements: [PathElement] = []
-
 
         let shouldApplyFlip = filled && !stroked
 

@@ -3,7 +3,6 @@ import UniformTypeIdentifiers
 import PDFKit
 import AppKit
 
-
 enum VectorFileFormat: String, CaseIterable {
     case svg = "svg"
     case pdf = "pdf"

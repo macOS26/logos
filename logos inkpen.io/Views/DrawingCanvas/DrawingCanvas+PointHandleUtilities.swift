@@ -123,7 +123,6 @@ extension DrawingCanvas {
                     }
                 }
 
-
                 var updatedShape = shape
                 updatedShape.path.elements = elements
 

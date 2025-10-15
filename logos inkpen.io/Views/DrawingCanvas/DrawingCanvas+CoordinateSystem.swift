@@ -47,7 +47,6 @@ extension DrawingCanvas {
         }
     }
 
-
     internal func canvasToScreen(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
         return canvasToScreen([point], geometry: geometry)[0]
     }
@@ -91,7 +90,6 @@ extension DrawingCanvas {
             return CGPoint(x: screenX, y: screenY)
         }
     }
-
 
     internal func setupDefaultView(geometry: GeometryProxy) {
 

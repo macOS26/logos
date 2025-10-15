@@ -163,7 +163,6 @@ struct EnvelopeHandles: View {
         }
     }
 
-
     @ViewBuilder
     private func envelopeCornerHandles() -> some View {
         if warpedCorners.count == 4 {
@@ -282,7 +281,6 @@ struct EnvelopeHandles: View {
         }
     }
 
-
     private func initializeEnvelopeCorners() {
         if shape.isWarpObject && !shape.warpEnvelope.isEmpty, let originalPath = shape.originalPath {
             let originalBounds = originalPath.cgPath.boundingBoxOfPath
@@ -353,7 +351,6 @@ struct EnvelopeHandles: View {
         }
         return false
     }
-
 
     private func handleEnvelopeWarp(cornerIndex: Int, dragValue: DragGesture.Value) {
         if !warpingStarted {
@@ -510,7 +507,6 @@ struct EnvelopeHandles: View {
         )
     }
 
-
     private func bilinearInterpolation(topLeft: CGPoint, topRight: CGPoint, bottomLeft: CGPoint, bottomRight: CGPoint, u: CGFloat, v: CGFloat) -> CGPoint {
         let top = CGPoint(
             x: topLeft.x * (1 - u) + topRight.x * u,
@@ -529,11 +525,9 @@ struct EnvelopeHandles: View {
 
     private func inverseBilinearInterpolation(point: CGPoint, topLeft: CGPoint, topRight: CGPoint, bottomLeft: CGPoint, bottomRight: CGPoint) -> (u: CGFloat, v: CGFloat) {
 
-
         let rightVector = CGPoint(x: topRight.x - topLeft.x, y: topRight.y - topLeft.y)
         let downVector = CGPoint(x: bottomLeft.x - topLeft.x, y: bottomLeft.y - topLeft.y)
         let pointVector = CGPoint(x: point.x - topLeft.x, y: point.y - topLeft.y)
-
 
         let det = rightVector.x * downVector.y - rightVector.y * downVector.x
 
@@ -729,9 +723,7 @@ struct EnvelopeHandles: View {
             document.warpEnvelopeCorners[shape.id] = warpedCorners
         }
 
-
     }
-
 
     @State private var envelopeKeyEventMonitor: Any?
 

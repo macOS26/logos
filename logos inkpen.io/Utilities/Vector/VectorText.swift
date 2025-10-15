@@ -151,7 +151,6 @@ struct TypographyProperties: Codable, Hashable {
         self.fillOpacity = fillOpacity
     }
 
-
     var nsFont: NSFont {
         if let variant = fontVariant {
             let fontManager = NSFontManager.shared
@@ -378,7 +377,6 @@ struct VectorText: Identifiable, Codable, Hashable {
 
         return CTFontCreateWithName(nsFont.fontName as CFString, typography.fontSize, nil)
     }
-
 
     static func from(_ vectorShape: VectorShape) -> VectorText? {
         guard vectorShape.isTextObject else { return nil }
@@ -673,7 +671,6 @@ extension NSBezierPath {
         }
     }
 }
-
 
 extension VectorText {
     func toVectorShape() -> VectorShape {

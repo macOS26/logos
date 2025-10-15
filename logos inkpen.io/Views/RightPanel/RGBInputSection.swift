@@ -311,7 +311,6 @@ struct RGBInputSection: View {
             return
         }
 
-
         return
 
     }
@@ -409,7 +408,6 @@ struct RGBInputSection: View {
 
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.rgb(currentColor)
-
 
         if showGradientEditing, let gradientCallback = appState.gradientEditingState?.onColorSelected {
             gradientCallback(vectorColor)

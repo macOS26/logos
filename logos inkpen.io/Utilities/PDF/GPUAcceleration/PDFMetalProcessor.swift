@@ -13,7 +13,6 @@ class PDFMetalProcessor {
 
     private var isInitialized: Bool = false
 
-
     private init() {
         setupMetal()
     }
@@ -51,7 +50,6 @@ class PDFMetalProcessor {
             Log.error("❌ Failed to create Metal compute pipelines: \(error)", category: .error)
         }
     }
-
 
     func convertRGBtoRGBA(rgbData: Data, maskData: Data?, width: Int, height: Int) -> Data? {
         guard isInitialized,
@@ -111,7 +109,6 @@ class PDFMetalProcessor {
         commandBuffer.waitUntilCompleted()
 
         let resultData = Data(bytes: rgbaBuffer.contents(), count: rgbaSize)
-
 
         return resultData
     }
@@ -184,10 +181,8 @@ class PDFMetalProcessor {
 
         let resultData = Data(bytes: rgbaBuffer.contents(), count: rgbaSize)
 
-
         return resultData
     }
-
 
     func extractGradientColors(sampleData: Data,
                               totalSamples: Int,

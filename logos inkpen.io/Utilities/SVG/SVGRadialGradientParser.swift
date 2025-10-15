@@ -2,7 +2,6 @@ import SwiftUI
 
 extension SVGParser {
 
-
     internal func parseRadialGradientCoordinates(from attributes: [String: String]) -> (cx: String, cy: String, r: String, fx: String?, fy: String?) {
         return (
             cx: attributes["cx"] ?? "50%",
@@ -69,7 +68,6 @@ extension SVGParser {
 
         let (cxRaw, cyRaw, rRaw, fxRaw, fyRaw) = parseRadialGradientCoordinates(from: attributes)
 
-
         let useExtremeHandling = useExtremeValueHandling && detectedExtremeValues
 
         let cx = parseGradientCoordinate(cxRaw, gradientUnits: gradientUnits, isXCoordinate: true, useExtremeValueHandling: useExtremeHandling)
@@ -78,7 +76,6 @@ extension SVGParser {
 
         let fx = fxRaw != nil ? parseGradientCoordinate(fxRaw!, gradientUnits: gradientUnits, isXCoordinate: true, useExtremeValueHandling: useExtremeHandling) : cx
         let fy = fyRaw != nil ? parseGradientCoordinate(fyRaw!, gradientUnits: gradientUnits, isXCoordinate: false, useExtremeValueHandling: useExtremeHandling) : cy
-
 
         var centerPoint: CGPoint
         var focalPoint: CGPoint
@@ -97,7 +94,6 @@ extension SVGParser {
         } else {
             finalRadius = r
         }
-
 
         let spreadMethod = parseSpreadMethod(from: attributes)
 

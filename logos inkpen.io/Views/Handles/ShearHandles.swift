@@ -182,7 +182,6 @@ struct ShearHandles: View {
                     .position(x: anchorScreenX, y: anchorScreenY)
             }
 
-
         }
         .onAppear {
             initialBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
@@ -201,7 +200,6 @@ struct ShearHandles: View {
         }
         .id("shear-handles-\(pointsRefreshTrigger)")
     }
-
 
     private func calculatePreviewShear(shearX: CGFloat, shearY: CGFloat, anchor: CGPoint) {
 
@@ -272,7 +270,6 @@ struct ShearHandles: View {
         previewTransform = .identity
     }
 
-
     private func extractPathPoints() {
         pathPoints.removeAll()
 
@@ -340,7 +337,6 @@ struct ShearHandles: View {
         }
     }
 
-
     private func setLockedPinPoint(_ pointIndex: Int?) {
         lockedPinPointIndex = pointIndex
 
@@ -382,7 +378,6 @@ struct ShearHandles: View {
 
         if isCapsLockPressed && draggedPointIndex != lockedPinPointIndex {
         }
-
 
         let currentLocation = dragValue.location
         let preciseZoom = Double(zoomLevel)
@@ -436,7 +431,6 @@ struct ShearHandles: View {
             setLockedPinPoint(nil)
         }
 
-
     }
 
     private func updatePathPointsAfterShear() {
@@ -475,7 +469,6 @@ struct ShearHandles: View {
 
     }
 
-
     private func cornerPosition(for index: Int, in bounds: CGRect, center: CGPoint) -> CGPoint {
         switch index {
         case 0: return CGPoint(x: bounds.minX, y: bounds.minY)
@@ -486,7 +479,6 @@ struct ShearHandles: View {
         }
     }
 
-
     private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int, transform: CGAffineTransform? = nil) {
         guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
         let currentTransform = transform ?? shape.transform
@@ -494,7 +486,6 @@ struct ShearHandles: View {
         if currentTransform.isIdentity {
             return
         }
-
 
         var transformedElements: [PathElement] = []
 

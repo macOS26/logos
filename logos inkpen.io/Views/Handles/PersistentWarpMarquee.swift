@@ -150,7 +150,6 @@ struct PersistentWarpMarquee: View {
         }
     }
 
-
     private func bilinearInterpolation(topLeft: CGPoint, topRight: CGPoint, bottomLeft: CGPoint, bottomRight: CGPoint, u: CGFloat, v: CGFloat) -> CGPoint {
         let top = CGPoint(
             x: topLeft.x * (1 - u) + topRight.x * u,

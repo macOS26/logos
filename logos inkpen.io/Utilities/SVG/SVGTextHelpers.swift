@@ -2,7 +2,6 @@ import SwiftUI
 
 extension SVGParser {
 
-
     internal func getCachedFont(family: String, size: Double) -> NSFont {
         let cacheKey = "\(family)-\(size)"
         if let cached = fontCache[cacheKey] {
@@ -78,7 +77,6 @@ extension SVGParser {
         return "Helvetica Neue"
     }
 
-
     func detectTextAlignment(from tspans: [(content: String, attributes: [String: String], x: Double, y: Double)]) -> TextAlignment {
         guard tspans.count > 1 else { return .left }
 
@@ -118,7 +116,6 @@ extension SVGParser {
 
         return .left
     }
-
 
     func parseText(attributes: [String: String]) {
         currentTextContent = ""
@@ -215,7 +212,6 @@ extension SVGParser {
 
                 maxTextWidth = max(maxTextWidth, actualWidth)
                 let actualHeight = lineHeight
-
 
                 let finalY = baseY - (firstFontSize)
 

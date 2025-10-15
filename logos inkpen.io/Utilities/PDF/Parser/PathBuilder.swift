@@ -1,6 +1,5 @@
 import SwiftUI
 
-
 private func offsetPath(_ path: VectorPath, by offset: CGPoint) -> VectorPath {
     let offsetElements = path.elements.map { element -> PathElement in
         switch element {

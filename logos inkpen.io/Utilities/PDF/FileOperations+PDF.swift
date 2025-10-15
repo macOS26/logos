@@ -14,7 +14,6 @@ extension FileOperations {
         }
     }
 
-
     static func renderShapeToPDF(shape: VectorShape, context: CGContext) throws {
         let cgPath = convertVectorPathToCGPath(shape.path)
 
@@ -909,7 +908,6 @@ extension FileOperations {
                                       options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
         }
     }
-
 
     private static func interpolateGradientColor(at t: Double, stops: [GradientStop], opacity: Double) -> NSColor {
         var lowerStop = stops.first!

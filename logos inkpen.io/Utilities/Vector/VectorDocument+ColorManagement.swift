@@ -39,7 +39,6 @@ extension VectorDocument {
         }
     }
 
-
     func notifyActiveToolsOfFillOpacityChange() {
         lastColorChangeType = .fillOpacity
         colorChangeNotification = UUID()
@@ -175,7 +174,6 @@ extension VectorDocument {
     func removeColorSwatch(_ color: VectorColor) {
         removeColorFromCurrentMode(color)
     }
-
 
     func getSelectedObjectColor() -> VectorColor? {
         guard let firstSelectedID = selectedObjectIDs.first else { return nil }

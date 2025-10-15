@@ -1096,7 +1096,6 @@ class DocumentState: ObservableObject {
         guard let document = document else { return }
         document.currentTool = tool
 
-
         ToolGroupManager.shared.handleKeyboardToolSwitch(tool: tool)
     }
 

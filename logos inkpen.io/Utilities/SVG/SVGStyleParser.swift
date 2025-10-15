@@ -2,7 +2,6 @@ import SwiftUI
 
 extension SVGParser {
 
-
     func parseStrokeStyle(_ attributes: [String: String]) -> StrokeStyle? {
         if let strokeWidth = attributes["stroke-width"] {
             let width = parseLength(strokeWidth) ?? 1.0

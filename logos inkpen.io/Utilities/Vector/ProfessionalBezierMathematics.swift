@@ -1,8 +1,6 @@
 import SwiftUI
 
-
 struct ProfessionalBezierMathematics {
-
 
     struct BezierPoint: Codable, Hashable {
         var point: VectorPoint
@@ -48,7 +46,6 @@ struct ProfessionalBezierMathematics {
         }
     }
 
-
     enum AnchorPointType: String, CaseIterable, Codable {
         case corner = "Corner"
         case smoothCurve = "Smooth Curve"
@@ -79,7 +76,6 @@ struct ProfessionalBezierMathematics {
         }
     }
 
-
     enum HandleConstraint: String, CaseIterable, Codable {
                 case symmetric = "Symmetric"
 case aligned = "Aligned"
@@ -99,7 +95,6 @@ case independent = "Independent"
             }
         }
     }
-
 
     static func deCasteljauEvaluation(points: [VectorPoint], t: Double) -> VectorPoint {
         guard !points.isEmpty else { return VectorPoint(0, 0) }
@@ -126,7 +121,6 @@ case independent = "Independent"
 
         return currentPoints[0]
     }
-
 
     static func bernsteinBasis(i: Int, n: Int, t: Double) -> Double {
         let binomialCoeff = binomialCoefficient(n: n, k: i)
@@ -159,7 +153,6 @@ case independent = "Independent"
         return binomialLookup[n][k]
     }
 
-
     static func evaluateCubicBezier(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> VectorPoint {
         let u = 1.0 - t
         let u2 = u * u
@@ -183,7 +176,6 @@ case independent = "Independent"
 
         return VectorPoint(x, y)
     }
-
 
     static func cubicBezierFirstDerivative(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> VectorPoint {
         let u = 1.0 - t
@@ -216,7 +208,6 @@ case independent = "Independent"
         return abs(crossProduct) / (speedSquared * speed)
     }
 
-
     static func splitCubicBezier(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, t: Double) -> ([VectorPoint], [VectorPoint]) {
         let q1 = VectorPoint.lerp(p0, p1, t)
         let q2 = VectorPoint.lerp(p1, p2, t)
@@ -233,7 +224,6 @@ case independent = "Independent"
 
         return (leftCurve, rightCurve)
     }
-
 
     static func generateSmoothHandles(previousPoint: VectorPoint?, currentPoint: VectorPoint, nextPoint: VectorPoint?, tension: Double = 0.33) -> (VectorPoint?, VectorPoint?) {
         var incomingHandle: VectorPoint?
@@ -302,7 +292,6 @@ case independent = "Independent"
         return (incomingHandle, outgoingHandle)
     }
 
-
     enum ContinuityType: String, CaseIterable, Codable {
         case c0 = "C0"
         case g1 = "G1"
@@ -345,7 +334,6 @@ case independent = "Independent"
         }
     }
 
-
     static func fitCubicBezierToPoints(points: [VectorPoint]) -> [VectorPoint]? {
         guard points.count >= 4 else { return nil }
 
@@ -359,7 +347,6 @@ case independent = "Independent"
 
         return [p0, p1, p2, p3]
     }
-
 
     static func calculateArcLength(p0: VectorPoint, p1: VectorPoint, p2: VectorPoint, p3: VectorPoint, subdivisions: Int = 10) -> Double {
         var totalLength: Double = 0.0
@@ -379,7 +366,6 @@ case independent = "Independent"
         return totalLength
     }
 }
-
 
 extension VectorPoint {
     static func lerp(_ a: VectorPoint, _ b: VectorPoint, _ t: Double) -> VectorPoint {
@@ -454,7 +440,6 @@ extension VectorPoint {
         }
     }
 }
-
 
 struct ProfessionalBezierFactory {
 

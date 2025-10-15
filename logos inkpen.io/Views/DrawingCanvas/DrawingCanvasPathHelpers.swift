@@ -2,7 +2,6 @@ import SwiftUI
 
 enum DrawingCanvasPathHelpers {
 
-
     static func douglasPeuckerSimplify(points: [CGPoint], tolerance: Double) -> [CGPoint] {
         guard points.count > 2 else { return points }
 
@@ -46,7 +45,6 @@ enum DrawingCanvasPathHelpers {
         let distance = abs(A * point.x + B * point.y + C) / sqrt(A * A + B * B)
         return distance
     }
-
 
     static func createSmoothBezierPath(from points: [CGPoint]) -> VectorPath {
         guard points.count >= 2 else {

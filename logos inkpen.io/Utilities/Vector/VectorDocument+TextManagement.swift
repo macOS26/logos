@@ -176,7 +176,6 @@ extension VectorDocument {
         }
     }
 
-
     func updateTextContent(_ textID: UUID, content: String) {
 
         updateTextContentInUnified(id: textID, content: content)

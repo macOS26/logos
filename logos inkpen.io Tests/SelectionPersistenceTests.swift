@@ -15,7 +15,6 @@ class SelectionPersistenceTests: XCTestCase {
         super.tearDown()
     }
 
-
     func testSelectedObjectIDsPersistence() throws {
         let shape1 = VectorShape()
         shape1.id = UUID()

@@ -272,7 +272,6 @@ class AppState {
         }
     }
 
-
     func setWindowActions(openWindow: @escaping (String) -> Void, dismissWindow: @escaping (String) -> Void) {
         self.openWindowAction = { id in
             openWindow(id)
@@ -298,6 +297,5 @@ class AppState {
             dismissWindow(id)
         }
     }
-
 
 }

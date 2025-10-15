@@ -22,7 +22,6 @@ extension VectorDocument {
 
     func removeTextFromUnifiedSystem(id: UUID) {
 
-
         unifiedObjects.removeAll { obj in
             if case .shape(let shape) = obj.objectType {
                 return shape.id == id && shape.isTextObject
@@ -57,11 +56,9 @@ extension VectorDocument {
                     orderID: unifiedObjects[unifiedIndex].orderID
                 )
 
-
             }
         }
     }
-
 
     func getTextCount() -> Int {
         return unifiedObjects.filter { obj in

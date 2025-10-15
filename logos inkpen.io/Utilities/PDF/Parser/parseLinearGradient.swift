@@ -33,7 +33,6 @@ extension PDFCommandParser {
         CGPDFArrayGetNumber(coords, 2, &x1)
         CGPDFArrayGetNumber(coords, 3, &y1)
 
-
         let needsNormalization = (abs(x0) > 1.0 || abs(y0) > 1.0 || abs(x1) > 1.0 || abs(y1) > 1.0)
 
         let startPoint: CGPoint
@@ -54,7 +53,6 @@ extension PDFCommandParser {
         let ctmAngle = atan2(-currentTransformMatrix.b, currentTransformMatrix.a) * 180.0 / .pi
         let angleDegrees = coordinateAngle + ctmAngle
 
-
         let stops = extractGradientStops(from: dict)
 
         var linearGradient = LinearGradient(
@@ -65,7 +63,6 @@ extension PDFCommandParser {
         )
 
         linearGradient.storedAngle = angleDegrees
-
 
         return .linear(linearGradient)
     }

@@ -2,7 +2,6 @@ import SwiftUI
 
 extension PDFCommandParser {
 
-
     func handleFillOpacity(scanner: CGPDFScannerRef) {
         var opacity: CGFloat = 1.0
 
@@ -61,7 +60,6 @@ extension PDFCommandParser {
             return
         }
 
-
         var extGStateDict: CGPDFDictionaryRef? = nil
         if !CGPDFDictionaryGetDictionary(resourcesDict, "ExtGState", &extGStateDict) {
             return
@@ -100,7 +98,6 @@ extension PDFCommandParser {
             gs3StrokeOpacity = currentStrokeOpacity
         }
     }
-
 
     func handleXObject(scanner: CGPDFScannerRef) {
         xObjectSavedFillOpacity = currentFillOpacity

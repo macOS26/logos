@@ -393,7 +393,6 @@ struct DocumentSettingsView: View {
         }
     }
 
-
     private var professionalFooter: some View {
         VStack(spacing: 0) {
             Divider()

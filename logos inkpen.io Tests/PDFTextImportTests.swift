@@ -3,7 +3,6 @@ import XCTest
 
 class PDFTextImportTests: XCTestCase {
 
-
     func testBeginEndTextOperators() {
         let parser = PDFCommandParser()
 
@@ -87,7 +86,6 @@ class PDFTextImportTests: XCTestCase {
         XCTAssertEqual(parser.currentLineMatrix, testMatrix, "Line matrix should match text matrix")
     }
 
-
     func testVectorTextCreationFromPDF() {
         let parser = PDFCommandParser()
 
@@ -151,7 +149,6 @@ class PDFTextImportTests: XCTestCase {
         }
     }
 
-
     func testPDFFontMapping() {
         let fontMappings = [
             ("Times-Roman", "Times New Roman"),
@@ -166,7 +163,6 @@ class PDFTextImportTests: XCTestCase {
             XCTAssertNotNil(systemFont, "System font name should exist")
         }
     }
-
 
     func testTextEncodingExtraction() {
         let utf8Text = "UTF-8 Text: 你好"
@@ -188,7 +184,6 @@ class PDFTextImportTests: XCTestCase {
             XCTAssertEqual(macRomanRecovered, macRomanText, "MacRoman should round-trip")
         }
     }
-
 
     func testTextRenderingModeConversion() {
         let parser = PDFCommandParser()
@@ -234,7 +229,6 @@ class PDFTextImportTests: XCTestCase {
         }
     }
 
-
     func testMultiLineTextHandling() {
         let parser = PDFCommandParser()
 
@@ -250,7 +244,6 @@ class PDFTextImportTests: XCTestCase {
             XCTAssertEqual(lines.count, 3, "Should have 3 lines")
         }
     }
-
 
     func testFullPDFTextRoundTrip() {
         let originalText = VectorText(

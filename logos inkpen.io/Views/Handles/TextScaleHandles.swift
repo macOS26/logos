@@ -1,7 +1,6 @@
 import SwiftUI
 import SwiftUI
 
-
 struct TextScaleHandles: View {
     @ObservedObject var document: VectorDocument
     let textObject: VectorText

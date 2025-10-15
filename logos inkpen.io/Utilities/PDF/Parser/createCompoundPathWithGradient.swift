@@ -8,7 +8,6 @@ extension PDFCommandParser {
             return
         }
 
-
         var combinedPaths: [VectorPath] = []
 
         for shapeIndex in gradientShapes {

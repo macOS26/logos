@@ -2,7 +2,6 @@ import SwiftUI
 
 extension DrawingCanvas {
 
-
     struct SnapPoint {
         let point: CGPoint
         let objectID: UUID

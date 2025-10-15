@@ -3,7 +3,6 @@ import SwiftUI
 
 extension DrawingCanvas {
 
-
     func findCoincidentPoints(to targetPointID: PointID, tolerance: Double = 1.0) -> Set<PointID> {
         guard let targetPosition = getPointPosition(targetPointID) else { return [] }
 
@@ -171,7 +170,6 @@ extension DrawingCanvas {
         }
 
     }
-
 
     func moveCoincidentPointsWithSmoothLogic(pointID: PointID, to newPosition: CGPoint, delta: CGPoint) {
         let coincidentPoints = findCoincidentPoints(to: pointID, tolerance: coincidentPointTolerance)

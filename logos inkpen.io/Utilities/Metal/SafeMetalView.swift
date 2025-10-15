@@ -95,7 +95,6 @@ class MetalRenderer: NSObject, MTKViewDelegate {
     }
 }
 
-
 extension SafeMetalView {
     static func forSwiftUIContent(@ViewBuilder content: @escaping () -> some View) -> some View {
         SafeMetalView { cgContext, size in

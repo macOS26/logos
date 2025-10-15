@@ -1,6 +1,5 @@
 import SwiftUI
 
-
 struct PantoneColorPickerSheet: View {
     @ObservedObject var document: VectorDocument
     @Environment(\.presentationMode) var presentationMode

@@ -71,7 +71,6 @@ struct MarkerSettingsSection: View {
                 .help("Enable or disable pressure sensitivity for marker tool")
             }
 
-
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Smoothing")

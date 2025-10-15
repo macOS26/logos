@@ -168,7 +168,6 @@ struct RotateHandles: View {
         .id("rotation-handles-\(pointsRefreshTrigger)")
     }
 
-
     private func extractPathPoints() {
         pathPoints.removeAll()
 
@@ -242,7 +241,6 @@ struct RotateHandles: View {
             rotationAngle = round(rotationAngle / increment) * increment
         }
 
-
         calculatePreviewRotation(angle: rotationAngle, anchor: rotationAnchorPoint)
     }
 
@@ -284,7 +282,6 @@ struct RotateHandles: View {
         pointsRefreshTrigger += 1
 
     }
-
 
     private func getRotationAnchorPoint(for anchor: RotationAnchor, in bounds: CGRect, cornerIndex: Int) -> CGPoint {
         switch anchor {
@@ -343,7 +340,6 @@ struct RotateHandles: View {
         if currentTransform.isIdentity {
             return
         }
-
 
         var transformedElements: [PathElement] = []
 
@@ -534,7 +530,6 @@ struct RotateHandles: View {
             return
         }
 
-
         var transformedElements: [PathElement] = []
 
         for element in shape.path.elements {
@@ -579,7 +574,6 @@ struct RotateHandles: View {
         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
 
     }
-
 
     private func applyTransformToCornerRadiiLocal(shape: inout VectorShape, transform: CGAffineTransform) {
         guard !transform.isIdentity else { return }

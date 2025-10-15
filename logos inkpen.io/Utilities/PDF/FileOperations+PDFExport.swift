@@ -444,7 +444,6 @@ extension FileOperations {
 
         context.restoreGState()
 
-
     }
 
     private static func isRectangleGlyph(_ path: CGPath) -> Bool {

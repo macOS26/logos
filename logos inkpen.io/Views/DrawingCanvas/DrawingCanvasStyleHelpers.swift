@@ -2,7 +2,6 @@ import SwiftUI
 
 extension DrawingCanvas {
 
-
     internal func getCurrentFillColor() -> VectorColor {
         if let firstSelectedTextID = document.selectedTextIDs.first,
            let textObject = document.findText(by: firstSelectedTextID) {

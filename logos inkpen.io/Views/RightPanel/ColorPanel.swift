@@ -112,7 +112,6 @@ struct ColorPanel: View {
                 .padding(.horizontal, 12)
             }
 
-
             Spacer()
         }
         .sheet(isPresented: $showingPantoneSearch) {
@@ -135,7 +134,6 @@ struct ColorPanel: View {
             }
         }
     }
-
 
     private var colorModeDescription: String {
         switch document.settings.colorMode {
@@ -173,7 +171,6 @@ struct ColorPanel: View {
             }
         }
     }
-
 
     private func colorDescription(for color: VectorColor) -> String {
         switch color {
@@ -214,7 +211,6 @@ struct ColorPanel: View {
                 .allowsTightening(true)
         }
     }
-
 
     private func convertColorToMode(_ color: VectorColor, from oldMode: ColorMode, to newMode: ColorMode) -> VectorColor {
         if oldMode == newMode {
@@ -302,7 +298,6 @@ struct ColorPanel: View {
 
         return color
     }
-
 
     private func updateSelectedTextStrokeColor(color: VectorColor, document: VectorDocument) {
         guard !document.selectedTextIDs.isEmpty else { return }

@@ -126,7 +126,6 @@ struct StrokeStyle: Hashable {
         self.blendMode = blendMode
     }
 
-
     init(gradient: VectorGradient, width: Double = 1.0, placement: StrokePlacement = .center, dashPattern: [Double] = [], lineCap: CGLineCap = .butt, lineJoin: CGLineJoin = .miter, miterLimit: Double = 10.0, opacity: Double = 1.0, blendMode: BlendMode = .normal) {
         self.color = .gradient(gradient)
         self.width = width
@@ -235,7 +234,6 @@ struct FillStyle: Codable, Hashable {
         blendMode = try container.decodeIfPresent(BlendMode.self, forKey: .blendMode) ?? .normal
     }
 
-
     init(gradient: VectorGradient, opacity: Double = 1.0, blendMode: BlendMode = .normal) {
         self.color = .gradient(gradient)
         self.opacity = opacity
@@ -266,7 +264,6 @@ struct FillStyle: Codable, Hashable {
         }
         return color
     }
-
 
     static func linearGradient(from startColor: VectorColor, to endColor: VectorColor, opacity: Double = 1.0) -> FillStyle {
         let stops = [
@@ -466,7 +463,6 @@ struct VectorShape: Hashable, Identifiable {
         }
     }
 
-
     static func group(from shapes: [VectorShape], name: String = "Group", isClippingGroup: Bool = false) -> VectorShape {
         var calculatedGroupBounds = CGRect.null
         for shape in shapes {
@@ -536,7 +532,6 @@ struct VectorShape: Hashable, Identifiable {
         return groupBounds
     }
 
-
     func createWarpObject(warpedPath: VectorPath, warpEnvelope: [CGPoint]) -> VectorShape {
         var warpObject = self
         warpObject.id = UUID()
@@ -586,11 +581,9 @@ struct VectorShape: Hashable, Identifiable {
         expandedShape.originalEnvelope = []
         expandedShape.transform = .identity
 
-
         expandedShape.updateBounds()
         return expandedShape
     }
-
 
     static func textObject(content: String, typography: TypographyProperties, position: CGPoint, areaSize: CGSize? = nil) -> VectorShape {
         let emptyPath = VectorPath(elements: [], isClosed: false)
@@ -755,7 +748,6 @@ extension VectorShape: Codable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-
 
         do {
             id = try container.decode(UUID.self, forKey: .id)
@@ -997,7 +989,6 @@ extension VectorLayer: Codable {
         }
     }
 }
-
 
 enum DraggableItem: Codable, Transferable {
     case vectorObject(DraggableVectorObject)

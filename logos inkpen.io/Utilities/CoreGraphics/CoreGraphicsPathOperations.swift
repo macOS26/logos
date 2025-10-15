@@ -2,12 +2,10 @@ import SwiftUI
 
 class CoreGraphicsPathOperations {
 
-
     private static func isFinite(_ rect: CGRect) -> Bool {
         return rect.origin.x.isFinite && rect.origin.y.isFinite &&
                rect.size.width.isFinite && rect.size.height.isFinite
     }
-
 
     static func union(_ pathA: CGPath, _ pathB: CGPath, using fillRule: CGPathFillRule = .winding) -> CGPath? {
         guard !pathA.isEmpty && !pathB.isEmpty else {
@@ -54,7 +52,6 @@ class CoreGraphicsPathOperations {
         return result
     }
 
-
     private static func pathsCanPotentiallyUnion(_ pathA: CGPath, _ pathB: CGPath) -> Bool {
         let boundsA = pathA.boundingBox
         let boundsB = pathB.boundingBox
@@ -74,7 +71,6 @@ class CoreGraphicsPathOperations {
         guard pathsWithIndices.count > 1 else {
             return [pathsWithIndices]
         }
-
 
         var groups: [[(CGPath, Int)]] = []
         var processed: Set<Int> = []
@@ -163,7 +159,6 @@ class CoreGraphicsPathOperations {
         return result.isEmpty ? nil : result
     }
 
-
     static func normalized(_ path: CGPath, using fillRule: CGPathFillRule = .winding) -> CGPath? {
         guard !path.isEmpty else { return nil }
 
@@ -177,7 +172,6 @@ class CoreGraphicsPathOperations {
         return path.componentsSeparated(using: fillRule)
     }
 
-
     static func split(_ paths: [CGPath], using fillRule: CGPathFillRule = .winding) -> [CGPath] {
         return splitWithShapeTracking(paths, using: fillRule).map { $0.0 }
     }
@@ -186,7 +180,6 @@ class CoreGraphicsPathOperations {
         guard paths.count >= 2 else {
             return paths.enumerated().map { (index, path) in (path, index) }
         }
-
 
         let allPieces = getAllMosaicPieces(paths, using: fillRule)
 
@@ -202,9 +195,7 @@ class CoreGraphicsPathOperations {
             return paths.enumerated().map { (index, path) in (path, index) }
         }
 
-
         var allPieces: [(CGPath, Int)] = []
-
 
         for mask in 1..<(1 << shapeCount) {
             var intersectingIndices: [Int] = []
@@ -275,7 +266,6 @@ class CoreGraphicsPathOperations {
             }
         }
 
-
         var uniquePieces: [(CGPath, Int)] = []
         let tolerance: CGFloat = 0.1
 
@@ -319,15 +309,12 @@ class CoreGraphicsPathOperations {
         return path1ContainsMid == path2ContainsMid
     }
 
-
     static func cutWithShapeTracking(_ paths: [CGPath], using fillRule: CGPathFillRule = .winding) -> [(CGPath, Int)] {
         guard paths.count >= 2 else {
             return paths.enumerated().map { (index, path) in (path, index) }
         }
 
-
         var resultPaths: [(CGPath, Int)] = []
-
 
         for i in 0..<paths.count {
             let currentPath = paths[i]
@@ -377,15 +364,12 @@ class CoreGraphicsPathOperations {
         return cutWithShapeTracking(paths, using: fillRule).map { $0.0 }
     }
 
-
     static func mergeWithShapeTracking(_ paths: [CGPath], colors: [VectorColor], using fillRule: CGPathFillRule = .winding) -> [(CGPath, Int)] {
         guard paths.count >= 2 && colors.count == paths.count else {
             return paths.enumerated().map { (index, path) in (path, index) }
         }
 
-
         let cutResults = cutWithShapeTracking(paths, using: fillRule)
-
 
         var colorGroups: [VectorColor: [(CGPath, Int)]] = [:]
 
@@ -398,7 +382,6 @@ class CoreGraphicsPathOperations {
         }
 
         var resultPaths: [(CGPath, Int)] = []
-
 
         for (_, group) in colorGroups {
             if group.count == 1 {
@@ -421,12 +404,10 @@ class CoreGraphicsPathOperations {
         return resultPaths
     }
 
-
     static func cropWithShapeTracking(_ paths: [CGPath], using fillRule: CGPathFillRule = .winding) -> [(CGPath, Int, Bool)] {
         guard paths.count >= 2 else {
             return paths.enumerated().map { (index, path) in (path, index, false) }
         }
-
 
         guard let cropShape = paths.last else {
             Log.error("❌ CROP: No crop shape found", category: .general)
@@ -450,7 +431,6 @@ class CoreGraphicsPathOperations {
                 }
             }
         }
-
 
         if croppedPaths.count >= 2 {
             let cutResults = cutWithShapeTracking(croppedPaths, using: fillRule)

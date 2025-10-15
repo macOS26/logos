@@ -8,7 +8,6 @@ extension DrawingCanvas {
             return
         }
 
-
         if draggedHandleID.handleType == .control2 {
             guard case .curve(let anchorTo, let control1, _) = elements[draggedHandleID.elementIndex] else { return }
 

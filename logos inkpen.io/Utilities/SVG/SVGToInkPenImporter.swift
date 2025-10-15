@@ -70,7 +70,6 @@ class SVGToInkPenImporter: ObservableObject {
         }
     }
 
-
     func importSVGFile(from url: URL) -> VectorDocument? {
         isImporting = true
         importResults.removeAll()
@@ -130,7 +129,6 @@ class SVGToInkPenImporter: ObservableObject {
 
         return document
     }
-
 
     private func createVectorDocumentFromSVG(_ svgDoc: SVGDocument, svgData: Data, name: String = "Imported SVG") -> VectorDocument {
         let svgSize = svgDoc.size
@@ -229,7 +227,6 @@ class SVGToInkPenImporter: ObservableObject {
         return svgShapeRegistry[shape.id]
     }
 
-
     private func addResult(_ operation: String, success: Bool, message: String, details: String = "") {
         DispatchQueue.main.async {
             self.currentOperation = operation
@@ -242,7 +239,6 @@ class SVGToInkPenImporter: ObservableObject {
             ))
         }
     }
-
 
 }
 

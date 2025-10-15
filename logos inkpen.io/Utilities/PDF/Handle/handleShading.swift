@@ -7,7 +7,6 @@ extension PDFCommandParser {
            let name = nameObj {
             let shadingName = String(cString: name)
 
-
             if hasClipOperatorPending {
                 hasClipOperatorPending = false
                 clipOperatorPath.removeAll()

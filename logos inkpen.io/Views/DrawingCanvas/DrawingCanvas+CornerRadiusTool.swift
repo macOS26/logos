@@ -2,7 +2,6 @@ import SwiftUI
 
 extension DrawingCanvas {
 
-
     @ViewBuilder
     func cornerRadiusTool(geometry: GeometryProxy) -> some View {
         if document.currentTool == .cornerRadius,
@@ -60,7 +59,6 @@ extension DrawingCanvas {
                 }
         )
     }
-
 
     private func handleCornerRadiusToolDrag(
         cornerIndex: Int,

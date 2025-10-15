@@ -100,7 +100,6 @@ class ClippingMaskNSView: NSView {
         context.addPath(maskPath)
         context.clip()
 
-
         if ImageContentRegistry.containsImage(clippedShape),
            let image = ImageContentRegistry.image(for: clippedShape.id) {
             let pathBounds = clippedShape.path.cgPath.boundingBoxOfPath

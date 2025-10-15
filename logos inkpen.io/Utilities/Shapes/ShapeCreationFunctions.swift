@@ -1,6 +1,5 @@
 import SwiftUI
 
-
 func createCirclePath(rect: CGRect) -> VectorPath {
         let center = CGPoint(x: rect.midX, y: rect.midY)
         let radiusX = rect.width / 2
@@ -338,7 +337,6 @@ func createRightTrianglePath(rect: CGRect, dragDirection: String) -> VectorPath 
         let topRight = VectorPoint(normalizedRect.maxX, normalizedRect.minY)
         let bottomLeft = VectorPoint(normalizedRect.minX, normalizedRect.maxY)
         let bottomRight = VectorPoint(normalizedRect.maxX, normalizedRect.maxY)
-
 
         switch dragDirection {
         case "RIGHT_DOWN":

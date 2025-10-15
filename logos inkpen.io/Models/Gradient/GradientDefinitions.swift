@@ -1,6 +1,5 @@
 import SwiftUI
 
-
 struct GradientStop: Codable, Hashable, Identifiable {
     var id: UUID
     var position: Double

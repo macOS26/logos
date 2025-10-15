@@ -1,12 +1,10 @@
 import SwiftUI
 import Combine
 
-
 class InkPenUIColors: ObservableObject {
     static let shared = InkPenUIColors()
 
     private init() {}
-
 
     var windowBackground: Color {
         Color(NSColor.windowBackgroundColor)
@@ -23,7 +21,6 @@ class InkPenUIColors: ObservableObject {
     var semiTransparentControlBackground: Color {
         Color(NSColor.controlBackgroundColor).opacity(0.5)
     }
-
 
     var primaryBlue: Color {
         ColorManager.shared.makeColor(r: 0.0, g: 0.478, b: 1.0, a: 1.0, source: ColorManager.shared.displayP3CG)
@@ -45,7 +42,6 @@ class InkPenUIColors: ObservableObject {
         ColorManager.shared.makeColor(r: 0.0, g: 0.478, b: 1.0, a: 1.0, source: ColorManager.shared.displayP3CG)
     }
 
-
     var standardBorder: Color {
         Color.gray
     }
@@ -53,7 +49,6 @@ class InkPenUIColors: ObservableObject {
     var lightGrayBorder: Color {
         Color.gray.opacity(0.3)
     }
-
 
     var primaryText: Color {
         Color.primary
@@ -63,11 +58,9 @@ class InkPenUIColors: ObservableObject {
         Color.secondary
     }
 
-
     var darkOverlay: Color {
         Color.black.opacity(0.8)
     }
-
 
     var lightSuccessBackground: Color {
         Color.green.opacity(0.1)
@@ -81,7 +74,6 @@ class InkPenUIColors: ObservableObject {
         Color.red.opacity(0.2)
     }
 
-
     var clear: Color {
         Color.clear
     }
@@ -90,16 +82,13 @@ class InkPenUIColors: ObservableObject {
         Color.white
     }
 
-
     var toolOrange: Color {
         ColorManager.shared.makeColor(r: 1.0, g: 0.584, b: 0.0, a: 1.0, source: ColorManager.shared.displayP3CG)
     }
 
-
     var textBackground: Color {
         Color(NSColor.textBackgroundColor)
     }
-
 
     func color(_ baseColor: Color, opacity: Double) -> Color {
         baseColor.opacity(opacity)
@@ -109,7 +98,6 @@ class InkPenUIColors: ObservableObject {
         Color(nsColor).opacity(opacity)
     }
 }
-
 
 extension Color {
     static var ui: InkPenUIColors {

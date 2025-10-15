@@ -3,7 +3,6 @@ import Combine
 
 extension DrawingCanvas {
 
-
     func handlePenPlusMinusTap(at location: CGPoint) {
         let tolerance: Double = 8.0 / document.zoomLevel
 
@@ -23,7 +22,6 @@ extension DrawingCanvas {
         }
 
     }
-
 
     private func insertPointOnCurve(layerIndex: Int, shapeIndex: Int, elementIndex: Int, at location: CGPoint) {
         guard layerIndex < document.layers.count,
@@ -95,7 +93,6 @@ extension DrawingCanvas {
         document.commandManager.execute(command)
     }
 
-
     private func deletePointWithCurvePreservation(pointID: PointID) {
         guard let unifiedObject = document.findObject(by: pointID.shapeID),
               case .shape(let shape) = unifiedObject.objectType else { return }
@@ -148,7 +145,6 @@ extension DrawingCanvas {
             return
         }
     }
-
 
     private func findAnchorPointAt(location: CGPoint, tolerance: Double) -> PointID? {
         for unifiedObject in document.unifiedObjects.reversed() {

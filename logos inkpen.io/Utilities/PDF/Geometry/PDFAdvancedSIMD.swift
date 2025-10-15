@@ -5,7 +5,6 @@ import Accelerate
 
 struct PDFAdvancedSIMD {
 
-
     static func calculatePathBounds(points: [CGPoint]) -> CGRect {
         guard !points.isEmpty else { return .zero }
 
@@ -35,7 +34,6 @@ struct PDFAdvancedSIMD {
             height: CGFloat(maxY - minY)
         )
     }
-
 
     static func batchCalculateDistances(from origin: CGPoint, to points: [CGPoint]) -> [CGFloat] {
         guard !points.isEmpty else { return [] }
@@ -67,7 +65,6 @@ struct PDFAdvancedSIMD {
 
         return distances.map { CGFloat($0) }
     }
-
 
     static func batchApplyTransform(_ transform: CGAffineTransform, to points: [CGPoint]) -> [CGPoint] {
         guard !points.isEmpty else { return [] }
@@ -114,7 +111,6 @@ struct PDFAdvancedSIMD {
         return results
     }
 
-
     static func batchInterpolate(from start: CGPoint, to end: CGPoint, steps: Int) -> [CGPoint] {
         guard steps > 0 else { return [] }
 
@@ -155,7 +151,6 @@ struct PDFAdvancedSIMD {
         return results
     }
 
-
     static func evaluateCubicBezier(
         p0: CGPoint,
         p1: CGPoint,
@@ -190,7 +185,6 @@ struct PDFAdvancedSIMD {
         return results
     }
 
-
     static func dotProduct(_ a: [Float], _ b: [Float]) -> Float {
         precondition(a.count == b.count, "Arrays must have same length")
         var result: Float = 0
@@ -219,7 +213,6 @@ struct PDFAdvancedSIMD {
         return result
     }
 
-
     static func cacheOptimizedTransform(
         points: [CGPoint],
         transform: (CGPoint) -> CGPoint
@@ -243,7 +236,6 @@ struct PDFAdvancedSIMD {
 
         return results
     }
-
 
     static func batchRectIntersections(rect: CGRect, testRects: [CGRect]) -> [Bool] {
         guard !testRects.isEmpty else { return [] }
@@ -279,7 +271,6 @@ struct PDFAdvancedSIMD {
 
         return results
     }
-
 
     static func parallelSIMDProcess(
         points: [CGPoint],

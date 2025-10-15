@@ -25,7 +25,6 @@ class PerformanceMonitor: ObservableObject {
         startPerformanceTracking()
     }
 
-
     private func setupMetalTracking() {
         if let device = MTLCreateSystemDefaultDevice() {
             self.metalDevice = device
@@ -41,7 +40,6 @@ class PerformanceMonitor: ObservableObject {
             self.updateMemoryUsage()
         }
     }
-
 
     func frameDidStart() {
         frameStartTime = CACurrentMediaTime()
@@ -80,7 +78,6 @@ class PerformanceMonitor: ObservableObject {
         }
     }
 
-
     func recordDrawCall(vertexCount: Int = 0) {
         DispatchQueue.main.async {
             self.drawCallCount += 1
@@ -94,7 +91,6 @@ class PerformanceMonitor: ObservableObject {
             self.vertexCount = 0
         }
     }
-
 
     private func updateMemoryUsage() {
         var info = mach_task_basic_info()
@@ -116,7 +112,6 @@ class PerformanceMonitor: ObservableObject {
             }
         }
     }
-
 
     var averageFrameTime: Double {
         guard !frameTimeHistory.isEmpty else { return 0.0 }

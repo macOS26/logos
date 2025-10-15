@@ -2,7 +2,6 @@ import SwiftUI
 
 extension PDFCommandParser {
 
-
     func handleBeginText() {
 
         isInTextObject = true
@@ -36,7 +35,6 @@ extension PDFCommandParser {
         simdLineMatrix = PDFSIMDMatrix()
     }
 
-
     func handleSetFont(scanner: CGPDFScannerRef) {
         var fontNamePointer: UnsafePointer<CChar>?
         var fontSize: CGPDFReal = 12.0
@@ -47,7 +45,6 @@ extension PDFCommandParser {
             let fontName = fontNamePointer.map { String(cString: $0) } ?? "Helvetica"
             currentFontName = fontName
             currentFontSize = Double(fontSize)
-
 
             if let (resolvedFont, fontDict) = resolveFontFromResourcesWithDict(fontName) {
                 currentFontName = resolvedFont
@@ -102,7 +99,6 @@ extension PDFCommandParser {
             textRise = Double(rise)
         }
     }
-
 
     func handleTextMove(scanner: CGPDFScannerRef) {
         var tx: CGPDFReal = 0
@@ -216,7 +212,6 @@ extension PDFCommandParser {
 
     }
 
-
     func handleShowText(scanner: CGPDFScannerRef) {
         var stringRef: CGPDFStringRef?
 
@@ -225,7 +220,6 @@ extension PDFCommandParser {
 
             let text = extractTextFromPDFString(stringRef)
             currentTextContent += text
-
 
             advanceTextPosition(for: text)
         }
@@ -285,12 +279,10 @@ extension PDFCommandParser {
                 let text = extractTextFromPDFString(stringRef)
                 currentTextContent += text
 
-
                 advanceTextPosition(for: text)
             }
         }
     }
-
 
     private func extractTextFromPDFString(_ pdfString: CGPDFStringRef) -> String {
         if let fontDict = currentFontDict {
@@ -576,7 +568,6 @@ extension PDFCommandParser {
         }
 
         let position = CGPoint(x: pdfX, y: finalY)
-
 
         let fullFontName = currentFontName ?? "Helvetica"
         var fontFamily = fullFontName

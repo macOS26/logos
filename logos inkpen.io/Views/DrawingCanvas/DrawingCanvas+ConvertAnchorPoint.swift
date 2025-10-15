@@ -22,7 +22,6 @@ extension DrawingCanvas {
         tryToSelectShapeForConvertTool(at: location)
     }
 
-
     func restoreCollapsedHandlesIfClicked(at location: CGPoint, tolerance: Double) -> (shapeID: UUID, elementIndex: Int)? {
         for layerIndex in document.layers.indices.reversed() {
             let layer = document.layers[layerIndex]
@@ -94,7 +93,6 @@ extension DrawingCanvas {
 
         return nil
     }
-
 
     func collapseHandleIfClicked(at location: CGPoint, tolerance: Double) -> (shapeID: UUID, elementIndex: Int)? {
         for layerIndex in document.layers.indices.reversed() {
@@ -321,7 +319,6 @@ extension DrawingCanvas {
         }
     }
 
-
     func restoreHandlesForCurveElement(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
@@ -542,7 +539,6 @@ extension DrawingCanvas {
         }
     }
 
-
     internal func tryToSelectShapeForConvertTool(at location: CGPoint) {
         for layerIndex in document.layers.indices.reversed() {
             let layer = document.layers[layerIndex]
@@ -616,7 +612,6 @@ extension DrawingCanvas {
         selectedPoints.removeAll()
         selectedHandles.removeAll()
         directSelectedShapeIDs.removeAll()
-
 
         directSelectedShapeIDs.insert(shapeID)
         syncDirectSelectionWithDocument()

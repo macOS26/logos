@@ -48,5 +48,4 @@ struct AppleSystemColor: Codable, Hashable {
         return lightMode
     }
 
-
 }

@@ -36,7 +36,6 @@ class OptimizedPerformanceMonitor: ObservableObject {
         stopTracking()
     }
 
-
     private func setupOptimizedTracking() {
         let metalEngine = MetalComputeEngine.shared
         self.metalDeviceName = metalEngine.device.name
@@ -60,7 +59,6 @@ class OptimizedPerformanceMonitor: ObservableObject {
         cpuTimer = nil
         isTracking = false
     }
-
 
     func trackDrawingEvent(elementCount: Int = 0) {
         guard isTracking else { return }
@@ -96,7 +94,6 @@ class OptimizedPerformanceMonitor: ObservableObject {
             trackDrawingEvent()
         }
     }
-
 
     private func updateSystemMetrics() {
         updateCPUUsage()
@@ -213,7 +210,6 @@ class OptimizedPerformanceMonitor: ObservableObject {
         }
     }
 
-
     var performanceGrade: String {
         if cpuUsage > 80 { return "CPU Overload" }
         if cpuUsage > 60 { return "High CPU" }
@@ -240,7 +236,6 @@ class OptimizedPerformanceMonitor: ObservableObject {
         }
     }
 }
-
 
 struct LightweightPerformanceOverlay: View {
     @ObservedObject var monitor: OptimizedPerformanceMonitor

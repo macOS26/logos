@@ -2,7 +2,6 @@ import SwiftUI
 
 extension SVGParser {
 
-
     func finishGradientElement() {
         guard let gradientId = currentGradientId, let gradientType = currentGradientType, isParsingGradient else { return }
 

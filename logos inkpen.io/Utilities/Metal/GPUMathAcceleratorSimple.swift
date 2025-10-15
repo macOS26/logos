@@ -15,7 +15,6 @@ class GPUMathAcceleratorSimple {
 
     }
 
-
     func douglasPeuckerSimplifyGPUReady(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
         if isMetalAvailable {
             OptimizedPerformanceMonitor.shared.renderingMode = "GPU Ready"
@@ -74,7 +73,6 @@ class GPUMathAcceleratorSimple {
         return result
     }
 
-
     private func perpendicularDistanceOptimized(point: CGPoint, lineStart: CGPoint, lineEnd: CGPoint) -> Float {
         let A = Float(lineEnd.y - lineStart.y)
         let B = Float(lineStart.x - lineEnd.x)
@@ -86,7 +84,6 @@ class GPUMathAcceleratorSimple {
         return numerator / denominator
     }
 
-
     func optimizeDrawingPath(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
         if points.count > 20 {
             return douglasPeuckerSimplifyGPUReady(points, tolerance: tolerance)
@@ -94,7 +91,6 @@ class GPUMathAcceleratorSimple {
             return points
         }
     }
-
 
     var isGPUReady: Bool {
         return isMetalAvailable

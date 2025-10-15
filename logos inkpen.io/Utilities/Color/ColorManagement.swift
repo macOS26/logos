@@ -2,7 +2,6 @@ import SwiftUI
 
 class ColorManagement {
 
-
     static func rgbToCMYK(_ rgb: RGBColor) -> CMYKColor {
         let r = rgb.red
         let g = rgb.green

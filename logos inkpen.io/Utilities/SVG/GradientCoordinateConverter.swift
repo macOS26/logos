@@ -30,7 +30,6 @@ struct GradientCoordinateConverter {
         let height: Double
     }
 
-
     static func convertBoundingBoxToUserSpace(
         gradient: RadialGradient,
         boundingBox: BoundingBox
@@ -100,7 +99,6 @@ struct GradientCoordinateConverter {
             stops: gradient.stops
         )
     }
-
 
     static func parseSVGGradients(from svgContent: String) -> [RadialGradient] {
         var gradients: [RadialGradient] = []
@@ -241,7 +239,6 @@ struct GradientCoordinateConverter {
         return String(string[swiftRange])
     }
 
-
     static func generateSVG(
         originalContent: String,
         convertedGradients: [RadialGradient],
@@ -288,7 +285,6 @@ struct GradientCoordinateConverter {
 }
 
 extension GradientCoordinateConverter {
-
 
     static func parseGradientCoordinate(_ value: String, gradientUnits: GradientUnits = .objectBoundingBox, isXCoordinate: Bool = true, useExtremeValueHandling: Bool = false, viewBoxWidth: Double = 100.0, viewBoxHeight: Double = 100.0) -> Double {
         let trimmed = value.trimmingCharacters(in: .whitespaces)

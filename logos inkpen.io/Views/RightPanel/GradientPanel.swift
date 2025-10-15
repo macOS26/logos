@@ -9,7 +9,7 @@ struct GradientPanel: View {
         ScrollView {
             VStack(spacing: 8) {
                 GradientFillSection(document: document)
-  can              Spacer()
+                Spacer()
             }
             .padding()
         }

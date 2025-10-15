@@ -24,7 +24,6 @@ extension ScaleHandles {
             return
         }
 
-
         if shape.isGroup && !shape.groupedShapes.isEmpty {
             var transformedGroupedShapes: [VectorShape] = []
 

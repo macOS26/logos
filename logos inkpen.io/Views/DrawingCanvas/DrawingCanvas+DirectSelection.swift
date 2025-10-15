@@ -322,7 +322,6 @@ extension DrawingCanvas {
             for shape in shapes.reversed() {
                 if !shape.isVisible { continue }
 
-
                 var isHit = false
 
                 let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
@@ -394,7 +393,6 @@ extension DrawingCanvas {
 
     internal func handleDirectSelectionTap(at location: CGPoint) {
 
-
         let screenTolerance: Double = 15.0
         let tolerance: Double = screenTolerance / document.zoomLevel
         var foundSelection = false
@@ -416,7 +414,6 @@ extension DrawingCanvas {
             syncDirectSelectionWithDocument()
         }
     }
-
 
     private func selectCoincidentHandles(for handleID: HandleID, shape: VectorShape) {
         let anchorPoint: CGPoint?

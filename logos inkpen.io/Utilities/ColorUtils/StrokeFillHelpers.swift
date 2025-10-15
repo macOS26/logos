@@ -1,14 +1,12 @@
 import SwiftUI
 import AppKit
 
-
 func formatNumberForDisplay(_ value: Double, maxDecimals: Int = 2) -> String {
     if value.truncatingRemainder(dividingBy: 1) == 0 {
         return String(format: "%.0f", value)
     }
     return String(format: "%.\(maxDecimals)f", value)
 }
-
 
 extension CGLineJoin {
     var iconName: String {
@@ -38,7 +36,6 @@ extension CGLineJoin {
         }
     }
 }
-
 
 extension CGLineCap {
     var iconName: String {

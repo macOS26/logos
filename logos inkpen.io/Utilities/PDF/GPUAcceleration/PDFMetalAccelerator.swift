@@ -26,7 +26,6 @@ class PDFMetalAccelerator {
     private var parallelMaxIndexPipeline: MTLComputePipelineState!
     private var interpolatePipeline: MTLComputePipelineState!
 
-
     private init() {
         setupMetal()
     }
@@ -68,7 +67,6 @@ class PDFMetalAccelerator {
         }
         return try device.makeComputePipelineState(function: function)
     }
-
 
     func transformPoints(_ points: [CGPoint], with matrix: PDFSIMDMatrix) -> [CGPoint] {
         guard !points.isEmpty else { return [] }
@@ -112,7 +110,6 @@ class PDFMetalAccelerator {
         return (0..<count).map { CGPoint(x: CGFloat(outputPointer[$0].x), y: CGFloat(outputPointer[$0].y)) }
     }
 
-
     func multiplyMatrices(_ matrices: [(PDFSIMDMatrix, PDFSIMDMatrix)]) -> [PDFSIMDMatrix] {
         guard !matrices.isEmpty else { return [] }
 
@@ -153,7 +150,6 @@ class PDFMetalAccelerator {
         let outputPointer = outputBuffer.contents().bindMemory(to: simd_float3x3.self, capacity: count)
         return (0..<count).map { PDFSIMDMatrix(metalBuffer: Array(UnsafeBufferPointer(start: outputPointer.advanced(by: $0), count: 1)).flatMap { [$0.columns.0.x, $0.columns.0.y, $0.columns.0.z, $0.columns.1.x, $0.columns.1.y, $0.columns.1.z, $0.columns.2.x, $0.columns.2.y, $0.columns.2.z] }) }
     }
-
 
     func calculateDistances(from origin: CGPoint, to points: [CGPoint]) -> [CGFloat] {
         guard !points.isEmpty else { return [] }
@@ -286,7 +282,6 @@ class PDFMetalAccelerator {
         return (maxValue, maxIndex)
     }
 
-
     func evaluateCubicBezier(p0: CGPoint, p1: CGPoint, p2: CGPoint, p3: CGPoint, tValues: [Float]) -> [CGPoint] {
         guard !tValues.isEmpty else { return [] }
 
@@ -339,7 +334,6 @@ class PDFMetalAccelerator {
         let outputPointer = outputBuffer.contents().bindMemory(to: simd_float2.self, capacity: count)
         return (0..<count).map { CGPoint(x: CGFloat(outputPointer[$0].x), y: CGFloat(outputPointer[$0].y)) }
     }
-
 
     func batchCheckCollinearity(triplets: [(CGPoint, CGPoint, CGPoint)], tolerance: Float) -> [Bool] {
         guard !triplets.isEmpty else { return [] }

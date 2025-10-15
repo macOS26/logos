@@ -191,7 +191,6 @@ struct CornerRadiusToolbar: View {
             }
         }
 
-
         if curves.count == cornerCount && cornerIndex < curves.count {
             return true
         }

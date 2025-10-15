@@ -162,7 +162,6 @@ struct DocumentBasedMainView: View {
         .focusedSceneObject(documentState)
     }
 
-
     private func calculateInitialZoom() {
         let documentBounds = document.documentBounds
 
@@ -196,7 +195,6 @@ struct DocumentBasedMainView: View {
         )
     }
 
-
     private func loadImportedDocument(_ importedDoc: VectorDocument) {
         document.settings = importedDoc.settings
         document.layers = importedDoc.layers
@@ -215,7 +213,6 @@ struct DocumentBasedMainView: View {
 
         calculateInitialZoom()
     }
-
 
     private func importVectorFile(from url: URL) {
         showingImportProgress = true

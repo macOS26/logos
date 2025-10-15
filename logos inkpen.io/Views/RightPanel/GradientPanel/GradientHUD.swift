@@ -1,7 +1,6 @@
 import SwiftUI
 import AppKit
 
-
 struct PersistentGradientHUDView: View {
     @Environment(AppState.self) private var appState
 

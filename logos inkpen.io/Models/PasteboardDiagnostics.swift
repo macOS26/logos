@@ -19,10 +19,8 @@ class PasteboardDiagnostics {
 
         report.performance = testPerformance(document)
 
-
         return report
     }
-
 
     private func testLayerStructure(_ document: VectorDocument) -> LayerStructureTest {
 
@@ -188,7 +186,6 @@ class PasteboardDiagnostics {
                     let shapeBounds = shape.bounds.applying(shape.transform)
                     let isHit = shapeBounds.contains(testPoint)
 
-
                     if isHit {
                         break
                     }
@@ -207,7 +204,6 @@ class PasteboardDiagnostics {
         }
 
         test.passed = test.allLayersTested && test.allBackgroundShapesTested
-
 
         return test
     }
@@ -249,7 +245,6 @@ class PasteboardDiagnostics {
 
         document.appendShapeToLayerUnified(layerIndex: 2, shape: pasteboardTestShape)
         document.appendShapeToLayerUnified(layerIndex: 2, shape: canvasTestShape)
-
 
         let pasteboardObjectCenter = CGPoint(
             x: pasteboardObjectLocation.x + 25,
@@ -340,7 +335,6 @@ class PasteboardDiagnostics {
         return test
     }
 
-
     @discardableResult
     private func simulateHitTest(document: VectorDocument, at location: CGPoint) -> HitTestResult {
         var hitShape: VectorShape?
@@ -388,7 +382,6 @@ class PasteboardDiagnostics {
         )
     }
 }
-
 
 struct DiagnosticReport {
     var layerStructure = LayerStructureTest()

@@ -70,7 +70,6 @@ extension DrawingCanvas {
 
     }
 
-
     private func handleSelectionConversion(from oldTool: DrawingTool, to newTool: DrawingTool) {
 
         if newTool == .selection {
@@ -110,7 +109,6 @@ extension DrawingCanvas {
             syncDirectSelectionWithDocument()
         }
     }
-
 
     internal func clearToolState() {
         if document.currentTool != .bezierPen {

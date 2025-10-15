@@ -7,7 +7,6 @@ extension PDFCommandParser {
         activeGradient = gradient
         gradientShapes.removeAll()
 
-
         if !currentPath.isEmpty {
 
         } else if isInCompoundPath || !compoundPathParts.isEmpty {

@@ -46,7 +46,6 @@ func parseSVGContent(_ data: Data, useExtremeValueHandling: Bool = false) throws
         allShapes.append(textShape)
     }
 
-
     return SVGContent(
         shapes: allShapes,
         documentSize: result.documentSize,

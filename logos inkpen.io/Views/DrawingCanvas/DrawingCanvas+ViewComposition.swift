@@ -55,7 +55,6 @@ extension DrawingCanvas {
             .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
         }
 
-
         rubberBandPreview(geometry: geometry)
 
         if let preview = brushPreviewPath {
@@ -339,12 +338,10 @@ extension DrawingCanvas {
             }
     }
 
-
     @ViewBuilder
     internal func gradientCenterPointOverlay(geometry: GeometryProxy) -> some View {
         gradientEditTool(geometry: geometry)
     }
-
 
     @ViewBuilder
     internal func pressureSensitiveOverlay(geometry: GeometryProxy) -> some View {
@@ -360,7 +357,6 @@ extension DrawingCanvas {
         }
     }
 
-
     private func handlePressureEvent(
         location: CGPoint,
         pressure: Double,
@@ -371,9 +367,7 @@ extension DrawingCanvas {
 
         let canvasLocation = screenToCanvas(location, geometry: geometry)
 
-
         PressureManager.shared.processRealPressure(pressure, at: canvasLocation, isTabletEvent: isTabletEvent)
-
 
         switch eventType {
         case .began:
@@ -561,7 +555,6 @@ private struct BrushPreviewStyleModifier: ViewModifier {
         return offsetShape
     }
 }
-
 
 private struct FreehandPreviewStyleModifier: ViewModifier {
     @Environment(AppState.self) var appState

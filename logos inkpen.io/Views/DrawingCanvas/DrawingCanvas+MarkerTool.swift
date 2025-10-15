@@ -12,7 +12,6 @@ struct MarkerPoint {
 
 extension DrawingCanvas {
 
-
     internal func cancelMarkerDrawing() {
         markerPath = nil
         markerRawPoints.removeAll()
@@ -63,14 +62,12 @@ extension DrawingCanvas {
             fillStyle: fillStyle
         )
 
-
     }
 
     internal func handleMarkerDragUpdate(at location: CGPoint, pressure: Double? = nil) {
         guard isMarkerDrawing else { return }
 
         let actualPressure = pressure ?? PressureManager.shared.currentPressure
-
 
         let markerPoint = MarkerPoint(location: location, pressure: actualPressure)
 
@@ -86,7 +83,6 @@ extension DrawingCanvas {
     internal func handleMarkerDragEnd() {
         guard isMarkerDrawing else { return }
 
-
         if let preview = markerPreviewPath {
             finalizeMarkerFromPreview(preview)
         } else {
@@ -99,7 +95,6 @@ extension DrawingCanvas {
         document.selectedShapeIDs.removeAll()
         document.selectedObjectIDs.removeAll()
     }
-
 
     private func calculateMarkerPressure(at location: CGPoint) -> Double {
         if !appState.pressureSensitivityEnabled {
@@ -124,7 +119,6 @@ extension DrawingCanvas {
         return finalPressure
     }
 
-
     private func updateMarkerPreview() {
         guard markerRawPoints.count >= 2 else { return }
 
@@ -146,14 +140,12 @@ extension DrawingCanvas {
         )
     }
 
-
     private func processMarkerStroke() {
         guard markerRawPoints.count >= 2,
               activeMarkerShape != nil,
               document.selectedLayerIndex != nil else {
             return
         }
-
 
         let rawPointLocations = markerRawPoints.map { $0.location }
 
@@ -364,7 +356,6 @@ extension DrawingCanvas {
         document.commandManager.execute(command)
     }
 
-
     private func createSmoothMarkerStroke(centerPoints: [CGPoint], recentRawPoints: [MarkerPoint]) -> VectorPath {
         guard centerPoints.count >= 2 else {
             return createMarkerDot(at: centerPoints[0])
@@ -385,7 +376,6 @@ extension DrawingCanvas {
         guard centerPoints.count >= 2 else {
             return createMarkerDot(at: centerPoints[0])
         }
-
 
         var thicknessPoints: [(location: CGPoint, thickness: Double)] = []
 
@@ -650,7 +640,6 @@ extension DrawingCanvas {
         return VectorPath(elements: elements)
     }
 
-
     private func fitBezierCurves(through points: [CGPoint]) -> [PathElement] {
         var elements: [PathElement] = []
 
@@ -710,7 +699,6 @@ extension DrawingCanvas {
         }
     }
 
-
     private func applySelfUnionToMarkerStroke(shapeIndex: Int, layerIndex: Int) {
 
         let shapes = document.getShapesForLayer(layerIndex)
@@ -725,7 +713,6 @@ extension DrawingCanvas {
         guard markerStroke.id == activeMarkerShape?.id else {
             return
         }
-
 
         let hasStroke = markerStroke.strokeStyle != nil
         let hasFill = markerStroke.fillStyle != nil
@@ -858,7 +845,6 @@ extension DrawingCanvas {
             applySingleUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
         }
     }
-
 
     private func removeCoincidentPointsFromPath(_ path: VectorPath, tolerance: Double = 0.5) -> VectorPath {
         let elements = path.elements

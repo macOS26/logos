@@ -1,6 +1,5 @@
 import SwiftUI
 
-
 struct HSBInputSection: View {
     @ObservedObject var document: VectorDocument
     @Binding var sharedColor: VectorColor

@@ -1,6 +1,5 @@
 import SwiftUI
 
-
 struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
     var id: UUID
     var points: [ProfessionalBezierMathematics.BezierPoint]
@@ -49,7 +48,6 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
             }
         }
     }
-
 
     mutating func addPoint(_ point: ProfessionalBezierMathematics.BezierPoint) {
         points.append(point)
@@ -112,7 +110,6 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
 
         continuityConstraints.removeAll { $0.pointIndex == points.count - 1 }
     }
-
 
     mutating func generateSmoothHandles() {
         for i in 0..<points.count {
@@ -207,7 +204,6 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
         }
     }
 
-
     private mutating func regenerateContinuityConstraints() {
         continuityConstraints.removeAll()
 
@@ -296,7 +292,6 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
         }
     }
 
-
     func toLegacyVectorPath() -> VectorPath {
         guard !points.isEmpty else {
             return VectorPath(elements: [], isClosed: isClosed)
@@ -342,7 +337,6 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
 
         return VectorPath(elements: elements, isClosed: isClosed)
     }
-
 
     static func fromLegacyVectorPath(_ legacyPath: VectorPath) -> ProfessionalVectorPath {
         var professionalPoints: [ProfessionalBezierMathematics.BezierPoint] = []
@@ -416,7 +410,6 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
 
         return professionalPath
     }
-
 
     struct PathAnalysis {
         var issues: [String] = []

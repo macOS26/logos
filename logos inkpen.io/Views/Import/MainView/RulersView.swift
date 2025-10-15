@@ -65,14 +65,12 @@ struct HorizontalRuler: View {
         document.onSettingsChanged()
     }
 
-
     private func drawHorizontalRuler(context: GraphicsContext, size: CGSize) {
         let unit = document.settings.unit
         let pointsPerUnit = unit.pointsPerUnit
         let zoomLevel = document.zoomLevel
         let canvasOffset = document.canvasOffset
         let pageOrigin = document.settings.pageOrigin ?? .zero
-
 
         let startX = (-canvasOffset.x) / zoomLevel
         let endX = (size.width - canvasOffset.x) / zoomLevel
@@ -300,7 +298,6 @@ struct VerticalRuler: View {
         let zoomLevel = document.zoomLevel
         let canvasOffset = document.canvasOffset
         let pageOrigin = document.settings.pageOrigin ?? .zero
-
 
         let startY = (-canvasOffset.y) / zoomLevel
         let endY = (size.height - canvasOffset.y) / zoomLevel
@@ -719,7 +716,6 @@ struct RulersView_Previews: PreviewProvider {
         .frame(width: 600, height: 400)
     }
 }
-
 
 struct PageOriginCrosshair: View {
     @ObservedObject var document: VectorDocument

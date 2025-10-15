@@ -93,6 +93,5 @@ extension DrawingCanvas {
         showClosePathHint = false
         showContinuePathHint = false
 
-
     }
 }

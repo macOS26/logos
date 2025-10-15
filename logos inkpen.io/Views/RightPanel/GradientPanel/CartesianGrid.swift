@@ -1,6 +1,5 @@
 import SwiftUI
 
-
 struct CartesianGrid: View {
     let width: CGFloat
     let height: CGFloat

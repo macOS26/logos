@@ -1,6 +1,5 @@
 import SwiftUI
 
-
 struct GradientPreviewAndStopsView: View {
     let currentGradient: VectorGradient?
     let document: VectorDocument

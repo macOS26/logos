@@ -2,7 +2,6 @@ import SwiftUI
 import Combine
 import Combine
 
-
 enum PathfinderOperation: String, CaseIterable, Codable {
     case union = "Union"
 case minusFront = "Punch"
@@ -61,7 +60,6 @@ case exclude = "Exclude"
 
 class ProfessionalPathOperations {
 
-
     static func union(_ paths: [CGPath]) -> CGPath? {
         return professionalUnion(paths)
     }
@@ -77,7 +75,6 @@ class ProfessionalPathOperations {
     static func exclude(_ path1: CGPath, _ path2: CGPath) -> [CGPath] {
         return professionalExclude(path1, path2)
     }
-
 
     static func mosaic(_ paths: [CGPath]) -> [CGPath] {
         return ProfessionalPathOperations.professionalMosaic(paths)
@@ -106,7 +103,6 @@ class ProfessionalPathOperations {
     static func kick(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
         return professionalMinusFront(backPath, from: frontPath)
     }
-
 
     private static func pathToPolygon(_ path: CGPath) -> [[CGPoint]]? {
         var subpaths: [[CGPoint]] = []
@@ -175,7 +171,6 @@ class ProfessionalPathOperations {
         return path
     }
 
-
     private static func unionPolygons(_ polygon1: [[CGPoint]], _ polygon2: [[CGPoint]]) -> [[CGPoint]] {
 
         return sutherland_hodgman_union(polygon1, polygon2)
@@ -194,7 +189,6 @@ class ProfessionalPathOperations {
         let intersection = intersectPolygons(polygon1, polygon2)
         return differencePolygons(union, intersection)
     }
-
 
     private static func sutherland_hodgman_union(_ poly1: [[CGPoint]], _ poly2: [[CGPoint]]) -> [[CGPoint]] {
         guard let first1 = poly1.first, let first2 = poly2.first else { return poly1 + poly2 }
@@ -248,7 +242,6 @@ class ProfessionalPathOperations {
             CGPoint(x: intersection.minX, y: intersection.maxY)
         ]]
     }
-
 
     private static func bezierToLineSegments(start: CGPoint, control: CGPoint, end: CGPoint, segments: Int = 10) -> [CGPoint] {
         var points: [CGPoint] = []
@@ -353,7 +346,6 @@ class ProfessionalPathOperations {
         return (A.x - O.x) * (B.y - O.y) - (A.y - O.y) * (B.x - O.x)
     }
 
-
     static func canPerformOperation(_ operation: PathfinderOperation, on paths: [CGPath]) -> Bool {
         switch operation {
         case .mosaic, .cut, .merge, .crop:
@@ -375,7 +367,6 @@ class ProfessionalPathOperations {
         let bounds = path.boundingBoxOfPath
         return !bounds.isEmpty && bounds.width > 0 && bounds.height > 0
     }
-
 
     static func pathToSVGString(_ path: CGPath) -> String {
         var pathString = ""
@@ -407,7 +398,6 @@ class ProfessionalPathOperations {
         return pathString.trimmingCharacters(in: .whitespaces)
     }
 }
-
 
 class PathOperations {
 
@@ -465,7 +455,6 @@ class PathOperations {
     static func pathToSVGString(_ path: CGPath) -> String {
         return ProfessionalPathOperations.pathToSVGString(path)
     }
-
 
 	private static func pathHasClosedSubpath(_ path: CGPath) -> Bool {
 		var hasClosed = false
@@ -583,7 +572,6 @@ class PathOperations {
         return !bounds.isEmpty && bounds.width > 0 && bounds.height > 0
     }
 
-
     static func hitTest(_ path: CGPath, point: CGPoint, tolerance: CGFloat = 5.0) -> Bool {
         guard !point.x.isNaN && !point.y.isNaN && !point.x.isInfinite && !point.y.isInfinite else {
             return false
@@ -646,7 +634,6 @@ class PathOperations {
         return isNear
     }
 }
-
 
 extension ProfessionalPathOperations {
 
@@ -751,7 +738,6 @@ extension ProfessionalPathOperations {
             return path
         }
 
-
         var firstPoint: VectorPoint?
         if case .move(let to) = path.elements.first {
             firstPoint = to
@@ -795,7 +781,6 @@ extension ProfessionalPathOperations {
             }
         }
 
-
         if cleanedElements.isEmpty {
             return path
         }
@@ -806,7 +791,6 @@ extension ProfessionalPathOperations {
         }
 
         let cleanedPath = VectorPath(elements: cleanedElements, isClosed: path.isClosed)
-
 
         return cleanedPath
     }
@@ -821,9 +805,7 @@ extension ProfessionalPathOperations {
         return cleanedShape
     }
 
-
 }
-
 
 extension ProfessionalPathOperations {
 
@@ -893,7 +875,6 @@ extension ProfessionalPathOperations {
         }
     }
 }
-
 
 extension ProfessionalPathOperations {
 

@@ -50,7 +50,6 @@ struct VariableStrokeSection: View {
                 .help("Enable or disable pressure sensitivity for variable stroke")
             }
 
-
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Smoothness")

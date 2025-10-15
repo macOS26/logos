@@ -11,7 +11,6 @@ extension PDFCommandParser {
             return createSubsampledGradientStops(from: shadingDict)
         }
 
-
         var functionStream: CGPDFStreamRef?
         if CGPDFObjectGetValue(funcObj, .stream, &functionStream),
            let stream = functionStream {
@@ -169,7 +168,6 @@ extension PDFCommandParser {
             }
         }
         bounds.append(1.0)
-
 
         var gradientStops: [GradientStop] = []
 

@@ -4,7 +4,6 @@ extension DrawingCanvas {
 
     internal func runRealDrawingTest(geometry: GeometryProxy) {
 
-
         if !document.layers.isEmpty {
             document.removeShapesUnified(layerIndex: 0, where: { _ in true })
         }
@@ -17,9 +16,7 @@ extension DrawingCanvas {
             fillStyle: FillStyle(color: VectorColor.rgb(RGBColor(red: 1.0, green: 0.5, blue: 0.0)), opacity: 0.8)
         )
 
-
         document.addShape(testShape)
-
 
         let shapes = document.getShapesForLayer(0)
         if let addedShape = shapes.first(where: { $0.name == "TEST SHAPE" }) {
@@ -27,7 +24,6 @@ extension DrawingCanvas {
                 x: (addedShape.bounds.minX + addedShape.bounds.maxX) / 2,
                 y: (addedShape.bounds.minY + addedShape.bounds.maxY) / 2
             )
-
 
             let deltaX = abs(actualCenter.x - testCenter.x)
             let deltaY = abs(actualCenter.y - testCenter.y)
@@ -38,7 +34,6 @@ extension DrawingCanvas {
             }
         }
 
-
         isDrawing = true
 
         let previewStart = CGPoint(x: 200, y: 200)
@@ -48,15 +43,12 @@ extension DrawingCanvas {
             .line(to: VectorPoint(previewEnd))
         ])
 
-
         isDrawing = false
         currentPath = nil
-
 
         let testCanvasPoint = CGPoint(x: 300, y: 200)
         let screenPoint = canvasToScreen(testCanvasPoint, geometry: geometry)
         let backToCanvas = screenToCanvas(screenPoint, geometry: geometry)
-
 
         let conversionDeltaX = abs(backToCanvas.x - testCanvasPoint.x)
         let conversionDeltaY = abs(backToCanvas.y - testCanvasPoint.y)

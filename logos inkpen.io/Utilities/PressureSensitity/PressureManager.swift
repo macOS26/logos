@@ -3,7 +3,6 @@ import Combine
 
 class PressureManager: ObservableObject {
 
-
     @Published var hasRealPressureInput = false
 
     @Published var currentPressure: Double = 1.0
@@ -18,7 +17,6 @@ class PressureManager: ObservableObject {
 
     @Published var tabletOnlyCalibration: Bool = true
 
-
     private var lastLocation: CGPoint?
     private var lastTimestamp: Date?
 
@@ -31,11 +29,9 @@ class PressureManager: ObservableObject {
     private let maxSpeed: Double = 100.0
     private let speedSmoothingFactor: Double = 0.3
 
-
     init() {
         detectInitialPressureSupport()
     }
-
 
     private func detectInitialPressureSupport() {
         hasRealPressureInput = false
@@ -46,7 +42,6 @@ class PressureManager: ObservableObject {
             self.hasRealPressureInput = isSupported
         }
     }
-
 
     func processRealPressure(_ pressure: Double, at location: CGPoint, timestamp: Date = Date(), isTabletEvent: Bool = false) {
 
@@ -130,7 +125,6 @@ class PressureManager: ObservableObject {
         return smoothedPressure
     }
 
-
     private func isPressureConstant() -> Bool {
         guard recentPressureValues.count >= pressureHistorySize else {
             return false
@@ -142,7 +136,6 @@ class PressureManager: ObservableObject {
 
         return variation < pressureVariationThreshold
     }
-
 
     func resetForNewDrawing() {
         lastLocation = nil
@@ -163,7 +156,6 @@ class PressureManager: ObservableObject {
             return processSimulatedPressure(at: location, sensitivity: sensitivity)
         }
     }
-
 
     func startCalibration() {
         DispatchQueue.main.async {
@@ -194,7 +186,6 @@ class PressureManager: ObservableObject {
         }
     }
 }
-
 
 extension PressureManager {
     static let shared = PressureManager()

@@ -3,7 +3,6 @@ import Combine
 
 extension VectorDocument {
 
-
     func unwrapWarpObject() {
         guard !selectedObjectIDs.isEmpty else { return }
 

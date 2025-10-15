@@ -32,7 +32,6 @@ enum MeasurementUnit: String, CaseIterable, Codable {
     }
 }
 
-
 enum ZoomMode: Equatable {
     case zoomIn
     case zoomOut

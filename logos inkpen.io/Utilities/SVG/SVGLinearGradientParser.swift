@@ -2,7 +2,6 @@ import SwiftUI
 
 extension SVGParser {
 
-
     internal func parseLinearGradient(attributes: [String: String]) {
         guard let id = attributes["id"] else {
             return
@@ -26,12 +25,10 @@ extension SVGParser {
         let x2Raw = attributes["x2"] ?? "100%"
         let y2Raw = attributes["y2"] ?? "0%"
 
-
         let x1 = parseGradientCoordinate(x1Raw, gradientUnits: gradientUnits, isXCoordinate: true)
         let y1 = parseGradientCoordinate(y1Raw, gradientUnits: gradientUnits, isXCoordinate: false)
         let x2 = parseGradientCoordinate(x2Raw, gradientUnits: gradientUnits, isXCoordinate: true)
         let y2 = parseGradientCoordinate(y2Raw, gradientUnits: gradientUnits, isXCoordinate: false)
-
 
         let transformInfo = parseGradientTransformFromAttributes(attributes)
 
@@ -62,7 +59,6 @@ extension SVGParser {
         }
 
         let angleDegrees = computedAngle
-
 
         let spreadMethod = parseSpreadMethod(from: attributes)
 

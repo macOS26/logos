@@ -2,7 +2,6 @@ import SwiftUI
 import AppKit
 import SwiftUI
 
-
 struct ImageNSView: NSViewRepresentable {
     let image: NSImage
     let bounds: CGRect

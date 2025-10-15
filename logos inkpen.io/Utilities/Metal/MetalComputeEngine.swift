@@ -35,7 +35,6 @@ class MetalComputeEngine {
     private var findPointsInRadiusPipeline: MTLComputePipelineState?
     private var findNearestHandlePipeline: MTLComputePipelineState?
 
-
     static let shared: MetalComputeEngine = {
         do {
             return try MetalComputeEngine()
@@ -67,7 +66,6 @@ class MetalComputeEngine {
         self.library = library
         try setupComputePipelines()
     }
-
 
     private func setupComputePipelines() throws {
         if let function = library.makeFunction(name: "calculate_distances") {
@@ -145,7 +143,6 @@ class MetalComputeEngine {
             findNearestHandlePipeline = try device.makeComputePipelineState(function: function)
         }
     }
-
 
     func douglasPeuckerGPU(_ points: [CGPoint], tolerance: Float) -> Result<[CGPoint], MetalError> {
         guard points.count > 2 else {
@@ -261,7 +258,6 @@ class MetalComputeEngine {
         return .success((distance: maxDistance, index: maxIndex))
     }
 
-
     func transformPointsGPU(_ points: [CGPoint], transform: CGAffineTransform) -> Result<[CGPoint], MetalError> {
         guard let pipeline = matrixTransformPipeline else {
             return .failure(.pipelineNotAvailable)
@@ -315,7 +311,6 @@ class MetalComputeEngine {
         return .success(result)
     }
 
-
     func pointsInPolygonGPU(_ testPoints: [CGPoint], polygon: [CGPoint]) -> Result<[Bool], MetalError> {
         guard let pipeline = collisionDetectionPipeline else {
             return .failure(.pipelineNotAvailable)
@@ -366,7 +361,6 @@ class MetalComputeEngine {
 
         return .success(results)
     }
-
 
     func calculateDistancesGPU(from sourcePoints: [CGPoint], to targetPoints: [CGPoint]) -> Result<[Float], MetalError> {
         guard sourcePoints.count == targetPoints.count else {
@@ -518,7 +512,6 @@ class MetalComputeEngine {
         return .success(results)
     }
 
-
     func calculateLinkedHandlesGPU(anchorPoints: [CGPoint], draggedHandles: [CGPoint], originalOppositeHandles: [CGPoint]) -> Result<[CGPoint], MetalError> {
         guard anchorPoints.count == draggedHandles.count &&
               draggedHandles.count == originalOppositeHandles.count else {
@@ -574,7 +567,6 @@ class MetalComputeEngine {
 
         return .success(results)
     }
-
 
     func calculateCurvatureGPU(points: [CGPoint]) -> Result<[Float], MetalError> {
         guard points.count >= 3 else {
@@ -685,7 +677,6 @@ class MetalComputeEngine {
         return .success(results)
     }
 
-
     func calculatePointDistanceGPU(from point1: CGPoint, to point2: CGPoint) -> Result<Float, MetalError> {
         let results = calculateDistancesGPU(from: [point1], to: [point2])
         switch results {
@@ -752,7 +743,6 @@ class MetalComputeEngine {
 
         return .success(results)
     }
-
 
     func booleanGeometryUnionGPU(path1Points: [Point2D], path2Points: [Point2D]) -> Result<[Point2D], MetalError> {
         guard let pipeline = booleanGeometryPipeline else {
@@ -848,7 +838,6 @@ class MetalComputeEngine {
 
         return .success(resultArray)
     }
-
 
     func calculateTrigonometricGPU(angles: [Float], function: TrigonometricFunction) -> Result<[Float], MetalError> {
         guard !angles.isEmpty else {
@@ -947,7 +936,6 @@ class MetalComputeEngine {
         return .success(results)
     }
 
-
     func calculateBezierCurveGPU(controlPoints: [CGPoint], steps: Int = 100) -> Result<[CGPoint], MetalError> {
         guard controlPoints.count == 4 else {
             return .failure(.operationFailed("Bezier curve requires exactly 4 control points"))
@@ -997,7 +985,6 @@ class MetalComputeEngine {
 
         return .success(result)
     }
-
 
     func findNearestPointGPU(points: [CGPoint], tapLocation: CGPoint, selectionRadius: CGFloat, transform: CGAffineTransform = .identity) -> Int? {
         guard !points.isEmpty else { return nil }
@@ -1177,7 +1164,6 @@ class MetalComputeEngine {
         return results
     }
 
-
     static func testMetalEngine() -> Bool {
 
         guard let device = MTLCreateSystemDefaultDevice() else {
@@ -1213,7 +1199,6 @@ class MetalComputeEngine {
         }
     }
 
-
     func executeParallelOperations<T>(_ operations: [(MTLCommandBuffer) -> T]) -> [T] {
         let group = DispatchGroup()
         var results: [T?] = Array(repeating: nil, count: operations.count)
@@ -1238,7 +1223,6 @@ class MetalComputeEngine {
         group.wait()
         return results.compactMap { $0 }
     }
-
 
     var isFullGPUAccelerationAvailable: Bool {
         return douglasPeuckerPipeline != nil &&

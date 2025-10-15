@@ -33,7 +33,6 @@ extension PDFCommandParser {
             spreadMethod: GradientSpreadMethod.pad
         )
 
-
         return .radial(radialGradient)
     }
 }

@@ -1,6 +1,5 @@
 import SwiftUI
 
-
 struct PointID: Hashable {
     let shapeID: UUID
     let pathIndex: Int
@@ -17,7 +16,6 @@ struct HandleID: Hashable {
 enum HandleType {
     case control1, control2
 }
-
 
 func findCoincidentPoints(to targetPointID: PointID, in document: VectorDocument, tolerance: Double = 1.0) -> Set<PointID> {
     guard let targetPosition = getPointPositionExternal(targetPointID, in: document) else { return [] }

@@ -2,7 +2,6 @@ import SwiftUI
 
 extension VectorDocument {
 
-
     func performPathfinderOperation(_ operation: PathfinderOperation) -> Bool {
 
         let selectedShapes = getSelectedShapesInStackingOrder()
@@ -10,7 +9,6 @@ extension VectorDocument {
             Log.error("❌ No shapes selected for pathfinder operation", category: .error)
             return false
         }
-
 
         let paths = selectedShapes.map { $0.path.cgPath }
 

@@ -1,6 +1,5 @@
 import SwiftUI
 
-
 struct ColorPickerModal: View {
     @ObservedObject var document: VectorDocument
     @Environment(\.presentationMode) var presentationMode

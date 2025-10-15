@@ -2,7 +2,6 @@ import SwiftUI
 
 extension FileOperations {
 
-
     static func exportSingleIcon(_ document: VectorDocument, url: URL, pixelSize: Int) throws {
 
         let artworkBounds = calculateArtworkBounds(from: document)
@@ -70,7 +69,6 @@ extension FileOperations {
         )
 
     }
-
 
     static func exportIconSet(_ document: VectorDocument, folderURL: URL) throws {
 
@@ -176,7 +174,6 @@ extension FileOperations {
         return bounds
     }
 
-
     static func exportToPNGFromView(_ document: VectorDocument, url: URL, scale: CGFloat, includeBackground: Bool = true) throws {
         let pageSize = document.settings.sizeInPoints
         let outputSize = CGSize(width: pageSize.width * scale, height: pageSize.height * scale)
@@ -271,7 +268,6 @@ extension FileOperations {
         context.translateBy(x: 0, y: outputSize.height)
         context.scaleBy(x: scale, y: -scale)
 
-
         for (index, layer) in document.layers.enumerated() {
             if !layer.isVisible { continue }
 
@@ -320,7 +316,6 @@ extension FileOperations {
         )
 
     }
-
 
     internal static func drawShapeInPDF(_ shape: VectorShape, context: CGContext) {
         context.saveGState()

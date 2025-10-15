@@ -109,7 +109,6 @@ struct HashableCGPoint: Hashable, Equatable {
     }
 }
 
-
 struct BrushPoint {
     let location: CGPoint
     let pressure: Double
@@ -196,7 +195,6 @@ struct DrawingCanvas: View {
     @State internal var activeMarkerShape: VectorShape? = nil
     @State internal var markerPreviewPath: VectorPath? = nil
 
-
     @State internal var previousTool: DrawingTool = .selection
 
     @State internal var isTemporaryHandToolActive = false
@@ -267,7 +265,6 @@ struct DrawingCanvas: View {
     @State internal var currentCursorPosition: Int = 0
     @State internal var currentSelectionRange: NSRange = NSRange(location: 0, length: 0)
     @State internal var lastTapLocation: CGPoint = .zero
-
 
     @State internal var isHit = false
     @State internal var foundPointOrHandle = false

@@ -3,7 +3,6 @@ import AppKit
 
 extension DrawingCanvas {
 
-
     internal func detectAdvancedClickTypes(at location: CGPoint, geometry: GeometryProxy, clickType: String) {
         screenToCanvas(location, geometry: geometry)
     }
@@ -31,7 +30,6 @@ extension DrawingCanvas {
             NSCursor.iBeam.set()
         }
     }
-
 
     internal func handleUnifiedTap(at location: CGPoint, geometry: GeometryProxy) {
         let canvasLocation = screenToCanvas(location, geometry: geometry)
@@ -235,7 +233,6 @@ extension DrawingCanvas {
         }
     }
 
-
     private func handleUnifiedSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         if !isDrawing && !document.isHandleScalingActive {
             for objectID in document.selectedObjectIDs {
@@ -272,7 +269,6 @@ extension DrawingCanvas {
             handleSelectionDrag(value: value, geometry: geometry)
         }
     }
-
 
     private func finishPanGesture() {
         initialCanvasOffset = CGPoint.zero
@@ -385,7 +381,6 @@ extension DrawingCanvas {
             document.syncSelectionArrays()
         }
     }
-
 
     private func validateCanvasLocation(_ location: CGPoint) -> CGPoint {
         if location.x.isNaN || location.y.isNaN || location.x.isInfinite || location.y.isInfinite {

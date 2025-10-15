@@ -24,7 +24,6 @@ extension PDFCommandParser {
             return
         }
 
-
         var sMaskRef: CGPDFStreamRef?
         let hasSMask = CGPDFDictionaryGetStream(streamDict, "SMask", &sMaskRef)
 
@@ -77,13 +76,11 @@ extension PDFCommandParser {
             }
         }
 
-
         var format: CGPDFDataFormat = .raw
         guard let imageData = CGPDFStreamCopyData(xObjectStream, &format) else {
             Log.error("PDF: Failed to extract image data for '\(name)'", category: .error)
             return
         }
-
 
         let nsData = imageData as NSData
 
@@ -158,7 +155,6 @@ extension PDFCommandParser {
                     let indexBytes = nsData.bytes.assumingMemoryBound(to: UInt8.self)
                     let paletteBytes = palette.withUnsafeBytes { $0.bindMemory(to: UInt8.self) }
                     let paletteEntries = palette.count / 3
-
 
                     for i in 0..<(width * height) {
                         let paletteIndex = Int(indexBytes[i])
@@ -365,7 +361,6 @@ extension PDFCommandParser {
         let flippedY = pageSize.height - pdfRect.maxY
         let finalRect = CGRect(x: pdfRect.minX, y: flippedY, width: pdfRect.width, height: pdfRect.height)
 
-
         if hasUpcomingTransparentImage {
             transparentImageBounds = finalRect
         }
@@ -484,7 +479,6 @@ extension PDFCommandParser {
 
     func handleClipOperator() {
 
-
         if isInCompoundPath || !compoundPathParts.isEmpty {
             hasClipOperatorPending = true
 
@@ -500,7 +494,6 @@ extension PDFCommandParser {
             clipOperatorPath = currentPath
             return
         }
-
 
         if !currentPath.isEmpty {
             var pathElements: [PathElement] = []
@@ -544,7 +537,6 @@ extension PDFCommandParser {
 
     func createClippingPathFromPending() {
         guard hasClipOperatorPending else { return }
-
 
         var allPathCommands: [[PathCommand]] = []
 
@@ -598,7 +590,6 @@ extension PDFCommandParser {
 
         pendingClippingPath = clipShape
 
-
         hasClipOperatorPending = false
         clipOperatorPath.removeAll()
 
@@ -639,7 +630,6 @@ extension PDFCommandParser {
         currentPath.removeAll()
 
     }
-
 
     func saveGraphicsState() {
         let state = PDFGraphicsState(
