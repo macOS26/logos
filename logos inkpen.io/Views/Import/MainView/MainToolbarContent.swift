@@ -409,10 +409,15 @@ struct MainToolbarContent: ToolbarContent {
     }
 
     private func unlockAllObjects() {
-        // TODO: Add appropriate Command here
+        var oldShapes: [UUID: VectorShape] = [:]
+        var newShapes: [UUID: VectorShape] = [:]
+        var objectIDs: [UUID] = []
 
         for unifiedObject in document.unifiedObjects {
             if case .shape(let shape) = unifiedObject.objectType {
+                oldShapes[shape.id] = shape
+                objectIDs.append(shape.id)
+
                 document.unlockShapeInUnified(id: shape.id)
             }
         }
@@ -423,6 +428,16 @@ struct MainToolbarContent: ToolbarContent {
             }
         }
 
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
+                newShapes[shape.id] = shape
+            }
+        }
+
+        if !objectIDs.isEmpty {
+            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+            document.commandManager.execute(command)
+        }
     }
 
     private func hideSelectedObjects() {
