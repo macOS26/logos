@@ -91,8 +91,6 @@ extension VectorDocument {
             }
         }
 
-        forceResyncUnifiedObjects()
-
         // Capture new state and create command
         var newShapes: [UUID: VectorShape] = [:]
         if let shape = findShape(by: maskID) {
