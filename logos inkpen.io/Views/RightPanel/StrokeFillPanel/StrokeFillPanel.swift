@@ -426,7 +426,6 @@ struct StrokeFillPanel: View {
                                 cachedIndexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
                             } else {
                                 document.defaultStrokeMiterLimit = strokeMiterLimitState
-                                document.saveToUndoStack()
                                 cachedIndexMap.removeAll()
                             }
                         }
