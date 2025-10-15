@@ -20,13 +20,8 @@ extension VectorDocument {
             }
         }
 
-        // Get shapes from unifiedObjects, not from layers
-        let selectedShapes = objectsToRemove.compactMap { obj -> VectorShape? in
-            if case .shape(let shape) = obj.objectType {
-                return shape
-            }
-            return nil
-        }
+        // Get shapes in proper stacking order
+        let selectedShapes = getSelectedShapesInStackingOrder()
         let groupShape = VectorShape.group(from: selectedShapes, name: "Group")
 
         // Calculate new orderID for group (use highest orderID from removed objects)

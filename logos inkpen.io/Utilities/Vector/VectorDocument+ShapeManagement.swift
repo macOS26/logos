@@ -191,17 +191,27 @@ extension VectorDocument {
     }
 
     func getSelectedShapesInStackingOrder() -> [VectorShape] {
-        var stackingOrderShapes: [VectorShape] = []
-
-        for unifiedObject in unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType {
-                if selectedShapeIDs.contains(shape.id) {
-                    stackingOrderShapes.append(shape)
+        // Sort selected objects by layerIndex and orderID to get proper stacking order
+        let sortedSelectedObjects = unifiedObjects
+            .filter { object in
+                if case .shape(let shape) = object.objectType {
+                    return selectedShapeIDs.contains(shape.id)
                 }
+                return false
             }
-        }
+            .sorted { obj1, obj2 in
+                if obj1.layerIndex != obj2.layerIndex {
+                    return obj1.layerIndex < obj2.layerIndex
+                }
+                return obj1.orderID < obj2.orderID
+            }
 
-        return stackingOrderShapes
+        return sortedSelectedObjects.compactMap { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape
+            }
+            return nil
+        }
     }
 
     func selectShape(_ shapeID: UUID) {

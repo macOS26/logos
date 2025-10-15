@@ -20,7 +20,10 @@
       "Bash(\"logos inkpen.io/Views/Handles/TransformBoxHandles.swift\" )",
       "Bash(\"logos inkpen.io/Views/Handles/EnvelopeHandles.swift\" )",
       "Bash(\"logos inkpen.io/Views/DrawingCanvas/DrawingCanvas+SelectionDrag.swift\")",
-      "Bash(xcodebuild:*)"
+      "Bash(xcodebuild:*)",
+      "mcp__xcf-server__read_dir",
+      "Bash(tee:*)",
+      "mcp__xcf-server__build_project"
     ],
     "deny": [],
     "ask": []
