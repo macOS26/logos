@@ -129,8 +129,8 @@ class DocumentState: ObservableObject {
             return
         }
 
-        canUndo = document.commandManager.canUndo || !document.undoStack.isEmpty
-        canRedo = document.commandManager.canRedo || !document.redoStack.isEmpty
+        canUndo = document.commandManager.canUndo //|| //!document.undoStack.isEmpty
+        canRedo = document.commandManager.canRedo //|| //!document.redoStack.isEmpty
         hasSelection = !document.selectedObjectIDs.isEmpty
         canCut = hasSelection
         canCopy = hasSelection

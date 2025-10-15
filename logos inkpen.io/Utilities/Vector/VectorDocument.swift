@@ -278,8 +278,8 @@ class VectorDocument: ObservableObject, Codable {
     @Published var gridSpacing: Double = 12.0
     @Published var backgroundColor: VectorColor = .white
 
-    @Published var undoStack: [VectorDocument] = []
-    @Published var redoStack: [VectorDocument] = []
+    @Published var undoStackX: [VectorDocument] = []
+    @Published var redoStackX: [VectorDocument] = []
 
     internal var isUndoRedoOperation: Bool = false
 
@@ -458,8 +458,8 @@ class VectorDocument: ObservableObject, Codable {
         self.snapToPoint = settings.snapToPoint
         self.gridSpacing = settings.gridSpacing
         self.backgroundColor = settings.backgroundColor
-        self.undoStack = []
-        self.redoStack = []
+        //self.undoStack = []
+        //self.redoStack = []
 
         createCanvasAndWorkingLayers()
 
@@ -657,8 +657,8 @@ class VectorDocument: ObservableObject, Codable {
         canvasOffset = decodedCanvasOffset
         zoomRequest = nil
 
-        undoStack = []
-        redoStack = []
+        //undoStack = []
+        //redoStack = []
         isUndoRedoOperation = false
         fontManager = FontManager()
 
