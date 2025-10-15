@@ -67,7 +67,6 @@ struct StrokePropertiesSection: View {
                 Picker("Placement", selection: Binding(
                     get: { strokePlacement },
                     set: { newPlacement in
-                        strokePlacement = newPlacement
                         onUpdateStrokePlacement(newPlacement)
                     }
                 )) {
