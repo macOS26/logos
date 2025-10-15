@@ -12,20 +12,18 @@ extension VectorDocument {
         let shape = VectorShape.from(text)
         let orderID = (unifiedObjects.filter { $0.layerIndex == layerIndex }.map { $0.orderID }.max() ?? -1) + 1
 
-        addTextToUnifiedSystem(text, layerIndex: layerIndex)
-
         let command = TextManagementCommand(
             operation: .addText(textID: text.id, shape: shape, layerIndex: layerIndex, orderID: orderID),
             oldSelection: oldSelection,
             newSelection: [text.id]
         )
 
+        commandManager.execute(command)
+
         selectedTextIDs = [text.id]
         selectedObjectIDs = [text.id]
         selectedShapeIDs.removeAll()
         syncSelectionArrays()
-
-        commandManager.execute(command)
     }
 
     func addTextToLayer(_ text: VectorText, layerIndex: Int?) {
@@ -42,39 +40,24 @@ extension VectorDocument {
         let shape = VectorShape.from(modifiedText)
         let orderID = (unifiedObjects.filter { $0.layerIndex == layerIndex }.map { $0.orderID }.max() ?? -1) + 1
 
-        addTextToUnifiedSystem(modifiedText, layerIndex: layerIndex)
-
         let command = TextManagementCommand(
             operation: .addText(textID: text.id, shape: shape, layerIndex: layerIndex, orderID: orderID),
             oldSelection: oldSelection,
             newSelection: [text.id]
         )
 
+        commandManager.execute(command)
+
         selectedTextIDs = [text.id]
         selectedObjectIDs = [text.id]
         selectedShapeIDs.removeAll()
         selectedLayerIndex = layerIndex
         syncSelectionArrays()
-
-        commandManager.execute(command)
     }
 
     func removeSelectedText() {
         let oldSelection = selectedObjectIDs
         let removedObjects = unifiedObjects.filter { obj in
-            if case .shape(let shape) = obj.objectType {
-                return selectedTextIDs.contains(shape.id) && shape.isTextObject
-            }
-            return false
-        }
-
-        for textID in selectedTextIDs {
-            for layerIndex in layers.indices {
-                removeShapesUnified(layerIndex: layerIndex, where: { $0.id == textID && $0.isTextObject })
-            }
-        }
-
-        unifiedObjects.removeAll { obj in
             if case .shape(let shape) = obj.objectType {
                 return selectedTextIDs.contains(shape.id) && shape.isTextObject
             }
@@ -87,9 +70,9 @@ extension VectorDocument {
             newSelection: []
         )
 
-        selectedTextIDs.removeAll()
-
         commandManager.execute(command)
+
+        selectedTextIDs.removeAll()
     }
 
     func duplicateSelectedText() {
@@ -100,7 +83,8 @@ extension VectorDocument {
         var duplicatedObjects: [VectorObject] = []
 
         for textID in selectedTextIDs {
-            if let originalText = findText(by: textID) {
+            if let originalText = findText(by: textID),
+               let obj = unifiedObjects.first(where: { $0.id == textID }) {
                 var duplicateText = originalText
                 duplicateText.id = UUID()
                 duplicateText.position = CGPoint(
@@ -108,12 +92,12 @@ extension VectorDocument {
                     y: originalText.position.y + 10
                 )
 
-                if let layerIndex = originalText.layerIndex ?? selectedLayerIndex {
-                    addTextToUnifiedSystem(duplicateText, layerIndex: layerIndex)
-                    if let obj = unifiedObjects.first(where: { $0.id == duplicateText.id }) {
-                        duplicatedObjects.append(obj)
-                    }
-                }
+                let shape = VectorShape.from(duplicateText)
+                let layerIndex = obj.layerIndex
+                let orderID = (unifiedObjects.filter { $0.layerIndex == layerIndex }.map { $0.orderID }.max() ?? -1) + 1
+
+                let newObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+                duplicatedObjects.append(newObject)
                 newTextIDs.insert(duplicateText.id)
             }
         }
@@ -124,9 +108,9 @@ extension VectorDocument {
             newSelection: newTextIDs
         )
 
-        selectedTextIDs = newTextIDs
-
         commandManager.execute(command)
+
+        selectedTextIDs = newTextIDs
     }
 
     func updateTextInUnified(_ updatedText: VectorText) {
@@ -146,13 +130,7 @@ extension VectorDocument {
     func convertSelectedTextToOutlines() {
         guard !selectedTextIDs.isEmpty else { return }
 
-        let oldSelection = selectedObjectIDs
-        let removedObjects = unifiedObjects.filter { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject && selectedTextIDs.contains(shape.id)
-            }
-            return false
-        }
+        saveToUndoStack()
 
         let selectedTexts = selectedTextIDs.compactMap { textID in findText(by: textID) }
         var newShapeIDs: Set<UUID> = []
@@ -181,8 +159,6 @@ extension VectorDocument {
         newShapeIDs = shapesAfterSet.subtracting(shapesBeforeSet)
 
         if !newShapeIDs.isEmpty {
-            let addedObjects = unifiedObjects.filter { newShapeIDs.contains($0.id) }
-
             unifiedObjects.removeAll { obj in
                 if case .shape(let shape) = obj.objectType {
                     return shape.isTextObject && selectedTextIDs.contains(shape.id)
@@ -190,22 +166,10 @@ extension VectorDocument {
                 return false
             }
 
-            let command = TextManagementCommand(
-                operation: .convertToOutlines(
-                    removedTextIDs: Array(selectedTextIDs),
-                    removedObjects: removedObjects,
-                    addedShapeIDs: Array(newShapeIDs),
-                    addedObjects: addedObjects
-                ),
-                oldSelection: oldSelection,
-                newSelection: newShapeIDs
-            )
-
             selectedTextIDs.removeAll()
             selectedShapeIDs = newShapeIDs
-            syncUnifiedSelectionFromLegacy()
 
-            commandManager.execute(command)
+            syncUnifiedSelectionFromLegacy()
         } else {
             Log.error("❌ TEXT TO OUTLINES FAILED: No new shapes were created", category: .error)
         }
