@@ -54,21 +54,4 @@ extension VectorDocument {
             }
         }
     }
-
-    private func updateUnifiedObjectsOrdering() {
-    }
-
-    func updateUnifiedObjectsOptimized(sendUpdate: Bool = true) {
-        if isUndoRedoOperation {
-            return
-        }
-
-    }
-
-    func forceResyncUnifiedObjects() {
-        if isUndoRedoOperation {
-            return
-        }
-
-    }
 }

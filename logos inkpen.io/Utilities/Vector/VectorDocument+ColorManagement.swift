@@ -174,10 +174,6 @@ extension VectorDocument {
                 hasChanges = true
             }
         }
-
-        if hasChanges {
-            updateUnifiedObjectsOptimized()
-        }
     }
 
     func removeColorSwatch(_ color: VectorColor) {
