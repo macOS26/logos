@@ -233,7 +233,7 @@ struct LayersPanel: View {
                             SwiftUI.LinearGradient(
                                 gradient: Gradient(colors: [
                                     Color(white: 1.0),
-                                    Color(white: 0.5)
+                                    Color(white: 0.0)
                                 ]),
                                 startPoint: .leading,
                                 endPoint: .trailing
