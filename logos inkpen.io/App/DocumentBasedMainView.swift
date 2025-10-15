@@ -227,8 +227,6 @@ struct DocumentBasedMainView: View {
                 showingImportProgress = false
 
                 if result.success {
-                    document.saveToUndoStack()
-
                     guard let layerIndex = document.selectedLayerIndex else { return }
                     var newShapeIDs: Set<UUID> = []
 
