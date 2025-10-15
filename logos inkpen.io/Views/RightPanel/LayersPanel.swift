@@ -227,7 +227,21 @@ struct LayersPanel: View {
                             Capsule()
                                 .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                         )
-
+                    
+                    Capsule()
+                        .fill(
+                            SwiftUI.LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color(white: 1.0),
+                                    Color(white: 0.5)
+                                ]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(height: 6)
+                        .allowsHitTesting(false)
+                    
                     Slider(
                         value: Binding(
                             get: { document.layers[layerIndex].opacity },
@@ -245,20 +259,6 @@ struct LayersPanel: View {
                     )
                     .controlSize(.regular)
                     .tint(Color.clear)
-
-                    Capsule()
-                        .fill(
-                            SwiftUI.LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color(white: 1.0),
-                                    Color(white: 0.5)
-                                ]),
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(height: 6)
-                        .allowsHitTesting(false)
                 }
                 .frame(maxWidth: .infinity)
 
