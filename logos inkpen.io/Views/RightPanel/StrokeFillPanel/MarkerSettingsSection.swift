@@ -30,17 +30,7 @@ struct MarkerSettingsSection: View {
                 Slider(value: Binding(
                     get: { document.currentMarkerTipSize },
                     set: { document.currentMarkerTipSize = $0 }
-                ), in: 1...50) {
-                    Text("Tip Size")
-                } minimumValueLabel: {
-                    Text("1")
-                        .font(.caption)
-                        .foregroundColor(Color.ui.secondaryText)
-                } maximumValueLabel: {
-                    Text("50")
-                        .font(.caption)
-                        .foregroundColor(Color.ui.secondaryText)
-                }
+                ), in: 1...50)
                 .controlSize(.regular)
                 .help("Adjust marker tip thickness (1-50 points)")
             }
@@ -60,17 +50,7 @@ struct MarkerSettingsSection: View {
                 Slider(value: Binding(
                     get: { document.currentMarkerOpacity },
                     set: { document.currentMarkerOpacity = $0 }
-                ), in: 0...1) {
-                    Text("Opacity")
-                } minimumValueLabel: {
-                    Text("0%")
-                        .font(.caption)
-                        .foregroundColor(Color.ui.secondaryText)
-                } maximumValueLabel: {
-                    Text("100%")
-                        .font(.caption)
-                        .foregroundColor(Color.ui.secondaryText)
-                }
+                ), in: 0...1)
                 .controlSize(.regular)
                 .help("Adjust marker ink opacity (0-100%)")
             }
@@ -107,17 +87,7 @@ struct MarkerSettingsSection: View {
                 Slider(value: Binding(
                     get: { document.currentMarkerSmoothingTolerance },
                     set: { document.currentMarkerSmoothingTolerance = $0 }
-                ), in: 0...100) {
-                    Text("Smoothing")
-                } minimumValueLabel: {
-                    Text("0%")
-                        .font(.caption)
-                        .foregroundColor(Color.ui.secondaryText)
-                } maximumValueLabel: {
-                    Text("100%")
-                        .font(.caption)
-                        .foregroundColor(Color.ui.secondaryText)
-                }
+                ), in: 0...100)
                 .controlSize(.regular)
                 .help("Smoothing amount - 0% = no smoothing (preserves exact shape), 100% = maximum smoothing")
             }
@@ -137,17 +107,7 @@ struct MarkerSettingsSection: View {
                 Slider(value: Binding(
                     get: { document.currentMarkerFeathering },
                     set: { document.currentMarkerFeathering = $0 }
-                ), in: 0...1) {
-                    Text("Feathering")
-                } minimumValueLabel: {
-                    Text("0%")
-                        .font(.caption)
-                        .foregroundColor(Color.ui.secondaryText)
-                } maximumValueLabel: {
-                    Text("100%")
-                        .font(.caption)
-                        .foregroundColor(Color.ui.secondaryText)
-                }
+                ), in: 0...1)
                 .controlSize(.regular)
                 .help("Edge softness for felt-tip marker appearance")
             }
@@ -167,17 +127,7 @@ struct MarkerSettingsSection: View {
                 Slider(value: Binding(
                     get: { document.currentMarkerTaperStart },
                     set: { document.currentMarkerTaperStart = $0 }
-                ), in: 0...0.5) {
-                    Text("Start Taper")
-                } minimumValueLabel: {
-                    Text("0%")
-                        .font(.caption)
-                        .foregroundColor(Color.ui.secondaryText)
-                } maximumValueLabel: {
-                    Text("50%")
-                        .font(.caption)
-                        .foregroundColor(Color.ui.secondaryText)
-                }
+                ), in: 0...0.5)
                 .controlSize(.regular)
                 .help("Thickness tapering at the start of marker strokes")
             }
@@ -197,17 +147,7 @@ struct MarkerSettingsSection: View {
                 Slider(value: Binding(
                     get: { document.currentMarkerTaperEnd },
                     set: { document.currentMarkerTaperEnd = $0 }
-                ), in: 0...0.5) {
-                    Text("End Taper")
-                } minimumValueLabel: {
-                    Text("0%")
-                        .font(.caption)
-                        .foregroundColor(Color.ui.secondaryText)
-                } maximumValueLabel: {
-                    Text("50%")
-                        .font(.caption)
-                        .foregroundColor(Color.ui.secondaryText)
-                }
+                ), in: 0...0.5)
                 .controlSize(.regular)
                 .help("Thickness tapering at the end of marker strokes")
             }
@@ -227,17 +167,7 @@ struct MarkerSettingsSection: View {
                 Slider(value: Binding(
                     get: { document.currentMarkerMinTaperThickness },
                     set: { document.currentMarkerMinTaperThickness = $0 }
-                ), in: 0...60) {
-                    Text("Min Taper Thickness")
-                } minimumValueLabel: {
-                    Text("0")
-                        .font(.caption)
-                        .foregroundColor(Color.ui.secondaryText)
-                } maximumValueLabel: {
-                    Text("60")
-                        .font(.caption)
-                        .foregroundColor(Color.ui.secondaryText)
-                }
+                ), in: 0...60)
                 .controlSize(.regular)
                 .help("Minimum thickness at taper ends (0-60 points)")
             }
