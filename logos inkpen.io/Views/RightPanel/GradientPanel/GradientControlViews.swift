@@ -229,9 +229,20 @@ struct GradientScaleControlView: View {
                         })
                         .controlSize(.regular)
 
-                        TextField("", text: createNaturalNumberBinding(
-                            getValue: { currentGradient.map { getScale($0) } ?? 1.0 },
-                            setValue: updateScale
+                        TextField("", text: Binding(
+                            get: {
+                                let scale = currentGradient.map { getScale($0) } ?? 1.0
+                                let percentage = scale * 100
+                                return percentage.truncatingRemainder(dividingBy: 1) == 0 ?
+                                    String(format: "%.0f", percentage) :
+                                    String(format: "%.1f", percentage)
+                            },
+                            set: { newValue in
+                                if let doubleValue = Double(newValue) {
+                                    let clamped = max(0, min(800, doubleValue))
+                                    updateScale(clamped / 100.0)
+                                }
+                            }
                         ))
                         .gradientTextField(width: 50)
                     }
