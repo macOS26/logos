@@ -33,13 +33,6 @@ struct FillPropertiesSection: View {
                                 .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                         )
 
-                    Slider(value: Binding(
-                        get: { fillOpacity },
-                        set: { onUpdateFillOpacity($0) }
-                    ), in: 0...1, onEditingChanged: onFillOpacityEditingChanged)
-                    .controlSize(.regular)
-                    .tint(Color.clear)
-
                     Capsule()
                         .fill(
                             SwiftUI.LinearGradient(
@@ -53,6 +46,13 @@ struct FillPropertiesSection: View {
                         )
                         .frame(height: 6)
                         .allowsHitTesting(false)
+                    
+                    Slider(value: Binding(
+                        get: { fillOpacity },
+                        set: { onUpdateFillOpacity($0) }
+                    ), in: 0...1, onEditingChanged: onFillOpacityEditingChanged)
+                    .controlSize(.regular)
+                    .tint(Color.clear)
                 }
             }
         }

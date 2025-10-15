@@ -24,7 +24,7 @@ struct StrokePropertiesSection: View {
                 .font(.headline)
                 .fontWeight(.medium)
 
-            VStack(spacing: 8) {
+            VStack(spacing: 0) {
                 HStack {
                     Text("Width")
                         .font(.caption)
@@ -42,7 +42,7 @@ struct StrokePropertiesSection: View {
                 .controlSize(.regular)
             }
 
-            VStack(spacing: 8) {
+            VStack(spacing: 0) {
                 HStack {
                     Text("Opacity")
                         .font(.caption)
@@ -62,13 +62,6 @@ struct StrokePropertiesSection: View {
                                 .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                         )
 
-                    Slider(value: Binding(
-                        get: { strokeOpacity },
-                        set: { onUpdateStrokeOpacity($0) }
-                    ), in: 0...1, onEditingChanged: onStrokeOpacityEditingChanged)
-                    .controlSize(.regular)
-                    .tint(Color.clear)
-
                     Capsule()
                         .fill(
                             SwiftUI.LinearGradient(
@@ -82,15 +75,24 @@ struct StrokePropertiesSection: View {
                         )
                         .frame(height: 6)
                         .allowsHitTesting(false)
+                    
+                    Slider(value: Binding(
+                        get: { strokeOpacity },
+                        set: { onUpdateStrokeOpacity($0) }
+                    ), in: 0...1, onEditingChanged: onStrokeOpacityEditingChanged)
+                    .controlSize(.regular)
+                    .tint(Color.clear)
+
+                  
                 }
             }
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 0) {
                 Text("Placement")
                     .font(.caption)
                     .foregroundColor(Color.ui.secondaryText)
 
-                Picker("Placement", selection: Binding(
+                Picker("", selection: Binding(
                     get: { strokePlacement },
                     set: { newPlacement in
                         // Update state FIRST for immediate UI update
