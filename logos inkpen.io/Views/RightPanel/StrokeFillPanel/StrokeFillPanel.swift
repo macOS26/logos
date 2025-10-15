@@ -649,7 +649,15 @@ struct StrokeFillPanel: View {
         strokePlacementCommitTask?.cancel()
 
         let commitTask = DispatchWorkItem {
-            self.document.saveToUndoStack()
+            var oldShapes: [UUID: VectorShape] = [:]
+            var objectIDs: [UUID] = []
+
+            for shapeID in activeShapeIDs {
+                if let shape = self.document.findShape(by: shapeID) {
+                    oldShapes[shapeID] = shape
+                    objectIDs.append(shapeID)
+                }
+            }
 
             for shapeID in activeShapeIDs {
                 for layerIndex in self.document.layers.indices {
@@ -677,6 +685,18 @@ struct StrokeFillPanel: View {
                         }
                     }
                 }
+            }
+
+            var newShapes: [UUID: VectorShape] = [:]
+            for shapeID in objectIDs {
+                if let shape = self.document.findShape(by: shapeID) {
+                    newShapes[shapeID] = shape
+                }
+            }
+
+            if !objectIDs.isEmpty {
+                let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
+                self.document.commandManager.execute(command)
             }
         }
 
