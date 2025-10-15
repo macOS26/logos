@@ -15,7 +15,7 @@ struct CheckerboardPattern: View {
                     ForEach(0..<cols, id: \.self) { col in
                         let isEven = (row + col) % 2 == 0
                                 Rectangle()
-                            .fill(isEven ? Color.white : Color(nsColor: .lightGray))
+                            .fill(isEven ? Color.white : Color(white: 0.8333))
                             .frame(width: tileSize, height: tileSize)
                             .position(
                                 x: CGFloat(col) * tileSize + tileSize / 2,
