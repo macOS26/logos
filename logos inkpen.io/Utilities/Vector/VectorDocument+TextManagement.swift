@@ -10,9 +10,8 @@ extension VectorDocument {
 
         let oldSelection = selectedObjectIDs
         let shape = VectorShape.from(text)
-        let orderID = (unifiedObjects.filter { $0.layerIndex == layerIndex }.map { $0.orderID }.max() ?? -1) + 1
         let command = TextManagementCommand(
-            operation: .addText(textID: text.id, shape: shape, layerIndex: layerIndex, orderID: orderID),
+            operation: .addText(textID: text.id, shape: shape, layerIndex: layerIndex),
             oldSelection: oldSelection,
             newSelection: [text.id]
         )
@@ -37,9 +36,8 @@ extension VectorDocument {
         modifiedText.layerIndex = layerIndex
 
         let shape = VectorShape.from(modifiedText)
-        let orderID = (unifiedObjects.filter { $0.layerIndex == layerIndex }.map { $0.orderID }.max() ?? -1) + 1
         let command = TextManagementCommand(
-            operation: .addText(textID: text.id, shape: shape, layerIndex: layerIndex, orderID: orderID),
+            operation: .addText(textID: text.id, shape: shape, layerIndex: layerIndex),
             oldSelection: oldSelection,
             newSelection: [text.id]
         )
@@ -92,8 +90,7 @@ extension VectorDocument {
 
                 let shape = VectorShape.from(duplicateText)
                 let layerIndex = obj.layerIndex
-                let orderID = (unifiedObjects.filter { $0.layerIndex == layerIndex }.map { $0.orderID }.max() ?? -1) + 1
-                let newObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+                let newObject = VectorObject(shape: shape, layerIndex: layerIndex)
                 duplicatedObjects.append(newObject)
                 newTextIDs.insert(duplicateText.id)
             }
@@ -118,7 +115,6 @@ extension VectorDocument {
             unifiedObjects[unifiedIndex] = VectorObject(
                 shape: updatedShape,
                 layerIndex: unifiedObjects[unifiedIndex].layerIndex,
-                orderID: unifiedObjects[unifiedIndex].orderID
             )
 
         }

@@ -3,37 +3,43 @@ import Combine
 
 class ObjectArrangementCommand: BaseCommand {
     private let affectedObjectIDs: [UUID]
-    private let oldOrderIDs: [UUID: Int]
-    private let newOrderIDs: [UUID: Int]
+    private let oldIndices: [UUID: Int]
+    private let newIndices: [UUID: Int]
 
     init(affectedObjectIDs: [UUID],
-         oldOrderIDs: [UUID: Int],
-         newOrderIDs: [UUID: Int]) {
+         oldIndices: [UUID: Int],
+         newIndices: [UUID: Int]) {
         self.affectedObjectIDs = affectedObjectIDs
-        self.oldOrderIDs = oldOrderIDs
-        self.newOrderIDs = newOrderIDs
+        self.oldIndices = oldIndices
+        self.newIndices = newIndices
     }
 
     override func execute(on document: VectorDocument) {
-        applyOrderIDs(newOrderIDs, to: document)
+        applyIndices(newIndices, to: document)
     }
 
     override func undo(on document: VectorDocument) {
-        applyOrderIDs(oldOrderIDs, to: document)
+        applyIndices(oldIndices, to: document)
     }
 
-    private func applyOrderIDs(_ orderIDs: [UUID: Int], to document: VectorDocument) {
-        for (id, orderID) in orderIDs {
-            if let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) {
-                let obj = document.unifiedObjects[index]
-                if case .shape(let shape) = obj.objectType {
-                    document.unifiedObjects[index] = VectorObject(
-                        shape: shape,
-                        layerIndex: obj.layerIndex,
-                        orderID: orderID
-                    )
-                }
+    private func applyIndices(_ targetIndices: [UUID: Int], to document: VectorDocument) {
+        var objects = document.unifiedObjects
+        var affectedObjects: [(UUID, VectorObject)] = []
+
+        for id in affectedObjectIDs {
+            if let index = objects.firstIndex(where: { $0.id == id }) {
+                affectedObjects.append((id, objects[index]))
+                objects.remove(at: index)
             }
         }
+
+        for (id, obj) in affectedObjects {
+            if let targetIndex = targetIndices[id] {
+                let insertIndex = min(targetIndex, objects.count)
+                objects.insert(obj, at: insertIndex)
+            }
+        }
+
+        document.unifiedObjects = objects
     }
 }

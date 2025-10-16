@@ -26,8 +26,7 @@ extension VectorDocument {
             }
             return false
         }) {
-            let orderID = unifiedObjects[index].orderID
-            unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+            unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
         }
     }
 
@@ -40,9 +39,8 @@ extension VectorDocument {
         }) {
             if case .shape(var shape) = unifiedObjects[index].objectType {
                 update(&shape)
-                let orderID = unifiedObjects[index].orderID
                 let layerIndex = unifiedObjects[index].layerIndex
-                unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+                unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
             }
             return
         }
@@ -55,9 +53,8 @@ extension VectorDocument {
                     update(&childShape)
                     groupShape.groupedShapes[childIndex] = childShape
 
-                    let orderID = unifiedObjects[groupIndex].orderID
                     let layerIndex = unifiedObjects[groupIndex].layerIndex
-                    unifiedObjects[groupIndex] = VectorObject(shape: groupShape, layerIndex: layerIndex, orderID: orderID)
+                    unifiedObjects[groupIndex] = VectorObject(shape: groupShape, layerIndex: layerIndex)
                     return
                 }
             }
@@ -65,19 +62,14 @@ extension VectorDocument {
     }
 
     func getShapesForLayer(_ layerIndex: Int) -> [VectorShape] {
+        // Array position IS the order now - no sorting needed
         return getObjectsInLayer(layerIndex)
-            .sorted { $0.orderID < $1.orderID }
             .compactMap { object -> VectorShape? in
                 if case .shape(let shape) = object.objectType {
                     return shape
                 }
                 return nil
             }
-    }
-
-    private func getNextOrderID(for layerIndex: Int) -> Int {
-        let existingOrderIDs = getObjectsInLayer(layerIndex).map { $0.orderID }
-        return existingOrderIDs.isEmpty ? 0 : (existingOrderIDs.max() ?? -1) + 1
     }
 
     func addShapeToUnifiedSystem(_ shape: VectorShape, layerIndex: Int) {
@@ -94,14 +86,13 @@ extension VectorDocument {
 
         if isUndoRedoOperation {
             if let existingObject = findObject(by: shape.id) {
-                let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: existingObject.orderID)
+                let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex)
                 unifiedObjects.append(unifiedObject)
                 return
             }
         }
 
-        let orderID = getNextOrderID(for: layerIndex)
-        let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+        let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex)
         unifiedObjects.append(unifiedObject)
     }
 
@@ -119,16 +110,13 @@ extension VectorDocument {
 
         if isUndoRedoOperation {
             if let existingObject = findObject(by: shape.id) {
-                let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: existingObject.orderID)
+                let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex)
                 unifiedObjects.append(unifiedObject)
                 return
             }
         }
 
-        let existingOrderIDs = getObjectsInLayer(layerIndex).map { $0.orderID }
-        let highestOrderID = existingOrderIDs.isEmpty ? 0 : (existingOrderIDs.max() ?? 0)
-        let orderID = highestOrderID + 1
-        let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+        let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex)
         unifiedObjects.append(unifiedObject)
     }
 
@@ -144,24 +132,25 @@ extension VectorDocument {
             unifiedObjects.remove(at: existingIndex)
         }
 
-        let layerObjects = getObjectsInLayer(layerIndex)
-        let targetOrderIDs = layerObjects.compactMap { unifiedObj -> Int? in
-            switch unifiedObj.objectType {
-            case .shape(let existingShape):
-                return behindShapeIDs.contains(existingShape.id) ? unifiedObj.orderID : nil
+        // Find the first object that should be "behind" (i.e., we insert before it)
+        var insertIndex: Int?
+        for (index, unifiedObj) in unifiedObjects.enumerated() {
+            if unifiedObj.layerIndex == layerIndex {
+                if case .shape(let existingShape) = unifiedObj.objectType {
+                    if behindShapeIDs.contains(existingShape.id) {
+                        insertIndex = index
+                        break
+                    }
+                }
             }
         }
 
-        let orderID: Int
-        if let minTargetOrderID = targetOrderIDs.min() {
-            orderID = minTargetOrderID - 1
+        let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex)
+        if let insertIndex = insertIndex {
+            unifiedObjects.insert(unifiedObject, at: insertIndex)
         } else {
-            let existingOrderIDs = layerObjects.map { $0.orderID }
-            orderID = (existingOrderIDs.min() ?? 0) - 1
+            unifiedObjects.append(unifiedObject)
         }
-
-        let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
-        unifiedObjects.append(unifiedObject)
     }
 
     func addTextToUnifiedSystem(_ text: VectorText, layerIndex: Int) {
@@ -183,14 +172,13 @@ extension VectorDocument {
 
         if isUndoRedoOperation {
             if let existingObject = findObject(by: text.id) {
-                let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex, orderID: existingObject.orderID)
+                let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex)
                 unifiedObjects.append(unifiedObject)
                 return
             }
         }
 
-        let orderID = getNextOrderID(for: layerIndex)
-        let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex, orderID: orderID)
+        let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex)
         unifiedObjects.append(unifiedObject)
 
     }

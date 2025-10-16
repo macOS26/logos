@@ -3,7 +3,7 @@ import Combine
 
 class TextManagementCommand: BaseCommand {
     enum Operation {
-        case addText(textID: UUID, shape: VectorShape, layerIndex: Int, orderID: Int)
+        case addText(textID: UUID, shape: VectorShape, layerIndex: Int)
         case removeText(textIDs: [UUID], removedObjects: [VectorObject])
         case duplicateText(originalIDs: [UUID], duplicatedObjects: [VectorObject])
         case convertToOutlines(removedTextIDs: [UUID], removedObjects: [VectorObject], addedShapeIDs: [UUID], addedObjects: [VectorObject])
@@ -21,8 +21,8 @@ class TextManagementCommand: BaseCommand {
 
     override func execute(on document: VectorDocument) {
         switch operation {
-        case .addText(let textID, let shape, let layerIndex, let orderID):
-            let newObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+        case .addText(let textID, let shape, let layerIndex):
+            let newObject = VectorObject(shape: shape, layerIndex: layerIndex)
             document.unifiedObjects.append(newObject)
             document.selectedObjectIDs = [textID]
             document.selectedTextIDs = [textID]

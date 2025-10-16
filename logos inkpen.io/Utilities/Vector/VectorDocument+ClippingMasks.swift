@@ -17,16 +17,13 @@ extension VectorDocument {
         let clippingGroup = VectorShape.group(from: groupShapes, name: "Clipping Group", isClippingGroup: true)
 
         var removedShapes: [UUID: VectorShape] = [:]
-        var removedOrderIDs: [UUID: Int] = [:]
         let objectsToRemove = unifiedObjects.filter { allSelectedIDs.contains($0.id) }
         for obj in objectsToRemove {
             if case .shape(let shape) = obj.objectType {
                 removedShapes[obj.id] = shape
-                removedOrderIDs[obj.id] = obj.orderID
             }
         }
 
-        let maxOrderID = objectsToRemove.map { $0.orderID }.max() ?? 0
         let newSelectedIDs: Set<UUID> = [clippingGroup.id]
 
         let command = GroupCommand(
@@ -34,10 +31,8 @@ extension VectorDocument {
             layerIndex: layerIndex,
             removedObjectIDs: Array(allSelectedIDs),
             removedShapes: removedShapes,
-            removedOrderIDs: removedOrderIDs,
             addedObjectIDs: [clippingGroup.id],
             addedShapes: [clippingGroup.id: clippingGroup],
-            addedOrderIDs: [clippingGroup.id: maxOrderID],
             oldSelectedObjectIDs: selectedObjectIDs,
             newSelectedObjectIDs: newSelectedIDs
         )

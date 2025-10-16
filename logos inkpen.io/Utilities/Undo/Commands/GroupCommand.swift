@@ -17,11 +17,9 @@ class GroupCommand: BaseCommand {
 
     private let removedObjectIDs: [UUID]
     private let removedShapes: [UUID: VectorShape]
-    private let removedOrderIDs: [UUID: Int]
 
     private let addedObjectIDs: [UUID]
     private let addedShapes: [UUID: VectorShape]
-    private let addedOrderIDs: [UUID: Int]
 
     private let oldSelectedObjectIDs: Set<UUID>
     private let newSelectedObjectIDs: Set<UUID>
@@ -30,20 +28,16 @@ class GroupCommand: BaseCommand {
          layerIndex: Int,
          removedObjectIDs: [UUID],
          removedShapes: [UUID: VectorShape],
-         removedOrderIDs: [UUID: Int],
          addedObjectIDs: [UUID],
          addedShapes: [UUID: VectorShape],
-         addedOrderIDs: [UUID: Int],
          oldSelectedObjectIDs: Set<UUID>,
          newSelectedObjectIDs: Set<UUID>) {
         self.operation = operation
         self.layerIndex = layerIndex
         self.removedObjectIDs = removedObjectIDs
         self.removedShapes = removedShapes
-        self.removedOrderIDs = removedOrderIDs
         self.addedObjectIDs = addedObjectIDs
         self.addedShapes = addedShapes
-        self.addedOrderIDs = addedOrderIDs
         self.oldSelectedObjectIDs = oldSelectedObjectIDs
         self.newSelectedObjectIDs = newSelectedObjectIDs
     }
@@ -52,12 +46,10 @@ class GroupCommand: BaseCommand {
         document.unifiedObjects.removeAll { removedObjectIDs.contains($0.id) }
 
         for objectID in addedObjectIDs {
-            guard let shape = addedShapes[objectID],
-                  let orderID = addedOrderIDs[objectID] else { continue }
+            guard let shape = addedShapes[objectID] else { continue }
             let newObject = VectorObject(
                 shape: shape,
-                layerIndex: layerIndex,
-                orderID: orderID
+                layerIndex: layerIndex
             )
             document.unifiedObjects.append(newObject)
         }
@@ -83,12 +75,10 @@ class GroupCommand: BaseCommand {
         document.unifiedObjects.removeAll { addedObjectIDs.contains($0.id) }
 
         for objectID in removedObjectIDs {
-            guard let shape = removedShapes[objectID],
-                  let orderID = removedOrderIDs[objectID] else { continue }
+            guard let shape = removedShapes[objectID] else { continue }
             let restoredObject = VectorObject(
                 shape: shape,
-                layerIndex: layerIndex,
-                orderID: orderID
+                layerIndex: layerIndex
             )
             document.unifiedObjects.append(restoredObject)
         }

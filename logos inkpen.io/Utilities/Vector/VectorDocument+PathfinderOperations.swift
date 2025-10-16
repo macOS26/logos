@@ -19,12 +19,8 @@ extension VectorDocument {
 
         guard let layerIndex = selectedLayerIndex else { return false }
         var oldShapes: [UUID: VectorShape] = [:]
-        var oldOrderIDs: [UUID: Int] = [:]
         for shape in selectedShapes {
             oldShapes[shape.id] = shape
-            if let obj = unifiedObjects.first(where: { $0.id == shape.id }) {
-                oldOrderIDs[shape.id] = obj.orderID
-            }
         }
 
         var resultShapes: [VectorShape] = []
@@ -318,12 +314,8 @@ extension VectorDocument {
         }
 
         var newShapes: [UUID: VectorShape] = [:]
-        var newOrderIDs: [UUID: Int] = [:]
         for shape in resultShapes {
             newShapes[shape.id] = shape
-            if let obj = unifiedObjects.first(where: { $0.id == shape.id }) {
-                newOrderIDs[shape.id] = obj.orderID
-            }
         }
 
         let command = GroupCommand(
@@ -331,10 +323,8 @@ extension VectorDocument {
             layerIndex: layerIndex,
             removedObjectIDs: Array(oldShapes.keys),
             removedShapes: oldShapes,
-            removedOrderIDs: oldOrderIDs,
             addedObjectIDs: Array(newShapes.keys),
             addedShapes: newShapes,
-            addedOrderIDs: newOrderIDs,
             oldSelectedObjectIDs: Set(oldShapes.keys),
             newSelectedObjectIDs: Set(newShapes.keys)
         )
