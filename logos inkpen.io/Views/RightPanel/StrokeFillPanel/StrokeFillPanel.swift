@@ -496,6 +496,11 @@ struct StrokeFillPanel: View {
         .onChange(of: document.selectedObjectIDs) { _, _ in
             syncOpacityStates()
         }
+        .onChange(of: document.unifiedObjects) { _, _ in
+            if !isDragging {
+                syncOpacityStates()
+            }
+        }
     }
 
     private func syncOpacityStates() {
