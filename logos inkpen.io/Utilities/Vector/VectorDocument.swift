@@ -35,22 +35,7 @@ class VectorDocument: ObservableObject, Codable {
     @Published var isDraggingLock: Bool = false
     @Published var processedLayersDuringDrag: Set<Int> = []
     @Published var processedObjectsDuringDrag: Set<UUID> = []
-    var rgbSwatches: [VectorColor] {
-        var swatches = ColorManager.shared.colorDefaults.rgbSwatches
-        swatches.append(contentsOf: customRgbSwatches)
-        return swatches
-    }
-    var cmykSwatches: [VectorColor] {
-        var swatches = ColorManager.shared.colorDefaults.cmykSwatches
-        swatches.append(contentsOf: customCmykSwatches)
-        return swatches
-    }
-    var hsbSwatches: [VectorColor] {
-        var swatches = ColorManager.shared.colorDefaults.hsbSwatches
-        swatches.append(contentsOf: customHsbSwatches)
-        return swatches
-    }
-    
+
     @Published var isHandleScalingActive = false
     @Published var unifiedObjects: [VectorObject] = [] {
         didSet {
@@ -76,17 +61,6 @@ class VectorDocument: ObservableObject, Codable {
 
     var textPreviewTypography: [UUID: TypographyProperties] = [:]
     var shapePreviewStyles: [UUID: (fillOpacity: Double?, strokeOpacity: Double?, strokeWidth: Double?)] = [:]
-    var allShapes: [VectorShape] {
-        return unifiedObjects.compactMap { unifiedObject in
-            if case .shape(let shape) = unifiedObject.objectType, !shape.isTextObject {
-                return shape
-            }
-            return nil
-        }
-    }
-    var allObjectsByLayer: [Int: [VectorObject]] {
-        return Dictionary(grouping: unifiedObjects) { $0.layerIndex }
-    }
 
     @Published var currentTool: DrawingTool = .brush {
         didSet {
@@ -186,44 +160,7 @@ class VectorDocument: ObservableObject, Codable {
     }()
     
     @Published var fontManager: FontManager = FontManager()
-    var defaultFillColor: VectorColor {
-        get { documentColorDefaults.fillColor }
-        set {
-            objectWillChange.send()
-            documentColorDefaults.fillColor = newValue
-            documentColorDefaults.saveToUserDefaults()
-        }
-    }
-    var defaultStrokeColor: VectorColor {
-        get { documentColorDefaults.strokeColor }
-        set {
-            objectWillChange.send()
-            documentColorDefaults.strokeColor = newValue
-            documentColorDefaults.saveToUserDefaults()
-        }
-    }
-    var defaultFillOpacity: Double {
-        get { documentColorDefaults.fillOpacity }
-        set {
-            documentColorDefaults.fillOpacity = newValue
-            documentColorDefaults.saveToUserDefaults()
-        }
-    }
-    var defaultStrokeOpacity: Double {
-        get { documentColorDefaults.strokeOpacity }
-        set {
-            documentColorDefaults.strokeOpacity = newValue
-            documentColorDefaults.saveToUserDefaults()
-        }
-    }
-    var defaultStrokeWidth: Double {
-        get { documentColorDefaults.strokeWidth }
-        set {
-            documentColorDefaults.strokeWidth = newValue
-            documentColorDefaults.saveToUserDefaults()
-        }
-    }
-    
+
     @Published var defaultStrokePlacement: StrokePlacement = .center {
         didSet { saveStrokeStyleDefaults() }
     }
@@ -389,9 +326,7 @@ class VectorDocument: ObservableObject, Codable {
         
         syncEncodableStorage()
     }
-    
-    deinit {}
-    
+
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let decodedSettings = try container.decode(DocumentSettings.self, forKey: .settings)
@@ -528,45 +463,7 @@ class VectorDocument: ObservableObject, Codable {
         }
         
         loadStrokeStyleDefaults()
-        
+
         migrateLegacyTextObjects()
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            guard let self = self else { return }
-            
-            var foundObjectToToggle = false
-            
-            for layerIndex in self.layers.indices {
-                let objects = self.unifiedObjects.filter { $0.layerIndex == layerIndex }
-                if let firstObject = objects.first {
-                    if case .shape(var shape) = firstObject.objectType {
-                        let wasVisible = shape.isVisible
-                        shape.isVisible = !wasVisible
-                        if let index = self.unifiedObjects.firstIndex(where: { $0.id == firstObject.id }) {
-                            self.unifiedObjects[index] = VectorObject(
-                                shape: shape,
-                                layerIndex: layerIndex,
-                                orderID: firstObject.orderID
-                            )
-                        }
-                        shape.isVisible = wasVisible
-                        if let index = self.unifiedObjects.firstIndex(where: { $0.id == firstObject.id }) {
-                            self.unifiedObjects[index] = VectorObject(
-                                shape: shape,
-                                layerIndex: layerIndex,
-                                orderID: firstObject.orderID
-                            )
-                        }
-                        foundObjectToToggle = true
-                        break
-                    }
-                }
-            }
-            
-            if !foundObjectToToggle {
-                self.objectWillChange.send()
-            }
-        }
     }
-    
 }

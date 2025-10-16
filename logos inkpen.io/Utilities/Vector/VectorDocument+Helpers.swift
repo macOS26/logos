@@ -1,6 +1,80 @@
 import SwiftUI
+import Combine
 
 extension VectorDocument {
+
+    var rgbSwatches: [VectorColor] {
+        var swatches = ColorManager.shared.colorDefaults.rgbSwatches
+        swatches.append(contentsOf: customRgbSwatches)
+        return swatches
+    }
+
+    var cmykSwatches: [VectorColor] {
+        var swatches = ColorManager.shared.colorDefaults.cmykSwatches
+        swatches.append(contentsOf: customCmykSwatches)
+        return swatches
+    }
+
+    var hsbSwatches: [VectorColor] {
+        var swatches = ColorManager.shared.colorDefaults.hsbSwatches
+        swatches.append(contentsOf: customHsbSwatches)
+        return swatches
+    }
+
+    var allShapes: [VectorShape] {
+        return unifiedObjects.compactMap { unifiedObject in
+            if case .shape(let shape) = unifiedObject.objectType, !shape.isTextObject {
+                return shape
+            }
+            return nil
+        }
+    }
+
+    var allObjectsByLayer: [Int: [VectorObject]] {
+        return Dictionary(grouping: unifiedObjects) { $0.layerIndex }
+    }
+
+    var defaultFillColor: VectorColor {
+        get { documentColorDefaults.fillColor }
+        set {
+            objectWillChange.send()
+            documentColorDefaults.fillColor = newValue
+            documentColorDefaults.saveToUserDefaults()
+        }
+    }
+
+    var defaultStrokeColor: VectorColor {
+        get { documentColorDefaults.strokeColor }
+        set {
+            objectWillChange.send()
+            documentColorDefaults.strokeColor = newValue
+            documentColorDefaults.saveToUserDefaults()
+        }
+    }
+
+    var defaultFillOpacity: Double {
+        get { documentColorDefaults.fillOpacity }
+        set {
+            documentColorDefaults.fillOpacity = newValue
+            documentColorDefaults.saveToUserDefaults()
+        }
+    }
+
+    var defaultStrokeOpacity: Double {
+        get { documentColorDefaults.strokeOpacity }
+        set {
+            documentColorDefaults.strokeOpacity = newValue
+            documentColorDefaults.saveToUserDefaults()
+        }
+    }
+
+    var defaultStrokeWidth: Double {
+        get { documentColorDefaults.strokeWidth }
+        set {
+            documentColorDefaults.strokeWidth = newValue
+            documentColorDefaults.saveToUserDefaults()
+        }
+    }
 
     func syncEncodableStorage() {
         _encodableSettings = settings
