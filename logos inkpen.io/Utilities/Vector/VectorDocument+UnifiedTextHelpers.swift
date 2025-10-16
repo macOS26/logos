@@ -4,12 +4,12 @@ extension VectorDocument {
 
     func lockTextInUnified(id: UUID) {
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject && shape.id == id
+            if case .text(let shape) = obj.objectType {
+                return shape.id == id
             }
             return false
         }) {
-            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+            if case .text(var shape) = unifiedObjects[objectIndex].objectType {
                 shape.isLocked = true
 
                 unifiedObjects[objectIndex] = VectorObject(
@@ -24,12 +24,12 @@ extension VectorDocument {
 
     func unlockTextInUnified(id: UUID) {
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject && shape.id == id
+            if case .text(let shape) = obj.objectType {
+                return shape.id == id
             }
             return false
         }) {
-            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+            if case .text(var shape) = unifiedObjects[objectIndex].objectType {
                 shape.isLocked = false
 
                 unifiedObjects[objectIndex] = VectorObject(
@@ -44,12 +44,12 @@ extension VectorDocument {
 
     func hideTextInUnified(id: UUID) {
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject && shape.id == id
+            if case .text(let shape) = obj.objectType {
+                return shape.id == id
             }
             return false
         }) {
-            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+            if case .text(var shape) = unifiedObjects[objectIndex].objectType {
                 shape.isVisible = false
 
                 unifiedObjects[objectIndex] = VectorObject(
@@ -64,12 +64,12 @@ extension VectorDocument {
 
     func showTextInUnified(id: UUID) {
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject && shape.id == id
+            if case .text(let shape) = obj.objectType {
+                return shape.id == id
             }
             return false
         }) {
-            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+            if case .text(var shape) = unifiedObjects[objectIndex].objectType {
                 shape.isVisible = true
 
                 unifiedObjects[objectIndex] = VectorObject(
@@ -108,7 +108,7 @@ extension VectorDocument {
 
     func translateAllTextInUnified(delta: CGPoint) {
         let textIDs = unifiedObjects.compactMap { obj -> UUID? in
-            if case .shape(let shape) = obj.objectType, shape.isTextObject {
+            if case .text(let shape) = obj.objectType {
                 return shape.id
             }
             return nil
@@ -127,13 +127,13 @@ extension VectorDocument {
 
     func updateTextLayerInUnified(id: UUID, layerIndex: Int) {
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject && shape.id == id
+            if case .text(let shape) = obj.objectType {
+                return shape.id == id
             }
             return false
         }) {
             let existingObject = unifiedObjects[objectIndex]
-            if case .shape(let shape) = existingObject.objectType {
+            if case .text(let shape) = existingObject.objectType {
 
                 unifiedObjects[objectIndex] = VectorObject(
                     shape: shape,
