@@ -3,7 +3,7 @@ import SwiftUI
 struct StrokePropertiesSection: View {
     @ObservedObject var document: VectorDocument
     let strokeWidth: Double
-    @Binding var strokePlacement: StrokePlacement
+    let strokePlacement: StrokePlacement
     let strokeOpacity: Double
     let strokeColor: VectorColor
     let strokeLineJoin: CGLineJoin
@@ -11,6 +11,7 @@ struct StrokePropertiesSection: View {
     let strokeMiterLimit: Double
     let onUpdateStrokeWidth: (Double) -> Void
     let onUpdateStrokeOpacity: (Double) -> Void
+    let onUpdateStrokePlacement: (StrokePlacement) -> Void
     let onUpdateLineJoin: (CGLineJoin) -> Void
     let onUpdateLineCap: (CGLineCap) -> Void
     let onUpdateMiterLimit: (Double) -> Void
@@ -93,19 +94,7 @@ struct StrokePropertiesSection: View {
                 Picker("", selection: Binding(
                     get: { strokePlacement },
                     set: { newPlacement in
-                        strokePlacement = newPlacement
-                        document.defaultStrokePlacement = newPlacement
-
-                        for objectID in document.selectedObjectIDs {
-                            if let unifiedObject = document.findObject(by: objectID) {
-                                switch unifiedObject.objectType {
-                                case .shape(let shape):
-                                    if !shape.isTextObject {
-                                        document.updateShapeStrokePlacementInUnified(id: shape.id, placement: newPlacement)
-                                    }
-                                }
-                            }
-                        }
+                        onUpdateStrokePlacement(newPlacement)
                     }
                 )) {
                     ForEach(StrokePlacement.allCases, id: \.self) { placement in

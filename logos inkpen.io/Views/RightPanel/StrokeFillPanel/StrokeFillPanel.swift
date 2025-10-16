@@ -286,7 +286,7 @@ struct StrokeFillPanel: View {
                     StrokePropertiesSection(
                         document: document,
                         strokeWidth: strokeWidthState,
-                        strokePlacement: $strokePlacementState,
+                        strokePlacement: strokePlacementState,
                         strokeOpacity: strokeOpacityState,
                         strokeColor: selectedStrokeColor,
                         strokeLineJoin: strokeLineJoin,
@@ -299,6 +299,10 @@ struct StrokeFillPanel: View {
                         onUpdateStrokeOpacity: { value in
                             strokeOpacityState = value
                             updateStrokeOpacityLive(value, isEditing: true)
+                        },
+                        onUpdateStrokePlacement: { value in
+                            strokePlacementState = value
+                            updateStrokePlacement(value)
                         },
                         onUpdateLineJoin: { value in
                             document.defaultStrokeLineJoin = value
