@@ -53,37 +53,9 @@ extension VectorObject: Codable {
         id = try container.decode(UUID.self, forKey: .id)
         layerIndex = try container.decode(Int.self, forKey: .layerIndex)
 
-        do {
-            let objectContainer = try container.nestedContainer(keyedBy: ObjectTypeCodingKeys.self, forKey: .objectType)
-
-            do {
-                let shape = try objectContainer.decode(VectorShape.self, forKey: .shape)
-                objectType = .shape(shape)
-            } catch let shapeError {
-                Log.error("❌ Failed to decode VectorShape - Error: \(shapeError)", category: .error)
-                if let decodingError = shapeError as? DecodingError {
-                    switch decodingError {
-                    case .typeMismatch(_, _):
-                        break
-                    case .valueNotFound(_, _):
-                        break
-                    case .keyNotFound(_, _):
-                        break
-                    case .dataCorrupted(_):
-                        break
-                    @unknown default:
-                        Log.error("   Unknown decoding error", category: .error)
-                    }
-                }
-                throw shapeError
-            }
-        } catch {
-            Log.error("❌ Failed to get nested container for objectType - Error: \(error)", category: .error)
-            throw DecodingError.dataCorrupted(DecodingError.Context(
-                codingPath: decoder.codingPath,
-                debugDescription: "Unable to decode VectorObject.objectType - \(error.localizedDescription)"
-            ))
-        }
+        let objectContainer = try container.nestedContainer(keyedBy: ObjectTypeCodingKeys.self, forKey: .objectType)
+        let shape = try objectContainer.decode(VectorShape.self, forKey: .shape)
+        objectType = .shape(shape)
     }
 
     private enum ObjectTypeCodingKeys: String, CodingKey {

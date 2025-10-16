@@ -60,7 +60,6 @@ class VectorDocument: ObservableObject, Codable {
     internal var objectsByLayerCache: [Int: [VectorObject]] = [:]
 
     var textPreviewTypography: [UUID: TypographyProperties] = [:]
-    var shapePreviewStyles: [UUID: (fillOpacity: Double?, strokeOpacity: Double?, strokeWidth: Double?)] = [:]
 
     @Published var currentTool: DrawingTool = .brush {
         didSet {
