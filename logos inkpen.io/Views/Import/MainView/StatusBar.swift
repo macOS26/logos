@@ -100,20 +100,23 @@ struct StatusBar: View {
         var combinedBounds: CGRect?
 
         for unifiedObject in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType,
-               !shape.isTextObject,
-               document.selectedShapeIDs.contains(shape.id) {
-                let shapeBounds = shape.bounds.applying(shape.transform)
-                if combinedBounds == nil {
-                    combinedBounds = shapeBounds
-                } else {
-                    combinedBounds = combinedBounds?.union(shapeBounds)
+            switch unifiedObject.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                if document.selectedShapeIDs.contains(shape.id) {
+                    let shapeBounds = shape.bounds.applying(shape.transform)
+                    if combinedBounds == nil {
+                        combinedBounds = shapeBounds
+                    } else {
+                        combinedBounds = combinedBounds?.union(shapeBounds)
+                    }
                 }
+            case .text:
+                continue
             }
         }
 
         for unifiedObject in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType, shape.isTextObject,
+            if case .text(let shape) = unifiedObject.objectType,
                document.selectedTextIDs.contains(shape.id),
                let textObj = VectorText.from(shape) {
                 let textBounds = CGRect(
