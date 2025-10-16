@@ -97,6 +97,12 @@ class VectorDocument: ObservableObject, Codable {
     @Published var currentBrushMinTaperThickness: Double = 0.5 {
         didSet { UserDefaults.standard.set(currentBrushMinTaperThickness, forKey: "brushMinTaperThickness") }
     }
+    @Published var currentBrushTaperStart: Double = 0.15 {
+        didSet { UserDefaults.standard.set(currentBrushTaperStart, forKey: "brushTaperStart") }
+    }
+    @Published var currentBrushTaperEnd: Double = 0.15 {
+        didSet { UserDefaults.standard.set(currentBrushTaperEnd, forKey: "brushTaperEnd") }
+    }
     @Published var hasPressureInput: Bool = false
     @Published var brushApplyNoStroke: Bool = true {
         didSet { UserDefaults.standard.set(brushApplyNoStroke, forKey: "brushApplyNoStroke") }
@@ -234,6 +240,8 @@ class VectorDocument: ObservableObject, Codable {
         
         self.currentBrushThickness = UserDefaults.standard.object(forKey: "brushThickness") as? Double ?? 20.0
         self.currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 5.0
+        self.currentBrushTaperStart = UserDefaults.standard.object(forKey: "brushTaperStart") as? Double ?? 0.15
+        self.currentBrushTaperEnd = UserDefaults.standard.object(forKey: "brushTaperEnd") as? Double ?? 0.15
 
         self.advancedSmoothingEnabled = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? false
         self.chaikinSmoothingIterations = UserDefaults.standard.object(forKey: "chaikinSmoothingIterations") as? Int ?? 1
@@ -395,6 +403,8 @@ class VectorDocument: ObservableObject, Codable {
         currentBrushThickness = UserDefaults.standard.object(forKey: "brushThickness") as? Double ?? 20.0
         currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 5.0
         currentBrushMinTaperThickness = UserDefaults.standard.object(forKey: "brushMinTaperThickness") as? Double ?? 0.5
+        currentBrushTaperStart = UserDefaults.standard.object(forKey: "brushTaperStart") as? Double ?? 0.15
+        currentBrushTaperEnd = UserDefaults.standard.object(forKey: "brushTaperEnd") as? Double ?? 0.15
 
         advancedSmoothingEnabled = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? false
         chaikinSmoothingIterations = UserDefaults.standard.object(forKey: "chaikinSmoothingIterations") as? Int ?? 1

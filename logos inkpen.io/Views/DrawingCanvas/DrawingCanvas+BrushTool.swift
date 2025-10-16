@@ -436,14 +436,15 @@ extension DrawingCanvas {
                 mappedPressure = getThicknessFromPressureCurve(pressure: closestPressure, curve: curve)
             }
 
-            let taperZone = 0.15
+            let taperStart = max(0.0, document.currentBrushTaperStart)
+            let taperEnd = max(0.0, document.currentBrushTaperEnd)
             var taperMultiplier = 1.0
 
-            if progress < taperZone {
-                let t = progress / taperZone
+            if taperStart > 0 && progress < taperStart {
+                let t = progress / taperStart
                 taperMultiplier = pow(t, 1.5)
-            } else if progress > (1.0 - taperZone) {
-                let t = (1.0 - progress) / taperZone
+            } else if taperEnd > 0 && progress > (1.0 - taperEnd) {
+                let t = (1.0 - progress) / taperEnd
                 taperMultiplier = pow(t, 1.5)
             }
 
@@ -537,14 +538,15 @@ extension DrawingCanvas {
                 mappedPressure = getThicknessFromPressureCurve(pressure: interpolatedPressure, curve: curve)
             }
 
-            let taperZone = 0.15
+            let taperStart = max(0.0, document.currentBrushTaperStart)
+            let taperEnd = max(0.0, document.currentBrushTaperEnd)
             var taperMultiplier = 1.0
 
-            if progress < taperZone {
-                let t = progress / taperZone
+            if taperStart > 0 && progress < taperStart {
+                let t = progress / taperStart
                 taperMultiplier = pow(t, 1.5)
-            } else if progress > (1.0 - taperZone) {
-                let t = (1.0 - progress) / taperZone
+            } else if taperEnd > 0 && progress > (1.0 - taperEnd) {
+                let t = (1.0 - progress) / taperEnd
                 taperMultiplier = pow(t, 1.5)
             }
 

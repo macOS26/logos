@@ -72,6 +72,46 @@ struct VariableStrokeSection: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
+                    Text("Taper Start")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.secondaryText)
+                    Spacer()
+                    Text("\(Int(document.currentBrushTaperStart * 100))%")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.primaryText)
+                        .monospacedDigit()
+                }
+
+                Slider(value: Binding(
+                    get: { document.currentBrushTaperStart },
+                    set: { document.currentBrushTaperStart = $0 }
+                ), in: 0...1)
+                .controlSize(.regular)
+                .help("Controls how much of the beginning tapers (0-100%)")
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Taper End")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.secondaryText)
+                    Spacer()
+                    Text("\(Int(document.currentBrushTaperEnd * 100))%")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.primaryText)
+                        .monospacedDigit()
+                }
+
+                Slider(value: Binding(
+                    get: { document.currentBrushTaperEnd },
+                    set: { document.currentBrushTaperEnd = $0 }
+                ), in: 0...1)
+                .controlSize(.regular)
+                .help("Controls how much of the end tapers (0-100%)")
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
                     Text("Min Taper Thickness")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
