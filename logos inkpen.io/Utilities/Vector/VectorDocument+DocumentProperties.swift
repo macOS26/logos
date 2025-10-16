@@ -37,8 +37,7 @@ extension VectorDocument {
         }
 
         for unifiedObj in unifiedObjects {
-            guard case .shape(let shape) = unifiedObj.objectType,
-                  shape.isTextObject,
+            guard case .text(let shape) = unifiedObj.objectType,
                   var textObj = VectorText.from(shape) else { continue }
             textObj.layerIndex = unifiedObj.layerIndex
             guard textObj.isVisible else { continue }
@@ -78,8 +77,7 @@ extension VectorDocument {
         }
 
         for unifiedObj in unifiedObjects {
-            guard case .shape(let shape) = unifiedObj.objectType,
-                  shape.isTextObject,
+            guard case .text(let shape) = unifiedObj.objectType,
                   var textObj = VectorText.from(shape),
                   textObj.isVisible else { continue }
             textObj.layerIndex = unifiedObj.layerIndex
