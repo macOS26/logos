@@ -341,7 +341,9 @@ extension VectorDocument {
 
         for object in unifiedObjects {
             if case .group(let shape) = object.objectType {
-                if let textShape = shape.groupedShapes.first(where: { $0.id == id && $0.isTextObject }),
+                if let textShape = shape.groupedShapes.first(where: { $0.id == id }),
+                   let childObject = findObject(by: textShape.id),
+                   case .text = childObject.objectType,
                    var vectorText = VectorText.from(textShape) {
                     vectorText.layerIndex = object.layerIndex
                     return vectorText
