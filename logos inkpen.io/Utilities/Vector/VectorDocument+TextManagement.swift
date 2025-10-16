@@ -54,8 +54,8 @@ extension VectorDocument {
     func removeSelectedText() {
         let oldSelection = selectedObjectIDs
         let removedObjects = unifiedObjects.filter { obj in
-            if case .shape(let shape) = obj.objectType {
-                return selectedTextIDs.contains(shape.id) && shape.isTextObject
+            if case .text(let shape) = obj.objectType {
+                return selectedTextIDs.contains(shape.id)
             }
             return false
         }
@@ -109,7 +109,7 @@ extension VectorDocument {
 
     func updateTextInUnified(_ updatedText: VectorText) {
         if let unifiedIndex = unifiedObjects.firstIndex(where: { $0.id == updatedText.id }),
-           case .shape(_) = unifiedObjects[unifiedIndex].objectType {
+           case .text(_) = unifiedObjects[unifiedIndex].objectType {
 
             let updatedShape = VectorShape.from(updatedText)
             unifiedObjects[unifiedIndex] = VectorObject(
@@ -126,10 +126,16 @@ extension VectorDocument {
         let selectedTexts = selectedTextIDs.compactMap { textID in findText(by: textID) }
         var newShapeIDs: Set<UUID> = []
         let shapesBefore = unifiedObjects.compactMap { obj -> UUID? in
-            if case .shape(let shape) = obj.objectType, !shape.isTextObject {
+            switch obj.objectType {
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 return shape.id
+            case .text:
+                return nil
             }
-            return nil
         }
         let shapesBeforeSet = Set(shapesBefore)
 
@@ -139,10 +145,16 @@ extension VectorDocument {
         }
 
         let shapesAfter = unifiedObjects.compactMap { obj -> UUID? in
-            if case .shape(let shape) = obj.objectType, !shape.isTextObject {
+            switch obj.objectType {
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 return shape.id
+            case .text:
+                return nil
             }
-            return nil
         }
         let shapesAfterSet = Set(shapesAfter)
 
@@ -150,8 +162,8 @@ extension VectorDocument {
 
         if !newShapeIDs.isEmpty {
             unifiedObjects.removeAll { obj in
-                if case .shape(let shape) = obj.objectType {
-                    return shape.isTextObject && selectedTextIDs.contains(shape.id)
+                if case .text(let shape) = obj.objectType {
+                    return selectedTextIDs.contains(shape.id)
                 }
                 return false
             }
