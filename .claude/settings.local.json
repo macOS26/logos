@@ -24,7 +24,8 @@
       "mcp__xcf-server__read_dir",
       "Bash(tee:*)",
       "mcp__xcf-server__build_project",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(xcrun xcodebuild:*)"
     ],
     "deny": [],
     "ask": []

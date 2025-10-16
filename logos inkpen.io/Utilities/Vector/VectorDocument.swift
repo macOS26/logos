@@ -20,7 +20,7 @@ class VectorDocument: ObservableObject, Codable {
             settings.strokeColor = documentColorDefaults.strokeColor
         }
     }
-
+    
     @Published var customRgbSwatches: [VectorColor] = [] {
         didSet { settings.customRgbSwatches = customRgbSwatches }
     }
@@ -30,7 +30,7 @@ class VectorDocument: ObservableObject, Codable {
     @Published var customHsbSwatches: [VectorColor] = [] {
         didSet { settings.customHsbSwatches = customHsbSwatches }
     }
-
+    
     @Published var isDraggingVisibility: Bool = false
     @Published var isDraggingLock: Bool = false
     @Published var processedLayersDuringDrag: Set<Int> = []
@@ -50,7 +50,7 @@ class VectorDocument: ObservableObject, Codable {
         swatches.append(contentsOf: customHsbSwatches)
         return swatches
     }
-
+    
     @Published var isHandleScalingActive = false
     @Published var unifiedObjects: [VectorObject] = [] {
         didSet {
@@ -67,22 +67,22 @@ class VectorDocument: ObservableObject, Codable {
             rebuildLayerCache()
         }
     }
-
+    
     private var unifiedObjectLookupCache: [UUID: VectorObject] = [:]
-
+    
     var cachedStackingOrder: [VectorObject]? = nil
-
+    
     private var objectsByLayerCache: [Int: [VectorObject]] = [:]
-
+    
     func rebuildLookupCache() {
         unifiedObjectLookupCache = Dictionary(uniqueKeysWithValues: unifiedObjects.map { ($0.id, $0) })
         rebuildLayerCache()
     }
-
+    
     private func rebuildLayerCache() {
         objectsByLayerCache = Dictionary(grouping: unifiedObjects, by: { $0.layerIndex })
     }
-
+    
     var textPreviewTypography: [UUID: TypographyProperties] = [:]
     var shapePreviewStyles: [UUID: (fillOpacity: Double?, strokeOpacity: Double?, strokeWidth: Double?)] = [:]
     var allShapes: [VectorShape] {
@@ -96,22 +96,22 @@ class VectorDocument: ObservableObject, Codable {
     var allObjectsByLayer: [Int: [VectorObject]] {
         return Dictionary(grouping: unifiedObjects) { $0.layerIndex }
     }
-
+    
     func findObject(by id: UUID) -> VectorObject? {
         return unifiedObjectLookupCache[id]
     }
-
+    
     func findObjectIndex(by id: UUID) -> Int? {
         return unifiedObjects.firstIndex(where: { $0.id == id })
     }
-
+    
     func findShape(by id: UUID) -> VectorShape? {
         guard let object = unifiedObjectLookupCache[id],
               case .shape(let shape) = object.objectType,
               !shape.isTextObject else { return nil }
         return shape
     }
-
+    
     func findText(by id: UUID) -> VectorText? {
         if let object = unifiedObjectLookupCache[id],
            case .shape(let shape) = object.objectType,
@@ -120,7 +120,7 @@ class VectorDocument: ObservableObject, Codable {
             vectorText.layerIndex = object.layerIndex
             return vectorText
         }
-
+        
         for object in unifiedObjects {
             if case .shape(let shape) = object.objectType, shape.isGroupContainer {
                 if let textShape = shape.groupedShapes.first(where: { $0.id == id && $0.isTextObject }),
@@ -130,14 +130,14 @@ class VectorDocument: ObservableObject, Codable {
                 }
             }
         }
-
+        
         return nil
     }
-
+    
     func getObjectsInLayer(_ layerIndex: Int) -> [VectorObject] {
         return objectsByLayerCache[layerIndex] ?? []
     }
-
+    
     func forEachTextInOrder(_ action: (VectorText) throws -> Void) rethrows {
         for unifiedObject in unifiedObjects.sorted(by: { $0.orderID < $1.orderID }) {
             if case .shape(let shape) = unifiedObject.objectType, shape.isTextObject,
@@ -146,7 +146,7 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
     }
-
+    
     func getShapesInLayer(_ layerIndex: Int) -> [VectorShape] {
         return allShapes.filter { shape in
             return unifiedObjects.first { obj in
@@ -157,11 +157,11 @@ class VectorDocument: ObservableObject, Codable {
             } != nil
         }
     }
-
+    
     @Published var currentTool: DrawingTool = .brush {
         didSet {
             UserDefaults.standard.set(currentTool.rawValue, forKey: "lastUsedTool")
-
+            
             if currentTool == .freehand && defaultStrokeColor == .clear {
                 defaultStrokeColor = defaultFillColor
             }
@@ -178,12 +178,12 @@ class VectorDocument: ObservableObject, Codable {
     @Published var scalePreviewDimensions: CGSize = .zero
     @Published var warpEnvelopeCorners: [UUID: [CGPoint]] = [:]
     @Published var warpBounds: [UUID: CGRect] = [:]
-
+    
     enum FreehandFillMode: String, CaseIterable {
         case fill = "Fill"
         case noFill = "No Fill"
     }
-
+    
     @Published var currentBrushThickness: Double = 20.0 {
         didSet { UserDefaults.standard.set(currentBrushThickness, forKey: "brushThickness") }
     }
@@ -206,14 +206,14 @@ class VectorDocument: ObservableObject, Codable {
     @Published var brushRemoveOverlap: Bool = true {
         didSet { UserDefaults.standard.set(brushRemoveOverlap, forKey: "brushRemoveOverlap") }
     }
-
+    
     @Published var advancedSmoothingEnabled: Bool {
         didSet { UserDefaults.standard.set(advancedSmoothingEnabled, forKey: "advancedSmoothingEnabled") }
     }
     @Published var chaikinSmoothingIterations: Int {
         didSet { UserDefaults.standard.set(chaikinSmoothingIterations, forKey: "chaikinSmoothingIterations") }
     }
-
+    
     @Published var freehandSmoothingTolerance: Double {
         didSet { UserDefaults.standard.set(freehandSmoothingTolerance, forKey: "freehandSmoothingTolerance") }
     }
@@ -235,7 +235,7 @@ class VectorDocument: ObservableObject, Codable {
     @Published var freehandClosePath: Bool = false {
         didSet { UserDefaults.standard.set(freehandClosePath, forKey: "freehandClosePath") }
     }
-
+    
     @Published var viewMode: ViewMode = .color
     @Published var zoomLevel: Double = 1.0
     @Published var canvasOffset: CGPoint = .zero
@@ -246,15 +246,15 @@ class VectorDocument: ObservableObject, Codable {
     @Published var snapToPoint: Bool = false
     @Published var gridSpacing: Double = 12.0
     @Published var backgroundColor: VectorColor = .white
-
+    
     internal var isUndoRedoOperation: Bool = false
-
+    
     lazy var commandManager: CommandManager = {
         let manager = CommandManager(maxStackSize: maxUndoStackSize)
         manager.document = self
         return manager
     }()
-
+    
     @Published var fontManager: FontManager = FontManager()
     var defaultFillColor: VectorColor {
         get { documentColorDefaults.fillColor }
@@ -293,7 +293,7 @@ class VectorDocument: ObservableObject, Codable {
             documentColorDefaults.saveToUserDefaults()
         }
     }
-
+    
     @Published var defaultStrokePlacement: StrokePlacement = .center {
         didSet { saveStrokeStyleDefaults() }
     }
@@ -306,13 +306,13 @@ class VectorDocument: ObservableObject, Codable {
     @Published var defaultStrokeMiterLimit: Double = 10.0 {
         didSet { saveStrokeStyleDefaults() }
     }
-
+    
     @Published var activeColorTarget: ColorTarget = .fill
     @Published var colorChangeNotification: UUID = UUID()
     @Published var lastColorChangeType: ColorChangeType = .fillOpacity
-
+    
     internal let maxUndoStackSize = 50
-
+    
     @Published var currentMarkerSmoothingTolerance: Double {
         didSet { UserDefaults.standard.set(currentMarkerSmoothingTolerance, forKey: "markerSmoothingTolerance") }
     }
@@ -343,9 +343,9 @@ class VectorDocument: ObservableObject, Codable {
     @Published var markerRemoveOverlap: Bool {
         didSet { UserDefaults.standard.set(markerRemoveOverlap, forKey: "markerRemoveOverlap") }
     }
-
+    
     @Published var originalHandlePositions: [String: VectorPoint] = [:]
-
+    
     internal var _encodableSettings: DocumentSettings
     internal var _encodableLayers: [VectorLayer]
     internal var _encodableCurrentTool: DrawingTool
@@ -353,7 +353,7 @@ class VectorDocument: ObservableObject, Codable {
     internal var _encodableZoomLevel: Double
     internal var _encodableCanvasOffset: CGPoint
     internal var _encodableUnifiedObjects: [VectorObject]
-
+    
     init(settings: DocumentSettings = DocumentSettings()) {
         self._encodableSettings = settings
         self._encodableLayers = []
@@ -362,22 +362,22 @@ class VectorDocument: ObservableObject, Codable {
         self._encodableZoomLevel = 1.0
         self._encodableCanvasOffset = .zero
         self._encodableUnifiedObjects = []
-
+        
         self.settings = settings
-
+        
         self.documentColorDefaults = ColorDefaults()
-
+        
         self.customRgbSwatches = []
         self.customCmykSwatches = []
         self.customHsbSwatches = []
-
+        
         self.currentBrushThickness = UserDefaults.standard.object(forKey: "brushThickness") as? Double ?? 20.0
         self.currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 5.0
         self.currentBrushSimplification = UserDefaults.standard.object(forKey: "brushSimplification") as? Double ?? 50.0
-
+        
         self.advancedSmoothingEnabled = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? false
         self.chaikinSmoothingIterations = UserDefaults.standard.object(forKey: "chaikinSmoothingIterations") as? Int ?? 1
-
+        
         self.freehandSmoothingTolerance = UserDefaults.standard.object(forKey: "freehandSmoothingTolerance") as? Double ?? 2.0
         self.realTimeSmoothingEnabled = UserDefaults.standard.object(forKey: "realTimeSmoothingEnabled") as? Bool ?? true
         self.realTimeSmoothingStrength = UserDefaults.standard.object(forKey: "realTimeSmoothingStrength") as? Double ?? 0.3
@@ -385,7 +385,7 @@ class VectorDocument: ObservableObject, Codable {
         self.freehandFillMode = FreehandFillMode(rawValue: UserDefaults.standard.string(forKey: "freehandFillMode") ?? "No Fill") ?? .noFill
         self.freehandExpandStroke = UserDefaults.standard.object(forKey: "freehandExpandStroke") as? Bool ?? false
         self.freehandClosePath = UserDefaults.standard.object(forKey: "freehandClosePath") as? Bool ?? false
-
+        
         self.currentMarkerSmoothingTolerance = UserDefaults.standard.object(forKey: "markerSmoothingTolerance") as? Double ?? 20.0
         self.currentMarkerTipSize = UserDefaults.standard.object(forKey: "markerTipSize") as? Double ?? 31.0
         self.currentMarkerOpacity = UserDefaults.standard.object(forKey: "markerOpacity") as? Double ?? 1.0
@@ -396,13 +396,13 @@ class VectorDocument: ObservableObject, Codable {
         self.markerUseFillAsStroke = UserDefaults.standard.object(forKey: "markerUseFillAsStroke") as? Bool ?? true
         self.markerApplyNoStroke = UserDefaults.standard.object(forKey: "markerApplyNoStroke") as? Bool ?? false
         self.markerRemoveOverlap = UserDefaults.standard.object(forKey: "markerRemoveOverlap") as? Bool ?? true
-
+        
         loadStrokeStyleDefaults()
-
+        
         self.selectedLayerIndex = nil
         self.selectedShapeIDs = []
         self.selectedTextIDs = []
-
+        
         if let lastToolRaw = UserDefaults.standard.string(forKey: "lastUsedTool"),
            let lastTool = DrawingTool(rawValue: lastToolRaw) {
             self.currentTool = lastTool
@@ -419,34 +419,34 @@ class VectorDocument: ObservableObject, Codable {
         self.snapToPoint = settings.snapToPoint
         self.gridSpacing = settings.gridSpacing
         self.backgroundColor = settings.backgroundColor
-
+        
         createCanvasAndWorkingLayers()
-
+        
         populateUnifiedObjectsFromLayersPreservingOrder()
-
+        
         self.selectedLayerIndex = 2
         self.layerIndex = 2
-
+        
         if layers.count > 2 {
             let workingLayer = layers[2]
             self.settings.selectedLayerId = workingLayer.id
             self.settings.selectedLayerName = workingLayer.name
         }
-
+        
         setupSettingsObservation()
-
+        
         if let fillColor = settings.fillColor {
             self.documentColorDefaults.fillColor = fillColor
         } else {
             self.documentColorDefaults.fillColor = ColorManager.shared.colorDefaults.fillColor
         }
-
+        
         if let strokeColor = settings.strokeColor {
             self.documentColorDefaults.strokeColor = strokeColor
         } else {
             self.documentColorDefaults.strokeColor = ColorManager.shared.colorDefaults.strokeColor
         }
-
+        
         if let rgbSwatches = settings.customRgbSwatches {
             self.customRgbSwatches = rgbSwatches
         }
@@ -456,12 +456,12 @@ class VectorDocument: ObservableObject, Codable {
         if let hsbSwatches = settings.customHsbSwatches {
             self.customHsbSwatches = hsbSwatches
         }
-
+        
         syncEncodableStorage()
     }
-
+    
     deinit {}
-
+    
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let decodedSettings = try container.decode(DocumentSettings.self, forKey: .settings)
@@ -471,7 +471,7 @@ class VectorDocument: ObservableObject, Codable {
         let decodedZoomLevel = try container.decode(Double.self, forKey: .zoomLevel)
         let decodedCanvasOffset = try container.decode(CGPoint.self, forKey: .canvasOffset)
         let decodedUnifiedObjects = try container.decodeIfPresent([VectorObject].self, forKey: .unifiedObjects) ?? []
-
+        
         _encodableSettings = decodedSettings
         _encodableLayers = decodedLayers
         _encodableCurrentTool = decodedCurrentTool
@@ -479,23 +479,23 @@ class VectorDocument: ObservableObject, Codable {
         _encodableZoomLevel = decodedZoomLevel
         _encodableCanvasOffset = decodedCanvasOffset
         _encodableUnifiedObjects = decodedUnifiedObjects
-
+        
         settings = decodedSettings
         layers = decodedLayers
         layerIndex = 0
-
+        
         documentColorDefaults = ColorDefaults()
         customRgbSwatches = []
         customCmykSwatches = []
         customHsbSwatches = []
-
+        
         selectedLayerIndex = try? container.decodeIfPresent(Int.self, forKey: .selectedLayerIndex)
         selectedShapeIDs = (try? container.decodeIfPresent(Set<UUID>.self, forKey: .selectedShapeIDs)) ?? []
         selectedTextIDs = (try? container.decodeIfPresent(Set<UUID>.self, forKey: .selectedTextIDs)) ?? []
         selectedObjectIDs = (try? container.decodeIfPresent(Set<UUID>.self, forKey: .selectedObjectIDs)) ?? []
         directSelectedShapeIDs = []
         isHandleScalingActive = false
-
+        
         currentTool = decodedCurrentTool
         scalingAnchor = .center
         rotationAnchor = .center
@@ -508,41 +508,41 @@ class VectorDocument: ObservableObject, Codable {
         scalePreviewDimensions = .zero
         warpEnvelopeCorners = (try? container.decodeIfPresent([UUID: [CGPoint]].self, forKey: .warpEnvelopeCorners)) ?? [:]
         warpBounds = (try? container.decodeIfPresent([UUID: CGRect].self, forKey: .warpBounds)) ?? [:]
-
+        
         viewMode = decodedViewMode
         zoomLevel = decodedZoomLevel
         canvasOffset = decodedCanvasOffset
         zoomRequest = nil
-
+        
         isUndoRedoOperation = false
         fontManager = FontManager()
-
+        
         unifiedObjects = decodedUnifiedObjects
-
+        
         defaultStrokePlacement = .center
         defaultStrokeLineJoin = .miter
         defaultStrokeLineCap = .butt
         defaultStrokeMiterLimit = 10.0
-
+        
         hasPressureInput = false
         brushApplyNoStroke = UserDefaults.standard.object(forKey: "brushApplyNoStroke") as? Bool ?? true
         brushRemoveOverlap = UserDefaults.standard.object(forKey: "brushRemoveOverlap") as? Bool ?? true
-
+        
         activeColorTarget = .fill
         colorChangeNotification = UUID()
         lastColorChangeType = .fillOpacity
-
+        
         originalHandlePositions = [:]
-
+        
         currentBrushThickness = UserDefaults.standard.object(forKey: "brushThickness") as? Double ?? 20.0
         currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 5.0
         currentBrushLiquid = UserDefaults.standard.object(forKey: "brushLiquid") as? Double ?? 0.0
         currentBrushMinTaperThickness = UserDefaults.standard.object(forKey: "brushMinTaperThickness") as? Double ?? 0.5
         currentBrushSimplification = UserDefaults.standard.object(forKey: "brushSimplification") as? Double ?? 50.0
-
+        
         advancedSmoothingEnabled = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? false
         chaikinSmoothingIterations = UserDefaults.standard.object(forKey: "chaikinSmoothingIterations") as? Int ?? 1
-
+        
         freehandSmoothingTolerance = UserDefaults.standard.object(forKey: "freehandSmoothingTolerance") as? Double ?? 2.0
         realTimeSmoothingEnabled = UserDefaults.standard.object(forKey: "realTimeSmoothingEnabled") as? Bool ?? true
         realTimeSmoothingStrength = UserDefaults.standard.object(forKey: "realTimeSmoothingStrength") as? Double ?? 0.3
@@ -550,7 +550,7 @@ class VectorDocument: ObservableObject, Codable {
         freehandFillMode = FreehandFillMode(rawValue: UserDefaults.standard.string(forKey: "freehandFillMode") ?? "No Fill") ?? .noFill
         freehandExpandStroke = UserDefaults.standard.object(forKey: "freehandExpandStroke") as? Bool ?? false
         freehandClosePath = UserDefaults.standard.object(forKey: "freehandClosePath") as? Bool ?? false
-
+        
         currentMarkerSmoothingTolerance = UserDefaults.standard.object(forKey: "markerSmoothingTolerance") as? Double ?? 20.0
         currentMarkerTipSize = UserDefaults.standard.object(forKey: "markerTipSize") as? Double ?? 31.0
         currentMarkerOpacity = UserDefaults.standard.object(forKey: "markerOpacity") as? Double ?? 1.0
@@ -561,32 +561,32 @@ class VectorDocument: ObservableObject, Codable {
         markerUseFillAsStroke = UserDefaults.standard.object(forKey: "markerUseFillAsStroke") as? Bool ?? true
         markerApplyNoStroke = UserDefaults.standard.object(forKey: "markerApplyNoStroke") as? Bool ?? false
         markerRemoveOverlap = UserDefaults.standard.object(forKey: "markerRemoveOverlap") as? Bool ?? true
-
+        
         showRulers = settings.showRulers
         showGrid = settings.showGrid
         snapToGrid = settings.snapToGrid
         snapToPoint = settings.snapToPoint
         gridSpacing = settings.gridSpacing
         backgroundColor = settings.backgroundColor
-
+        
         if unifiedObjects.isEmpty {
             populateUnifiedObjectsFromLayersPreservingOrder()
         }
-
+        
         validateSelectedLayer()
-
+        
         if let fillColor = settings.fillColor {
             documentColorDefaults.fillColor = fillColor
         } else {
             documentColorDefaults.fillColor = ColorManager.shared.colorDefaults.fillColor
         }
-
+        
         if let strokeColor = settings.strokeColor {
             documentColorDefaults.strokeColor = strokeColor
         } else {
             documentColorDefaults.strokeColor = ColorManager.shared.colorDefaults.strokeColor
         }
-
+        
         if let rgbSwatches = settings.customRgbSwatches {
             customRgbSwatches = rgbSwatches
         }
@@ -596,16 +596,16 @@ class VectorDocument: ObservableObject, Codable {
         if let hsbSwatches = settings.customHsbSwatches {
             customHsbSwatches = hsbSwatches
         }
-
+        
         loadStrokeStyleDefaults()
-
+        
         migrateLegacyTextObjects()
-
+        
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             guard let self = self else { return }
-
+            
             var foundObjectToToggle = false
-
+            
             for layerIndex in self.layers.indices {
                 let objects = self.unifiedObjects.filter { $0.layerIndex == layerIndex }
                 if let firstObject = objects.first {
@@ -628,15 +628,15 @@ class VectorDocument: ObservableObject, Codable {
                             )
                         }
                         foundObjectToToggle = true
-break
+                        break
                     }
                 }
             }
-
+            
             if !foundObjectToToggle {
                 self.objectWillChange.send()
             }
         }
     }
-
+    
 }
