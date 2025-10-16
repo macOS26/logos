@@ -25,10 +25,13 @@ class TextEditCommand: BaseCommand {
         if let index = document.unifiedObjects.firstIndex(where: { $0.id == textID }) {
             var obj = document.unifiedObjects[index]
 
-            if case .shape(var shape) = obj.objectType, shape.isTextObject {
+            switch obj.objectType {
+            case .text(var shape):
                 shape.textContent = content
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
+            case .shape, .warp, .group, .clipGroup, .clipMask:
+                break
             }
         }
 
