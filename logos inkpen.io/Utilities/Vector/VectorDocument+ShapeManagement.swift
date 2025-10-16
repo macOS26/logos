@@ -1,16 +1,10 @@
 import SwiftUI
 
 extension VectorDocument {
-    private func getNextOrderIDForLayer(_ layerIndex: Int) -> Int {
-        let existingOrderIDs = getObjectsInLayer(layerIndex).map { $0.orderID }
-        return existingOrderIDs.isEmpty ? 0 : (existingOrderIDs.max() ?? -1) + 1
-    }
-
     func addShape(_ shape: VectorShape) {
         guard let layerIndex = selectedLayerIndex else { return }
 
-        let orderID = getNextOrderIDForLayer(layerIndex)
-        let obj = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+        let obj = VectorObject(shape: shape, layerIndex: layerIndex)
         let command = AddObjectCommand(object: obj)
         executeCommand(command)
 
@@ -22,11 +16,7 @@ extension VectorDocument {
     func addShapeToFront(_ shape: VectorShape) {
         guard let layerIndex = selectedLayerIndex else { return }
 
-        let layerObjects = getObjectsInLayer(layerIndex)
-        let existingOrderIDs = layerObjects.map { $0.orderID }
-        let highestOrderID = existingOrderIDs.isEmpty ? 0 : (existingOrderIDs.max() ?? 0)
-        let orderID = highestOrderID + 1
-        let obj = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+        let obj = VectorObject(shape: shape, layerIndex: layerIndex)
 
         let command = AddObjectCommand(object: obj)
         executeCommand(command)
@@ -39,8 +29,7 @@ extension VectorDocument {
     func addShape(_ shape: VectorShape, to layerIndex: Int) {
         guard layerIndex >= 0 && layerIndex < layers.count else { return }
 
-        let orderID = getNextOrderIDForLayer(layerIndex)
-        let obj = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+        let obj = VectorObject(shape: shape, layerIndex: layerIndex)
         let command = AddObjectCommand(object: obj)
         executeCommand(command)
     }
@@ -169,6 +158,7 @@ extension VectorDocument {
             return cached
         }
 
+        // Array position IS the stacking order now
         let result = unifiedObjects
             .filter { object in
                 guard object.isVisible else { return false }
@@ -176,30 +166,19 @@ extension VectorDocument {
                 let layer = layers[object.layerIndex]
                 return layer.isVisible
             }
-            .sorted { obj1, obj2 in
-                if obj1.layerIndex != obj2.layerIndex {
-                    return obj1.layerIndex < obj2.layerIndex
-                }
-                return obj1.orderID < obj2.orderID
-            }
 
         cachedStackingOrder = result
         return result
     }
 
     func getSelectedShapesInStackingOrder() -> [VectorShape] {
+        // Array position IS the stacking order now
         let sortedSelectedObjects = unifiedObjects
             .filter { object in
                 if case .shape(let shape) = object.objectType {
                     return selectedShapeIDs.contains(shape.id)
                 }
                 return false
-            }
-            .sorted { obj1, obj2 in
-                if obj1.layerIndex != obj2.layerIndex {
-                    return obj1.layerIndex < obj2.layerIndex
-                }
-                return obj1.orderID < obj2.orderID
             }
 
         return sortedSelectedObjects.compactMap { obj in

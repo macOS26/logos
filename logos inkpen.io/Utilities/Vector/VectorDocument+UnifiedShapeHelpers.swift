@@ -17,7 +17,7 @@ extension VectorDocument {
                 } else {
                     shape.fillStyle?.color = color
                 }
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
+                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
                 unifiedObjects[index] = updatedObject
             }
         }
@@ -37,7 +37,7 @@ extension VectorDocument {
                 } else {
                     shape.strokeStyle?.color = color
                 }
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
+                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
                 unifiedObjects[index] = updatedObject
             }
         }
@@ -57,7 +57,7 @@ extension VectorDocument {
                 } else {
                     shape.fillStyle?.opacity = opacity
                 }
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
+                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
                 unifiedObjects[index] = updatedObject
             }
         }
@@ -77,7 +77,7 @@ extension VectorDocument {
                 } else {
                     shape.strokeStyle?.width = width
                 }
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
+                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
                 unifiedObjects[index] = updatedObject
             }
         }
@@ -93,7 +93,7 @@ extension VectorDocument {
             var updatedObject = unifiedObjects[index]
             if case .shape(var shape) = updatedObject.objectType {
                 shape.isLocked = true
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
+                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
                 unifiedObjects[index] = updatedObject
             }
         }
@@ -109,7 +109,7 @@ extension VectorDocument {
             var updatedObject = unifiedObjects[index]
             if case .shape(var shape) = updatedObject.objectType {
                 shape.isLocked = false
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
+                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
                 unifiedObjects[index] = updatedObject
             }
         }
@@ -125,7 +125,7 @@ extension VectorDocument {
             var updatedObject = unifiedObjects[index]
             if case .shape(var shape) = updatedObject.objectType {
                 shape.isVisible = false
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
+                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
                 unifiedObjects[index] = updatedObject
             }
         }
@@ -141,7 +141,7 @@ extension VectorDocument {
             var updatedObject = unifiedObjects[index]
             if case .shape(var shape) = updatedObject.objectType {
                 shape.isVisible = true
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
+                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
                 unifiedObjects[index] = updatedObject
             }
         }
@@ -161,7 +161,7 @@ extension VectorDocument {
                 } else {
                     shape.strokeStyle?.opacity = opacity
                 }
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
+                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
                 unifiedObjects[index] = updatedObject
             }
         }
@@ -177,7 +177,7 @@ extension VectorDocument {
             var updatedObject = unifiedObjects[index]
             if case .shape(var shape) = updatedObject.objectType {
                 shape.opacity = opacity
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
+                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
                 unifiedObjects[index] = updatedObject
             }
         }
@@ -197,7 +197,7 @@ extension VectorDocument {
                 } else {
                     shape.strokeStyle?.placement = placement
                 }
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex, orderID: updatedObject.orderID)
+                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
                 unifiedObjects[index] = updatedObject
 
                 NotificationCenter.default.post(

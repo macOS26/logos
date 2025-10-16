@@ -1016,7 +1016,7 @@ class ClipboardManager {
 
             for shape in clipboardData.shapes {
                 let newShape = regenerateUUIDs(for: shape)
-                let unifiedObject = VectorObject(shape: newShape, layerIndex: layerIndex, orderID: nextOrderID)
+                let unifiedObject = VectorObject(shape: newShape, layerIndex: layerIndex)
                 objectsToAdd.append(unifiedObject)
                 document.selectedObjectIDs.insert(newShape.id)
                 nextOrderID += 1
@@ -1027,7 +1027,7 @@ class ClipboardManager {
                 newText.id = UUID()
                 newText.layerIndex = layerIndex
                 let textShape = VectorShape.from(newText)
-                let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex, orderID: nextOrderID)
+                let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex)
                 objectsToAdd.append(unifiedObject)
                 document.selectedObjectIDs.insert(newText.id)
                 nextOrderID += 1
@@ -1085,7 +1085,7 @@ class ClipboardManager {
                     let newOrderID = obj.orderID + numNewObjects
                     switch obj.objectType {
                     case .shape(let shape):
-                        let newObj = VectorObject(shape: shape, layerIndex: obj.layerIndex, orderID: newOrderID)
+                        let newObj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                         updatedUnifiedObjects.append(newObj)
                     }
                 } else {
@@ -1099,7 +1099,7 @@ class ClipboardManager {
 
             for shape in clipboardData.shapes {
                 let newShape = regenerateUUIDs(for: shape)
-                let unifiedObject = VectorObject(shape: newShape, layerIndex: layerIndex, orderID: currentOrderID)
+                let unifiedObject = VectorObject(shape: newShape, layerIndex: layerIndex)
                 objectsToAdd.append(unifiedObject)
                 document.selectedObjectIDs.insert(newShape.id)
                 currentOrderID += 1
@@ -1110,7 +1110,7 @@ class ClipboardManager {
                 newText.id = UUID()
                 newText.layerIndex = layerIndex
                 let textShape = VectorShape.from(newText)
-                let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex, orderID: currentOrderID)
+                let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex)
                 objectsToAdd.append(unifiedObject)
                 document.selectedObjectIDs.insert(newText.id)
                 currentOrderID += 1

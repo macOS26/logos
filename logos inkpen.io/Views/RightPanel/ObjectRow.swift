@@ -172,7 +172,6 @@ struct ObjectRow: View {
                         document.unifiedObjects[objIndex] = VectorObject(
                             shape: parentShape,
                             layerIndex: layerIndex,
-                            orderID: document.unifiedObjects[objIndex].orderID
                         )
                     }
                 }
@@ -198,7 +197,6 @@ struct ObjectRow: View {
                         document.unifiedObjects[objIndex] = VectorObject(
                             shape: parentShape,
                             layerIndex: layerIndex,
-                            orderID: document.unifiedObjects[objIndex].orderID
                         )
                     }
                 }

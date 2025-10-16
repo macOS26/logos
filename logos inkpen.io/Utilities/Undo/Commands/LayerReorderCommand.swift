@@ -44,7 +44,6 @@ class LayerReorderCommand: BaseCommand {
                     document.unifiedObjects[objIndex] = VectorObject(
                         shape: shape,
                         layerIndex: newLayerIndex,
-                        orderID: obj.orderID
                     )
                 }
             }

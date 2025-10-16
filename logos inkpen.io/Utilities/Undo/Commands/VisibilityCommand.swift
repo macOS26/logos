@@ -40,7 +40,7 @@ class VisibilityCommand: BaseCommand {
                 case .locked:
                     shape.isLocked = value
                 }
-                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex, orderID: obj.orderID)
+                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
             }
         }

@@ -44,7 +44,7 @@ class TransformCommand: BaseCommand {
                     if let position = positions[id], shape.isTextObject {
                         shape.textPosition = position
                     }
-                    obj = VectorObject(shape: shape, layerIndex: obj.layerIndex, orderID: obj.orderID)
+                    obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                     document.unifiedObjects[index] = obj
                 }
             }

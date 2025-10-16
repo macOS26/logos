@@ -246,7 +246,7 @@ struct StrokeFillPanel: View {
                                             let shapes = document.getShapesForLayer(layerIndex)
                                             if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
                                                let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex)
                                                 break
                                             }
                                         }
@@ -344,7 +344,7 @@ struct StrokeFillPanel: View {
                                             let shapes = document.getShapesForLayer(layerIndex)
                                             if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
                                                let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex)
                                                 break
                                             }
                                         }
@@ -394,7 +394,7 @@ struct StrokeFillPanel: View {
                                             let shapes = document.getShapesForLayer(layerIndex)
                                             if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
                                                let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex)
                                                 break
                                             }
                                         }
@@ -586,7 +586,6 @@ struct StrokeFillPanel: View {
                 document.unifiedObjects[index] = VectorObject(
                     shape: shape,
                     layerIndex: document.unifiedObjects[index].layerIndex,
-                    orderID: document.unifiedObjects[index].orderID
                 )
             }
         }
@@ -713,7 +712,6 @@ struct StrokeFillPanel: View {
                 document.unifiedObjects[index] = VectorObject(
                     shape: shape,
                     layerIndex: document.unifiedObjects[index].layerIndex,
-                    orderID: document.unifiedObjects[index].orderID
                 )
             }
         }
@@ -767,7 +765,7 @@ struct StrokeFillPanel: View {
                     let shapes = document.getShapesForLayer(layerIndex)
                     if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
                        let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                        document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                        document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex)
                         break
                     }
                 }
@@ -819,7 +817,7 @@ struct StrokeFillPanel: View {
                         let shapes = document.getShapesForLayer(layerIndex)
                         if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
                            let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex)
                             break
                         }
                     }
@@ -836,7 +834,6 @@ struct StrokeFillPanel: View {
                 document.unifiedObjects[index] = VectorObject(
                     shape: shape,
                     layerIndex: document.unifiedObjects[index].layerIndex,
-                    orderID: document.unifiedObjects[index].orderID
                 )
             }
         }
@@ -887,7 +884,7 @@ struct StrokeFillPanel: View {
                         let shapes = document.getShapesForLayer(layerIndex)
                         if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
                            let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex)
                             break
                         }
                     }
@@ -941,7 +938,7 @@ struct StrokeFillPanel: View {
                         let shapes = document.getShapesForLayer(layerIndex)
                         if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
                            let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex)
                             break
                         }
                     }
@@ -995,7 +992,7 @@ struct StrokeFillPanel: View {
                         let shapes = document.getShapesForLayer(layerIndex)
                         if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
                            let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex)
                             break
                         }
                     }
@@ -1012,7 +1009,6 @@ struct StrokeFillPanel: View {
                 document.unifiedObjects[index] = VectorObject(
                     shape: shape,
                     layerIndex: document.unifiedObjects[index].layerIndex,
-                    orderID: document.unifiedObjects[index].orderID
                 )
             }
         }

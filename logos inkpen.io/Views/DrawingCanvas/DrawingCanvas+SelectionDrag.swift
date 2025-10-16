@@ -527,7 +527,6 @@ extension DrawingCanvas {
                         document.unifiedObjects[i] = VectorObject(
                             shape: updatedShape,
                             layerIndex: unifiedObject.layerIndex,
-                            orderID: unifiedObject.orderID
                         )
                     }
                 } else {
@@ -535,7 +534,6 @@ extension DrawingCanvas {
                         document.unifiedObjects[i] = VectorObject(
                             shape: updatedShape,
                             layerIndex: unifiedObject.layerIndex,
-                            orderID: unifiedObject.orderID
                         )
                     }
                 }

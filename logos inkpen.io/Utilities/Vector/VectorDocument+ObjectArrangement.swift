@@ -37,13 +37,11 @@ extension VectorDocument {
     func bringSelectedToFront() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        var oldOrderIDs: [UUID: Int] = [:]
         var affectedObjectIDs: [UUID] = []
 
         for layerIndex in layers.indices {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
             for obj in layerObjects {
-                oldOrderIDs[obj.id] = obj.orderID
                 affectedObjectIDs.append(obj.id)
             }
         }
@@ -58,7 +56,6 @@ extension VectorDocument {
 
             guard !selectedObjects.isEmpty else { continue }
 
-            let currentOrderIDs = layerObjects.map { $0.orderID }
             let minOrderID = currentOrderIDs.min() ?? 0
             var newOrderID = minOrderID
 
@@ -91,7 +88,6 @@ extension VectorDocument {
             }
         }
 
-        var newOrderIDs: [UUID: Int] = [:]
         for id in affectedObjectIDs {
             if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
                 newOrderIDs[id] = unifiedObjects[index].orderID
@@ -108,13 +104,11 @@ extension VectorDocument {
     func bringSelectedForward() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        var oldOrderIDs: [UUID: Int] = [:]
         var affectedObjectIDs: [UUID] = []
 
         for layerIndex in layers.indices {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
             for obj in layerObjects {
-                oldOrderIDs[obj.id] = obj.orderID
                 affectedObjectIDs.append(obj.id)
             }
         }
@@ -128,7 +122,6 @@ extension VectorDocument {
 
             guard !selectedObjects.isEmpty else { continue }
 
-            let sortedLayerObjects = layerObjects.sorted { $0.orderID < $1.orderID }
 
             for selectedObject in selectedObjects {
                 if let currentIndex = sortedLayerObjects.firstIndex(where: { $0.id == selectedObject.id }),
@@ -137,8 +130,6 @@ extension VectorDocument {
 
                     if let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObject.id }),
                        let frontIndex = unifiedObjects.firstIndex(where: { $0.id == objectInFront.id }) {
-                        let selectedOrderID = unifiedObjects[selectedIndex].orderID
-                        let frontOrderID = unifiedObjects[frontIndex].orderID
 
                         switch selectedObject.objectType {
                         case .shape(let shape):
@@ -167,7 +158,6 @@ extension VectorDocument {
             }
         }
 
-        var newOrderIDs: [UUID: Int] = [:]
         for id in affectedObjectIDs {
             if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
                 newOrderIDs[id] = unifiedObjects[index].orderID
@@ -184,13 +174,11 @@ extension VectorDocument {
     func sendSelectedBackward() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        var oldOrderIDs: [UUID: Int] = [:]
         var affectedObjectIDs: [UUID] = []
 
         for layerIndex in layers.indices {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
             for obj in layerObjects {
-                oldOrderIDs[obj.id] = obj.orderID
                 affectedObjectIDs.append(obj.id)
             }
         }
@@ -204,7 +192,6 @@ extension VectorDocument {
 
             guard !selectedObjects.isEmpty else { continue }
 
-            let sortedLayerObjects = layerObjects.sorted { $0.orderID < $1.orderID }
 
             for selectedObject in selectedObjects {
                 if let currentIndex = sortedLayerObjects.firstIndex(where: { $0.id == selectedObject.id }),
@@ -213,8 +200,6 @@ extension VectorDocument {
 
                     if let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObject.id }),
                        let behindIndex = unifiedObjects.firstIndex(where: { $0.id == objectBehind.id }) {
-                        let selectedOrderID = unifiedObjects[selectedIndex].orderID
-                        let behindOrderID = unifiedObjects[behindIndex].orderID
 
                         switch selectedObject.objectType {
                         case .shape(let shape):
@@ -248,7 +233,6 @@ extension VectorDocument {
             }
         }
 
-        var newOrderIDs: [UUID: Int] = [:]
         for id in affectedObjectIDs {
             if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
                 newOrderIDs[id] = unifiedObjects[index].orderID
@@ -265,13 +249,11 @@ extension VectorDocument {
     func sendSelectedToBack() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        var oldOrderIDs: [UUID: Int] = [:]
         var affectedObjectIDs: [UUID] = []
 
         for layerIndex in layers.indices {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
             for obj in layerObjects {
-                oldOrderIDs[obj.id] = obj.orderID
                 affectedObjectIDs.append(obj.id)
             }
         }
@@ -286,7 +268,6 @@ extension VectorDocument {
 
             guard !selectedObjects.isEmpty else { continue }
 
-            let currentOrderIDs = layerObjects.map { $0.orderID }
             let minOrderID = currentOrderIDs.min() ?? 0
             var newOrderID = minOrderID
 
@@ -319,7 +300,6 @@ extension VectorDocument {
             }
         }
 
-        var newOrderIDs: [UUID: Int] = [:]
         for id in affectedObjectIDs {
             if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
                 newOrderIDs[id] = unifiedObjects[index].orderID

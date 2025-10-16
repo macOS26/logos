@@ -622,7 +622,6 @@ struct EnvelopeHandles: View {
                 document.unifiedObjects[objectIndex] = VectorObject(
                     shape: updatedWarpObject,
                     layerIndex: document.unifiedObjects[objectIndex].layerIndex,
-                    orderID: document.unifiedObjects[objectIndex].orderID
                 )
                 document.syncShapeToLayer(updatedWarpObject, at: document.unifiedObjects[objectIndex].layerIndex)
             }
@@ -670,7 +669,6 @@ struct EnvelopeHandles: View {
             document.unifiedObjects[unifiedObjectIndex] = VectorObject(
                 shape: warpObject,
                 layerIndex: unifiedObject.layerIndex,
-                orderID: unifiedObject.orderID
             )
         } else {
             document.addShapeToUnifiedSystem(warpObject, layerIndex: layerIndex)
@@ -689,13 +687,11 @@ struct EnvelopeHandles: View {
                         self.document.unifiedObjects[objectIndex] = VectorObject(
                             shape: shape,
                             layerIndex: self.document.unifiedObjects[objectIndex].layerIndex,
-                            orderID: self.document.unifiedObjects[objectIndex].orderID
                         )
                         shape.isVisible = wasVisible
                         self.document.unifiedObjects[objectIndex] = VectorObject(
                             shape: shape,
                             layerIndex: self.document.unifiedObjects[objectIndex].layerIndex,
-                            orderID: self.document.unifiedObjects[objectIndex].orderID
                         )
                     }
                 }

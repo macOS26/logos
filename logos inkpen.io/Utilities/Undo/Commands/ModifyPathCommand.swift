@@ -27,7 +27,7 @@ class ModifyPathCommand: BaseCommand {
 
             if case .shape(var shape) = obj.objectType {
                 shape.path = path
-                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex, orderID: obj.orderID)
+                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
             }
         }

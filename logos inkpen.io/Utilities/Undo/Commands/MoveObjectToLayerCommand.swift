@@ -34,7 +34,6 @@ class MoveObjectToLayerCommand: BaseCommand {
             document.unifiedObjects[objectIndex] = VectorObject(
                 shape: shape,
                 layerIndex: toLayerIndex,
-                orderID: object.orderID
             )
         }
     }

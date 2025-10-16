@@ -28,7 +28,6 @@ class TextTypographyCommand: BaseCommand {
                 document.unifiedObjects[index] = VectorObject(
                     shape: shape,
                     layerIndex: obj.layerIndex,
-                    orderID: obj.orderID
                 )
             }
         }

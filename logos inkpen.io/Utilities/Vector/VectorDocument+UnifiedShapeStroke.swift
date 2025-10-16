@@ -19,7 +19,6 @@ extension VectorDocument {
                 unifiedObjects[objectIndex] = VectorObject(
                     shape: shape,
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
-                    orderID: unifiedObjects[objectIndex].orderID
                 )
 
                 syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
@@ -44,7 +43,6 @@ extension VectorDocument {
                 unifiedObjects[objectIndex] = VectorObject(
                     shape: shape,
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
-                    orderID: unifiedObjects[objectIndex].orderID
                 )
 
                 syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
@@ -69,7 +67,6 @@ extension VectorDocument {
                 unifiedObjects[objectIndex] = VectorObject(
                     shape: shape,
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
-                    orderID: unifiedObjects[objectIndex].orderID
                 )
 
                 syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
@@ -93,7 +90,6 @@ extension VectorDocument {
                 unifiedObjects[objectIndex] = VectorObject(
                     shape: shape,
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
-                    orderID: unifiedObjects[objectIndex].orderID
                 )
 
                 syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
@@ -122,7 +118,6 @@ extension VectorDocument {
                 unifiedObjects[objectIndex] = VectorObject(
                     shape: shape,
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
-                    orderID: unifiedObjects[objectIndex].orderID
                 )
 
                 syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
@@ -144,7 +139,6 @@ extension VectorDocument {
                 unifiedObjects[objectIndex] = VectorObject(
                     shape: shape,
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
-                    orderID: unifiedObjects[objectIndex].orderID
                 )
 
                 syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
@@ -167,7 +161,6 @@ extension VectorDocument {
                 unifiedObjects[objectIndex] = VectorObject(
                     shape: shape,
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
-                    orderID: unifiedObjects[objectIndex].orderID
                 )
 
                 syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
@@ -202,7 +195,6 @@ extension VectorDocument {
                 unifiedObjects[objectIndex] = VectorObject(
                     shape: shape,
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
-                    orderID: unifiedObjects[objectIndex].orderID
                 )
 
                 syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
@@ -229,7 +221,6 @@ extension VectorDocument {
                 unifiedObjects[objectIndex] = VectorObject(
                     shape: shape,
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
-                    orderID: unifiedObjects[objectIndex].orderID
                 )
 
                 syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
@@ -251,7 +242,6 @@ extension VectorDocument {
                 unifiedObjects[objectIndex] = VectorObject(
                     shape: shape,
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
-                    orderID: unifiedObjects[objectIndex].orderID
                 )
 
                 syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)

@@ -41,7 +41,6 @@ extension VectorDocument {
                     unifiedObjects[index] = VectorObject(
                         shape: shape,
                         layerIndex: object.layerIndex,
-                        orderID: object.orderID
                     )
                 }
             }

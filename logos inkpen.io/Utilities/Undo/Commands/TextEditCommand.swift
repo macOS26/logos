@@ -27,7 +27,7 @@ class TextEditCommand: BaseCommand {
 
             if case .shape(var shape) = obj.objectType, shape.isTextObject {
                 shape.textContent = content
-                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex, orderID: obj.orderID)
+                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
             }
         }

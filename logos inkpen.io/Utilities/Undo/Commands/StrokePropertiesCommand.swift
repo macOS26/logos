@@ -148,7 +148,7 @@ class StrokePropertiesCommand: BaseCommand {
 
             if case .shape(var shape) = obj.objectType, !shape.isTextObject {
                 shape.strokeStyle?.placement = placement
-                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex, orderID: obj.orderID)
+                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
             }
         }
@@ -164,7 +164,7 @@ class StrokePropertiesCommand: BaseCommand {
 
             if case .shape(var shape) = obj.objectType, !shape.isTextObject {
                 shape.strokeStyle?.lineJoin = LineJoin(lineJoin)
-                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex, orderID: obj.orderID)
+                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
             }
         }
@@ -180,7 +180,7 @@ class StrokePropertiesCommand: BaseCommand {
 
             if case .shape(var shape) = obj.objectType, !shape.isTextObject {
                 shape.strokeStyle?.lineCap = LineCap(lineCap)
-                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex, orderID: obj.orderID)
+                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
             }
         }
@@ -196,7 +196,7 @@ class StrokePropertiesCommand: BaseCommand {
 
             if case .shape(var shape) = obj.objectType, !shape.isTextObject {
                 shape.strokeStyle?.miterLimit = miterLimit
-                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex, orderID: obj.orderID)
+                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
             }
         }
@@ -212,7 +212,7 @@ class StrokePropertiesCommand: BaseCommand {
 
             if case .shape(var shape) = obj.objectType, !shape.isTextObject {
                 shape.opacity = opacity
-                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex, orderID: obj.orderID)
+                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
             }
         }

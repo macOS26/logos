@@ -124,7 +124,7 @@ extension DrawingCanvas {
                 updatedShape.path.elements = elements
 
                 if isLiveDrag {
-                    document.unifiedObjects[unifiedIndex] = VectorObject(shape: updatedShape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                    document.unifiedObjects[unifiedIndex] = VectorObject(shape: updatedShape, layerIndex: layerIndex)
                 } else {
                     updatedShape.updateBounds()
                     let shapesInLayer = document.getShapesForLayer(layerIndex)
@@ -236,7 +236,7 @@ extension DrawingCanvas {
                 updatedShape.path.elements = elements
 
                 if isLiveDrag {
-                    document.unifiedObjects[unifiedIndex] = VectorObject(shape: updatedShape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                    document.unifiedObjects[unifiedIndex] = VectorObject(shape: updatedShape, layerIndex: layerIndex)
                 } else {
                     updatedShape.updateBounds()
                     let shapesInLayer = document.getShapesForLayer(layerIndex)

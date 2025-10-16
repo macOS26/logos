@@ -434,7 +434,6 @@ struct LayersPanel: View {
                         document.unifiedObjects[objIndex] = VectorObject(
                             shape: shape,
                             layerIndex: layerIndex,
-                            orderID: document.unifiedObjects[objIndex].orderID
                         )
                         document.processedObjectsDuringDrag.insert(objectId)
                     }
@@ -449,7 +448,6 @@ struct LayersPanel: View {
                             document.unifiedObjects[objIndex] = VectorObject(
                                 shape: parentShape,
                                 layerIndex: layerIndex,
-                                orderID: document.unifiedObjects[objIndex].orderID
                             )
                             document.processedObjectsDuringDrag.insert(childShapeId)
                         }
@@ -474,7 +472,6 @@ struct LayersPanel: View {
                         document.unifiedObjects[objIndex] = VectorObject(
                             shape: shape,
                             layerIndex: layerIndex,
-                            orderID: document.unifiedObjects[objIndex].orderID
                         )
                         document.processedObjectsDuringDrag.insert(objectId)
                     }
@@ -489,7 +486,6 @@ struct LayersPanel: View {
                             document.unifiedObjects[objIndex] = VectorObject(
                                 shape: parentShape,
                                 layerIndex: layerIndex,
-                                orderID: document.unifiedObjects[objIndex].orderID
                             )
                             document.processedObjectsDuringDrag.insert(childShapeId)
                         }

@@ -53,7 +53,7 @@ class OpacityCommand: BaseCommand {
                         shape.strokeStyle?.opacity = opacity
                     }
                 }
-                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex, orderID: obj.orderID)
+                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
             }
         }

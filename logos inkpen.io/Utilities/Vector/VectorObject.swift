@@ -2,7 +2,6 @@ import SwiftUI
 
 struct VectorObject: Identifiable, Hashable {
     let id: UUID
-    let orderID: Int
     let layerIndex: Int
     let objectType: ObjectType
 
@@ -10,13 +9,10 @@ struct VectorObject: Identifiable, Hashable {
         case shape(VectorShape)
     }
 
-    init(shape: VectorShape, layerIndex: Int, orderID: Int) {
-
+    init(shape: VectorShape, layerIndex: Int) {
         self.id = shape.id
-        self.orderID = orderID
         self.layerIndex = layerIndex
         self.objectType = .shape(shape)
-
     }
 
     var isVisible: Bool {
@@ -36,13 +32,12 @@ struct VectorObject: Identifiable, Hashable {
 
 extension VectorObject: Codable {
     enum CodingKeys: String, CodingKey {
-        case id, orderID, layerIndex, objectType
+        case id, layerIndex, objectType, orderID // orderID kept for legacy decoding only
     }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
-        try container.encode(orderID, forKey: .orderID)
         try container.encode(layerIndex, forKey: .layerIndex)
 
         var objectContainer = container.nestedContainer(keyedBy: ObjectTypeCodingKeys.self, forKey: .objectType)
@@ -56,7 +51,8 @@ extension VectorObject: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         id = try container.decode(UUID.self, forKey: .id)
-        orderID = try container.decode(Int.self, forKey: .orderID)
+        // Decode and ignore orderID from legacy files
+        _ = try? container.decode(Int.self, forKey: .orderID)
         layerIndex = try container.decode(Int.self, forKey: .layerIndex)
 
         do {

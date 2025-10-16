@@ -396,7 +396,7 @@ extension DrawingCanvas {
                 }
                 return false
             }) {
-                document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex)
             }
         }
     }
