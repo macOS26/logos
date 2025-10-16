@@ -635,7 +635,7 @@ class PathOperations {
 
 extension ProfessionalPathOperations {
 
-    static func mergeAdjacentCoincidentPoints(in path: VectorPath, tolerance: Double = 1.0) -> VectorPath {
+    static func mergeAdjacentCoincidentPoints(in path: VectorPath, tolerance: Double = 1.1) -> VectorPath {
         guard path.elements.count > 2 else {
             return path
         }
