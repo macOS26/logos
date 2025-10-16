@@ -32,7 +32,7 @@ struct VectorObject: Identifiable, Hashable {
 
 extension VectorObject: Codable {
     enum CodingKeys: String, CodingKey {
-        case id, layerIndex, objectType, orderID // orderID kept for legacy decoding only
+        case id, layerIndex, objectType
     }
 
     func encode(to encoder: Encoder) throws {
@@ -51,8 +51,6 @@ extension VectorObject: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         id = try container.decode(UUID.self, forKey: .id)
-        // Decode and ignore orderID from legacy files
-        _ = try? container.decode(Int.self, forKey: .orderID)
         layerIndex = try container.decode(Int.self, forKey: .layerIndex)
 
         do {
