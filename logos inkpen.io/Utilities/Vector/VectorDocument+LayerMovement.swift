@@ -18,23 +18,10 @@ extension VectorDocument {
             return
         }
 
-        let shapes = getShapesForLayer(fromLayerIndex)
-        guard let shapeIndex = shapes.firstIndex(where: { $0.id == shapeId }) else {
-            Log.error("❌ Shape not found in source layer \(fromLayerIndex)", category: .error)
-            return
-        }
-
-        guard let shape = getShapeAtIndex(layerIndex: fromLayerIndex, shapeIndex: shapeIndex) else {
-            Log.error("❌ Failed to get shape from source layer", category: .error)
-            return
-        }
-
-        removeShapeAtIndexUnified(layerIndex: fromLayerIndex, shapeIndex: shapeIndex)
-        appendShapeToLayerUnified(layerIndex: toLayerIndex, shape: shape)
+        moveObjectToLayer(objectId: shapeId, targetLayerIndex: toLayerIndex)
 
         selectedShapeIDs = [shapeId]
         selectedLayerIndex = toLayerIndex
-
     }
 
     func moveTextToLayer(textId: UUID, toLayerIndex: Int) {
@@ -52,12 +39,11 @@ extension VectorDocument {
             return
         }
 
-        updateTextLayerInUnified(id: textId, layerIndex: toLayerIndex)
+        moveObjectToLayer(objectId: textId, targetLayerIndex: toLayerIndex)
 
         selectedTextIDs = [textId]
         selectedShapeIDs.removeAll()
         selectedLayerIndex = toLayerIndex
-
     }
 
     func handleObjectDrop(_ draggableObject: DraggableVectorObject, ontoLayerIndex: Int) {

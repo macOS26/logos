@@ -245,13 +245,12 @@ extension VectorDocument {
             return
         }
 
-        let updatedObject = VectorObject(
-            shape: extractShape(from: object),
-            layerIndex: targetLayerIndex,
-            orderID: object.orderID
+        let command = MoveObjectToLayerCommand(
+            objectID: objectId,
+            oldLayerIndex: sourceLayerIndex,
+            newLayerIndex: targetLayerIndex
         )
-
-        unifiedObjects[objectIndex] = updatedObject
+        commandManager.execute(command)
     }
 
     func selectNextObjectUp() {
