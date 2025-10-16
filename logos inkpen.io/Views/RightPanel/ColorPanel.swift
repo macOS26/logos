@@ -308,12 +308,16 @@ struct ColorPanel: View {
         var newOpacities: [UUID: Double] = [:]
 
         for textID in document.selectedTextIDs {
-            if let obj = document.findObject(by: textID),
-               case .shape(let shape) = obj.objectType, shape.isTextObject {
-                oldColors[textID] = shape.typography?.strokeColor ?? .clear
-                newColors[textID] = color
-                oldOpacities[textID] = shape.typography?.strokeOpacity ?? document.defaultStrokeOpacity
-                newOpacities[textID] = document.defaultStrokeOpacity
+            if let obj = document.findObject(by: textID) {
+                switch obj.objectType {
+                case .text(let shape):
+                    oldColors[textID] = shape.typography?.strokeColor ?? .clear
+                    newColors[textID] = color
+                    oldOpacities[textID] = shape.typography?.strokeOpacity ?? document.defaultStrokeOpacity
+                    newOpacities[textID] = document.defaultStrokeOpacity
+                case .shape, .warp, .group, .clipGroup, .clipMask:
+                    continue
+                }
             }
         }
 
