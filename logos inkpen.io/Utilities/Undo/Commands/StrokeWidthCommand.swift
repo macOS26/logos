@@ -27,15 +27,17 @@ class StrokeWidthCommand: BaseCommand {
                   let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
             var obj = document.unifiedObjects[index]
 
-            if case .shape(var shape) = obj.objectType {
-                if shape.isTextObject {
-                    if var typography = shape.typography {
-                        typography.strokeWidth = width
-                        shape.typography = typography
-                    }
-                } else {
-                    shape.strokeStyle?.width = width
+            switch obj.objectType {
+            case .text(var shape):
+                if var typography = shape.typography {
+                    typography.strokeWidth = width
+                    shape.typography = typography
                 }
+                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                document.unifiedObjects[index] = obj
+
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+                shape.strokeStyle?.width = width
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
             }
