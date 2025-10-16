@@ -179,25 +179,9 @@ class VectorDocument: ObservableObject, Codable {
     @Published var warpEnvelopeCorners: [UUID: [CGPoint]] = [:]
     @Published var warpBounds: [UUID: CGRect] = [:]
 
-    func updateTransformPanelValues() {
-        guard !selectedObjectIDs.isEmpty else { return }
-
-        var combinedBounds: CGRect?
-        for objectID in selectedObjectIDs {
-            if let unifiedObject = findObject(by: objectID) {
-                switch unifiedObject.objectType {
-                case .shape(let shape):
-                    let shapeBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-                    if let existing = combinedBounds {
-                        combinedBounds = existing.union(shapeBounds)
-                    } else {
-                        combinedBounds = shapeBounds
-                    }
-                }
-            }
-        }
-
-        objectPositionUpdateTrigger.toggle()
+    enum FreehandFillMode: String, CaseIterable {
+        case fill = "Fill"
+        case noFill = "No Fill"
     }
 
     @Published var currentBrushThickness: Double = 20.0 {
@@ -241,11 +225,6 @@ class VectorDocument: ObservableObject, Codable {
     }
     @Published var preserveSharpCorners: Bool {
         didSet { UserDefaults.standard.set(preserveSharpCorners, forKey: "preserveSharpCorners") }
-    }
-
-    enum FreehandFillMode: String, CaseIterable {
-        case fill = "Fill"
-        case noFill = "No Fill"
     }
     @Published var freehandFillMode: FreehandFillMode = .noFill {
         didSet { UserDefaults.standard.set(freehandFillMode.rawValue, forKey: "freehandFillMode") }
@@ -367,13 +346,13 @@ class VectorDocument: ObservableObject, Codable {
 
     @Published var originalHandlePositions: [String: VectorPoint] = [:]
 
-    private var _encodableSettings: DocumentSettings
-    private var _encodableLayers: [VectorLayer]
-    private var _encodableCurrentTool: DrawingTool
-    private var _encodableViewMode: ViewMode
-    private var _encodableZoomLevel: Double
-    private var _encodableCanvasOffset: CGPoint
-    private var _encodableUnifiedObjects: [VectorObject]
+    internal var _encodableSettings: DocumentSettings
+    internal var _encodableLayers: [VectorLayer]
+    internal var _encodableCurrentTool: DrawingTool
+    internal var _encodableViewMode: ViewMode
+    internal var _encodableZoomLevel: Double
+    internal var _encodableCanvasOffset: CGPoint
+    internal var _encodableUnifiedObjects: [VectorObject]
 
     init(settings: DocumentSettings = DocumentSettings()) {
         self._encodableSettings = settings
@@ -481,60 +460,7 @@ class VectorDocument: ObservableObject, Codable {
         syncEncodableStorage()
     }
 
-    private func syncEncodableStorage() {
-        _encodableSettings = settings
-        _encodableLayers = layers
-        _encodableCurrentTool = currentTool
-        _encodableViewMode = viewMode
-        _encodableZoomLevel = zoomLevel
-        _encodableCanvasOffset = canvasOffset
-        _encodableUnifiedObjects = unifiedObjects
-    }
-
-    var currentSwatches: [VectorColor] {
-        switch settings.colorMode {
-        case .rgb:
-            return rgbSwatches
-        case .cmyk:
-            return cmykSwatches
-        case .pms:
-            return hsbSwatches
-        }
-    }
-
-    func addCustomSwatch(_ color: VectorColor) {
-        switch settings.colorMode {
-        case .rgb:
-            if !customRgbSwatches.contains(where: { $0 == color }) {
-                customRgbSwatches.append(color)
-            }
-        case .cmyk:
-            if !customCmykSwatches.contains(where: { $0 == color }) {
-                customCmykSwatches.append(color)
-            }
-        case .pms:
-            if !customHsbSwatches.contains(where: { $0 == color }) {
-                customHsbSwatches.append(color)
-            }
-        }
-    }
-
-    func removeCustomSwatch(_ color: VectorColor) {
-        switch settings.colorMode {
-        case .rgb:
-            customRgbSwatches.removeAll(where: { $0 == color })
-        case .cmyk:
-            customCmykSwatches.removeAll(where: { $0 == color })
-        case .pms:
-            customHsbSwatches.removeAll(where: { $0 == color })
-        }
-    }
-
     deinit {}
-
-    enum CodingKeys: CodingKey {
-        case settings, layers, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, selectedObjectIDs, currentTool, viewMode, zoomLevel, canvasOffset, unifiedObjects, warpEnvelopeCorners, warpBounds
-    }
 
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -711,33 +637,6 @@ break
                 self.objectWillChange.send()
             }
         }
-    }
-
-    func encode(to encoder: Encoder) throws {
-        syncEncodableStorage()
-
-        var container = encoder.container(keyedBy: CodingKeys.self)
-
-        _encodableSettings.fillColor = documentColorDefaults.fillColor
-        _encodableSettings.strokeColor = documentColorDefaults.strokeColor
-        _encodableSettings.customRgbSwatches = customRgbSwatches.isEmpty ? nil : customRgbSwatches
-        _encodableSettings.customCmykSwatches = customCmykSwatches.isEmpty ? nil : customCmykSwatches
-        _encodableSettings.customHsbSwatches = customHsbSwatches.isEmpty ? nil : customHsbSwatches
-
-        try container.encode(_encodableSettings, forKey: .settings)
-        try container.encode(_encodableLayers, forKey: .layers)
-        try container.encode(_encodableCurrentTool, forKey: .currentTool)
-        try container.encode(_encodableViewMode, forKey: .viewMode)
-        try container.encode(_encodableZoomLevel, forKey: .zoomLevel)
-        try container.encode(_encodableCanvasOffset, forKey: .canvasOffset)
-        try container.encode(_encodableUnifiedObjects, forKey: .unifiedObjects)
-
-        try container.encode(selectedLayerIndex, forKey: .selectedLayerIndex)
-        try container.encode(selectedShapeIDs, forKey: .selectedShapeIDs)
-        try container.encode(selectedTextIDs, forKey: .selectedTextIDs)
-        try container.encode(selectedObjectIDs, forKey: .selectedObjectIDs)
-        try container.encode(warpEnvelopeCorners, forKey: .warpEnvelopeCorners)
-        try container.encode(warpBounds, forKey: .warpBounds)
     }
 
 }

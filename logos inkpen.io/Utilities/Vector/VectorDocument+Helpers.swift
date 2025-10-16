@@ -2,6 +2,76 @@ import SwiftUI
 
 extension VectorDocument {
 
+    func syncEncodableStorage() {
+        _encodableSettings = settings
+        _encodableLayers = layers
+        _encodableCurrentTool = currentTool
+        _encodableViewMode = viewMode
+        _encodableZoomLevel = zoomLevel
+        _encodableCanvasOffset = canvasOffset
+        _encodableUnifiedObjects = unifiedObjects
+    }
+
+    var currentSwatches: [VectorColor] {
+        switch settings.colorMode {
+        case .rgb:
+            return rgbSwatches
+        case .cmyk:
+            return cmykSwatches
+        case .pms:
+            return hsbSwatches
+        }
+    }
+
+    func addCustomSwatch(_ color: VectorColor) {
+        switch settings.colorMode {
+        case .rgb:
+            if !customRgbSwatches.contains(where: { $0 == color }) {
+                customRgbSwatches.append(color)
+            }
+        case .cmyk:
+            if !customCmykSwatches.contains(where: { $0 == color }) {
+                customCmykSwatches.append(color)
+            }
+        case .pms:
+            if !customHsbSwatches.contains(where: { $0 == color }) {
+                customHsbSwatches.append(color)
+            }
+        }
+    }
+
+    func removeCustomSwatch(_ color: VectorColor) {
+        switch settings.colorMode {
+        case .rgb:
+            customRgbSwatches.removeAll(where: { $0 == color })
+        case .cmyk:
+            customCmykSwatches.removeAll(where: { $0 == color })
+        case .pms:
+            customHsbSwatches.removeAll(where: { $0 == color })
+        }
+    }
+
+    func updateTransformPanelValues() {
+        guard !selectedObjectIDs.isEmpty else { return }
+
+        var combinedBounds: CGRect?
+        for objectID in selectedObjectIDs {
+            if let unifiedObject = findObject(by: objectID) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    let shapeBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+                    if let existing = combinedBounds {
+                        combinedBounds = existing.union(shapeBounds)
+                    } else {
+                        combinedBounds = shapeBounds
+                    }
+                }
+            }
+        }
+
+        objectPositionUpdateTrigger.toggle()
+    }
+
     func cleanupImageRegistry() {
         var allShapeIDs = Set<UUID>()
 
