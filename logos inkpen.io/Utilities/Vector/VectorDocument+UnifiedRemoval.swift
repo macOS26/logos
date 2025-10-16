@@ -4,11 +4,18 @@ extension VectorDocument {
 
     func removeShapeFromUnifiedSystem(id: UUID) {
         unifiedObjects.removeAll { obj in
-            if case .shape(let shape) = obj.objectType {
+            switch obj.objectType {
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 if shape.id == id {
                     ImageContentRegistry.remove(for: id)
                     return true
                 }
+            case .text:
+                break
             }
             return false
         }
@@ -23,8 +30,8 @@ extension VectorDocument {
     func removeTextFromUnifiedSystem(id: UUID) {
 
         unifiedObjects.removeAll { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.id == id && shape.isTextObject
+            if case .text(let shape) = obj.objectType {
+                return shape.id == id
             }
             return false
         }
@@ -38,12 +45,12 @@ extension VectorDocument {
 
     func updateEntireTextInUnified(id: UUID, updater: (inout VectorText) -> Void) {
         if let unifiedIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.id == id && shape.isTextObject
+            if case .text(let shape) = obj.objectType {
+                return shape.id == id
             }
             return false
         }) {
-            if case .shape(let shape) = unifiedObjects[unifiedIndex].objectType,
+            if case .text(let shape) = unifiedObjects[unifiedIndex].objectType,
                var vectorText = VectorText.from(shape) {
 
                 updater(&vectorText)
@@ -61,8 +68,8 @@ extension VectorDocument {
 
     func getTextCount() -> Int {
         return unifiedObjects.filter { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject
+            if case .text = obj.objectType {
+                return true
             }
             return false
         }.count
@@ -70,16 +77,15 @@ extension VectorDocument {
 
     func hasTextObjects() -> Bool {
         return unifiedObjects.contains { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject
+            if case .text = obj.objectType {
+                return true
             }
             return false
         }
     }
     func getTextByID(_ id: UUID) -> VectorText? {
         for unifiedObject in unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType,
-               shape.isTextObject,
+            if case .text(let shape) = unifiedObject.objectType,
                shape.id == id,
                var vectorText = VectorText.from(shape) {
                 vectorText.layerIndex = unifiedObject.layerIndex
@@ -91,8 +97,7 @@ extension VectorDocument {
 
     func getFirstText(where predicate: (VectorText) -> Bool) -> VectorText? {
         for unifiedObject in unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType,
-               shape.isTextObject,
+            if case .text(let shape) = unifiedObject.objectType,
                var vectorText = VectorText.from(shape) {
                 vectorText.layerIndex = unifiedObject.layerIndex
                 if predicate(vectorText) {
@@ -105,8 +110,8 @@ extension VectorDocument {
 
     func removeAllText() {
         unifiedObjects.removeAll { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject
+            if case .text = obj.objectType {
+                return true
             }
             return false
         }
