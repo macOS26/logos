@@ -603,20 +603,16 @@ extension DrawingCanvas {
                     y: (normIncoming.y + normOutgoing.y) / 2
                 )
 
-                // Check if averaged direction is too small (sharp corner)
-                let avgLength = sqrt(avgDirection.x * avgDirection.x + avgDirection.y * avgDirection.y)
-                if avgLength < 0.1 {
-                    // Sharp corner - use outgoing direction instead
-                    perpendicular = CGPoint(x: -normOutgoing.y, y: normOutgoing.x)
-                } else {
-                    perpendicular = CGPoint(x: -avgDirection.y, y: avgDirection.x)
-                }
+                perpendicular = CGPoint(x: -avgDirection.y, y: avgDirection.x)
             }
 
             let length = sqrt(perpendicular.x * perpendicular.x + perpendicular.y * perpendicular.y)
             if length > 0 {
                 perpendicular.x /= length
                 perpendicular.y /= length
+            } else {
+                // If perpendicular is zero (180° turn), skip this point
+                continue
             }
 
             let offsetDistance = thickness / 2.0
