@@ -188,4 +188,74 @@ extension VectorDocument {
             defaultStrokeMiterLimit = miter
         }
     }
+
+    func rebuildLookupCache() {
+        unifiedObjectLookupCache = Dictionary(uniqueKeysWithValues: unifiedObjects.map { ($0.id, $0) })
+        rebuildLayerCache()
+    }
+
+    func rebuildLayerCache() {
+        objectsByLayerCache = Dictionary(grouping: unifiedObjects, by: { $0.layerIndex })
+    }
+
+    func findObject(by id: UUID) -> VectorObject? {
+        return unifiedObjectLookupCache[id]
+    }
+
+    func findObjectIndex(by id: UUID) -> Int? {
+        return unifiedObjects.firstIndex(where: { $0.id == id })
+    }
+
+    func findShape(by id: UUID) -> VectorShape? {
+        guard let object = unifiedObjectLookupCache[id],
+              case .shape(let shape) = object.objectType,
+              !shape.isTextObject else { return nil }
+        return shape
+    }
+
+    func findText(by id: UUID) -> VectorText? {
+        if let object = unifiedObjectLookupCache[id],
+           case .shape(let shape) = object.objectType,
+           shape.isTextObject,
+           var vectorText = VectorText.from(shape) {
+            vectorText.layerIndex = object.layerIndex
+            return vectorText
+        }
+
+        for object in unifiedObjects {
+            if case .shape(let shape) = object.objectType, shape.isGroupContainer {
+                if let textShape = shape.groupedShapes.first(where: { $0.id == id && $0.isTextObject }),
+                   var vectorText = VectorText.from(textShape) {
+                    vectorText.layerIndex = object.layerIndex
+                    return vectorText
+                }
+            }
+        }
+
+        return nil
+    }
+
+    func getObjectsInLayer(_ layerIndex: Int) -> [VectorObject] {
+        return objectsByLayerCache[layerIndex] ?? []
+    }
+
+    func forEachTextInOrder(_ action: (VectorText) throws -> Void) rethrows {
+        for unifiedObject in unifiedObjects.sorted(by: { $0.orderID < $1.orderID }) {
+            if case .shape(let shape) = unifiedObject.objectType, shape.isTextObject,
+               let text = VectorText.from(shape) {
+                try action(text)
+            }
+        }
+    }
+
+    func getShapesInLayer(_ layerIndex: Int) -> [VectorShape] {
+        return allShapes.filter { shape in
+            return unifiedObjects.first { obj in
+                if case .shape(let objShape) = obj.objectType {
+                    return objShape.id == shape.id && obj.layerIndex == layerIndex
+                }
+                return false
+            } != nil
+        }
+    }
 }
