@@ -204,7 +204,7 @@ class PressureSensitiveCanvasView: NSView {
             if event.subtype == .tabletPoint {
                 pressure = Double(event.pressure)
                 foundRealPressure = true
-            } else if event.pressure > 0.0 {
+            } else if event.pressure > 0.0 && event.pressure != 1.0 {
                 pressure = Double(event.pressure)
                 foundRealPressure = true
             } else {
