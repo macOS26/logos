@@ -72,26 +72,6 @@ struct VariableStrokeSection: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("Liquid")
-                        .font(.subheadline)
-                        .foregroundColor(Color.ui.secondaryText)
-                    Spacer()
-                    Text("\(Int(100.0 - document.currentBrushLiquid))%")
-                        .font(.subheadline)
-                        .foregroundColor(Color.ui.primaryText)
-                        .monospacedDigit()
-                }
-
-                Slider(value: Binding(
-                    get: { 100.0 - document.currentBrushLiquid },
-                    set: { document.currentBrushLiquid = 100.0 - $0 }
-                ), in: 0...100)
-                .controlSize(.regular)
-                .help("Controls curve fluidity - 0% = no smoothing (all points), 50% = moderate smoothing, 100% = maximum liquid smoothing")
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
                     Text("Min Taper Thickness")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
@@ -108,68 +88,6 @@ struct VariableStrokeSection: View {
                 ), in: 0...15)
                 .controlSize(.regular)
                 .help("Minimum thickness at taper ends (0-15 points)")
-            }
-
-            Divider()
-                .padding(.vertical, 8)
-
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Image(systemName: "waveform.path")
-                        .foregroundColor(.purple)
-                    Text("Advanced Smoothing")
-                        .font(.headline)
-                        .foregroundColor(Color.ui.primaryText)
-                    Spacer()
-                    Toggle("", isOn: Binding(
-                        get: { document.advancedSmoothingEnabled },
-                        set: { document.advancedSmoothingEnabled = $0 }
-                    ))
-                    .toggleStyle(SwitchToggleStyle(tint: .purple))
-                    .controlSize(.small)
-                }
-                .help("Enable advanced curve smoothing algorithms for ultra-smooth strokes")
-
-                if document.advancedSmoothingEnabled {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Chaikin Iterations")
-                                .font(.subheadline)
-                                .foregroundColor(Color.ui.secondaryText)
-                            Spacer()
-                            Text("\(document.chaikinSmoothingIterations)")
-                                .font(.subheadline)
-                                .foregroundColor(Color.ui.primaryText)
-                                .monospacedDigit()
-                        }
-
-                        Slider(value: Binding<Double>(
-                            get: { Double(document.chaikinSmoothingIterations) },
-                            set: { document.chaikinSmoothingIterations = Int(round($0)) }
-                        ), in: 0...6)
-                        .controlSize(.regular)
-                        .help("Number of smoothing passes - 0 = off, 6 = maximum smoothing")
-                    }
-
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Preserve Sharp Corners")
-                                .font(.subheadline)
-                                .foregroundColor(Color.ui.primaryText)
-                            Text("Keep intentional sharp angles in strokes")
-                                .font(.caption)
-                                .foregroundColor(Color.ui.secondaryText)
-                        }
-                        Spacer()
-                        Toggle("", isOn: Binding(
-                            get: { document.preserveSharpCorners },
-                            set: { document.preserveSharpCorners = $0 }
-                        ))
-                        .toggleStyle(SwitchToggleStyle(tint: .purple))
-                        .controlSize(.small)
-                        .help("Keep intentional sharp angles during simplification")
-                    }
-                }
             }
 
             VStack(alignment: .leading, spacing: 12) {
