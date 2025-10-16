@@ -253,6 +253,33 @@ extension VectorDocument {
         commandManager.execute(command)
     }
 
+    func moveObjectsToLayer(objectIds: [UUID], targetLayerIndex: Int) {
+        guard targetLayerIndex >= 0 && targetLayerIndex < layers.count else {
+            Log.error("❌ Invalid target layer index: \(targetLayerIndex)", category: .error)
+            return
+        }
+
+        var moves: [(objectID: UUID, oldLayerIndex: Int, newLayerIndex: Int)] = []
+
+        for objectId in objectIds {
+            guard let objectIndex = unifiedObjects.firstIndex(where: { $0.id == objectId }) else {
+                continue
+            }
+
+            let object = unifiedObjects[objectIndex]
+            let sourceLayerIndex = object.layerIndex
+
+            if sourceLayerIndex != targetLayerIndex {
+                moves.append((objectID: objectId, oldLayerIndex: sourceLayerIndex, newLayerIndex: targetLayerIndex))
+            }
+        }
+
+        if !moves.isEmpty {
+            let command = MoveObjectToLayerCommand(moves: moves)
+            commandManager.execute(command)
+        }
+    }
+
     func selectNextObjectUp() {
         let visibleObjects = unifiedObjects
             .filter { obj in

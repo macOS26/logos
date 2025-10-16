@@ -366,9 +366,7 @@ struct ProfessionalLayerRow: View {
 
             case .vectorObject(let vectorObj):
                 if document.selectedObjectIDs.contains(vectorObj.objectId) && document.selectedObjectIDs.count > 1 {
-                    for selectedObjectId in document.selectedObjectIDs {
-                        document.moveObjectToLayer(objectId: selectedObjectId, targetLayerIndex: layerIndex)
-                    }
+                    document.moveObjectsToLayer(objectIds: Array(document.selectedObjectIDs), targetLayerIndex: layerIndex)
                 } else {
                     document.moveObjectToLayer(objectId: vectorObj.objectId, targetLayerIndex: layerIndex)
                 }
