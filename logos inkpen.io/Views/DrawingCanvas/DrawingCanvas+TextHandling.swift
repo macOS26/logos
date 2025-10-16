@@ -16,9 +16,25 @@ extension DrawingCanvas {
     func handleAggressiveBackgroundTap(at location: CGPoint) {
 
         let tapHitsText = document.unifiedObjects.contains { unifiedObj in
-            guard case .shape(let shape) = unifiedObj.objectType else { return false }
+            switch unifiedObj.objectType {
+            case .text(let shape):
+                if var textObj = VectorText.from(shape) {
+                    textObj.layerIndex = unifiedObj.layerIndex
+                    if !textObj.isVisible || textObj.isLocked { return false }
 
-            if shape.isGroupContainer {
+                    let exactBounds = CGRect(
+                        x: textObj.position.x + textObj.bounds.minX,
+                        y: textObj.position.y + textObj.bounds.minY,
+                        width: textObj.bounds.width,
+                        height: textObj.bounds.height
+                    )
+
+                    let expandedBounds = exactBounds.insetBy(dx: -30, dy: -20)
+
+                    return expandedBounds.contains(location)
+                }
+                return false
+            case .group(let shape):
                 for childShape in shape.groupedShapes {
                     if childShape.isTextObject, var textObj = VectorText.from(childShape) {
                         textObj.layerIndex = unifiedObj.layerIndex
@@ -38,25 +54,10 @@ extension DrawingCanvas {
                         }
                     }
                 }
+                return false
+            case .shape, .warp, .clipGroup, .clipMask:
+                return false
             }
-
-            if shape.isTextObject, var textObj = VectorText.from(shape) {
-                textObj.layerIndex = unifiedObj.layerIndex
-                if !textObj.isVisible || textObj.isLocked { return false }
-
-                let exactBounds = CGRect(
-                    x: textObj.position.x + textObj.bounds.minX,
-                    y: textObj.position.y + textObj.bounds.minY,
-                    width: textObj.bounds.width,
-                    height: textObj.bounds.height
-                )
-
-                let expandedBounds = exactBounds.insetBy(dx: -30, dy: -20)
-
-                return expandedBounds.contains(location)
-            }
-
-            return false
         }
 
         if !tapHitsText {
@@ -64,17 +65,19 @@ extension DrawingCanvas {
             document.selectedShapeIDs.removeAll()
 
             for unifiedObj in document.unifiedObjects {
-                if case .shape(let shape) = unifiedObj.objectType {
-                    if shape.isTextObject && shape.isEditing == true {
+                switch unifiedObj.objectType {
+                case .text(let shape):
+                    if shape.isEditing == true {
                         document.setTextEditingInUnified(id: shape.id, isEditing: false)
                     }
-                    if shape.isGroupContainer {
-                        for childShape in shape.groupedShapes {
-                            if childShape.isTextObject && childShape.isEditing == true {
-                                document.setTextEditingInUnified(id: childShape.id, isEditing: false)
-                            }
+                case .group(let shape):
+                    for childShape in shape.groupedShapes {
+                        if childShape.isTextObject && childShape.isEditing == true {
+                            document.setTextEditingInUnified(id: childShape.id, isEditing: false)
                         }
                     }
+                case .shape, .warp, .clipGroup, .clipMask:
+                    break
                 }
             }
 
@@ -84,28 +87,9 @@ extension DrawingCanvas {
 
     func findTextAt(location: CGPoint) -> UUID? {
         for unifiedObj in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObj.objectType {
-                if shape.isGroupContainer {
-                    for childShape in shape.groupedShapes {
-                        if childShape.isTextObject, var textObj = VectorText.from(childShape) {
-                            textObj.layerIndex = unifiedObj.layerIndex
-                            if !textObj.isVisible || textObj.isLocked { continue }
-
-                            let textBounds = CGRect(
-                                x: textObj.position.x + textObj.bounds.minX,
-                                y: textObj.position.y + textObj.bounds.minY,
-                                width: textObj.bounds.width,
-                                height: textObj.bounds.height
-                            )
-
-                            if textBounds.contains(location) {
-                                return textObj.id
-                            }
-                        }
-                    }
-                }
-
-                if shape.isTextObject, var textObj = VectorText.from(shape) {
+            switch unifiedObj.objectType {
+            case .text(let shape):
+                if var textObj = VectorText.from(shape) {
                     textObj.layerIndex = unifiedObj.layerIndex
                     if !textObj.isVisible || textObj.isLocked { continue }
 
@@ -122,6 +106,26 @@ extension DrawingCanvas {
                         return textObj.id
                     }
                 }
+            case .group(let shape):
+                for childShape in shape.groupedShapes {
+                    if childShape.isTextObject, var textObj = VectorText.from(childShape) {
+                        textObj.layerIndex = unifiedObj.layerIndex
+                        if !textObj.isVisible || textObj.isLocked { continue }
+
+                        let textBounds = CGRect(
+                            x: textObj.position.x + textObj.bounds.minX,
+                            y: textObj.position.y + textObj.bounds.minY,
+                            width: textObj.bounds.width,
+                            height: textObj.bounds.height
+                        )
+
+                        if textBounds.contains(location) {
+                            return textObj.id
+                        }
+                    }
+                }
+            case .shape, .warp, .clipGroup, .clipMask:
+                break
             }
         }
 
@@ -131,12 +135,11 @@ extension DrawingCanvas {
     func startEditingText(textID: UUID, at location: CGPoint) {
 
         for unifiedObj in document.unifiedObjects {
-            guard case .shape(let shape) = unifiedObj.objectType,
-                  shape.isTextObject,
-                  shape.id != textID,
-                  shape.isEditing == true else { continue }
-
-            document.setTextEditingInUnified(id: shape.id, isEditing: false)
+            if case .text(let shape) = unifiedObj.objectType,
+               shape.id != textID,
+               shape.isEditing == true {
+                document.setTextEditingInUnified(id: shape.id, isEditing: false)
+            }
         }
 
         if let textObject = document.findText(by: textID) {
@@ -713,8 +716,7 @@ extension DrawingCanvas {
         let totalTolerance = handleRadius + tolerance
 
         for unifiedObj in document.unifiedObjects {
-            guard case .shape(let shape) = unifiedObj.objectType,
-                  shape.isTextObject,
+            guard case .text(let shape) = unifiedObj.objectType,
                   var textObj = VectorText.from(shape) else { continue }
             textObj.layerIndex = unifiedObj.layerIndex
             if !textObj.isVisible || textObj.isLocked { continue }
