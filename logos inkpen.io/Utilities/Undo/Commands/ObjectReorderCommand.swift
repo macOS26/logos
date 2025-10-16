@@ -33,7 +33,7 @@ class ObjectReorderCommand: BaseCommand {
 
             if let currentIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectID }),
                case .shape(let shape) = document.unifiedObjects[currentIndex].objectType {
-                let obj = document.unifiedObjects.remove(at: currentIndex)
+                _ = document.unifiedObjects.remove(at: currentIndex)
                 let updatedObj = VectorObject(
                     shape: shape,
                     layerIndex: targetLayer

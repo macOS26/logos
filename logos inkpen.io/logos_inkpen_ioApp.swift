@@ -1011,15 +1011,12 @@ class ClipboardManager {
             }
 
             var objectsToAdd: [VectorObject] = []
-            let existingOrderIDs = document.getObjectsInLayer(layerIndex).map { $0.orderID }
-            var nextOrderID = existingOrderIDs.isEmpty ? 0 : (existingOrderIDs.max() ?? -1) + 1
 
             for shape in clipboardData.shapes {
                 let newShape = regenerateUUIDs(for: shape)
                 let unifiedObject = VectorObject(shape: newShape, layerIndex: layerIndex)
                 objectsToAdd.append(unifiedObject)
                 document.selectedObjectIDs.insert(newShape.id)
-                nextOrderID += 1
             }
 
             for text in clipboardData.texts {
@@ -1030,7 +1027,6 @@ class ClipboardManager {
                 let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex)
                 objectsToAdd.append(unifiedObject)
                 document.selectedObjectIDs.insert(newText.id)
-                nextOrderID += 1
             }
 
             if !objectsToAdd.isEmpty {
@@ -1067,42 +1063,24 @@ class ClipboardManager {
                 }
             }
 
-            var insertionPoint = 0
+            // Find the lowest array index of selected objects in this layer
+            var insertionIndex = document.unifiedObjects.count
 
             if !originalSelectedObjectIDs.isEmpty {
-                let selectedObjectsInLayer = document.unifiedObjects.filter {
-                    originalSelectedObjectIDs.contains($0.id) && $0.layerIndex == layerIndex
-                }
-                if let lowestOrderID = selectedObjectsInLayer.map({ $0.orderID }).min() {
-                    insertionPoint = lowestOrderID
-                }
-            }
-
-            let numNewObjects = clipboardData.shapes.count + clipboardData.texts.count
-            var updatedUnifiedObjects: [VectorObject] = []
-            for obj in document.unifiedObjects {
-                if obj.layerIndex == layerIndex && obj.orderID >= insertionPoint {
-                    let newOrderID = obj.orderID + numNewObjects
-                    switch obj.objectType {
-                    case .shape(let shape):
-                        let newObj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-                        updatedUnifiedObjects.append(newObj)
+                for (index, obj) in document.unifiedObjects.enumerated() {
+                    if originalSelectedObjectIDs.contains(obj.id) && obj.layerIndex == layerIndex {
+                        insertionIndex = min(insertionIndex, index)
                     }
-                } else {
-                    updatedUnifiedObjects.append(obj)
                 }
             }
-            document.unifiedObjects = updatedUnifiedObjects
 
             var objectsToAdd: [VectorObject] = []
-            var currentOrderID = insertionPoint
 
             for shape in clipboardData.shapes {
                 let newShape = regenerateUUIDs(for: shape)
                 let unifiedObject = VectorObject(shape: newShape, layerIndex: layerIndex)
                 objectsToAdd.append(unifiedObject)
                 document.selectedObjectIDs.insert(newShape.id)
-                currentOrderID += 1
             }
 
             for text in clipboardData.texts {
@@ -1113,7 +1091,6 @@ class ClipboardManager {
                 let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex)
                 objectsToAdd.append(unifiedObject)
                 document.selectedObjectIDs.insert(newText.id)
-                currentOrderID += 1
             }
 
             if !objectsToAdd.isEmpty {
