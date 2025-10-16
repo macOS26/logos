@@ -152,8 +152,7 @@ class ProfessionalTextViewModel: ObservableObject {
 
     func startEditing() {
         for unifiedObj in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObj.objectType,
-               shape.isTextObject,
+            if case .text(let shape) = unifiedObj.objectType,
                shape.id != textObject.id,
                shape.isEditing == true {
                 document.setTextEditingInUnified(id: shape.id, isEditing: false)
@@ -530,7 +529,7 @@ class ProfessionalTextViewModel: ObservableObject {
 
         var editingCount = 0
         for unifiedObj in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject, shape.isEditing == true {
+            if case .text(let shape) = unifiedObj.objectType, shape.isEditing == true {
                 document.setTextEditingInUnified(id: shape.id, isEditing: false)
                 editingCount += 1
             }
