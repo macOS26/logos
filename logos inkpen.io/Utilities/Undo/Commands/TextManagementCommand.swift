@@ -63,7 +63,7 @@ class TextManagementCommand: BaseCommand {
 
     override func undo(on document: VectorDocument) {
         switch operation {
-        case .addText(let textID, _, _, _):
+        case .addText(let textID, _, _):
             document.unifiedObjects.removeAll { $0.id == textID }
             document.selectedObjectIDs = oldSelection
 
