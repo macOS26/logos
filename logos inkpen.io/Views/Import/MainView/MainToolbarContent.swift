@@ -436,7 +436,7 @@ struct MainToolbarContent: ToolbarContent {
         }
 
         for unifiedObj in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject {
+            if case .text(let shape) = unifiedObj.objectType {
                 document.unlockTextInUnified(id: shape.id)
             }
         }
@@ -512,7 +512,7 @@ struct MainToolbarContent: ToolbarContent {
         }
 
         for unifiedObj in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject {
+            if case .text(let shape) = unifiedObj.objectType {
                 document.showTextInUnified(id: shape.id)
             }
         }
