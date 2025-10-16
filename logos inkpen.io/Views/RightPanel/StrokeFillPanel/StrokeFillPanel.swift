@@ -569,19 +569,20 @@ struct StrokeFillPanel: View {
         var newOpacities: [UUID: Double] = [:]
 
         for objectID in document.selectedObjectIDs {
-            if let obj = document.findObject(by: objectID),
-               case .shape(let shape) = obj.objectType {
-                if shape.isTextObject {
+            if let obj = document.findObject(by: objectID) {
+                switch obj.objectType {
+                case .text(let shape):
                     oldOpacities[objectID] = shape.typography?.fillOpacity ?? 1.0
                     document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
-                } else {
+                    newOpacities[objectID] = opacity
+                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                     oldOpacities[objectID] = shape.fillStyle?.opacity ?? 1.0
                     if let layerIndex = obj.layerIndex < document.layers.count ? obj.layerIndex : nil,
                        document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
                         document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
                     }
+                    newOpacities[objectID] = opacity
                 }
-                newOpacities[objectID] = opacity
             }
         }
 
@@ -599,12 +600,15 @@ struct StrokeFillPanel: View {
     private func updateFillOpacityDirectNoUndo(_ opacity: Double) {
         for objectID in document.selectedObjectIDs {
             guard let index = cachedIndexMap[objectID] else { continue }
-            if case .shape(var shape) = document.unifiedObjects[index].objectType {
-                if shape.isTextObject {
-                    shape.typography?.fillOpacity = opacity
-                } else {
-                    shape.fillStyle?.opacity = opacity
-                }
+            switch document.unifiedObjects[index].objectType {
+            case .text(var shape):
+                shape.typography?.fillOpacity = opacity
+                document.unifiedObjects[index] = VectorObject(
+                    shape: shape,
+                    layerIndex: document.unifiedObjects[index].layerIndex,
+                )
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+                shape.fillStyle?.opacity = opacity
                 document.unifiedObjects[index] = VectorObject(
                     shape: shape,
                     layerIndex: document.unifiedObjects[index].layerIndex,
@@ -708,19 +712,20 @@ struct StrokeFillPanel: View {
         var newWidths: [UUID: Double] = [:]
 
         for objectID in document.selectedObjectIDs {
-            if let obj = document.findObject(by: objectID),
-               case .shape(let shape) = obj.objectType {
-                if shape.isTextObject {
+            if let obj = document.findObject(by: objectID) {
+                switch obj.objectType {
+                case .text(let shape):
                     oldWidths[objectID] = shape.typography?.strokeWidth ?? 1.0
                     document.updateTextStrokeWidthInUnified(id: shape.id, width: width)
-                } else {
+                    newWidths[objectID] = width
+                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                     oldWidths[objectID] = shape.strokeStyle?.width ?? 1.0
                     if let layerIndex = obj.layerIndex < document.layers.count ? obj.layerIndex : nil,
                        document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
                         document.updateShapeStrokeWidthInUnified(id: shape.id, width: width)
                     }
+                    newWidths[objectID] = width
                 }
-                newWidths[objectID] = width
             }
         }
 
@@ -737,12 +742,15 @@ struct StrokeFillPanel: View {
     private func updateStrokeWidthDirectNoUndo(_ width: Double) {
         for objectID in document.selectedObjectIDs {
             guard let index = cachedIndexMap[objectID] else { continue }
-            if case .shape(var shape) = document.unifiedObjects[index].objectType {
-                if shape.isTextObject {
-                    shape.typography?.strokeWidth = width
-                } else {
-                    shape.strokeStyle?.width = width
-                }
+            switch document.unifiedObjects[index].objectType {
+            case .text(var shape):
+                shape.typography?.strokeWidth = width
+                document.unifiedObjects[index] = VectorObject(
+                    shape: shape,
+                    layerIndex: document.unifiedObjects[index].layerIndex,
+                )
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+                shape.strokeStyle?.width = width
                 document.unifiedObjects[index] = VectorObject(
                     shape: shape,
                     layerIndex: document.unifiedObjects[index].layerIndex,
@@ -762,10 +770,14 @@ struct StrokeFillPanel: View {
         var newPlacements: [UUID: StrokePlacement] = [:]
 
         for shapeID in activeShapeIDs {
-            if let obj = document.findObject(by: shapeID),
-               case .shape(let shape) = obj.objectType, !shape.isTextObject {
-                oldPlacements[shapeID] = shape.strokeStyle?.placement ?? .center
-                newPlacements[shapeID] = placement
+            if let obj = document.findObject(by: shapeID) {
+                switch obj.objectType {
+                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                    oldPlacements[shapeID] = shape.strokeStyle?.placement ?? .center
+                    newPlacements[shapeID] = placement
+                case .text:
+                    continue
+                }
             }
         }
 
@@ -816,10 +828,14 @@ struct StrokeFillPanel: View {
             var newOpacities: [UUID: Double] = [:]
 
             for shapeID in activeShapeIDs {
-                if let obj = document.findObject(by: shapeID),
-                   case .shape(let shape) = obj.objectType {
-                    oldOpacities[shapeID] = shape.strokeStyle?.opacity ?? 1.0
-                    newOpacities[shapeID] = opacity
+                if let obj = document.findObject(by: shapeID) {
+                    switch obj.objectType {
+                    case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                        oldOpacities[shapeID] = shape.strokeStyle?.opacity ?? 1.0
+                        newOpacities[shapeID] = opacity
+                    case .text:
+                        continue
+                    }
                 }
             }
 
@@ -863,12 +879,15 @@ struct StrokeFillPanel: View {
     private func updateStrokeOpacityDirectNoUndo(_ opacity: Double) {
         for objectID in document.selectedObjectIDs {
             guard let index = cachedIndexMap[objectID] else { continue }
-            if case .shape(var shape) = document.unifiedObjects[index].objectType {
+            switch document.unifiedObjects[index].objectType {
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.strokeStyle?.opacity = opacity
                 document.unifiedObjects[index] = VectorObject(
                     shape: shape,
                     layerIndex: document.unifiedObjects[index].layerIndex,
                 )
+            case .text:
+                continue
             }
         }
     }
@@ -882,10 +901,14 @@ struct StrokeFillPanel: View {
             var newLineJoins: [UUID: CGLineJoin] = [:]
 
             for shapeID in activeShapeIDs {
-                if let obj = document.findObject(by: shapeID),
-                   case .shape(let shape) = obj.objectType, !shape.isTextObject {
-                    oldLineJoins[shapeID] = shape.strokeStyle?.lineJoin.cgLineJoin ?? .miter
-                    newLineJoins[shapeID] = lineJoin
+                if let obj = document.findObject(by: shapeID) {
+                    switch obj.objectType {
+                    case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                        oldLineJoins[shapeID] = shape.strokeStyle?.lineJoin.cgLineJoin ?? .miter
+                        newLineJoins[shapeID] = lineJoin
+                    case .text:
+                        continue
+                    }
                 }
             }
 
@@ -936,10 +959,14 @@ struct StrokeFillPanel: View {
             var newLineCaps: [UUID: CGLineCap] = [:]
 
             for shapeID in activeShapeIDs {
-                if let obj = document.findObject(by: shapeID),
-                   case .shape(let shape) = obj.objectType, !shape.isTextObject {
-                    oldLineCaps[shapeID] = shape.strokeStyle?.lineCap.cgLineCap ?? .butt
-                    newLineCaps[shapeID] = lineCap
+                if let obj = document.findObject(by: shapeID) {
+                    switch obj.objectType {
+                    case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                        oldLineCaps[shapeID] = shape.strokeStyle?.lineCap.cgLineCap ?? .butt
+                        newLineCaps[shapeID] = lineCap
+                    case .text:
+                        continue
+                    }
                 }
             }
 
@@ -990,10 +1017,14 @@ struct StrokeFillPanel: View {
             var newMiterLimits: [UUID: Double] = [:]
 
             for shapeID in activeShapeIDs {
-                if let obj = document.findObject(by: shapeID),
-                   case .shape(let shape) = obj.objectType, !shape.isTextObject {
-                    oldMiterLimits[shapeID] = shape.strokeStyle?.miterLimit ?? 10.0
-                    newMiterLimits[shapeID] = miterLimit
+                if let obj = document.findObject(by: shapeID) {
+                    switch obj.objectType {
+                    case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                        oldMiterLimits[shapeID] = shape.strokeStyle?.miterLimit ?? 10.0
+                        newMiterLimits[shapeID] = miterLimit
+                    case .text:
+                        continue
+                    }
                 }
             }
 
@@ -1038,12 +1069,15 @@ struct StrokeFillPanel: View {
     private func updateStrokeMiterLimitDirectNoUndo(_ miterLimit: Double) {
         for objectID in document.selectedObjectIDs {
             guard let index = cachedIndexMap[objectID] else { continue }
-            if case .shape(var shape) = document.unifiedObjects[index].objectType {
+            switch document.unifiedObjects[index].objectType {
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.strokeStyle?.miterLimit = miterLimit
                 document.unifiedObjects[index] = VectorObject(
                     shape: shape,
                     layerIndex: document.unifiedObjects[index].layerIndex,
                 )
+            case .text:
+                continue
             }
         }
     }
@@ -1055,10 +1089,14 @@ struct StrokeFillPanel: View {
         var newOpacities: [UUID: Double] = [:]
 
         for shapeID in document.selectedShapeIDs {
-            if let obj = document.findObject(by: shapeID),
-               case .shape(let shape) = obj.objectType {
-                oldOpacities[shapeID] = shape.opacity
-                newOpacities[shapeID] = opacity
+            if let obj = document.findObject(by: shapeID) {
+                switch obj.objectType {
+                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                    oldOpacities[shapeID] = shape.opacity
+                    newOpacities[shapeID] = opacity
+                case .text:
+                    continue
+                }
             }
         }
 
@@ -1092,12 +1130,16 @@ struct StrokeFillPanel: View {
         var newOpacities: [UUID: Double] = [:]
 
         for shapeID in activeShapeIDs {
-            if let obj = document.findObject(by: shapeID),
-               case .shape(let shape) = obj.objectType {
-                oldColors[shapeID] = shape.fillStyle?.color ?? .black
-                newColors[shapeID] = selectedFillColor
-                oldOpacities[shapeID] = shape.fillStyle?.opacity ?? 1.0
-                newOpacities[shapeID] = fillOpacity
+            if let obj = document.findObject(by: shapeID) {
+                switch obj.objectType {
+                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                    oldColors[shapeID] = shape.fillStyle?.color ?? .black
+                    newColors[shapeID] = selectedFillColor
+                    oldOpacities[shapeID] = shape.fillStyle?.opacity ?? 1.0
+                    newOpacities[shapeID] = fillOpacity
+                case .text:
+                    continue
+                }
             }
         }
 
