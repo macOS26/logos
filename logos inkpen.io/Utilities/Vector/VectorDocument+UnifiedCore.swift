@@ -156,8 +156,8 @@ extension VectorDocument {
     func addTextToUnifiedSystem(_ text: VectorText, layerIndex: Int) {
 
         let existingIndex = unifiedObjects.firstIndex { unifiedObject in
-            if case .shape(let existingShape) = unifiedObject.objectType {
-                return existingShape.id == text.id && existingShape.isTextObject
+            if case .text(let existingShape) = unifiedObject.objectType {
+                return existingShape.id == text.id
             }
             return false
         }
