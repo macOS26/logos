@@ -17,15 +17,17 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
-            case .shape(let shape):
-                if shape.isTextObject {
-                    return shape.typography?.hasStroke == true ? shape.typography?.strokeColor ?? .clear : .clear
+            case .text(let shape):
+                return shape.typography?.hasStroke == true ? shape.typography?.strokeColor ?? .clear : .clear
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
+                if let strokeColor = shape.strokeStyle?.color {
+                    return strokeColor
                 } else {
-                    if let strokeColor = shape.strokeStyle?.color {
-                        return strokeColor
-                    } else {
-                        return .clear
-                    }
+                    return .clear
                 }
             }
         }
@@ -36,13 +38,15 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
-            case .shape(let shape):
-                if shape.isTextObject {
-                    return shape.typography?.fillColor ?? .black
-                } else {
-                    if let fillStyle = shape.fillStyle {
-                        return fillStyle.color
-                    }
+            case .text(let shape):
+                return shape.typography?.fillColor ?? .black
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
+                if let fillStyle = shape.fillStyle {
+                    return fillStyle.color
                 }
             }
         }
@@ -53,12 +57,14 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
-            case .shape(let shape):
-                if shape.isTextObject {
-                    return shape.typography?.strokeWidth ?? document.defaultStrokeWidth
-                } else {
-                    return shape.strokeStyle?.width ?? document.defaultStrokeWidth
-                }
+            case .text(let shape):
+                return shape.typography?.strokeWidth ?? document.defaultStrokeWidth
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
+                return shape.strokeStyle?.width ?? document.defaultStrokeWidth
             }
         }
         return document.defaultStrokeWidth
@@ -68,12 +74,14 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
-            case .shape(let shape):
-                if shape.isTextObject {
-                    return document.defaultStrokePlacement
-                } else {
-                    return shape.strokeStyle?.placement ?? document.defaultStrokePlacement
-                }
+            case .text(let shape):
+                return document.defaultStrokePlacement
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
+                return shape.strokeStyle?.placement ?? document.defaultStrokePlacement
             }
         }
         return document.defaultStrokePlacement
@@ -83,13 +91,15 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
-            case .shape(let shape):
-                if shape.isTextObject {
-                    return shape.typography?.fillOpacity ?? document.defaultFillOpacity
-                } else {
-                    if let opacity = shape.fillStyle?.opacity {
-                        return opacity
-                    }
+            case .text(let shape):
+                return shape.typography?.fillOpacity ?? document.defaultFillOpacity
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
+                if let opacity = shape.fillStyle?.opacity {
+                    return opacity
                 }
             }
         }
@@ -100,13 +110,15 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
-            case .shape(let shape):
-                if shape.isTextObject {
-                    return shape.typography?.strokeOpacity ?? document.defaultStrokeOpacity
-                } else {
-                    if let opacity = shape.strokeStyle?.opacity {
-                        return opacity
-                    }
+            case .text(let shape):
+                return shape.typography?.strokeOpacity ?? document.defaultStrokeOpacity
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
+                if let opacity = shape.strokeStyle?.opacity {
+                    return opacity
                 }
             }
         }
@@ -117,12 +129,14 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
-            case .shape(let shape):
-                if shape.isTextObject {
-                    return document.defaultStrokeLineJoin
-                } else {
-                    return shape.strokeStyle?.lineJoin.cgLineJoin ?? document.defaultStrokeLineJoin
-                }
+            case .text(let shape):
+                return document.defaultStrokeLineJoin
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
+                return shape.strokeStyle?.lineJoin.cgLineJoin ?? document.defaultStrokeLineJoin
             }
         }
         return document.defaultStrokeLineJoin
@@ -132,12 +146,14 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
-            case .shape(let shape):
-                if shape.isTextObject {
-                    return document.defaultStrokeLineCap
-                } else {
-                    return shape.strokeStyle?.lineCap.cgLineCap ?? document.defaultStrokeLineCap
-                }
+            case .text(let shape):
+                return document.defaultStrokeLineCap
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
+                return shape.strokeStyle?.lineCap.cgLineCap ?? document.defaultStrokeLineCap
             }
         }
         return document.defaultStrokeLineCap
@@ -147,12 +163,14 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
-            case .shape(let shape):
-                if shape.isTextObject {
-                    return document.defaultStrokeMiterLimit
-                } else {
-                    return shape.strokeStyle?.miterLimit ?? document.defaultStrokeMiterLimit
-                }
+            case .text(let shape):
+                return document.defaultStrokeMiterLimit
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
+                return shape.strokeStyle?.miterLimit ?? document.defaultStrokeMiterLimit
             }
         }
         return document.defaultStrokeMiterLimit
@@ -162,12 +180,14 @@ struct StrokeFillPanel: View {
         return document.selectedObjectIDs.contains { objectID in
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
-                case .shape(let shape):
-                    if shape.isTextObject {
-                        return false
-                    } else {
-                        return ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil
-                    }
+                case .text:
+                    return false
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
+                    return ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil
                 }
             }
             return false
@@ -178,13 +198,15 @@ struct StrokeFillPanel: View {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
-                case .shape(let shape):
-                    if shape.isTextObject {
-                        continue
-                    } else {
-                        if ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
-                            return shape.opacity
-                        }
+                case .text:
+                    continue
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
+                    if ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
+                        return shape.opacity
                     }
                 }
             }
@@ -595,19 +617,21 @@ struct StrokeFillPanel: View {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
-                case .shape(let shape):
-                    if shape.isTextObject {
-                        if isEditing {
-                            document.updateTextFillOpacityPreview(id: shape.id, opacity: opacity)
-                        } else {
-                            document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
-                        }
+                case .text(let shape):
+                    if isEditing {
+                        document.updateTextFillOpacityPreview(id: shape.id, opacity: opacity)
                     } else {
-                        if isEditing {
-                            document.updateShapeFillOpacityPreview(id: shape.id, opacity: opacity)
-                        } else {
-                            document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
-                        }
+                        document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
+                    }
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
+                    if isEditing {
+                        document.updateShapeFillOpacityPreview(id: shape.id, opacity: opacity)
+                    } else {
+                        document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
                     }
                 }
             }
@@ -618,13 +642,17 @@ struct StrokeFillPanel: View {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
-                case .shape(let shape):
-                    if !shape.isTextObject {
-                        if isEditing {
-                            document.updateShapeStrokeOpacityPreview(id: shape.id, opacity: opacity)
-                        } else {
-                            document.updateShapeStrokeOpacityInUnified(id: shape.id, opacity: opacity)
-                        }
+                case .text:
+                    break
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
+                    if isEditing {
+                        document.updateShapeStrokeOpacityPreview(id: shape.id, opacity: opacity)
+                    } else {
+                        document.updateShapeStrokeOpacityInUnified(id: shape.id, opacity: opacity)
                     }
                 }
             }
@@ -635,17 +663,19 @@ struct StrokeFillPanel: View {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
-                case .shape(let shape):
-                    if shape.isTextObject {
-                        if !isEditing {
-                            document.updateTextStrokeWidthInUnified(id: shape.id, width: width)
-                        }
+                case .text(let shape):
+                    if !isEditing {
+                        document.updateTextStrokeWidthInUnified(id: shape.id, width: width)
+                    }
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
+                    if isEditing {
+                        document.updateShapeStrokeWidthPreview(id: shape.id, width: width)
                     } else {
-                        if isEditing {
-                            document.updateShapeStrokeWidthPreview(id: shape.id, width: width)
-                        } else {
-                            document.updateShapeStrokeWidthInUnified(id: shape.id, width: width)
-                        }
+                        document.updateShapeStrokeWidthInUnified(id: shape.id, width: width)
                     }
                 }
             }
@@ -658,10 +688,14 @@ struct StrokeFillPanel: View {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
-                case .shape(let shape):
-                    if !shape.isTextObject {
-                        document.updateShapeStrokePlacementInUnified(id: shape.id, placement: placement)
-                    }
+                case .text:
+                    break
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
+                    document.updateShapeStrokePlacementInUnified(id: shape.id, placement: placement)
                 }
             }
         }

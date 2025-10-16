@@ -84,27 +84,28 @@ struct UnifiedObjectContentView: View {
     var body: some View {
         Group {
             switch unifiedObject.objectType {
-            case .shape(let shape):
-                if shape.isTextObject {
-                    if shape.textContent != nil, shape.typography != nil {
-
-                        StableProfessionalTextCanvas(
-                            document: document,
-                            textObjectID: shape.id,
-                            dragPreviewDelta: dragPreviewDelta,
-                            dragPreviewTrigger: dragPreviewTrigger,
-                            viewMode: viewMode
-                        )
-                        .allowsHitTesting(true)
-                    } else {
-                        EmptyView()
-                    }
-                }
-                else if shape.isClippingPath {
+            case .text(let shape):
+                if shape.textContent != nil, shape.typography != nil {
+                    StableProfessionalTextCanvas(
+                        document: document,
+                        textObjectID: shape.id,
+                        dragPreviewDelta: dragPreviewDelta,
+                        dragPreviewTrigger: dragPreviewTrigger,
+                        viewMode: viewMode
+                    )
+                    .allowsHitTesting(true)
+                } else {
                     EmptyView()
-                } else if let clipID = shape.clippedByShapeID {
-                    if let maskUnifiedObject = document.findObject(by: clipID),
-                    case .shape(let maskShape) = maskUnifiedObject.objectType {
+                }
+            case .clipMask(let shape):
+                EmptyView()
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape):
+                if let clipID = shape.clippedByShapeID {
+                    if let maskUnifiedObject = document.findObject(by: clipID) {
+                        let maskShape = maskUnifiedObject.shape
                         let clippedPath = createPreTransformedPath(for: shape)
                         let maskPath = createPreTransformedPath(for: maskShape)
                         let isClippedShapeSelected = selectedObjectIDs.contains(unifiedObject.id)
@@ -147,7 +148,6 @@ struct UnifiedObjectContentView: View {
                         }
                     }
                 }
-
             }
         }
     }
@@ -207,10 +207,16 @@ struct PasteboardBackgroundView: View {
 
     private var pasteboardBackground: VectorObject? {
         document.getObjectsInStackingOrder().first { obj in
-            if case .shape(let shape) = obj.objectType {
+            switch obj.objectType {
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 return shape.name == "Pasteboard Background"
+            case .text:
+                return false
             }
-            return false
         }
     }
 
@@ -259,10 +265,16 @@ struct CanvasBackgroundView: View {
 
     private var canvasBackground: VectorObject? {
         document.getObjectsInStackingOrder().first { obj in
-            if case .shape(let shape) = obj.objectType {
+            switch obj.objectType {
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 return shape.name == "Canvas Background"
+            case .text:
+                return false
             }
-            return false
         }
     }
 
@@ -312,10 +324,16 @@ struct NonBackgroundObjectsView: View {
 
     private var nonBackgroundObjects: [VectorObject] {
         document.getObjectsInStackingOrder().filter { obj in
-            if case .shape(let shape) = obj.objectType {
+            switch obj.objectType {
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 return shape.name != "Canvas Background" && shape.name != "Pasteboard Background"
+            case .text:
+                return true
             }
-            return true
         }
     }
 

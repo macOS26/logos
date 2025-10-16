@@ -19,7 +19,13 @@ extension DrawingCanvas {
             }
 
             switch unifiedObject.objectType {
-            case .shape(let shape):
+            case .text:
+                break
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 if shape.isLocked {
                     return
                 }
@@ -29,7 +35,13 @@ extension DrawingCanvas {
         var combinedBounds: CGRect?
         for unifiedObject in selectedObjects {
             switch unifiedObject.objectType {
-            case .shape(let shape):
+            case .text:
+                break
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
                 if let existing = combinedBounds {
                     combinedBounds = existing.union(bounds)
@@ -44,27 +56,28 @@ extension DrawingCanvas {
 
         for unifiedObject in selectedObjects {
             switch unifiedObject.objectType {
-            case .shape(let shape):
-
-                if shape.isTextObject {
-                    if let textObject = document.findText(by: shape.id) {
-                        let centerX = textObject.position.x + textObject.bounds.width/2
-                        let centerY = textObject.position.y + textObject.bounds.height/2
-                        let calculatedCenter = CGPoint(x: centerX, y: centerY)
-                        initialObjectPositions[unifiedObject.id] = calculatedCenter
-                    } else {
-                        let bounds = shape.bounds
-                        let centerX = shape.transform.tx + bounds.width/2
-                        let centerY = shape.transform.ty + bounds.height/2
-                        let fallbackCenter = CGPoint(x: centerX, y: centerY)
-                        initialObjectPositions[unifiedObject.id] = fallbackCenter
-                    }
+            case .text(let shape):
+                if let textObject = document.findText(by: shape.id) {
+                    let centerX = textObject.position.x + textObject.bounds.width/2
+                    let centerY = textObject.position.y + textObject.bounds.height/2
+                    let calculatedCenter = CGPoint(x: centerX, y: centerY)
+                    initialObjectPositions[unifiedObject.id] = calculatedCenter
                 } else {
-                    let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-                    let centerX = bounds.midX
-                    let centerY = bounds.midY
-                    initialObjectPositions[unifiedObject.id] = CGPoint(x: centerX, y: centerY)
+                    let bounds = shape.bounds
+                    let centerX = shape.transform.tx + bounds.width/2
+                    let centerY = shape.transform.ty + bounds.height/2
+                    let fallbackCenter = CGPoint(x: centerX, y: centerY)
+                    initialObjectPositions[unifiedObject.id] = fallbackCenter
                 }
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
+                let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+                let centerX = bounds.midX
+                let centerY = bounds.midY
+                initialObjectPositions[unifiedObject.id] = CGPoint(x: centerX, y: centerY)
 
                 initialObjectTransforms[unifiedObject.id] = shape.transform
             }
@@ -86,7 +99,13 @@ extension DrawingCanvas {
             }
 
             switch unifiedObject.objectType {
-            case .shape(let shape):
+            case .text:
+                break
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 if shape.isLocked {
                     return
                 }
@@ -181,16 +200,7 @@ extension DrawingCanvas {
 
             for unifiedObject in selectedObjects {
                 switch unifiedObject.objectType {
-                case .shape(let shape):
-                    let shapes = document.getShapesForLayer(unifiedObject.layerIndex)
-                    if let shapeIndex = shapes.firstIndex(where: { $0.id == unifiedObject.id }) {
-                        if shape.isClippingPath {
-                            applyDragDeltaToShapeCoordinates(layerIndex: unifiedObject.layerIndex, shapeIndex: shapeIndex, delta: currentDragDelta)
-                        } else {
-                            applyDragDeltaToShapeCoordinates(layerIndex: unifiedObject.layerIndex, shapeIndex: shapeIndex, delta: currentDragDelta)
-                        }
-                    }
-
+                case .text:
                     if let textObj = document.findText(by: unifiedObject.id),
                        let initialCenter = initialObjectPositions[unifiedObject.id] {
                         let textBounds = textObj.bounds
@@ -198,6 +208,15 @@ extension DrawingCanvas {
                         let newPositionY = initialCenter.y - textBounds.height/2 + currentDragDelta.y
                         let delta = CGPoint(x: newPositionX - textObj.position.x, y: newPositionY - textObj.position.y)
                         document.translateTextInUnified(id: unifiedObject.id, delta: delta)
+                    }
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
+                    let shapes = document.getShapesForLayer(unifiedObject.layerIndex)
+                    if let shapeIndex = shapes.firstIndex(where: { $0.id == unifiedObject.id }) {
+                        applyDragDeltaToShapeCoordinates(layerIndex: unifiedObject.layerIndex, shapeIndex: shapeIndex, delta: currentDragDelta)
                     }
                 }
             }
@@ -520,22 +539,24 @@ extension DrawingCanvas {
             guard document.selectedObjectIDs.contains(unifiedObject.id) else { continue }
 
             switch unifiedObject.objectType {
-            case .shape(let oldShape):
-                if oldShape.isTextObject {
-                    if let updatedText = document.findText(by: oldShape.id) {
-                        let updatedShape = VectorShape.from(updatedText)
-                        document.unifiedObjects[i] = VectorObject(
-                            shape: updatedShape,
-                            layerIndex: unifiedObject.layerIndex,
-                        )
-                    }
-                } else {
-                    if let updatedShape = document.findShape(by: oldShape.id) {
-                        document.unifiedObjects[i] = VectorObject(
-                            shape: updatedShape,
-                            layerIndex: unifiedObject.layerIndex,
-                        )
-                    }
+            case .text(let oldShape):
+                if let updatedText = document.findText(by: oldShape.id) {
+                    let updatedShape = VectorShape.from(updatedText)
+                    document.unifiedObjects[i] = VectorObject(
+                        shape: updatedShape,
+                        layerIndex: unifiedObject.layerIndex,
+                    )
+                }
+            case .shape(let oldShape),
+                 .warp(let oldShape),
+                 .group(let oldShape),
+                 .clipGroup(let oldShape),
+                 .clipMask(let oldShape):
+                if let updatedShape = document.findShape(by: oldShape.id) {
+                    document.unifiedObjects[i] = VectorObject(
+                        shape: updatedShape,
+                        layerIndex: unifiedObject.layerIndex,
+                    )
                 }
             }
         }

@@ -10,23 +10,25 @@ extension DrawingCanvas {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
-                case .shape(let shape):
-                    if shape.isTextObject {
-                        if !shape.isVisible || shape.isLocked { continue }
+                case .text(let shape):
+                    if !shape.isVisible || shape.isLocked { continue }
 
-                        let position = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
-                        let absoluteBounds = CGRect(
-                            x: position.x + shape.bounds.minX,
-                            y: position.y + shape.bounds.minY,
-                            width: shape.bounds.width,
-                            height: shape.bounds.height
-                        )
+                    let position = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                    let absoluteBounds = CGRect(
+                        x: position.x + shape.bounds.minX,
+                        y: position.y + shape.bounds.minY,
+                        width: shape.bounds.width,
+                        height: shape.bounds.height
+                    )
 
-                        if absoluteBounds.contains(location) {
-                            return true
-                        }
-                        continue
+                    if absoluteBounds.contains(location) {
+                        return true
                     }
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
                     if !shape.isVisible {
                         continue
                     }

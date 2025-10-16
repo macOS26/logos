@@ -316,21 +316,21 @@ struct TransformationControls: View {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
-                case .shape(let shape):
-                    var shapeBounds: CGRect
-                    if shape.isTextObject {
-                        let position = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
-                        shapeBounds = CGRect(
-                            x: position.x,
-                            y: position.y,
-                            width: shape.bounds.width,
-                            height: shape.bounds.height
-                        )
-                    } else if shape.isGroupContainer {
-                        shapeBounds = shape.groupBounds
-                    } else {
-                        shapeBounds = shape.bounds
-                    }
+                case .text(let shape):
+                    let position = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                    let shapeBounds = CGRect(
+                        x: position.x,
+                        y: position.y,
+                        width: shape.bounds.width,
+                        height: shape.bounds.height
+                    )
+                    combinedBounds = combinedBounds.map { $0.union(shapeBounds) } ?? shapeBounds
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
+                    let shapeBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
                     combinedBounds = combinedBounds.map { $0.union(shapeBounds) } ?? shapeBounds
                 }
             }

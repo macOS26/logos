@@ -255,53 +255,54 @@ struct ProfessionalLayerRow: View {
                 VStack(spacing: 0) {
                     ForEach(layerObjects, id: \.id) { unifiedObject in
                         let index = layerObjects.firstIndex(where: { $0.id == unifiedObject.id }) ?? 0
+                        let isLast = index == layerObjects.count - 1
                         switch unifiedObject.objectType {
-                        case .shape(let shape):
-                            let isLast = index == layerObjects.count - 1
-                            if shape.isTextObject {
-                                ObjectRow(
-                                    objectType: .text,
-                                    objectId: shape.id,
-                                    name: shape.textContent?.isEmpty != false ? "Text" : (shape.textContent ?? "Text"),
-                                    isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
-                                    onSelect: { isShiftPressed, isCommandPressed in
-                                        handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
-                                    },
-                                    layerIndex: layerIndex,
-                                    document: document,
-                                    showBottomIndicator: isLast
-                                )
-                                .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
-                            } else if shape.isGroupContainer {
-                                ObjectRow(
-                                    objectType: .group,
-                                    objectId: shape.id,
-                                    name: shape.name,
-                                    isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
-                                    onSelect: { isShiftPressed, isCommandPressed in
-                                        handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
-                                    },
-                                    layerIndex: layerIndex,
-                                    document: document,
-                                    groupedShapes: shape.groupedShapes,
-                                    showBottomIndicator: isLast
-                                )
-                                .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
-                            } else {
-                                ObjectRow(
-                                    objectType: .shape,
-                                    objectId: shape.id,
-                                    name: shape.name,
-                                    isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
-                                    onSelect: { isShiftPressed, isCommandPressed in
-                                        handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
-                                    },
-                                    layerIndex: layerIndex,
-                                    document: document,
-                                    showBottomIndicator: isLast
-                                )
-                                .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
-                            }
+                        case .text(let shape):
+                            ObjectRow(
+                                objectType: .text,
+                                objectId: shape.id,
+                                name: shape.textContent?.isEmpty != false ? "Text" : (shape.textContent ?? "Text"),
+                                isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
+                                onSelect: { isShiftPressed, isCommandPressed in
+                                    handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
+                                },
+                                layerIndex: layerIndex,
+                                document: document,
+                                showBottomIndicator: isLast
+                            )
+                            .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
+                        case .group(let shape),
+                             .clipGroup(let shape):
+                            ObjectRow(
+                                objectType: .group,
+                                objectId: shape.id,
+                                name: shape.name,
+                                isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
+                                onSelect: { isShiftPressed, isCommandPressed in
+                                    handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
+                                },
+                                layerIndex: layerIndex,
+                                document: document,
+                                groupedShapes: shape.groupedShapes,
+                                showBottomIndicator: isLast
+                            )
+                            .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
+                        case .shape(let shape),
+                             .warp(let shape),
+                             .clipMask(let shape):
+                            ObjectRow(
+                                objectType: .shape,
+                                objectId: shape.id,
+                                name: shape.name,
+                                isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
+                                onSelect: { isShiftPressed, isCommandPressed in
+                                    handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
+                                },
+                                layerIndex: layerIndex,
+                                document: document,
+                                showBottomIndicator: isLast
+                            )
+                            .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
                         }
                     }
                 }

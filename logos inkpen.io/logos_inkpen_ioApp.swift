@@ -947,21 +947,20 @@ class ClipboardManager {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
-                case .shape(let shape):
-                    if shape.isTextObject {
-                        if let textContent = shape.textContent {
-                            let originalText = document.findText(by: objectID)
-                            let originalAreaSize = originalText?.areaSize ?? shape.areaSize
-                            let typography = originalText?.typography ?? shape.typography ?? TypographyProperties(strokeColor: .black, fillColor: .black)
-                            let position = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
-                            let vectorText = VectorText(
-                                content: textContent,
-                                typography: typography,
-                                position: position,
-                                transform: .identity,
-                                isVisible: shape.isVisible,
-                                isLocked: shape.isLocked,
-                                isEditing: false,
+                case .text(let shape):
+                    if let textContent = shape.textContent {
+                        let originalText = document.findText(by: objectID)
+                        let originalAreaSize = originalText?.areaSize ?? shape.areaSize
+                        let typography = originalText?.typography ?? shape.typography ?? TypographyProperties(strokeColor: .black, fillColor: .black)
+                        let position = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                        let vectorText = VectorText(
+                            content: textContent,
+                            typography: typography,
+                            position: position,
+                            transform: .identity,
+                            isVisible: shape.isVisible,
+                            isLocked: shape.isLocked,
+                            isEditing: false,
                                 layerIndex: unifiedObject.layerIndex,
                                 cursorPosition: 0,
                                 areaSize: originalAreaSize
@@ -969,9 +968,12 @@ class ClipboardManager {
 
                             textToCopy.append(vectorText)
                         }
-                    } else {
-                        shapesToCopy.append(shape)
-                    }
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
+                    shapesToCopy.append(shape)
                 }
             }
         }

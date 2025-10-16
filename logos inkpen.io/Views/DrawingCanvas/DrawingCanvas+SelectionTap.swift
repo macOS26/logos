@@ -137,7 +137,24 @@ extension DrawingCanvas {
             var isHit = false
 
             switch unifiedObject.objectType {
-            case .shape(let shape):
+            case .text(let shape):
+                if !shape.isVisible || shape.isLocked { continue }
+
+                let textPos = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                let textContentArea = CGRect(
+                    x: textPos.x,
+                    y: textPos.y,
+                    width: shape.bounds.width,
+                    height: shape.bounds.height
+                )
+
+                let contentHit = textContentArea.contains(validatedLocation)
+                isHit = contentHit
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 if !shape.isVisible { continue }
 
                 let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
@@ -145,32 +162,14 @@ extension DrawingCanvas {
                     continue
                 }
 
-                if shape.isTextObject {
-                    if !shape.isVisible || shape.isLocked {
-                        continue
-                    }
-
-                    let textPos = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
-                    let textContentArea = CGRect(
-                        x: textPos.x,
-                        y: textPos.y,
-                        width: shape.bounds.width,
-                        height: shape.bounds.height
-                    )
-
-                    let contentHit = textContentArea.contains(validatedLocation)
-
-                    isHit = contentHit
+                if shape.clippedByShapeID != nil {
+                    isHit = false
+                } else if shape.isClippingPath {
+                    let baseTolerance: CGFloat = 8.0
+                    let tolerance = max(2.0, baseTolerance / document.zoomLevel)
+                    isHit = PathOperations.hitTest(shape.transformedPath, point: validatedLocation, tolerance: tolerance)
                 } else {
-                    if shape.clippedByShapeID != nil {
-                        isHit = false
-                    } else if shape.isClippingPath {
-                        let baseTolerance: CGFloat = 8.0
-                        let tolerance = max(2.0, baseTolerance / document.zoomLevel)
-                        isHit = PathOperations.hitTest(shape.transformedPath, point: validatedLocation, tolerance: tolerance)
-                    } else {
-                        isHit = performShapeHitTest(shape: shape, at: validatedLocation)
-                    }
+                    isHit = performShapeHitTest(shape: shape, at: validatedLocation)
                 }
             }
 
@@ -308,27 +307,29 @@ extension DrawingCanvas {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
-                case .shape(let shape):
-                    if shape.isTextObject {
-                        let textContentArea = CGRect(
-                            x: CGPoint(x: shape.transform.tx, y: shape.transform.ty).x,
-                            y: CGPoint(x: shape.transform.tx, y: shape.transform.ty).y,
-                            width: shape.bounds.width,
-                            height: shape.bounds.height
-                        )
-                        let contains = textContentArea.contains(location)
+                case .text(let shape):
+                    let textContentArea = CGRect(
+                        x: CGPoint(x: shape.transform.tx, y: shape.transform.ty).x,
+                        y: CGPoint(x: shape.transform.tx, y: shape.transform.ty).y,
+                        width: shape.bounds.width,
+                        height: shape.bounds.height
+                    )
+                    let contains = textContentArea.contains(location)
 
-                        if contains {
-                            return true
-                        }
-                    } else {
-                        let transformedBounds = shape.bounds.applying(shape.transform)
-                        let selectionBoxBounds = transformedBounds.insetBy(dx: 0, dy: 0)
-                        let contains = selectionBoxBounds.contains(location)
+                    if contains {
+                        return true
+                    }
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
+                    let transformedBounds = shape.bounds.applying(shape.transform)
+                    let selectionBoxBounds = transformedBounds.insetBy(dx: 0, dy: 0)
+                    let contains = selectionBoxBounds.contains(location)
 
-                        if contains {
-                            return true
-                        }
+                    if contains {
+                        return true
                     }
                 }
             }
