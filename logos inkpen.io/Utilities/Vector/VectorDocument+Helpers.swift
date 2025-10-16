@@ -314,7 +314,8 @@ extension VectorDocument {
     }
 
     func forEachTextInOrder(_ action: (VectorText) throws -> Void) rethrows {
-        for unifiedObject in unifiedObjects.sorted(by: { $0.orderID < $1.orderID }) {
+        // Array position IS the order now - no sorting needed
+        for unifiedObject in unifiedObjects {
             if case .shape(let shape) = unifiedObject.objectType, shape.isTextObject,
                let text = VectorText.from(shape) {
                 try action(text)
