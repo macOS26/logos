@@ -72,7 +72,7 @@ class SVGExporter {
             for shape in shapesInLayer {
                 if !shape.isVisible { continue }
 
-                if shape.isTextObject {
+                if let object = document.findObject(by: shape.id), case .text = object.objectType {
                     svg += exportTextShape(shape, dpiScale: 1.0, renderingMode: textRenderingMode)
                 } else {
                     svg += exportShape(shape, dpiScale: 1.0)
