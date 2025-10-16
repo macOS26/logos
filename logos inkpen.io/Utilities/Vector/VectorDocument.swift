@@ -9,7 +9,6 @@ class VectorDocument: ObservableObject, Codable {
         }
     }
     @Published var layerIndex: Int = 0
-    @Published var pasteboard: VectorLayer = VectorLayer(name: "Pasteboard")
     @Published var selectedLayerIndex: Int?
     @Published var selectedShapeIDs: Set<UUID> = []
     @Published var selectedTextIDs: Set<UUID> = []
@@ -603,7 +602,6 @@ class VectorDocument: ObservableObject, Codable {
         settings = decodedSettings
         layers = decodedLayers
         layerIndex = 0
-        pasteboard = VectorLayer(name: "Pasteboard")
 
         documentColorDefaults = ColorDefaults()
         customRgbSwatches = []
