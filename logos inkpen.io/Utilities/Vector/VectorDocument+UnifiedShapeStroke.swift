@@ -4,12 +4,15 @@ extension VectorDocument {
 
     func updateShapeStrokeLineJoinInUnified(id: UUID, lineJoin: CGLineJoin) {
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return !shape.isTextObject && shape.id == id
+            switch obj.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                return shape.id == id
+            case .text:
+                return false
             }
-            return false
         }) {
-            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+            switch unifiedObjects[objectIndex].objectType {
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 if shape.strokeStyle == nil {
                     shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: defaultStrokePlacement, lineJoin: lineJoin, opacity: defaultStrokeOpacity)
                 } else {
@@ -22,18 +25,23 @@ extension VectorDocument {
                 )
 
                 syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
+            case .text:
+                break
             }
         }
     }
 
     func updateShapeStrokeLineCapInUnified(id: UUID, lineCap: CGLineCap) {
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return !shape.isTextObject && shape.id == id
+            switch obj.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                return shape.id == id
+            case .text:
+                return false
             }
-            return false
         }) {
-            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+            switch unifiedObjects[objectIndex].objectType {
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 if shape.strokeStyle == nil {
                     shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: defaultStrokePlacement, lineCap: lineCap, opacity: defaultStrokeOpacity)
                 } else {
@@ -46,18 +54,23 @@ extension VectorDocument {
                 )
 
                 syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
+            case .text:
+                break
             }
         }
     }
 
     func updateShapeStrokeMiterLimitInUnified(id: UUID, miterLimit: CGFloat) {
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return !shape.isTextObject && shape.id == id
+            switch obj.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                return shape.id == id
+            case .text:
+                return false
             }
-            return false
         }) {
-            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+            switch unifiedObjects[objectIndex].objectType {
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 if shape.strokeStyle == nil {
                     shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: defaultStrokePlacement, miterLimit: miterLimit, opacity: defaultStrokeOpacity)
                 } else {
@@ -70,18 +83,23 @@ extension VectorDocument {
                 )
 
                 syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
+            case .text:
+                break
             }
         }
     }
 
     func createFillStyleInUnified(id: UUID, color: VectorColor, opacity: Double) {
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return !shape.isTextObject && shape.id == id
+            switch obj.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                return shape.id == id
+            case .text:
+                return false
             }
-            return false
         }) {
-            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+            switch unifiedObjects[objectIndex].objectType {
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.fillStyle = FillStyle(
                     color: color,
                     opacity: opacity
@@ -93,18 +111,23 @@ extension VectorDocument {
                 )
 
                 syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
+            case .text:
+                break
             }
         }
     }
 
     func createStrokeStyleInUnified(id: UUID, color: VectorColor, width: Double, placement: StrokePlacement, lineCap: CGLineCap, lineJoin: CGLineJoin, miterLimit: Double, opacity: Double) {
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return !shape.isTextObject && shape.id == id
+            switch obj.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                return shape.id == id
+            case .text:
+                return false
             }
-            return false
         }) {
-            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+            switch unifiedObjects[objectIndex].objectType {
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.strokeStyle = StrokeStyle(
                     color: color,
                     width: width,
@@ -121,18 +144,23 @@ extension VectorDocument {
                 )
 
                 syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
+            case .text:
+                break
             }
         }
     }
 
     func updateShapePathUnified(id: UUID, path: VectorPath) {
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.id == id && !shape.isTextObject
+            switch obj.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                return shape.id == id
+            case .text:
+                return false
             }
-            return false
         }) {
-            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+            switch unifiedObjects[objectIndex].objectType {
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.path = path
                 shape.updateBounds()
 
@@ -142,18 +170,23 @@ extension VectorDocument {
                 )
 
                 syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
+            case .text:
+                break
             }
         }
     }
 
     func updateShapeCornerRadiiInUnified(id: UUID, cornerRadii: [Double], path: VectorPath) {
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.id == id && !shape.isTextObject
+            switch obj.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                return shape.id == id
+            case .text:
+                return false
             }
-            return false
         }) {
-            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+            switch unifiedObjects[objectIndex].objectType {
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.cornerRadii = cornerRadii
                 shape.path = path
                 shape.updateBounds()
@@ -164,18 +197,23 @@ extension VectorDocument {
                 )
 
                 syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
+            case .text:
+                break
             }
         }
     }
 
     func updateShapeGradientInUnified(id: UUID, gradient: VectorGradient, target: ColorTarget) {
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.id == id && !shape.isTextObject
+            switch obj.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                return shape.id == id
+            case .text:
+                return false
             }
-            return false
         }) {
-            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+            switch unifiedObjects[objectIndex].objectType {
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 switch target {
                 case .fill:
                     shape.fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
@@ -198,18 +236,23 @@ extension VectorDocument {
                 )
 
                 syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
+            case .text:
+                break
             }
         }
     }
 
     func updateShapeTransformAndPathInUnified(id: UUID, path: VectorPath? = nil, transform: CGAffineTransform? = nil) {
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.id == id && !shape.isTextObject
+            switch obj.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                return shape.id == id
+            case .text:
+                return false
             }
-            return false
         }) {
-            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+            switch unifiedObjects[objectIndex].objectType {
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 if let path = path {
                     shape.path = path
                 }
@@ -224,18 +267,23 @@ extension VectorDocument {
                 )
 
                 syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
+            case .text:
+                break
             }
         }
     }
 
     func updateEntireShapeInUnified(id: UUID, updater: (inout VectorShape) -> Void) {
         if let objectIndex = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.id == id && !shape.isTextObject
+            switch obj.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                return shape.id == id
+            case .text:
+                return false
             }
-            return false
         }) {
-            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+            switch unifiedObjects[objectIndex].objectType {
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 updater(&shape)
                 shape.updateBounds()
 
@@ -245,6 +293,8 @@ extension VectorDocument {
                 )
 
                 syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
+            case .text:
+                break
             }
         }
     }
