@@ -493,6 +493,9 @@ struct StrokeFillPanel: View {
         .onAppear {
             syncOpacityStates()
         }
+        .onChange(of: document.selectedObjectIDs) { _, _ in
+            syncOpacityStates()
+        }
     }
 
     private func syncOpacityStates() {
