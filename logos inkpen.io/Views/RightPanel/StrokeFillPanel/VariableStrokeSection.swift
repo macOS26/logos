@@ -29,9 +29,9 @@ struct VariableStrokeSection: View {
                 Slider(value: Binding(
                     get: { document.currentBrushThickness },
                     set: { document.currentBrushThickness = $0 }
-                ), in: 0...100)
+                ), in: 0.25...72)
                 .controlSize(.regular)
-                .help("Adjust brush stroke thickness (0-100 points)")
+                .help("Adjust brush stroke thickness (0.25-72 points)")
             }
 
             VStack(alignment: .leading, spacing: 8) {
