@@ -11,8 +11,7 @@ struct FontPanel: View {
               let textID = document.selectedTextIDs.first else { return nil }
 
         if let unifiedObj = document.findObject(by: textID),
-           case .shape(let shape) = unifiedObj.objectType,
-           shape.isTextObject {
+           case .text(let shape) = unifiedObj.objectType {
             if let typography = shape.typography {
                 return typography
             } else {
@@ -33,8 +32,7 @@ struct FontPanel: View {
         guard let textID = selectedTextID else { return nil }
 
         if let unifiedObj = document.findObject(by: textID),
-           case .shape(let shape) = unifiedObj.objectType,
-           shape.isTextObject {
+           case .text(let shape) = unifiedObj.objectType {
             return shape.textContent ?? shape.name.replacingOccurrences(of: "Text: ", with: "")
         }
         return nil
@@ -45,8 +43,7 @@ struct FontPanel: View {
               let typography = selectedTextTypography else { return nil }
 
         if let unifiedObj = document.findObject(by: textID),
-           case .shape(let shape) = unifiedObj.objectType,
-           shape.isTextObject {
+           case .text(let shape) = unifiedObj.objectType {
             return VectorText.from(shape)
         }
 
@@ -61,12 +58,12 @@ struct FontPanel: View {
 
     private var editingText: VectorText? {
         if let unifiedObj = document.unifiedObjects.first(where: { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject && (shape.isEditing == true)
+            if case .text(let shape) = obj.objectType {
+                return shape.isEditing == true
             }
             return false
         }) {
-            if case .shape(let shape) = unifiedObj.objectType {
+            if case .text(let shape) = unifiedObj.objectType {
                 return VectorText.from(shape)
             }
         }
@@ -134,12 +131,12 @@ struct FontPanel: View {
         }
         .onChange(of: document.unifiedObjects.map { $0.id }) { _, _ in
             let freshEditingText = document.unifiedObjects.first { obj in
-                if case .shape(let shape) = obj.objectType, shape.isTextObject {
+                if case .text(let shape) = obj.objectType {
                     return shape.isEditing == true
                 }
                 return false
             }.flatMap { obj -> VectorText? in
-                if case .shape(let shape) = obj.objectType, var text = VectorText.from(shape) {
+                if case .text(let shape) = obj.objectType, var text = VectorText.from(shape) {
                     text.layerIndex = obj.layerIndex
                     return text
                 }
