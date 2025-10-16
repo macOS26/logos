@@ -146,10 +146,13 @@ class StrokePropertiesCommand: BaseCommand {
                   let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
             var obj = document.unifiedObjects[index]
 
-            if case .shape(var shape) = obj.objectType, !shape.isTextObject {
+            switch obj.objectType {
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.strokeStyle?.placement = placement
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
+            case .text:
+                continue
             }
         }
 
@@ -162,10 +165,13 @@ class StrokePropertiesCommand: BaseCommand {
                   let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
             var obj = document.unifiedObjects[index]
 
-            if case .shape(var shape) = obj.objectType, !shape.isTextObject {
+            switch obj.objectType {
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.strokeStyle?.lineJoin = LineJoin(lineJoin)
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
+            case .text:
+                continue
             }
         }
 
@@ -178,10 +184,13 @@ class StrokePropertiesCommand: BaseCommand {
                   let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
             var obj = document.unifiedObjects[index]
 
-            if case .shape(var shape) = obj.objectType, !shape.isTextObject {
+            switch obj.objectType {
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.strokeStyle?.lineCap = LineCap(lineCap)
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
+            case .text:
+                continue
             }
         }
 
@@ -194,10 +203,13 @@ class StrokePropertiesCommand: BaseCommand {
                   let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
             var obj = document.unifiedObjects[index]
 
-            if case .shape(var shape) = obj.objectType, !shape.isTextObject {
+            switch obj.objectType {
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.strokeStyle?.miterLimit = miterLimit
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
+            case .text:
+                continue
             }
         }
 
@@ -210,10 +222,13 @@ class StrokePropertiesCommand: BaseCommand {
                   let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
             var obj = document.unifiedObjects[index]
 
-            if case .shape(var shape) = obj.objectType, !shape.isTextObject {
+            switch obj.objectType {
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 shape.opacity = opacity
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
+            case .text:
+                continue
             }
         }
 
