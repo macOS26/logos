@@ -473,13 +473,10 @@ class VectorDocument: ObservableObject, Codable {
     }
 
     private func refreshSystemLayers() {
-        if layers.count >= 2 {
-            layers[0].isVisible.toggle()
-            layers[1].isVisible.toggle()
-            objectWillChange.send()
-            layers[0].isVisible.toggle()
-            layers[1].isVisible.toggle()
-            objectWillChange.send()
-        }
+        let temp = unifiedObjects
+        unifiedObjects = []
+        objectWillChange.send()
+        unifiedObjects = temp
+        objectWillChange.send()
     }
 }
