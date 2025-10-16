@@ -34,24 +34,26 @@ class OpacityCommand: BaseCommand {
                   let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) else { continue }
             var obj = document.unifiedObjects[index]
 
-            if case .shape(var shape) = obj.objectType {
-                if shape.isTextObject {
-                    if var typography = shape.typography {
-                        switch target {
-                        case .fill:
-                            typography.fillOpacity = opacity
-                        case .stroke:
-                            typography.strokeOpacity = opacity
-                        }
-                        shape.typography = typography
-                    }
-                } else {
+            switch obj.objectType {
+            case .text(var shape):
+                if var typography = shape.typography {
                     switch target {
                     case .fill:
-                        shape.fillStyle?.opacity = opacity
+                        typography.fillOpacity = opacity
                     case .stroke:
-                        shape.strokeStyle?.opacity = opacity
+                        typography.strokeOpacity = opacity
                     }
+                    shape.typography = typography
+                }
+                obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                document.unifiedObjects[index] = obj
+
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+                switch target {
+                case .fill:
+                    shape.fillStyle?.opacity = opacity
+                case .stroke:
+                    shape.strokeStyle?.opacity = opacity
                 }
                 obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                 document.unifiedObjects[index] = obj
