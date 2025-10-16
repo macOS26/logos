@@ -397,8 +397,7 @@ extension VectorDocument {
         }
 
         let object = unifiedObjects.remove(at: sourceIndex)
-        let adjustedTargetIndex = sourceIndex < targetIndex ? targetIndex - 1 : targetIndex
-        unifiedObjects.insert(object, at: adjustedTargetIndex)
+        unifiedObjects.insert(object, at: targetIndex)
     }
 
     func moveObjectToTop(objectId: UUID) {
