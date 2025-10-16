@@ -19,10 +19,13 @@ extension DrawingCanvas {
         guard !isBrushDrawing else { return }
 
         isBrushDrawing = true
-        brushRawPoints = [BrushPoint(location: location, pressure: 1.0)]
-        brushSimplifiedPoints = []
 
         document.hasPressureInput = PressureManager.shared.hasRealPressureInput
+
+        // Use current pressure instead of hardcoded 1.0 to avoid false positive bulge at start
+        let startPressure = PressureManager.shared.currentPressure
+        brushRawPoints = [BrushPoint(location: location, pressure: startPressure)]
+        brushSimplifiedPoints = []
 
         PressureManager.shared.resetForNewDrawing()
 
@@ -55,19 +58,14 @@ extension DrawingCanvas {
 
         let actualPressure = pressure ?? PressureManager.shared.currentPressure
 
-        if let lastPoint = brushRawPoints.last {
-            let distance = hypot(location.x - lastPoint.location.x, location.y - lastPoint.location.y)
-            let minDistance: Double = 1.0
-
-            if distance < minDistance {
-                return
-            }
-        }
-
         let newPoint = BrushPoint(location: location, pressure: actualPressure)
         brushRawPoints.append(newPoint)
 
         updateBrushPreview()
+
+        if brushRawPoints.count > 1000 {
+            brushRawPoints = Array(brushRawPoints.suffix(800))
+        }
     }
 
     internal func handleBrushDragEnd() {
