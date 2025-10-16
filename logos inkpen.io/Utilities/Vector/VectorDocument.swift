@@ -466,5 +466,18 @@ class VectorDocument: ObservableObject, Codable {
         loadStrokeStyleDefaults()
 
         migrateLegacyTextObjects()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            self?.refreshSystemLayers()
+        }
+    }
+
+    private func refreshSystemLayers() {
+        if layers.count >= 2 {
+            layers[0].isVisible.toggle()
+            layers[1].isVisible.toggle()
+            layers[0].isVisible.toggle()
+            layers[1].isVisible.toggle()
+        }
     }
 }
