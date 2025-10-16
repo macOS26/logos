@@ -673,23 +673,35 @@ extension ProfessionalPathOperations {
         }
 
         // Only check adjacent (consecutive) points - this is "mergeADJACENTCoincidentPoints"
+        // Loop until no more removals (handles multiple stacked points)
         var indicesToRemove: Set<Int> = []
+        var removedInLastPass = true
 
-        for i in 0..<(pointData.count - 1) {
-            let currentData = pointData[i]
-            let nextData = pointData[i + 1]
+        while removedInLastPass {
+            removedInLastPass = false
 
-            // Only merge if they are adjacent in the actual path
-            if nextData.index == currentData.index + 1 {
-                let distance = currentData.position.distance(to: nextData.position)
+            for i in 0..<(pointData.count - 1) {
+                let currentData = pointData[i]
+                let nextData = pointData[i + 1]
 
-                if distance <= tolerance {
-                    let actualElementIndex = nextData.index
-                    let isFirstOrLast = (actualElementIndex == firstPointIndex || actualElementIndex == lastPointIndex)
+                // Skip if already marked for removal
+                if indicesToRemove.contains(currentData.index) || indicesToRemove.contains(nextData.index) {
+                    continue
+                }
 
-                    if !isFirstOrLast {
-                        indicesToRemove.insert(actualElementIndex)
-                        Log.info("  Removing adjacent coincident point at index \(actualElementIndex)", category: .general)
+                // Only merge if they are adjacent in the actual path
+                if nextData.index == currentData.index + 1 {
+                    let distance = currentData.position.distance(to: nextData.position)
+
+                    if distance <= tolerance {
+                        let actualElementIndex = nextData.index
+                        let isFirstOrLast = (actualElementIndex == firstPointIndex || actualElementIndex == lastPointIndex)
+
+                        if !isFirstOrLast {
+                            indicesToRemove.insert(actualElementIndex)
+                            removedInLastPass = true
+                            Log.info("  Removing adjacent coincident point at index \(actualElementIndex)", category: .general)
+                        }
                     }
                 }
             }
