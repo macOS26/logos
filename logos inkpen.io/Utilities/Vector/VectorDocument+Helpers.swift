@@ -23,10 +23,16 @@ extension VectorDocument {
 
     var allShapes: [VectorShape] {
         return unifiedObjects.compactMap { unifiedObject in
-            if case .shape(let shape) = unifiedObject.objectType, !shape.isTextObject {
+            switch unifiedObject.objectType {
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 return shape
+            case .text:
+                return nil
             }
-            return nil
         }
     }
 
@@ -132,8 +138,19 @@ extension VectorDocument {
         for objectID in selectedObjectIDs {
             if let unifiedObject = findObject(by: objectID) {
                 switch unifiedObject.objectType {
-                case .shape(let shape):
-                    let shapeBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+                case .group(let shape):
+                    let shapeBounds = shape.groupBounds
+                    if let existing = combinedBounds {
+                        combinedBounds = existing.union(shapeBounds)
+                    } else {
+                        combinedBounds = shapeBounds
+                    }
+                case .shape(let shape),
+                     .text(let shape),
+                     .warp(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
+                    let shapeBounds = shape.bounds
                     if let existing = combinedBounds {
                         combinedBounds = existing.union(shapeBounds)
                     } else {
@@ -150,13 +167,21 @@ extension VectorDocument {
         var allShapeIDs = Set<UUID>()
 
         for object in unifiedObjects {
-            if case .shape(let shape) = object.objectType {
+            switch object.objectType {
+            case .shape(let shape),
+                 .warp(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
+                allShapeIDs.insert(shape.id)
+            case .group(let shape):
                 allShapeIDs.insert(shape.id)
                 if shape.isGroupContainer {
                     for groupedShape in shape.groupedShapes {
                         allShapeIDs.insert(groupedShape.id)
                     }
                 }
+            case .text:
+                break
             }
         }
 
@@ -167,13 +192,25 @@ extension VectorDocument {
         var colors = Set<VectorColor>()
 
         for object in unifiedObjects {
-            if case .shape(let shape) = object.objectType {
+            switch object.objectType {
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 if let fillStyle = shape.fillStyle {
                     colors.insert(fillStyle.color)
                 }
 
                 if let strokeStyle = shape.strokeStyle {
                     colors.insert(strokeStyle.color)
+                }
+            case .text(let shape):
+                if let fillColor = shape.typography?.fillColor {
+                    colors.insert(fillColor)
+                }
+                if let strokeColor = shape.typography?.strokeColor {
+                    colors.insert(strokeColor)
                 }
             }
         }
@@ -281,23 +318,29 @@ extension VectorDocument {
     }
 
     func findShape(by id: UUID) -> VectorShape? {
-        guard let object = unifiedObjectLookupCache[id],
-              case .shape(let shape) = object.objectType,
-              !shape.isTextObject else { return nil }
-        return shape
+        guard let object = unifiedObjectLookupCache[id] else { return nil }
+        switch object.objectType {
+        case .shape(let shape),
+             .warp(let shape),
+             .group(let shape),
+             .clipGroup(let shape),
+             .clipMask(let shape):
+            return shape
+        case .text:
+            return nil
+        }
     }
 
     func findText(by id: UUID) -> VectorText? {
         if let object = unifiedObjectLookupCache[id],
-           case .shape(let shape) = object.objectType,
-           shape.isTextObject,
+           case .text(let shape) = object.objectType,
            var vectorText = VectorText.from(shape) {
             vectorText.layerIndex = object.layerIndex
             return vectorText
         }
 
         for object in unifiedObjects {
-            if case .shape(let shape) = object.objectType, shape.isGroupContainer {
+            if case .group(let shape) = object.objectType {
                 if let textShape = shape.groupedShapes.first(where: { $0.id == id && $0.isTextObject }),
                    var vectorText = VectorText.from(textShape) {
                     vectorText.layerIndex = object.layerIndex
@@ -316,7 +359,7 @@ extension VectorDocument {
     func forEachTextInOrder(_ action: (VectorText) throws -> Void) rethrows {
         // Array position IS the order now - no sorting needed
         for unifiedObject in unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType, shape.isTextObject,
+            if case .text(let shape) = unifiedObject.objectType,
                let text = VectorText.from(shape) {
                 try action(text)
             }
@@ -326,10 +369,16 @@ extension VectorDocument {
     func getShapesInLayer(_ layerIndex: Int) -> [VectorShape] {
         return allShapes.filter { shape in
             return unifiedObjects.first { obj in
-                if case .shape(let objShape) = obj.objectType {
+                switch obj.objectType {
+                case .shape(let objShape),
+                     .warp(let objShape),
+                     .group(let objShape),
+                     .clipGroup(let objShape),
+                     .clipMask(let objShape):
                     return objShape.id == shape.id && obj.layerIndex == layerIndex
+                case .text:
+                    return false
                 }
-                return false
             } != nil
         }
     }
