@@ -288,6 +288,7 @@ extension VectorDocument {
                 if obj1.layerIndex != obj2.layerIndex {
                     return obj1.layerIndex > obj2.layerIndex
                 }
+                return false
             }
 
         guard !visibleObjects.isEmpty else { return }
@@ -322,6 +323,7 @@ extension VectorDocument {
                 if obj1.layerIndex != obj2.layerIndex {
                     return obj1.layerIndex > obj2.layerIndex
                 }
+                return false
             }
 
         guard !visibleObjects.isEmpty else { return }
@@ -354,24 +356,11 @@ extension VectorDocument {
             }
         }
 
-
         for selectedObj in selectedObjects {
-            let higherObjects = unifiedObjects.filter {
+            guard let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObj.id }) else { continue }
+            guard selectedIndex < unifiedObjects.count - 1 else { continue }
 
-            guard let nextHigher = higherObjects.first else { continue }
-
-            if let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObj.id }),
-               let higherIndex = unifiedObjects.firstIndex(where: { $0.id == nextHigher.id }) {
-                unifiedObjects[selectedIndex] = VectorObject(
-                    shape: extractShape(from: unifiedObjects[selectedIndex]),
-                    layerIndex: unifiedObjects[selectedIndex].layerIndex,
-                )
-                unifiedObjects[higherIndex] = VectorObject(
-                    shape: extractShape(from: unifiedObjects[higherIndex]),
-                    layerIndex: unifiedObjects[higherIndex].layerIndex,
-                    orderID: tempOrderID
-                )
-            }
+            unifiedObjects.swapAt(selectedIndex, selectedIndex + 1)
         }
     }
 
@@ -385,24 +374,11 @@ extension VectorDocument {
             }
         }
 
-
         for selectedObj in selectedObjects {
-            let lowerObjects = unifiedObjects.filter {
+            guard let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObj.id }) else { continue }
+            guard selectedIndex > 0 else { continue }
 
-            guard let nextLower = lowerObjects.first else { continue }
-
-            if let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObj.id }),
-               let lowerIndex = unifiedObjects.firstIndex(where: { $0.id == nextLower.id }) {
-                unifiedObjects[selectedIndex] = VectorObject(
-                    shape: extractShape(from: unifiedObjects[selectedIndex]),
-                    layerIndex: unifiedObjects[selectedIndex].layerIndex,
-                )
-                unifiedObjects[lowerIndex] = VectorObject(
-                    shape: extractShape(from: unifiedObjects[lowerIndex]),
-                    layerIndex: unifiedObjects[lowerIndex].layerIndex,
-                    orderID: tempOrderID
-                )
-            }
+            unifiedObjects.swapAt(selectedIndex, selectedIndex - 1)
         }
     }
 
@@ -420,38 +396,9 @@ extension VectorDocument {
             return
         }
 
-        let newOrderID: Int
-        if sourceOrderID < targetOrderID {
-            newOrderID = targetOrderID
-            for i in 0..<unifiedObjects.count {
-                let obj = unifiedObjects[i]
-                if obj.layerIndex == sourceObject.layerIndex &&
-                   obj.id != sourceObject.id {
-                    unifiedObjects[i] = VectorObject(
-                        shape: extractShape(from: obj),
-                        layerIndex: obj.layerIndex,
-                    )
-                }
-            }
-        } else {
-            newOrderID = targetOrderID
-            for i in 0..<unifiedObjects.count {
-                let obj = unifiedObjects[i]
-                if obj.layerIndex == sourceObject.layerIndex &&
-                   obj.id != sourceObject.id {
-                    unifiedObjects[i] = VectorObject(
-                        shape: extractShape(from: obj),
-                        layerIndex: obj.layerIndex,
-                    )
-                }
-            }
-        }
-
-        unifiedObjects[sourceIndex] = VectorObject(
-            shape: extractShape(from: sourceObject),
-            layerIndex: sourceObject.layerIndex,
-            orderID: newOrderID
-        )
+        let object = unifiedObjects.remove(at: sourceIndex)
+        let adjustedTargetIndex = sourceIndex < targetIndex ? targetIndex - 1 : targetIndex
+        unifiedObjects.insert(object, at: adjustedTargetIndex)
     }
 
     func moveObjectToTop(objectId: UUID) {
@@ -461,27 +408,13 @@ extension VectorDocument {
         }
 
         let sourceObject = unifiedObjects[sourceIndex]
-        let layerObjects = unifiedObjects.filter { $0.layerIndex == sourceObject.layerIndex }
+        let layerObjects = unifiedObjects.enumerated().filter { $0.element.layerIndex == sourceObject.layerIndex }
 
-            return
-        }
+        guard let lastIndex = layerObjects.last?.offset else { return }
+        guard sourceIndex != lastIndex else { return }
 
-        for i in 0..<unifiedObjects.count {
-            let obj = unifiedObjects[i]
-            if obj.layerIndex == sourceObject.layerIndex &&
-               obj.id != sourceObject.id {
-                unifiedObjects[i] = VectorObject(
-                    shape: extractShape(from: obj),
-                    layerIndex: obj.layerIndex,
-                )
-            }
-        }
-
-        unifiedObjects[sourceIndex] = VectorObject(
-            shape: extractShape(from: sourceObject),
-            layerIndex: sourceObject.layerIndex,
-            orderID: maxOrderID
-        )
+        let object = unifiedObjects.remove(at: sourceIndex)
+        unifiedObjects.insert(object, at: lastIndex)
     }
 
     func moveObjectToBottom(objectId: UUID) {
@@ -491,27 +424,13 @@ extension VectorDocument {
         }
 
         let sourceObject = unifiedObjects[sourceIndex]
-        let layerObjects = unifiedObjects.filter { $0.layerIndex == sourceObject.layerIndex }
+        let layerObjects = unifiedObjects.enumerated().filter { $0.element.layerIndex == sourceObject.layerIndex }
 
-            return
-        }
+        guard let firstIndex = layerObjects.first?.offset else { return }
+        guard sourceIndex != firstIndex else { return }
 
-        for i in 0..<unifiedObjects.count {
-            let obj = unifiedObjects[i]
-            if obj.layerIndex == sourceObject.layerIndex &&
-               obj.id != sourceObject.id {
-                unifiedObjects[i] = VectorObject(
-                    shape: extractShape(from: obj),
-                    layerIndex: obj.layerIndex,
-                )
-            }
-        }
-
-        unifiedObjects[sourceIndex] = VectorObject(
-            shape: extractShape(from: sourceObject),
-            layerIndex: sourceObject.layerIndex,
-            orderID: minOrderID
-        )
+        let object = unifiedObjects.remove(at: sourceIndex)
+        unifiedObjects.insert(object, at: firstIndex)
     }
 
     func reorderLayer(sourceLayerId: UUID, targetLayerId: UUID) {

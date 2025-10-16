@@ -112,7 +112,7 @@ struct StatusBar: View {
             }
         }
 
-        for unifiedObject in document.unifiedObjects.sorted(by: { $0.orderID < $1.orderID }) {
+        for unifiedObject in document.unifiedObjects {
             if case .shape(let shape) = unifiedObject.objectType, shape.isTextObject,
                document.selectedTextIDs.contains(shape.id),
                let textObj = VectorText.from(shape) {

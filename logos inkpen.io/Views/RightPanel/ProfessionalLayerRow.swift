@@ -45,9 +45,9 @@ struct ProfessionalLayerRow: View {
             _isExpanded = State(initialValue: document.settings.layerExpansionState[layer.id] ?? true)
         }
 
-        _layerObjects = State(initialValue: document.unifiedObjects
+        _layerObjects = State(initialValue: Array(document.unifiedObjects
             .filter { $0.layerIndex == layerIndex }
-            .sorted { $0.orderID > $1.orderID })
+            .reversed()))
     }
 
     private func setExpanded(_ value: Bool) {
@@ -309,14 +309,14 @@ struct ProfessionalLayerRow: View {
             }
         }
         .onAppear {
-            layerObjects = document.unifiedObjects
+            layerObjects = Array(document.unifiedObjects
                 .filter { $0.layerIndex == layerIndex }
-                .sorted { $0.orderID > $1.orderID }
+                .reversed())
         }
         .onChange(of: document.unifiedObjects) { _, _ in
-            layerObjects = document.unifiedObjects
+            layerObjects = Array(document.unifiedObjects
                 .filter { $0.layerIndex == layerIndex }
-                .sorted { $0.orderID > $1.orderID }
+                .reversed())
         }
         .if(layer.name != "Canvas" && layer.name != "Pasteboard") { view in
             view.draggable(DraggableItem.layer(

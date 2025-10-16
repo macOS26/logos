@@ -38,65 +38,53 @@ extension VectorDocument {
         guard !selectedObjectIDs.isEmpty else { return }
 
         var affectedObjectIDs: [UUID] = []
+        var oldIndices: [UUID: Int] = [:]
+        var newIndices: [UUID: Int] = [:]
 
         for layerIndex in layers.indices {
-            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
-            for obj in layerObjects {
-                affectedObjectIDs.append(obj.id)
-            }
-        }
-
-        for layerIndex in layers.indices {
-            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
+            let layerObjects = unifiedObjects.enumerated().filter { $0.element.layerIndex == layerIndex }
             guard !layerObjects.isEmpty else { continue }
 
-            let expandedSelectedIDs = expandSelectionForClippingMasks(selectedObjectIDs, in: layerObjects)
-            let selectedObjects = layerObjects.filter { expandedSelectedIDs.contains($0.id) }
-            let unselectedObjects = layerObjects.filter { !expandedSelectedIDs.contains($0.id) }
+            let expandedSelectedIDs = expandSelectionForClippingMasks(selectedObjectIDs, in: layerObjects.map { $0.element })
+            let selectedIndices = layerObjects.filter { expandedSelectedIDs.contains($0.element.id) }.map { $0.offset }
+            let unselectedIndices = layerObjects.filter { !expandedSelectedIDs.contains($0.element.id) }.map { $0.offset }
 
-            guard !selectedObjects.isEmpty else { continue }
+            guard !selectedIndices.isEmpty else { continue }
 
-            let minOrderID = currentOrderIDs.min() ?? 0
-            var newOrderID = minOrderID
-
-            for unselectedObject in unselectedObjects {
-                if let index = unifiedObjects.firstIndex(where: { $0.id == unselectedObject.id }) {
-                    switch unselectedObject.objectType {
-                    case .shape(let shape):
-                        unifiedObjects[index] = VectorObject(
-                            shape: shape,
-                            layerIndex: unselectedObject.layerIndex,
-                            orderID: newOrderID
-                        )
-                    }
-                    newOrderID += 1
-                }
+            for index in layerObjects.map({ $0.offset }) {
+                let obj = unifiedObjects[index]
+                oldIndices[obj.id] = index
+                affectedObjectIDs.append(obj.id)
             }
 
-            for selectedObject in selectedObjects {
-                if let index = unifiedObjects.firstIndex(where: { $0.id == selectedObject.id }) {
-                    switch selectedObject.objectType {
-                    case .shape(let shape):
-                        unifiedObjects[index] = VectorObject(
-                            shape: shape,
-                            layerIndex: selectedObject.layerIndex,
-                            orderID: newOrderID
-                        )
-                    }
-                    newOrderID += 1
+            var removedObjects: [VectorObject] = []
+            for index in selectedIndices.sorted(by: >) {
+                removedObjects.insert(unifiedObjects.remove(at: index), at: 0)
+            }
+
+            if let lastUnselectedIndex = unselectedIndices.max() {
+                var insertionPoint = lastUnselectedIndex - selectedIndices.filter { $0 < lastUnselectedIndex }.count + 1
+                for obj in removedObjects {
+                    unifiedObjects.insert(obj, at: insertionPoint)
+                    insertionPoint += 1
+                }
+            } else {
+                for obj in removedObjects.reversed() {
+                    unifiedObjects.insert(obj, at: layerObjects.first!.offset)
                 }
             }
         }
 
         for id in affectedObjectIDs {
             if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
-                newOrderIDs[id] = unifiedObjects[index].orderID
+                newIndices[id] = index
             }
         }
+
         let command = ObjectArrangementCommand(
             affectedObjectIDs: affectedObjectIDs,
-            oldOrderIDs: oldOrderIDs,
-            newOrderIDs: newOrderIDs
+            oldIndices: oldIndices,
+            newIndices: newIndices
         )
         commandManager.execute(command)
     }
@@ -105,54 +93,28 @@ extension VectorDocument {
         guard !selectedObjectIDs.isEmpty else { return }
 
         var affectedObjectIDs: [UUID] = []
+        var oldIndices: [UUID: Int] = [:]
+        var newIndices: [UUID: Int] = [:]
 
         for layerIndex in layers.indices {
-            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
-            for obj in layerObjects {
-                affectedObjectIDs.append(obj.id)
-            }
-        }
-
-        for layerIndex in layers.indices {
-            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
+            let layerObjects = unifiedObjects.enumerated().filter { $0.element.layerIndex == layerIndex }
             guard !layerObjects.isEmpty else { continue }
 
-            let expandedSelectedIDs = expandSelectionForClippingMasks(selectedObjectIDs, in: layerObjects)
-            let selectedObjects = layerObjects.filter { expandedSelectedIDs.contains($0.id) }
+            let expandedSelectedIDs = expandSelectionForClippingMasks(selectedObjectIDs, in: layerObjects.map { $0.element })
 
-            guard !selectedObjects.isEmpty else { continue }
+            for index in layerObjects.map({ $0.offset }) {
+                let obj = unifiedObjects[index]
+                oldIndices[obj.id] = index
+                affectedObjectIDs.append(obj.id)
+            }
 
-
-            for selectedObject in selectedObjects {
-                if let currentIndex = sortedLayerObjects.firstIndex(where: { $0.id == selectedObject.id }),
-                   currentIndex < sortedLayerObjects.count - 1 {
-                    let objectInFront = sortedLayerObjects[currentIndex + 1]
-
-                    if let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObject.id }),
-                       let frontIndex = unifiedObjects.firstIndex(where: { $0.id == objectInFront.id }) {
-
-                        switch selectedObject.objectType {
-                        case .shape(let shape):
-                            unifiedObjects[selectedIndex] = VectorObject(
-                                shape: shape,
-                                layerIndex: selectedObject.layerIndex,
-                                orderID: frontOrderID
-                            )
-                                                }
-
-                        switch objectInFront.objectType {
-                        case .shape(let shape):
-                            unifiedObjects[frontIndex] = VectorObject(
-                                shape: shape,
-                                layerIndex: objectInFront.layerIndex,
-                                orderID: selectedOrderID
-                            )
-                                                    unifiedObjects[frontIndex] = VectorObject(
-                                shape: shape,
-                                layerIndex: objectInFront.layerIndex,
-                                orderID: selectedOrderID
-                            )
-                        }
+            let sortedIndices = layerObjects.map { $0.offset }.sorted(by: >)
+            for index in sortedIndices {
+                let obj = unifiedObjects[index]
+                if expandedSelectedIDs.contains(obj.id) && index < unifiedObjects.count - 1 {
+                    let nextObj = unifiedObjects[index + 1]
+                    if nextObj.layerIndex == layerIndex && !expandedSelectedIDs.contains(nextObj.id) {
+                        unifiedObjects.swapAt(index, index + 1)
                     }
                 }
             }
@@ -160,13 +122,14 @@ extension VectorDocument {
 
         for id in affectedObjectIDs {
             if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
-                newOrderIDs[id] = unifiedObjects[index].orderID
+                newIndices[id] = index
             }
         }
+
         let command = ObjectArrangementCommand(
             affectedObjectIDs: affectedObjectIDs,
-            oldOrderIDs: oldOrderIDs,
-            newOrderIDs: newOrderIDs
+            oldIndices: oldIndices,
+            newIndices: newIndices
         )
         commandManager.execute(command)
     }
@@ -175,59 +138,28 @@ extension VectorDocument {
         guard !selectedObjectIDs.isEmpty else { return }
 
         var affectedObjectIDs: [UUID] = []
+        var oldIndices: [UUID: Int] = [:]
+        var newIndices: [UUID: Int] = [:]
 
         for layerIndex in layers.indices {
-            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
-            for obj in layerObjects {
-                affectedObjectIDs.append(obj.id)
-            }
-        }
-
-        for layerIndex in layers.indices {
-            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
+            let layerObjects = unifiedObjects.enumerated().filter { $0.element.layerIndex == layerIndex }
             guard !layerObjects.isEmpty else { continue }
 
-            let expandedSelectedIDs = expandSelectionForClippingMasks(selectedObjectIDs, in: layerObjects)
-            let selectedObjects = layerObjects.filter { expandedSelectedIDs.contains($0.id) }
+            let expandedSelectedIDs = expandSelectionForClippingMasks(selectedObjectIDs, in: layerObjects.map { $0.element })
 
-            guard !selectedObjects.isEmpty else { continue }
+            for index in layerObjects.map({ $0.offset }) {
+                let obj = unifiedObjects[index]
+                oldIndices[obj.id] = index
+                affectedObjectIDs.append(obj.id)
+            }
 
-
-            for selectedObject in selectedObjects {
-                if let currentIndex = sortedLayerObjects.firstIndex(where: { $0.id == selectedObject.id }),
-                   currentIndex > 0 {
-                    let objectBehind = sortedLayerObjects[currentIndex - 1]
-
-                    if let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObject.id }),
-                       let behindIndex = unifiedObjects.firstIndex(where: { $0.id == objectBehind.id }) {
-
-                        switch selectedObject.objectType {
-                        case .shape(let shape):
-                            unifiedObjects[selectedIndex] = VectorObject(
-                                shape: shape,
-                                layerIndex: selectedObject.layerIndex,
-                                orderID: behindOrderID
-                            )
-                                                    unifiedObjects[selectedIndex] = VectorObject(
-                                shape: shape,
-                                layerIndex: selectedObject.layerIndex,
-                                orderID: behindOrderID
-                            )
-                        }
-
-                        switch objectBehind.objectType {
-                        case .shape(let shape):
-                            unifiedObjects[behindIndex] = VectorObject(
-                                shape: shape,
-                                layerIndex: objectBehind.layerIndex,
-                                orderID: selectedOrderID
-                            )
-                                                    unifiedObjects[behindIndex] = VectorObject(
-                                shape: shape,
-                                layerIndex: objectBehind.layerIndex,
-                                orderID: selectedOrderID
-                            )
-                        }
+            let sortedIndices = layerObjects.map { $0.offset }.sorted()
+            for index in sortedIndices {
+                let obj = unifiedObjects[index]
+                if expandedSelectedIDs.contains(obj.id) && index > 0 {
+                    let prevObj = unifiedObjects[index - 1]
+                    if prevObj.layerIndex == layerIndex && !expandedSelectedIDs.contains(prevObj.id) {
+                        unifiedObjects.swapAt(index, index - 1)
                     }
                 }
             }
@@ -235,13 +167,14 @@ extension VectorDocument {
 
         for id in affectedObjectIDs {
             if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
-                newOrderIDs[id] = unifiedObjects[index].orderID
+                newIndices[id] = index
             }
         }
+
         let command = ObjectArrangementCommand(
             affectedObjectIDs: affectedObjectIDs,
-            oldOrderIDs: oldOrderIDs,
-            newOrderIDs: newOrderIDs
+            oldIndices: oldIndices,
+            newIndices: newIndices
         )
         commandManager.execute(command)
     }
@@ -250,65 +183,52 @@ extension VectorDocument {
         guard !selectedObjectIDs.isEmpty else { return }
 
         var affectedObjectIDs: [UUID] = []
+        var oldIndices: [UUID: Int] = [:]
+        var newIndices: [UUID: Int] = [:]
 
         for layerIndex in layers.indices {
-            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
-            for obj in layerObjects {
-                affectedObjectIDs.append(obj.id)
-            }
-        }
-
-        for layerIndex in layers.indices {
-            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
+            let layerObjects = unifiedObjects.enumerated().filter { $0.element.layerIndex == layerIndex }
             guard !layerObjects.isEmpty else { continue }
 
-            let expandedSelectedIDs = expandSelectionForClippingMasks(selectedObjectIDs, in: layerObjects)
-            let selectedObjects = layerObjects.filter { expandedSelectedIDs.contains($0.id) }
-            let unselectedObjects = layerObjects.filter { !expandedSelectedIDs.contains($0.id) }
+            let expandedSelectedIDs = expandSelectionForClippingMasks(selectedObjectIDs, in: layerObjects.map { $0.element })
+            let selectedIndices = layerObjects.filter { expandedSelectedIDs.contains($0.element.id) }.map { $0.offset }
+            let unselectedIndices = layerObjects.filter { !expandedSelectedIDs.contains($0.element.id) }.map { $0.offset }
 
-            guard !selectedObjects.isEmpty else { continue }
+            guard !selectedIndices.isEmpty else { continue }
 
-            let minOrderID = currentOrderIDs.min() ?? 0
-            var newOrderID = minOrderID
-
-            for selectedObject in selectedObjects {
-                if let index = unifiedObjects.firstIndex(where: { $0.id == selectedObject.id }) {
-                    switch selectedObject.objectType {
-                    case .shape(let shape):
-                        unifiedObjects[index] = VectorObject(
-                            shape: shape,
-                            layerIndex: selectedObject.layerIndex,
-                            orderID: newOrderID
-                        )
-                    }
-                    newOrderID += 1
-                }
+            for index in layerObjects.map({ $0.offset }) {
+                let obj = unifiedObjects[index]
+                oldIndices[obj.id] = index
+                affectedObjectIDs.append(obj.id)
             }
 
-            for unselectedObject in unselectedObjects {
-                if let index = unifiedObjects.firstIndex(where: { $0.id == unselectedObject.id }) {
-                    switch unselectedObject.objectType {
-                    case .shape(let shape):
-                        unifiedObjects[index] = VectorObject(
-                            shape: shape,
-                            layerIndex: unselectedObject.layerIndex,
-                            orderID: newOrderID
-                        )
-                    }
-                    newOrderID += 1
+            var removedObjects: [VectorObject] = []
+            for index in selectedIndices.sorted(by: >) {
+                removedObjects.insert(unifiedObjects.remove(at: index), at: 0)
+            }
+
+            if let firstUnselectedIndex = unselectedIndices.min() {
+                let insertionPoint = firstUnselectedIndex
+                for obj in removedObjects.reversed() {
+                    unifiedObjects.insert(obj, at: insertionPoint)
+                }
+            } else {
+                for obj in removedObjects.reversed() {
+                    unifiedObjects.insert(obj, at: layerObjects.first!.offset)
                 }
             }
         }
 
         for id in affectedObjectIDs {
             if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
-                newOrderIDs[id] = unifiedObjects[index].orderID
+                newIndices[id] = index
             }
         }
+
         let command = ObjectArrangementCommand(
             affectedObjectIDs: affectedObjectIDs,
-            oldOrderIDs: oldOrderIDs,
-            newOrderIDs: newOrderIDs
+            oldIndices: oldIndices,
+            newIndices: newIndices
         )
         commandManager.execute(command)
     }

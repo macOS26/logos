@@ -116,7 +116,7 @@ struct LayersPanel: View {
             if isExpanded {
                 let layerObjects = document.unifiedObjects
                     .filter { $0.layerIndex == layerIndex }
-                    .sorted { $0.orderID > $1.orderID }
+                    .reversed()
 
                 for object in layerObjects {
                     rows.append(.object(layerIndex: layerIndex, objectId: object.id))
@@ -629,9 +629,9 @@ if event.keyCode == 126 {
         private func selectNextObject(document: VectorDocument) {
             guard let currentLayerIndex = document.selectedLayerIndex,
                   let firstSelectedId = document.selectedObjectIDs.first else { return }
-            let layerObjects = document.unifiedObjects
+            let layerObjects = Array(document.unifiedObjects
                 .filter { $0.layerIndex == currentLayerIndex }
-                .sorted { $0.orderID > $1.orderID }
+                .reversed())
 
             if let currentIndex = layerObjects.firstIndex(where: { $0.id == firstSelectedId }) {
                 if currentIndex < layerObjects.count - 1 {
@@ -645,9 +645,9 @@ if event.keyCode == 126 {
         private func selectPreviousObject(document: VectorDocument) {
             guard let currentLayerIndex = document.selectedLayerIndex,
                   let firstSelectedId = document.selectedObjectIDs.first else { return }
-            let layerObjects = document.unifiedObjects
+            let layerObjects = Array(document.unifiedObjects
                 .filter { $0.layerIndex == currentLayerIndex }
-                .sorted { $0.orderID > $1.orderID }
+                .reversed())
 
             if let currentIndex = layerObjects.firstIndex(where: { $0.id == firstSelectedId }) {
                 if currentIndex > 0 {
