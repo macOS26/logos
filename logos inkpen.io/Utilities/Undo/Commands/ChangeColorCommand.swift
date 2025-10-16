@@ -44,33 +44,35 @@ class ChangeColorCommand: BaseCommand {
             if let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) {
                 var obj = document.unifiedObjects[index]
 
-                if case .shape(var shape) = obj.objectType {
-                    if let color = colors[id], let opacity = opacities[id] {
-                        if shape.isTextObject {
-                            if var typography = shape.typography {
-                                switch target {
-                                case .fill:
-                                    typography.fillColor = color
-                                    typography.fillOpacity = opacity
-                                case .stroke:
-                                    typography.strokeColor = color
-                                    typography.strokeOpacity = opacity
-                                }
-                                shape.typography = typography
-                            }
-                        } else {
+                if let color = colors[id], let opacity = opacities[id] {
+                    switch obj.objectType {
+                    case .text(var shape):
+                        if var typography = shape.typography {
                             switch target {
                             case .fill:
-                                shape.fillStyle?.color = color
-                                shape.fillStyle?.opacity = opacity
+                                typography.fillColor = color
+                                typography.fillOpacity = opacity
                             case .stroke:
-                                shape.strokeStyle?.color = color
-                                shape.strokeStyle?.opacity = opacity
+                                typography.strokeColor = color
+                                typography.strokeOpacity = opacity
                             }
+                            shape.typography = typography
                         }
+                        obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                        document.unifiedObjects[index] = obj
+
+                    case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+                        switch target {
+                        case .fill:
+                            shape.fillStyle?.color = color
+                            shape.fillStyle?.opacity = opacity
+                        case .stroke:
+                            shape.strokeStyle?.color = color
+                            shape.strokeStyle?.opacity = opacity
+                        }
+                        obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                        document.unifiedObjects[index] = obj
                     }
-                    obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
-                    document.unifiedObjects[index] = obj
                 }
             }
         }
