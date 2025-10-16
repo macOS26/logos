@@ -166,8 +166,8 @@ extension DrawingCanvas {
         }.count
 
         count += document.unifiedObjects.filter { unifiedObject in
-            if case .shape(let shape) = unifiedObject.objectType {
-                return shape.isTextObject && shape.isVisible
+            if case .text(let shape) = unifiedObject.objectType {
+                return shape.isVisible
             }
             return false
         }.count
