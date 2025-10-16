@@ -10,10 +10,17 @@ extension VectorDocument {
         var newValues: [UUID: Bool] = [:]
 
         for id in allIDs {
-            if let obj = unifiedObjects.first(where: { $0.id == id }),
-               case .shape(let shape) = obj.objectType {
-                oldValues[id] = shape.isLocked
-                newValues[id] = true
+            if let obj = unifiedObjects.first(where: { $0.id == id }) {
+                switch obj.objectType {
+                case .text(let shape),
+                     .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
+                    oldValues[id] = shape.isLocked
+                    newValues[id] = true
+                }
             }
         }
 
@@ -37,10 +44,18 @@ extension VectorDocument {
         var newValues: [UUID: Bool] = [:]
 
         for obj in unifiedObjects where obj.layerIndex == layerIndex {
-            if case .shape(let shape) = obj.objectType, shape.isLocked {
-                affectedIDs.append(obj.id)
-                oldValues[obj.id] = true
-                newValues[obj.id] = false
+            switch obj.objectType {
+            case .text(let shape),
+                 .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
+                if shape.isLocked {
+                    affectedIDs.append(obj.id)
+                    oldValues[obj.id] = true
+                    newValues[obj.id] = false
+                }
             }
         }
 
@@ -63,10 +78,17 @@ extension VectorDocument {
         var newValues: [UUID: Bool] = [:]
 
         for id in allIDs {
-            if let obj = unifiedObjects.first(where: { $0.id == id }),
-               case .shape(let shape) = obj.objectType {
-                oldValues[id] = shape.isVisible
-                newValues[id] = false
+            if let obj = unifiedObjects.first(where: { $0.id == id }) {
+                switch obj.objectType {
+                case .text(let shape),
+                     .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
+                    oldValues[id] = shape.isVisible
+                    newValues[id] = false
+                }
             }
         }
 
@@ -102,7 +124,7 @@ extension VectorDocument {
         }
 
         for unifiedObj in unifiedObjects {
-            if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject, shape.isVisible == false {
+            if case .text(let shape) = unifiedObj.objectType, shape.isVisible == false {
                 affectedIDs.append(shape.id)
                 oldValues[shape.id] = false
                 newValues[shape.id] = true
