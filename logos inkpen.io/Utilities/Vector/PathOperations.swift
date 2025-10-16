@@ -673,21 +673,17 @@ extension ProfessionalPathOperations {
         }
 
         // Only check adjacent (consecutive) points - this is "mergeADJACENTCoincidentPoints"
-        // Loop until no more removals (handles multiple stacked points)
+        // Rebuild pointData after each removal to properly handle stacked points
+        var currentPointData = pointData
         var indicesToRemove: Set<Int> = []
-        var removedInLastPass = true
 
-        while removedInLastPass {
-            removedInLastPass = false
+        var changed = true
+        while changed {
+            changed = false
 
-            for i in 0..<(pointData.count - 1) {
-                let currentData = pointData[i]
-                let nextData = pointData[i + 1]
-
-                // Skip if already marked for removal
-                if indicesToRemove.contains(currentData.index) || indicesToRemove.contains(nextData.index) {
-                    continue
-                }
+            for i in 0..<(currentPointData.count - 1) {
+                let currentData = currentPointData[i]
+                let nextData = currentPointData[i + 1]
 
                 // Only merge if they are adjacent in the actual path
                 if nextData.index == currentData.index + 1 {
@@ -699,8 +695,12 @@ extension ProfessionalPathOperations {
 
                         if !isFirstOrLast {
                             indicesToRemove.insert(actualElementIndex)
-                            removedInLastPass = true
                             Log.info("  Removing adjacent coincident point at index \(actualElementIndex)", category: .general)
+
+                            // Remove from currentPointData and retry
+                            currentPointData.remove(at: i + 1)
+                            changed = true
+                            break
                         }
                     }
                 }
