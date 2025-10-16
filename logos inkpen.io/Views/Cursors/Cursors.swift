@@ -232,7 +232,7 @@ struct DrawingCanvas: View {
     @State internal var currentMousePosition: CGPoint = .zero
     @State internal var coincidentPointClusters: [HashableCGPoint: [PointID]] = [:]
     @State internal var coincidentPointRadius: CGFloat = 2.0
-    @State internal var coincidentPointTolerance: Double = 1.0
+    @State internal var coincidentPointTolerance: Double = 0.1
 	@State internal var isHUDDragging = false
 	@State internal var hudDragStartOffsetX: CGFloat = 0
 	@State internal var hudDragStartOffsetY: CGFloat = 0

@@ -108,7 +108,7 @@ extension DrawingCanvas {
                     if let moveIndex = moveToIndex, let lastIndex = lastPointIndex,
                        let firstPoint = moveToPoint, let endPoint = lastPoint {
                         let distance = sqrt(pow(firstPoint.x - endPoint.x, 2) + pow(firstPoint.y - endPoint.y, 2))
-                        let tolerance = 1.0
+                        let tolerance = 0.1
 
                         if distance <= tolerance {
                             if pointID.elementIndex == moveIndex {
@@ -380,7 +380,7 @@ extension DrawingCanvas {
         excludeIndex: Int
     ) -> [Int] {
         var coincidentIndices: [Int] = []
-        let tolerance = 1.0
+        let tolerance = 0.1
 
         for (index, element) in elements.enumerated() {
             if index == excludeIndex { continue }
