@@ -452,7 +452,7 @@ struct MainView: View {
                 var pdfData: Data
 
                 if convertTextToOutlines && document.unifiedObjects.contains(where: { obj in
-                    if case .shape(let shape) = obj.objectType { return shape.isTextObject }
+                    if case .text = obj.objectType { return true }
                     return false
                 }) {
                     let savedData = try JSONEncoder().encode(document)
