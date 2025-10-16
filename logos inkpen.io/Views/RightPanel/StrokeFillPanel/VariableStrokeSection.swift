@@ -29,9 +29,9 @@ struct VariableStrokeSection: View {
                 Slider(value: Binding(
                     get: { document.currentBrushThickness },
                     set: { document.currentBrushThickness = $0 }
-                ), in: 1...100)
+                ), in: 0...100)
                 .controlSize(.regular)
-                .help("Adjust brush stroke thickness (1-100 points)")
+                .help("Adjust brush stroke thickness (0-100 points)")
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -65,9 +65,9 @@ struct VariableStrokeSection: View {
                 Slider(value: Binding(
                     get: { document.currentBrushSmoothingTolerance },
                     set: { document.currentBrushSmoothingTolerance = $0 }
-                ), in: 0.5...10)
+                ), in: 0...10)
                 .controlSize(.regular)
-                .help("Point reduction threshold - higher values remove more duplicate points for smoother strokes (0.5-10 pixels)")
+                .help("Point reduction threshold - higher values remove more duplicate points for smoother strokes (0-10 pixels)")
             }
 
             VStack(alignment: .leading, spacing: 8) {
