@@ -74,7 +74,7 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
-            case .text(let shape):
+            case .text:
                 return document.defaultStrokePlacement
             case .shape(let shape),
                  .warp(let shape),
@@ -129,7 +129,7 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
-            case .text(let shape):
+            case .text:
                 return document.defaultStrokeLineJoin
             case .shape(let shape),
                  .warp(let shape),
@@ -146,7 +146,7 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
-            case .text(let shape):
+            case .text:
                 return document.defaultStrokeLineCap
             case .shape(let shape),
                  .warp(let shape),
@@ -163,7 +163,7 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
-            case .text(let shape):
+            case .text:
                 return document.defaultStrokeMiterLimit
             case .shape(let shape),
                  .warp(let shape),

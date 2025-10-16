@@ -209,11 +209,7 @@ extension DrawingCanvas {
                         let delta = CGPoint(x: newPositionX - textObj.position.x, y: newPositionY - textObj.position.y)
                         document.translateTextInUnified(id: unifiedObject.id, delta: delta)
                     }
-                case .shape(let shape),
-                     .warp(let shape),
-                     .group(let shape),
-                     .clipGroup(let shape),
-                     .clipMask(let shape):
+                case .shape, .warp, .group, .clipGroup, .clipMask:
                     let shapes = document.getShapesForLayer(unifiedObject.layerIndex)
                     if let shapeIndex = shapes.firstIndex(where: { $0.id == unifiedObject.id }) {
                         applyDragDeltaToShapeCoordinates(layerIndex: unifiedObject.layerIndex, shapeIndex: shapeIndex, delta: currentDragDelta)

@@ -97,7 +97,7 @@ struct UnifiedObjectContentView: View {
                 } else {
                     EmptyView()
                 }
-            case .clipMask(let shape):
+            case .clipMask:
                 EmptyView()
             case .shape(let shape),
                  .warp(let shape),
