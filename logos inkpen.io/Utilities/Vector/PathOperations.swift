@@ -672,37 +672,24 @@ extension ProfessionalPathOperations {
             }
         }
 
-        var processed: Set<Int> = []
+        // Only check adjacent (consecutive) points - this is "mergeADJACENTCoincidentPoints"
         var indicesToRemove: Set<Int> = []
 
-        for (i, data) in pointData.enumerated() {
-            if processed.contains(i) { continue }
+        for i in 0..<(pointData.count - 1) {
+            let currentData = pointData[i]
+            let nextData = pointData[i + 1]
 
-            var coincidentGroup: [Int] = [i]
+            // Only merge if they are adjacent in the actual path
+            if nextData.index == currentData.index + 1 {
+                let distance = currentData.position.distance(to: nextData.position)
 
-            for (j, otherData) in pointData.enumerated() {
-                if j <= i { continue }
-                if processed.contains(j) { continue }
-
-                let distance = data.position.distance(to: otherData.position)
                 if distance <= tolerance {
-                    coincidentGroup.append(j)
-                }
-            }
-
-            if coincidentGroup.count > 1 {
-                for pointIndex in coincidentGroup {
-                    processed.insert(pointIndex)
-                }
-
-                for groupIdx in 1..<coincidentGroup.count {
-                    let pointDataIdx = coincidentGroup[groupIdx]
-                    let actualElementIndex = pointData[pointDataIdx].index
-
+                    let actualElementIndex = nextData.index
                     let isFirstOrLast = (actualElementIndex == firstPointIndex || actualElementIndex == lastPointIndex)
+
                     if !isFirstOrLast {
                         indicesToRemove.insert(actualElementIndex)
-                        Log.info("  Removing coincident point at index \(actualElementIndex)", category: .general)
+                        Log.info("  Removing adjacent coincident point at index \(actualElementIndex)", category: .general)
                     }
                 }
             }
