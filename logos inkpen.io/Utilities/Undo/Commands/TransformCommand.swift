@@ -37,12 +37,20 @@ class TransformCommand: BaseCommand {
             if let index = document.unifiedObjects.firstIndex(where: { $0.id == id }) {
                 var obj = document.unifiedObjects[index]
 
-                if case .shape(var shape) = obj.objectType {
+                switch obj.objectType {
+                case .text(var shape):
                     if let transform = transforms[id] {
                         shape.transform = transform
                     }
-                    if let position = positions[id], shape.isTextObject {
+                    if let position = positions[id] {
                         shape.textPosition = position
+                    }
+                    obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                    document.unifiedObjects[index] = obj
+
+                case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+                    if let transform = transforms[id] {
+                        shape.transform = transform
                     }
                     obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                     document.unifiedObjects[index] = obj
