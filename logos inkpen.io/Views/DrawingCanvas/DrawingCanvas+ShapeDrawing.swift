@@ -985,42 +985,44 @@ extension DrawingCanvas {
         let totalTolerance = handleRadius + tolerance
 
         for objectID in document.selectedObjectIDs {
-            guard let unifiedObject = document.findObject(by: objectID),
-                  case .shape(let shape) = unifiedObject.objectType else { continue }
+            guard let unifiedObject = document.findObject(by: objectID) else { continue }
 
-            if !shape.isVisible || shape.isLocked { continue }
+            switch unifiedObject.objectType {
+            case .text:
+                continue
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                if !shape.isVisible || shape.isLocked { continue }
 
-            if shape.isTextObject { continue }
+                let shapeBounds: CGRect
+                if shape.isGroupContainer {
+                    shapeBounds = shape.groupBounds
+                } else {
+                    shapeBounds = shape.bounds.applying(shape.transform)
+                }
 
-            let shapeBounds: CGRect
-            if shape.isGroupContainer {
-                shapeBounds = shape.groupBounds
-            } else {
-                shapeBounds = shape.bounds.applying(shape.transform)
-            }
+                let handles = [
+                    CGPoint(x: shapeBounds.minX, y: shapeBounds.minY),
+                    CGPoint(x: shapeBounds.maxX, y: shapeBounds.minY),
+                    CGPoint(x: shapeBounds.minX, y: shapeBounds.maxY),
+                    CGPoint(x: shapeBounds.maxX, y: shapeBounds.maxY),
+                    CGPoint(x: shapeBounds.midX, y: shapeBounds.minY),
+                    CGPoint(x: shapeBounds.midX, y: shapeBounds.maxY),
+                    CGPoint(x: shapeBounds.minX, y: shapeBounds.midY),
+                    CGPoint(x: shapeBounds.maxX, y: shapeBounds.midY),
+                ]
 
-            let handles = [
-CGPoint(x: shapeBounds.minX, y: shapeBounds.minY),
-CGPoint(x: shapeBounds.maxX, y: shapeBounds.minY),
-CGPoint(x: shapeBounds.minX, y: shapeBounds.maxY),
-CGPoint(x: shapeBounds.maxX, y: shapeBounds.maxY),
-CGPoint(x: shapeBounds.midX, y: shapeBounds.minY),
-CGPoint(x: shapeBounds.midX, y: shapeBounds.maxY),
-CGPoint(x: shapeBounds.minX, y: shapeBounds.midY),
-CGPoint(x: shapeBounds.maxX, y: shapeBounds.midY),
-            ]
+                for handle in handles {
+                    let distance = sqrt(pow(location.x - handle.x, 2) + pow(location.y - handle.y, 2))
+                    if distance <= totalTolerance {
+                        return true
+                    }
+                }
 
-            for handle in handles {
-                let distance = sqrt(pow(location.x - handle.x, 2) + pow(location.y - handle.y, 2))
-                if distance <= totalTolerance {
+                let center = shape.calculateCentroid()
+                let centerDistance = sqrt(pow(location.x - center.x, 2) + pow(location.y - center.y, 2))
+                if centerDistance <= totalTolerance {
                     return true
                 }
-            }
-
-            let center = shape.calculateCentroid()
-            let centerDistance = sqrt(pow(location.x - center.x, 2) + pow(location.y - center.y, 2))
-            if centerDistance <= totalTolerance {
-                return true
             }
         }
 
