@@ -592,8 +592,7 @@ extension DrawingCanvas {
     func handleCanvasBackgroundTap(at location: CGPoint) {
 
         let hitAnyTextBox = document.unifiedObjects.contains { unifiedObj in
-            guard case .shape(let shape) = unifiedObj.objectType,
-                  shape.isTextObject,
+            guard case .text(let shape) = unifiedObj.objectType,
                   var textObj = VectorText.from(shape) else { return false }
             textObj.layerIndex = unifiedObj.layerIndex
             let textFrame = CGRect(
@@ -610,7 +609,7 @@ extension DrawingCanvas {
             document.selectedShapeIDs.removeAll()
 
             for unifiedObj in document.unifiedObjects {
-                if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject, shape.isEditing == true {
+                if case .text(let shape) = unifiedObj.objectType, shape.isEditing == true {
                     document.setTextEditingInUnified(id: shape.id, isEditing: false)
                 }
             }
@@ -623,7 +622,7 @@ extension DrawingCanvas {
 
     func handleTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
         let hasEditingTextBox = document.unifiedObjects.contains { unifiedObj in
-            if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject {
+            if case .text(let shape) = unifiedObj.objectType {
                 return shape.isEditing == true
             }
             return false
@@ -670,7 +669,7 @@ extension DrawingCanvas {
 
     func finishTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
         let hasEditingTextBox = document.unifiedObjects.contains { unifiedObj in
-            if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject {
+            if case .text(let shape) = unifiedObj.objectType {
                 return shape.isEditing == true
             }
             return false
