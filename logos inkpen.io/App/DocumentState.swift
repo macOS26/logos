@@ -137,7 +137,10 @@ class DocumentState: ObservableObject {
 
         func isShape(_ unifiedObject: VectorObject) -> Bool {
             switch unifiedObject.objectType {
-            case .shape: return true
+            case .shape, .warp, .group, .clipGroup, .clipMask:
+                return true
+            case .text:
+                return false
             }
         }
 
@@ -148,14 +151,14 @@ class DocumentState: ObservableObject {
 
         canGroup = selectedShapeCount > 1
         canUngroup = selectedShapes.contains { unifiedObject in
-            if case .shape(let shape) = unifiedObject.objectType {
+            if case .group(let shape) = unifiedObject.objectType {
                 return shape.isGroupContainer
             }
             return false
         }
         canFlatten = selectedShapeCount > 1
         canUnflatten = selectedShapeCount == 1 && selectedShapes.contains { unifiedObject in
-            if case .shape(let shape) = unifiedObject.objectType {
+            if case .group(let shape) = unifiedObject.objectType {
                 return shape.isGroup
             }
             return false
@@ -175,22 +178,29 @@ class DocumentState: ObservableObject {
             return false
         }
         canUnwrapWarpObject = selectedShapeCount == 1 && selectedShapes.contains { unifiedObject in
-            if case .shape(let shape) = unifiedObject.objectType {
-                return shape.isWarpObject
+            if case .warp = unifiedObject.objectType {
+                return true
             }
             return false
         }
         canExpandWarpObject = selectedShapeCount == 1 && selectedShapes.contains { unifiedObject in
-            if case .shape(let shape) = unifiedObject.objectType {
-                return shape.isWarpObject
+            if case .warp = unifiedObject.objectType {
+                return true
             }
             return false
         }
         canEmbedLinkedImages = {
             for unifiedObject in selectedShapes {
-                if case .shape(let shape) = unifiedObject.objectType {
+                switch unifiedObject.objectType {
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
                     if shape.linkedImagePath != nil { return true }
                     if ImageContentRegistry.containsImage(shape) { return true }
+                case .text:
+                    break
                 }
             }
             return false
@@ -369,7 +379,7 @@ class DocumentState: ObservableObject {
                     var svgContent: String
 
                     if convertTextToOutlines && document.unifiedObjects.contains(where: { obj in
-                        if case .shape(let shape) = obj.objectType { return shape.isTextObject }
+                        if case .text = obj.objectType { return true }
                         return false
                     }) {
                         svgContent = try await DocumentState.exportSVGWithTextToOutlines(
@@ -483,7 +493,7 @@ class DocumentState: ObservableObject {
                     var pdfData: Data
 
                     if convertTextToOutlines && document.unifiedObjects.contains(where: { obj in
-                        if case .shape(let shape) = obj.objectType { return shape.isTextObject }
+                        if case .text = obj.objectType { return true }
                         return false
                     }) {
                         pdfData = try await DocumentState.exportWithTextToOutlines(document) {
@@ -690,7 +700,7 @@ class DocumentState: ObservableObject {
                     Task {
                         do {
                             if convertTextToOutlines && document.unifiedObjects.contains(where: { obj in
-                                if case .shape(let shape) = obj.objectType { return shape.isTextObject }
+                                if case .text = obj.objectType { return true }
                                 return false
                             }) {
 
@@ -798,7 +808,7 @@ class DocumentState: ObservableObject {
                     var svgContent: String
 
                     if convertTextToOutlines && document.unifiedObjects.contains(where: { obj in
-                        if case .shape(let shape) = obj.objectType { return shape.isTextObject }
+                        if case .text = obj.objectType { return true }
                         return false
                     }) {
                         svgContent = try await DocumentState.exportSVGWithTextToOutlines(
@@ -1093,7 +1103,7 @@ class DocumentState: ObservableObject {
 
     static func convertAllTextToOutlinesForExport(_ document: VectorDocument) {
         let textObjects = document.unifiedObjects.compactMap { obj -> VectorText? in
-            guard case .shape(let shape) = obj.objectType, shape.isTextObject else { return nil }
+            guard case .text(let shape) = obj.objectType else { return nil }
             var vectorText = VectorText.from(shape)
             vectorText?.layerIndex = obj.layerIndex
             return vectorText
@@ -1108,8 +1118,8 @@ class DocumentState: ObservableObject {
         }
 
         document.unifiedObjects.removeAll { obj in
-            if case .shape(let shape) = obj.objectType {
-                return shape.isTextObject
+            if case .text = obj.objectType {
+                return true
             }
             return false
         }
