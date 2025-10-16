@@ -590,12 +590,27 @@ extension DrawingCanvas {
                 let nextPoint = centerPoints[i + 1].location
                 let incomingDir = CGPoint(x: point.location.x - prevPoint.x, y: point.location.y - prevPoint.y)
                 let outgoingDir = CGPoint(x: nextPoint.x - point.location.x, y: nextPoint.y - point.location.y)
+
+                // Normalize incoming and outgoing directions
+                let incomingLength = sqrt(incomingDir.x * incomingDir.x + incomingDir.y * incomingDir.y)
+                let outgoingLength = sqrt(outgoingDir.x * outgoingDir.x + outgoingDir.y * outgoingDir.y)
+
+                let normIncoming = incomingLength > 0 ? CGPoint(x: incomingDir.x / incomingLength, y: incomingDir.y / incomingLength) : incomingDir
+                let normOutgoing = outgoingLength > 0 ? CGPoint(x: outgoingDir.x / outgoingLength, y: outgoingDir.y / outgoingLength) : outgoingDir
+
                 let avgDirection = CGPoint(
-                    x: (incomingDir.x + outgoingDir.x) / 2,
-                    y: (incomingDir.y + outgoingDir.y) / 2
+                    x: (normIncoming.x + normOutgoing.x) / 2,
+                    y: (normIncoming.y + normOutgoing.y) / 2
                 )
 
-                perpendicular = CGPoint(x: -avgDirection.y, y: avgDirection.x)
+                // Check if averaged direction is too small (sharp corner)
+                let avgLength = sqrt(avgDirection.x * avgDirection.x + avgDirection.y * avgDirection.y)
+                if avgLength < 0.1 {
+                    // Sharp corner - use outgoing direction instead
+                    perpendicular = CGPoint(x: -normOutgoing.y, y: normOutgoing.x)
+                } else {
+                    perpendicular = CGPoint(x: -avgDirection.y, y: avgDirection.x)
+                }
             }
 
             let length = sqrt(perpendicular.x * perpendicular.x + perpendicular.y * perpendicular.y)
