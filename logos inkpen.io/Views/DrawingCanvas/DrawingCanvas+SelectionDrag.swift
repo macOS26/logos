@@ -221,19 +221,21 @@ extension DrawingCanvas {
 
             var newShapes: [UUID: VectorShape] = [:]
             for objectID in affectedObjectIDs {
-                if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }),
-                   case .shape(let shape) = unifiedObject.objectType {
-                    if shape.isTextObject {
+                if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+                    switch unifiedObject.objectType {
+                    case .text(let shape):
                         if let index = document.unifiedObjects.firstIndex(where: { $0.id == shape.id }),
-                           case .shape(let updatedShape) = document.unifiedObjects[index].objectType {
+                           case .text(let updatedShape) = document.unifiedObjects[index].objectType {
                             newShapes[objectID] = updatedShape
                         } else {
                             newShapes[objectID] = shape
                         }
-                    } else if let updatedShape = document.findShape(by: shape.id) {
-                        newShapes[objectID] = updatedShape
-                    } else {
-                        newShapes[objectID] = shape
+                    case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                        if let updatedShape = document.findShape(by: shape.id) {
+                            newShapes[objectID] = updatedShape
+                        } else {
+                            newShapes[objectID] = shape
+                        }
                     }
                 }
             }
