@@ -100,9 +100,9 @@ extension VectorDocument {
         var newOpacities: [UUID: Double] = [:]
 
         for objectID in selectedObjectIDs {
-            if let unifiedObject = findObject(by: objectID),
-               case .shape(let shape) = unifiedObject.objectType {
-                if shape.isTextObject {
+            if let unifiedObject = findObject(by: objectID) {
+                switch unifiedObject.objectType {
+                case .text(let shape):
                     switch activeColorTarget {
                     case .fill:
                         oldColors[objectID] = shape.typography?.fillColor ?? .black
@@ -115,7 +115,11 @@ extension VectorDocument {
                         oldOpacities[objectID] = shape.typography?.strokeOpacity ?? defaultStrokeOpacity
                         newOpacities[objectID] = defaultStrokeOpacity
                     }
-                } else {
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
                     switch activeColorTarget {
                     case .fill:
                         oldColors[objectID] = shape.fillStyle?.color ?? .black
@@ -153,17 +157,18 @@ extension VectorDocument {
         }
 
         for objectID in selectedObjectIDs {
-            if let unifiedObject = findObject(by: objectID),
-               case .shape(let groupShape) = unifiedObject.objectType,
-               groupShape.isGroupContainer {
-                for childShape in groupShape.groupedShapes {
-                    updateShapeByID(childShape.id) { shape in
+            if let unifiedObject = findObject(by: objectID) {
+                switch unifiedObject.objectType {
+                case .group(let groupShape):
+                    for childShape in groupShape.groupedShapes {
+                        updateShapeByID(childShape.id) { shape in
+                            applyColorToShape(&shape, color: color)
+                        }
+                    }
+                case .shape, .text, .warp, .clipGroup, .clipMask:
+                    updateShapeByID(objectID) { shape in
                         applyColorToShape(&shape, color: color)
                     }
-                }
-            } else {
-                updateShapeByID(objectID) { shape in
-                    applyColorToShape(&shape, color: color)
                 }
             }
         }
@@ -178,15 +183,21 @@ extension VectorDocument {
 
         if let unifiedObject = findObject(by: firstSelectedID) {
             switch unifiedObject.objectType {
-            case .shape(let shape):
+            case .text(let shape):
+                if activeColorTarget == .stroke {
+                    return shape.typography?.strokeColor
+                } else {
+                    return shape.typography?.fillColor
+                }
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 if activeColorTarget == .stroke {
                     return shape.strokeStyle?.color
                 } else {
-                    if shape.isTextObject {
-                        return shape.typography?.fillColor
-                    } else {
-                        return shape.fillStyle?.color
-                    }
+                    return shape.fillStyle?.color
                 }
             }
         }

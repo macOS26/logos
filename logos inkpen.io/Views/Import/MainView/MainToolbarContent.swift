@@ -28,8 +28,13 @@ struct MainToolbarContent: ToolbarContent {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
-                case .shape(let shape):
-                    if shape.isTextObject { continue }
+                case .text:
+                    continue
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
 
                     let hasCloseElement = shape.path.elements.contains { element in
                         if case .close = element { return true }
@@ -60,8 +65,13 @@ struct MainToolbarContent: ToolbarContent {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
-                case .shape(let shape):
-                    if shape.isTextObject { continue }
+                case .text:
+                    continue
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
 
                     if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
                         let shapes = document.getShapesForLayer(layerIndex)
@@ -334,13 +344,13 @@ struct MainToolbarContent: ToolbarContent {
             if let unifiedObject = document.findObject(by: objectID) {
                 if unifiedObject.layerIndex >= 2 {
                     switch unifiedObject.objectType {
-                    case .shape(let shape):
-                        let shapeBounds: CGRect
-                        if shape.isTextObject {
-                            shapeBounds = shape.bounds.applying(shape.transform)
-                        } else {
-                            shapeBounds = shape.bounds.applying(shape.transform)
-                        }
+                    case .shape(let shape),
+                         .text(let shape),
+                         .warp(let shape),
+                         .group(let shape),
+                         .clipGroup(let shape),
+                         .clipMask(let shape):
+                        let shapeBounds = shape.bounds.applying(shape.transform)
                         combinedBounds = combinedBounds.map { $0.union(shapeBounds) } ?? shapeBounds
                     }
                 }
@@ -373,24 +383,31 @@ struct MainToolbarContent: ToolbarContent {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
-                case .shape(let shape):
+                case .text(let shape):
+                    oldShapes[shape.id] = shape
+                    objectIDs.append(shape.id)
+                    document.lockTextInUnified(id: shape.id)
+                    if let updatedObject = document.findObject(by: shape.id),
+                       case .text(let updatedShape) = updatedObject.objectType {
+                        newShapes[shape.id] = updatedShape
+                    }
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
                     oldShapes[shape.id] = shape
                     objectIDs.append(shape.id)
 
-                    if shape.isTextObject {
-                        document.lockTextInUnified(id: shape.id)
-                    } else {
-                        if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
-                            let shapes = document.getShapesForLayer(layerIndex)
-                            if shapes.contains(where: { $0.id == shape.id }) {
-                                document.lockShapeInUnified(id: shape.id)
-                            }
+                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
+                        let shapes = document.getShapesForLayer(layerIndex)
+                        if shapes.contains(where: { $0.id == shape.id }) {
+                            document.lockShapeInUnified(id: shape.id)
                         }
                     }
 
-                    if let updatedObject = document.findObject(by: shape.id),
-                       case .shape(let updatedShape) = updatedObject.objectType {
-                        newShapes[shape.id] = updatedShape
+                    if let updatedObject = document.findObject(by: shape.id) {
+                        newShapes[shape.id] = updatedObject.shape
                     }
                 }
             }
@@ -444,24 +461,29 @@ struct MainToolbarContent: ToolbarContent {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
-                case .shape(let shape):
+                case .text(let shape):
                     oldShapes[shape.id] = shape
                     objectIDs.append(shape.id)
-
-                    if shape.isTextObject {
-                        document.hideTextInUnified(id: shape.id)
-                    } else {
-                        if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
-                            let shapes = document.getShapesForLayer(layerIndex)
-                            if shapes.contains(where: { $0.id == shape.id }) {
-                                document.hideShapeInUnified(id: shape.id)
-                            }
+                    document.hideTextInUnified(id: shape.id)
+                    if let updatedObject = document.findObject(by: shape.id) {
+                        newShapes[shape.id] = updatedObject.shape
+                    }
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
+                    oldShapes[shape.id] = shape
+                    objectIDs.append(shape.id)
+                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
+                        let shapes = document.getShapesForLayer(layerIndex)
+                        if shapes.contains(where: { $0.id == shape.id }) {
+                            document.hideShapeInUnified(id: shape.id)
                         }
                     }
 
-                    if let updatedObject = document.findObject(by: shape.id),
-                       case .shape(let updatedShape) = updatedObject.objectType {
-                        newShapes[shape.id] = updatedShape
+                    if let updatedObject = document.findObject(by: shape.id) {
+                        newShapes[shape.id] = updatedObject.shape
                     }
                 }
             }

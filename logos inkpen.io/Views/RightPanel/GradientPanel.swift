@@ -508,7 +508,11 @@ struct GradientFillSection: View {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
-                case .shape(let shape):
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
                     if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
                         let shapes = document.getShapesForLayer(layerIndex)
                         if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }),
@@ -523,7 +527,8 @@ struct GradientFillSection: View {
                             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                         }
                     }
-
+                case .text:
+                    break
                 }
             }
         }

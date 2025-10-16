@@ -78,7 +78,12 @@ extension VectorDocument {
 
         let protectedObjects = objectsToDelete.filter { objectToDelete in
             switch objectToDelete.objectType {
-            case .shape(let shape):
+            case .shape(let shape),
+                 .text(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
                     Log.error("🚫 PROTECTED: Attempted to delete protected background shape '\(shape.name)' - BLOCKED", category: .error)
                     return false
@@ -94,12 +99,16 @@ extension VectorDocument {
 
         for objectToDelete in protectedObjects {
             switch objectToDelete.objectType {
-            case .shape(let shape):
-                if !shape.isTextObject {
-                    if let layerIndex = objectToDelete.layerIndex < layers.count ? objectToDelete.layerIndex : nil {
-                        removeShapesUnified(layerIndex: layerIndex, where: { $0.id == shape.id })
-                    }
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
+                if let layerIndex = objectToDelete.layerIndex < layers.count ? objectToDelete.layerIndex : nil {
+                    removeShapesUnified(layerIndex: layerIndex, where: { $0.id == shape.id })
                 }
+            case .text:
+                break
             }
         }
 
@@ -115,10 +124,17 @@ extension VectorDocument {
         var selectedShapes: [VectorShape] = []
 
         for unifiedObject in unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType {
+            switch unifiedObject.objectType {
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 if selectedShapeIDs.contains(shape.id) {
                     selectedShapes.append(shape)
                 }
+            case .text:
+                break
             }
         }
 
@@ -129,10 +145,17 @@ extension VectorDocument {
         var shapes: [VectorShape] = []
 
         for unifiedObject in unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType {
+            switch unifiedObject.objectType {
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 if shapeIDs.contains(shape.id) {
                     shapes.append(shape)
                 }
+            case .text:
+                break
             }
         }
 
@@ -175,17 +198,29 @@ extension VectorDocument {
         // Array position IS the stacking order now
         let sortedSelectedObjects = unifiedObjects
             .filter { object in
-                if case .shape(let shape) = object.objectType {
+                switch object.objectType {
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
                     return selectedShapeIDs.contains(shape.id)
+                case .text:
+                    return false
                 }
-                return false
             }
 
         return sortedSelectedObjects.compactMap { obj in
-            if case .shape(let shape) = obj.objectType {
+            switch obj.objectType {
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 return shape
+            case .text:
+                return nil
             }
-            return nil
         }
     }
 
@@ -223,9 +258,10 @@ extension VectorDocument {
             guard selectedObjectIDs.contains(unifiedObject.id) &&
                   unifiedObject.layerIndex == layerIndex else { return false }
 
-            if case .shape = unifiedObject.objectType {
+            switch unifiedObject.objectType {
+            case .shape, .warp, .group, .clipGroup, .clipMask:
                 return true
-            } else {
+            case .text:
                 return false
             }
         }
@@ -233,7 +269,12 @@ extension VectorDocument {
         var newShapeIDs: Set<UUID> = []
 
         for unifiedObject in selectedShapes {
-            if case .shape(let shape) = unifiedObject.objectType {
+            switch unifiedObject.objectType {
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 var newShape = shape
                 newShape.id = UUID()
                 if ImageContentRegistry.containsImage(shape),
@@ -246,6 +287,8 @@ extension VectorDocument {
                 newShape.updateBounds()
                 addShape(newShape, to: layerIndex)
                 newShapeIDs.insert(newShape.id)
+            case .text:
+                break
             }
         }
 

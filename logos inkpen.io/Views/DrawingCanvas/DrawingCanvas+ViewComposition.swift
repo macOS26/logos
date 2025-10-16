@@ -474,8 +474,14 @@ private struct BrushPreviewStyleModifier: ViewModifier {
     @ViewBuilder
     private func draggedObjectView(_ unifiedObject: VectorObject, dragDelta: CGPoint) -> some View {
         switch unifiedObject.objectType {
-        case .shape(let shape):
+        case .shape(let shape),
+             .warp(let shape),
+             .group(let shape),
+             .clipGroup(let shape),
+             .clipMask(let shape):
             draggedShapeView(shape, dragDelta: dragDelta)
+        case .text:
+            EmptyView()
         }
     }
 

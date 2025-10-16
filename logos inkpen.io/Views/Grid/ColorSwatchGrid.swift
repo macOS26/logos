@@ -18,7 +18,15 @@ struct ColorSwatchGrid: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
-            case .shape(let shape):
+            case .text(let shape):
+                if let typography = shape.typography {
+                    return typography.fillColor
+                }
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 if let fillStyle = shape.fillStyle {
                     return fillStyle.color
                 }
@@ -32,7 +40,17 @@ struct ColorSwatchGrid: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
-            case .shape(let shape):
+            case .text(let shape):
+                if let typography = shape.typography, typography.hasStroke {
+                    return typography.strokeColor
+                } else {
+                    return .clear
+                }
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 if let strokeStyle = shape.strokeStyle {
                     return strokeStyle.color
                 } else {
@@ -48,7 +66,15 @@ struct ColorSwatchGrid: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
-            case .shape(let shape):
+            case .text(let shape):
+                if let typography = shape.typography {
+                    return typography.fillOpacity
+                }
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 if let fillStyle = shape.fillStyle {
                     return fillStyle.opacity
                 }
@@ -62,7 +88,15 @@ struct ColorSwatchGrid: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
-            case .shape(let shape):
+            case .text(let shape):
+                if let typography = shape.typography {
+                    return typography.strokeOpacity
+                }
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 if let strokeStyle = shape.strokeStyle {
                     return strokeStyle.opacity
                 }

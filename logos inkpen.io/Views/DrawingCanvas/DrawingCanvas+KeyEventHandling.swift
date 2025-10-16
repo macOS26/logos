@@ -178,7 +178,7 @@ extension DrawingCanvas {
                 }
 
                 for unifiedObj in self.document.unifiedObjects {
-                    if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject, shape.isEditing == true {
+                    if case .text(let shape) = unifiedObj.objectType, shape.isEditing == true {
                         self.document.setTextEditingInUnified(id: shape.id, isEditing: false)
                     }
                 }
@@ -326,7 +326,11 @@ extension DrawingCanvas {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
-                case .shape(var shape):
+                case .shape(var shape),
+                     .warp(var shape),
+                     .group(var shape),
+                     .clipGroup(var shape),
+                     .clipMask(var shape):
                     if shape.isGroupContainer {
                         var nudgedGroupedShapes: [VectorShape] = []
                         for var groupedShape in shape.groupedShapes {
@@ -388,6 +392,8 @@ extension DrawingCanvas {
                     document.updateEntireShapeInUnified(id: shape.id) { updatedShape in
                         updatedShape = shape
                     }
+                case .text:
+                    break
                 }
             }
         }

@@ -14,7 +14,7 @@ struct SelectionHandlesView: View {
             ForEach(document.unifiedObjects.indices, id: \.self) { unifiedObjectIndex in
                 let unifiedObject = document.unifiedObjects[unifiedObjectIndex]
 
-                if case .shape(let groupShape) = unifiedObject.objectType, groupShape.isGroupContainer {
+                if case .group(let groupShape) = unifiedObject.objectType {
                     ForEach(groupShape.groupedShapes, id: \.id) { childShape in
                         if document.selectedObjectIDs.contains(childShape.id) {
                             renderHandlesForShape(childShape)
@@ -24,7 +24,11 @@ struct SelectionHandlesView: View {
 
                 if document.selectedObjectIDs.contains(unifiedObject.id) {
                     switch unifiedObject.objectType {
-                    case .shape(let shape):
+                    case .shape(let shape),
+                         .warp(let shape),
+                         .group(let shape),
+                         .clipGroup(let shape),
+                         .clipMask(let shape):
                         let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
                         if !isBackgroundShape {
                             if document.currentTool == .warp {
@@ -87,7 +91,8 @@ struct SelectionHandlesView: View {
                                 }
                             }
                         }
-
+                    case .text:
+                        EmptyView()
                     }
                 }
             }

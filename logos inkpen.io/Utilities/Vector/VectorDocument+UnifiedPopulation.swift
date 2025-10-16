@@ -26,12 +26,14 @@ extension VectorDocument {
         for objectID in selectedObjectIDs {
             if let unifiedObject = findObject(by: objectID) {
                 switch unifiedObject.objectType {
-                case .shape(let shape):
-                    if shape.isTextObject {
-                        selectedTextIDs.insert(shape.id)
-                    } else {
-                        selectedShapeIDs.insert(shape.id)
-                    }
+                case .text(let shape):
+                    selectedTextIDs.insert(shape.id)
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
+                    selectedShapeIDs.insert(shape.id)
                 }
             }
         }
