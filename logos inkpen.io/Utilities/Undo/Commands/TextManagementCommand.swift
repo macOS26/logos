@@ -30,10 +30,12 @@ class TextManagementCommand: BaseCommand {
 
         case .removeText(let textIDs, _):
             document.unifiedObjects.removeAll { obj in
-                if case .shape(let shape) = obj.objectType {
-                    return textIDs.contains(shape.id) && shape.isTextObject
+                switch obj.objectType {
+                case .text(let shape):
+                    return textIDs.contains(shape.id)
+                case .shape, .warp, .group, .clipGroup, .clipMask:
+                    return false
                 }
-                return false
             }
             document.selectedTextIDs.removeAll()
             document.selectedObjectIDs = newSelection
@@ -47,10 +49,12 @@ class TextManagementCommand: BaseCommand {
 
         case .convertToOutlines(let removedTextIDs, _, _, let addedObjects):
             document.unifiedObjects.removeAll { obj in
-                if case .shape(let shape) = obj.objectType {
-                    return shape.isTextObject && removedTextIDs.contains(shape.id)
+                switch obj.objectType {
+                case .text(let shape):
+                    return removedTextIDs.contains(shape.id)
+                case .shape, .warp, .group, .clipGroup, .clipMask:
+                    return false
                 }
-                return false
             }
             for obj in addedObjects {
                 document.unifiedObjects.append(obj)
