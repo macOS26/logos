@@ -202,8 +202,12 @@ extension FileOperations {
         context.restoreGState()
     }
 
-    static func renderShapeToPDFWithImageSupport(shape: VectorShape, context: CGContext, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs) throws {
-        if shape.isTextObject, let vectorText = VectorText.from(shape) {
+    static func renderShapeToPDFWithImageSupport(shape: VectorShape, context: CGContext, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, document: VectorDocument? = nil) throws {
+        if let doc = document, let object = doc.findObject(by: shape.id), case .text = object.objectType, let vectorText = VectorText.from(shape) {
+            try renderTextToPDF(vectorText: vectorText, context: context, renderingMode: textRenderingMode)
+            return
+        } else if shape.isTextObject, let vectorText = VectorText.from(shape) {
+            // Fallback for when document is not available
             try renderTextToPDF(vectorText: vectorText, context: context, renderingMode: textRenderingMode)
             return
         }
