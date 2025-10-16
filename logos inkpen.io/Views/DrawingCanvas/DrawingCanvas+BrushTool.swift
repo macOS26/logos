@@ -420,7 +420,7 @@ extension DrawingCanvas {
             var finalThickness = thickness
 
             var mappedPressure = 1.0
-            if !recentRawPoints.isEmpty {
+            if appState.pressureSensitivityEnabled && !recentRawPoints.isEmpty {
                 var closestDistance = Double.infinity
                 var closestPressure = 1.0
 
@@ -530,10 +530,13 @@ extension DrawingCanvas {
             let progress = Double(index) / Double(centerPoints.count - 1)
             var finalThickness = thickness
 
-            let interpolatedPressure = interpolatePressureForPoint(point, from: rawPoints)
-            let curve = appState.pressureCurve
+            var mappedPressure = 1.0
+            if appState.pressureSensitivityEnabled {
+                let interpolatedPressure = interpolatePressureForPoint(point, from: rawPoints)
+                let curve = appState.pressureCurve
+                mappedPressure = getThicknessFromPressureCurve(pressure: interpolatedPressure, curve: curve)
+            }
 
-            let mappedPressure = getThicknessFromPressureCurve(pressure: interpolatedPressure, curve: curve)
             let taperZone = 0.15
             var taperMultiplier = 1.0
 
