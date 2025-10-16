@@ -56,16 +56,24 @@ class GroupCommand: BaseCommand {
 
         document.selectedObjectIDs = newSelectedObjectIDs
         document.selectedShapeIDs = newSelectedObjectIDs.filter { id in
-            if let obj = document.unifiedObjects.first(where: { $0.id == id }),
-               case .shape(let shape) = obj.objectType {
-                return !shape.isTextObject
+            if let obj = document.unifiedObjects.first(where: { $0.id == id }) {
+                switch obj.objectType {
+                case .shape, .warp, .group, .clipGroup, .clipMask:
+                    return true
+                case .text:
+                    return false
+                }
             }
             return false
         }
         document.selectedTextIDs = newSelectedObjectIDs.filter { id in
-            if let obj = document.unifiedObjects.first(where: { $0.id == id }),
-               case .shape(let shape) = obj.objectType {
-                return shape.isTextObject
+            if let obj = document.unifiedObjects.first(where: { $0.id == id }) {
+                switch obj.objectType {
+                case .text:
+                    return true
+                case .shape, .warp, .group, .clipGroup, .clipMask:
+                    return false
+                }
             }
             return false
         }
@@ -85,16 +93,24 @@ class GroupCommand: BaseCommand {
 
         document.selectedObjectIDs = oldSelectedObjectIDs
         document.selectedShapeIDs = oldSelectedObjectIDs.filter { id in
-            if let obj = document.unifiedObjects.first(where: { $0.id == id }),
-               case .shape(let shape) = obj.objectType {
-                return !shape.isTextObject
+            if let obj = document.unifiedObjects.first(where: { $0.id == id }) {
+                switch obj.objectType {
+                case .shape, .warp, .group, .clipGroup, .clipMask:
+                    return true
+                case .text:
+                    return false
+                }
             }
             return false
         }
         document.selectedTextIDs = oldSelectedObjectIDs.filter { id in
-            if let obj = document.unifiedObjects.first(where: { $0.id == id }),
-               case .shape(let shape) = obj.objectType {
-                return shape.isTextObject
+            if let obj = document.unifiedObjects.first(where: { $0.id == id }) {
+                switch obj.objectType {
+                case .text:
+                    return true
+                case .shape, .warp, .group, .clipGroup, .clipMask:
+                    return false
+                }
             }
             return false
         }
