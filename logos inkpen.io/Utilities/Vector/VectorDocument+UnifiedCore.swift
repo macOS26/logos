@@ -85,7 +85,7 @@ extension VectorDocument {
         }
 
         if isUndoRedoOperation {
-            if let existingObject = findObject(by: shape.id) {
+            if findObject(by: shape.id) != nil {
                 let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex)
                 unifiedObjects.append(unifiedObject)
                 return
@@ -109,7 +109,7 @@ extension VectorDocument {
         }
 
         if isUndoRedoOperation {
-            if let existingObject = findObject(by: shape.id) {
+            if findObject(by: shape.id) != nil {
                 let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex)
                 unifiedObjects.append(unifiedObject)
                 return
@@ -171,7 +171,7 @@ extension VectorDocument {
         let textShape = VectorShape.from(textWithLayer)
 
         if isUndoRedoOperation {
-            if let existingObject = findObject(by: text.id) {
+            if findObject(by: text.id) != nil {
                 let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex)
                 unifiedObjects.append(unifiedObject)
                 return

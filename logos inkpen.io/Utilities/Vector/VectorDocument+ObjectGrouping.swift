@@ -109,7 +109,7 @@ extension VectorDocument {
                let shape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
 
                 if shape.isGroupContainer {
-                    if let obj = unifiedObjects.first(where: { $0.id == shapeID }) {
+                    if unifiedObjects.contains(where: { $0.id == shapeID }) {
                         removedShapes[shapeID] = shape
                     }
 
@@ -131,7 +131,7 @@ extension VectorDocument {
         var addedShapes: [UUID: VectorShape] = [:]
 
 
-        for (index, shape) in shapesToAdd.enumerated() {
+        for shape in shapesToAdd {
             addedShapes[shape.id] = shape
         }
 
@@ -164,7 +164,7 @@ extension VectorDocument {
         guard flattenedGroup.isGroup && !flattenedGroup.groupedShapes.isEmpty else { return }
 
         var removedShapes: [UUID: VectorShape] = [:]
-        if let obj = unifiedObjects.first(where: { $0.id == selectedShapeID }) {
+        if unifiedObjects.contains(where: { $0.id == selectedShapeID }) {
             removedShapes[selectedShapeID] = flattenedGroup
         }
 
@@ -181,7 +181,7 @@ extension VectorDocument {
         var addedShapes: [UUID: VectorShape] = [:]
 
 
-        for (index, shape) in shapesToAdd.enumerated() {
+        for shape in shapesToAdd {
             addedShapes[shape.id] = shape
         }
 
@@ -304,7 +304,7 @@ extension VectorDocument {
               compoundShape.isTrueCompoundPath else { return }
 
         var removedShapes: [UUID: VectorShape] = [:]
-        if let obj = unifiedObjects.first(where: { $0.id == selectedShapeID }) {
+        if unifiedObjects.contains(where: { $0.id == selectedShapeID }) {
             removedShapes[selectedShapeID] = compoundShape
         }
 
@@ -328,7 +328,7 @@ extension VectorDocument {
         var addedShapes: [UUID: VectorShape] = [:]
 
 
-        for (index, shape) in newShapes.enumerated() {
+        for shape in newShapes {
             addedShapes[shape.id] = shape
         }
 
@@ -359,7 +359,7 @@ extension VectorDocument {
               loopingShape.isTrueLoopingPath else { return }
 
         var removedShapes: [UUID: VectorShape] = [:]
-        if let obj = unifiedObjects.first(where: { $0.id == selectedShapeID }) {
+        if unifiedObjects.contains(where: { $0.id == selectedShapeID }) {
             removedShapes[selectedShapeID] = loopingShape
         }
 
@@ -383,7 +383,7 @@ extension VectorDocument {
         var addedShapes: [UUID: VectorShape] = [:]
 
 
-        for (index, shape) in newShapes.enumerated() {
+        for shape in newShapes {
             addedShapes[shape.id] = shape
         }
 
