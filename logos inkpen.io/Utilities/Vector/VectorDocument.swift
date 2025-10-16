@@ -476,8 +476,10 @@ class VectorDocument: ObservableObject, Codable {
         if layers.count >= 2 {
             layers[0].isVisible.toggle()
             layers[1].isVisible.toggle()
+            objectWillChange.send()
             layers[0].isVisible.toggle()
             layers[1].isVisible.toggle()
+            objectWillChange.send()
         }
     }
 }
