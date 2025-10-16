@@ -6,8 +6,7 @@ extension VectorDocument {
 
     func migrateLegacyTextObjects() {
         for (index, object) in unifiedObjects.enumerated() {
-            if case .shape(var shape) = object.objectType,
-               shape.isTextObject,
+            if case .text(var shape) = object.objectType,
                let typography = shape.typography {
                 let needsFontVariantMigration = typography.fontVariant == nil || typography.fontVariant?.isEmpty == true
 
