@@ -29,7 +29,13 @@ struct InkpenDocument: FileDocument {
                 var minY: CGFloat = .infinity
 
                 for unifiedObj in self.document.unifiedObjects {
-                    if case .shape(let shape) = unifiedObj.objectType {
+                    switch unifiedObj.objectType {
+                    case .text(let shape),
+                         .shape(let shape),
+                         .warp(let shape),
+                         .group(let shape),
+                         .clipGroup(let shape),
+                         .clipMask(let shape):
                         if let textPos = shape.textPosition {
                             minX = min(minX, textPos.x)
                             minY = min(minY, textPos.y)
@@ -45,7 +51,7 @@ struct InkpenDocument: FileDocument {
                 }
 
                 for unifiedObj in self.document.unifiedObjects {
-                    if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject {
+                    if case .text(let shape) = unifiedObj.objectType {
                         self.document.setTextEditingInUnified(id: shape.id, isEditing: false)
                     }
                 }
@@ -60,7 +66,7 @@ struct InkpenDocument: FileDocument {
                 self.document.populateUnifiedObjectsFromLayersPreservingOrder()
 
                 for unifiedObj in self.document.unifiedObjects {
-                    if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject {
+                    if case .text(let shape) = unifiedObj.objectType {
                         self.document.setTextEditingInUnified(id: shape.id, isEditing: false)
                     }
                 }
@@ -73,7 +79,7 @@ struct InkpenDocument: FileDocument {
                 self.document = try FileOperations.importFromJSONData(data)
 
                 for unifiedObj in self.document.unifiedObjects {
-                    if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject {
+                    if case .text(let shape) = unifiedObj.objectType {
                         self.document.setTextEditingInUnified(id: shape.id, isEditing: false)
                     }
                 }
