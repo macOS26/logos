@@ -22,20 +22,27 @@ extension DrawingCanvas {
                     if layer.isLocked { continue }
                 }
 
-                if case .shape(let shape) = unifiedObject.objectType {
+                switch unifiedObject.objectType {
+                case .text(let shape):
+                    if !shape.isVisible { continue }
+                    let transformedBounds = shape.bounds.applying(shape.transform)
+                    if transformedBounds.contains(validatedLocation) {
+                        hitShape = shape
+                        hitLayerIndex = unifiedObject.layerIndex
+                        break outerHit
+                    }
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
                     if !shape.isVisible { continue }
                     let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
                     if isBackgroundShape { continue }
 
                     let baseTolerance: CGFloat = 8.0
                     let tolerance = max(2.0, baseTolerance / document.zoomLevel)
-                    let isHit: Bool
-                    if shape.isTextObject {
-                        let transformedBounds = shape.bounds.applying(shape.transform)
-                        isHit = transformedBounds.contains(validatedLocation)
-                    } else {
-                        isHit = PathOperations.hitTest(shape.transformedPath, point: validatedLocation, tolerance: tolerance)
-                    }
+                    let isHit = PathOperations.hitTest(shape.transformedPath, point: validatedLocation, tolerance: tolerance)
 
                     if isHit {
                         hitShape = shape
@@ -75,7 +82,12 @@ extension DrawingCanvas {
                     if layer.isLocked { continue }
                 }
 
-                if case .shape(let shape) = unifiedObject.objectType {
+                switch unifiedObject.objectType {
+                case .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
                     if !shape.isVisible { continue }
 
                     let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
@@ -87,6 +99,8 @@ extension DrawingCanvas {
                         clickedShape = shape
                         break
                     }
+                case .text:
+                    continue
                 }
             }
 
@@ -195,7 +209,7 @@ extension DrawingCanvas {
                 document.selectedObjectIDs = [objectToSelect.id]
             }
 
-            if case .shape(let shape) = objectToSelect.objectType, shape.isTextObject {
+            if case .text = objectToSelect.objectType {
                 document.transformOrigin = .topLeft
             }
 
@@ -340,9 +354,17 @@ extension DrawingCanvas {
 
     private func findShapeByID(_ shapeID: UUID) -> VectorShape? {
         for unifiedObject in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType,
-               shape.id == shapeID {
-                return shape
+            switch unifiedObject.objectType {
+            case .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
+                if shape.id == shapeID {
+                    return shape
+                }
+            case .text:
+                continue
             }
         }
         return nil
