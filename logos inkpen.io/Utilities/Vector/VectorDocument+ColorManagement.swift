@@ -161,9 +161,21 @@ extension VectorDocument {
                 switch unifiedObject.objectType {
                 case .group(let groupShape):
                     for childShape in groupShape.groupedShapes {
-                        let childIsText = childShape.isTextObject
-                        updateShapeByID(childShape.id) { shape in
-                            applyColorToShape(&shape, color: color, isText: childIsText)
+                        if let childObject = findObject(by: childShape.id) {
+                            switch childObject.objectType {
+                            case .text:
+                                updateShapeByID(childShape.id) { shape in
+                                    applyColorToShape(&shape, color: color, isText: true)
+                                }
+                            case .shape, .warp, .clipGroup, .clipMask:
+                                updateShapeByID(childShape.id) { shape in
+                                    applyColorToShape(&shape, color: color, isText: false)
+                                }
+                            case .group:
+                                updateShapeByID(childShape.id) { shape in
+                                    applyColorToShape(&shape, color: color, isText: false)
+                                }
+                            }
                         }
                     }
                 case .text:
