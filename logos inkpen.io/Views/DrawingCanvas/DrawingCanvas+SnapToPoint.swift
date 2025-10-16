@@ -16,7 +16,8 @@ extension DrawingCanvas {
         var nearestDistance = threshold
 
         for unifiedObject in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType {
+            switch unifiedObject.objectType {
+            case .shape(let shape), .text(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                 if !shape.isVisible || shape.isLocked {
                     continue
                 }
