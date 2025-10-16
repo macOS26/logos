@@ -246,9 +246,9 @@ extension DrawingCanvas {
                 }
             }
 
-            finalShape.path = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: finalShape.path)
+            finalShape.path = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: finalShape.path, tolerance: 1.0)
         } else {
-            finalShape.path = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: finalShape.path)
+            finalShape.path = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: finalShape.path, tolerance: 1.0)
         }
 
         guard let layerIndex = document.selectedLayerIndex else { return }
@@ -324,9 +324,9 @@ extension DrawingCanvas {
                 }
             }
 
-            finalPath = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: finalPath)
+            finalPath = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: finalPath, tolerance: 1.0)
         } else {
-            finalPath = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: finalPath)
+            finalPath = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: finalPath, tolerance: 1.0)
         }
 
         let shape = VectorShape(name: "Marker Stroke", path: finalPath, geometricType: .brushStroke, strokeStyle: finalStrokeStyle, fillStyle: fillStyle)

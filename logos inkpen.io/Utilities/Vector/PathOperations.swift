@@ -635,7 +635,7 @@ class PathOperations {
 
 extension ProfessionalPathOperations {
 
-    static func mergeAdjacentCoincidentPoints(in path: VectorPath) -> VectorPath {
+    static func mergeAdjacentCoincidentPoints(in path: VectorPath, tolerance: Double = 1.0) -> VectorPath {
         guard path.elements.count > 2 else {
             return path
         }
@@ -684,13 +684,8 @@ extension ProfessionalPathOperations {
                 if j <= i { continue }
                 if processed.contains(j) { continue }
 
-                // Check for coincident points using epsilon for floating-point comparison
-                // Epsilon of 0.001 catches truly coincident points with floating-point precision issues
-                let epsilon: Double = 0.001
-                let dx = abs(data.position.x - otherData.position.x)
-                let dy = abs(data.position.y - otherData.position.y)
-
-                if dx < epsilon && dy < epsilon {
+                let distance = data.position.distance(to: otherData.position)
+                if distance <= tolerance {
                     coincidentGroup.append(j)
                 }
             }
@@ -707,7 +702,7 @@ extension ProfessionalPathOperations {
                     let isFirstOrLast = (actualElementIndex == firstPointIndex || actualElementIndex == lastPointIndex)
                     if !isFirstOrLast {
                         indicesToRemove.insert(actualElementIndex)
-                        Log.info("  Removing coincident point at index \(actualElementIndex) at (\(data.position.x), \(data.position.y))", category: .general)
+                        Log.info("  Removing coincident point at index \(actualElementIndex)", category: .general)
                     }
                 }
             }
