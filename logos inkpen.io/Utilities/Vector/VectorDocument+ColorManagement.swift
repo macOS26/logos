@@ -59,8 +59,8 @@ extension VectorDocument {
         colorChangeNotification = UUID()
     }
 
-    private func applyColorToShape(_ shape: inout VectorShape, color: VectorColor) {
-        if shape.isTextObject {
+    private func applyColorToShape(_ shape: inout VectorShape, color: VectorColor, isText: Bool) {
+        if isText {
             switch activeColorTarget {
             case .fill:
                 if shape.typography != nil {
@@ -161,13 +161,18 @@ extension VectorDocument {
                 switch unifiedObject.objectType {
                 case .group(let groupShape):
                     for childShape in groupShape.groupedShapes {
+                        let childIsText = childShape.isTextObject
                         updateShapeByID(childShape.id) { shape in
-                            applyColorToShape(&shape, color: color)
+                            applyColorToShape(&shape, color: color, isText: childIsText)
                         }
                     }
-                case .shape, .text, .warp, .clipGroup, .clipMask:
+                case .text:
                     updateShapeByID(objectID) { shape in
-                        applyColorToShape(&shape, color: color)
+                        applyColorToShape(&shape, color: color, isText: true)
+                    }
+                case .shape, .warp, .clipGroup, .clipMask:
+                    updateShapeByID(objectID) { shape in
+                        applyColorToShape(&shape, color: color, isText: false)
                     }
                 }
             }
