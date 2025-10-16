@@ -7,6 +7,7 @@ struct ProfessionalDirectSelectionView: View {
     let visibleHandles: Set<HandleID>
     let directSelectedShapeIDs: Set<UUID>
     let geometry: GeometryProxy
+    let coincidentPointTolerance: Double
 
     private var dragOffset: CGPoint {
         if document.currentDragOffset != .zero && !directSelectedShapeIDs.isEmpty && selectedPoints.isEmpty && selectedHandles.isEmpty {
@@ -135,7 +136,7 @@ struct ProfessionalDirectSelectionView: View {
         let isOutgoingHandleVisible = outgoingHandleID != nil ? (selectedHandles.contains(outgoingHandleID!) || visibleHandles.contains(outgoingHandleID!)) : false
         let shouldShowBothHandlesAtThisPoint = isIncomingHandleVisible || isOutgoingHandleVisible
 
-        let coincidentPoints = findCoincidentPoints(to: pointID, in: document, tolerance: 1.0)
+        let coincidentPoints = findCoincidentPoints(to: pointID, in: document, tolerance: coincidentPointTolerance)
         let anyCoincidentPointSelected = !coincidentPoints.isEmpty && coincidentPoints.contains { selectedPoints.contains($0) }
         let anyCoincidentHandleSelected: Bool = {
             if shape.path.elements.last == .close {
@@ -193,7 +194,7 @@ struct ProfessionalDirectSelectionView: View {
             elementIndex: elementIndex
         )
         let isPointSelected = selectedPoints.contains(pointID)
-        let coincidentPoints = findCoincidentPoints(to: pointID, in: document, tolerance: 1.0)
+        let coincidentPoints = findCoincidentPoints(to: pointID, in: document, tolerance: coincidentPointTolerance)
         let anyCoincidentPointSelected = !coincidentPoints.isEmpty && coincidentPoints.contains { selectedPoints.contains($0) }
         let outgoingHandleID: HandleID? = {
             if elementIndex + 1 < shape.path.elements.count {
@@ -306,7 +307,7 @@ struct ProfessionalDirectSelectionView: View {
                 elementIndex: elementIndex
             )
             let isPointSelected = selectedPoints.contains(pointID)
-            let hasCoincidentPoints = !findCoincidentPoints(to: pointID, in: document, tolerance: 1.0).isEmpty
+            let hasCoincidentPoints = !findCoincidentPoints(to: pointID, in: document, tolerance: coincidentPointTolerance).isEmpty
 
             Rectangle()
                 .fill(isPointSelected ? Color.blue : Color.white)
