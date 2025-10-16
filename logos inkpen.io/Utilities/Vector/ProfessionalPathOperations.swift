@@ -78,42 +78,6 @@ extension ProfessionalPathOperations {
             }
         }
 
-    private static func convexHull(_ points: [CGPoint]) -> [CGPoint] {
-        guard points.count > 2 else { return points }
-
-        let sortedPoints = points.sorted { point1, point2 in
-            if abs(point1.x - point2.x) < 1e-9 {
-                return point1.y < point2.y
-            }
-            return point1.x < point2.x
-        }
-
-        var lower: [CGPoint] = []
-        for point in sortedPoints {
-            while lower.count >= 2 && cross(lower[lower.count-2], lower[lower.count-1], point) <= 0 {
-                lower.removeLast()
-            }
-            lower.append(point)
-        }
-
-        var upper: [CGPoint] = []
-        for point in sortedPoints.reversed() {
-            while upper.count >= 2 && cross(upper[upper.count-2], upper[upper.count-1], point) <= 0 {
-                upper.removeLast()
-            }
-            upper.append(point)
-        }
-
-        lower.removeLast()
-        upper.removeLast()
-
-        return lower + upper
-    }
-
-    private static func cross(_ O: CGPoint, _ A: CGPoint, _ B: CGPoint) -> CGFloat {
-        return (A.x - O.x) * (B.y - O.y) - (A.y - O.y) * (B.x - O.x)
-    }
-
     static func extractSubpaths(from cgPath: CGPath) -> [CGPath] {
         var subpaths: [CGPath] = []
         var currentPath = CGMutablePath()
