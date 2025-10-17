@@ -246,7 +246,7 @@ extension DrawingCanvas {
     }
 
     private func performShapeHitTest(shape: VectorShape, at location: CGPoint) -> Bool {
-        if shape.isTextObject {
+        if shape.typography != nil {
             let textBounds = CGRect(
                 x: shape.transform.tx,
                 y: shape.transform.ty,
