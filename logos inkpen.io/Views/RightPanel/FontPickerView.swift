@@ -36,19 +36,11 @@ struct FontPickerView: View {
     let editingText: VectorText?
     @Binding var fontFamilyUpdateTrigger: Bool
 
-    // LOCAL @State variables for preview during editing
     @State private var currentFontFamilyState: String = "Helvetica"
     @State private var availableFontVariantNamesState: [String] = ["Regular"]
     @State private var currentFontVariantState: String = "Regular"
-    @State private var previewTypography: TypographyProperties? = nil
-    @State private var editingTextID: UUID? = nil
 
     private var currentFontFamily: String {
-        // During editing, return the preview state
-        if editingText != nil, previewTypography != nil {
-            return currentFontFamilyState
-        }
-
         if let selectedText = selectedText {
             return selectedText.typography.fontFamily
         } else if let editingText = editingText {
@@ -64,11 +56,6 @@ struct FontPickerView: View {
     }
 
     private var currentFontVariant: String {
-        // During editing, return the preview state
-        if editingText != nil, previewTypography != nil {
-            return currentFontVariantState
-        }
-
         if let selectedText = selectedText {
             if let variant = selectedText.typography.fontVariant,
                !variant.isEmpty {
@@ -94,7 +81,6 @@ struct FontPickerView: View {
                 },
                 set: { newFamily in
                     currentFontFamilyState = newFamily
-
                     document.fontManager.selectedFontFamily = newFamily
                     fontFamilyUpdateTrigger.toggle()
 
@@ -105,26 +91,23 @@ struct FontPickerView: View {
                     currentFontVariantState = defaultVariant
                     document.fontManager.selectedFontVariant = defaultVariant
 
-                    // Update LOCAL preview state only - do NOT update document
-                    if let textID = document.selectedTextIDs.first,
-                       let freshText = document.findText(by: textID) {
-                        var updatedTypography = freshText.typography
-                        updatedTypography.fontFamily = newFamily
-                        updatedTypography.fontVariant = defaultVariant
-
-                        // Store in @State for preview
-                        previewTypography = updatedTypography
-                        editingTextID = textID
-
-                        // Send preview notification for live update
-                        document.textPreviewTypography[textID] = updatedTypography
-                        NotificationCenter.default.post(
-                            name: Notification.Name("TextPreviewUpdate"),
-                            object: nil,
-                            userInfo: ["textID": textID, "typography": updatedTypography]
-                        )
-
-                        // Document will be updated when editing finishes
+                    // Update document DIRECTLY - no preview
+                    if let textID = document.selectedTextIDs.first {
+                        document.updateTextTypographyInUnified(id: textID, typography: TypographyProperties(
+                            fontFamily: newFamily,
+                            fontVariant: defaultVariant,
+                            fontSize: selectedText?.typography.fontSize ?? 16,
+                            lineHeight: selectedText?.typography.lineHeight ?? 19.2,
+                            lineSpacing: selectedText?.typography.lineSpacing ?? 0,
+                            letterSpacing: selectedText?.typography.letterSpacing ?? 0,
+                            alignment: selectedText?.typography.alignment ?? .left,
+                            hasStroke: selectedText?.typography.hasStroke ?? false,
+                            strokeColor: selectedText?.typography.strokeColor ?? .black,
+                            strokeWidth: selectedText?.typography.strokeWidth ?? 1,
+                            strokeOpacity: selectedText?.typography.strokeOpacity ?? 1,
+                            fillColor: selectedText?.typography.fillColor ?? .black,
+                            fillOpacity: selectedText?.typography.fillOpacity ?? 1
+                        ))
                     }
                 }
             )) {
@@ -148,25 +131,11 @@ struct FontPickerView: View {
                     currentFontVariantState = newVariant
                     document.fontManager.selectedFontVariant = newVariant
 
-                    // Update LOCAL preview state only - do NOT update document
-                    if let textID = document.selectedTextIDs.first,
-                       let freshText = document.findText(by: textID) {
-                        var updatedTypography = freshText.typography
+                    // Update document DIRECTLY - no preview
+                    if let textID = document.selectedTextIDs.first, let currentTypography = selectedText?.typography {
+                        var updatedTypography = currentTypography
                         updatedTypography.fontVariant = newVariant
-
-                        // Store in @State for preview
-                        previewTypography = updatedTypography
-                        editingTextID = textID
-
-                        // Send preview notification for live update
-                        document.textPreviewTypography[textID] = updatedTypography
-                        NotificationCenter.default.post(
-                            name: Notification.Name("TextPreviewUpdate"),
-                            object: nil,
-                            userInfo: ["textID": textID, "typography": updatedTypography]
-                        )
-
-                        // Document will be updated when editing finishes
+                        document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
                     }
                 }
             )) {
@@ -186,15 +155,7 @@ struct FontPickerView: View {
         .onChange(of: selectedText?.id) { _, _ in
             syncFontStates()
         }
-        .onChange(of: editingText?.id) { oldID, newID in
-            // When editing ends (editingText becomes nil), apply the preview typography to document
-            if oldID != nil && newID == nil && previewTypography != nil, let textID = editingTextID {
-                // Editing finished - save preview to document
-                document.updateTextTypographyInUnified(id: textID, typography: previewTypography!)
-                // Clear preview state
-                previewTypography = nil
-                editingTextID = nil
-            }
+        .onChange(of: editingText?.id) { _, _ in
             syncFontStates()
         }
         .onChange(of: fontFamilyUpdateTrigger) { _, _ in

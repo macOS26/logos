@@ -31,6 +31,22 @@ extension VectorDocument {
     }
 
     func updateShapeByID(_ shapeID: UUID, update: (inout VectorShape) -> Void) {
+        // Check for .text type first
+        if let index = unifiedObjects.firstIndex(where: { obj in
+            if case .text(let s) = obj.objectType {
+                return s.id == shapeID
+            }
+            return false
+        }) {
+            if case .text(var shape) = unifiedObjects[index].objectType {
+                update(&shape)
+                let layerIndex = unifiedObjects[index].layerIndex
+                unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
+            }
+            return
+        }
+
+        // Check for .shape type
         if let index = unifiedObjects.firstIndex(where: { obj in
             if case .shape(let s) = obj.objectType {
                 return s.id == shapeID
@@ -45,6 +61,7 @@ extension VectorDocument {
             return
         }
 
+        // Check in groups
         for groupIndex in unifiedObjects.indices {
             if case .shape(var groupShape) = unifiedObjects[groupIndex].objectType,
                groupShape.isGroupContainer {
