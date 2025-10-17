@@ -94,6 +94,7 @@ struct LayersPanel: View {
     @State private var showColorPicker: Bool = false
     @State private var overlaysEnabled: Bool = true
     @State private var rowHeights: [CGFloat] = []
+    @State private var layerOpacityState: Double = 1.0
 
     private enum RowType: Hashable {
         case layer(index: Int)
@@ -241,14 +242,7 @@ struct LayersPanel: View {
                         .allowsHitTesting(false)
                     
                     Slider(
-                        value: Binding(
-                            get: { document.layers[layerIndex].opacity },
-                            set: { newValue in
-                                var updatedLayer = document.layers[layerIndex]
-                                updatedLayer.opacity = newValue
-                                document.layers[layerIndex] = updatedLayer
-                            }
-                        ),
+                        value: $layerOpacityState,
                         in: 0...1,
                         onEditingChanged: { editing in
                             if !editing {
@@ -260,7 +254,7 @@ struct LayersPanel: View {
                 }
                 .frame(maxWidth: .infinity)
 
-                Text("\(Int(document.layers[layerIndex].opacity * 100))%")
+                Text("\(Int(layerOpacityState * 100))%")
                     .layerPercentage()
             }
             
