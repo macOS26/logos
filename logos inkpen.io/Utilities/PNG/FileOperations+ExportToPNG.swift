@@ -180,18 +180,42 @@ extension FileOperations {
             throw VectorImportError.parsingError("Invalid output size: \(outputSize)", line: nil)
         }
 
-        let contentView = UnifiedObjectView(
-            document: document,
-            zoomLevel: scale,
-            canvasOffset: .zero,
-            selectedObjectIDs: [],
-            viewMode: .color,
-            isShiftPressed: false,
-            dragPreviewDelta: .zero,
-            dragPreviewTrigger: false
-        )
+        let contentView = ZStack {
+            if includeBackground {
+                PasteboardBackgroundView(
+                    document: document,
+                    zoomLevel: scale,
+                    canvasOffset: .zero,
+                    selectedObjectIDs: [],
+                    viewMode: .color,
+                    dragPreviewDelta: .zero,
+                    dragPreviewTrigger: false
+                )
+
+                CanvasBackgroundView(
+                    document: document,
+                    zoomLevel: scale,
+                    canvasOffset: .zero,
+                    selectedObjectIDs: [],
+                    viewMode: .color,
+                    dragPreviewDelta: .zero,
+                    dragPreviewTrigger: false
+                )
+            }
+
+            NonBackgroundObjectsView(
+                document: document,
+                zoomLevel: scale,
+                canvasOffset: .zero,
+                selectedObjectIDs: [],
+                viewMode: .color,
+                isShiftPressed: false,
+                dragPreviewDelta: .zero,
+                dragPreviewTrigger: false
+            )
+        }
         .frame(width: outputSize.width, height: outputSize.height)
-        .background(includeBackground ? Color.white : Color.clear)
+        .background(Color.clear)
 
         let hostingView = NSHostingView(rootView: contentView)
         hostingView.frame = CGRect(origin: .zero, size: outputSize)

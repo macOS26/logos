@@ -1,69 +1,5 @@
 import SwiftUI
 
-struct UnifiedObjectView: View {
-    @ObservedObject var document: VectorDocument
-    let zoomLevel: Double
-    let canvasOffset: CGPoint
-    let selectedObjectIDs: Set<UUID>
-    let viewMode: ViewMode
-    let isShiftPressed: Bool
-    let dragPreviewDelta: CGPoint
-    let dragPreviewTrigger: Bool
-
-    @State private var layerOpacities: [Double] = []
-    @State private var layerBlendModes: [BlendMode] = []
-
-    private var visibleObjects: [VectorObject] {
-        document.getObjectsInStackingOrder()
-    }
-
-    private var objectsByLayer: [Int: [VectorObject]] {
-        Dictionary(grouping: visibleObjects, by: { $0.layerIndex })
-    }
-
-    var body: some View {
-        ZStack {
-            ForEach(objectsByLayer.keys.sorted(), id: \.self) { layerIndex in
-                if layerIndex < document.layers.count,
-                   document.layers[layerIndex].isVisible,
-                   let objects = objectsByLayer[layerIndex] {
-                    ZStack {
-                        ForEach(objects, id: \.id) { unifiedObject in
-                            if unifiedObject.isVisible {
-                                UnifiedObjectContentView(
-                                    unifiedObject: unifiedObject,
-                                    document: document,
-                                    zoomLevel: zoomLevel,
-                                    canvasOffset: canvasOffset,
-                                    selectedObjectIDs: selectedObjectIDs,
-                                    viewMode: viewMode,
-                                    dragPreviewDelta: dragPreviewDelta,
-                                    dragPreviewTrigger: dragPreviewTrigger
-                                )
-                            }
-                        }
-                    }
-                    .opacity(document.layers[layerIndex].opacity)
-                    .compositingGroup()
-                    .blendMode(document.layers[layerIndex].blendMode.swiftUIBlendMode)
-                }
-            }
-
-        }
-        //.compositingGroup()
-        .onAppear {
-            layerOpacities = document.layers.map { $0.opacity }
-            layerBlendModes = document.layers.map { $0.blendMode }
-        }
-        .onChange(of: document.layers.map { $0.opacity }) {
-            layerOpacities = document.layers.map { $0.opacity }
-        }
-        .onChange(of: document.layers.map { $0.blendMode }) {
-            layerBlendModes = document.layers.map { $0.blendMode }
-        }
-    }
-}
-
 struct UnifiedObjectContentView: View {
     let unifiedObject: VectorObject
     let document: VectorDocument
@@ -371,12 +307,11 @@ struct NonBackgroundObjectsView: View {
                         }
                     }
                     .opacity(document.layers[layerIndex].opacity)
-                    .compositingGroup()
                     .blendMode(document.layers[layerIndex].blendMode.swiftUIBlendMode)
                 }
             }
         }
-        //.compositingGroup()
+        .compositingGroup()
         .onAppear {
             layerOpacities = document.layers.map { $0.opacity }
             layerBlendModes = document.layers.map { $0.blendMode }
