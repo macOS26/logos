@@ -28,7 +28,8 @@ struct SelectionHandlesView: View {
                          .warp(let shape),
                          .group(let shape),
                          .clipGroup(let shape),
-                         .clipMask(let shape):
+                         .clipMask(let shape),
+                         .text(let shape):
                         let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
                         if !isBackgroundShape {
                             if document.currentTool == .warp {
@@ -91,8 +92,6 @@ struct SelectionHandlesView: View {
                                 }
                             }
                         }
-                    case .text:
-                        EmptyView()
                     }
                 }
             }
