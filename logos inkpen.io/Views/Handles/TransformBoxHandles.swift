@@ -24,7 +24,7 @@ struct TransformBoxHandles: View {
         let transformedBounds: CGRect = computeTransformedBounds()
 
         ZStack {
-            if shape.isTextObject {
+            if shape.typography != nil {
                 Rectangle()
                     .stroke(strokeColor, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0]))
                     .frame(width: transformedBounds.width, height: transformedBounds.height)
@@ -72,7 +72,7 @@ struct TransformBoxHandles: View {
                         .offset(x: canvasOffset.x, y: canvasOffset.y)
                         .allowsHitTesting(false)
                     }
-                } else if shape.isTextObject {
+                } else if shape.typography != nil {
                     if let originalPosition = shape.textPosition, let originalAreaSize = shape.areaSize {
                         let originalBounds = CGRect(x: originalPosition.x, y: originalPosition.y, width: originalAreaSize.width, height: originalAreaSize.height)
                         let transformedBounds = originalBounds.applying(previewTransform)
@@ -136,7 +136,7 @@ struct TransformBoxHandles: View {
                         .allowsHitTesting(false)
                 }
                 .position(
-                    (shape.isTextObject || containsTextBoxInGroup()) ?
+                    (shape.typography != nil || containsTextBoxInGroup()) ?
                     CGPoint(
                         x: (transformedBounds.midX + (pt.x - transformedBounds.midX)) * zoomLevel + canvasOffset.x,
                         y: (transformedBounds.midY + (pt.y - transformedBounds.midY)) * zoomLevel + canvasOffset.y
@@ -169,13 +169,13 @@ struct TransformBoxHandles: View {
 
     private func computeTransformedBounds() -> CGRect {
         let baseBounds: CGRect
-        if shape.isTextObject, let areaSize = shape.areaSize, let textPosition = shape.textPosition {
+        if shape.typography != nil, let areaSize = shape.areaSize, let textPosition = shape.textPosition {
             baseBounds = CGRect(x: textPosition.x, y: textPosition.y, width: areaSize.width, height: areaSize.height)
         } else {
             baseBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         }
 
-        if shape.isTextObject {
+        if shape.typography != nil {
             return baseBounds
         }
 
@@ -198,7 +198,7 @@ struct TransformBoxHandles: View {
 
     private func containsTextBoxInGroup() -> Bool {
         guard shape.isGroupContainer else { return false }
-        return shape.groupedShapes.contains { $0.isTextObject }
+        return shape.groupedShapes.contains { $0.typography != nil }
     }
 
     private func handlePosition(index: Int, in rect: CGRect) -> CGPoint {
@@ -373,7 +373,7 @@ struct TransformBoxHandles: View {
            let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
             var updatedShape = currentShape
 
-            if currentShape.isTextObject {
+            if currentShape.typography != nil {
                 let scaleX = sqrt(previewTransform.a * previewTransform.a + previewTransform.c * previewTransform.c)
                 let scaleY = sqrt(previewTransform.b * previewTransform.b + previewTransform.d * previewTransform.d)
 
