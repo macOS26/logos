@@ -36,40 +36,6 @@ struct FontPickerView: View {
     let editingText: VectorText?
     @Binding var fontFamilyUpdateTrigger: Bool
 
-    @State private var currentFontFamilyState: String = "Helvetica"
-    @State private var availableFontVariantNamesState: [String] = ["Regular"]
-    @State private var currentFontVariantState: String = "Regular"
-
-    private var currentFontFamily: String {
-        if let selectedText = selectedText {
-            return selectedText.typography.fontFamily
-        } else if let editingText = editingText {
-            return editingText.typography.fontFamily
-        } else {
-            return document.fontManager.selectedFontFamily
-        }
-    }
-
-    private var availableFontVariantNames: [String] {
-        let family = currentFontFamily
-        return document.fontManager.getAvailableVariantNames(for: family)
-    }
-
-    private var currentFontVariant: String {
-        if let selectedText = selectedText {
-            if let variant = selectedText.typography.fontVariant,
-               !variant.isEmpty {
-                return variant
-            }
-        } else if let editingText = editingText {
-            if let variant = editingText.typography.fontVariant,
-               !variant.isEmpty {
-                return variant
-            }
-        }
-        return document.fontManager.selectedFontVariant
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Font")
@@ -77,46 +43,28 @@ struct FontPickerView: View {
             
             Picker("", selection: Binding(
                 get: {
-                    // Read directly from selectedText, not from state
                     if let textID = document.selectedTextIDs.first,
                        let obj = document.findObject(by: textID),
                        case .text(let shape) = obj.objectType,
                        let typography = shape.typography {
                         return typography.fontFamily
                     }
-                    return currentFontFamilyState
+                    return document.fontManager.selectedFontFamily
                 },
                 set: { newFamily in
                     document.fontManager.selectedFontFamily = newFamily
-
-                    let newVariants = document.fontManager.getAvailableVariantNames(for: newFamily)
-                    availableFontVariantNamesState = newVariants
-
-                    let defaultVariant = newVariants.first ?? "Regular"
+                    let defaultVariant = document.fontManager.getAvailableVariantNames(for: newFamily).first ?? "Regular"
                     document.fontManager.selectedFontVariant = defaultVariant
 
-                    // Update document DIRECTLY - no preview
-                    if let textID = document.selectedTextIDs.first {
-                        document.updateTextTypographyInUnified(id: textID, typography: TypographyProperties(
-                            fontFamily: newFamily,
-                            fontVariant: defaultVariant,
-                            fontSize: selectedText?.typography.fontSize ?? 16,
-                            lineHeight: selectedText?.typography.lineHeight ?? 19.2,
-                            lineSpacing: selectedText?.typography.lineSpacing ?? 0,
-                            letterSpacing: selectedText?.typography.letterSpacing ?? 0,
-                            alignment: selectedText?.typography.alignment ?? .left,
-                            hasStroke: selectedText?.typography.hasStroke ?? false,
-                            strokeColor: selectedText?.typography.strokeColor ?? .black,
-                            strokeWidth: selectedText?.typography.strokeWidth ?? 1,
-                            strokeOpacity: selectedText?.typography.strokeOpacity ?? 1,
-                            fillColor: selectedText?.typography.fillColor ?? .black,
-                            fillOpacity: selectedText?.typography.fillOpacity ?? 1
-                        ))
+                    if let textID = document.selectedTextIDs.first,
+                       let obj = document.findObject(by: textID),
+                       case .text(let shape) = obj.objectType,
+                       let typography = shape.typography {
+                        var updatedTypography = typography
+                        updatedTypography.fontFamily = newFamily
+                        updatedTypography.fontVariant = defaultVariant
+                        document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
                     }
-
-                    // Update state AFTER document update
-                    currentFontFamilyState = newFamily
-                    currentFontVariantState = defaultVariant
                 }
             )) {
                 ForEach(document.fontManager.availableFonts, id: \.self) { fontFamily in
@@ -132,7 +80,6 @@ struct FontPickerView: View {
             
             Picker("", selection: Binding(
                 get: {
-                    // Read directly from selectedText, not from state
                     if let textID = document.selectedTextIDs.first,
                        let obj = document.findObject(by: textID),
                        case .text(let shape) = obj.objectType,
@@ -141,59 +88,39 @@ struct FontPickerView: View {
                        !variant.isEmpty {
                         return variant
                     }
-                    return currentFontVariantState
+                    return document.fontManager.selectedFontVariant
                 },
                 set: { newVariant in
                     document.fontManager.selectedFontVariant = newVariant
 
-                    // Update document DIRECTLY - no preview
-                    if let textID = document.selectedTextIDs.first, let currentTypography = selectedText?.typography {
-                        var updatedTypography = currentTypography
+                    if let textID = document.selectedTextIDs.first,
+                       let obj = document.findObject(by: textID),
+                       case .text(let shape) = obj.objectType,
+                       let typography = shape.typography {
+                        var updatedTypography = typography
                         updatedTypography.fontVariant = newVariant
                         document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
                     }
-
-                    // Update state AFTER document update
-                    currentFontVariantState = newVariant
                 }
             )) {
-                ForEach(availableFontVariantNamesState, id: \.self) { variant in
+                let currentFamily = {
+                    if let textID = document.selectedTextIDs.first,
+                       let obj = document.findObject(by: textID),
+                       case .text(let shape) = obj.objectType,
+                       let typography = shape.typography {
+                        return typography.fontFamily
+                    }
+                    return document.fontManager.selectedFontFamily
+                }()
+
+                ForEach(document.fontManager.getAvailableVariantNames(for: currentFamily), id: \.self) { variant in
                     Text(cleanVariantName(variant))
-                        .font(getFontForVariant(family: currentFontFamilyState, variantName: variant))
+                        .font(getFontForVariant(family: currentFamily, variantName: variant))
                         .tag(variant)
-                        .id("\(currentFontFamilyState)-\(variant)")
+                        .id("\(currentFamily)-\(variant)")
                 }
             }
             .fontPickerStyle()
-        }
-        .onAppear {
-            syncFontStates()
-        }
-        .onChange(of: selectedText?.id) { _, _ in
-            syncFontStates()
-        }
-        .onChange(of: editingText?.id) { _, _ in
-            syncFontStates()
-        }
-    }
-
-    private func syncFontStates() {
-        let family = currentFontFamily
-        currentFontFamilyState = family
-
-        let variants = document.fontManager.getAvailableVariantNames(for: family)
-        availableFontVariantNamesState = variants
-
-        print("📋 SYNCING FONT STATES FOR \(family)")
-        print("   Variants in state: \(variants)")
-
-        let variant = currentFontVariant
-        if variants.contains(variant) {
-            currentFontVariantState = variant
-            print("   Current variant: \(variant) ✅")
-        } else {
-            currentFontVariantState = variants.first ?? "Regular"
-            print("   Variant not found, using: \(currentFontVariantState) ⚠️")
         }
     }
 
