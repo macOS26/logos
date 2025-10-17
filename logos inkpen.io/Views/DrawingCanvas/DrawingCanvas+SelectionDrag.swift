@@ -196,14 +196,19 @@ extension DrawingCanvas {
 
             for unifiedObject in selectedObjects {
                 switch unifiedObject.objectType {
-                case .text:
-                    if let textObj = document.findText(by: unifiedObject.id),
-                       let initialCenter = initialObjectPositions[unifiedObject.id] {
-                        let textBounds = textObj.bounds
+                case .text(let shape):
+                    // Text objects: calculate new position and update transform
+                    if let initialCenter = initialObjectPositions[unifiedObject.id] {
+                        let textBounds = shape.bounds
                         let newPositionX = initialCenter.x - textBounds.width/2 + currentDragDelta.x
                         let newPositionY = initialCenter.y - textBounds.height/2 + currentDragDelta.y
-                        let delta = CGPoint(x: newPositionX - textObj.position.x, y: newPositionY - textObj.position.y)
-                        document.translateTextInUnified(id: unifiedObject.id, delta: delta)
+
+                        // Update transform with new position
+                        let newTransform = CGAffineTransform(translationX: newPositionX, y: newPositionY)
+                        document.updateShapeTransformAndPathInUnified(id: shape.id, transform: newTransform)
+
+                        affectedObjectIDs.insert(unifiedObject.id)
+                        oldShapes[unifiedObject.id] = shape
                     }
                 case .shape, .warp, .group, .clipGroup, .clipMask:
                     let shapes = document.getShapesForLayer(unifiedObject.layerIndex)
