@@ -36,7 +36,7 @@ class VectorDocument: ObservableObject, Codable {
     @Published var processedLayersDuringDrag: Set<Int> = []
     @Published var processedObjectsDuringDrag: Set<UUID> = []
 
-    @Published var isHandleScalingActive = false
+    var isHandleScalingActive = false
     @Published var unifiedObjects: [VectorObject] = [] {
         didSet {
             if oldValue.count != unifiedObjects.count {
@@ -76,9 +76,9 @@ class VectorDocument: ObservableObject, Codable {
     @Published var transformOrigin: TransformOrigin = .center
     @Published var objectPositionUpdateTrigger: Bool = false
     var currentDragOffset: CGPoint = .zero
-    @Published var cachedSelectionBounds: CGRect? = nil
-    @Published var dragPreviewCoordinates: CGPoint = .zero
-    @Published var scalePreviewDimensions: CGSize = .zero
+    var cachedSelectionBounds: CGRect? = nil
+    var dragPreviewCoordinates: CGPoint = .zero
+    var scalePreviewDimensions: CGSize = .zero
     @Published var warpEnvelopeCorners: [UUID: [CGPoint]] = [:]
     @Published var warpBounds: [UUID: CGRect] = [:]
     
@@ -502,6 +502,27 @@ class VectorDocument: ObservableObject, Codable {
 
     func setSelectedLayerIndex(_ index: Int?) {
         selectedLayerIndex = index
+        objectWillChange.send()
+    }
+
+    // MARK: - Drag/Transform Preview Helpers (O(1) updates)
+    func setIsHandleScalingActive(_ active: Bool) {
+        isHandleScalingActive = active
+        objectWillChange.send()
+    }
+
+    func setCachedSelectionBounds(_ bounds: CGRect?) {
+        cachedSelectionBounds = bounds
+        objectWillChange.send()
+    }
+
+    func setDragPreviewCoordinates(_ coords: CGPoint) {
+        dragPreviewCoordinates = coords
+        objectWillChange.send()
+    }
+
+    func setScalePreviewDimensions(_ size: CGSize) {
+        scalePreviewDimensions = size
         objectWillChange.send()
     }
 }
