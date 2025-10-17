@@ -44,10 +44,8 @@ struct FontPickerView: View {
             Picker("", selection: Binding(
                 get: {
                     if let textID = document.selectedTextIDs.first,
-                       let obj = document.findObject(by: textID),
-                       case .text(let shape) = obj.objectType,
-                       let typography = shape.typography {
-                        return typography.fontFamily
+                       let freshText = document.findText(by: textID) {
+                        return freshText.typography.fontFamily
                     }
                     return document.fontManager.selectedFontFamily
                 },
@@ -57,10 +55,8 @@ struct FontPickerView: View {
                     document.fontManager.selectedFontVariant = defaultVariant
 
                     if let textID = document.selectedTextIDs.first,
-                       let obj = document.findObject(by: textID),
-                       case .text(let shape) = obj.objectType,
-                       let typography = shape.typography {
-                        var updatedTypography = typography
+                       let freshText = document.findText(by: textID) {
+                        var updatedTypography = freshText.typography
                         updatedTypography.fontFamily = newFamily
                         updatedTypography.fontVariant = defaultVariant
                         document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
@@ -81,10 +77,8 @@ struct FontPickerView: View {
             Picker("", selection: Binding(
                 get: {
                     if let textID = document.selectedTextIDs.first,
-                       let obj = document.findObject(by: textID),
-                       case .text(let shape) = obj.objectType,
-                       let typography = shape.typography,
-                       let variant = typography.fontVariant,
+                       let freshText = document.findText(by: textID),
+                       let variant = freshText.typography.fontVariant,
                        !variant.isEmpty {
                         return variant
                     }
@@ -94,10 +88,8 @@ struct FontPickerView: View {
                     document.fontManager.selectedFontVariant = newVariant
 
                     if let textID = document.selectedTextIDs.first,
-                       let obj = document.findObject(by: textID),
-                       case .text(let shape) = obj.objectType,
-                       let typography = shape.typography {
-                        var updatedTypography = typography
+                       let freshText = document.findText(by: textID) {
+                        var updatedTypography = freshText.typography
                         updatedTypography.fontVariant = newVariant
                         document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
                     }
@@ -105,10 +97,8 @@ struct FontPickerView: View {
             )) {
                 let currentFamily = {
                     if let textID = document.selectedTextIDs.first,
-                       let obj = document.findObject(by: textID),
-                       case .text(let shape) = obj.objectType,
-                       let typography = shape.typography {
-                        return typography.fontFamily
+                       let freshText = document.findText(by: textID) {
+                        return freshText.typography.fontFamily
                     }
                     return document.fontManager.selectedFontFamily
                 }()
