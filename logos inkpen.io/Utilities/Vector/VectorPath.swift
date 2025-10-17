@@ -223,11 +223,13 @@ struct VectorPath: Codable, Hashable, Identifiable {
             case .quadCurve(let to, let control):
                 path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
             case .close:
-                path.closeSubpath()
+                if !path.isEmpty {
+                    path.closeSubpath()
+                }
             }
         }
 
-        if isClosed && !elements.contains(.close) {
+        if isClosed && !elements.contains(.close) && !path.isEmpty {
             path.closeSubpath()
         }
 
