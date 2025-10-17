@@ -46,7 +46,7 @@ struct ShapeView: View {
                 } else {
                     ZStack {
                         ForEach(shape.groupedShapes.filter { $0.isVisible }, id: \.id) { groupedShape in
-                            if !groupedShape.isTextObject {
+                            if groupedShape.typography == nil {
                                 let cachedPath = Path { path in
                                     addPathElements(groupedShape.path.elements, to: &path)
                                 }
@@ -323,7 +323,7 @@ struct ShapeView: View {
                         .transformEffect(maskShape.transform)
 
                     ForEach(contentShapes, id: \.id) { contentShape in
-                        if !contentShape.isTextObject {
+                        if contentShape.typography == nil {
                             let contentPath = Path { path in
                                 addPathElements(contentShape.path.elements, to: &path)
                             }
@@ -342,7 +342,7 @@ struct ShapeView: View {
 
                 ZStack {
                     ForEach(contentShapes, id: \.id) { contentShape in
-                        if !contentShape.isTextObject {
+                        if contentShape.typography == nil {
                             if ImageContentRegistry.containsImage(contentShape),
                                let image = ImageContentRegistry.image(for: contentShape.id) {
                                 let pathBounds = contentShape.path.cgPath.boundingBoxOfPath
