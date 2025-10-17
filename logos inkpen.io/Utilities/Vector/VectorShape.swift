@@ -373,7 +373,7 @@ struct VectorShape: Hashable, Identifiable {
     var isRoundedRectangle: Bool = false
     var originalBounds: CGRect?
     var cornerRadii: [Double] = []
-    var isTextObject: Bool = false
+    var isTextObject: Bool = false  // Only for decoding/migrating old files
     var textContent: String? = nil
     var typography: TypographyProperties? = nil
     var cursorPosition: Int? = nil
@@ -382,7 +382,7 @@ struct VectorShape: Hashable, Identifiable {
     var textPosition: CGPoint? = nil
     var metadata: [String: String] = [:]
 
-    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isClippingGroup: Bool = false, isCompoundPath: Bool = false, isClippingPath: Bool = false, clippedByShapeID: UUID? = nil, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], warpedBounds: CGRect? = nil, isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = [], isTextObject: Bool = false, textContent: String? = nil, typography: TypographyProperties? = nil, cursorPosition: Int? = nil, areaSize: CGSize? = nil, isEditing: Bool? = nil, textPosition: CGPoint? = nil, metadata: [String: String] = [:]) {
+    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isClippingGroup: Bool = false, isCompoundPath: Bool = false, isClippingPath: Bool = false, clippedByShapeID: UUID? = nil, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], warpedBounds: CGRect? = nil, isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = [], textContent: String? = nil, typography: TypographyProperties? = nil, cursorPosition: Int? = nil, areaSize: CGSize? = nil, isEditing: Bool? = nil, textPosition: CGPoint? = nil, metadata: [String: String] = [:]) {
         self.id = UUID()
         self.name = name
         self.path = path
@@ -410,7 +410,6 @@ struct VectorShape: Hashable, Identifiable {
         self.isRoundedRectangle = isRoundedRectangle
         self.originalBounds = originalBounds
         self.cornerRadii = cornerRadii
-        self.isTextObject = isTextObject
         self.textContent = textContent
         self.typography = typography
         self.cursorPosition = cursorPosition
@@ -426,7 +425,7 @@ struct VectorShape: Hashable, Identifiable {
     }
 
     mutating func updateBounds() {
-        if isTextObject {
+        if typography != nil {
             if let areaSize = areaSize {
                 bounds = CGRect(x: 0, y: 0, width: areaSize.width, height: areaSize.height)
             } else {
@@ -460,7 +459,7 @@ struct VectorShape: Hashable, Identifiable {
         var calculatedGroupBounds = CGRect.null
         for shape in shapes {
             let shapeBounds: CGRect
-            if shape.isTextObject, let textPosition = shape.textPosition, let areaSize = shape.areaSize {
+            if shape.typography != nil, let textPosition = shape.textPosition, let areaSize = shape.areaSize {
                 shapeBounds = CGRect(x: textPosition.x, y: textPosition.y, width: areaSize.width, height: areaSize.height)
             } else {
                 shapeBounds = shape.bounds
@@ -470,7 +469,7 @@ struct VectorShape: Hashable, Identifiable {
 
         var preservedShapes = shapes
         for i in preservedShapes.indices {
-            if preservedShapes[i].isTextObject {
+            if preservedShapes[i].typography != nil {
                 if preservedShapes[i].textPosition == nil {
                     preservedShapes[i].textPosition = CGPoint(x: preservedShapes[i].transform.tx, y: preservedShapes[i].transform.ty)
                 }
@@ -514,7 +513,7 @@ struct VectorShape: Hashable, Identifiable {
         var groupBounds = CGRect.null
         for shape in groupedShapes {
             let shapeBounds: CGRect
-            if shape.isTextObject, let textPosition = shape.textPosition, let areaSize = shape.areaSize {
+            if shape.typography != nil, let textPosition = shape.textPosition, let areaSize = shape.areaSize {
                 shapeBounds = CGRect(x: textPosition.x, y: textPosition.y, width: areaSize.width, height: areaSize.height)
             } else {
                 shapeBounds = shape.bounds
@@ -591,7 +590,6 @@ struct VectorShape: Hashable, Identifiable {
             isLocked: false,
             opacity: 1.0,
             blendMode: .normal,
-            isTextObject: true,
             textContent: content,
             typography: typography,
             cursorPosition: content.count,
@@ -614,7 +612,6 @@ struct VectorShape: Hashable, Identifiable {
             isLocked: vectorText.isLocked,
             opacity: 1.0,
             blendMode: .normal,
-            isTextObject: true,
             textContent: vectorText.content,
             typography: vectorText.typography,
             cursorPosition: vectorText.cursorPosition,
@@ -684,7 +681,7 @@ extension VectorShape: Codable {
         if bounds.isInfinite || bounds.isNull ||
            bounds.width.isInfinite || bounds.height.isInfinite ||
            bounds.width.isNaN || bounds.height.isNaN {
-            if isTextObject {
+            if typography != nil {
                 validBounds = CGRect(x: 0, y: 0, width: areaSize?.width ?? 200, height: areaSize?.height ?? 50)
             } else {
                 validBounds = CGRect(x: 0, y: 0, width: 100, height: 100)
@@ -728,7 +725,7 @@ extension VectorShape: Codable {
         try container.encodeIfPresent(originalBounds, forKey: .originalBounds)
         if !cornerRadii.isEmpty { try container.encode(cornerRadii, forKey: .cornerRadii) }
 
-        if isTextObject { try container.encode(isTextObject, forKey: .isTextObject) }
+        // Note: isTextObject is NOT encoded to new files - only decoded from old files for migration
         try container.encodeIfPresent(textContent, forKey: .textContent)
         try container.encodeIfPresent(typography, forKey: .typography)
         try container.encodeIfPresent(cursorPosition, forKey: .cursorPosition)
