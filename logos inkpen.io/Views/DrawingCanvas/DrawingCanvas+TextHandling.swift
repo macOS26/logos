@@ -259,7 +259,6 @@ extension DrawingCanvas {
     }
 
     func createNewTextWithSize(at location: CGPoint, width: CGFloat, height: CGFloat) {
-        print("📍 Creating text at location: \(location), size: \(width)x\(height)")
 
         let typography = TypographyProperties(
             fontFamily: document.fontManager.selectedFontFamily,
@@ -285,8 +284,6 @@ extension DrawingCanvas {
 
         newText.bounds = CGRect(x: 0, y: 0, width: width, height: height)
         newText.areaSize = CGSize(width: width, height: height)
-
-        print("📍 newText.position: \(newText.position), newText.transform: \(newText.transform)")
 
         document.addTextToLayer(newText, layerIndex: document.selectedLayerIndex!)
 
