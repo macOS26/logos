@@ -22,7 +22,9 @@ class FileOperations {
                     control: CGPoint(x: control.x, y: control.y)
                 )
             case .close:
-                cgPath.closeSubpath()
+                if !cgPath.isEmpty {
+                    cgPath.closeSubpath()
+                }
             }
         }
 
