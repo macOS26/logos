@@ -219,14 +219,6 @@ struct LayersPanel: View {
                     .layerControlLabel()
 
                 ZStack {
-//                    Capsule()
-//                        .fill(Color.white)
-//                        .frame(height: 6)
-//                        .overlay(
-//                            Capsule()
-//                                .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
-//                        )
-                    
                     Capsule()
                         .fill(
                             SwiftUI.LinearGradient(
@@ -240,24 +232,27 @@ struct LayersPanel: View {
                         )
                         .frame(height: 6)
                         .allowsHitTesting(false)
-                    
+
                     Slider(
                         value: $layerOpacityState,
                         in: 0...1,
                         onEditingChanged: { isEditing in
-                            print("📤 onEditingChanged: isEditing=\(isEditing)")
                             if !isEditing {
                                 document.layers[layerIndex].opacity = layerOpacityState
                             }
                         }
                     )
                     .onChange(of: layerOpacityState) { _, newValue in
-                        print("📤 onChange: Posting notification - opacity: \(newValue)")
                         NotificationCenter.default.post(
                             name: Notification.Name("LayerOpacityUpdate"),
                             object: nil,
                             userInfo: ["layerID": document.layers[layerIndex].id, "opacity": newValue]
                         )
+                    }
+                    .onChange(of: document.layers[layerIndex].opacity) { _, newValue in
+                        if abs(layerOpacityState - newValue) > 0.001 {
+                            layerOpacityState = newValue
+                        }
                     }
                     .controlSize(.regular)
                     .tint(Color.clear)
