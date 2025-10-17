@@ -429,7 +429,9 @@ extension VectorDocument {
                 currentPath.addCurve(to: element.points[2], control1: element.points[0], control2: element.points[1])
                 
             case .closeSubpath:
-                currentPath.closeSubpath()
+                if !currentPath.isEmpty {
+                    currentPath.closeSubpath()
+                }
                 
             @unknown default:
                 break
