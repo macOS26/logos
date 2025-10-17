@@ -321,6 +321,10 @@ struct ProfessionalLayerRow: View {
                 .reversed())
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("LayerOpacityUpdate"))) { notification in
+            guard document.selectedLayerIndex == layerIndex else {
+                return
+            }
+
             print("📥 Received LayerOpacityUpdate in layer: \(layer.name) (id: \(layer.id))")
             guard let userInfo = notification.userInfo,
                   let layerID = userInfo["layerID"] as? UUID,

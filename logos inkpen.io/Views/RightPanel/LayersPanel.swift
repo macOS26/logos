@@ -242,18 +242,19 @@ struct LayersPanel: View {
                         .allowsHitTesting(false)
                     
                     Slider(
-                        value: $layerOpacityState,
-                        in: 0...1,
-                        onEditingChanged: { editing in
-                            if !editing {
-                                print("📤 Posting LayerOpacityUpdate - layerID: \(document.layers[layerIndex].id), opacity: \(layerOpacityState)")
+                        value: Binding(
+                            get: { layerOpacityState },
+                            set: { newValue in
+                                layerOpacityState = newValue
+                                print("📤 Posting LayerOpacityUpdate - layerID: \(document.layers[layerIndex].id), opacity: \(newValue)")
                                 NotificationCenter.default.post(
                                     name: Notification.Name("LayerOpacityUpdate"),
                                     object: nil,
-                                    userInfo: ["layerID": document.layers[layerIndex].id, "opacity": layerOpacityState]
+                                    userInfo: ["layerID": document.layers[layerIndex].id, "opacity": newValue]
                                 )
                             }
-                        }
+                        ),
+                        in: 0...1
                     )
                     .controlSize(.regular)
                     .tint(Color.clear)
