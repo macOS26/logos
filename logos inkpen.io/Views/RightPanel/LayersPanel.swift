@@ -246,7 +246,6 @@ struct LayersPanel: View {
                             get: { layerOpacityState },
                             set: { newValue in
                                 layerOpacityState = newValue
-                                print("📤 Posting LayerOpacityUpdate - layerID: \(document.layers[layerIndex].id), opacity: \(newValue)")
                                 NotificationCenter.default.post(
                                     name: Notification.Name("LayerOpacityUpdate"),
                                     object: nil,
@@ -254,7 +253,12 @@ struct LayersPanel: View {
                                 )
                             }
                         ),
-                        in: 0...1
+                        in: 0...1,
+                        onEditingChanged: { isEditing in
+                            if !isEditing {
+                                document.layers[layerIndex].opacity = layerOpacityState
+                            }
+                        }
                     )
                     .controlSize(.regular)
                     .tint(Color.clear)

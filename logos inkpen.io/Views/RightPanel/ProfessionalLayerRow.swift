@@ -325,17 +325,14 @@ struct ProfessionalLayerRow: View {
                 return
             }
 
-            print("📥 Received LayerOpacityUpdate in layer: \(layer.name) (id: \(layer.id))")
             guard let userInfo = notification.userInfo,
                   let layerID = userInfo["layerID"] as? UUID,
                   layerID == layer.id else {
-                print("   ❌ Layer ID mismatch or missing data")
                 return
             }
 
             if let opacity = userInfo["opacity"] as? Double {
-                print("   ✅ Setting layer opacity to \(opacity)")
-                document.layers[layerIndex].opacity = opacity
+                previewOpacity = opacity
             }
         }
         .if(layer.name != "Canvas" && layer.name != "Pasteboard") { view in
