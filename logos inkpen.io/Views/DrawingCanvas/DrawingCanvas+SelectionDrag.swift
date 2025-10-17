@@ -153,12 +153,6 @@ extension DrawingCanvas {
         }
 
         currentDragDelta = canvasDelta
-        document.currentDragOffset = canvasDelta
-
-        dragUpdateCounter += 1
-        if dragUpdateCounter % 60 == 0 {
-            document.dragPreviewCoordinates = canvasDelta
-        }
 
     }
 
