@@ -321,12 +321,17 @@ struct ProfessionalLayerRow: View {
                 .reversed())
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("LayerOpacityUpdate"))) { notification in
+            print("📥 Received LayerOpacityUpdate in layer: \(layer.name) (id: \(layer.id))")
             guard let userInfo = notification.userInfo,
                   let layerID = userInfo["layerID"] as? UUID,
-                  layerID == layer.id else { return }
+                  layerID == layer.id else {
+                print("   ❌ Layer ID mismatch or missing data")
+                return
+            }
 
             if let opacity = userInfo["opacity"] as? Double {
-                previewOpacity = opacity
+                print("   ✅ Setting layer opacity to \(opacity)")
+                document.layers[layerIndex].opacity = opacity
             }
         }
         .if(layer.name != "Canvas" && layer.name != "Pasteboard") { view in

@@ -246,6 +246,7 @@ struct LayersPanel: View {
                         in: 0...1,
                         onEditingChanged: { editing in
                             if !editing {
+                                print("📤 Posting LayerOpacityUpdate - layerID: \(document.layers[layerIndex].id), opacity: \(layerOpacityState)")
                                 NotificationCenter.default.post(
                                     name: Notification.Name("LayerOpacityUpdate"),
                                     object: nil,
