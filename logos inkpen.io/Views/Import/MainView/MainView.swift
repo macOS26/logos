@@ -19,6 +19,7 @@ struct MainView: View {
     @State private var showingPressureCalibration = false
     @State private var isBottomDrawerOpen = false
     @State private var isLeftDrawerOpen = false
+    @State private var layerPreviewOpacities: [UUID: Double] = [:]
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         ZStack {
@@ -40,7 +41,7 @@ struct MainView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .allowsHitTesting(false)
 
-                        DrawingCanvas(document: document)
+                        DrawingCanvas(document: document, layerPreviewOpacities: $layerPreviewOpacities)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
                             .background(Color.ui.clear)
@@ -59,7 +60,7 @@ struct MainView: View {
                 .contentShape(Rectangle())
                 .allowsHitTesting(true)
 
-                RightPanel(document: document)
+                RightPanel(document: document, layerPreviewOpacities: $layerPreviewOpacities)
                     .frame(width: 280)
                     .frame(minWidth: 280)
                     .zIndex(100)
