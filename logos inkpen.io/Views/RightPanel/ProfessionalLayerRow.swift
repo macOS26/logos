@@ -13,6 +13,8 @@ struct ProfessionalLayerRow: View {
     @State private var layerObjects: [VectorObject] = []
     @State private var previewOpacity: Double? = nil
     @State private var selectionAnchorID: UUID? = nil
+    @State private var selectionRangeMin: Int? = nil
+    @State private var selectionRangeMax: Int? = nil
 
     private var isVisibleBinding: Binding<Bool> {
         Binding(
@@ -418,10 +420,17 @@ struct ProfessionalLayerRow: View {
 
                 if let anchorIndex = currentLayerObjects.firstIndex(where: { $0.id == anchorID }),
                    let clickedIndex = currentLayerObjects.firstIndex(where: { $0.id == objectID }) {
-                    let startIndex = min(anchorIndex, clickedIndex)
-                    let endIndex = max(anchorIndex, clickedIndex)
 
-                    let rangeObjects = currentLayerObjects[startIndex...endIndex]
+                    let currentMin = selectionRangeMin ?? anchorIndex
+                    let currentMax = selectionRangeMax ?? anchorIndex
+
+                    let newMin = min(currentMin, clickedIndex)
+                    let newMax = max(currentMax, clickedIndex)
+
+                    selectionRangeMin = newMin
+                    selectionRangeMax = newMax
+
+                    let rangeObjects = currentLayerObjects[newMin...newMax]
                     let rangeIDs = Set(rangeObjects.map { $0.id })
 
                     document.selectedObjectIDs = rangeIDs
@@ -435,6 +444,8 @@ struct ProfessionalLayerRow: View {
         } else {
             document.selectedObjectIDs = [objectID]
             selectionAnchorID = objectID
+            selectionRangeMin = nil
+            selectionRangeMax = nil
         }
 
         document.syncSelectionArrays()
