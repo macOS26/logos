@@ -371,7 +371,7 @@ struct VectorText: Identifiable, Codable, Hashable {
     }
 
     static func from(_ vectorShape: VectorShape) -> VectorText? {
-        guard vectorShape.isTextObject else { return nil }
+        guard vectorShape.typography != nil else { return nil }
 
         let typography: TypographyProperties
         if let existingTypography = vectorShape.typography {
