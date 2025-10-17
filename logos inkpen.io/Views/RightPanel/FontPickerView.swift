@@ -77,7 +77,14 @@ struct FontPickerView: View {
             
             Picker("", selection: Binding(
                 get: {
-                    currentFontFamilyState
+                    // Read directly from selectedText, not from state
+                    if let textID = document.selectedTextIDs.first,
+                       let obj = document.findObject(by: textID),
+                       case .text(let shape) = obj.objectType,
+                       let typography = shape.typography {
+                        return typography.fontFamily
+                    }
+                    return currentFontFamilyState
                 },
                 set: { newFamily in
                     document.fontManager.selectedFontFamily = newFamily
@@ -125,7 +132,16 @@ struct FontPickerView: View {
             
             Picker("", selection: Binding(
                 get: {
-                    currentFontVariantState
+                    // Read directly from selectedText, not from state
+                    if let textID = document.selectedTextIDs.first,
+                       let obj = document.findObject(by: textID),
+                       case .text(let shape) = obj.objectType,
+                       let typography = shape.typography,
+                       let variant = typography.fontVariant,
+                       !variant.isEmpty {
+                        return variant
+                    }
+                    return currentFontVariantState
                 },
                 set: { newVariant in
                     document.fontManager.selectedFontVariant = newVariant
