@@ -228,22 +228,16 @@ extension DrawingCanvas {
                 }
             }
         } else {
-            let isWithinSelectionBox = isLocationWithinSelectionBox(validatedLocation)
-
+            // Nothing was hit - deselect unless shift/command pressed
             if !isShiftPressed && !isCommandPressed {
-                if isWithinSelectionBox {
-                } else {
-                    document.selectedObjectIDs.removeAll()
+                document.selectedObjectIDs.removeAll()
+                document.syncSelectionArrays()
 
-                    document.syncSelectionArrays()
-
-                    selectedPoints.removeAll()
-                    selectedHandles.removeAll()
-                    directSelectedShapeIDs.removeAll()
-                    syncDirectSelectionWithDocument()
-                    isCornerRadiusEditMode = false
-
-                }
+                selectedPoints.removeAll()
+                selectedHandles.removeAll()
+                directSelectedShapeIDs.removeAll()
+                syncDirectSelectionWithDocument()
+                isCornerRadiusEditMode = false
             }
         }
     }
