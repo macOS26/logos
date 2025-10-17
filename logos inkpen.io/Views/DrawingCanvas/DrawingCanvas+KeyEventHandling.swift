@@ -170,7 +170,7 @@ extension DrawingCanvas {
             if let characters = event.charactersIgnoringModifiers,
                characters == "\t" {
                 print("🟢 TAB KEY: Deselecting all")
-                self.document.setSelectedObjectIDs([])
+                self.document.selectedObjectIDs = []
 
                 self.document.syncSelectionArrays()
 
