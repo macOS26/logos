@@ -125,16 +125,14 @@ extension FileOperations {
                     }
                 } else {
                     let shouldSkip: Bool = {
-                        if !shape.isTextObject && shape.path.elements.isEmpty {
-                            return true
-                        }
-                        if shape.isTextObject {
+                        let tempObject = VectorObject(shape: shape, layerIndex: 0)
+                        switch tempObject.objectType {
+                        case .text:
                             let textContent = shape.textContent?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                            if textContent.isEmpty {
-                                return true
-                            }
+                            return textContent.isEmpty
+                        case .shape, .warp, .group, .clipGroup, .clipMask:
+                            return shape.path.elements.isEmpty
                         }
-                        return false
                     }()
 
                     if !shouldSkip {
