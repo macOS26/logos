@@ -600,14 +600,17 @@ struct VectorShape: Hashable, Identifiable {
     }
 
     static func from(_ vectorText: VectorText) -> VectorShape {
+        print("🔵 VectorShape.from() - vectorText.position: \(vectorText.position), vectorText.transform: \(vectorText.transform)")
         let emptyPath = VectorPath(elements: [], isClosed: false)
+        let finalTransform = CGAffineTransform(translationX: vectorText.position.x, y: vectorText.position.y).concatenating(vectorText.transform)
+        print("🔵 VectorShape.from() - finalTransform: \(finalTransform)")
         var shape = VectorShape(
             name: "Text: \(vectorText.content.prefix(20))",
             path: emptyPath,
             geometricType: nil,
             strokeStyle: nil,
             fillStyle: nil,
-            transform: CGAffineTransform(translationX: vectorText.position.x, y: vectorText.position.y).concatenating(vectorText.transform),
+            transform: finalTransform,
             isVisible: vectorText.isVisible,
             isLocked: vectorText.isLocked,
             opacity: 1.0,
