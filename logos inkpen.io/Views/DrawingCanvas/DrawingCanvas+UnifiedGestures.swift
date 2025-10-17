@@ -94,7 +94,10 @@ extension DrawingCanvas {
             handleAggressiveBackgroundTap(at: canvasLocation)
 
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
-            break
+            if !isShiftPressed && !isCommandPressed {
+                document.selectedObjectIDs = []
+                document.syncSelectionArrays()
+            }
 
         case .zoom:
             MagnifyingGlassCursor.set()
