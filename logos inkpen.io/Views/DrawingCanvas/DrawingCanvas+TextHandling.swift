@@ -259,6 +259,8 @@ extension DrawingCanvas {
     }
 
     func createNewTextWithSize(at location: CGPoint, width: CGFloat, height: CGFloat) {
+        // Create text shape EXACTLY like how rectangles are created
+        // Use transform.tx/ty for position, NOT VectorText.position
 
         let typography = TypographyProperties(
             fontFamily: document.fontManager.selectedFontFamily,
@@ -275,38 +277,36 @@ extension DrawingCanvas {
             fillOpacity: document.defaultFillOpacity
         )
 
-        var newText = VectorText(
-            content: "",
+        let emptyPath = VectorPath(elements: [], isClosed: false)
+
+        // Create shape directly with transform containing position
+        var shape = VectorShape(
+            name: "Text",
+            path: emptyPath,
+            geometricType: nil,
+            strokeStyle: nil,
+            fillStyle: nil,
+            transform: CGAffineTransform(translationX: location.x, y: location.y),  // Position in transform!
+            textContent: "",
             typography: typography,
-            position: location,
-            isEditing: true
+            areaSize: CGSize(width: width, height: height),
+            isEditing: true,
+            textPosition: location
         )
 
-        newText.bounds = CGRect(x: 0, y: 0, width: width, height: height)
-        newText.areaSize = CGSize(width: width, height: height)
+        shape.bounds = CGRect(x: 0, y: 0, width: width, height: height)
 
-        document.addTextToLayer(newText, layerIndex: document.selectedLayerIndex!)
+        document.addShape(shape)
 
-        document.selectedTextIDs = [newText.id]
+        document.selectedTextIDs = [shape.id]
+        document.selectedObjectIDs = [shape.id]
         document.selectedShapeIDs.removeAll()
 
-        document.setTextEditingInUnified(id: newText.id, isEditing: true)
-
         isEditingText = true
-        editingTextID = newText.id
+        editingTextID = shape.id
 
         currentCursorPosition = 0
         currentSelectionRange = NSRange(location: 0, length: 0)
-
-        if let textShape = document.findShape(by: newText.id) {
-            let objectIDs = [newText.id]
-            let oldShapes: [UUID: VectorShape] = [:]
-            var newShapes: [UUID: VectorShape] = [:]
-            newShapes[newText.id] = textShape
-
-            let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
-            document.commandManager.execute(command)
-        }
     }
 
     func insertTextAtCursor(_ text: String) {
@@ -410,11 +410,17 @@ extension DrawingCanvas {
 
     func finishTextEditing() {
         if let editingID = editingTextID {
+            // Apply preview typography if it exists BEFORE fetching textObj
+            if let previewTypography = document.textPreviewTypography[editingID] {
+                document.updateTextTypographyInUnified(id: editingID, typography: previewTypography)
+                document.textPreviewTypography.removeValue(forKey: editingID)
+            }
+
+            // NOW fetch the updated text object
             if var textObj = document.findText(by: editingID) {
-                document.setTextEditingInUnified(id: textObj.id, isEditing: false)
                 textObj.updateBounds()
                 document.updateTextInUnified(textObj)
-
+                document.setTextEditingInUnified(id: textObj.id, isEditing: false)
             }
         }
 
@@ -668,35 +674,63 @@ extension DrawingCanvas {
     }
 
     func finishTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
-        let hasEditingTextBox = document.unifiedObjects.contains { unifiedObj in
-            if case .text(let shape) = unifiedObj.objectType {
-                return shape.isEditing == true
-            }
-            return false
-        }
-        if hasEditingTextBox {
-            return
-        }
-
+        // EXACT same pattern as finishShapeDrawing for rectangles
         let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
         let endLocation = screenToCanvas(value.location, geometry: geometry)
-        let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
-
-        if dragDistance < 12.0 {
-            createNewTextAt(location: startLocation)
-            return
-        }
 
         let minX = min(startLocation.x, endLocation.x)
         let minY = min(startLocation.y, endLocation.y)
-        let maxX = max(startLocation.x, endLocation.x)
-        let maxY = max(startLocation.y, endLocation.y)
-        let width = maxX - minX
-        let height = maxY - minY
-        let finalWidth = max(width, 50.0)
-        let finalHeight = max(height, 30.0)
+        let width = abs(endLocation.x - startLocation.x)
+        let height = abs(endLocation.y - startLocation.y)
+        let finalWidth = max(width, 100.0)
+        let finalHeight = max(height, 50.0)
 
-        createNewTextWithSize(at: CGPoint(x: minX, y: minY), width: finalWidth, height: finalHeight)
+        // Create typography
+        let typography = TypographyProperties(
+            fontFamily: document.fontManager.selectedFontFamily,
+            fontVariant: document.fontManager.selectedFontVariant,
+            fontSize: document.fontManager.selectedFontSize,
+            lineHeight: document.fontManager.selectedLineHeight,
+            lineSpacing: document.fontManager.selectedLineSpacing,
+            letterSpacing: 0.0,
+            alignment: document.fontManager.selectedTextAlignment,
+            hasStroke: false,
+            strokeColor: document.defaultStrokeColor,
+            strokeOpacity: document.defaultStrokeOpacity,
+            fillColor: document.defaultFillColor,
+            fillOpacity: document.defaultFillOpacity
+        )
+
+        // Create empty path
+        let emptyPath = VectorPath(elements: [], isClosed: false)
+
+        // Create shape with position in TRANSFORM (like rectangles!)
+        var shape = VectorShape(
+            name: "Text",
+            path: emptyPath,
+            geometricType: nil,
+            strokeStyle: nil,
+            fillStyle: nil,
+            transform: CGAffineTransform(translationX: minX, y: minY),
+            textContent: "",
+            typography: typography,
+            areaSize: CGSize(width: finalWidth, height: finalHeight),
+            isEditing: true,
+            textPosition: CGPoint(x: minX, y: minY)
+        )
+
+        shape.bounds = CGRect(x: 0, y: 0, width: finalWidth, height: finalHeight)
+
+        // Add to document (same as addShape)
+        document.addShape(shape)
+
+        // Select it
+        document.selectedObjectIDs = [shape.id]
+        document.selectedTextIDs = [shape.id]
+        document.selectedShapeIDs.removeAll()
+
+        isEditingText = true
+        editingTextID = shape.id
     }
 
     func resetTextBoxDrawingState() {
