@@ -169,7 +169,8 @@ extension DrawingCanvas {
 
             if let characters = event.charactersIgnoringModifiers,
                characters == "\t" {
-                self.document.selectedObjectIDs.removeAll()
+                print("🟢 TAB KEY: Deselecting all")
+                self.document.setSelectedObjectIDs([])
 
                 self.document.syncSelectionArrays()
 
@@ -193,6 +194,7 @@ extension DrawingCanvas {
                     self.finishBezierPath()
                 }
 
+                print("🟢 TAB KEY: Done deselecting, selectedObjectIDs count = \(self.document.selectedObjectIDs.count)")
                 return nil
             }
 

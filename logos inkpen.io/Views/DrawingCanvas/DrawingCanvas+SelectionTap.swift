@@ -228,17 +228,7 @@ extension DrawingCanvas {
                 }
             }
         } else {
-            // Nothing was hit - deselect unless shift/command pressed
-            if !isShiftPressed && !isCommandPressed {
-                document.selectedObjectIDs.removeAll()
-                document.syncSelectionArrays()
-
-                selectedPoints.removeAll()
-                selectedHandles.removeAll()
-                directSelectedShapeIDs.removeAll()
-                syncDirectSelectionWithDocument()
-                isCornerRadiusEditMode = false
-            }
+            // Nothing was hit - do nothing (Tab key is the only way to deselect)
         }
     }
 
