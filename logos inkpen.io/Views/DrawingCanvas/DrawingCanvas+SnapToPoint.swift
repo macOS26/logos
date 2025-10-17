@@ -44,7 +44,7 @@ extension DrawingCanvas {
     private func extractSnapPoints(from shape: VectorShape) -> [SnapPoint] {
         var snapPoints: [SnapPoint] = []
 
-        if shape.isTextObject {
+        if shape.typography != nil {
             let bounds = shape.bounds
             snapPoints.append(SnapPoint(point: CGPoint(x: bounds.minX, y: bounds.minY), objectID: shape.id, isAnchor: true, description: "Text top-left"))
             snapPoints.append(SnapPoint(point: CGPoint(x: bounds.maxX, y: bounds.minY), objectID: shape.id, isAnchor: true, description: "Text top-right"))
