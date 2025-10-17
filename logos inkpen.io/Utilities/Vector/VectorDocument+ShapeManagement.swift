@@ -239,15 +239,14 @@ extension VectorDocument {
     }
 
     func selectAll() {
-        guard let layerIndex = selectedLayerIndex else { return }
-        guard layerIndex < layers.count, layers[layerIndex].isVisible else { return }
-
-        let layerObjects = unifiedObjects.filter {
-            $0.layerIndex == layerIndex && $0.isVisible && !$0.isLocked
+        let visibleObjects = unifiedObjects.filter { object in
+            guard object.isVisible && !object.isLocked else { return false }
+            guard object.layerIndex < layers.count else { return false }
+            return layers[object.layerIndex].isVisible
         }
 
-        if !layerObjects.isEmpty {
-            selectedObjectIDs = Set(layerObjects.map { $0.id })
+        if !visibleObjects.isEmpty {
+            selectedObjectIDs = Set(visibleObjects.map { $0.id })
             syncSelectionArrays()
         }
     }
