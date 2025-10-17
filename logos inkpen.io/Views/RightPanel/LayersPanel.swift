@@ -246,6 +246,11 @@ struct LayersPanel: View {
                         in: 0...1,
                         onEditingChanged: { editing in
                             if !editing {
+                                NotificationCenter.default.post(
+                                    name: Notification.Name("LayerOpacityUpdate"),
+                                    object: nil,
+                                    userInfo: ["layerID": document.layers[layerIndex].id, "opacity": layerOpacityState]
+                                )
                             }
                         }
                     )

@@ -11,6 +11,7 @@ struct ProfessionalLayerRow: View {
     @State private var showColorPicker: Bool = false
     @State private var isExpanded: Bool
     @State private var layerObjects: [VectorObject] = []
+    @State private var previewOpacity: Double? = nil
 
     private var isVisibleBinding: Binding<Bool> {
         Binding(
@@ -318,6 +319,15 @@ struct ProfessionalLayerRow: View {
             layerObjects = Array(document.unifiedObjects
                 .filter { $0.layerIndex == layerIndex }
                 .reversed())
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("LayerOpacityUpdate"))) { notification in
+            guard let userInfo = notification.userInfo,
+                  let layerID = userInfo["layerID"] as? UUID,
+                  layerID == layer.id else { return }
+
+            if let opacity = userInfo["opacity"] as? Double {
+                previewOpacity = opacity
+            }
         }
         .if(layer.name != "Canvas" && layer.name != "Pasteboard") { view in
             view.draggable(DraggableItem.layer(
