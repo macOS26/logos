@@ -427,7 +427,7 @@ struct ObjectRow: View {
                                     .stroke(Color.blue.opacity(0.3), lineWidth: 1)
                                     .frame(width: 8, height: 8)
                                 
-                                Text(childShape.isTextObject ? (childShape.textContent ?? "Text") : childShape.name)
+                                Text(childShape.typography != nil ? (childShape.textContent ?? "Text") : childShape.name)
                                     .font(.system(size: 11, weight: .medium))
                                     .foregroundColor(isChildSelected ? .blue : .secondary)
                                     .lineLimit(1)
@@ -449,14 +449,14 @@ struct ObjectRow: View {
                         if isCommandPressed {
                             if document.selectedObjectIDs.contains(childShape.id) {
                                 document.selectedObjectIDs.remove(childShape.id)
-                                if childShape.isTextObject {
+                                if childShape.typography != nil {
                                     document.selectedTextIDs.remove(childShape.id)
                                 } else {
                                     document.selectedShapeIDs.remove(childShape.id)
                                 }
                             } else {
                                 document.selectedObjectIDs.insert(childShape.id)
-                                if childShape.isTextObject {
+                                if childShape.typography != nil {
                                     document.selectedTextIDs.insert(childShape.id)
                                 } else {
                                     document.selectedShapeIDs.insert(childShape.id)
@@ -471,7 +471,7 @@ struct ObjectRow: View {
                             }
                         } else {
                             document.selectedObjectIDs = [childShape.id]
-                            if childShape.isTextObject {
+                            if childShape.typography != nil {
                                 document.selectedTextIDs = [childShape.id]
                                 document.selectedShapeIDs.removeAll()
                             } else {
@@ -522,7 +522,7 @@ struct ObjectRow: View {
             return "scissors"
         }
 
-        if childShape.isTextObject {
+        if childShape.typography != nil {
             return "textformat"
         }
         return childIconName(for: childShape)
@@ -536,7 +536,7 @@ struct ObjectRow: View {
             return .orange
         }
 
-        if childShape.isTextObject {
+        if childShape.typography != nil {
             return .green
         }
         return .blue
