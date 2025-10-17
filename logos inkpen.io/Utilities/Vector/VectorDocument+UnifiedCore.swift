@@ -41,7 +41,9 @@ extension VectorDocument {
             if case .text(var shape) = unifiedObjects[index].objectType {
                 update(&shape)
                 let layerIndex = unifiedObjects[index].layerIndex
-                unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
+                let updatedObject = VectorObject(shape: shape, layerIndex: layerIndex)
+                unifiedObjects[index] = updatedObject
+                unifiedObjectLookupCache[shapeID] = updatedObject
             }
             return
         }
@@ -56,7 +58,9 @@ extension VectorDocument {
             if case .shape(var shape) = unifiedObjects[index].objectType {
                 update(&shape)
                 let layerIndex = unifiedObjects[index].layerIndex
-                unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
+                let updatedObject = VectorObject(shape: shape, layerIndex: layerIndex)
+                unifiedObjects[index] = updatedObject
+                unifiedObjectLookupCache[shapeID] = updatedObject
             }
             return
         }
@@ -71,7 +75,9 @@ extension VectorDocument {
                     groupShape.groupedShapes[childIndex] = childShape
 
                     let layerIndex = unifiedObjects[groupIndex].layerIndex
-                    unifiedObjects[groupIndex] = VectorObject(shape: groupShape, layerIndex: layerIndex)
+                    let updatedObject = VectorObject(shape: groupShape, layerIndex: layerIndex)
+                    unifiedObjects[groupIndex] = updatedObject
+                    unifiedObjectLookupCache[groupShape.id] = updatedObject
                     return
                 }
             }
