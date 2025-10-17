@@ -324,6 +324,10 @@ struct NonBackgroundObjectsView: View {
 
     private var nonBackgroundObjects: [VectorObject] {
         document.getObjectsInStackingOrder().filter { obj in
+            // Cull objects from invisible layers
+            guard obj.layerIndex < document.layers.count else { return false }
+            guard document.layers[obj.layerIndex].isVisible else { return false }
+
             switch obj.objectType {
             case .shape(let shape),
                  .warp(let shape),
