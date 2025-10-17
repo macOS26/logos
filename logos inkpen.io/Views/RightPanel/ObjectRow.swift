@@ -103,7 +103,13 @@ struct ObjectRow: View {
         Binding(
             get: {
                 if let object = document.findObject(by: objectId) {
-                    if case .shape(let shape) = object.objectType {
+                    switch object.objectType {
+                    case .text(let shape),
+                         .shape(let shape),
+                         .warp(let shape),
+                         .group(let shape),
+                         .clipGroup(let shape),
+                         .clipMask(let shape):
                         return shape.isVisible
                     }
                 }
@@ -111,7 +117,13 @@ struct ObjectRow: View {
             },
             set: { newValue in
                 guard let index = document.findObjectIndex(by: objectId) else { return }
-                if case .shape(let shape) = document.unifiedObjects[index].objectType {
+                switch document.unifiedObjects[index].objectType {
+                case .text(let shape),
+                     .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
                     if shape.isVisible != newValue {
                         let command = VisibilityCommand(
                             objectIDs: [objectId],
@@ -130,7 +142,13 @@ struct ObjectRow: View {
         Binding(
             get: {
                 if let object = document.findObject(by: objectId) {
-                    if case .shape(let shape) = object.objectType {
+                    switch object.objectType {
+                    case .text(let shape),
+                         .shape(let shape),
+                         .warp(let shape),
+                         .group(let shape),
+                         .clipGroup(let shape),
+                         .clipMask(let shape):
                         return shape.isLocked
                     }
                 }
@@ -138,7 +156,13 @@ struct ObjectRow: View {
             },
             set: { newValue in
                 guard let index = document.findObjectIndex(by: objectId) else { return }
-                if case .shape(let shape) = document.unifiedObjects[index].objectType {
+                switch document.unifiedObjects[index].objectType {
+                case .text(let shape),
+                     .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
                     if shape.isLocked != newValue {
                         let command = VisibilityCommand(
                             objectIDs: [objectId],
