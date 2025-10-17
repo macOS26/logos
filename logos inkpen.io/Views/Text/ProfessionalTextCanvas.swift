@@ -87,7 +87,13 @@ struct ProfessionalTextCanvas: View {
             if let selectedObject = document.findObject(by: selectedID),
                case .shape(let selectedShape) = selectedObject.objectType,
                selectedShape.isGroupContainer {
-                if selectedShape.groupedShapes.contains(where: { $0.id == textObjectID && $0.isTextObject }) {
+                if selectedShape.groupedShapes.contains(where: { shape in
+                    guard shape.id == textObjectID else { return false }
+                    if let obj = document.findObject(by: shape.id), case .text = obj.objectType {
+                        return true
+                    }
+                    return false
+                }) {
                     return true
                 }
             }
@@ -102,8 +108,7 @@ struct ProfessionalTextCanvas: View {
         if oldTool != .font && newTool == .font && (textBoxState == .green || isThisTextSelected) {
 
             for unifiedObj in document.unifiedObjects {
-                guard case .shape(let shape) = unifiedObj.objectType,
-                      shape.isTextObject,
+                guard case .text(let shape) = unifiedObj.objectType,
                       shape.id != viewModel.textObject.id,
                       shape.isEditing == true else { continue }
 
@@ -169,8 +174,7 @@ struct ProfessionalTextCanvas: View {
 
     private func handleTextBoxSelect(location: CGPoint) {
         for unifiedObj in document.unifiedObjects {
-            guard case .shape(let shape) = unifiedObj.objectType,
-                  shape.isTextObject,
+            guard case .text(let shape) = unifiedObj.objectType,
                   shape.id != viewModel.textObject.id,
                   shape.isEditing == true else { continue }
 
