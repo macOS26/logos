@@ -333,8 +333,8 @@ struct ProfessionalLayerRow: View {
                         }
 
                         if let opacity = userInfo["opacity"] as? Double {
-                            print("   ✅ Setting previewOpacity to \(opacity)")
-                            previewOpacity = opacity
+                            print("   ✅ Setting layer opacity to \(opacity)")
+                            document.layers[layerIndex].opacity = opacity
                         }
                     }
                 }
