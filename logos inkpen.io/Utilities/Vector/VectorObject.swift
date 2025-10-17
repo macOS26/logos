@@ -18,7 +18,7 @@ struct VectorObject: Identifiable, Hashable {
         self.id = shape.id
         self.layerIndex = layerIndex
 
-        if shape.isTextObject {
+        if shape.typography != nil {
             self.objectType = .text(shape)
         } else if shape.isClippingPath {
             self.objectType = .clipMask(shape)
@@ -101,7 +101,7 @@ extension VectorObject: Codable {
         let objectContainer = try container.nestedContainer(keyedBy: ObjectTypeCodingKeys.self, forKey: .objectType)
         let shape = try objectContainer.decode(VectorShape.self, forKey: .shape)
 
-        if shape.isTextObject {
+        if shape.typography != nil {
             objectType = .text(shape)
         } else if shape.isClippingPath {
             objectType = .clipMask(shape)
