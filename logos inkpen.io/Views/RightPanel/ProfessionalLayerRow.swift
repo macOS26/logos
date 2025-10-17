@@ -320,26 +320,7 @@ struct ProfessionalLayerRow: View {
                 .filter { $0.layerIndex == layerIndex }
                 .reversed())
         }
-        .background(
-            Group {
-                if document.selectedLayerIndex == layerIndex {
-                    Color.clear.onReceive(NotificationCenter.default.publisher(for: Notification.Name("LayerOpacityUpdate"))) { notification in
-                        print("📥 RECEIVE: Layer \(layer.name)")
-                        guard let userInfo = notification.userInfo,
-                              let layerID = userInfo["layerID"] as? UUID,
-                              layerID == layer.id else {
-                            print("   ❌ Layer ID mismatch")
-                            return
-                        }
-
-                        if let opacity = userInfo["opacity"] as? Double {
-                            print("   ✅ Setting layer opacity to \(opacity)")
-                            document.layers[layerIndex].opacity = opacity
-                        }
-                    }
-                }
-            }
-        )
+        .background()
         .if(layer.name != "Canvas" && layer.name != "Pasteboard") { view in
             view.draggable(DraggableItem.layer(
                 DraggableLayer(

@@ -3,7 +3,7 @@ import Combine
 
 class VectorDocument: ObservableObject, Codable {
     @Published var settings: DocumentSettings
-    @Published var layers: [VectorLayer] = [] {
+    var layers: [VectorLayer] = [] {
         didSet {
             cachedStackingOrder = nil
         }
@@ -211,7 +211,9 @@ class VectorDocument: ObservableObject, Codable {
     }
     
     @Published var originalHandlePositions: [String: VectorPoint] = [:]
-    
+
+    var layerPreviewOpacities: [UUID: Double] = [:]
+
     internal var _encodableSettings: DocumentSettings
     internal var _encodableLayers: [VectorLayer]
     internal var _encodableCurrentTool: DrawingTool
