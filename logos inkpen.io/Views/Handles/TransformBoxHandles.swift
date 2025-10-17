@@ -265,6 +265,7 @@ struct TransformBoxHandles: View {
         startLocation = startValue.startLocation
         initialTransform = .identity
         document.isHandleScalingActive = true
+        document.objectWillChange.send()
     }
 
     private func updateScaling(forHandle index: Int, dragValue: DragGesture.Value, bounds: CGRect) {
@@ -299,6 +300,7 @@ struct TransformBoxHandles: View {
 
             previewTransform = scaleTransform
             document.isHandleScalingActive = true
+            document.objectWillChange.send()
             return
         }
 
@@ -354,12 +356,14 @@ struct TransformBoxHandles: View {
         let currentBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         let newBounds = currentBounds.applying(scaleTransform)
         document.scalePreviewDimensions = CGSize(width: newBounds.width, height: newBounds.height)
+        document.objectWillChange.send()
     }
 
     private func endScaling() {
         isScaling = false
         document.isHandleScalingActive = false
         document.scalePreviewDimensions = .zero
+        document.objectWillChange.send()
 
         var oldShapes: [UUID: VectorShape] = [:]
         if case .shape(let oldShape) = document.findObject(by: shape.id)?.objectType {
