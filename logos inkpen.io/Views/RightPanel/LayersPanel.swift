@@ -242,24 +242,23 @@ struct LayersPanel: View {
                         .allowsHitTesting(false)
                     
                     Slider(
-                        value: Binding(
-                            get: { layerOpacityState },
-                            set: { newValue in
-                                layerOpacityState = newValue
-                                NotificationCenter.default.post(
-                                    name: Notification.Name("LayerOpacityUpdate"),
-                                    object: nil,
-                                    userInfo: ["layerID": document.layers[layerIndex].id, "opacity": newValue]
-                                )
-                            }
-                        ),
+                        value: $layerOpacityState,
                         in: 0...1,
                         onEditingChanged: { isEditing in
+                            print("📤 onEditingChanged: isEditing=\(isEditing)")
                             if !isEditing {
                                 document.layers[layerIndex].opacity = layerOpacityState
                             }
                         }
                     )
+                    .onChange(of: layerOpacityState) { _, newValue in
+                        print("📤 onChange: Posting notification - opacity: \(newValue)")
+                        NotificationCenter.default.post(
+                            name: Notification.Name("LayerOpacityUpdate"),
+                            object: nil,
+                            userInfo: ["layerID": document.layers[layerIndex].id, "opacity": newValue]
+                        )
+                    }
                     .controlSize(.regular)
                     .tint(Color.clear)
                 }
