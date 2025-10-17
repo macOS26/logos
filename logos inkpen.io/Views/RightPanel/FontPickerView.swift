@@ -80,15 +80,12 @@ struct FontPickerView: View {
                     currentFontFamilyState
                 },
                 set: { newFamily in
-                    currentFontFamilyState = newFamily
                     document.fontManager.selectedFontFamily = newFamily
-                    fontFamilyUpdateTrigger.toggle()
 
                     let newVariants = document.fontManager.getAvailableVariantNames(for: newFamily)
                     availableFontVariantNamesState = newVariants
 
                     let defaultVariant = newVariants.first ?? "Regular"
-                    currentFontVariantState = defaultVariant
                     document.fontManager.selectedFontVariant = defaultVariant
 
                     // Update document DIRECTLY - no preview
@@ -109,6 +106,10 @@ struct FontPickerView: View {
                             fillOpacity: selectedText?.typography.fillOpacity ?? 1
                         ))
                     }
+
+                    // Update state AFTER document update
+                    currentFontFamilyState = newFamily
+                    currentFontVariantState = defaultVariant
                 }
             )) {
                 ForEach(document.fontManager.availableFonts, id: \.self) { fontFamily in
@@ -118,7 +119,6 @@ struct FontPickerView: View {
                 }
             }
             .fontPickerStyle()
-            .id(fontFamilyUpdateTrigger)
 
             Text("Weight")
                 .fontPickerLabel()
@@ -128,7 +128,6 @@ struct FontPickerView: View {
                     currentFontVariantState
                 },
                 set: { newVariant in
-                    currentFontVariantState = newVariant
                     document.fontManager.selectedFontVariant = newVariant
 
                     // Update document DIRECTLY - no preview
@@ -137,6 +136,9 @@ struct FontPickerView: View {
                         updatedTypography.fontVariant = newVariant
                         document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
                     }
+
+                    // Update state AFTER document update
+                    currentFontVariantState = newVariant
                 }
             )) {
                 ForEach(availableFontVariantNamesState, id: \.self) { variant in
@@ -147,7 +149,6 @@ struct FontPickerView: View {
                 }
             }
             .fontPickerStyle()
-            .id("\(currentFontFamilyState)-\(fontFamilyUpdateTrigger)")
         }
         .onAppear {
             syncFontStates()
@@ -156,9 +157,6 @@ struct FontPickerView: View {
             syncFontStates()
         }
         .onChange(of: editingText?.id) { _, _ in
-            syncFontStates()
-        }
-        .onChange(of: fontFamilyUpdateTrigger) { _, _ in
             syncFontStates()
         }
     }
