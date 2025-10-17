@@ -69,15 +69,22 @@ extension VectorDocument {
     }
 
     func removeSelectedObjects() {
-        let objectsToDelete = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
+        let candidateObjects = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
 
-        if !objectsToDelete.isEmpty {
-            let command = DeleteObjectCommand(objects: objectsToDelete)
-            executeCommand(command)
-        }
+        // Filter out protected objects (locked layers, Canvas/Pasteboard layers, background shapes)
+        let objectsToDelete = candidateObjects.filter { object in
+            // Skip objects on locked layers
+            if object.layerIndex < layers.count && layers[object.layerIndex].isLocked {
+                return false
+            }
 
-        let protectedObjects = objectsToDelete.filter { objectToDelete in
-            switch objectToDelete.objectType {
+            // Skip objects on Canvas or Pasteboard layers (indices 1 and 0)
+            if object.layerIndex <= 1 {
+                return false
+            }
+
+            // Skip background shapes
+            switch object.objectType {
             case .shape(let shape),
                  .text(let shape),
                  .warp(let shape),
@@ -88,36 +95,23 @@ extension VectorDocument {
                     Log.error("🚫 PROTECTED: Attempted to delete protected background shape '\(shape.name)' - BLOCKED", category: .error)
                     return false
                 }
-                return true
             }
+
+            return true
         }
 
-        if protectedObjects.count != objectsToDelete.count {
-            let blockedCount = objectsToDelete.count - protectedObjects.count
-            Log.error("🚫 PROTECTION: Blocked deletion of \(blockedCount) protected background shapes", category: .error)
+        if candidateObjects.count != objectsToDelete.count {
+            let blockedCount = candidateObjects.count - objectsToDelete.count
+            Log.error("🚫 PROTECTION: Blocked deletion of \(blockedCount) protected object(s)", category: .error)
         }
 
-        for objectToDelete in protectedObjects {
-            switch objectToDelete.objectType {
-            case .shape(let shape),
-                 .warp(let shape),
-                 .group(let shape),
-                 .clipGroup(let shape),
-                 .clipMask(let shape):
-                if let layerIndex = objectToDelete.layerIndex < layers.count ? objectToDelete.layerIndex : nil {
-                    removeShapesUnified(layerIndex: layerIndex, where: { $0.id == shape.id })
-                }
-            case .text:
-                break
-            }
+        if !objectsToDelete.isEmpty {
+            let command = DeleteObjectCommand(objects: objectsToDelete)
+            executeCommand(command)
         }
-
-        unifiedObjects.removeAll { selectedObjectIDs.contains($0.id) }
 
         selectedObjectIDs.removeAll()
-
         syncSelectionArrays()
-
     }
 
     func getSelectedShapes() -> [VectorShape] {
@@ -240,9 +234,34 @@ extension VectorDocument {
 
     func selectAll() {
         let visibleObjects = unifiedObjects.filter { object in
+            // Skip invisible or locked objects
             guard object.isVisible && !object.isLocked else { return false }
+
+            // Skip if layer doesn't exist
             guard object.layerIndex < layers.count else { return false }
-            return layers[object.layerIndex].isVisible
+
+            let layer = layers[object.layerIndex]
+
+            // Skip objects on invisible or locked layers
+            guard layer.isVisible && !layer.isLocked else { return false }
+
+            // Skip objects on Canvas or Pasteboard layers (layer indices 1 and 0)
+            guard object.layerIndex > 1 else { return false }
+
+            // Skip background shapes
+            switch object.objectType {
+            case .shape(let shape),
+                 .text(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
+                if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
+                    return false
+                }
+            }
+
+            return true
         }
 
         if !visibleObjects.isEmpty {
