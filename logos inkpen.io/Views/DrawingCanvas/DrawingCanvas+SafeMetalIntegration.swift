@@ -27,7 +27,9 @@ extension DrawingCanvas {
                         cgPath.addQuadCurve(to: transformPointToView(to.cgPoint, geometry: geometry),
                                             control: transformPointToView(c.cgPoint, geometry: geometry))
                     case .close:
-                        cgPath.closeSubpath()
+                        if !cgPath.isEmpty {
+                            cgPath.closeSubpath()
+                        }
                     }
                 }
                 cgContext.addPath(cgPath)
@@ -107,7 +109,9 @@ extension DrawingCanvas {
                 let transformedPoint = transformPointToView(to.cgPoint, geometry: geometry)
                 cgPath.addQuadCurve(to: transformedPoint, control: transformedControl)
             case .close:
-                cgPath.closeSubpath()
+                if !cgPath.isEmpty {
+                    cgPath.closeSubpath()
+                }
             }
         }
 
