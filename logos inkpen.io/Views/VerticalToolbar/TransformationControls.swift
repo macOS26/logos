@@ -270,8 +270,8 @@ struct TransformationControls: View {
 
         let origin = document.transformOrigin.point
         let pageOrigin = document.settings.pageOrigin ?? .zero
-        let x = bounds.minX + bounds.width * origin.x + document.dragOffsetForUI.x - pageOrigin.x
-        let y = bounds.minY + bounds.height * origin.y + document.dragOffsetForUI.y - pageOrigin.y
+        let x = bounds.minX + bounds.width * origin.x - pageOrigin.x
+        let y = bounds.minY + bounds.height * origin.y - pageOrigin.y
 
         xValue = String(format: "%.2f", x)
         yValue = String(format: "%.2f", y)
