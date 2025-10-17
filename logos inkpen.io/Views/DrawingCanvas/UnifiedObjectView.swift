@@ -213,9 +213,9 @@ struct CanvasBackgroundView: View {
             }
         }
     }
-
-    @State private var layerOpacities: [Double] = []
-    @State private var layerBlendModes: [BlendMode] = []
+//
+//    @State private var layerOpacities: [Double] = []
+//    @State private var layerBlendModes: [BlendMode] = []
 
     var body: some View {
         ZStack {
@@ -281,8 +281,7 @@ struct NonBackgroundObjectsView: View {
         Dictionary(grouping: nonBackgroundObjects, by: { $0.layerIndex })
     }
 
-    @State private var layerOpacities: [Double] = []
-    @State private var layerBlendModes: [BlendMode] = []
+    @State private var previewOpacities: [UUID: Double] = [:]
 
     var body: some View {
         ZStack {
@@ -306,22 +305,24 @@ struct NonBackgroundObjectsView: View {
                             }
                         }
                     }
-                    .opacity(document.layers[layerIndex].opacity)
+                   .onReceive(NotificationCenter.default.publisher(for: Notification.Name("LayerOpacityUpdate"))) { notification in
+                        guard let userInfo = notification.userInfo,
+                              let layerID = userInfo["layerID"] as? UUID,
+                              layerID == document.layers[layerIndex].id else {
+                            return
+                        }
+
+                        if let opacity = userInfo["opacity"] as? Double {
+                            previewOpacities[layerID] = opacity
+                        }
+                    }
+                    .opacity(previewOpacities[document.layers[layerIndex].id] ?? document.layers[layerIndex].opacity)
                     .blendMode(document.layers[layerIndex].blendMode.swiftUIBlendMode)
+
                 }
             }
         }
         .compositingGroup()
-//        .onAppear {
-//            layerOpacities = document.layers.map { $0.opacity }
-//            layerBlendModes = document.layers.map { $0.blendMode }
-//        }
-//        .onChange(of: document.layers.map { $0.opacity }) {
-//            layerOpacities = document.layers.map { $0.opacity }
-//        }
-//        .onChange(of: document.layers.map { $0.blendMode }) {
-//            layerBlendModes = document.layers.map { $0.blendMode }
-//        }
     }
 }
 
