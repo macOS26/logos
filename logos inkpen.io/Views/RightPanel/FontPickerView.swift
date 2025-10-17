@@ -60,6 +60,13 @@ struct FontPickerView: View {
                         updatedTypography.fontFamily = newFamily
                         updatedTypography.fontVariant = defaultVariant
                         document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+
+                        // Send preview notification so text view updates immediately
+                        NotificationCenter.default.post(
+                            name: Notification.Name("TextPreviewUpdate"),
+                            object: nil,
+                            userInfo: ["textID": textID, "typography": updatedTypography]
+                        )
                     }
                 }
             )) {
@@ -92,6 +99,13 @@ struct FontPickerView: View {
                         var updatedTypography = freshText.typography
                         updatedTypography.fontVariant = newVariant
                         document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+
+                        // Send preview notification so text view updates immediately
+                        NotificationCenter.default.post(
+                            name: Notification.Name("TextPreviewUpdate"),
+                            object: nil,
+                            userInfo: ["textID": textID, "typography": updatedTypography]
+                        )
                     }
                 }
             )) {
