@@ -36,7 +36,7 @@ extension DrawingCanvas {
                 return false
             case .group(let shape):
                 for childShape in shape.groupedShapes {
-                    if childShape.isTextObject, var textObj = VectorText.from(childShape) {
+                    if childShape.typography != nil, var textObj = VectorText.from(childShape) {
                         textObj.layerIndex = unifiedObj.layerIndex
                         if !textObj.isVisible || textObj.isLocked { continue }
 
@@ -72,7 +72,7 @@ extension DrawingCanvas {
                     }
                 case .group(let shape):
                     for childShape in shape.groupedShapes {
-                        if childShape.isTextObject && childShape.isEditing == true {
+                        if childShape.typography != nil && childShape.isEditing == true {
                             document.setTextEditingInUnified(id: childShape.id, isEditing: false)
                         }
                     }
@@ -108,7 +108,7 @@ extension DrawingCanvas {
                 }
             case .group(let shape):
                 for childShape in shape.groupedShapes {
-                    if childShape.isTextObject, var textObj = VectorText.from(childShape) {
+                    if childShape.typography != nil, var textObj = VectorText.from(childShape) {
                         textObj.layerIndex = unifiedObj.layerIndex
                         if !textObj.isVisible || textObj.isLocked { continue }
 
