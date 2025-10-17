@@ -163,12 +163,13 @@ extension FileOperations {
                             context: context,
                             isExport: isExport,
                             useCMYK: useCMYK,
-                            textRenderingMode: textRenderingMode
+                            textRenderingMode: textRenderingMode,
+                            document: document
                         )
                         renderedShapeIds.insert(shape.id)
                         clipped.forEach { renderedShapeIds.insert($0.id) }
                     } else if !shape.isClippingPath {
-                        try renderShapeToPDFWithImageSupport(shape: shape, context: context, isExport: isExport, useCMYK: useCMYK, textRenderingMode: textRenderingMode)
+                        try renderShapeToPDFWithImageSupport(shape: shape, context: context, isExport: isExport, useCMYK: useCMYK, textRenderingMode: textRenderingMode, document: document)
                         renderedShapeIds.insert(shape.id)
                     }
                 }
@@ -183,7 +184,7 @@ extension FileOperations {
 
     }
 
-    static func renderClippingGroup(clippingMask: VectorShape, clippedShapes: [VectorShape], context: CGContext, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs) throws {
+    static func renderClippingGroup(clippingMask: VectorShape, clippedShapes: [VectorShape], context: CGContext, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, document: VectorDocument) throws {
 
         context.saveGState()
 
@@ -196,7 +197,7 @@ extension FileOperations {
         context.concatenate(clippingMask.transform.inverted())
 
         for shape in clippedShapes {
-            try renderShapeToPDFWithImageSupport(shape: shape, context: context, isExport: isExport, useCMYK: useCMYK, textRenderingMode: textRenderingMode)
+            try renderShapeToPDFWithImageSupport(shape: shape, context: context, isExport: isExport, useCMYK: useCMYK, textRenderingMode: textRenderingMode, document: document)
         }
 
         context.restoreGState()
@@ -204,10 +205,6 @@ extension FileOperations {
 
     static func renderShapeToPDFWithImageSupport(shape: VectorShape, context: CGContext, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, document: VectorDocument? = nil) throws {
         if let doc = document, let object = doc.findObject(by: shape.id), case .text = object.objectType, let vectorText = VectorText.from(shape) {
-            try renderTextToPDF(vectorText: vectorText, context: context, renderingMode: textRenderingMode)
-            return
-        } else if shape.isTextObject, let vectorText = VectorText.from(shape) {
-            // Fallback for when document is not available
             try renderTextToPDF(vectorText: vectorText, context: context, renderingMode: textRenderingMode)
             return
         }
@@ -234,7 +231,8 @@ extension FileOperations {
                     context: context,
                     isExport: isExport,
                     useCMYK: useCMYK,
-                    textRenderingMode: textRenderingMode
+                    textRenderingMode: textRenderingMode,
+                    document: document
                 )
             }
 
