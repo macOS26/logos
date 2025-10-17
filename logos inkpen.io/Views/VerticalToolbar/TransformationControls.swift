@@ -426,7 +426,7 @@ struct TransformationControls: View {
                     }
                     shape.groupedShapes = transformedGroupedShapes
                     shape.updateBounds()
-                } else if shape.isTextObject {
+                } else if shape.typography != nil {
                     let currentPosition = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
                     let newPosition = transformPoint(currentPosition,
                                                     currentOrigin: CGPoint(x: currentOriginX, y: currentOriginY),
@@ -501,7 +501,7 @@ struct TransformationControls: View {
                     if let shapeIndex = shapes.firstIndex(where: { $0.id == objectID }) {
                         document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: shape)
 
-                        if shape.isTextObject {
+                        if shape.typography != nil {
                             if let position = shape.textPosition {
                                 document.updateTextPositionInUnified(id: shape.id, position: position)
                             }
