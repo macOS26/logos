@@ -36,7 +36,7 @@ extension DrawingCanvas {
         var stoppedCount = 0
 
         for unifiedObj in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObj.objectType, shape.isTextObject, shape.isEditing == true {
+            if case .text(let shape) = unifiedObj.objectType, shape.isEditing == true {
                 document.setTextEditingInUnified(id: shape.id, isEditing: false)
                 stoppedCount += 1
             }

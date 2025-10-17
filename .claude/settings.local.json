@@ -26,7 +26,8 @@
       "mcp__xcf-server__build_project",
       "Bash(python3:*)",
       "Bash(xcrun xcodebuild:*)",
-      "Read(//Users/toddbruss/Desktop/**)"
+      "Read(//Users/toddbruss/Desktop/**)",
+      "Read(//tmp/**)"
     ],
     "deny": [],
     "ask": []
