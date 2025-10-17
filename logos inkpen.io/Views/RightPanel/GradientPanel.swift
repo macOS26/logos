@@ -125,7 +125,7 @@ struct GradientFillSection: View {
         .onChange(of: document.selectedLayerIndex) { _, _ in updateSelectedGradient() }
         .onReceive(document.objectWillChange) { _ in
             if editingGradientStopId == nil && !isEditingAngle {
-                //updateSelectedGradientDisplay()
+                updateSelectedGradientDisplay()
             }
         }
     }

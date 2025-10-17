@@ -37,7 +37,7 @@ class CommandManager: ObservableObject {
         redoStack.removeAll()
 
         updateState()
-        //document.objectWillChange.send()
+        document.objectWillChange.send()
     }
 
     func undo() {
@@ -52,7 +52,7 @@ class CommandManager: ObservableObject {
 
         updateState()
 
-        //document.objectWillChange.send()
+        document.objectWillChange.send()
         NotificationCenter.default.post(name: Notification.Name("ClearPreviewStates"), object: nil)
     }
 
@@ -68,7 +68,7 @@ class CommandManager: ObservableObject {
 
         updateState()
 
-        //document.objectWillChange.send()
+        document.objectWillChange.send()
     }
 
     func clear() {
