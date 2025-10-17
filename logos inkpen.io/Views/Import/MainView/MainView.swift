@@ -20,6 +20,7 @@ struct MainView: View {
     @State private var isBottomDrawerOpen = false
     @State private var isLeftDrawerOpen = false
     @State private var layerPreviewOpacities: [UUID: Double] = [:]
+    @State private var liveDragOffset: CGPoint = .zero
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         ZStack {
@@ -41,7 +42,7 @@ struct MainView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .allowsHitTesting(false)
 
-                        DrawingCanvas(document: document, layerPreviewOpacities: $layerPreviewOpacities)
+                        DrawingCanvas(document: document, layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
                             .background(Color.ui.clear)
@@ -90,6 +91,7 @@ struct MainView: View {
             showingImportProgress: $showingImportProgress,
             showingSVGTestHarness: $showingSVGTestHarness,
             showingPressureCalibration: $showingPressureCalibration,
+            liveDragOffset: $liveDragOffset,
             onRunDiagnostics: runPasteboardDiagnostics
         )
         }

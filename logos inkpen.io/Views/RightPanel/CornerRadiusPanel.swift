@@ -20,7 +20,7 @@ struct CornerRadiusPanel: View {
             updateCornerValues()
         }
         .onReceive(document.objectWillChange) { _ in
-            updateCornerValues()
+            //updateCornerValues()
         }
     }
 

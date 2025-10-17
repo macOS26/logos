@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RightPanel: View {
     @ObservedObject var document: VectorDocument
+    @Binding var layerPreviewOpacities: [UUID: Double]
     @Environment(AppState.self) private var appState
 
     var body: some View {
@@ -14,7 +15,7 @@ struct RightPanel: View {
             Group {
                 switch appState.selectedPanelTab {
                 case .layers:
-                    LayersPanel(document: document)
+                    LayersPanel(document: document, layerPreviewOpacities: $layerPreviewOpacities)
                 case .properties:
                     StrokeFillPanel(document: document)
                 case .gradient:
@@ -39,6 +40,6 @@ struct RightPanel: View {
 }
 
 #Preview {
-    RightPanel(document: VectorDocument())
+    RightPanel(document: VectorDocument(), layerPreviewOpacities: .constant([:]))
         .frame(height: 600)
 }

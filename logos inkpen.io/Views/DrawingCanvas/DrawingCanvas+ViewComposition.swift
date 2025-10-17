@@ -191,7 +191,8 @@ extension DrawingCanvas {
                 viewMode: document.viewMode,
                 isShiftPressed: self.isShiftPressed,
                 dragPreviewDelta: currentDragDelta,
-                dragPreviewTrigger: dragPreviewUpdateTrigger
+                dragPreviewTrigger: dragPreviewUpdateTrigger,
+                layerPreviewOpacities: $layerPreviewOpacities
             )
 
             canvasOverlays(geometry: geometry)

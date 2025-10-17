@@ -10,12 +10,12 @@ extension VectorDocument {
     func undo() {
         if commandManager.canUndo {
             commandManager.undo()
-            objectWillChange.send()
+            //objectWillChange.send()
             NotificationCenter.default.post(name: Notification.Name("ClearPreviewStates"), object: nil)
             return
         }
 
-        objectWillChange.send()
+        //objectWillChange.send()
         NotificationCenter.default.post(name: Notification.Name("ClearPreviewStates"), object: nil)
 
         cleanupImageRegistry()
@@ -24,7 +24,7 @@ extension VectorDocument {
     func redo() {
         if commandManager.canRedo {
             commandManager.redo()
-            objectWillChange.send()
+            //objectWillChange.send()
             return
         }
 

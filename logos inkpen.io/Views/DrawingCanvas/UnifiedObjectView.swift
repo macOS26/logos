@@ -257,6 +257,7 @@ struct NonBackgroundObjectsView: View {
     let isShiftPressed: Bool
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
+    @Binding var layerPreviewOpacities: [UUID: Double]
 
     private var nonBackgroundObjects: [VectorObject] {
         document.getObjectsInStackingOrder().filter { obj in
@@ -281,8 +282,6 @@ struct NonBackgroundObjectsView: View {
         Dictionary(grouping: nonBackgroundObjects, by: { $0.layerIndex })
     }
 
-    @State private var previewOpacities: [UUID: Double] = [:]
-
     var body: some View {
         ZStack {
             ForEach(objectsByLayer.keys.sorted(), id: \.self) { layerIndex in
@@ -305,18 +304,7 @@ struct NonBackgroundObjectsView: View {
                             }
                         }
                     }
-                   .onReceive(NotificationCenter.default.publisher(for: Notification.Name("LayerOpacityUpdate"))) { notification in
-                        guard let userInfo = notification.userInfo,
-                              let layerID = userInfo["layerID"] as? UUID,
-                              layerID == document.layers[layerIndex].id else {
-                            return
-                        }
-
-                        if let opacity = userInfo["opacity"] as? Double {
-                            previewOpacities[layerID] = opacity
-                        }
-                    }
-                    .opacity(previewOpacities[document.layers[layerIndex].id] ?? document.layers[layerIndex].opacity)
+                    .opacity(layerPreviewOpacities[document.layers[layerIndex].id] ?? document.layers[layerIndex].opacity)
                     .blendMode(document.layers[layerIndex].blendMode.swiftUIBlendMode)
 
                 }

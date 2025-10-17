@@ -88,6 +88,7 @@ extension View {
 
 struct LayersPanel: View {
     @ObservedObject var document: VectorDocument
+    @Binding var layerPreviewOpacities: [UUID: Double]
     @State private var expandedLayers: Set<Int> = []
     @State private var renamingLayerIndex: Int?
     @State private var newLayerName: String = ""
@@ -239,6 +240,7 @@ struct LayersPanel: View {
                         onEditingChanged: { isEditing in
                             if !isEditing {
                                 document.layers[layerIndex].opacity = layerOpacityState
+                                layerPreviewOpacities.removeValue(forKey: document.layers[layerIndex].id)
                             }
                         }
                     )
@@ -246,11 +248,7 @@ struct LayersPanel: View {
                         let currentPercentage = Int(newValue * 100)
                         if currentPercentage != lastSentPercentage {
                             lastSentPercentage = currentPercentage
-                            NotificationCenter.default.post(
-                                name: Notification.Name("LayerOpacityUpdate"),
-                                object: nil,
-                                userInfo: ["layerID": document.layers[layerIndex].id, "opacity": newValue]
-                            )
+                            layerPreviewOpacities[document.layers[layerIndex].id] = newValue
                         }
                     }
                  

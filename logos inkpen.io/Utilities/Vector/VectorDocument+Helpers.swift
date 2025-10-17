@@ -43,7 +43,7 @@ extension VectorDocument {
     var defaultFillColor: VectorColor {
         get { documentColorDefaults.fillColor }
         set {
-            objectWillChange.send()
+            //objectWillChange.send()
             documentColorDefaults.fillColor = newValue
             documentColorDefaults.saveToUserDefaults()
         }
@@ -52,7 +52,7 @@ extension VectorDocument {
     var defaultStrokeColor: VectorColor {
         get { documentColorDefaults.strokeColor }
         set {
-            objectWillChange.send()
+            //objectWillChange.send()
             documentColorDefaults.strokeColor = newValue
             documentColorDefaults.saveToUserDefaults()
         }

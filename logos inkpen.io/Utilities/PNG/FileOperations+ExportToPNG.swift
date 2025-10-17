@@ -211,7 +211,8 @@ extension FileOperations {
                 viewMode: .color,
                 isShiftPressed: false,
                 dragPreviewDelta: .zero,
-                dragPreviewTrigger: false
+                dragPreviewTrigger: false,
+                layerPreviewOpacities: .constant([:])
             )
         }
         .frame(width: outputSize.width, height: outputSize.height)

@@ -119,6 +119,7 @@ struct BrushPoint {
 struct DrawingCanvas: View {
     @ObservedObject var document: VectorDocument
     @Binding var layerPreviewOpacities: [UUID: Double]
+    @Binding var liveDragOffset: CGPoint
     @Environment(AppState.self) internal var appState
     @State internal var currentPath: VectorPath?
     @State internal var tempBoundingBoxPath: VectorPath?

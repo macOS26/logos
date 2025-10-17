@@ -27,7 +27,8 @@
       "Bash(python3:*)",
       "Bash(xcrun xcodebuild:*)",
       "Read(//Users/toddbruss/Desktop/**)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(git revert:*)"
     ],
     "deny": [],
     "ask": []

@@ -15,6 +15,8 @@ struct DocumentBasedMainView: View {
     @State private var showingSVGTestHarness = false
     @State private var showingPressureCalibration = false
     @State private var hasInitializedTool = false
+    @State private var layerPreviewOpacities: [UUID: Double] = [:]
+    @State private var liveDragOffset: CGPoint = .zero
 
     var body: some View {
         VStack(spacing: 0) {
@@ -32,7 +34,7 @@ struct DocumentBasedMainView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .allowsHitTesting(false)
 
-                        DrawingCanvas(document: document)
+                        DrawingCanvas(document: document, layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
                             .background(Color.clear)
@@ -51,7 +53,7 @@ struct DocumentBasedMainView: View {
                 .contentShape(Rectangle())
                 .allowsHitTesting(true)
 
-                RightPanel(document: document)
+                RightPanel(document: document, layerPreviewOpacities: $layerPreviewOpacities)
                     .frame(width: 280)
                     .frame(minWidth: 280)
                     .zIndex(100)
@@ -77,6 +79,7 @@ struct DocumentBasedMainView: View {
                 showingImportProgress: $showingImportProgress,
                 showingSVGTestHarness: $showingSVGTestHarness,
                 showingPressureCalibration: $showingPressureCalibration,
+                liveDragOffset: $liveDragOffset,
                 onRunDiagnostics: runPasteboardDiagnostics
             )
         }

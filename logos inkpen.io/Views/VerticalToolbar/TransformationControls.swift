@@ -70,6 +70,7 @@ struct NinePointOriginSelector: View {
 
 struct TransformationControls: View {
     @ObservedObject var document: VectorDocument
+    @Binding var liveDragOffset: CGPoint
     @State private var keepProportions: Bool = false
     @State private var xValue: String = ""
     @State private var yValue: String = ""
@@ -232,6 +233,9 @@ struct TransformationControls: View {
                 updateValuesFromSelection()
             }
         }
+        .onChange(of: liveDragOffset) { _, _ in
+            updatePositionOnly()
+        }
         .onChange(of: document.scalePreviewDimensions) { _, _ in
             if document.isHandleScalingActive && document.scalePreviewDimensions != .zero {
                 widthValue = String(format: "%.2f", document.scalePreviewDimensions.width)
@@ -251,8 +255,8 @@ struct TransformationControls: View {
 
         let origin = document.transformOrigin.point
         let pageOrigin = document.settings.pageOrigin ?? .zero
-        let x = bounds.minX + bounds.width * origin.x - pageOrigin.x
-        let y = bounds.minY + bounds.height * origin.y - pageOrigin.y
+        let x = bounds.minX + bounds.width * origin.x + liveDragOffset.x - pageOrigin.x
+        let y = bounds.minY + bounds.height * origin.y + liveDragOffset.y - pageOrigin.y
 
         xValue = String(format: "%.2f", x)
         yValue = String(format: "%.2f", y)

@@ -22,7 +22,7 @@ struct CornerRadiusToolbar: View {
             updateCornerValues()
         }
         .onReceive(document.objectWillChange) { _ in
-            updateCornerValues()
+           // updateCornerValues()
         }
     }
 
