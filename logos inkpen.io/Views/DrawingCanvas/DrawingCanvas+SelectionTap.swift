@@ -133,6 +133,11 @@ extension DrawingCanvas {
               document.currentTool == .rotate ||
               document.currentTool == .shear ||
               document.currentTool == .warp else {
+            // For non-selection tools, deselect when clicking empty space
+            if !isShiftPressed && !isCommandPressed {
+                document.selectedObjectIDs = []
+                document.syncSelectionArrays()
+            }
             return
         }
 
