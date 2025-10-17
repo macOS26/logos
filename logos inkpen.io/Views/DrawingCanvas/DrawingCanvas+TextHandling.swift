@@ -410,18 +410,19 @@ extension DrawingCanvas {
 
     func finishTextEditing() {
         if let editingID = editingTextID {
-            // Apply preview typography if it exists BEFORE fetching textObj
+            // Apply preview typography if it exists
             if let previewTypography = document.textPreviewTypography[editingID] {
                 document.updateTextTypographyInUnified(id: editingID, typography: previewTypography)
                 document.textPreviewTypography.removeValue(forKey: editingID)
             }
 
-            // NOW fetch the updated text object
+            // Update bounds directly on the shape - don't call updateTextInUnified() which would overwrite!
             if var textObj = document.findText(by: editingID) {
                 textObj.updateBounds()
-                document.updateTextInUnified(textObj)
-                document.setTextEditingInUnified(id: textObj.id, isEditing: false)
+                document.updateTextBoundsInUnified(id: editingID, bounds: textObj.bounds)
             }
+
+            document.setTextEditingInUnified(id: editingID, isEditing: false)
         }
 
         isEditingText = false
