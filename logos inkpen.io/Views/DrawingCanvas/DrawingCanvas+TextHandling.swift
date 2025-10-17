@@ -622,24 +622,24 @@ extension DrawingCanvas {
     }
 
     func handleTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
-        let hasEditingTextBox = document.unifiedObjects.contains { unifiedObj in
-            if case .text(let shape) = unifiedObj.objectType {
-                return shape.isEditing == true
-            }
-            return false
-        }
-        if hasEditingTextBox {
+        let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
+
+        if findTextAt(location: startLocation) != nil {
             return
         }
 
-        let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
+        if !isDrawing {
+            for unifiedObj in document.unifiedObjects {
+                if case .text(let shape) = unifiedObj.objectType, shape.isEditing == true {
+                    document.setTextEditingInUnified(id: shape.id, isEditing: false)
+                }
+            }
+            finishTextEditing()
+        }
+
         let isDraggingResizeHandle = isLocationOnTextResizeHandle(startLocation)
 
         if isDraggingResizeHandle {
-            return
-        }
-
-        if findTextAt(location: startLocation) != nil {
             return
         }
 
