@@ -118,6 +118,7 @@ struct BrushPoint {
 
 struct DrawingCanvas: View {
     @ObservedObject var document: VectorDocument
+    @Binding var layerPreviewOpacities: [UUID: Double]
     @Environment(AppState.self) internal var appState
     @State internal var currentPath: VectorPath?
     @State internal var tempBoundingBoxPath: VectorPath?
@@ -260,6 +261,7 @@ struct DrawingCanvas: View {
     @State internal var sharedAllRadii: [Double] = []
     @State internal var sharedUpdatedRadii: [Double] = []
     @State internal var hasPerformedInitialFitToPage = false
+    @State internal var cachedSelectionBoundsForDrag: CGRect? = nil
 
     var body: some View {
         GeometryReader { geometry in

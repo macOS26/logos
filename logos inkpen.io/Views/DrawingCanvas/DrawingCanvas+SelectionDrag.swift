@@ -50,7 +50,7 @@ extension DrawingCanvas {
                 }
             }
         }
-        document.cachedSelectionBounds = combinedBounds
+        cachedSelectionBoundsForDrag = combinedBounds
 
         initialObjectPositions.removeAll()
 
@@ -153,7 +153,6 @@ extension DrawingCanvas {
         }
 
         currentDragDelta = canvasDelta
-        document.dragOffsetForUI = canvasDelta
 
     }
 
@@ -163,8 +162,7 @@ extension DrawingCanvas {
             initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
             currentDragDelta = .zero
-            document.dragOffsetForUI = .zero
-            document.cachedSelectionBounds = nil
+            cachedSelectionBoundsForDrag = nil
             return
         }
 
@@ -251,13 +249,13 @@ extension DrawingCanvas {
             initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
             currentDragDelta = .zero
+            cachedSelectionBoundsForDrag = nil
             document.currentDragOffset = .zero
-            document.dragOffsetForUI = .zero
             document.dragPreviewCoordinates = .zero
             document.cachedSelectionBounds = nil
 
         } else {
-            document.dragOffsetForUI = .zero
+            cachedSelectionBoundsForDrag = nil
             document.cachedSelectionBounds = nil
         }
     }
