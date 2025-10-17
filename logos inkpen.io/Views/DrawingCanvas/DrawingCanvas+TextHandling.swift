@@ -89,22 +89,19 @@ extension DrawingCanvas {
         for unifiedObj in document.unifiedObjects {
             switch unifiedObj.objectType {
             case .text(let shape):
-                if var textObj = VectorText.from(shape) {
-                    textObj.layerIndex = unifiedObj.layerIndex
-                    if !textObj.isVisible || textObj.isLocked { continue }
+                if !shape.isVisible || shape.isLocked { continue }
 
-                    let textBounds = CGRect(
-                        x: textObj.position.x + textObj.bounds.minX,
-                        y: textObj.position.y + textObj.bounds.minY,
-                        width: textObj.bounds.width,
-                        height: textObj.bounds.height
-                    )
+                // Use transform.tx/ty for text position
+                let textPos = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                let textBounds = CGRect(
+                    x: textPos.x,
+                    y: textPos.y,
+                    width: shape.bounds.width,
+                    height: shape.bounds.height
+                )
 
-                    let hitArea = textBounds
-
-                    if hitArea.contains(location) {
-                        return textObj.id
-                    }
+                if textBounds.contains(location) {
+                    return shape.id
                 }
             case .group(let shape):
                 for childShape in shape.groupedShapes {
@@ -716,16 +713,16 @@ extension DrawingCanvas {
         let totalTolerance = handleRadius + tolerance
 
         for unifiedObj in document.unifiedObjects {
-            guard case .text(let shape) = unifiedObj.objectType,
-                  var textObj = VectorText.from(shape) else { continue }
-            textObj.layerIndex = unifiedObj.layerIndex
-            if !textObj.isVisible || textObj.isLocked { continue }
+            guard case .text(let shape) = unifiedObj.objectType else { continue }
+            if !shape.isVisible || shape.isLocked { continue }
 
+            // Use transform.tx/ty for text position
+            let textPos = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
             let textBounds = CGRect(
-                x: textObj.position.x + textObj.bounds.minX,
-                y: textObj.position.y + textObj.bounds.minY,
-                width: textObj.bounds.width,
-                height: textObj.bounds.height
+                x: textPos.x,
+                y: textPos.y,
+                width: shape.bounds.width,
+                height: shape.bounds.height
             )
 
             let handles = [
