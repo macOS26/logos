@@ -95,6 +95,7 @@ struct LayersPanel: View {
     @State private var overlaysEnabled: Bool = true
     @State private var rowHeights: [CGFloat] = []
     @State private var layerOpacityState: Double = 1.0
+    @State private var lastSentPercentage: Int = 100
 
     private enum RowType: Hashable {
         case layer(index: Int)
@@ -232,7 +233,6 @@ struct LayersPanel: View {
                         )
                         .frame(height: 6)
                         .allowsHitTesting(false)
-
                     Slider(
                         value: $layerOpacityState,
                         in: 0...1,
@@ -243,17 +243,17 @@ struct LayersPanel: View {
                         }
                     )
                     .onChange(of: layerOpacityState) { _, newValue in
-                        NotificationCenter.default.post(
-                            name: Notification.Name("LayerOpacityUpdate"),
-                            object: nil,
-                            userInfo: ["layerID": document.layers[layerIndex].id, "opacity": newValue]
-                        )
-                    }
-                    .onChange(of: document.layers[layerIndex].opacity) { _, newValue in
-                        if abs(layerOpacityState - newValue) > 0.001 {
-                            layerOpacityState = newValue
+                        let currentPercentage = Int(newValue * 100)
+                        if currentPercentage != lastSentPercentage {
+                            lastSentPercentage = currentPercentage
+                            NotificationCenter.default.post(
+                                name: Notification.Name("LayerOpacityUpdate"),
+                                object: nil,
+                                userInfo: ["layerID": document.layers[layerIndex].id, "opacity": newValue]
+                            )
                         }
                     }
+                 
                     .controlSize(.regular)
                     .tint(Color.clear)
                 }
