@@ -25,8 +25,10 @@ extension DrawingCanvas {
                 switch unifiedObject.objectType {
                 case .text(let shape):
                     if !shape.isVisible { continue }
-                    let transformedBounds = shape.bounds.applying(shape.transform)
-                    if transformedBounds.contains(validatedLocation) {
+                    // Get text position from transform and create hit area
+                    let textPos = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                    let textArea = CGRect(x: textPos.x, y: textPos.y, width: shape.bounds.width, height: shape.bounds.height)
+                    if textArea.contains(validatedLocation) {
                         hitShape = shape
                         hitLayerIndex = unifiedObject.layerIndex
                         break outerHit
@@ -154,7 +156,8 @@ extension DrawingCanvas {
             case .text(let shape):
                 if !shape.isVisible || shape.isLocked { continue }
 
-                let textPos = shape.textPosition ?? CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                // Get position from transform (tx, ty are the translation components)
+                let textPos = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
                 let textContentArea = CGRect(
                     x: textPos.x,
                     y: textPos.y,
