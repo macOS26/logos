@@ -672,7 +672,6 @@ extension VectorText {
             transform: transform
         )
 
-        shape.isTextObject = true
         shape.textContent = content
         shape.textPosition = position
         shape.typography = typography
