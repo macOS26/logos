@@ -240,6 +240,7 @@ extension VectorDocument {
 
     func selectAll() {
         guard let layerIndex = selectedLayerIndex else { return }
+        guard layerIndex < layers.count, layers[layerIndex].isVisible else { return }
 
         let layerObjects = unifiedObjects.filter {
             $0.layerIndex == layerIndex && $0.isVisible && !$0.isLocked
