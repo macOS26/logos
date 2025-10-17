@@ -75,7 +75,7 @@ class VectorDocument: ObservableObject, Codable {
     @Published var shearAnchor: ShearAnchor = .center
     @Published var transformOrigin: TransformOrigin = .center
     @Published var objectPositionUpdateTrigger: Bool = false
-    @Published var currentDragOffset: CGPoint = .zero
+    var currentDragOffset: CGPoint = .zero
     @Published var cachedSelectionBounds: CGRect? = nil
     @Published var dragPreviewCoordinates: CGPoint = .zero
     @Published var scalePreviewDimensions: CGSize = .zero

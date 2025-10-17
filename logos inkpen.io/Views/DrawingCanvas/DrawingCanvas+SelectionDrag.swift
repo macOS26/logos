@@ -153,6 +153,7 @@ extension DrawingCanvas {
         }
 
         currentDragDelta = canvasDelta
+        document.currentDragOffset = canvasDelta
 
     }
 
