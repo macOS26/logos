@@ -29,7 +29,7 @@ struct UnifiedObjectContentView: View {
                         dragPreviewTrigger: dragPreviewTrigger,
                         viewMode: viewMode
                     )
-                    .allowsHitTesting(true)
+                    .allowsHitTesting(document.currentTool == .font)
                 } else {
                     EmptyView()
                 }
@@ -78,7 +78,7 @@ struct UnifiedObjectContentView: View {
                                         dragPreviewTrigger: dragPreviewTrigger,
                                         viewMode: viewMode
                                     )
-                                    .allowsHitTesting(true)
+                                    .allowsHitTesting(document.currentTool == .font)
                                 }
                             }
                         }
