@@ -488,7 +488,7 @@ struct ObjectRow: View {
                             }
                         } else if isShiftPressed {
                             document.selectedObjectIDs.insert(childShape.id)
-                            if childShape.isTextObject {
+                            if childShape.typography != nil {
                                 document.selectedTextIDs.insert(childShape.id)
                             } else {
                                 document.selectedShapeIDs.insert(childShape.id)
