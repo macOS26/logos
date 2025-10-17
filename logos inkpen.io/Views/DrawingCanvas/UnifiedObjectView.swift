@@ -50,7 +50,7 @@ struct UnifiedObjectView: View {
             }
 
         }
-        .compositingGroup()
+        //.compositingGroup()
         .onAppear {
             layerOpacities = document.layers.map { $0.opacity }
             layerBlendModes = document.layers.map { $0.blendMode }
@@ -372,7 +372,7 @@ struct NonBackgroundObjectsView: View {
                 }
             }
         }
-        .compositingGroup()
+        //.compositingGroup()
         .onAppear {
             layerOpacities = document.layers.map { $0.opacity }
             layerBlendModes = document.layers.map { $0.blendMode }
