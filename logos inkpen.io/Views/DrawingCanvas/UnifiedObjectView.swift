@@ -177,16 +177,16 @@ struct PasteboardBackgroundView: View {
         .compositingGroup()
         .opacity(pasteboardBackground.map { $0.layerIndex < document.layers.count ? document.layers[$0.layerIndex].opacity : 1.0 } ?? 1.0)
         .blendMode(pasteboardBackground.map { $0.layerIndex < document.layers.count ? document.layers[$0.layerIndex].blendMode.swiftUIBlendMode : .normal } ?? .normal)
-        .onAppear {
-            layerOpacities = document.layers.map { $0.opacity }
-            layerBlendModes = document.layers.map { $0.blendMode }
-        }
-        .onChange(of: document.layers.map { $0.opacity }) {
-            layerOpacities = document.layers.map { $0.opacity }
-        }
-        .onChange(of: document.layers.map { $0.blendMode }) {
-            layerBlendModes = document.layers.map { $0.blendMode }
-        }
+//        .onAppear {
+//            layerOpacities = document.layers.map { $0.opacity }
+//            layerBlendModes = document.layers.map { $0.blendMode }
+//        }
+//        .onChange(of: document.layers.map { $0.opacity }) {
+//            layerOpacities = document.layers.map { $0.opacity }
+//        }
+//        .onChange(of: document.layers.map { $0.blendMode }) {
+//            layerBlendModes = document.layers.map { $0.blendMode }
+//        }
     }
 }
 
@@ -235,16 +235,16 @@ struct CanvasBackgroundView: View {
         .compositingGroup()
         .opacity(canvasBackground.map { $0.layerIndex < document.layers.count ? document.layers[$0.layerIndex].opacity : 1.0 } ?? 1.0)
         .blendMode(canvasBackground.map { $0.layerIndex < document.layers.count ? document.layers[$0.layerIndex].blendMode.swiftUIBlendMode : .normal } ?? .normal)
-        .onAppear {
-            layerOpacities = document.layers.map { $0.opacity }
-            layerBlendModes = document.layers.map { $0.blendMode }
-        }
-        .onChange(of: document.layers.map { $0.opacity }) {
-            layerOpacities = document.layers.map { $0.opacity }
-        }
-        .onChange(of: document.layers.map { $0.blendMode }) {
-            layerBlendModes = document.layers.map { $0.blendMode }
-        }
+//        .onAppear {
+//            layerOpacities = document.layers.map { $0.opacity }
+//            layerBlendModes = document.layers.map { $0.blendMode }
+//        }
+//        .onChange(of: document.layers.map { $0.opacity }) {
+//            layerOpacities = document.layers.map { $0.opacity }
+//        }
+//        .onChange(of: document.layers.map { $0.blendMode }) {
+//            layerBlendModes = document.layers.map { $0.blendMode }
+//        }
     }
 }
 
@@ -312,16 +312,16 @@ struct NonBackgroundObjectsView: View {
             }
         }
         .compositingGroup()
-        .onAppear {
-            layerOpacities = document.layers.map { $0.opacity }
-            layerBlendModes = document.layers.map { $0.blendMode }
-        }
-        .onChange(of: document.layers.map { $0.opacity }) {
-            layerOpacities = document.layers.map { $0.opacity }
-        }
-        .onChange(of: document.layers.map { $0.blendMode }) {
-            layerBlendModes = document.layers.map { $0.blendMode }
-        }
+//        .onAppear {
+//            layerOpacities = document.layers.map { $0.opacity }
+//            layerBlendModes = document.layers.map { $0.blendMode }
+//        }
+//        .onChange(of: document.layers.map { $0.opacity }) {
+//            layerOpacities = document.layers.map { $0.opacity }
+//        }
+//        .onChange(of: document.layers.map { $0.blendMode }) {
+//            layerBlendModes = document.layers.map { $0.blendMode }
+//        }
     }
 }
 
