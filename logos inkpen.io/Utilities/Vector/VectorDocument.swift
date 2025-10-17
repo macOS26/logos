@@ -8,12 +8,12 @@ class VectorDocument: ObservableObject, Codable {
             cachedStackingOrder = nil
         }
     }
-    @Published var layerIndex: Int = 0
-    @Published var selectedLayerIndex: Int?
-    @Published var selectedShapeIDs: Set<UUID> = []
-    @Published var selectedTextIDs: Set<UUID> = []
-    @Published var selectedObjectIDs: Set<UUID> = []
-    @Published var directSelectedShapeIDs: Set<UUID> = []
+    var layerIndex: Int = 0
+    var selectedLayerIndex: Int?
+    var selectedShapeIDs: Set<UUID> = []
+    var selectedTextIDs: Set<UUID> = []
+    var selectedObjectIDs: Set<UUID> = []
+    var directSelectedShapeIDs: Set<UUID> = []
     @Published var documentColorDefaults: ColorDefaults = ColorDefaults() {
         didSet {
             settings.fillColor = documentColorDefaults.fillColor
@@ -476,6 +476,32 @@ class VectorDocument: ObservableObject, Codable {
         unifiedObjects = []
         objectWillChange.send()
         unifiedObjects = temp
+        objectWillChange.send()
+    }
+
+    // MARK: - Selection Helpers (O(1) updates)
+    func setSelectedObjectIDs(_ ids: Set<UUID>) {
+        selectedObjectIDs = ids
+        objectWillChange.send()
+    }
+
+    func setSelectedShapeIDs(_ ids: Set<UUID>) {
+        selectedShapeIDs = ids
+        objectWillChange.send()
+    }
+
+    func setSelectedTextIDs(_ ids: Set<UUID>) {
+        selectedTextIDs = ids
+        objectWillChange.send()
+    }
+
+    func setDirectSelectedShapeIDs(_ ids: Set<UUID>) {
+        directSelectedShapeIDs = ids
+        objectWillChange.send()
+    }
+
+    func setSelectedLayerIndex(_ index: Int?) {
+        selectedLayerIndex = index
         objectWillChange.send()
     }
 }
