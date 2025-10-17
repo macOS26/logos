@@ -76,6 +76,7 @@ class VectorDocument: ObservableObject, Codable {
     @Published var transformOrigin: TransformOrigin = .center
     @Published var objectPositionUpdateTrigger: Bool = false
     var currentDragOffset: CGPoint = .zero
+    @Published var dragOffsetForUI: CGPoint = .zero
     @Published var cachedSelectionBounds: CGRect? = nil
     @Published var dragPreviewCoordinates: CGPoint = .zero
     @Published var scalePreviewDimensions: CGSize = .zero

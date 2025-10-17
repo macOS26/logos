@@ -153,7 +153,7 @@ extension DrawingCanvas {
         }
 
         currentDragDelta = canvasDelta
-        document.currentDragOffset = canvasDelta
+        document.dragOffsetForUI = canvasDelta
 
     }
 
@@ -163,6 +163,7 @@ extension DrawingCanvas {
             initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
             currentDragDelta = .zero
+            document.dragOffsetForUI = .zero
             document.cachedSelectionBounds = nil
             return
         }
@@ -251,10 +252,12 @@ extension DrawingCanvas {
             selectionDragStart = CGPoint.zero
             currentDragDelta = .zero
             document.currentDragOffset = .zero
+            document.dragOffsetForUI = .zero
             document.dragPreviewCoordinates = .zero
             document.cachedSelectionBounds = nil
 
         } else {
+            document.dragOffsetForUI = .zero
             document.cachedSelectionBounds = nil
         }
     }

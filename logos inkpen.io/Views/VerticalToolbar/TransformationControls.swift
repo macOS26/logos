@@ -232,7 +232,7 @@ struct TransformationControls: View {
                 updateValuesFromSelection()
             }
         }
-        .onChange(of: document.currentDragOffset) { _, newOffset in
+        .onChange(of: document.dragOffsetForUI) { _, newOffset in
             if newOffset != .zero {
                 updatePositionOnly()
             } else {
@@ -258,8 +258,8 @@ struct TransformationControls: View {
 
         let origin = document.transformOrigin.point
         let pageOrigin = document.settings.pageOrigin ?? .zero
-        let x = bounds.minX + bounds.width * origin.x + document.currentDragOffset.x - pageOrigin.x
-        let y = bounds.minY + bounds.height * origin.y + document.currentDragOffset.y - pageOrigin.y
+        let x = bounds.minX + bounds.width * origin.x + document.dragOffsetForUI.x - pageOrigin.x
+        let y = bounds.minY + bounds.height * origin.y + document.dragOffsetForUI.y - pageOrigin.y
 
         xValue = String(format: "%.2f", x)
         yValue = String(format: "%.2f", y)
@@ -277,8 +277,8 @@ struct TransformationControls: View {
 
         let origin = document.transformOrigin.point
         let pageOrigin = document.settings.pageOrigin ?? .zero
-        let x = bounds.minX + bounds.width * origin.x + document.currentDragOffset.x - pageOrigin.x
-        let y = bounds.minY + bounds.height * origin.y + document.currentDragOffset.y - pageOrigin.y
+        let x = bounds.minX + bounds.width * origin.x + document.dragOffsetForUI.x - pageOrigin.x
+        let y = bounds.minY + bounds.height * origin.y + document.dragOffsetForUI.y - pageOrigin.y
 
         xValue = String(format: "%.2f", x)
         yValue = String(format: "%.2f", y)
