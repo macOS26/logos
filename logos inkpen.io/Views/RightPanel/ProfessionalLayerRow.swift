@@ -12,6 +12,7 @@ struct ProfessionalLayerRow: View {
     @State private var isExpanded: Bool
     @State private var layerObjects: [VectorObject] = []
     @State private var previewOpacity: Double? = nil
+    @State private var selectionAnchorID: UUID? = nil
 
     private var isVisibleBinding: Binding<Bool> {
         Binding(
@@ -410,9 +411,30 @@ struct ProfessionalLayerRow: View {
                 document.selectedObjectIDs.insert(objectID)
             }
         } else if isShiftPressed {
-            document.selectedObjectIDs.insert(objectID)
+            if let anchorID = selectionAnchorID {
+                let currentLayerObjects = Array(document.unifiedObjects
+                    .filter { $0.layerIndex == layerIndex }
+                    .reversed())
+
+                if let anchorIndex = currentLayerObjects.firstIndex(where: { $0.id == anchorID }),
+                   let clickedIndex = currentLayerObjects.firstIndex(where: { $0.id == objectID }) {
+                    let startIndex = min(anchorIndex, clickedIndex)
+                    let endIndex = max(anchorIndex, clickedIndex)
+
+                    let rangeObjects = currentLayerObjects[startIndex...endIndex]
+                    let rangeIDs = Set(rangeObjects.map { $0.id })
+
+                    document.selectedObjectIDs = rangeIDs
+                } else {
+                    document.selectedObjectIDs.insert(objectID)
+                }
+            } else {
+                document.selectedObjectIDs.insert(objectID)
+                selectionAnchorID = objectID
+            }
         } else {
             document.selectedObjectIDs = [objectID]
+            selectionAnchorID = objectID
         }
 
         document.syncSelectionArrays()
