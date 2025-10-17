@@ -239,7 +239,6 @@ struct LayersPanel: View {
                         onEditingChanged: { isEditing in
                             if !isEditing {
                                 document.layers[layerIndex].opacity = layerOpacityState
-                                document.layerPreviewOpacities.removeValue(forKey: document.layers[layerIndex].id)
                             }
                         }
                     )
@@ -247,8 +246,11 @@ struct LayersPanel: View {
                         let currentPercentage = Int(newValue * 100)
                         if currentPercentage != lastSentPercentage {
                             lastSentPercentage = currentPercentage
-                            document.layerPreviewOpacities[document.layers[layerIndex].id] = newValue
-                            document.objectWillChange.send()
+                            NotificationCenter.default.post(
+                                name: Notification.Name("LayerOpacityUpdate"),
+                                object: nil,
+                                userInfo: ["layerID": document.layers[layerIndex].id, "opacity": newValue]
+                            )
                         }
                     }
                  
