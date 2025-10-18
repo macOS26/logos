@@ -144,8 +144,9 @@ final class AppEventMonitor {
                     }
 
                     if let direction = nudgeDirection {
-                        // TODO: Implement nudgeSelectedObjects on VectorDocument
-                        print("🔴 Nudging not yet implemented in AppEventMonitor")
+                        let gridSpacing = activeDoc.gridSpacing
+                        let nudgeAmount = CGVector(dx: direction.dx * gridSpacing, dy: direction.dy * gridSpacing)
+                        activeDoc.nudgeSelectedObjects(by: nudgeAmount)
                         return nil
                     }
                 }
