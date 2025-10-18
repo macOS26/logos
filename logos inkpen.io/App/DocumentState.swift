@@ -31,6 +31,16 @@ class DocumentState: ObservableObject {
         DocumentStateRegistry.shared.register(self)
 
         startPasteboardMonitoring()
+
+        // Track when this becomes focused
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.didBecomeKeyNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self = self, let doc = self.document else { return }
+            DrawingCanvasRegistry.shared.setActiveDocument(doc)
+        }
     }
 
     deinit {
