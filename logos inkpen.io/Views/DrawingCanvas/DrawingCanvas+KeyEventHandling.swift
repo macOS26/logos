@@ -178,18 +178,18 @@ extension DrawingCanvas {
 
             if let characters = event.charactersIgnoringModifiers,
                characters == "\t" {
-                print("🟢 TAB KEY: Deselecting all")
-                self.document.selectedObjectIDs = []
+                print("🟢 TAB KEY: Deselecting all on active document")
+                activeDoc.selectedObjectIDs = []
 
-                self.document.syncSelectionArrays()
+                activeDoc.syncSelectionArrays()
 
                 if self.isEditingText {
                     self.finishTextEditing()
                 }
 
-                for unifiedObj in self.document.unifiedObjects {
+                for unifiedObj in activeDoc.unifiedObjects {
                     if case .text(let shape) = unifiedObj.objectType, shape.isEditing == true {
-                        self.document.setTextEditingInUnified(id: shape.id, isEditing: false)
+                        activeDoc.setTextEditingInUnified(id: shape.id, isEditing: false)
                     }
                 }
 
@@ -199,11 +199,11 @@ extension DrawingCanvas {
                 self.syncDirectSelectionWithDocument()
                 self.isCornerRadiusEditMode = false
 
-                if self.document.currentTool == .bezierPen && self.isBezierDrawing {
+                if activeDoc.currentTool == .bezierPen && self.isBezierDrawing {
                     self.finishBezierPath()
                 }
 
-                print("🟢 TAB KEY: Done deselecting, selectedObjectIDs count = \(self.document.selectedObjectIDs.count)")
+                print("🟢 TAB KEY: Done deselecting, selectedObjectIDs count = \(activeDoc.selectedObjectIDs.count)")
                 return nil
             }
 
