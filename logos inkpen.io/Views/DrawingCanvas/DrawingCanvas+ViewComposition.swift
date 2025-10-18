@@ -159,7 +159,8 @@ extension DrawingCanvas {
                 isOptionPressed: self.isOptionPressed,
                 isCommandPressed: self.isCommandPressed,
                 isTemporarySelectionViaCommand: self.isTemporarySelectionViaCommand,
-                dragPreviewDelta: currentDragDelta
+                dragPreviewDelta: currentDragDelta,
+                liveScaleTransform: $liveScaleTransform
             )
         }
 
@@ -222,27 +223,31 @@ extension DrawingCanvas {
             }
 
             // Render layers directly without parent view to avoid @ObservedObject re-renders
-            ForEach(visibleLayerIndices(), id: \.self) { layerIndex in
-                if let objects = objectsForLayer(layerIndex) {
-                    let isActiveLayer = document.activeLayerIndexDuringDrag == nil || document.activeLayerIndexDuringDrag == layerIndex
+            Group {
+                ForEach(visibleLayerIndices(), id: \.self) { layerIndex in
+                    if let objects = objectsForLayer(layerIndex) {
+                        let isActiveLayer = document.activeLayerIndexDuringDrag == nil || document.activeLayerIndexDuringDrag == layerIndex
 
-                    IsolatedLayerView(
-                        objects: objects,
-                        layerID: document.layers[layerIndex].id,
-                        document: document,
-                        zoomLevel: document.zoomLevel,
-                        canvasOffset: document.canvasOffset,
-                        selectedObjectIDs: document.selectedObjectIDs,
-                        viewMode: document.viewMode,
-                        dragPreviewDelta: isActiveLayer ? currentDragDelta : .zero,
-                        dragPreviewTrigger: dragPreviewUpdateTrigger,
-                        layerOpacity: layerPreviewOpacities[document.layers[layerIndex].id] ?? document.layers[layerIndex].opacity,
-                        layerBlendMode: document.layers[layerIndex].blendMode
-                    )
-                    .equatable()
-                    .allowsHitTesting(isActiveLayer)
+                        IsolatedLayerView(
+                            objects: objects,
+                            layerID: document.layers[layerIndex].id,
+                            document: document,
+                            zoomLevel: document.zoomLevel,
+                            canvasOffset: document.canvasOffset,
+                            selectedObjectIDs: document.selectedObjectIDs,
+                            viewMode: document.viewMode,
+                            dragPreviewDelta: isActiveLayer ? currentDragDelta : .zero,
+                            dragPreviewTrigger: dragPreviewUpdateTrigger,
+                            liveScaleTransform: liveScaleTransform,
+                            layerOpacity: layerPreviewOpacities[document.layers[layerIndex].id] ?? document.layers[layerIndex].opacity,
+                            layerBlendMode: document.layers[layerIndex].blendMode
+                        )
+                        .equatable()
+                        .allowsHitTesting(isActiveLayer)
+                    }
                 }
             }
+            .compositingGroup()
 
             canvasOverlays(geometry: geometry)
         }
