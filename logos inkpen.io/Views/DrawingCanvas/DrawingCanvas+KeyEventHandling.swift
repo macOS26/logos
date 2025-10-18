@@ -6,8 +6,11 @@ extension DrawingCanvas {
     internal func setupKeyEventMonitoring() {
         keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { (event: NSEvent) -> NSEvent? in
 
+            print("🟡 Canvas monitor received event: \(event.charactersIgnoringModifiers ?? "nil")")
+
             guard let keyWindow = NSApp.keyWindow,
                   keyWindow == event.window else {
+                print("🟡 Canvas monitor: Not key window")
                 return event
             }
 
@@ -19,8 +22,11 @@ extension DrawingCanvas {
 
             // 2) Only handle events if this canvas owns the active document
             guard activeDoc === self.document else {
+                print("🟡 Canvas monitor: Not my document")
                 return event
             }
+
+            print("🟢 Canvas monitor: This is my document!")
 
             if event.type == .keyDown {
 

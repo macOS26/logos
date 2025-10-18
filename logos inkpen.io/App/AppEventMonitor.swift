@@ -81,8 +81,77 @@ final class AppEventMonitor {
             return nil
         }
 
-        // Pass through all other events (arrows, modifiers, etc) to canvas monitors
-        print("🔵 AppEventMonitor passing through event: \(event.charactersIgnoringModifiers ?? "nil")")
+        // Arrow keys
+        if event.type == .keyDown,
+           let characters = event.charactersIgnoringModifiers {
+            let arrowUp = "\u{F700}"
+            let arrowDown = "\u{F701}"
+            let arrowLeft = "\u{F702}"
+            let arrowRight = "\u{F703}"
+
+            if [arrowUp, arrowDown, arrowLeft, arrowRight].contains(characters) {
+
+                // Cmd+Arrow: Z-order and selection navigation
+                if event.modifierFlags.contains(.command) &&
+                   !event.modifierFlags.contains(.control) &&
+                   !event.modifierFlags.contains(.option) {
+
+                    if !activeDoc.selectedObjectIDs.isEmpty {
+                        if characters == arrowUp {
+                            activeDoc.selectNextObjectUp()
+                            return nil
+                        } else if characters == arrowDown {
+                            activeDoc.selectNextObjectDown()
+                            return nil
+                        }
+                    }
+                }
+
+                // Option+Arrow: Move objects up/down in z-order
+                if event.modifierFlags.contains(.option) &&
+                   !event.modifierFlags.contains(.control) &&
+                   !event.modifierFlags.contains(.command) &&
+                   !activeDoc.selectedObjectIDs.isEmpty {
+
+                    if characters == arrowUp {
+                        activeDoc.moveSelectedObjectsUp()
+                        return nil
+                    } else if characters == arrowDown {
+                        activeDoc.moveSelectedObjectsDown()
+                        return nil
+                    }
+                }
+
+                // Plain arrows: Nudge selected objects
+                if !event.modifierFlags.contains(.control) &&
+                   !event.modifierFlags.contains(.command) &&
+                   !event.modifierFlags.contains(.option) &&
+                   activeDoc.currentTool == .selection &&
+                   !activeDoc.selectedObjectIDs.isEmpty {
+
+                    var nudgeDirection: CGVector? = nil
+                    switch characters {
+                    case arrowUp:
+                        nudgeDirection = CGVector(dx: 0, dy: -1)
+                    case arrowDown:
+                        nudgeDirection = CGVector(dx: 0, dy: 1)
+                    case arrowLeft:
+                        nudgeDirection = CGVector(dx: -1, dy: 0)
+                    case arrowRight:
+                        nudgeDirection = CGVector(dx: 1, dy: 0)
+                    default:
+                        break
+                    }
+
+                    if let direction = nudgeDirection {
+                        // TODO: Implement nudgeSelectedObjects on VectorDocument
+                        print("🔴 Nudging not yet implemented in AppEventMonitor")
+                        return nil
+                    }
+                }
+            }
+        }
+
         return event
     }
 }
