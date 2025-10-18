@@ -143,31 +143,35 @@ extension VectorDocument {
 
         var removedShapes: [UUID: VectorShape] = [:]
 
-        for shapeID in selectedObjectIDs {
-            print("🟡 UNGROUP: Processing shapeID=\(shapeID)")
-            let shapes = getShapesForLayer(layerIndex)
-            print("🟡 UNGROUP: shapes in layer count=\(shapes.count)")
-            if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
-               let shape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                print("🟡 UNGROUP: Found shape, isGroupContainer=\(shape.isGroupContainer)")
+        for objectID in selectedObjectIDs {
+            print("🟡 UNGROUP: Processing objectID=\(objectID)")
 
-                if shape.isGroupContainer {
-                    if unifiedObjects.contains(where: { $0.id == shapeID }) {
-                        removedShapes[shapeID] = shape
+            if let unifiedObject = findObject(by: objectID) {
+                switch unifiedObject.objectType {
+                case .group(let shape), .clipGroup(let shape):
+                    print("🟡 UNGROUP: Found group, isGroupContainer=\(shape.isGroupContainer), groupedShapes.count=\(shape.groupedShapes.count)")
+
+                    if shape.isGroupContainer {
+                        removedShapes[objectID] = shape
+
+                        let shapesToUngroup = shape.isClippingGroup ? shape.groupedShapes.reversed() : shape.groupedShapes
+
+                        for groupedShape in shapesToUngroup {
+                            print("🟡 UNGROUP: Adding grouped shape id=\(groupedShape.id)")
+                            shapesToAdd.append(groupedShape)
+                            newSelectedShapeIDs.insert(groupedShape.id)
+                        }
+
+                        shapesToRemove.append(objectID)
+                    } else {
+                        newSelectedShapeIDs.insert(objectID)
                     }
-
-                    let shapesToUngroup = shape.isClippingGroup ? shape.groupedShapes.reversed() : shape.groupedShapes
-
-                    for groupedShape in shapesToUngroup {
-                        shapesToAdd.append(groupedShape)
-                        newSelectedShapeIDs.insert(groupedShape.id)
-                    }
-
-                    shapesToRemove.append(shapeID)
-
-                } else {
-                    newSelectedShapeIDs.insert(shapeID)
+                case .shape, .warp, .clipMask, .text:
+                    print("🟡 UNGROUP: Not a group, keeping selected")
+                    newSelectedShapeIDs.insert(objectID)
                 }
+            } else {
+                print("🔴 UNGROUP: Could not find object \(objectID)")
             }
         }
 
