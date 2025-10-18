@@ -90,7 +90,8 @@ final class AppEventMonitor {
             let arrowRight = "\u{F703}"
 
             if [arrowUp, arrowDown, arrowLeft, arrowRight].contains(characters) {
-                print("🔷 Arrow key pressed - tool: \(activeDoc.currentTool), selected: \(activeDoc.selectedObjectIDs.count)")
+                let mods = event.modifierFlags
+                print("🔷 Arrow key - tool: \(activeDoc.currentTool), selected: \(activeDoc.selectedObjectIDs.count), cmd: \(mods.contains(.command)), opt: \(mods.contains(.option)), shift: \(mods.contains(.shift))")
 
                 // Cmd+Arrow: Select next/prev object within same layer
                 if event.modifierFlags.contains(.command) &&
@@ -114,10 +115,14 @@ final class AppEventMonitor {
                    !event.modifierFlags.contains(.command) &&
                    !activeDoc.selectedObjectIDs.isEmpty {
 
+                    print("🔷 Option+Arrow detected - moving in z-order")
+
                     if characters == arrowUp {
+                        print("🔷 Moving up in z-order")
                         activeDoc.moveSelectedObjectsUpWithinLayer()
                         return nil
                     } else if characters == arrowDown {
+                        print("🔷 Moving down in z-order")
                         activeDoc.moveSelectedObjectsDownWithinLayer()
                         return nil
                     }
