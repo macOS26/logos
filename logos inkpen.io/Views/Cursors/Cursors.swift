@@ -121,6 +121,7 @@ struct DrawingCanvas: View {
     @Binding var layerPreviewOpacities: [UUID: Double]
     @Binding var liveDragOffset: CGPoint
     @Binding var liveScaleDimensions: CGSize
+    @Binding var liveScaleTransform: CGAffineTransform
     @Environment(AppState.self) internal var appState
     @State internal var currentPath: VectorPath?
     @State internal var tempBoundingBoxPath: VectorPath?
