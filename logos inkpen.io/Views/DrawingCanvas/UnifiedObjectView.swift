@@ -298,19 +298,14 @@ struct NonBackgroundObjectsView: View {
     }
 
     var body: some View {
-        let _ = print("🟣 RENDER: isDragging=\(isDragging), layers=\(objectsByLayer.keys.sorted())")
-
-        return ZStack {
+        ZStack {
             ForEach(objectsByLayer.keys.sorted(), id: \.self) { layerIndex in
                 if layerIndex < document.layers.count,
                    document.layers[layerIndex].isVisible,
                    let objects = objectsByLayer[layerIndex] {
 
                     // During drag: only show layer with selection (like turning other layers off)
-                    let hasSelection = layerHasSelection(objects: objects)
-                    let showLayer = !isDragging || hasSelection
-
-                    let _ = print("🟣 LAYER \(layerIndex): isDragging=\(isDragging), hasSelection=\(hasSelection), showLayer=\(showLayer)")
+                    let showLayer = !isDragging || layerHasSelection(objects: objects)
 
                     if showLayer {
                         IsolatedLayerView(
@@ -380,20 +375,18 @@ struct IsolatedLayerView: View, Equatable {
     }
 
     var body: some View {
-        ZStack {
-            ForEach(objects, id: \.id) { unifiedObject in
-                if unifiedObject.isVisible {
-                    UnifiedObjectContentView(
-                        unifiedObject: unifiedObject,
-                        document: document,
-                        zoomLevel: zoomLevel,
-                        canvasOffset: canvasOffset,
-                        selectedObjectIDs: selectedObjectIDs,
-                        viewMode: viewMode,
-                        dragPreviewDelta: dragPreviewDelta,
-                        dragPreviewTrigger: dragPreviewTrigger
-                    )
-                }
+        ForEach(objects, id: \.id) { unifiedObject in
+            if unifiedObject.isVisible {
+                UnifiedObjectContentView(
+                    unifiedObject: unifiedObject,
+                    document: document,
+                    zoomLevel: zoomLevel,
+                    canvasOffset: canvasOffset,
+                    selectedObjectIDs: selectedObjectIDs,
+                    viewMode: viewMode,
+                    dragPreviewDelta: dragPreviewDelta,
+                    dragPreviewTrigger: dragPreviewTrigger
+                )
             }
         }
         .opacity(layerOpacity)
