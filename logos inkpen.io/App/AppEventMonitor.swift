@@ -29,7 +29,33 @@ final class AppEventMonitor {
         }
     }
 
+    private var temporaryTool: DrawingTool?
+    private var previousTool: DrawingTool?
+
     private func handleKeyEvent(_ event: NSEvent, activeDoc: VectorDocument) -> NSEvent? {
+
+        // Space bar - temporary hand tool
+        if event.type == .keyDown,
+           let characters = event.charactersIgnoringModifiers,
+           characters == " " {
+            if activeDoc.currentTool != .hand && temporaryTool == nil {
+                previousTool = activeDoc.currentTool
+                temporaryTool = .hand
+                activeDoc.currentTool = .hand
+            }
+            return nil
+        }
+
+        if event.type == .keyUp,
+           let characters = event.charactersIgnoringModifiers,
+           characters == " " {
+            if let previous = previousTool, temporaryTool == .hand {
+                activeDoc.currentTool = previous
+                temporaryTool = nil
+                previousTool = nil
+            }
+            return nil
+        }
 
         // Tab key - deselect all
         if event.type == .keyDown,
