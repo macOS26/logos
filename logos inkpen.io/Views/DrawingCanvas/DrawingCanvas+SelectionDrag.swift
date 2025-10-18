@@ -155,6 +155,12 @@ extension DrawingCanvas {
         currentDragDelta = canvasDelta
         liveDragOffset = canvasDelta
 
+        // Set active layer for performance optimization (hides other layers during drag)
+        if document.activeLayerIndexDuringDrag == nil, let firstSelected = document.selectedObjectIDs.first {
+            if let obj = document.findObject(by: firstSelected) {
+                document.activeLayerIndexDuringDrag = obj.layerIndex
+            }
+        }
     }
 
     internal func finishSelectionDrag() {
@@ -165,6 +171,7 @@ extension DrawingCanvas {
             currentDragDelta = .zero
             liveDragOffset = .zero
             cachedSelectionBoundsForDrag = nil
+            document.activeLayerIndexDuringDrag = nil
             return
         }
 
@@ -253,6 +260,7 @@ extension DrawingCanvas {
             document.currentDragOffset = .zero
             document.dragPreviewCoordinates = .zero
             document.cachedSelectionBounds = nil
+            document.activeLayerIndexDuringDrag = nil
 
         } else {
             liveDragOffset = .zero

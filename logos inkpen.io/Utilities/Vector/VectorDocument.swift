@@ -36,6 +36,9 @@ class VectorDocument: ObservableObject, Codable {
     @Published var processedLayersDuringDrag: Set<Int> = []
     @Published var processedObjectsDuringDrag: Set<UUID> = []
 
+    // Track active layer during object drag for performance optimization
+    var activeLayerIndexDuringDrag: Int? = nil
+
     var isHandleScalingActive = false
     var unifiedObjects: [VectorObject] = [] {
         didSet {

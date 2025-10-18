@@ -1,6 +1,49 @@
 import SwiftUI
 
 extension DrawingCanvas {
+    // Get visible layer indices (filters during drag for performance)
+    private func visibleLayerIndices() -> [Int] {
+        let allObjects = document.getObjectsInStackingOrder()
+        let filtered = allObjects.filter { obj in
+            guard obj.layerIndex < document.layers.count else { return false }
+            guard document.layers[obj.layerIndex].isVisible else { return false }
+
+            // During drag: only show active layer
+            if let activeLayer = document.activeLayerIndexDuringDrag {
+                guard obj.layerIndex == activeLayer else { return false }
+            }
+
+            switch obj.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                return shape.name != "Canvas Background" && shape.name != "Pasteboard Background"
+            case .text:
+                return true
+            }
+        }
+
+        let objectsByLayer = Dictionary(grouping: filtered, by: { $0.layerIndex })
+        return objectsByLayer.keys.sorted()
+    }
+
+    // Get objects for a specific layer
+    private func objectsForLayer(_ layerIndex: Int) -> [VectorObject]? {
+        let allObjects = document.getObjectsInStackingOrder()
+        let filtered = allObjects.filter { obj in
+            guard obj.layerIndex == layerIndex else { return false }
+            guard obj.layerIndex < document.layers.count else { return false }
+            guard document.layers[obj.layerIndex].isVisible else { return false }
+
+            switch obj.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                return shape.name != "Canvas Background" && shape.name != "Pasteboard Background"
+            case .text:
+                return true
+            }
+        }
+
+        return filtered.isEmpty ? nil : filtered
+    }
+
     @ViewBuilder
     internal func canvasOverlays(geometry: GeometryProxy) -> some View {
         if let currentPath = currentPath {
@@ -183,17 +226,25 @@ extension DrawingCanvas {
                     .allowsHitTesting(false)
             }
 
-            NonBackgroundObjectsView(
-                document: document,
-                zoomLevel: document.zoomLevel,
-                canvasOffset: document.canvasOffset,
-                selectedObjectIDs: document.selectedObjectIDs,
-                viewMode: document.viewMode,
-                isShiftPressed: self.isShiftPressed,
-                dragPreviewDelta: currentDragDelta,
-                dragPreviewTrigger: dragPreviewUpdateTrigger,
-                layerPreviewOpacities: $layerPreviewOpacities
-            )
+            // Render layers directly without parent view to avoid @ObservedObject re-renders
+            ForEach(visibleLayerIndices(), id: \.self) { layerIndex in
+                if let objects = objectsForLayer(layerIndex) {
+                    IsolatedLayerView(
+                        objects: objects,
+                        layerID: document.layers[layerIndex].id,
+                        document: document,
+                        zoomLevel: document.zoomLevel,
+                        canvasOffset: document.canvasOffset,
+                        selectedObjectIDs: document.selectedObjectIDs,
+                        viewMode: document.viewMode,
+                        dragPreviewDelta: currentDragDelta,
+                        dragPreviewTrigger: dragPreviewUpdateTrigger,
+                        layerOpacity: layerPreviewOpacities[document.layers[layerIndex].id] ?? document.layers[layerIndex].opacity,
+                        layerBlendMode: document.layers[layerIndex].blendMode
+                    )
+                    .equatable()
+                }
+            }
 
             canvasOverlays(geometry: geometry)
         }
