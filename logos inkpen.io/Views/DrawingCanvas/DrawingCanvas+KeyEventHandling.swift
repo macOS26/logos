@@ -13,12 +13,10 @@ extension DrawingCanvas {
 
             // 1) Find the active document
             guard let activeDoc = DrawingCanvasRegistry.shared.activeDocument else {
-                print("🔴 No active document")
                 return event
             }
 
             // 2) Get the active document's VectorDocument - done, it's activeDoc
-            print("🟢 Active document: \(Unmanaged.passUnretained(activeDoc).toOpaque())")
 
             if event.type == .keyDown {
 
@@ -178,7 +176,6 @@ extension DrawingCanvas {
 
             if let characters = event.charactersIgnoringModifiers,
                characters == "\t" {
-                print("🟢 TAB KEY: Deselecting all on active document")
                 activeDoc.selectedObjectIDs = []
 
                 activeDoc.syncSelectionArrays()
@@ -203,7 +200,6 @@ extension DrawingCanvas {
                     self.finishBezierPath()
                 }
 
-                print("🟢 TAB KEY: Done deselecting, selectedObjectIDs count = \(activeDoc.selectedObjectIDs.count)")
                 return nil
             }
 

@@ -45,7 +45,6 @@ class DocumentState: ObservableObject {
             if let notificationWindow = notification.object as? NSWindow,
                notificationWindow == NSApp.keyWindow,
                notificationWindow == self.window {
-                print("🔵 Window \(notificationWindow.title) became key, setting document \(Unmanaged.passUnretained(doc).toOpaque())")
                 DrawingCanvasRegistry.shared.setActiveDocument(doc)
             }
         }

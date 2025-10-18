@@ -10,6 +10,5 @@ final class DrawingCanvasRegistry {
         lock.lock()
         defer { lock.unlock() }
         activeDocument = document
-        print("🔵 DrawingCanvasRegistry: Set active document to \(Unmanaged.passUnretained(document).toOpaque())")
     }
 }
