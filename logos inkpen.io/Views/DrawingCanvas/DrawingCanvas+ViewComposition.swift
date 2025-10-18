@@ -1,17 +1,12 @@
 import SwiftUI
 
 extension DrawingCanvas {
-    // Get visible layer indices (filters during drag for performance)
+    // Get visible layer indices
     private func visibleLayerIndices() -> [Int] {
         let allObjects = document.getObjectsInStackingOrder()
         let filtered = allObjects.filter { obj in
             guard obj.layerIndex < document.layers.count else { return false }
             guard document.layers[obj.layerIndex].isVisible else { return false }
-
-            // During drag: only show active layer
-            if let activeLayer = document.activeLayerIndexDuringDrag {
-                guard obj.layerIndex == activeLayer else { return false }
-            }
 
             switch obj.objectType {
             case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
@@ -229,6 +224,8 @@ extension DrawingCanvas {
             // Render layers directly without parent view to avoid @ObservedObject re-renders
             ForEach(visibleLayerIndices(), id: \.self) { layerIndex in
                 if let objects = objectsForLayer(layerIndex) {
+                    let isActiveLayer = document.activeLayerIndexDuringDrag == nil || document.activeLayerIndexDuringDrag == layerIndex
+
                     IsolatedLayerView(
                         objects: objects,
                         layerID: document.layers[layerIndex].id,
@@ -243,6 +240,8 @@ extension DrawingCanvas {
                         layerBlendMode: document.layers[layerIndex].blendMode
                     )
                     .equatable()
+                    .opacity(isActiveLayer ? 1.0 : 0.3)
+                    .allowsHitTesting(isActiveLayer)
                 }
             }
 
