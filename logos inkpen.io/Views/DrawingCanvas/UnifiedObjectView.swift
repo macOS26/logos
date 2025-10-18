@@ -343,19 +343,44 @@ struct IsolatedLayerView: View, Equatable {
     let layerOpacity: Double
     let layerBlendMode: BlendMode
 
+    @State private var cachedImage: NSImage?
+    @State private var isDragging: Bool = false
+
+    // Track if this layer has selection
     private var hasSelection: Bool {
         objects.contains(where: { selectedObjectIDs.contains($0.id) })
     }
 
+    // Equatable: Only re-render if layer has selection and drag changed, or if objects changed
     static func == (lhs: IsolatedLayerView, rhs: IsolatedLayerView) -> Bool {
+        // If layer ID changed, definitely need to re-render
         guard lhs.layerID == rhs.layerID else { return false }
+
+        // If objects array changed, need to re-render
         guard lhs.objects.count == rhs.objects.count else { return false }
 
+        // Check if this layer has selection
         let lhsHasSelection = lhs.hasSelection
         let rhsHasSelection = rhs.hasSelection
 
-        // If layer has no selection, don't re-render during drag
+        // Check if drag state changed (started or stopped)
+        let lhsDragging = lhs.dragPreviewDelta != .zero
+        let rhsDragging = rhs.dragPreviewDelta != .zero
+        let dragStateChanged = lhsDragging != rhsDragging
+
+        // If layer has no selection
         if !lhsHasSelection && !rhsHasSelection {
+            // Always update if drag state changed (started/stopped) - needed for caching
+            if dragStateChanged {
+                return false  // Not equal - force update
+            }
+
+            // During drag, don't re-render (use cached image)
+            if lhsDragging && rhsDragging {
+                return true  // Equal - skip re-render
+            }
+
+            // Not dragging - only re-render if zoom, offset, opacity, or blend mode changed
             return lhs.zoomLevel == rhs.zoomLevel &&
                    lhs.canvasOffset == rhs.canvasOffset &&
                    lhs.layerOpacity == rhs.layerOpacity &&
@@ -375,22 +400,93 @@ struct IsolatedLayerView: View, Equatable {
     }
 
     var body: some View {
-        ForEach(objects, id: \.id) { unifiedObject in
-            if unifiedObject.isVisible {
-                UnifiedObjectContentView(
-                    unifiedObject: unifiedObject,
-                    document: document,
-                    zoomLevel: zoomLevel,
-                    canvasOffset: canvasOffset,
-                    selectedObjectIDs: selectedObjectIDs,
-                    viewMode: viewMode,
-                    dragPreviewDelta: dragPreviewDelta,
-                    dragPreviewTrigger: dragPreviewTrigger
-                )
+        ZStack {
+            let shouldShowCache = isDragging && !hasSelection && cachedImage != nil
+
+            if shouldShowCache {
+                // Show cached image - SwiftUI views are HIDDEN
+                if let cached = cachedImage {
+                    Image(nsImage: cached)
+                        .resizable()
+                        .frame(width: cached.size.width / zoomLevel, height: cached.size.height / zoomLevel)
+                        .offset(x: canvasOffset.x / zoomLevel, y: canvasOffset.y / zoomLevel)
+                        .allowsHitTesting(false)
+                }
+            } else {
+                // Render live SwiftUI views
+                ForEach(objects, id: \.id) { unifiedObject in
+                    if unifiedObject.isVisible {
+                        UnifiedObjectContentView(
+                            unifiedObject: unifiedObject,
+                            document: document,
+                            zoomLevel: zoomLevel,
+                            canvasOffset: canvasOffset,
+                            selectedObjectIDs: selectedObjectIDs,
+                            viewMode: viewMode,
+                            dragPreviewDelta: dragPreviewDelta,
+                            dragPreviewTrigger: dragPreviewTrigger
+                        )
+                    }
+                }
             }
         }
         .opacity(layerOpacity)
         .blendMode(layerBlendMode.swiftUIBlendMode)
+        .onChange(of: dragPreviewDelta) { oldValue, newValue in
+            let isNowDragging = newValue != .zero
+
+            print("🔵 LAYER \(layerID): delta=\(newValue), isNowDragging=\(isNowDragging), hasSelection=\(hasSelection), isDragging=\(isDragging)")
+
+            if isNowDragging && !hasSelection && !isDragging {
+                // Drag just started on another layer - cache this inactive layer
+                print("🔵 CACHE: Rendering layer \(layerID) to cache")
+                renderLayerToCache()
+                isDragging = true
+                print("🔵 CACHE: Cache created, image size = \(cachedImage?.size ?? .zero)")
+            } else if !isNowDragging && isDragging {
+                // Drag ended - clear cache
+                print("🔵 CACHE: Clearing cache for layer \(layerID)")
+                isDragging = false
+                cachedImage = nil
+            }
+        }
+    }
+
+    private func renderLayerToCache() {
+        guard !objects.isEmpty else { return }
+
+        let pageSize = document.settings.sizeInPoints
+        let scale = zoomLevel
+
+        guard let context = CGContext(
+            data: nil,
+            width: Int(pageSize.width * scale),
+            height: Int(pageSize.height * scale),
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
+        ) else { return }
+
+        context.clear(CGRect(x: 0, y: 0, width: pageSize.width * scale, height: pageSize.height * scale))
+        context.translateBy(x: 0, y: pageSize.height * scale)
+        context.scaleBy(x: scale, y: -scale)
+
+        // Render all shapes in this layer using Core Graphics
+        for object in objects where object.isVisible {
+            switch object.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                FileOperations.drawShapeInPDF(shape, context: context)
+            case .text(let shape):
+                if let text = VectorText.from(shape) {
+                    FileOperations.drawTextInPDF(text, context: context)
+                }
+            }
+        }
+
+        if let cgImage = context.makeImage() {
+            cachedImage = NSImage(cgImage: cgImage, size: NSSize(width: pageSize.width, height: pageSize.height))
+        }
     }
 }
 
