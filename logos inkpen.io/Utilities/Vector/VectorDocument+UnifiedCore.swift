@@ -31,41 +31,45 @@ extension VectorDocument {
     }
 
     func updateShapeByID(_ shapeID: UUID, update: (inout VectorShape) -> Void) {
-        // Check for .text type first
-        if let index = unifiedObjects.firstIndex(where: { obj in
-            if case .text(let s) = obj.objectType {
-                return s.id == shapeID
-            }
-            return false
-        }) {
-            if case .text(var shape) = unifiedObjects[index].objectType {
+        // Find the object by ID
+        if let index = unifiedObjects.firstIndex(where: { $0.id == shapeID }) {
+            let layerIndex = unifiedObjects[index].layerIndex
+
+            switch unifiedObjects[index].objectType {
+            case .text(var shape):
                 update(&shape)
-                let layerIndex = unifiedObjects[index].layerIndex
-                let updatedObject = VectorObject(shape: shape, layerIndex: layerIndex)
-                unifiedObjects[index] = updatedObject
-                unifiedObjectLookupCache[shapeID] = updatedObject
+                unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
+                unifiedObjectLookupCache[shapeID] = unifiedObjects[index]
+
+            case .shape(var shape):
+                update(&shape)
+                unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
+                unifiedObjectLookupCache[shapeID] = unifiedObjects[index]
+
+            case .warp(var shape):
+                update(&shape)
+                unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
+                unifiedObjectLookupCache[shapeID] = unifiedObjects[index]
+
+            case .group(var shape):
+                update(&shape)
+                unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
+                unifiedObjectLookupCache[shapeID] = unifiedObjects[index]
+
+            case .clipGroup(var shape):
+                update(&shape)
+                unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
+                unifiedObjectLookupCache[shapeID] = unifiedObjects[index]
+
+            case .clipMask(var shape):
+                update(&shape)
+                unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
+                unifiedObjectLookupCache[shapeID] = unifiedObjects[index]
             }
             return
         }
 
-        // Check for .shape type
-        if let index = unifiedObjects.firstIndex(where: { obj in
-            if case .shape(let s) = obj.objectType {
-                return s.id == shapeID
-            }
-            return false
-        }) {
-            if case .shape(var shape) = unifiedObjects[index].objectType {
-                update(&shape)
-                let layerIndex = unifiedObjects[index].layerIndex
-                let updatedObject = VectorObject(shape: shape, layerIndex: layerIndex)
-                unifiedObjects[index] = updatedObject
-                unifiedObjectLookupCache[shapeID] = updatedObject
-            }
-            return
-        }
-
-        // Check in groups
+        // Check in groups for child shapes
         for groupIndex in unifiedObjects.indices {
             switch unifiedObjects[groupIndex].objectType {
             case .group(var groupShape), .clipGroup(var groupShape):
