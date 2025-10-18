@@ -193,27 +193,25 @@ extension VectorDocument {
         let sortedSelectedObjects = unifiedObjects
             .filter { object in
                 switch object.objectType {
-                case .shape(let shape),
+                case .text(let shape),
+                     .shape(let shape),
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
                      .clipMask(let shape):
-                    return selectedShapeIDs.contains(shape.id)
-                case .text:
-                    return false
+                    return selectedShapeIDs.contains(shape.id) || selectedTextIDs.contains(shape.id)
                 }
             }
 
         return sortedSelectedObjects.compactMap { obj in
             switch obj.objectType {
-            case .shape(let shape),
+            case .text(let shape),
+                 .shape(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
                  .clipMask(let shape):
                 return shape
-            case .text:
-                return nil
             }
         }
     }

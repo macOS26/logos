@@ -12,7 +12,13 @@ extension VectorDocument {
         var removedShapes: [UUID: VectorShape] = [:]
         let objectsToRemove = unifiedObjects.filter { allSelectedIDs.contains($0.id) }
         for obj in objectsToRemove {
-            if case .shape(let shape) = obj.objectType {
+            switch obj.objectType {
+            case .text(let shape),
+                 .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 removedShapes[obj.id] = shape
             }
         }
@@ -47,7 +53,13 @@ extension VectorDocument {
         var removedShapes: [UUID: VectorShape] = [:]
         let objectsToRemove = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
         for obj in objectsToRemove {
-            if case .shape(let shape) = obj.objectType {
+            switch obj.objectType {
+            case .text(let shape),
+                 .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 removedShapes[obj.id] = shape
             }
         }
@@ -209,7 +221,13 @@ extension VectorDocument {
         var removedShapes: [UUID: VectorShape] = [:]
         let objectsToRemove = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
         for obj in objectsToRemove {
-            if case .shape(let shape) = obj.objectType {
+            switch obj.objectType {
+            case .text(let shape),
+                 .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 removedShapes[obj.id] = shape
             }
         }
@@ -255,7 +273,13 @@ extension VectorDocument {
         var removedShapes: [UUID: VectorShape] = [:]
         let objectsToRemove = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
         for obj in objectsToRemove {
-            if case .shape(let shape) = obj.objectType {
+            switch obj.objectType {
+            case .text(let shape),
+                 .shape(let shape),
+                 .warp(let shape),
+                 .group(let shape),
+                 .clipGroup(let shape),
+                 .clipMask(let shape):
                 removedShapes[obj.id] = shape
             }
         }
