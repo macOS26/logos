@@ -55,22 +55,22 @@ extension DrawingCanvas {
                                                          .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon]
 
                 if self.isCommandPressed {
-                    if self.document.currentTool == .selection && !self.isTemporaryDirectSelectionViaCommand {
+                    if activeDoc.currentTool == .selection && !self.isTemporaryDirectSelectionViaCommand {
                         self.isTemporaryDirectSelectionViaCommand = true
-                        self.temporaryCommandPreviousTool = self.document.currentTool
+                        self.temporaryCommandPreviousTool = activeDoc.currentTool
                     }
-                    else if shapeDrawingTools.contains(self.document.currentTool) && !self.isTemporarySelectionViaCommand {
+                    else if shapeDrawingTools.contains(activeDoc.currentTool) && !self.isTemporarySelectionViaCommand {
                         self.isTemporarySelectionViaCommand = true
-                        self.temporaryCommandPreviousTool = self.document.currentTool
-                        self.document.currentTool = .selection
+                        self.temporaryCommandPreviousTool = activeDoc.currentTool
+                        activeDoc.currentTool = .selection
                     }
                 } else {
                     if self.isTemporaryDirectSelectionViaCommand {
                         self.isTemporaryDirectSelectionViaCommand = false
-                        if self.document.currentTool == .directSelection {
-                            self.document.currentTool = self.temporaryCommandPreviousTool ?? .selection
+                        if activeDoc.currentTool == .directSelection {
+                            activeDoc.currentTool = self.temporaryCommandPreviousTool ?? .selection
                         }
-                        if self.document.currentTool == .selection {
+                        if activeDoc.currentTool == .selection {
                             self.selectedPoints.removeAll()
                             self.selectedHandles.removeAll()
                             self.directSelectedShapeIDs.removeAll()
@@ -81,7 +81,7 @@ extension DrawingCanvas {
                     if self.isTemporarySelectionViaCommand {
                         self.isTemporarySelectionViaCommand = false
                         if let previousTool = self.temporaryCommandPreviousTool {
-                            self.document.currentTool = previousTool
+                            activeDoc.currentTool = previousTool
                         }
                         self.temporaryCommandPreviousTool = nil
                     }
@@ -102,12 +102,12 @@ extension DrawingCanvas {
                        !event.modifierFlags.contains(.control) &&
                        !event.modifierFlags.contains(.option) {
 
-                        if !self.document.selectedObjectIDs.isEmpty {
+                        if !activeDoc.selectedObjectIDs.isEmpty {
                             if characters == arrowUp {
-                                self.document.selectNextObjectUp()
+                                activeDoc.selectNextObjectUp()
                                 return nil
                             } else if characters == arrowDown {
-                                self.document.selectNextObjectDown()
+                                activeDoc.selectNextObjectDown()
                                 return nil
                             }
                         } else {
@@ -124,13 +124,13 @@ extension DrawingCanvas {
                     if event.modifierFlags.contains(.option) &&
                        !event.modifierFlags.contains(.control) &&
                        !event.modifierFlags.contains(.command) &&
-                       !self.document.selectedObjectIDs.isEmpty {
+                       !activeDoc.selectedObjectIDs.isEmpty {
 
                         if characters == arrowUp {
-                            self.document.moveSelectedObjectsUp()
+                            activeDoc.moveSelectedObjectsUp()
                             return nil
                         } else if characters == arrowDown {
-                            self.document.moveSelectedObjectsDown()
+                            activeDoc.moveSelectedObjectsDown()
                             return nil
                         }
                     }
@@ -138,7 +138,7 @@ extension DrawingCanvas {
                     if !event.modifierFlags.contains(.control) &&
                        !event.modifierFlags.contains(.command) &&
                        !event.modifierFlags.contains(.option) &&
-                       self.document.currentTool == .selection {
+                       activeDoc.currentTool == .selection {
 
                         var nudgeDirection: CGVector? = nil
                         switch characters {
@@ -155,7 +155,7 @@ extension DrawingCanvas {
                         }
 
                         if let direction = nudgeDirection {
-                            let gridSpacing = self.document.gridSpacing
+                            let gridSpacing = activeDoc.gridSpacing
                             let nudgeAmount = CGVector(dx: direction.dx * gridSpacing, dy: direction.dy * gridSpacing)
                             self.nudgeSelectedObjects(by: nudgeAmount)
                             return nil
