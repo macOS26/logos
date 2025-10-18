@@ -9,6 +9,7 @@ struct SelectionHandlesView: View {
     let isCommandPressed: Bool
     let isTemporarySelectionViaCommand: Bool
     let dragPreviewDelta: CGPoint
+    @Binding var liveScaleTransform: CGAffineTransform
     var body: some View {
         ZStack {
             ForEach(document.unifiedObjects.indices, id: \.self) { unifiedObjectIndex in
@@ -71,7 +72,8 @@ struct SelectionHandlesView: View {
                                         shape: shape,
                                         zoomLevel: document.zoomLevel,
                                         canvasOffset: document.canvasOffset,
-                                        isShiftPressed: isShiftPressed
+                                        isShiftPressed: isShiftPressed,
+                                        liveScaleTransform: $liveScaleTransform
                                     )
                                 } else if document.currentTool == .rotate {
                                     RotateHandles(
@@ -141,7 +143,8 @@ struct SelectionHandlesView: View {
                         shape: shape,
                         zoomLevel: document.zoomLevel,
                         canvasOffset: document.canvasOffset,
-                        isShiftPressed: isShiftPressed
+                        isShiftPressed: isShiftPressed,
+                        liveScaleTransform: $liveScaleTransform
                     )
                 } else if document.currentTool == .rotate {
                     RotateHandles(
