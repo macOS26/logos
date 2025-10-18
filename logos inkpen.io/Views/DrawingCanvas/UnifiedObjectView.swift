@@ -372,13 +372,17 @@ struct IsolatedLayerView: View, Equatable {
 
     var body: some View {
         ZStack {
-            // Show cached image if dragging and layer is inactive
-            if isDragging, !hasSelection, let cached = cachedImage {
-                Image(nsImage: cached)
-                    .resizable()
-                    .frame(width: cached.size.width / zoomLevel, height: cached.size.height / zoomLevel)
-                    .offset(x: canvasOffset.x / zoomLevel, y: canvasOffset.y / zoomLevel)
-                    .allowsHitTesting(false)
+            let shouldShowCache = isDragging && !hasSelection && cachedImage != nil
+
+            if shouldShowCache {
+                // Show cached image - SwiftUI views are HIDDEN
+                if let cached = cachedImage {
+                    Image(nsImage: cached)
+                        .resizable()
+                        .frame(width: cached.size.width / zoomLevel, height: cached.size.height / zoomLevel)
+                        .offset(x: canvasOffset.x / zoomLevel, y: canvasOffset.y / zoomLevel)
+                        .allowsHitTesting(false)
+                }
             } else {
                 // Render live SwiftUI views
                 ForEach(objects, id: \.id) { unifiedObject in
@@ -405,12 +409,14 @@ struct IsolatedLayerView: View, Equatable {
 
             // Drag started
             if !wasDragging && isNowDragging && !hasSelection {
+                print("🔵 CACHE: Rendering layer \(layerID) to cache")
                 renderLayerToCache()
                 isDragging = true
             }
 
             // Drag ended
             if wasDragging && !isNowDragging {
+                print("🔵 CACHE: Clearing cache for layer \(layerID)")
                 isDragging = false
                 cachedImage = nil
             }
