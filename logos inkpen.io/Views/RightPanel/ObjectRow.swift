@@ -399,7 +399,7 @@ struct ObjectRow: View {
             }
             
             if objectType == .group, isGroupExpanded, let shapes = groupedShapes {
-                ForEach(Array(shapes.reversed().enumerated()), id: \.element.id) { index, childShape in
+                ForEach(Array(shapes.enumerated()), id: \.element.id) { index, childShape in
                     let isChildSelected = document.selectedObjectIDs.contains(childShape.id)
                     let childVisBinding = childVisibilityBinding(for: childShape.id)
                     let childLockBinding = childLockBinding(for: childShape.id)
