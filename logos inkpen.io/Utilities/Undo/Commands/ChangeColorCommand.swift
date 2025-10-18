@@ -61,7 +61,7 @@ class ChangeColorCommand: BaseCommand {
                         obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                         document.unifiedObjects[index] = obj
 
-                    case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+                    case .shape(var shape), .warp(var shape), .clipMask(var shape):
                         switch target {
                         case .fill:
                             shape.fillStyle?.color = color
@@ -69,6 +69,37 @@ class ChangeColorCommand: BaseCommand {
                         case .stroke:
                             shape.strokeStyle?.color = color
                             shape.strokeStyle?.opacity = opacity
+                        }
+                        obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
+                        document.unifiedObjects[index] = obj
+
+                    case .group(var shape), .clipGroup(var shape):
+                        switch target {
+                        case .fill:
+                            shape.fillStyle?.color = color
+                            shape.fillStyle?.opacity = opacity
+
+                            // Update children in groups
+                            var updatedChildren: [VectorShape] = []
+                            for var childShape in shape.groupedShapes {
+                                childShape.fillStyle?.color = color
+                                childShape.fillStyle?.opacity = opacity
+                                updatedChildren.append(childShape)
+                            }
+                            shape.groupedShapes = updatedChildren
+
+                        case .stroke:
+                            shape.strokeStyle?.color = color
+                            shape.strokeStyle?.opacity = opacity
+
+                            // Update children in groups
+                            var updatedChildren: [VectorShape] = []
+                            for var childShape in shape.groupedShapes {
+                                childShape.strokeStyle?.color = color
+                                childShape.strokeStyle?.opacity = opacity
+                                updatedChildren.append(childShape)
+                            }
+                            shape.groupedShapes = updatedChildren
                         }
                         obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                         document.unifiedObjects[index] = obj
