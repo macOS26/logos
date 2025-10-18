@@ -64,6 +64,9 @@ extension VectorDocument {
                 unifiedObjects.swapAt(selectedIndex, selectedIndex + 1)
             }
         }
+
+        // Trigger UI update
+        objectPositionUpdateTrigger.toggle()
     }
 
     func moveSelectedObjectsDownWithinLayer() {
@@ -87,5 +90,8 @@ extension VectorDocument {
                 unifiedObjects.swapAt(selectedIndex, selectedIndex - 1)
             }
         }
+
+        // Trigger UI update
+        objectPositionUpdateTrigger.toggle()
     }
 }
