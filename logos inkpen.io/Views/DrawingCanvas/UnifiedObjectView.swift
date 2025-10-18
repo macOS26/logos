@@ -295,36 +295,69 @@ struct NonBackgroundObjectsView: View {
                 if layerIndex < document.layers.count,
                    document.layers[layerIndex].isVisible,
                    let objects = objectsByLayer[layerIndex] {
-
-                    // Skip rendering non-selected layers during drag for performance
-                    let isDragging = dragPreviewDelta != .zero
-                    let hasSelectedObjects = objects.contains(where: { selectedObjectIDs.contains($0.id) })
-                    let shouldRender = !isDragging || hasSelectedObjects
-
-                    if shouldRender {
-                        ZStack {
-                            ForEach(objects, id: \.id) { unifiedObject in
-                                if unifiedObject.isVisible {
-                                    UnifiedObjectContentView(
-                                        unifiedObject: unifiedObject,
-                                        document: document,
-                                        zoomLevel: zoomLevel,
-                                        canvasOffset: canvasOffset,
-                                        selectedObjectIDs: selectedObjectIDs,
-                                        viewMode: viewMode,
-                                        dragPreviewDelta: dragPreviewDelta,
-                                        dragPreviewTrigger: dragPreviewTrigger
-                                    )
-                                }
-                            }
-                        }
-                        .opacity(layerPreviewOpacities[document.layers[layerIndex].id] ?? document.layers[layerIndex].opacity)
-                        .blendMode(document.layers[layerIndex].blendMode.swiftUIBlendMode)
-                    }
+                    IsolatedLayerView(
+                        objects: objects,
+                        layerIndex: layerIndex,
+                        document: document,
+                        zoomLevel: zoomLevel,
+                        canvasOffset: canvasOffset,
+                        selectedObjectIDs: selectedObjectIDs,
+                        viewMode: viewMode,
+                        dragPreviewDelta: dragPreviewDelta,
+                        dragPreviewTrigger: dragPreviewTrigger,
+                        layerOpacity: layerPreviewOpacities[document.layers[layerIndex].id] ?? document.layers[layerIndex].opacity,
+                        layerBlendMode: document.layers[layerIndex].blendMode
+                    )
                 }
             }
         }
         .compositingGroup()
+    }
+}
+
+struct IsolatedLayerView: View {
+    let objects: [VectorObject]
+    let layerIndex: Int
+    @ObservedObject var document: VectorDocument
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+    let selectedObjectIDs: Set<UUID>
+    let viewMode: ViewMode
+    let dragPreviewDelta: CGPoint
+    let dragPreviewTrigger: Bool
+    let layerOpacity: Double
+    let layerBlendMode: BlendMode
+
+    // Track if this layer has selection
+    private var hasSelection: Bool {
+        objects.contains(where: { selectedObjectIDs.contains($0.id) })
+    }
+
+    private var layerID: UUID? {
+        guard layerIndex < document.layers.count else { return nil }
+        return document.layers[layerIndex].id
+    }
+
+    var body: some View {
+        ZStack {
+            ForEach(objects, id: \.id) { unifiedObject in
+                if unifiedObject.isVisible {
+                    UnifiedObjectContentView(
+                        unifiedObject: unifiedObject,
+                        document: document,
+                        zoomLevel: zoomLevel,
+                        canvasOffset: canvasOffset,
+                        selectedObjectIDs: selectedObjectIDs,
+                        viewMode: viewMode,
+                        dragPreviewDelta: dragPreviewDelta,
+                        dragPreviewTrigger: dragPreviewTrigger
+                    )
+                }
+            }
+        }
+        .opacity(layerOpacity)
+        .blendMode(layerBlendMode.swiftUIBlendMode)
+        .id(hasSelection ? "\(layerID?.uuidString ?? "")-\(dragPreviewDelta.x)-\(dragPreviewDelta.y)" : layerID?.uuidString ?? "")
     }
 }
 
