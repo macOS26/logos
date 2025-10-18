@@ -86,7 +86,7 @@ class VectorDocument: ObservableObject, Codable {
     var currentDragOffset: CGPoint = .zero
     var cachedSelectionBounds: CGRect? = nil
     var dragPreviewCoordinates: CGPoint = .zero
-    var scalePreviewDimensions: CGSize = .zero
+    @Published var scalePreviewDimensions: CGSize = .zero
     @Published var warpEnvelopeCorners: [UUID: [CGPoint]] = [:]
     @Published var warpBounds: [UUID: CGRect] = [:]
     

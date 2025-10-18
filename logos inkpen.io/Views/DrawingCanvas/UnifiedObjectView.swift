@@ -2,7 +2,7 @@ import SwiftUI
 
 struct UnifiedObjectContentView: View {
     let unifiedObject: VectorObject
-    let document: VectorDocument
+    @ObservedObject var document: VectorDocument
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let selectedObjectIDs: Set<UUID>
@@ -97,8 +97,11 @@ struct UnifiedObjectContentView: View {
 
     @ViewBuilder
     private func renderRegularShape(shape: VectorShape, isSelected: Bool) -> some View {
+        // Refetch latest shape from document (like text does)
+        let latestShape = document.findShape(by: shape.id) ?? shape
+
         ShapeView(
-            shape: shape,
+            shape: latestShape,
             zoomLevel: zoomLevel,
             canvasOffset: canvasOffset,
             isSelected: isSelected,
@@ -108,7 +111,7 @@ struct UnifiedObjectContentView: View {
             dragPreviewDelta: dragPreviewDelta,
             dragPreviewTrigger: dragPreviewTrigger
         )
-        .id("\(shape.id)-\(shape.path.isClosed)-\(shape.bounds.hashValue)-\(shape.isClippingPath)-\(shape.clippedByShapeID?.uuidString ?? "none")")
+        .id("\(shape.id)-\(shape.path.isClosed)-\(latestShape.bounds.hashValue)-\(shape.isClippingPath)-\(shape.clippedByShapeID?.uuidString ?? "none")")
     }
 
     private func createPreTransformedPath(for shape: VectorShape) -> CGPath {
