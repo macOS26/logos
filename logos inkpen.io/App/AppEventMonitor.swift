@@ -123,13 +123,12 @@ final class AppEventMonitor {
                     }
                 }
 
-                // Plain arrows: Nudge selected objects (consume event even if nothing selected to prevent beep)
+                // Plain arrows: Nudge selected objects (works with any tool)
                 if !event.modifierFlags.contains(.control) &&
                    !event.modifierFlags.contains(.command) &&
-                   !event.modifierFlags.contains(.option) &&
-                   activeDoc.currentTool == .selection {
+                   !event.modifierFlags.contains(.option) {
 
-                    print("🔷 Plain arrow with selection tool")
+                    print("🔷 Plain arrow - attempting to nudge")
 
                     // Only nudge if something is selected, but consume the event regardless
                     if activeDoc.selectedObjectIDs.isEmpty {
