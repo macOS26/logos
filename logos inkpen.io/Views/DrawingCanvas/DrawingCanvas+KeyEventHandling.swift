@@ -142,6 +142,8 @@ extension DrawingCanvas {
                        !event.modifierFlags.contains(.option) &&
                        activeDoc.currentTool == .selection {
 
+                        print("🟢 Arrow key nudge - tool is selection, selectedIDs: \(activeDoc.selectedObjectIDs.count)")
+
                         var nudgeDirection: CGVector? = nil
                         switch characters {
                         case arrowUp:
@@ -159,6 +161,7 @@ extension DrawingCanvas {
                         if let direction = nudgeDirection {
                             let gridSpacing = activeDoc.gridSpacing
                             let nudgeAmount = CGVector(dx: direction.dx * gridSpacing, dy: direction.dy * gridSpacing)
+                            print("🟢 Nudging by \(nudgeAmount)")
                             self.nudgeSelectedObjects(by: nudgeAmount)
                             return nil
                         }
