@@ -8,25 +8,8 @@ extension DrawingCanvas {
 
             guard let keyWindow = NSApp.keyWindow,
                   keyWindow == event.window else {
-                print("🟡 Event monitor: Not key window, passing through")
                 return event
             }
-
-            let activeDoc = DrawingCanvasRegistry.shared.activeDocument
-            let selfDoc = self.document
-            let isMatch = activeDoc === selfDoc
-
-            let activePtr = activeDoc.map { String(describing: Unmanaged.passUnretained($0).toOpaque()) } ?? "nil"
-            let selfPtr = String(describing: Unmanaged.passUnretained(selfDoc).toOpaque())
-
-            print("🟠 Event monitor check - Active: \(activePtr), Self: \(selfPtr), Match: \(isMatch)")
-
-            guard isMatch else {
-                print("🔴 Event monitor: Document mismatch, passing through")
-                return event
-            }
-
-            print("🟢 Event monitor: Document match, handling event")
 
             if event.type == .keyDown {
 
@@ -230,21 +213,6 @@ extension DrawingCanvas {
         if let monitor = keyEventMonitor {
             NSEvent.removeMonitor(monitor)
             keyEventMonitor = nil
-        }
-    }
-
-    internal func setupWindowObserver() {
-        NotificationCenter.default.addObserver(
-            forName: NSWindow.didBecomeKeyNotification,
-            object: nil,
-            queue: .main
-        ) { [weak document] notification in
-            guard let window = notification.object as? NSWindow,
-                  window == NSApp.keyWindow,
-                  let doc = document else { return }
-
-            print("🟣 Window became key, setting active document to \(Unmanaged.passUnretained(doc).toOpaque())")
-            DrawingCanvasRegistry.shared.setActiveDocument(doc)
         }
     }
 
