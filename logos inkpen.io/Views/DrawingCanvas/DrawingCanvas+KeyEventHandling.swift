@@ -232,12 +232,13 @@ extension DrawingCanvas {
     }
 
     internal func activateTemporaryHandTool() {
-        guard document.currentTool != .hand && !isTemporaryHandToolActive else { return }
+        guard let activeDoc = DrawingCanvasRegistry.shared.activeDocument else { return }
+        guard activeDoc.currentTool != .hand && !isTemporaryHandToolActive else { return }
 
-        temporaryToolPreviousTool = document.currentTool
+        temporaryToolPreviousTool = activeDoc.currentTool
         isTemporaryHandToolActive = true
 
-        document.currentTool = .hand
+        activeDoc.currentTool = .hand
 
         if isCanvasHovering {
             HandOpenCursor.set()
@@ -251,9 +252,10 @@ extension DrawingCanvas {
     }
 
     internal func deactivateTemporaryHandTool() {
+        guard let activeDoc = DrawingCanvasRegistry.shared.activeDocument else { return }
         guard isTemporaryHandToolActive, let previousTool = temporaryToolPreviousTool else { return }
 
-        document.currentTool = previousTool
+        activeDoc.currentTool = previousTool
         isTemporaryHandToolActive = false
         temporaryToolPreviousTool = nil
 
