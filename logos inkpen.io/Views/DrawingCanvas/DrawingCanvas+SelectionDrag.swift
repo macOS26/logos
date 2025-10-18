@@ -200,11 +200,10 @@ extension DrawingCanvas {
                     document.translateTextInUnified(id: shape.id, delta: currentDragDelta)
                     affectedObjectIDs.insert(unifiedObject.id)
                     oldShapes[unifiedObject.id] = shape
-                case .shape, .warp, .group, .clipGroup, .clipMask:
-                    let shapes = document.getShapesForLayer(unifiedObject.layerIndex)
-                    if let shapeIndex = shapes.firstIndex(where: { $0.id == unifiedObject.id }) {
-                        applyDragDeltaToShapeCoordinates(layerIndex: unifiedObject.layerIndex, shapeIndex: shapeIndex, delta: currentDragDelta)
-                    }
+                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                    applyDragDeltaToUnifiedObject(objectID: shape.id, delta: currentDragDelta)
+                    affectedObjectIDs.insert(unifiedObject.id)
+                    oldShapes[unifiedObject.id] = shape
                 }
             }
 
@@ -259,8 +258,23 @@ extension DrawingCanvas {
         }
     }
 
+    private func applyDragDeltaToUnifiedObject(objectID: UUID, delta: CGPoint) {
+        guard let unifiedObject = document.findObject(by: objectID) else { return }
+
+        switch unifiedObject.objectType {
+        case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+            applyDragDeltaToShape(shape: shape, delta: delta)
+        case .text:
+            return
+        }
+    }
+
     private func applyDragDeltaToShapeCoordinates(layerIndex: Int, shapeIndex: Int, delta: CGPoint) {
         guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
+        applyDragDeltaToShape(shape: shape, delta: delta)
+    }
+
+    private func applyDragDeltaToShape(shape: VectorShape, delta: CGPoint) {
 
         if ImageContentRegistry.containsImage(shape) {
             var updatedShape = shape
@@ -347,7 +361,7 @@ extension DrawingCanvas {
             }
 
             groupShape.updateBounds()
-            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: groupShape)
+            document.updateShapeByID(groupShape.id) { $0 = groupShape }
             return
         }
 
@@ -401,16 +415,20 @@ extension DrawingCanvas {
         }
 
         if shape.isClippingPath {
-            let shapes = document.getShapesForLayer(layerIndex)
-            for (idx, checkShape) in shapes.enumerated() {
-                if checkShape.clippedByShapeID == shape.id {
-                    applyDragDeltaToShapeCoordinates(layerIndex: layerIndex, shapeIndex: idx, delta: delta)
+            for unifiedObject in document.unifiedObjects {
+                switch unifiedObject.objectType {
+                case .shape(let checkShape), .warp(let checkShape), .group(let checkShape), .clipGroup(let checkShape), .clipMask(let checkShape):
+                    if checkShape.clippedByShapeID == shape.id {
+                        applyDragDeltaToUnifiedObject(objectID: checkShape.id, delta: delta)
+                    }
+                case .text:
+                    break
                 }
             }
         }
 
         movedShape.updateBounds()
-        document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: movedShape)
+        document.updateShapeByID(movedShape.id) { $0 = movedShape }
     }
 
     private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int) {
