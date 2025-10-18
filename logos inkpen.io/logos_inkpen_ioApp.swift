@@ -18,6 +18,9 @@ struct logos_inken_ioApp: App {
         if !metalWorking {
             Log.metal("❌ Metal Engine Failed", level: .error)
         }
+
+        // Initialize shared app event monitor (one local monitor for entire app)
+        _ = AppEventMonitor.shared
     }
 
     fileprivate func doNotRestoreThis(_ window: NSWindow) {
