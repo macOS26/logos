@@ -154,6 +154,7 @@ struct DocumentBasedMainView: View {
             }
 
             documentState.setDocument(document)
+            documentState.window = NSApp.keyWindow
 
             if let configured = appState.pendingNewDocument {
                 loadImportedDocument(configured)

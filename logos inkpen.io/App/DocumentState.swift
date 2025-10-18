@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 class DocumentState: ObservableObject {
     @Published var document: VectorDocument?
+    weak var window: NSWindow?
     @Published var canUndo = false
     @Published var canRedo = false
     @Published var hasSelection = false
@@ -41,9 +42,10 @@ class DocumentState: ObservableObject {
             guard let self = self, let doc = self.document else { return }
 
             // Only set if THIS document's window became key
-            if let window = notification.object as? NSWindow,
-               window == NSApp.keyWindow {
-                print("🔵 Window \(window.title) became key, setting document \(Unmanaged.passUnretained(doc).toOpaque())")
+            if let notificationWindow = notification.object as? NSWindow,
+               notificationWindow == NSApp.keyWindow,
+               notificationWindow == self.window {
+                print("🔵 Window \(notificationWindow.title) became key, setting document \(Unmanaged.passUnretained(doc).toOpaque())")
                 DrawingCanvasRegistry.shared.setActiveDocument(doc)
             }
         }
