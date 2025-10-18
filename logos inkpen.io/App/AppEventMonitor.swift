@@ -90,6 +90,7 @@ final class AppEventMonitor {
             let arrowRight = "\u{F703}"
 
             if [arrowUp, arrowDown, arrowLeft, arrowRight].contains(characters) {
+                print("🔷 Arrow key pressed - tool: \(activeDoc.currentTool), selected: \(activeDoc.selectedObjectIDs.count)")
 
                 // Cmd+Arrow: Z-order and selection navigation
                 if event.modifierFlags.contains(.command) &&
@@ -128,10 +129,15 @@ final class AppEventMonitor {
                    !event.modifierFlags.contains(.option) &&
                    activeDoc.currentTool == .selection {
 
+                    print("🔷 Plain arrow with selection tool")
+
                     // Only nudge if something is selected, but consume the event regardless
                     if activeDoc.selectedObjectIDs.isEmpty {
+                        print("🔷 No objects selected - consuming event")
                         return nil
                     }
+
+                    print("🔷 Nudging \(activeDoc.selectedObjectIDs.count) objects")
 
                     var nudgeDirection: CGVector? = nil
                     switch characters {
