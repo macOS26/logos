@@ -209,8 +209,6 @@ extension DrawingCanvas {
         }
         .onAppear {
             setupCanvas()
-            // setupKeyEventMonitoring() // Now using AppEventMonitor
-            setupToolKeyboardShortcuts()
             previousTool = document.currentTool
         }
         .onDisappear {
