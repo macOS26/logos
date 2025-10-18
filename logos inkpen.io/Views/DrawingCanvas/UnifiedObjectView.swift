@@ -9,6 +9,7 @@ struct UnifiedObjectContentView: View {
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
+    let liveScaleTransform: CGAffineTransform
 
     private var layerIsVisible: Bool {
         guard unifiedObject.layerIndex >= 0 && unifiedObject.layerIndex < document.layers.count else {
@@ -109,7 +110,8 @@ struct UnifiedObjectContentView: View {
             isCanvasLayer: unifiedObject.layerIndex == 1,
             isPasteboardLayer: unifiedObject.layerIndex == 0,
             dragPreviewDelta: dragPreviewDelta,
-            dragPreviewTrigger: dragPreviewTrigger
+            dragPreviewTrigger: dragPreviewTrigger,
+            liveScaleTransform: liveScaleTransform
         )
         .id("\(shape.id)-\(shape.path.isClosed)-\(latestShape.bounds.hashValue)-\(shape.isClippingPath)-\(shape.clippedByShapeID?.uuidString ?? "none")")
     }
@@ -180,7 +182,8 @@ struct PasteboardBackgroundView: View {
                     selectedObjectIDs: selectedObjectIDs,
                     viewMode: viewMode,
                     dragPreviewDelta: dragPreviewDelta,
-                    dragPreviewTrigger: dragPreviewTrigger
+                    dragPreviewTrigger: dragPreviewTrigger,
+                    liveScaleTransform: .identity
                 )
             }
         }
@@ -238,7 +241,8 @@ struct CanvasBackgroundView: View {
                     selectedObjectIDs: selectedObjectIDs,
                     viewMode: viewMode,
                     dragPreviewDelta: dragPreviewDelta,
-                    dragPreviewTrigger: dragPreviewTrigger
+                    dragPreviewTrigger: dragPreviewTrigger,
+                    liveScaleTransform: .identity
                 )
             }
         }
@@ -268,6 +272,7 @@ struct IsolatedLayerView: View, Equatable {
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
+    let liveScaleTransform: CGAffineTransform
     let layerOpacity: Double
     let layerBlendMode: BlendMode
 
@@ -308,11 +313,12 @@ struct IsolatedLayerView: View, Equatable {
                 return true  // Equal - skip re-render
             }
 
-            // Not dragging - only re-render if zoom, offset, opacity, or blend mode changed
+            // Not dragging - only re-render if zoom, offset, opacity, blend mode, or scale transform changed
             return lhs.zoomLevel == rhs.zoomLevel &&
                    lhs.canvasOffset == rhs.canvasOffset &&
                    lhs.layerOpacity == rhs.layerOpacity &&
                    lhs.layerBlendMode == rhs.layerBlendMode &&
+                   lhs.liveScaleTransform == rhs.liveScaleTransform &&
                    lhs.viewMode == rhs.viewMode
         }
 
@@ -320,6 +326,7 @@ struct IsolatedLayerView: View, Equatable {
         return lhs.selectedObjectIDs == rhs.selectedObjectIDs &&
                lhs.dragPreviewDelta == rhs.dragPreviewDelta &&
                lhs.dragPreviewTrigger == rhs.dragPreviewTrigger &&
+               lhs.liveScaleTransform == rhs.liveScaleTransform &&
                lhs.zoomLevel == rhs.zoomLevel &&
                lhs.canvasOffset == rhs.canvasOffset &&
                lhs.layerOpacity == rhs.layerOpacity &&
@@ -352,7 +359,8 @@ struct IsolatedLayerView: View, Equatable {
                             selectedObjectIDs: selectedObjectIDs,
                             viewMode: viewMode,
                             dragPreviewDelta: dragPreviewDelta,
-                            dragPreviewTrigger: dragPreviewTrigger
+                            dragPreviewTrigger: dragPreviewTrigger,
+                            liveScaleTransform: liveScaleTransform
                         )
                     }
                 }
