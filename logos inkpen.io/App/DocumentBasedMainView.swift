@@ -147,6 +147,11 @@ struct DocumentBasedMainView: View {
             PressureCalibrationView()
                 .frame(width: 1200, height: 800)
         }
+        .background(WindowAccessor { window in
+            if let window = window {
+                documentState.window = window
+            }
+        })
         .onAppear {
             if !hasInitializedTool {
                 document.currentTool = appState.defaultTool
@@ -154,7 +159,6 @@ struct DocumentBasedMainView: View {
             }
 
             documentState.setDocument(document)
-            documentState.window = NSApp.keyWindow
 
             if let configured = appState.pendingNewDocument {
                 loadImportedDocument(configured)
