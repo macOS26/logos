@@ -81,6 +81,8 @@ final class AppEventMonitor {
             return nil
         }
 
+        // Pass through all other events (arrows, modifiers, etc) to canvas monitors
+        print("🔵 AppEventMonitor passing through event: \(event.charactersIgnoringModifiers ?? "nil")")
         return event
     }
 }
