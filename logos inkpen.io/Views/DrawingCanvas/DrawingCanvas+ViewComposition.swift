@@ -234,13 +234,12 @@ extension DrawingCanvas {
                         canvasOffset: document.canvasOffset,
                         selectedObjectIDs: document.selectedObjectIDs,
                         viewMode: document.viewMode,
-                        dragPreviewDelta: currentDragDelta,
+                        dragPreviewDelta: isActiveLayer ? currentDragDelta : .zero,
                         dragPreviewTrigger: dragPreviewUpdateTrigger,
                         layerOpacity: layerPreviewOpacities[document.layers[layerIndex].id] ?? document.layers[layerIndex].opacity,
                         layerBlendMode: document.layers[layerIndex].blendMode
                     )
                     .equatable()
-                    .opacity(isActiveLayer ? 1.0 : 0.3)
                     .allowsHitTesting(isActiveLayer)
                 }
             }
