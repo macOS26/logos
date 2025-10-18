@@ -131,7 +131,7 @@ extension VectorDocument {
 
     func ungroupSelectedObjects() {
         guard let layerIndex = selectedLayerIndex,
-              !selectedShapeIDs.isEmpty else { return }
+              !selectedObjectIDs.isEmpty else { return }
 
         var newSelectedShapeIDs: Set<UUID> = []
         var shapesToRemove: [UUID] = []
@@ -139,7 +139,7 @@ extension VectorDocument {
 
         var removedShapes: [UUID: VectorShape] = [:]
 
-        for shapeID in selectedShapeIDs {
+        for shapeID in selectedObjectIDs {
             let shapes = getShapesForLayer(layerIndex)
             if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
                let shape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
