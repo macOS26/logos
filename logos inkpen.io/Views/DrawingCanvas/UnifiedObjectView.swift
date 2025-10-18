@@ -69,8 +69,13 @@ struct UnifiedObjectContentView: View {
                         renderRegularShape(shape: shape, isSelected: selectedObjectIDs.contains(unifiedObject.id))
 
                         if shape.isGroupContainer {
-                            ForEach(shape.groupedShapes.filter { $0.typography != nil && $0.isVisible }, id: \.id) { textShape in
+                            let _ = print("🟢 RENDER GROUP: isGroupContainer=true, groupedShapes.count=\(shape.groupedShapes.count)")
+                            let textShapes = shape.groupedShapes.filter { $0.typography != nil && $0.isVisible }
+                            let _ = print("🟢 RENDER GROUP: filtered text shapes count=\(textShapes.count)")
+                            ForEach(textShapes, id: \.id) { textShape in
+                                let _ = print("🟢 RENDER GROUP: textShape id=\(textShape.id), textContent=\(textShape.textContent != nil), typography=\(textShape.typography != nil)")
                                 if textShape.textContent != nil, textShape.typography != nil {
+                                    let _ = print("🟢 RENDER GROUP: Creating StableProfessionalTextCanvas for \(textShape.id)")
                                     StableProfessionalTextCanvas(
                                         document: document,
                                         textObjectID: textShape.id,
@@ -79,6 +84,8 @@ struct UnifiedObjectContentView: View {
                                         viewMode: viewMode
                                     )
                                     .allowsHitTesting(document.currentTool == .font)
+                                } else {
+                                    let _ = print("🔴 RENDER GROUP: SKIPPING textShape \(textShape.id) - textContent or typography is nil")
                                 }
                             }
                         }
