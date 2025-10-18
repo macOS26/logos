@@ -34,6 +34,13 @@ final class AppEventMonitor {
 
     private func handleKeyEvent(_ event: NSEvent, activeDoc: VectorDocument) -> NSEvent? {
 
+        // Don't intercept events when editing text
+        if let window = NSApp.keyWindow,
+           let firstResponder = window.firstResponder,
+           firstResponder is NSTextView {
+            return event
+        }
+
         // Space bar - temporary hand tool
         if event.type == .keyDown,
            let characters = event.charactersIgnoringModifiers,
