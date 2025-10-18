@@ -120,6 +120,7 @@ struct DrawingCanvas: View {
     @ObservedObject var document: VectorDocument
     @Binding var layerPreviewOpacities: [UUID: Double]
     @Binding var liveDragOffset: CGPoint
+    @Binding var liveScaleDimensions: CGSize
     @Environment(AppState.self) internal var appState
     @State internal var currentPath: VectorPath?
     @State internal var tempBoundingBoxPath: VectorPath?
@@ -274,6 +275,9 @@ struct DrawingCanvas: View {
                             hasPerformedInitialFitToPage = true
                         }
                     }
+                }
+                .onChange(of: document.scalePreviewDimensions) { _, newValue in
+                    liveScaleDimensions = newValue
                 }
         }
     }

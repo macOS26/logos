@@ -13,6 +13,7 @@ struct MainToolbarContent: ToolbarContent {
     @Binding var showingSVGTestHarness: Bool
     @Binding var showingPressureCalibration: Bool
     @Binding var liveDragOffset: CGPoint
+    @Binding var liveScaleDimensions: CGSize
     let onRunDiagnostics: () -> Void
 
     private func hasOpenPaths() -> Bool {
@@ -147,7 +148,7 @@ struct MainToolbarContent: ToolbarContent {
             .help("Development Tools")
 #endif
 
-            TransformationControls(document: document, liveDragOffset: $liveDragOffset)
+            TransformationControls(document: document, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions)
 
             CornerRadiusToolbar(document: document)
 

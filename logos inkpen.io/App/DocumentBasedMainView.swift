@@ -17,6 +17,7 @@ struct DocumentBasedMainView: View {
     @State private var hasInitializedTool = false
     @State private var layerPreviewOpacities: [UUID: Double] = [:]
     @State private var liveDragOffset: CGPoint = .zero
+    @State private var liveScaleDimensions: CGSize = .zero
 
     var body: some View {
         VStack(spacing: 0) {
@@ -34,7 +35,7 @@ struct DocumentBasedMainView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .allowsHitTesting(false)
 
-                        DrawingCanvas(document: document, layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset)
+                        DrawingCanvas(document: document, layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
                             .background(Color.clear)
@@ -80,6 +81,7 @@ struct DocumentBasedMainView: View {
                 showingSVGTestHarness: $showingSVGTestHarness,
                 showingPressureCalibration: $showingPressureCalibration,
                 liveDragOffset: $liveDragOffset,
+                liveScaleDimensions: $liveScaleDimensions,
                 onRunDiagnostics: runPasteboardDiagnostics
             )
         }
