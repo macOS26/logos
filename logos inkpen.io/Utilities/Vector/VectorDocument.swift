@@ -37,7 +37,7 @@ class VectorDocument: ObservableObject, Codable {
     @Published var processedObjectsDuringDrag: Set<UUID> = []
 
     var isHandleScalingActive = false
-    @Published var unifiedObjects: [VectorObject] = [] {
+    var unifiedObjects: [VectorObject] = [] {
         didSet {
             if oldValue.count != unifiedObjects.count {
                 rebuildIndexCache()
@@ -50,6 +50,7 @@ class VectorDocument: ObservableObject, Codable {
             }
             cachedStackingOrder = nil
             rebuildLayerCache()
+            changeNotifier.notifyGeneralChange()
         }
     }
 
@@ -478,55 +479,50 @@ class VectorDocument: ObservableObject, Codable {
     private func refreshSystemLayers() {
         let temp = unifiedObjects
         unifiedObjects = []
-        objectWillChange.send()
         unifiedObjects = temp
-        objectWillChange.send()
+        changeNotifier.notifyGeneralChange()
     }
 
     // MARK: - Selection Helpers (O(1) updates)
     func setSelectedObjectIDs(_ ids: Set<UUID>) {
         selectedObjectIDs = ids
-        objectWillChange.send()
+        changeNotifier.notifySelectionChanged()
     }
 
     func setSelectedShapeIDs(_ ids: Set<UUID>) {
         selectedShapeIDs = ids
-        objectWillChange.send()
+        changeNotifier.notifySelectionChanged()
     }
 
     func setSelectedTextIDs(_ ids: Set<UUID>) {
         selectedTextIDs = ids
-        objectWillChange.send()
+        changeNotifier.notifySelectionChanged()
     }
 
     func setDirectSelectedShapeIDs(_ ids: Set<UUID>) {
         directSelectedShapeIDs = ids
-        objectWillChange.send()
+        changeNotifier.notifySelectionChanged()
     }
 
     func setSelectedLayerIndex(_ index: Int?) {
         selectedLayerIndex = index
-        objectWillChange.send()
+        changeNotifier.notifySelectionChanged()
     }
 
     // MARK: - Drag/Transform Preview Helpers (O(1) updates)
     func setIsHandleScalingActive(_ active: Bool) {
         isHandleScalingActive = active
-        objectWillChange.send()
     }
 
     func setCachedSelectionBounds(_ bounds: CGRect?) {
         cachedSelectionBounds = bounds
-        objectWillChange.send()
     }
 
     func setDragPreviewCoordinates(_ coords: CGPoint) {
         dragPreviewCoordinates = coords
-        objectWillChange.send()
     }
 
     func setScalePreviewDimensions(_ size: CGSize) {
         scalePreviewDimensions = size
-        objectWillChange.send()
     }
 }
