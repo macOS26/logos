@@ -153,8 +153,9 @@ final class AppEventMonitor {
                     }
 
                     if let direction = nudgeDirection {
-                        let gridSpacing = activeDoc.gridSpacing
-                        let nudgeAmount = CGVector(dx: direction.dx * gridSpacing, dy: direction.dy * gridSpacing)
+                        // Convert grid spacing from document units to points
+                        let gridSpacingInPoints = activeDoc.settings.gridSpacing * activeDoc.settings.unit.pointsPerUnit
+                        let nudgeAmount = CGVector(dx: direction.dx * gridSpacingInPoints, dy: direction.dy * gridSpacingInPoints)
                         activeDoc.nudgeSelectedObjects(by: nudgeAmount)
                         return nil
                     }
