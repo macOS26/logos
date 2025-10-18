@@ -329,6 +329,8 @@ struct IsolatedLayerView: View, Equatable {
     let layerOpacity: Double
     let layerBlendMode: BlendMode
 
+    @State private var cachedImage: NSImage?
+    @State private var isDragging: Bool = false
 
     // Track if this layer has selection
     private var hasSelection: Bool {
@@ -370,23 +372,86 @@ struct IsolatedLayerView: View, Equatable {
 
     var body: some View {
         ZStack {
-            ForEach(objects, id: \.id) { unifiedObject in
-                if unifiedObject.isVisible {
-                    UnifiedObjectContentView(
-                        unifiedObject: unifiedObject,
-                        document: document,
-                        zoomLevel: zoomLevel,
-                        canvasOffset: canvasOffset,
-                        selectedObjectIDs: selectedObjectIDs,
-                        viewMode: viewMode,
-                        dragPreviewDelta: dragPreviewDelta,
-                        dragPreviewTrigger: dragPreviewTrigger
-                    )
+            // Show cached image if dragging and layer is inactive
+            if isDragging, !hasSelection, let cached = cachedImage {
+                Image(nsImage: cached)
+                    .resizable()
+                    .frame(width: cached.size.width / zoomLevel, height: cached.size.height / zoomLevel)
+                    .offset(x: canvasOffset.x / zoomLevel, y: canvasOffset.y / zoomLevel)
+                    .allowsHitTesting(false)
+            } else {
+                // Render live SwiftUI views
+                ForEach(objects, id: \.id) { unifiedObject in
+                    if unifiedObject.isVisible {
+                        UnifiedObjectContentView(
+                            unifiedObject: unifiedObject,
+                            document: document,
+                            zoomLevel: zoomLevel,
+                            canvasOffset: canvasOffset,
+                            selectedObjectIDs: selectedObjectIDs,
+                            viewMode: viewMode,
+                            dragPreviewDelta: dragPreviewDelta,
+                            dragPreviewTrigger: dragPreviewTrigger
+                        )
+                    }
                 }
             }
         }
         .opacity(layerOpacity)
         .blendMode(layerBlendMode.swiftUIBlendMode)
+        .onChange(of: dragPreviewDelta) { oldValue, newValue in
+            let wasDragging = oldValue != .zero
+            let isNowDragging = newValue != .zero
+
+            // Drag started
+            if !wasDragging && isNowDragging && !hasSelection {
+                renderLayerToCache()
+                isDragging = true
+            }
+
+            // Drag ended
+            if wasDragging && !isNowDragging {
+                isDragging = false
+                cachedImage = nil
+            }
+        }
+    }
+
+    private func renderLayerToCache() {
+        guard !objects.isEmpty else { return }
+
+        let pageSize = document.settings.sizeInPoints
+        let scale = zoomLevel
+
+        guard let context = CGContext(
+            data: nil,
+            width: Int(pageSize.width * scale),
+            height: Int(pageSize.height * scale),
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
+        ) else { return }
+
+        context.clear(CGRect(x: 0, y: 0, width: pageSize.width * scale, height: pageSize.height * scale))
+        context.translateBy(x: 0, y: pageSize.height * scale)
+        context.scaleBy(x: scale, y: -scale)
+
+        // Render all shapes in this layer using Core Graphics
+        for object in objects where object.isVisible {
+            switch object.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                FileOperations.drawShapeInPDF(shape, context: context)
+            case .text(let shape):
+                if let text = VectorText.from(shape) {
+                    FileOperations.drawTextInPDF(text, context: context)
+                }
+            }
+        }
+
+        if let cgImage = context.makeImage() {
+            cachedImage = NSImage(cgImage: cgImage, size: NSSize(width: pageSize.width, height: pageSize.height))
+        }
     }
 }
 
