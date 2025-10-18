@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 class DocumentState: ObservableObject {
     @Published var document: VectorDocument?
     weak var window: NSWindow?
+    private var windowObserver: NSObjectProtocol?
     @Published var canUndo = false
     @Published var canRedo = false
     @Published var hasSelection = false
@@ -34,7 +35,7 @@ class DocumentState: ObservableObject {
         startPasteboardMonitoring()
 
         // Track when this becomes focused
-        NotificationCenter.default.addObserver(
+        windowObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.didBecomeKeyNotification,
             object: nil,
             queue: .main
@@ -51,6 +52,9 @@ class DocumentState: ObservableObject {
     }
 
     deinit {
+        if let observer = windowObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
         cancellables.removeAll()
     }
 
