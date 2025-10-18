@@ -13,6 +13,7 @@ extension DrawingCanvas {
 
             // 1) Find the active document
             guard let activeDoc = DrawingCanvasRegistry.shared.activeDocument else {
+                print("🔴 No active document in registry")
                 return event
             }
 
