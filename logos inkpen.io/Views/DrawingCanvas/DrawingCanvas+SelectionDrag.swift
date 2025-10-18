@@ -194,16 +194,16 @@ extension DrawingCanvas {
                 }
             }
 
-            print("🟣 DRAG FINISH: Processing \(selectedObjects.count) selected objects")
+            // print("🟣 DRAG FINISH: Processing \(selectedObjects.count) selected objects")
             for unifiedObject in selectedObjects {
                 switch unifiedObject.objectType {
                 case .text(let shape):
-                    print("🟣 DRAG FINISH: Text object \(shape.id)")
+                    // print("🟣 DRAG FINISH: Text object \(shape.id)")
                     document.translateTextInUnified(id: shape.id, delta: currentDragDelta)
                     affectedObjectIDs.insert(unifiedObject.id)
                     oldShapes[unifiedObject.id] = shape
                 case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                    print("🟣 DRAG FINISH: Calling applyDragDeltaToUnifiedObject for \(shape.id), isGroupContainer=\(shape.isGroupContainer)")
+                    // print("🟣 DRAG FINISH: Calling applyDragDeltaToUnifiedObject for \(shape.id), isGroupContainer=\(shape.isGroupContainer)")
                     applyDragDeltaToUnifiedObject(objectID: shape.id, delta: currentDragDelta)
                     affectedObjectIDs.insert(unifiedObject.id)
                     oldShapes[unifiedObject.id] = shape
@@ -263,16 +263,16 @@ extension DrawingCanvas {
 
     private func applyDragDeltaToUnifiedObject(objectID: UUID, delta: CGPoint) {
         guard let unifiedObject = document.findObject(by: objectID) else {
-            print("🔴 DRAG: Could not find object \(objectID)")
+            // print("🔴 DRAG: Could not find object \(objectID)")
             return
         }
 
         switch unifiedObject.objectType {
         case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-            print("🔵 DRAG: Applying drag to \(unifiedObject.objectType) with ID \(objectID), isGroupContainer=\(shape.isGroupContainer)")
+            // print("🔵 DRAG: Applying drag to \(unifiedObject.objectType) with ID \(objectID), isGroupContainer=\(shape.isGroupContainer)")
             applyDragDeltaToShape(shape: shape, delta: delta)
         case .text:
-            print("🟡 DRAG: Skipping text object \(objectID)")
+            // print("🟡 DRAG: Skipping text object \(objectID)")
             return
         }
     }
