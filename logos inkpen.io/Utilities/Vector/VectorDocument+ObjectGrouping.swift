@@ -130,8 +130,12 @@ extension VectorDocument {
     }
 
     func ungroupSelectedObjects() {
+        print("🟡 UNGROUP: Starting, selectedObjectIDs=\(selectedObjectIDs)")
         guard let layerIndex = selectedLayerIndex,
-              !selectedObjectIDs.isEmpty else { return }
+              !selectedObjectIDs.isEmpty else {
+            print("🔴 UNGROUP: FAILED - layerIndex=\(selectedLayerIndex as Any), isEmpty=\(selectedObjectIDs.isEmpty)")
+            return
+        }
 
         var newSelectedShapeIDs: Set<UUID> = []
         var shapesToRemove: [UUID] = []
@@ -140,9 +144,12 @@ extension VectorDocument {
         var removedShapes: [UUID: VectorShape] = [:]
 
         for shapeID in selectedObjectIDs {
+            print("🟡 UNGROUP: Processing shapeID=\(shapeID)")
             let shapes = getShapesForLayer(layerIndex)
+            print("🟡 UNGROUP: shapes in layer count=\(shapes.count)")
             if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
                let shape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
+                print("🟡 UNGROUP: Found shape, isGroupContainer=\(shape.isGroupContainer)")
 
                 if shape.isGroupContainer {
                     if unifiedObjects.contains(where: { $0.id == shapeID }) {
