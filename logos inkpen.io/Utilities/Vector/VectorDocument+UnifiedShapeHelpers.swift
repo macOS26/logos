@@ -24,9 +24,16 @@ extension VectorDocument {
 
                 // If this is a group, update all children
                 if shape.isGroupContainer {
-                    for childShape in shape.groupedShapes {
-                        updateShapeFillColorInUnified(id: childShape.id, color: color)
+                    var updatedChildren: [VectorShape] = []
+                    for var childShape in shape.groupedShapes {
+                        if childShape.fillStyle == nil {
+                            childShape.fillStyle = FillStyle(color: color, opacity: defaultFillOpacity)
+                        } else {
+                            childShape.fillStyle?.color = color
+                        }
+                        updatedChildren.append(childShape)
                     }
+                    shape.groupedShapes = updatedChildren
                 }
 
                 updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
@@ -58,9 +65,16 @@ extension VectorDocument {
 
                 // If this is a group, update all children
                 if shape.isGroupContainer {
-                    for childShape in shape.groupedShapes {
-                        updateShapeStrokeColorInUnified(id: childShape.id, color: color)
+                    var updatedChildren: [VectorShape] = []
+                    for var childShape in shape.groupedShapes {
+                        if childShape.strokeStyle == nil {
+                            childShape.strokeStyle = StrokeStyle(color: color, width: defaultStrokeWidth, placement: defaultStrokePlacement, lineCap: defaultStrokeLineCap, lineJoin: defaultStrokeLineJoin, miterLimit: defaultStrokeMiterLimit, opacity: defaultStrokeOpacity)
+                        } else {
+                            childShape.strokeStyle?.color = color
+                        }
+                        updatedChildren.append(childShape)
                     }
+                    shape.groupedShapes = updatedChildren
                 }
 
                 updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
