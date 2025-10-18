@@ -159,6 +159,13 @@ extension DrawingCanvas {
         if document.activeLayerIndexDuringDrag == nil, let firstSelected = document.selectedObjectIDs.first {
             if let obj = document.findObject(by: firstSelected) {
                 document.activeLayerIndexDuringDrag = obj.layerIndex
+
+                // Set all layers that are at 100% opacity to 0.9999999999 during drag
+                for layer in document.layers {
+                    if layer.opacity == 1.0 {
+                        layerPreviewOpacities[layer.id] = 0.9999999999
+                    }
+                }
             }
         }
     }
@@ -172,6 +179,7 @@ extension DrawingCanvas {
             liveDragOffset = .zero
             cachedSelectionBoundsForDrag = nil
             document.activeLayerIndexDuringDrag = nil
+            layerPreviewOpacities.removeAll()
             return
         }
 
@@ -261,6 +269,9 @@ extension DrawingCanvas {
             document.dragPreviewCoordinates = .zero
             document.cachedSelectionBounds = nil
             document.activeLayerIndexDuringDrag = nil
+
+            // Clear layer preview opacities
+            layerPreviewOpacities.removeAll()
 
         } else {
             liveDragOffset = .zero
