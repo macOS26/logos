@@ -386,16 +386,13 @@ struct IsolatedLayerView: View, Equatable {
     }
 
     var body: some View {
-        ZStack {
-            let shouldShowCache = isDragging && !hasSelection && cachedImage != nil
+        let shouldShowCache = isDragging && !hasSelection && cachedImage != nil
 
+        Group {
             if shouldShowCache {
-                // Show cached image - SwiftUI views are HIDDEN
+                // Show cached image - SwiftUI views are REMOVED (not just hidden)
                 if let cached = cachedImage {
                     Image(nsImage: cached)
-                        .resizable()
-                        .frame(width: cached.size.width / zoomLevel, height: cached.size.height / zoomLevel)
-                        .offset(x: canvasOffset.x / zoomLevel, y: canvasOffset.y / zoomLevel)
                         .allowsHitTesting(false)
                 }
             } else {
@@ -442,21 +439,20 @@ struct IsolatedLayerView: View, Equatable {
         guard !objects.isEmpty else { return }
 
         let pageSize = document.settings.sizeInPoints
-        let scale = zoomLevel
 
         guard let context = CGContext(
             data: nil,
-            width: Int(pageSize.width * scale),
-            height: Int(pageSize.height * scale),
+            width: Int(pageSize.width),
+            height: Int(pageSize.height),
             bitsPerComponent: 8,
             bytesPerRow: 0,
             space: CGColorSpaceCreateDeviceRGB(),
             bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
         ) else { return }
 
-        context.clear(CGRect(x: 0, y: 0, width: pageSize.width * scale, height: pageSize.height * scale))
-        context.translateBy(x: 0, y: pageSize.height * scale)
-        context.scaleBy(x: scale, y: -scale)
+        context.clear(CGRect(x: 0, y: 0, width: pageSize.width, height: pageSize.height))
+        context.translateBy(x: 0, y: pageSize.height)
+        context.scaleBy(x: 1, y: -1)
 
         // Render all shapes in this layer using Core Graphics
         for object in objects where object.isVisible {
