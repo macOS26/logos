@@ -308,6 +308,7 @@ struct NonBackgroundObjectsView: View {
                         layerOpacity: layerPreviewOpacities[document.layers[layerIndex].id] ?? document.layers[layerIndex].opacity,
                         layerBlendMode: document.layers[layerIndex].blendMode
                     )
+                    .equatable()
                 }
             }
         }
