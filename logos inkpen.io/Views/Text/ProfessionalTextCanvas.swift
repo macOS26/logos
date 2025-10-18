@@ -79,22 +79,23 @@ struct ProfessionalTextCanvas: View {
     }
 
     private func shouldApplyDragPreview() -> Bool {
-        if document.selectedTextIDs.contains(textObjectID) {
+        // Check if this text object is directly selected
+        if document.selectedObjectIDs.contains(textObjectID) {
             return true
         }
 
-        for selectedID in document.selectedShapeIDs {
-            if let selectedObject = document.findObject(by: selectedID),
-               case .shape(let selectedShape) = selectedObject.objectType,
-               selectedShape.isGroupContainer {
-                if selectedShape.groupedShapes.contains(where: { shape in
-                    guard shape.id == textObjectID else { return false }
-                    if let obj = document.findObject(by: shape.id), case .text = obj.objectType {
-                        return true
+        // Check if this text is inside a selected group
+        for selectedID in document.selectedObjectIDs {
+            if let selectedObject = document.findObject(by: selectedID) {
+                switch selectedObject.objectType {
+                case .group(let selectedShape), .clipGroup(let selectedShape):
+                    if selectedShape.isGroupContainer {
+                        if selectedShape.groupedShapes.contains(where: { $0.id == textObjectID }) {
+                            return true
+                        }
                     }
-                    return false
-                }) {
-                    return true
+                default:
+                    continue
                 }
             }
         }
