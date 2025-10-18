@@ -99,10 +99,10 @@ final class AppEventMonitor {
 
                     if !activeDoc.selectedObjectIDs.isEmpty {
                         if characters == arrowUp {
-                            activeDoc.selectNextObjectUp()
+                            activeDoc.selectNextObjectDown()
                             return nil
                         } else if characters == arrowDown {
-                            activeDoc.selectNextObjectDown()
+                            activeDoc.selectNextObjectUp()
                             return nil
                         }
                     }
