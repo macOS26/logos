@@ -215,7 +215,7 @@ struct logos_inken_ioApp: App {
                     Button("Deselect All") {
                         documentState?.deselectAll()
                     }
-                    .keyboardShortcut(.tab)
+                    .keyboardShortcut(.tab, modifiers: [])
                     .disabled(documentState?.hasSelection != true)
                 }
             }
