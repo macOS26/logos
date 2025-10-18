@@ -329,6 +329,10 @@ struct IsolatedLayerView: View, Equatable {
     let layerOpacity: Double
     let layerBlendMode: BlendMode
 
+    @State private var throttledDragDelta: CGPoint = .zero
+    @State private var throttledTrigger: Bool = false
+    @State private var lastUpdateTime: Date = Date()
+
     // Track if this layer has selection
     private var hasSelection: Bool {
         objects.contains(where: { selectedObjectIDs.contains($0.id) })
@@ -378,14 +382,38 @@ struct IsolatedLayerView: View, Equatable {
                         canvasOffset: canvasOffset,
                         selectedObjectIDs: selectedObjectIDs,
                         viewMode: viewMode,
-                        dragPreviewDelta: dragPreviewDelta,
-                        dragPreviewTrigger: dragPreviewTrigger
+                        dragPreviewDelta: hasSelection ? dragPreviewDelta : throttledDragDelta,
+                        dragPreviewTrigger: hasSelection ? dragPreviewTrigger : throttledTrigger
                     )
                 }
             }
         }
         .opacity(layerOpacity)
         .blendMode(layerBlendMode.swiftUIBlendMode)
+        .onChange(of: dragPreviewDelta) { _, newDelta in
+            // Active layer: update immediately (60fps)
+            if hasSelection {
+                return
+            }
+
+            // Inactive layer: throttle to 1fps
+            let now = Date()
+            if now.timeIntervalSince(lastUpdateTime) >= 1.0 {
+                throttledDragDelta = newDelta
+                lastUpdateTime = now
+            }
+        }
+        .onChange(of: dragPreviewTrigger) { _, newTrigger in
+            if hasSelection {
+                return
+            }
+
+            let now = Date()
+            if now.timeIntervalSince(lastUpdateTime) >= 1.0 {
+                throttledTrigger = newTrigger
+                lastUpdateTime = now
+            }
+        }
     }
 }
 
