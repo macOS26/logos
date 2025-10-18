@@ -315,7 +315,7 @@ struct NonBackgroundObjectsView: View {
     }
 }
 
-struct IsolatedLayerView: View {
+struct IsolatedLayerView: View, Equatable {
     let objects: [VectorObject]
     let layerID: UUID
     let document: VectorDocument  // NOT @ObservedObject!
@@ -331,6 +331,39 @@ struct IsolatedLayerView: View {
     // Track if this layer has selection
     private var hasSelection: Bool {
         objects.contains(where: { selectedObjectIDs.contains($0.id) })
+    }
+
+    // Equatable: Only re-render if layer has selection and drag changed, or if objects changed
+    static func == (lhs: IsolatedLayerView, rhs: IsolatedLayerView) -> Bool {
+        // If layer ID changed, definitely need to re-render
+        guard lhs.layerID == rhs.layerID else { return false }
+
+        // If objects array changed, need to re-render
+        guard lhs.objects.count == rhs.objects.count else { return false }
+
+        // Check if this layer has selection
+        let lhsHasSelection = lhs.hasSelection
+        let rhsHasSelection = rhs.hasSelection
+
+        // If layer has no selection, don't re-render during drag
+        if !lhsHasSelection && !rhsHasSelection {
+            // Only re-render if zoom, offset, opacity, or blend mode changed
+            return lhs.zoomLevel == rhs.zoomLevel &&
+                   lhs.canvasOffset == rhs.canvasOffset &&
+                   lhs.layerOpacity == rhs.layerOpacity &&
+                   lhs.layerBlendMode == rhs.layerBlendMode &&
+                   lhs.viewMode == rhs.viewMode
+        }
+
+        // Layer has selection - check all properties
+        return lhs.selectedObjectIDs == rhs.selectedObjectIDs &&
+               lhs.dragPreviewDelta == rhs.dragPreviewDelta &&
+               lhs.dragPreviewTrigger == rhs.dragPreviewTrigger &&
+               lhs.zoomLevel == rhs.zoomLevel &&
+               lhs.canvasOffset == rhs.canvasOffset &&
+               lhs.layerOpacity == rhs.layerOpacity &&
+               lhs.layerBlendMode == rhs.layerBlendMode &&
+               lhs.viewMode == rhs.viewMode
     }
 
     var body: some View {
@@ -352,7 +385,6 @@ struct IsolatedLayerView: View {
         }
         .opacity(layerOpacity)
         .blendMode(layerBlendMode.swiftUIBlendMode)
-        .id(hasSelection ? "\(layerID.uuidString)-\(dragPreviewDelta.x)-\(dragPreviewDelta.y)" : layerID.uuidString)
     }
 }
 
