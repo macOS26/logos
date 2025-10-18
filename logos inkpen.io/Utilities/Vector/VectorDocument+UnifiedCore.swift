@@ -39,32 +39,32 @@ extension VectorDocument {
             case .text(var shape):
                 update(&shape)
                 unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
-                unifiedObjectLookupCache[shapeID] = unifiedObjects[index]
+                unifiedObjectIndexCache[shapeID] = index
 
             case .shape(var shape):
                 update(&shape)
                 unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
-                unifiedObjectLookupCache[shapeID] = unifiedObjects[index]
+                unifiedObjectIndexCache[shapeID] = index
 
             case .warp(var shape):
                 update(&shape)
                 unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
-                unifiedObjectLookupCache[shapeID] = unifiedObjects[index]
+                unifiedObjectIndexCache[shapeID] = index
 
             case .group(var shape):
                 update(&shape)
                 unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
-                unifiedObjectLookupCache[shapeID] = unifiedObjects[index]
+                unifiedObjectIndexCache[shapeID] = index
 
             case .clipGroup(var shape):
                 update(&shape)
                 unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
-                unifiedObjectLookupCache[shapeID] = unifiedObjects[index]
+                unifiedObjectIndexCache[shapeID] = index
 
             case .clipMask(var shape):
                 update(&shape)
                 unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
-                unifiedObjectLookupCache[shapeID] = unifiedObjects[index]
+                unifiedObjectIndexCache[shapeID] = index
             }
             return
         }
@@ -82,7 +82,7 @@ extension VectorDocument {
                         let layerIndex = unifiedObjects[groupIndex].layerIndex
                         let updatedObject = VectorObject(shape: groupShape, layerIndex: layerIndex)
                         unifiedObjects[groupIndex] = updatedObject
-                        unifiedObjectLookupCache[groupShape.id] = updatedObject
+                        unifiedObjectIndexCache[groupShape.id] = groupIndex
                         return
                     }
                 }

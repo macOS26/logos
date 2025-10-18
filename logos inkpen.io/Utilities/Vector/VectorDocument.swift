@@ -40,11 +40,11 @@ class VectorDocument: ObservableObject, Codable {
     @Published var unifiedObjects: [VectorObject] = [] {
         didSet {
             if oldValue.count != unifiedObjects.count {
-                rebuildLookupCache()
+                rebuildIndexCache()
             } else {
                 for (index, object) in unifiedObjects.enumerated() {
                     if index < oldValue.count && oldValue[index].id == object.id {
-                        unifiedObjectLookupCache[object.id] = object
+                        unifiedObjectIndexCache[object.id] = index
                     }
                 }
             }
@@ -52,8 +52,9 @@ class VectorDocument: ObservableObject, Codable {
             rebuildLayerCache()
         }
     }
-    
-    internal var unifiedObjectLookupCache: [UUID: VectorObject] = [:]
+
+    // Index cache: maps UUID -> array index (O(1) lookup, minimal memory)
+    internal var unifiedObjectIndexCache: [UUID: Int] = [:]
 
     var cachedStackingOrder: [VectorObject]? = nil
 

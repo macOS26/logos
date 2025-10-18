@@ -300,8 +300,8 @@ extension VectorDocument {
         }
     }
 
-    func rebuildLookupCache() {
-        unifiedObjectLookupCache = Dictionary(uniqueKeysWithValues: unifiedObjects.map { ($0.id, $0) })
+    func rebuildIndexCache() {
+        unifiedObjectIndexCache = Dictionary(uniqueKeysWithValues: unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
         rebuildLayerCache()
     }
 
@@ -310,15 +310,21 @@ extension VectorDocument {
     }
 
     func findObject(by id: UUID) -> VectorObject? {
-        return unifiedObjectLookupCache[id]
+        guard let index = unifiedObjectIndexCache[id], index < unifiedObjects.count else {
+            return nil
+        }
+        return unifiedObjects[index]
     }
 
     func findObjectIndex(by id: UUID) -> Int? {
-        return unifiedObjects.firstIndex(where: { $0.id == id })
+        return unifiedObjectIndexCache[id]
     }
 
     func findShape(by id: UUID) -> VectorShape? {
-        guard let object = unifiedObjectLookupCache[id] else { return nil }
+        guard let index = unifiedObjectIndexCache[id], index < unifiedObjects.count else {
+            return nil
+        }
+        let object = unifiedObjects[index]
         switch object.objectType {
         case .shape(let shape),
              .warp(let shape),
@@ -332,7 +338,11 @@ extension VectorDocument {
     }
 
     func findText(by id: UUID) -> VectorText? {
-        if let object = unifiedObjectLookupCache[id],
+        guard let index = unifiedObjectIndexCache[id], index < unifiedObjects.count else {
+            return nil
+        }
+        let object = unifiedObjects[index]
+        if
            case .text(let shape) = object.objectType,
            var vectorText = VectorText.from(shape) {
             vectorText.layerIndex = object.layerIndex
