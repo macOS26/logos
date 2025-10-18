@@ -22,6 +22,7 @@ struct MainView: View {
     @State private var layerPreviewOpacities: [UUID: Double] = [:]
     @State private var liveDragOffset: CGPoint = .zero
     @State private var liveScaleDimensions: CGSize = .zero
+    @State private var liveScaleTransform: CGAffineTransform = .identity
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         ZStack {
@@ -43,7 +44,7 @@ struct MainView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .allowsHitTesting(false)
 
-                        DrawingCanvas(document: document, layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions)
+                        DrawingCanvas(document: document, layerPreviewOpacities: $layerPreviewOpacities, liveDragOffset: $liveDragOffset, liveScaleDimensions: $liveScaleDimensions, liveScaleTransform: $liveScaleTransform)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
                             .background(Color.ui.clear)
