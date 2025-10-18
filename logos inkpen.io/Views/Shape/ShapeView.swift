@@ -12,6 +12,7 @@ struct ShapeView: View {
     let isPasteboardLayer: Bool
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
+    let liveScaleTransform: CGAffineTransform
 
     @State private var previewFillOpacity: Double? = nil
     @State private var previewStrokeOpacity: Double? = nil
@@ -141,6 +142,7 @@ struct ShapeView: View {
         .scaleEffect(zoomLevel, anchor: .topLeading)
         .offset(x: canvasOffset.x, y: canvasOffset.y)
         .transformEffect(shape.isGroupContainer ? shape.transform : .identity)
+        .transformEffect(isSelected && liveScaleTransform != .identity ? liveScaleTransform : .identity)
         .offset(x: isSelected && !ImageContentRegistry.containsImage(shape) ? dragPreviewDelta.x * zoomLevel : 0,
                 y: isSelected && !ImageContentRegistry.containsImage(shape) ? dragPreviewDelta.y * zoomLevel : 0)
         .id(dragPreviewTrigger)
