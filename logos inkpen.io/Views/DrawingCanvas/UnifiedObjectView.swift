@@ -329,11 +329,6 @@ struct IsolatedLayerView: View, Equatable {
     let layerOpacity: Double
     let layerBlendMode: BlendMode
 
-    @State private var throttledDragDelta: CGPoint = .zero
-    @State private var throttledTrigger: Bool = false
-    @State private var throttledZoom: Double = 1.0
-    @State private var throttledOffset: CGPoint = .zero
-    @State private var lastUpdateTime: Date = Date()
 
     // Track if this layer has selection
     private var hasSelection: Bool {
@@ -380,66 +375,18 @@ struct IsolatedLayerView: View, Equatable {
                     UnifiedObjectContentView(
                         unifiedObject: unifiedObject,
                         document: document,
-                        zoomLevel: hasSelection ? zoomLevel : throttledZoom,
-                        canvasOffset: hasSelection ? canvasOffset : throttledOffset,
+                        zoomLevel: zoomLevel,
+                        canvasOffset: canvasOffset,
                         selectedObjectIDs: selectedObjectIDs,
                         viewMode: viewMode,
-                        dragPreviewDelta: hasSelection ? dragPreviewDelta : throttledDragDelta,
-                        dragPreviewTrigger: hasSelection ? dragPreviewTrigger : throttledTrigger
+                        dragPreviewDelta: dragPreviewDelta,
+                        dragPreviewTrigger: dragPreviewTrigger
                     )
                 }
             }
         }
         .opacity(layerOpacity)
         .blendMode(layerBlendMode.swiftUIBlendMode)
-        .onAppear {
-            throttledZoom = zoomLevel
-            throttledOffset = canvasOffset
-        }
-        .onChange(of: zoomLevel) { _, newZoom in
-            if hasSelection {
-                return
-            }
-
-            let now = Date()
-            if now.timeIntervalSince(lastUpdateTime) >= 0.1 {
-                throttledZoom = newZoom
-                lastUpdateTime = now
-            }
-        }
-        .onChange(of: canvasOffset) { _, newOffset in
-            if hasSelection {
-                return
-            }
-
-            let now = Date()
-            if now.timeIntervalSince(lastUpdateTime) >= 0.1 {
-                throttledOffset = newOffset
-                lastUpdateTime = now
-            }
-        }
-        .onChange(of: dragPreviewDelta) { _, newDelta in
-            if hasSelection {
-                return
-            }
-
-            let now = Date()
-            if now.timeIntervalSince(lastUpdateTime) >= 1.0 {
-                throttledDragDelta = newDelta
-                lastUpdateTime = now
-            }
-        }
-        .onChange(of: dragPreviewTrigger) { _, newTrigger in
-            if hasSelection {
-                return
-            }
-
-            let now = Date()
-            if now.timeIntervalSince(lastUpdateTime) >= 1.0 {
-                throttledTrigger = newTrigger
-                lastUpdateTime = now
-            }
-        }
     }
 }
 
