@@ -176,9 +176,11 @@ extension VectorDocument {
         }
 
         var addedShapes: [UUID: VectorShape] = [:]
+        var addedObjectIDsInOrder: [UUID] = []
 
         for shape in shapesToAdd {
             addedShapes[shape.id] = shape
+            addedObjectIDsInOrder.append(shape.id)
         }
 
         let command = GroupCommand(
@@ -186,7 +188,7 @@ extension VectorDocument {
             layerIndex: layerIndex,
             removedObjectIDs: shapesToRemove,
             removedShapes: removedShapes,
-            addedObjectIDs: Array(newSelectedShapeIDs),
+            addedObjectIDs: addedObjectIDsInOrder,
             addedShapes: addedShapes,
             oldSelectedObjectIDs: selectedObjectIDs,
             newSelectedObjectIDs: newSelectedShapeIDs
