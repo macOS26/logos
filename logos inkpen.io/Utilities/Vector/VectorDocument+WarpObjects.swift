@@ -8,7 +8,7 @@ extension VectorDocument {
 
         let selectedWarpObjects = unifiedObjects.filter { unifiedObject in
             guard selectedObjectIDs.contains(unifiedObject.id) else { return false }
-            if case .shape(let shape) = unifiedObject.objectType {
+            if case .warp(let shape) = unifiedObject.objectType {
                 return shape.isWarpObject
             }
             return false
@@ -17,14 +17,14 @@ extension VectorDocument {
         var oldShapes: [UUID: VectorShape] = [:]
         var affectedIDs: [UUID] = []
         for unifiedObject in selectedWarpObjects {
-            if case .shape(let shape) = unifiedObject.objectType {
+            if case .warp(let shape) = unifiedObject.objectType {
                 oldShapes[shape.id] = shape
                 affectedIDs.append(shape.id)
             }
         }
 
         for unifiedObject in selectedWarpObjects {
-            if case .shape(let shape) = unifiedObject.objectType,
+            if case .warp(let shape) = unifiedObject.objectType,
                let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil {
                let shapes = getShapesForLayer(layerIndex)
                if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
@@ -62,7 +62,7 @@ extension VectorDocument {
 
         let selectedWarpObjects = unifiedObjects.filter { unifiedObject in
             guard selectedObjectIDs.contains(unifiedObject.id) else { return false }
-            if case .shape(let shape) = unifiedObject.objectType {
+            if case .warp(let shape) = unifiedObject.objectType {
                 return shape.isWarpObject
             }
             return false
@@ -71,14 +71,14 @@ extension VectorDocument {
         var oldShapes: [UUID: VectorShape] = [:]
         var affectedIDs: [UUID] = []
         for unifiedObject in selectedWarpObjects {
-            if case .shape(let shape) = unifiedObject.objectType {
+            if case .warp(let shape) = unifiedObject.objectType {
                 oldShapes[shape.id] = shape
                 affectedIDs.append(shape.id)
             }
         }
 
         for unifiedObject in selectedWarpObjects {
-            if case .shape(let shape) = unifiedObject.objectType,
+            if case .warp(let shape) = unifiedObject.objectType,
                let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil {
                let shapes = getShapesForLayer(layerIndex)
                if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) {
