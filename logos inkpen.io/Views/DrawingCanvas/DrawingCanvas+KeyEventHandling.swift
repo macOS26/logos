@@ -17,7 +17,10 @@ extension DrawingCanvas {
                 return event
             }
 
-            // 2) Get the active document's VectorDocument - done, it's activeDoc
+            // 2) Only handle events if this canvas owns the active document
+            guard activeDoc === self.document else {
+                return event
+            }
 
             if event.type == .keyDown {
 
