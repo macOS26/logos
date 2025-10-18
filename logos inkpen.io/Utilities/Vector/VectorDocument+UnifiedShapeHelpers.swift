@@ -4,6 +4,7 @@ import Combine
 extension VectorDocument {
 
     func updateShapeFillColorInUnified(id: UUID, color: VectorColor) {
+        print("🔴 UPDATE FILL: Called for shape \(id), color=\(color)")
         if let index = unifiedObjects.firstIndex(where: { obj in
             switch obj.objectType {
             case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
@@ -15,6 +16,7 @@ extension VectorDocument {
             var updatedObject = unifiedObjects[index]
             switch updatedObject.objectType {
             case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+                print("🔴 UPDATE FILL: Found object at index \(index), isGroupContainer=\(shape.isGroupContainer)")
                 // Update the shape itself
                 if shape.fillStyle == nil {
                     shape.fillStyle = FillStyle(color: color, opacity: defaultFillOpacity)
@@ -24,8 +26,10 @@ extension VectorDocument {
 
                 // If this is a group, update all children
                 if shape.isGroupContainer {
+                    print("🔴 UPDATE FILL: Updating \(shape.groupedShapes.count) children")
                     var updatedChildren: [VectorShape] = []
                     for var childShape in shape.groupedShapes {
+                        print("🔴 UPDATE FILL: Updating child \(childShape.id)")
                         if childShape.fillStyle == nil {
                             childShape.fillStyle = FillStyle(color: color, opacity: defaultFillOpacity)
                         } else {
@@ -34,17 +38,22 @@ extension VectorDocument {
                         updatedChildren.append(childShape)
                     }
                     shape.groupedShapes = updatedChildren
+                    print("🔴 UPDATE FILL: Updated children saved back to group")
                 }
 
                 updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
                 unifiedObjects[index] = updatedObject
+                print("🔴 UPDATE FILL: Updated object saved to unifiedObjects")
             case .text:
                 break
             }
+        } else {
+            print("🔴 UPDATE FILL: Shape \(id) NOT FOUND in unifiedObjects")
         }
     }
 
     func updateShapeStrokeColorInUnified(id: UUID, color: VectorColor) {
+        print("🟠 UPDATE STROKE: Called for shape \(id), color=\(color)")
         if let index = unifiedObjects.firstIndex(where: { obj in
             switch obj.objectType {
             case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
@@ -56,6 +65,7 @@ extension VectorDocument {
             var updatedObject = unifiedObjects[index]
             switch updatedObject.objectType {
             case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+                print("🟠 UPDATE STROKE: Found object at index \(index), isGroupContainer=\(shape.isGroupContainer)")
                 // Update the shape itself
                 if shape.strokeStyle == nil {
                     shape.strokeStyle = StrokeStyle(color: color, width: defaultStrokeWidth, placement: defaultStrokePlacement, lineCap: defaultStrokeLineCap, lineJoin: defaultStrokeLineJoin, miterLimit: defaultStrokeMiterLimit, opacity: defaultStrokeOpacity)
@@ -65,8 +75,10 @@ extension VectorDocument {
 
                 // If this is a group, update all children
                 if shape.isGroupContainer {
+                    print("🟠 UPDATE STROKE: Updating \(shape.groupedShapes.count) children")
                     var updatedChildren: [VectorShape] = []
                     for var childShape in shape.groupedShapes {
+                        print("🟠 UPDATE STROKE: Updating child \(childShape.id)")
                         if childShape.strokeStyle == nil {
                             childShape.strokeStyle = StrokeStyle(color: color, width: defaultStrokeWidth, placement: defaultStrokePlacement, lineCap: defaultStrokeLineCap, lineJoin: defaultStrokeLineJoin, miterLimit: defaultStrokeMiterLimit, opacity: defaultStrokeOpacity)
                         } else {
@@ -75,13 +87,17 @@ extension VectorDocument {
                         updatedChildren.append(childShape)
                     }
                     shape.groupedShapes = updatedChildren
+                    print("🟠 UPDATE STROKE: Updated children saved back to group")
                 }
 
                 updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
                 unifiedObjects[index] = updatedObject
+                print("🟠 UPDATE STROKE: Updated object saved to unifiedObjects")
             case .text:
                 break
             }
+        } else {
+            print("🟠 UPDATE STROKE: Shape \(id) NOT FOUND in unifiedObjects")
         }
     }
 
