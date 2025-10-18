@@ -289,26 +289,40 @@ struct NonBackgroundObjectsView: View {
         Dictionary(grouping: nonBackgroundObjects, by: { $0.layerIndex })
     }
 
+    private var isDragging: Bool {
+        dragPreviewDelta != .zero
+    }
+
+    private func layerHasSelection(objects: [VectorObject]) -> Bool {
+        objects.contains(where: { selectedObjectIDs.contains($0.id) })
+    }
+
     var body: some View {
         ZStack {
             ForEach(objectsByLayer.keys.sorted(), id: \.self) { layerIndex in
                 if layerIndex < document.layers.count,
                    document.layers[layerIndex].isVisible,
                    let objects = objectsByLayer[layerIndex] {
-                    IsolatedLayerView(
-                        objects: objects,
-                        layerID: document.layers[layerIndex].id,
-                        document: document,
-                        zoomLevel: zoomLevel,
-                        canvasOffset: canvasOffset,
-                        selectedObjectIDs: selectedObjectIDs,
-                        viewMode: viewMode,
-                        dragPreviewDelta: dragPreviewDelta,
-                        dragPreviewTrigger: dragPreviewTrigger,
-                        layerOpacity: layerPreviewOpacities[document.layers[layerIndex].id] ?? document.layers[layerIndex].opacity,
-                        layerBlendMode: document.layers[layerIndex].blendMode
-                    )
-                    .equatable()
+
+                    // During drag: only show layer with selection (like turning other layers off)
+                    let showLayer = !isDragging || layerHasSelection(objects: objects)
+
+                    if showLayer {
+                        IsolatedLayerView(
+                            objects: objects,
+                            layerID: document.layers[layerIndex].id,
+                            document: document,
+                            zoomLevel: zoomLevel,
+                            canvasOffset: canvasOffset,
+                            selectedObjectIDs: selectedObjectIDs,
+                            viewMode: viewMode,
+                            dragPreviewDelta: dragPreviewDelta,
+                            dragPreviewTrigger: dragPreviewTrigger,
+                            layerOpacity: layerPreviewOpacities[document.layers[layerIndex].id] ?? document.layers[layerIndex].opacity,
+                            layerBlendMode: document.layers[layerIndex].blendMode
+                        )
+                        .equatable()
+                    }
                 }
             }
         }
