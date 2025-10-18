@@ -203,17 +203,26 @@ extension FileOperations {
                 )
             }
 
-            NonBackgroundObjectsView(
-                document: document,
-                zoomLevel: scale,
-                canvasOffset: .zero,
-                selectedObjectIDs: [],
-                viewMode: .color,
-                isShiftPressed: false,
-                dragPreviewDelta: .zero,
-                dragPreviewTrigger: false,
-                layerPreviewOpacities: .constant([:])
-            )
+            // Render layers directly
+            ForEach(document.layers.indices, id: \.self) { layerIndex in
+                if document.layers[layerIndex].isVisible,
+                   layerIndex >= 2 { // Skip background layers
+                    let objects = document.getObjectsInStackingOrder().filter { $0.layerIndex == layerIndex }
+                    IsolatedLayerView(
+                        objects: objects,
+                        layerID: document.layers[layerIndex].id,
+                        document: document,
+                        zoomLevel: scale,
+                        canvasOffset: .zero,
+                        selectedObjectIDs: [],
+                        viewMode: .color,
+                        dragPreviewDelta: .zero,
+                        dragPreviewTrigger: false,
+                        layerOpacity: document.layers[layerIndex].opacity,
+                        layerBlendMode: document.layers[layerIndex].blendMode
+                    )
+                }
+            }
         }
         .frame(width: outputSize.width, height: outputSize.height)
         .background(Color.clear)
