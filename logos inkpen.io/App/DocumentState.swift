@@ -46,7 +46,10 @@ class DocumentState: ObservableObject {
             if let notificationWindow = notification.object as? NSWindow,
                notificationWindow == NSApp.keyWindow,
                notificationWindow == self.window {
+                print("🔵 Window '\(notificationWindow.title)' became key - setting active document")
                 DrawingCanvasRegistry.shared.setActiveDocument(doc)
+            } else {
+                print("🟡 Window notification but not matching (window: \(self.window != nil ? "set" : "nil"))")
             }
         }
     }
