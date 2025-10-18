@@ -365,12 +365,8 @@ struct ProfessionalLayerRow: View {
             }
         }
         .dropDestination(for: DraggableItem.self) { items, location in
-            guard let droppedItem = items.first else {
-                print("🔴 DROP FAILED: No items")
-                return false
-            }
+            guard let droppedItem = items.first else { return false }
 
-            print("🟢 DROP RECEIVED on layer \(layerIndex): \(droppedItem)")
             switch droppedItem {
             case .layer(let draggableLayer):
                 let droppedLayerId = draggableLayer.layerId
@@ -394,12 +390,9 @@ struct ProfessionalLayerRow: View {
                 return true
 
             case .vectorObject(let vectorObj):
-                print("🟢 VECTOR DROP: type=\(vectorObj.objectType), id=\(vectorObj.objectId), from=\(vectorObj.sourceLayerIndex), to=\(layerIndex)")
                 if document.selectedObjectIDs.contains(vectorObj.objectId) && document.selectedObjectIDs.count > 1 {
-                    print("🟢 Moving multiple objects")
                     document.moveObjectsToLayer(objectIds: Array(document.selectedObjectIDs), targetLayerIndex: layerIndex)
                 } else {
-                    print("🟢 Moving single object")
                     document.moveObjectToLayer(objectId: vectorObj.objectId, targetLayerIndex: layerIndex)
                 }
                 return true
