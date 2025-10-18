@@ -42,17 +42,11 @@ extension VectorDocument {
     func syncUnifiedSelectionFromLegacy() {
         selectedObjectIDs.removeAll()
 
-        for shapeID in selectedShapeIDs {
-            if findShape(by: shapeID) != nil,
-               let unifiedObject = findObject(by: shapeID) {
-                selectedObjectIDs.insert(unifiedObject.id)
-            }
-        }
+        let allSelectedIDs = selectedShapeIDs.union(selectedTextIDs)
 
-        for textID in selectedTextIDs {
-            if findText(by: textID) != nil,
-               let unifiedObject = findObject(by: textID) {
-                selectedObjectIDs.insert(unifiedObject.id)
+        for object in unifiedObjects {
+            if allSelectedIDs.contains(object.id) {
+                selectedObjectIDs.insert(object.id)
             }
         }
     }
