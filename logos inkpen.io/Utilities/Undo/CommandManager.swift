@@ -21,6 +21,7 @@ class CommandManager: ObservableObject {
         document.isUndoRedoOperation = true
         command.execute(on: document)
         document.rebuildIndexCache()
+        document.changeNotifier.notifyGeneralChange()
         document.isUndoRedoOperation = false
 
         if let lastCommand = undoStack.last,
@@ -47,6 +48,7 @@ class CommandManager: ObservableObject {
         let command = undoStack.removeLast()
         command.undo(on: document)
         document.rebuildIndexCache()
+        document.changeNotifier.notifyGeneralChange()
         redoStack.append(command)
         document.isUndoRedoOperation = false
 
@@ -63,6 +65,7 @@ class CommandManager: ObservableObject {
         let command = redoStack.removeLast()
         command.execute(on: document)
         document.rebuildIndexCache()
+        document.changeNotifier.notifyGeneralChange()
         undoStack.append(command)
         document.isUndoRedoOperation = false
 

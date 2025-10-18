@@ -318,7 +318,7 @@ struct ProfessionalLayerRow: View {
                 .filter { $0.layerIndex == layerIndex }
                 .reversed())
         }
-        .onChange(of: document.unifiedObjects) { _, _ in
+        .onChange(of: document.changeNotifier.changeToken) { _, _ in
             layerObjects = Array(document.unifiedObjects
                 .filter { $0.layerIndex == layerIndex }
                 .reversed())

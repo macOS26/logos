@@ -135,7 +135,7 @@ struct EnvelopeHandles: View {
                 initializeEnvelopeCorners()
             }
         }
-        .onChange(of: document.unifiedObjects) { _, _ in
+        .onChange(of: document.changeNotifier.changeToken) { _, _ in
             if document.currentTool == .warp && !isWarping {
                 if let updatedShape = document.unifiedObjects.first(where: { obj in
                     if case .shape(let s) = obj.objectType {

@@ -183,7 +183,7 @@ struct LayersPanel: View {
         .onChange(of: document.layers.map { $0.id }) { _, _ in
             validateOverlays()
         }
-        .onChange(of: document.unifiedObjects.map { $0.id }) { _, _ in
+        .onChange(of: document.changeNotifier.changeToken) { _, _ in
             validateOverlays()
         }
         .onChange(of: document.settings.layerExpansionState) { _, _ in

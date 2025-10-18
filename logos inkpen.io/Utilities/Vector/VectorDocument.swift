@@ -56,6 +56,9 @@ class VectorDocument: ObservableObject, Codable {
     // Index cache: maps UUID -> array index (O(1) lookup, minimal memory)
     internal var unifiedObjectIndexCache: [UUID: Int] = [:]
 
+    // Lightweight change notifier - avoids copying unifiedObjects array
+    let changeNotifier = DocumentChangeNotifier()
+
     var cachedStackingOrder: [VectorObject]? = nil
 
     internal var objectsByLayerCache: [Int: [VectorObject]] = [:]

@@ -129,7 +129,7 @@ struct FontPanel: View {
                 }
             }
         }
-        .onChange(of: document.unifiedObjects.map { $0.id }) { _, _ in
+        .onChange(of: document.changeNotifier.changeToken) { _, _ in
             let freshEditingText = document.unifiedObjects.first { obj in
                 if case .text(let shape) = obj.objectType {
                     return shape.isEditing == true
