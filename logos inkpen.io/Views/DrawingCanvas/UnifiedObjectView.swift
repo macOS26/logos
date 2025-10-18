@@ -404,18 +404,15 @@ struct IsolatedLayerView: View, Equatable {
         .opacity(layerOpacity)
         .blendMode(layerBlendMode.swiftUIBlendMode)
         .onChange(of: dragPreviewDelta) { oldValue, newValue in
-            let wasDragging = oldValue != .zero
             let isNowDragging = newValue != .zero
 
-            // Drag started
-            if !wasDragging && isNowDragging && !hasSelection {
-                print("🔵 CACHE: Rendering layer \(layerID) to cache")
+            if isNowDragging && !hasSelection && !isDragging {
+                // Drag just started on another layer - cache this inactive layer
+                print("🔵 CACHE: Rendering layer \(layerID) to cache, hasSelection=\(hasSelection)")
                 renderLayerToCache()
                 isDragging = true
-            }
-
-            // Drag ended
-            if wasDragging && !isNowDragging {
+            } else if !isNowDragging && isDragging {
+                // Drag ended - clear cache
                 print("🔵 CACHE: Clearing cache for layer \(layerID)")
                 isDragging = false
                 cachedImage = nil
