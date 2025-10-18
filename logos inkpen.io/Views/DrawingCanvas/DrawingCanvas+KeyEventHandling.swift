@@ -167,12 +167,35 @@ extension DrawingCanvas {
                 return nil
             }
 
-            // Tab key - let it pass through to the menu system
-            // The menu command will call DocumentState.deselectAll()
-            // which will notify this canvas to clear its state
             if let characters = event.charactersIgnoringModifiers,
                characters == "\t" {
-                return event
+                print("🟢 TAB KEY: Deselecting all")
+                self.document.selectedObjectIDs = []
+
+                self.document.syncSelectionArrays()
+
+                if self.isEditingText {
+                    self.finishTextEditing()
+                }
+
+                for unifiedObj in self.document.unifiedObjects {
+                    if case .text(let shape) = unifiedObj.objectType, shape.isEditing == true {
+                        self.document.setTextEditingInUnified(id: shape.id, isEditing: false)
+                    }
+                }
+
+                self.selectedPoints.removeAll()
+                self.selectedHandles.removeAll()
+                self.directSelectedShapeIDs.removeAll()
+                self.syncDirectSelectionWithDocument()
+                self.isCornerRadiusEditMode = false
+
+                if self.document.currentTool == .bezierPen && self.isBezierDrawing {
+                    self.finishBezierPath()
+                }
+
+                print("🟢 TAB KEY: Done deselecting, selectedObjectIDs count = \(self.document.selectedObjectIDs.count)")
+                return nil
             }
 
             let toolSwitchingKeys = Set(["a", "d", "c", "s", "r", "x", "w", "p", "f", "b", "m", "t", "l", "e", "o", "i", "h", "z", "g", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"])
@@ -389,31 +412,5 @@ extension DrawingCanvas {
             let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
             document.commandManager.execute(command)
         }
-    }
-
-    internal func handleDeselectAll() {
-        print("🟢 TAB KEY (Canvas): Clearing canvas-specific state")
-
-        if self.isEditingText {
-            self.finishTextEditing()
-        }
-
-        for unifiedObj in self.document.unifiedObjects {
-            if case .text(let shape) = unifiedObj.objectType, shape.isEditing == true {
-                self.document.setTextEditingInUnified(id: shape.id, isEditing: false)
-            }
-        }
-
-        self.selectedPoints.removeAll()
-        self.selectedHandles.removeAll()
-        self.directSelectedShapeIDs.removeAll()
-        self.syncDirectSelectionWithDocument()
-        self.isCornerRadiusEditMode = false
-
-        if self.document.currentTool == .bezierPen && self.isBezierDrawing {
-            self.finishBezierPath()
-        }
-
-        print("🟢 TAB KEY (Canvas): Done clearing canvas state")
     }
 }
