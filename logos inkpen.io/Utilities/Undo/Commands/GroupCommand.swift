@@ -84,8 +84,15 @@ class GroupCommand: BaseCommand {
     }
 
     override func undo(on document: VectorDocument) {
+        print("🔵 UNDO GROUP: operation=\(operation)")
+        print("🔵 UNDO GROUP: removedObjectIDs count=\(removedObjectIDs.count)")
+        for (i, id) in removedObjectIDs.enumerated() {
+            print("🔵 UNDO GROUP: removedObjectIDs[\(i)]=\(id)")
+        }
+
         // Find the index where the grouped object was to restore original order
         let insertionIndex = document.unifiedObjects.firstIndex { addedObjectIDs.contains($0.id) } ?? document.unifiedObjects.count
+        print("🔵 UNDO GROUP: insertionIndex=\(insertionIndex)")
 
         document.unifiedObjects.removeAll { addedObjectIDs.contains($0.id) }
 
@@ -97,6 +104,7 @@ class GroupCommand: BaseCommand {
                 layerIndex: layerIndex
             )
             document.unifiedObjects.insert(restoredObject, at: insertionIndex + offset)
+            print("🔵 UNDO GROUP: Inserted \(objectID) at \(insertionIndex + offset)")
         }
 
         document.selectedObjectIDs = oldSelectedObjectIDs

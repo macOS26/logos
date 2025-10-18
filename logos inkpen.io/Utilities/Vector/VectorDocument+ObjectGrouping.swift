@@ -52,10 +52,13 @@ extension VectorDocument {
 
         let newSelectedIDs: Set<UUID> = [groupShape.id]
 
+        // Build removedObjectIDs in the correct stacking order from selectedShapes
+        let removedObjectIDsInOrder = selectedShapes.map { $0.id }
+
         let command = GroupCommand(
             operation: .group,
             layerIndex: layerIndex,
-            removedObjectIDs: Array(selectedObjectIDs),
+            removedObjectIDs: removedObjectIDsInOrder,
             removedShapes: removedShapes,
             addedObjectIDs: [groupShape.id],
             addedShapes: [groupShape.id: groupShape],
