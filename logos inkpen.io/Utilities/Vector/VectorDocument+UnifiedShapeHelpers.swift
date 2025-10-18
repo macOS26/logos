@@ -15,11 +15,20 @@ extension VectorDocument {
             var updatedObject = unifiedObjects[index]
             switch updatedObject.objectType {
             case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+                // Update the shape itself
                 if shape.fillStyle == nil {
                     shape.fillStyle = FillStyle(color: color, opacity: defaultFillOpacity)
                 } else {
                     shape.fillStyle?.color = color
                 }
+
+                // If this is a group, update all children
+                if shape.isGroupContainer {
+                    for childShape in shape.groupedShapes {
+                        updateShapeFillColorInUnified(id: childShape.id, color: color)
+                    }
+                }
+
                 updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
                 unifiedObjects[index] = updatedObject
             case .text:
@@ -40,11 +49,20 @@ extension VectorDocument {
             var updatedObject = unifiedObjects[index]
             switch updatedObject.objectType {
             case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+                // Update the shape itself
                 if shape.strokeStyle == nil {
                     shape.strokeStyle = StrokeStyle(color: color, width: defaultStrokeWidth, placement: defaultStrokePlacement, lineCap: defaultStrokeLineCap, lineJoin: defaultStrokeLineJoin, miterLimit: defaultStrokeMiterLimit, opacity: defaultStrokeOpacity)
                 } else {
                     shape.strokeStyle?.color = color
                 }
+
+                // If this is a group, update all children
+                if shape.isGroupContainer {
+                    for childShape in shape.groupedShapes {
+                        updateShapeStrokeColorInUnified(id: childShape.id, color: color)
+                    }
+                }
+
                 updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
                 unifiedObjects[index] = updatedObject
             case .text:
