@@ -67,19 +67,23 @@ extension VectorDocument {
 
         // Check in groups
         for groupIndex in unifiedObjects.indices {
-            if case .shape(var groupShape) = unifiedObjects[groupIndex].objectType,
-               groupShape.isGroupContainer {
-                if let childIndex = groupShape.groupedShapes.firstIndex(where: { $0.id == shapeID }) {
-                    var childShape = groupShape.groupedShapes[childIndex]
-                    update(&childShape)
-                    groupShape.groupedShapes[childIndex] = childShape
+            switch unifiedObjects[groupIndex].objectType {
+            case .group(var groupShape), .clipGroup(var groupShape):
+                if groupShape.isGroupContainer {
+                    if let childIndex = groupShape.groupedShapes.firstIndex(where: { $0.id == shapeID }) {
+                        var childShape = groupShape.groupedShapes[childIndex]
+                        update(&childShape)
+                        groupShape.groupedShapes[childIndex] = childShape
 
-                    let layerIndex = unifiedObjects[groupIndex].layerIndex
-                    let updatedObject = VectorObject(shape: groupShape, layerIndex: layerIndex)
-                    unifiedObjects[groupIndex] = updatedObject
-                    unifiedObjectLookupCache[groupShape.id] = updatedObject
-                    return
+                        let layerIndex = unifiedObjects[groupIndex].layerIndex
+                        let updatedObject = VectorObject(shape: groupShape, layerIndex: layerIndex)
+                        unifiedObjects[groupIndex] = updatedObject
+                        unifiedObjectLookupCache[groupShape.id] = updatedObject
+                        return
+                    }
                 }
+            default:
+                continue
             }
         }
     }
