@@ -123,7 +123,7 @@ final class AppEventMonitor {
                     }
                 }
 
-                // Plain arrows: Nudge selected objects (works with any tool)
+                // Plain or Shift+arrows: Nudge selected objects (works with any tool)
                 if !event.modifierFlags.contains(.control) &&
                    !event.modifierFlags.contains(.command) &&
                    !event.modifierFlags.contains(.option) {
@@ -155,7 +155,14 @@ final class AppEventMonitor {
                     if let direction = nudgeDirection {
                         // Convert grid spacing from document units to points
                         let gridSpacingInPoints = activeDoc.settings.gridSpacing * activeDoc.settings.unit.pointsPerUnit
-                        let nudgeAmount = CGVector(dx: direction.dx * gridSpacingInPoints, dy: direction.dy * gridSpacingInPoints)
+
+                        // Shift key = 10x nudge
+                        let multiplier: CGFloat = event.modifierFlags.contains(.shift) ? 10.0 : 1.0
+
+                        let nudgeAmount = CGVector(
+                            dx: direction.dx * gridSpacingInPoints * multiplier,
+                            dy: direction.dy * gridSpacingInPoints * multiplier
+                        )
                         activeDoc.nudgeSelectedObjects(by: nudgeAmount)
                         return nil
                     }
