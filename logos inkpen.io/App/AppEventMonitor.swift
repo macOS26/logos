@@ -122,12 +122,16 @@ final class AppEventMonitor {
                     }
                 }
 
-                // Plain arrows: Nudge selected objects
+                // Plain arrows: Nudge selected objects (consume event even if nothing selected to prevent beep)
                 if !event.modifierFlags.contains(.control) &&
                    !event.modifierFlags.contains(.command) &&
                    !event.modifierFlags.contains(.option) &&
-                   activeDoc.currentTool == .selection &&
-                   !activeDoc.selectedObjectIDs.isEmpty {
+                   activeDoc.currentTool == .selection {
+
+                    // Only nudge if something is selected, but consume the event regardless
+                    if activeDoc.selectedObjectIDs.isEmpty {
+                        return nil
+                    }
 
                     var nudgeDirection: CGVector? = nil
                     switch characters {
