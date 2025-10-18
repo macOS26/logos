@@ -160,6 +160,9 @@ struct DocumentBasedMainView: View {
 
             documentState.setDocument(document)
 
+            // Set as active document immediately on appear
+            DrawingCanvasRegistry.shared.setActiveDocument(document)
+
             if let configured = appState.pendingNewDocument {
                 loadImportedDocument(configured)
                 appState.pendingNewDocument = nil
