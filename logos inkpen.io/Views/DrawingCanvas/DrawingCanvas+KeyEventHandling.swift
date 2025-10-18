@@ -11,14 +11,20 @@ extension DrawingCanvas {
                 return event
             }
 
-            // 1) Find the active document
-            guard let activeDoc = DrawingCanvasRegistry.shared.activeDocument else {
-                print("🔴 No active document")
-                return event
+            // 1) Find the active document by matching window to InkpenDocument
+            var activeDoc: VectorDocument? = nil
+
+            if let windowController = keyWindow.windowController,
+               let inkpenDoc = windowController.document as? InkpenDocument {
+                activeDoc = inkpenDoc.document
+                print("🟢 Found active document from key window: \(Unmanaged.passUnretained(activeDoc!).toOpaque())")
             }
 
-            // 2) Get the active document's VectorDocument - done, it's activeDoc
-            print("🟢 Active document: \(Unmanaged.passUnretained(activeDoc).toOpaque())")
+            // 2) Get the active document VectorDocument
+            guard let activeDoc = activeDoc else {
+                print("🔴 No active document in key window")
+                return event
+            }
 
             if event.type == .keyDown {
 
