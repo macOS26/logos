@@ -338,17 +338,17 @@ extension VectorDocument {
     }
 
     func findText(by id: UUID) -> VectorText? {
-        guard let index = unifiedObjectIndexCache[id], index < unifiedObjects.count else {
-            return nil
-        }
-        let object = unifiedObjects[index]
-        if
-           case .text(let shape) = object.objectType,
-           var vectorText = VectorText.from(shape) {
-            vectorText.layerIndex = object.layerIndex
-            return vectorText
+        // First check if it's a top-level text object in unifiedObjects
+        if let index = unifiedObjectIndexCache[id], index < unifiedObjects.count {
+            let object = unifiedObjects[index]
+            if case .text(let shape) = object.objectType,
+               var vectorText = VectorText.from(shape) {
+                vectorText.layerIndex = object.layerIndex
+                return vectorText
+            }
         }
 
+        // Not in cache or not a text object - search inside groups
         for object in unifiedObjects {
             if case .group(let shape) = object.objectType {
                 if let textShape = shape.groupedShapes.first(where: { $0.id == id && $0.typography != nil }),
