@@ -879,7 +879,20 @@ class DocumentState: ObservableObject {
     }
 
     func deselectAll() {
-        document?.selectedObjectIDs.removeAll()
+        guard let document = document else { return }
+
+        print("🟢 TAB KEY (DocumentState): Deselecting all")
+        document.selectedObjectIDs = []
+        document.syncSelectionArrays()
+
+        // Notify all canvases to clear their text editing state
+        NotificationCenter.default.post(
+            name: NSNotification.Name("DeselectAllNotification"),
+            object: document
+        )
+
+        print("🟢 TAB KEY (DocumentState): Done deselecting, selectedObjectIDs count = \(document.selectedObjectIDs.count)")
+
         updateAllStates()
     }
 
