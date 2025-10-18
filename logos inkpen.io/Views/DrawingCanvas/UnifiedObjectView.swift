@@ -295,25 +295,32 @@ struct NonBackgroundObjectsView: View {
                 if layerIndex < document.layers.count,
                    document.layers[layerIndex].isVisible,
                    let objects = objectsByLayer[layerIndex] {
-                    ZStack {
-                        ForEach(objects, id: \.id) { unifiedObject in
-                            if unifiedObject.isVisible {
-                                UnifiedObjectContentView(
-                                    unifiedObject: unifiedObject,
-                                    document: document,
-                                    zoomLevel: zoomLevel,
-                                    canvasOffset: canvasOffset,
-                                    selectedObjectIDs: selectedObjectIDs,
-                                    viewMode: viewMode,
-                                    dragPreviewDelta: dragPreviewDelta,
-                                    dragPreviewTrigger: dragPreviewTrigger
-                                )
+
+                    // Skip rendering non-selected layers during drag for performance
+                    let isDragging = dragPreviewDelta != .zero
+                    let hasSelectedObjects = objects.contains(where: { selectedObjectIDs.contains($0.id) })
+                    let shouldRender = !isDragging || hasSelectedObjects
+
+                    if shouldRender {
+                        ZStack {
+                            ForEach(objects, id: \.id) { unifiedObject in
+                                if unifiedObject.isVisible {
+                                    UnifiedObjectContentView(
+                                        unifiedObject: unifiedObject,
+                                        document: document,
+                                        zoomLevel: zoomLevel,
+                                        canvasOffset: canvasOffset,
+                                        selectedObjectIDs: selectedObjectIDs,
+                                        viewMode: viewMode,
+                                        dragPreviewDelta: dragPreviewDelta,
+                                        dragPreviewTrigger: dragPreviewTrigger
+                                    )
+                                }
                             }
                         }
+                        .opacity(layerPreviewOpacities[document.layers[layerIndex].id] ?? document.layers[layerIndex].opacity)
+                        .blendMode(document.layers[layerIndex].blendMode.swiftUIBlendMode)
                     }
-                    .opacity(layerPreviewOpacities[document.layers[layerIndex].id] ?? document.layers[layerIndex].opacity)
-                    .blendMode(document.layers[layerIndex].blendMode.swiftUIBlendMode)
-
                 }
             }
         }
