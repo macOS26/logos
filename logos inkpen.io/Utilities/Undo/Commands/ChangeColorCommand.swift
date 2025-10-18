@@ -82,8 +82,14 @@ class ChangeColorCommand: BaseCommand {
                             // Update children in groups
                             var updatedChildren: [VectorShape] = []
                             for var childShape in shape.groupedShapes {
-                                childShape.fillStyle?.color = color
-                                childShape.fillStyle?.opacity = opacity
+                                if var typography = childShape.typography {
+                                    typography.fillColor = color
+                                    typography.fillOpacity = opacity
+                                    childShape.typography = typography
+                                } else {
+                                    childShape.fillStyle?.color = color
+                                    childShape.fillStyle?.opacity = opacity
+                                }
                                 updatedChildren.append(childShape)
                             }
                             shape.groupedShapes = updatedChildren
@@ -95,8 +101,14 @@ class ChangeColorCommand: BaseCommand {
                             // Update children in groups
                             var updatedChildren: [VectorShape] = []
                             for var childShape in shape.groupedShapes {
-                                childShape.strokeStyle?.color = color
-                                childShape.strokeStyle?.opacity = opacity
+                                if var typography = childShape.typography {
+                                    typography.strokeColor = color
+                                    typography.strokeOpacity = opacity
+                                    childShape.typography = typography
+                                } else {
+                                    childShape.strokeStyle?.color = color
+                                    childShape.strokeStyle?.opacity = opacity
+                                }
                                 updatedChildren.append(childShape)
                             }
                             shape.groupedShapes = updatedChildren
