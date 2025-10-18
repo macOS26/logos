@@ -297,7 +297,7 @@ struct NonBackgroundObjectsView: View {
                    let objects = objectsByLayer[layerIndex] {
                     IsolatedLayerView(
                         objects: objects,
-                        layerIndex: layerIndex,
+                        layerID: document.layers[layerIndex].id,
                         document: document,
                         zoomLevel: zoomLevel,
                         canvasOffset: canvasOffset,
@@ -317,8 +317,8 @@ struct NonBackgroundObjectsView: View {
 
 struct IsolatedLayerView: View {
     let objects: [VectorObject]
-    let layerIndex: Int
-    @ObservedObject var document: VectorDocument
+    let layerID: UUID
+    let document: VectorDocument  // NOT @ObservedObject!
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let selectedObjectIDs: Set<UUID>
@@ -331,11 +331,6 @@ struct IsolatedLayerView: View {
     // Track if this layer has selection
     private var hasSelection: Bool {
         objects.contains(where: { selectedObjectIDs.contains($0.id) })
-    }
-
-    private var layerID: UUID? {
-        guard layerIndex < document.layers.count else { return nil }
-        return document.layers[layerIndex].id
     }
 
     var body: some View {
@@ -357,7 +352,7 @@ struct IsolatedLayerView: View {
         }
         .opacity(layerOpacity)
         .blendMode(layerBlendMode.swiftUIBlendMode)
-        .id(hasSelection ? "\(layerID?.uuidString ?? "")-\(dragPreviewDelta.x)-\(dragPreviewDelta.y)" : layerID?.uuidString ?? "")
+        .id(hasSelection ? "\(layerID.uuidString)-\(dragPreviewDelta.x)-\(dragPreviewDelta.y)" : layerID.uuidString)
     }
 }
 
