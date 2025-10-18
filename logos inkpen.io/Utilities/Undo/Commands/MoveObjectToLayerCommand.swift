@@ -30,7 +30,13 @@ class MoveObjectToLayerCommand: BaseCommand {
 
         let object = document.unifiedObjects[objectIndex]
 
-        if case .shape(let shape) = object.objectType {
+        switch object.objectType {
+        case .text(let shape),
+             .shape(let shape),
+             .warp(let shape),
+             .group(let shape),
+             .clipGroup(let shape),
+             .clipMask(let shape):
             document.unifiedObjects[objectIndex] = VectorObject(
                 shape: shape,
                 layerIndex: toLayerIndex,
