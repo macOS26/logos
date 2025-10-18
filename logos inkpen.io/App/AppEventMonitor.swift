@@ -92,33 +92,33 @@ final class AppEventMonitor {
             if [arrowUp, arrowDown, arrowLeft, arrowRight].contains(characters) {
                 print("🔷 Arrow key pressed - tool: \(activeDoc.currentTool), selected: \(activeDoc.selectedObjectIDs.count)")
 
-                // Cmd+Arrow: Z-order and selection navigation
+                // Cmd+Arrow: Select next/prev object within same layer
                 if event.modifierFlags.contains(.command) &&
                    !event.modifierFlags.contains(.control) &&
                    !event.modifierFlags.contains(.option) {
 
                     if !activeDoc.selectedObjectIDs.isEmpty {
                         if characters == arrowUp {
-                            activeDoc.selectNextObjectDown()
+                            activeDoc.selectNextObjectDownWithinLayer()
                             return nil
                         } else if characters == arrowDown {
-                            activeDoc.selectNextObjectUp()
+                            activeDoc.selectNextObjectUpWithinLayer()
                             return nil
                         }
                     }
                 }
 
-                // Option+Arrow: Move objects up/down in z-order
+                // Option+Arrow: Move objects up/down in z-order within same layer
                 if event.modifierFlags.contains(.option) &&
                    !event.modifierFlags.contains(.control) &&
                    !event.modifierFlags.contains(.command) &&
                    !activeDoc.selectedObjectIDs.isEmpty {
 
                     if characters == arrowUp {
-                        activeDoc.moveSelectedObjectsUp()
+                        activeDoc.moveSelectedObjectsUpWithinLayer()
                         return nil
                     } else if characters == arrowDown {
-                        activeDoc.moveSelectedObjectsDown()
+                        activeDoc.moveSelectedObjectsDownWithinLayer()
                         return nil
                     }
                 }
