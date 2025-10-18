@@ -7,6 +7,7 @@ struct ScaleHandles: View {
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let isShiftPressed: Bool
+    @Binding var liveScaleTransform: CGAffineTransform
     @State var isScaling = false
     @State var scalingStarted = false
     @State var initialBounds: CGRect = .zero
