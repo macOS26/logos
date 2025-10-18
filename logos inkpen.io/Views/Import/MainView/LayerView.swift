@@ -28,8 +28,7 @@ struct LayerView: View {
     var body: some View {
         let shapes = document.getShapesForLayer(layerIndex)
         return ZStack {
-            ForEach(shapes.indices, id: \.self) { shapeIndex in
-                let currentShape = shapes[shapeIndex]
+            ForEach(shapes, id: \.id) { currentShape in
                 if currentShape.isClippingPath {
                     EmptyView()
                 } else if let clipID = currentShape.clippedByShapeID, let maskShape = document.findShape(by: clipID) {
@@ -58,7 +57,8 @@ struct LayerView: View {
                         isCanvasLayer: isCanvasLayer,
                         isPasteboardLayer: isPasteboardLayer,
                         dragPreviewDelta: dragPreviewDelta,
-                        dragPreviewTrigger: dragPreviewTrigger
+                        dragPreviewTrigger: dragPreviewTrigger,
+                        liveScaleTransform: .identity
                     )
                 }
             }
