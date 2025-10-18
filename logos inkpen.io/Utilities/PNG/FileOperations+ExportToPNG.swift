@@ -218,6 +218,7 @@ extension FileOperations {
                         viewMode: .color,
                         dragPreviewDelta: .zero,
                         dragPreviewTrigger: false,
+                        liveScaleTransform: .identity,
                         layerOpacity: document.layers[layerIndex].opacity,
                         layerBlendMode: document.layers[layerIndex].blendMode
                     )
