@@ -321,13 +321,16 @@ struct ObjectRow: View {
                 }
                 .padding(.horizontal, 4)
             }
-            .draggable(DraggableItem.vectorObject(
-                DraggableVectorObject(
-                    objectType: objectType == .text ? .text : .shape,
+            .draggable(DraggableItem.vectorObject({
+                let dragType: DraggableVectorObject.ObjectType = objectType == .text ? .text : .shape
+                print("🔵 CREATING DRAG: objectType=\(objectType), dragType=\(dragType), objectId=\(objectId), layer=\(layerIndex)")
+                return DraggableVectorObject(
+                    objectType: dragType,
                     objectId: objectId,
                     sourceLayerIndex: layerIndex
                 )
-            )) {
+            }())
+            ) {
                 HStack(spacing: 4) {
                     Image(systemName: objectIcon)
                         .font(.system(size: 10))
