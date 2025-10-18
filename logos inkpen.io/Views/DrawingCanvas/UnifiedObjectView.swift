@@ -296,31 +296,28 @@ struct NonBackgroundObjectsView: View {
                    document.layers[layerIndex].isVisible,
                    let objects = objectsByLayer[layerIndex] {
 
-                    // Skip rendering non-selected layers during drag for performance
-                    let isDragging = dragPreviewDelta != .zero
-                    let hasSelectedObjects = objects.contains(where: { selectedObjectIDs.contains($0.id) })
-                    let shouldRender = !isDragging || hasSelectedObjects
+                    ZStack {
+                        ForEach(objects, id: \.id) { unifiedObject in
+                            if unifiedObject.isVisible {
+                                // Only apply drag delta to selected objects
+                                let effectiveDragDelta = selectedObjectIDs.contains(unifiedObject.id) ? dragPreviewDelta : .zero
 
-                    if shouldRender {
-                        ZStack {
-                            ForEach(objects, id: \.id) { unifiedObject in
-                                if unifiedObject.isVisible {
-                                    UnifiedObjectContentView(
-                                        unifiedObject: unifiedObject,
-                                        document: document,
-                                        zoomLevel: zoomLevel,
-                                        canvasOffset: canvasOffset,
-                                        selectedObjectIDs: selectedObjectIDs,
-                                        viewMode: viewMode,
-                                        dragPreviewDelta: dragPreviewDelta,
-                                        dragPreviewTrigger: dragPreviewTrigger
-                                    )
-                                }
+                                UnifiedObjectContentView(
+                                    unifiedObject: unifiedObject,
+                                    document: document,
+                                    zoomLevel: zoomLevel,
+                                    canvasOffset: canvasOffset,
+                                    selectedObjectIDs: selectedObjectIDs,
+                                    viewMode: viewMode,
+                                    dragPreviewDelta: effectiveDragDelta,
+                                    dragPreviewTrigger: dragPreviewTrigger
+                                )
+                                .drawingGroup(opaque: false, colorMode: .nonLinear)
                             }
                         }
-                        .opacity(layerPreviewOpacities[document.layers[layerIndex].id] ?? document.layers[layerIndex].opacity)
-                        .blendMode(document.layers[layerIndex].blendMode.swiftUIBlendMode)
                     }
+                    .opacity(layerPreviewOpacities[document.layers[layerIndex].id] ?? document.layers[layerIndex].opacity)
+                    .blendMode(document.layers[layerIndex].blendMode.swiftUIBlendMode)
                 }
             }
         }
