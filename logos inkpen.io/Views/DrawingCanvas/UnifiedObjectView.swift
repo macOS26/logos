@@ -349,9 +349,24 @@ struct IsolatedLayerView: View, Equatable {
         let lhsHasSelection = lhs.hasSelection
         let rhsHasSelection = rhs.hasSelection
 
-        // If layer has no selection, don't re-render during drag
+        // Check if drag state changed (started or stopped)
+        let lhsDragging = lhs.dragPreviewDelta != .zero
+        let rhsDragging = rhs.dragPreviewDelta != .zero
+        let dragStateChanged = lhsDragging != rhsDragging
+
+        // If layer has no selection
         if !lhsHasSelection && !rhsHasSelection {
-            // Only re-render if zoom, offset, opacity, or blend mode changed
+            // Always update if drag state changed (started/stopped) - needed for caching
+            if dragStateChanged {
+                return false  // Not equal - force update
+            }
+
+            // During drag, don't re-render (use cached image)
+            if lhsDragging && rhsDragging {
+                return true  // Equal - skip re-render
+            }
+
+            // Not dragging - only re-render if zoom, offset, opacity, or blend mode changed
             return lhs.zoomLevel == rhs.zoomLevel &&
                    lhs.canvasOffset == rhs.canvasOffset &&
                    lhs.layerOpacity == rhs.layerOpacity &&
@@ -406,11 +421,14 @@ struct IsolatedLayerView: View, Equatable {
         .onChange(of: dragPreviewDelta) { oldValue, newValue in
             let isNowDragging = newValue != .zero
 
+            print("🔵 LAYER \(layerID): delta=\(newValue), isNowDragging=\(isNowDragging), hasSelection=\(hasSelection), isDragging=\(isDragging)")
+
             if isNowDragging && !hasSelection && !isDragging {
                 // Drag just started on another layer - cache this inactive layer
-                print("🔵 CACHE: Rendering layer \(layerID) to cache, hasSelection=\(hasSelection)")
+                print("🔵 CACHE: Rendering layer \(layerID) to cache")
                 renderLayerToCache()
                 isDragging = true
+                print("🔵 CACHE: Cache created, image size = \(cachedImage?.size ?? .zero)")
             } else if !isNowDragging && isDragging {
                 // Drag ended - clear cache
                 print("🔵 CACHE: Clearing cache for layer \(layerID)")
