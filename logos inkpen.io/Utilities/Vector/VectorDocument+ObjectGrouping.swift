@@ -175,20 +175,24 @@ extension VectorDocument {
             }
         }
 
-        // Find insertion index (where the group was)
-        let insertionIndex = unifiedObjects.firstIndex { shapesToRemove.contains($0.id) } ?? unifiedObjects.count
+        var addedShapes: [UUID: VectorShape] = [:]
 
-        print("🟡 UNGROUP: insertionIndex=\(insertionIndex), shapesToAdd.count=\(shapesToAdd.count)")
-
-        // Remove the group
-        unifiedObjects.removeAll { shapesToRemove.contains($0.id) }
-
-        // Insert ungrouped shapes at the correct position to preserve order
-        for (offset, shape) in shapesToAdd.enumerated() {
-            let newObject = VectorObject(shape: shape, layerIndex: layerIndex)
-            unifiedObjects.insert(newObject, at: insertionIndex + offset)
-            print("🟡 UNGROUP: Inserted shape id=\(shape.id) at index \(insertionIndex + offset)")
+        for shape in shapesToAdd {
+            addedShapes[shape.id] = shape
         }
+
+        let command = GroupCommand(
+            operation: .ungroup,
+            layerIndex: layerIndex,
+            removedObjectIDs: shapesToRemove,
+            removedShapes: removedShapes,
+            addedObjectIDs: Array(newSelectedShapeIDs),
+            addedShapes: addedShapes,
+            oldSelectedObjectIDs: selectedObjectIDs,
+            newSelectedObjectIDs: newSelectedShapeIDs
+        )
+
+        commandManager.execute(command)
 
         selectedObjectIDs = newSelectedShapeIDs
         syncSelectionArrays()

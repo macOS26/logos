@@ -84,15 +84,19 @@ class GroupCommand: BaseCommand {
     }
 
     override func undo(on document: VectorDocument) {
+        // Find the index where the grouped object was to restore original order
+        let insertionIndex = document.unifiedObjects.firstIndex { addedObjectIDs.contains($0.id) } ?? document.unifiedObjects.count
+
         document.unifiedObjects.removeAll { addedObjectIDs.contains($0.id) }
 
-        for objectID in removedObjectIDs {
+        // Insert objects at the correct position in the order they appear in removedObjectIDs
+        for (offset, objectID) in removedObjectIDs.enumerated() {
             guard let shape = removedShapes[objectID] else { continue }
             let restoredObject = VectorObject(
                 shape: shape,
                 layerIndex: layerIndex
             )
-            document.unifiedObjects.append(restoredObject)
+            document.unifiedObjects.insert(restoredObject, at: insertionIndex + offset)
         }
 
         document.selectedObjectIDs = oldSelectedObjectIDs
