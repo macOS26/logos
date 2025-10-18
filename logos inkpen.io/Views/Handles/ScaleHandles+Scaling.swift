@@ -52,6 +52,7 @@ extension ScaleHandles {
         isScaling = false
         document.isHandleScalingActive = false
         document.scalePreviewDimensions = .zero
+        liveScaleTransform = .identity
 
         var oldShapes: [UUID: VectorShape] = [:]
         if case .shape(let oldShape) = document.findObject(by: shape.id)?.objectType {
@@ -161,6 +162,7 @@ extension ScaleHandles {
             .translatedBy(x: -anchor.x, y: -anchor.y)
 
         previewTransform = initialTransform.concatenating(scaleTransform)
+        liveScaleTransform = previewTransform
 
         let newWidth = initialBounds.width * abs(scaleX)
         let newHeight = initialBounds.height * abs(scaleY)
