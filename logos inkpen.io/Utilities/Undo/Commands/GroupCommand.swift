@@ -43,15 +43,19 @@ class GroupCommand: BaseCommand {
     }
 
     override func execute(on document: VectorDocument) {
+        // Find the index of the first removed object to preserve order
+        let insertionIndex = document.unifiedObjects.firstIndex { removedObjectIDs.contains($0.id) } ?? document.unifiedObjects.count
+
         document.unifiedObjects.removeAll { removedObjectIDs.contains($0.id) }
 
-        for objectID in addedObjectIDs {
+        // Insert objects at the correct position in the order they appear in addedObjectIDs
+        for (offset, objectID) in addedObjectIDs.enumerated() {
             guard let shape = addedShapes[objectID] else { continue }
             let newObject = VectorObject(
                 shape: shape,
                 layerIndex: layerIndex
             )
-            document.unifiedObjects.append(newObject)
+            document.unifiedObjects.insert(newObject, at: insertionIndex + offset)
         }
 
         document.selectedObjectIDs = newSelectedObjectIDs
