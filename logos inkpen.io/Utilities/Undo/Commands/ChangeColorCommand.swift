@@ -82,13 +82,15 @@ class ChangeColorCommand: BaseCommand {
                             // Update children in groups
                             var updatedChildren: [VectorShape] = []
                             for var childShape in shape.groupedShapes {
-                                if var typography = childShape.typography {
-                                    typography.fillColor = color
-                                    typography.fillOpacity = opacity
-                                    childShape.typography = typography
-                                } else {
-                                    childShape.fillStyle?.color = color
-                                    childShape.fillStyle?.opacity = opacity
+                                if let childColor = colors[childShape.id], let childOpacity = opacities[childShape.id] {
+                                    if var typography = childShape.typography {
+                                        typography.fillColor = childColor
+                                        typography.fillOpacity = childOpacity
+                                        childShape.typography = typography
+                                    } else {
+                                        childShape.fillStyle?.color = childColor
+                                        childShape.fillStyle?.opacity = childOpacity
+                                    }
                                 }
                                 updatedChildren.append(childShape)
                             }
@@ -101,13 +103,15 @@ class ChangeColorCommand: BaseCommand {
                             // Update children in groups
                             var updatedChildren: [VectorShape] = []
                             for var childShape in shape.groupedShapes {
-                                if var typography = childShape.typography {
-                                    typography.strokeColor = color
-                                    typography.strokeOpacity = opacity
-                                    childShape.typography = typography
-                                } else {
-                                    childShape.strokeStyle?.color = color
-                                    childShape.strokeStyle?.opacity = opacity
+                                if let childColor = colors[childShape.id], let childOpacity = opacities[childShape.id] {
+                                    if var typography = childShape.typography {
+                                        typography.strokeColor = childColor
+                                        typography.strokeOpacity = childOpacity
+                                        childShape.typography = typography
+                                    } else {
+                                        childShape.strokeStyle?.color = childColor
+                                        childShape.strokeStyle?.opacity = childOpacity
+                                    }
                                 }
                                 updatedChildren.append(childShape)
                             }

@@ -115,11 +115,7 @@ extension VectorDocument {
                         oldOpacities[objectID] = shape.typography?.strokeOpacity ?? defaultStrokeOpacity
                         newOpacities[objectID] = defaultStrokeOpacity
                     }
-                case .shape(let shape),
-                     .warp(let shape),
-                     .group(let shape),
-                     .clipGroup(let shape),
-                     .clipMask(let shape):
+                case .shape(let shape), .warp(let shape), .clipMask(let shape):
                     switch activeColorTarget {
                     case .fill:
                         oldColors[objectID] = shape.fillStyle?.color ?? .black
@@ -131,6 +127,51 @@ extension VectorDocument {
                         newColors[objectID] = color
                         oldOpacities[objectID] = shape.strokeStyle?.opacity ?? defaultStrokeOpacity
                         newOpacities[objectID] = defaultStrokeOpacity
+                    }
+
+                case .group(let shape), .clipGroup(let shape):
+                    switch activeColorTarget {
+                    case .fill:
+                        oldColors[objectID] = shape.fillStyle?.color ?? .black
+                        newColors[objectID] = color
+                        oldOpacities[objectID] = shape.fillStyle?.opacity ?? defaultFillOpacity
+                        newOpacities[objectID] = defaultFillOpacity
+
+                        // Capture old colors of children
+                        for childShape in shape.groupedShapes {
+                            if let typography = childShape.typography {
+                                oldColors[childShape.id] = typography.fillColor
+                                newColors[childShape.id] = color
+                                oldOpacities[childShape.id] = typography.fillOpacity
+                                newOpacities[childShape.id] = defaultFillOpacity
+                            } else {
+                                oldColors[childShape.id] = childShape.fillStyle?.color ?? .black
+                                newColors[childShape.id] = color
+                                oldOpacities[childShape.id] = childShape.fillStyle?.opacity ?? defaultFillOpacity
+                                newOpacities[childShape.id] = defaultFillOpacity
+                            }
+                        }
+
+                    case .stroke:
+                        oldColors[objectID] = shape.strokeStyle?.color ?? .clear
+                        newColors[objectID] = color
+                        oldOpacities[objectID] = shape.strokeStyle?.opacity ?? defaultStrokeOpacity
+                        newOpacities[objectID] = defaultStrokeOpacity
+
+                        // Capture old colors of children
+                        for childShape in shape.groupedShapes {
+                            if let typography = childShape.typography {
+                                oldColors[childShape.id] = typography.strokeColor
+                                newColors[childShape.id] = color
+                                oldOpacities[childShape.id] = typography.strokeOpacity
+                                newOpacities[childShape.id] = defaultStrokeOpacity
+                            } else {
+                                oldColors[childShape.id] = childShape.strokeStyle?.color ?? .clear
+                                newColors[childShape.id] = color
+                                oldOpacities[childShape.id] = childShape.strokeStyle?.opacity ?? defaultStrokeOpacity
+                                newOpacities[childShape.id] = defaultStrokeOpacity
+                            }
+                        }
                     }
                 }
             }
