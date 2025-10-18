@@ -328,6 +328,9 @@ extension DrawingCanvas {
             setupKeyEventMonitoring()
             setupToolKeyboardShortcuts()
             previousTool = document.currentTool
+            print("🟣 ViewComposition onAppear for document \(Unmanaged.passUnretained(document).toOpaque())")
+            DrawingCanvasRegistry.shared.setActiveDocument(document)
+            setupWindowObserver()
         }
             .onDisappear {
                 teardownKeyEventMonitoring()
@@ -337,11 +340,17 @@ extension DrawingCanvas {
             }
             .onHover { isHovering in
                 isCanvasHovering = isHovering
+                if isHovering {
+                    print("🟣 ViewComposition onHover for document \(Unmanaged.passUnretained(document).toOpaque())")
+                    DrawingCanvasRegistry.shared.setActiveDocument(document)
+                }
             }
             .onContinuousHover { phase in
                 handleHover(phase: phase, geometry: geometry)
             }
             .onTapGesture { location in
+                print("🟣 ViewComposition onTapGesture for document \(Unmanaged.passUnretained(document).toOpaque())")
+                DrawingCanvasRegistry.shared.setActiveDocument(document)
                 handleUnifiedTap(at: location, geometry: geometry)
             }
             .simultaneousGesture(

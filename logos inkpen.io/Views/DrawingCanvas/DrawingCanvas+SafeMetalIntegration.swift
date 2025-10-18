@@ -212,6 +212,9 @@ extension DrawingCanvas {
             setupKeyEventMonitoring()
             setupToolKeyboardShortcuts()
             previousTool = document.currentTool
+            print("🟣 SafeMetalIntegration onAppear for document \(Unmanaged.passUnretained(document).toOpaque())")
+            DrawingCanvasRegistry.shared.setActiveDocument(document)
+            setupWindowObserver()
         }
         .onDisappear {
             teardownKeyEventMonitoring()
