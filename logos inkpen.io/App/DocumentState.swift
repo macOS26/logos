@@ -149,7 +149,8 @@ class DocumentState: ObservableObject {
         }
         let selectedShapeCount = selectedShapes.count
 
-        canGroup = selectedShapeCount > 1
+        let totalSelectedCount = document.selectedObjectIDs.count
+        canGroup = totalSelectedCount > 1
         canUngroup = selectedShapes.contains { unifiedObject in
             if case .group(let shape) = unifiedObject.objectType {
                 return shape.isGroupContainer
