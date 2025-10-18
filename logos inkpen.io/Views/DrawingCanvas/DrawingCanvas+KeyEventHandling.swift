@@ -169,40 +169,7 @@ extension DrawingCanvas {
                 return event
             }
 
-            if let characters = event.charactersIgnoringModifiers,
-               characters == " " {
-                activateTemporaryHandTool()
-                return nil
-            }
-
-            if let characters = event.charactersIgnoringModifiers,
-               characters == "\t" {
-                activeDoc.selectedObjectIDs = []
-
-                activeDoc.syncSelectionArrays()
-
-                if self.isEditingText {
-                    self.finishTextEditing()
-                }
-
-                for unifiedObj in activeDoc.unifiedObjects {
-                    if case .text(let shape) = unifiedObj.objectType, shape.isEditing == true {
-                        activeDoc.setTextEditingInUnified(id: shape.id, isEditing: false)
-                    }
-                }
-
-                self.selectedPoints.removeAll()
-                self.selectedHandles.removeAll()
-                self.directSelectedShapeIDs.removeAll()
-                self.syncDirectSelectionWithDocument()
-                self.isCornerRadiusEditMode = false
-
-                if activeDoc.currentTool == .bezierPen && self.isBezierDrawing {
-                    self.finishBezierPath()
-                }
-
-                return nil
-            }
+            // Space and Tab are handled by AppEventMonitor
 
             let toolSwitchingKeys = Set(["a", "d", "c", "s", "r", "x", "w", "p", "f", "b", "m", "t", "l", "e", "o", "i", "h", "z", "g", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"])
 

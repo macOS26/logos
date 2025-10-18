@@ -325,12 +325,12 @@ extension DrawingCanvas {
         }
         .onAppear {
             setupCanvas()
-            // setupKeyEventMonitoring() // Now using AppEventMonitor
+            setupKeyEventMonitoring() // For canvas-specific events (arrows, modifiers)
             setupToolKeyboardShortcuts()
             previousTool = document.currentTool
         }
             .onDisappear {
-                // teardownKeyEventMonitoring()
+                teardownKeyEventMonitoring()
             }
             .onChange(of: document.currentTool) { oldTool, newTool in
                 handleToolChange(oldTool: oldTool, newTool: newTool)
