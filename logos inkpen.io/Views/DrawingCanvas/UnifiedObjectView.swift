@@ -429,17 +429,12 @@ struct IsolatedLayerView: View, Equatable {
         .onChange(of: dragPreviewDelta) { oldValue, newValue in
             let isNowDragging = newValue != .zero
 
-            print("🔵 LAYER \(layerID): delta=\(newValue), isNowDragging=\(isNowDragging), hasSelection=\(hasSelection), isDragging=\(isDragging)")
-
             if isNowDragging && !hasSelection && !isDragging {
                 // Drag just started on another layer - cache this inactive layer
-                print("🔵 CACHE: Rendering layer \(layerID) to cache")
                 renderLayerToCache()
                 isDragging = true
-                print("🔵 CACHE: Cache created, image size = \(cachedImage?.size ?? .zero)")
             } else if !isNowDragging && isDragging {
                 // Drag ended - clear cache
-                print("🔵 CACHE: Clearing cache for layer \(layerID)")
                 isDragging = false
                 cachedImage = nil
             }
