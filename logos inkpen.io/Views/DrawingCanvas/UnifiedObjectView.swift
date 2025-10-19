@@ -257,7 +257,6 @@ struct IsolatedLayerView: View, Equatable {
     let layerBlendMode: BlendMode
 
     @State private var cachedImage: NSImage?
-    @State private var isDragging: Bool = false
 
     // Track if this layer has selection
     private var hasSelection: Bool {
@@ -323,7 +322,8 @@ struct IsolatedLayerView: View, Equatable {
 
     var body: some View {
         ZStack {
-            let shouldShowCache = isDragging && !hasSelection && cachedImage != nil
+            // Show cache for inactive layers (no selection)
+            let shouldShowCache = !hasSelection && cachedImage != nil
 
             if shouldShowCache {
                 // Show cached image - SwiftUI views are HIDDEN
@@ -335,7 +335,7 @@ struct IsolatedLayerView: View, Equatable {
                         .allowsHitTesting(false)
                 }
             } else {
-                // Render live SwiftUI views
+                // Render live SwiftUI views (active layer with selection)
                 ForEach(objects, id: \.id) { unifiedObject in
                     if unifiedObject.isVisible {
                         UnifiedObjectContentView(
@@ -354,19 +354,27 @@ struct IsolatedLayerView: View, Equatable {
             }
         }
         .opacity(layerOpacity)
-        
-        .blendMode(layerBlendMode.swiftUIBlendMode)
-        .onChange(of: dragPreviewDelta) { oldValue, newValue in
-            let isNowDragging = newValue != .zero
 
-            if isNowDragging && !hasSelection && !isDragging {
-                // Drag just started on another layer - cache this inactive layer
+        .blendMode(layerBlendMode.swiftUIBlendMode)
+        .onAppear {
+            // Cache inactive layer on appear
+            if !hasSelection {
                 renderLayerToCache()
-                isDragging = true
-            } else if !isNowDragging && isDragging {
-                // Drag ended - clear cache
-                isDragging = false
+            }
+        }
+        .onChange(of: hasSelection) { oldValue, newValue in
+            if newValue {
+                // Layer became active - clear cache to show live views
                 cachedImage = nil
+            } else {
+                // Layer became inactive - create cache
+                renderLayerToCache()
+            }
+        }
+        .onChange(of: objects.count) { oldValue, newValue in
+            // Objects changed - invalidate cache if inactive
+            if !hasSelection {
+                renderLayerToCache()
             }
         }
     }
