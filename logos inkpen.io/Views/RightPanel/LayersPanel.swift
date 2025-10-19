@@ -241,6 +241,7 @@ struct LayersPanel: View {
                             if !isEditing {
                                 document.layers[layerIndex].opacity = layerOpacityState
                                 layerPreviewOpacities.removeValue(forKey: document.layers[layerIndex].id)
+                                document.changeNotifier.notifyLayersChanged()
                             }
                         }
                     )
@@ -271,6 +272,7 @@ struct LayersPanel: View {
                         var updatedLayer = document.layers[layerIndex]
                         updatedLayer.blendMode = newValue
                         document.layers[layerIndex] = updatedLayer
+                        document.changeNotifier.notifyLayersChanged()
                     }
                 )) {
                     ForEach(BlendMode.allCases, id: \.self) { mode in
@@ -288,6 +290,7 @@ struct LayersPanel: View {
                         get: { document.layers[layerIndex].color },
                         set: { newColor in
                             document.layers[layerIndex].color = newColor
+                            document.changeNotifier.notifyLayersChanged()
                         }
                     ),
                     availableColors: Color.layerColorPalette
@@ -422,6 +425,7 @@ struct LayersPanel: View {
             if !document.processedLayersDuringDrag.contains(index) {
                 document.layers[index].isVisible.toggle()
                 document.processedLayersDuringDrag.insert(index)
+                document.changeNotifier.notifyLayersChanged()
             }
         case .object(let layerIndex, let objectId):
             if !document.processedObjectsDuringDrag.contains(objectId) {
@@ -441,6 +445,7 @@ struct LayersPanel: View {
                             layerIndex: layerIndex
                         )
                         document.processedObjectsDuringDrag.insert(objectId)
+                        document.changeNotifier.notifyObjectChanged(objectId)
                     }
                 }
             }
@@ -455,6 +460,7 @@ struct LayersPanel: View {
                                 layerIndex: layerIndex,
                             )
                             document.processedObjectsDuringDrag.insert(childShapeId)
+                            document.changeNotifier.notifyObjectChanged(parentObjectId)
                         }
                     }
                 }
@@ -468,6 +474,7 @@ struct LayersPanel: View {
             if !document.processedLayersDuringDrag.contains(index) {
                 document.layers[index].isLocked.toggle()
                 document.processedLayersDuringDrag.insert(index)
+                document.changeNotifier.notifyLayersChanged()
             }
         case .object(let layerIndex, let objectId):
             if !document.processedObjectsDuringDrag.contains(objectId) {
@@ -487,6 +494,7 @@ struct LayersPanel: View {
                             layerIndex: layerIndex
                         )
                         document.processedObjectsDuringDrag.insert(objectId)
+                        document.changeNotifier.notifyObjectChanged(objectId)
                     }
                 }
             }
@@ -501,6 +509,7 @@ struct LayersPanel: View {
                                 layerIndex: layerIndex,
                             )
                             document.processedObjectsDuringDrag.insert(childShapeId)
+                            document.changeNotifier.notifyObjectChanged(parentObjectId)
                         }
                     }
                 }
