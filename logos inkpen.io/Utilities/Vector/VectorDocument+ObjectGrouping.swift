@@ -294,7 +294,6 @@ extension VectorDocument {
 
         commandManager.execute(command)
 
-        selectedShapeIDs = [compoundShape.id]
         viewState.selectedObjectIDs = [compoundShape.id]
     }
 
@@ -346,7 +345,6 @@ extension VectorDocument {
 
         commandManager.execute(command)
 
-        selectedShapeIDs = [loopingShape.id]
         viewState.selectedObjectIDs = [loopingShape.id]
     }
 
