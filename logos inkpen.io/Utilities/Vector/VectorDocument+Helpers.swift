@@ -301,12 +301,7 @@ extension VectorDocument {
 
     func rebuildIndexCache() {
         unifiedObjectIndexCache = Dictionary(uniqueKeysWithValues: unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
-        rebuildLayerCache()
     }
-
-//    func rebuildLayerCache() {
-//        objectsByLayerCache = Dictionary(grouping: unifiedObjects, by: { $0.layerIndex })
-//    }
 
     func findObject(by id: UUID) -> VectorObject? {
         guard let index = unifiedObjectIndexCache[id], index < unifiedObjects.count else {
@@ -359,10 +354,6 @@ extension VectorDocument {
         }
 
         return nil
-    }
-
-    func getObjectsInLayer(_ layerIndex: Int) -> [VectorObject] {
-        return objectsByLayerCache[layerIndex] ?? []
     }
 
     func forEachTextInOrder(_ action: (VectorText) throws -> Void) rethrows {

@@ -47,7 +47,6 @@ class VectorDocument: ObservableObject, Codable {
                     }
                 }
             }
-            rebuildLayerCache()
             changeNotifier.notifyGeneralChange()
         }
     }
@@ -58,7 +57,6 @@ class VectorDocument: ObservableObject, Codable {
     // Lightweight change notifier - avoids copying unifiedObjects array
     let changeNotifier = DocumentChangeNotifier()
 
-    //internal var objectsByLayerCache: [Int: [VectorObject]] = [:]
 
     var textPreviewTypography: [UUID: TypographyProperties] = [:]
 

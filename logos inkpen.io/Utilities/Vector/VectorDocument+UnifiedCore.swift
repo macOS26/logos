@@ -94,7 +94,8 @@ extension VectorDocument {
 
     func getShapesForLayer(_ layerIndex: Int) -> [VectorShape] {
         // Array position IS the order now - no sorting needed
-        return getObjectsInLayer(layerIndex)
+        return unifiedObjects
+            .filter { $0.layerIndex == layerIndex }
             .compactMap { object -> VectorShape? in
                 if case .shape(let shape) = object.objectType {
                     return shape
