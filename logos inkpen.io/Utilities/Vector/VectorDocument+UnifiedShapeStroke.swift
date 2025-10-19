@@ -24,7 +24,6 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
 
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             case .text:
                 break
             }
@@ -53,7 +52,6 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
 
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             case .text:
                 break
             }
@@ -82,7 +80,6 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
 
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             case .text:
                 break
             }
@@ -110,7 +107,6 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
 
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             case .text:
                 break
             }
@@ -143,7 +139,6 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
 
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             case .text:
                 break
             }
@@ -169,7 +164,6 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
 
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             case .text:
                 break
             }
@@ -196,7 +190,6 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
 
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             case .text:
                 break
             }
@@ -235,7 +228,6 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
 
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             case .text:
                 break
             }
@@ -266,7 +258,6 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
 
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             case .text:
                 break
             }
@@ -292,7 +283,6 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
 
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             case .text:
                 break
             }

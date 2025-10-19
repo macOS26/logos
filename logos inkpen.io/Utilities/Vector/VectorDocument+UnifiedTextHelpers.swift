@@ -17,7 +17,6 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
 
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }
@@ -37,7 +36,6 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
 
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }
@@ -57,7 +55,6 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
 
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }
@@ -77,7 +74,6 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
 
-                syncShapeToLayer(shape, at: unifiedObjects[objectIndex].layerIndex)
             }
         }
     }
@@ -140,7 +136,6 @@ extension VectorDocument {
                     layerIndex: layerIndex,
                 )
 
-                syncShapeToLayer(shape, at: layerIndex)
             }
         }
     }

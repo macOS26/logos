@@ -2,9 +2,6 @@ import SwiftUI
 
 extension VectorDocument {
 
-    func syncShapeToLayer(_ shape: VectorShape, at layerIndex: Int) {
-    }
-
     func getShapeAtIndex(layerIndex: Int, shapeIndex: Int) -> VectorShape? {
         let shapes = getShapesForLayer(layerIndex)
         guard shapeIndex >= 0 && shapeIndex < shapes.count else { return nil }

@@ -623,7 +623,6 @@ struct EnvelopeHandles: View {
                     shape: updatedWarpObject,
                     layerIndex: document.unifiedObjects[objectIndex].layerIndex,
                 )
-                document.syncShapeToLayer(updatedWarpObject, at: document.unifiedObjects[objectIndex].layerIndex)
             }
         } else {
             var warpObject = currentShape
