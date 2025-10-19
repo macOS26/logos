@@ -322,8 +322,9 @@ struct IsolatedLayerView: View, Equatable {
 
     var body: some View {
         ZStack {
-            // Show cache for inactive layers (no selection)
-            let shouldShowCache = !hasSelection && cachedImage != nil
+            // DISABLED: Inactive layer caching temporarily disabled
+            // TODO: Re-enable after fixing fonts undo/redo
+            let shouldShowCache = false // was: !hasSelection && cachedImage != nil
 
             if shouldShowCache {
                 // Show cached image using Canvas at correct zoom/offset position
@@ -346,7 +347,7 @@ struct IsolatedLayerView: View, Equatable {
                     .allowsHitTesting(false)
                 }
             } else {
-                // Render live SwiftUI views (active layer with selection)
+                // Render live SwiftUI views
                 ForEach(objects, id: \.id) { unifiedObject in
                     if unifiedObject.isVisible {
                         UnifiedObjectContentView(
@@ -367,27 +368,6 @@ struct IsolatedLayerView: View, Equatable {
         .opacity(layerOpacity)
 
         .blendMode(layerBlendMode.swiftUIBlendMode)
-        .onAppear {
-            // Cache inactive layer on appear
-            if !hasSelection {
-                renderLayerToCache()
-            }
-        }
-        .onChange(of: hasSelection) { oldValue, newValue in
-            if newValue {
-                // Layer became active - clear cache to show live views
-                cachedImage = nil
-            } else {
-                // Layer became inactive - create cache
-                renderLayerToCache()
-            }
-        }
-        .onChange(of: objects.count) { oldValue, newValue in
-            // Objects changed - invalidate cache if inactive
-            if !hasSelection {
-                renderLayerToCache()
-            }
-        }
     }
 
     private func renderLayerToCache() {
