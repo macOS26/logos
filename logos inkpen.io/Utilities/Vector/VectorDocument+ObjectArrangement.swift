@@ -108,21 +108,22 @@ extension VectorDocument {
                 affectedObjectIDs.append(obj.id)
             }
 
+            var tempObjects = unifiedObjects
             let sortedIndices = layerObjects.map { $0.offset }.sorted(by: >)
             for index in sortedIndices {
-                let obj = unifiedObjects[index]
-                if expandedSelectedIDs.contains(obj.id) && index < unifiedObjects.count - 1 {
-                    let nextObj = unifiedObjects[index + 1]
+                let obj = tempObjects[index]
+                if expandedSelectedIDs.contains(obj.id) && index < tempObjects.count - 1 {
+                    let nextObj = tempObjects[index + 1]
                     if nextObj.layerIndex == layerIndex && !expandedSelectedIDs.contains(nextObj.id) {
-                        unifiedObjects.swapAt(index, index + 1)
+                        tempObjects.swapAt(index, index + 1)
                     }
                 }
             }
-        }
 
-        for id in affectedObjectIDs {
-            if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
-                newIndices[id] = index
+            for id in affectedObjectIDs {
+                if let index = tempObjects.firstIndex(where: { $0.id == id }) {
+                    newIndices[id] = index
+                }
             }
         }
 
@@ -153,21 +154,22 @@ extension VectorDocument {
                 affectedObjectIDs.append(obj.id)
             }
 
+            var tempObjects = unifiedObjects
             let sortedIndices = layerObjects.map { $0.offset }.sorted()
             for index in sortedIndices {
-                let obj = unifiedObjects[index]
+                let obj = tempObjects[index]
                 if expandedSelectedIDs.contains(obj.id) && index > 0 {
-                    let prevObj = unifiedObjects[index - 1]
+                    let prevObj = tempObjects[index - 1]
                     if prevObj.layerIndex == layerIndex && !expandedSelectedIDs.contains(prevObj.id) {
-                        unifiedObjects.swapAt(index, index - 1)
+                        tempObjects.swapAt(index, index - 1)
                     }
                 }
             }
-        }
 
-        for id in affectedObjectIDs {
-            if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
-                newIndices[id] = index
+            for id in affectedObjectIDs {
+                if let index = tempObjects.firstIndex(where: { $0.id == id }) {
+                    newIndices[id] = index
+                }
             }
         }
 
