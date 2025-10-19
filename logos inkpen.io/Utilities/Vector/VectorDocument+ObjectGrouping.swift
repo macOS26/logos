@@ -8,8 +8,6 @@ extension VectorDocument {
         }
 
         print("🔴 GROUP: viewState.selectedObjectIDs = \(viewState.selectedObjectIDs)")
-        print("🔴 GROUP: selectedShapeIDs = \(selectedShapeIDs)")
-        print("🔴 GROUP: selectedTextIDs = \(selectedTextIDs)")
 
         var removedShapes: [UUID: VectorShape] = [:]
         let objectsToRemove = unifiedObjects.filter { viewState.selectedObjectIDs.contains($0.id) }
@@ -68,14 +66,12 @@ extension VectorDocument {
 
         commandManager.execute(command)
 
-        selectedShapeIDs = [groupShape.id]
-        selectedTextIDs.removeAll()
         viewState.selectedObjectIDs = [groupShape.id]
     }
 
     func flattenSelectedObjects() {
         guard let layerIndex = selectedLayerIndex,
-              selectedShapeIDs.count > 1 else { return }
+              viewState.selectedObjectIDs.count > 1 else { return }
 
         var removedShapes: [UUID: VectorShape] = [:]
         let objectsToRemove = unifiedObjects.filter { viewState.selectedObjectIDs.contains($0.id) }
@@ -128,7 +124,6 @@ extension VectorDocument {
 
         commandManager.execute(command)
 
-        selectedShapeIDs = [flattenedShape.id]
         viewState.selectedObjectIDs = [flattenedShape.id]
     }
 
@@ -200,13 +195,12 @@ extension VectorDocument {
         commandManager.execute(command)
 
         viewState.selectedObjectIDs = newSelectedShapeIDs
-        syncSelectionArrays()
     }
 
     func unflattenSelectedObjects() {
         guard let layerIndex = selectedLayerIndex,
-              selectedShapeIDs.count == 1,
-              let selectedShapeID = selectedShapeIDs.first else { return }
+              viewState.selectedObjectIDs.count == 1,
+              let selectedShapeID = viewState.selectedObjectIDs.first else { return }
         let shapes = getShapesForLayer(layerIndex)
         guard let shapeIndex = shapes.firstIndex(where: { $0.id == selectedShapeID }) else { return }
 
@@ -249,13 +243,12 @@ extension VectorDocument {
 
         commandManager.execute(command)
 
-        selectedShapeIDs = newSelectedIDs
         viewState.selectedObjectIDs = newSelectedIDs
     }
 
     func makeCompoundPath() {
         guard let layerIndex = selectedLayerIndex,
-              selectedShapeIDs.count > 1 else { return }
+              viewState.selectedObjectIDs.count > 1 else { return }
 
         var removedShapes: [UUID: VectorShape] = [:]
         let objectsToRemove = unifiedObjects.filter { viewState.selectedObjectIDs.contains($0.id) }
@@ -307,7 +300,7 @@ extension VectorDocument {
 
     func makeLoopingPath() {
         guard let layerIndex = selectedLayerIndex,
-              selectedShapeIDs.count > 1 else { return }
+              viewState.selectedObjectIDs.count > 1 else { return }
 
         var removedShapes: [UUID: VectorShape] = [:]
         let objectsToRemove = unifiedObjects.filter { viewState.selectedObjectIDs.contains($0.id) }
@@ -359,8 +352,8 @@ extension VectorDocument {
 
     func releaseCompoundPath() {
         guard let layerIndex = selectedLayerIndex,
-              selectedShapeIDs.count == 1,
-              let selectedShapeID = selectedShapeIDs.first else { return }
+              viewState.selectedObjectIDs.count == 1,
+              let selectedShapeID = viewState.selectedObjectIDs.first else { return }
         let shapes = getShapesForLayer(layerIndex)
         guard let shapeIndex = shapes.firstIndex(where: { $0.id == selectedShapeID }),
               let compoundShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
@@ -408,14 +401,13 @@ extension VectorDocument {
 
         commandManager.execute(command)
 
-        selectedShapeIDs = newSelectedIDs
         viewState.selectedObjectIDs = newSelectedIDs
     }
 
     func releaseLoopingPath() {
         guard let layerIndex = selectedLayerIndex,
-              selectedShapeIDs.count == 1,
-              let selectedShapeID = selectedShapeIDs.first else { return }
+              viewState.selectedObjectIDs.count == 1,
+              let selectedShapeID = viewState.selectedObjectIDs.first else { return }
         let shapes = getShapesForLayer(layerIndex)
         guard let shapeIndex = shapes.firstIndex(where: { $0.id == selectedShapeID }),
               let loopingShape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex),
@@ -463,7 +455,6 @@ extension VectorDocument {
 
         commandManager.execute(command)
 
-        selectedShapeIDs = newSelectedIDs
         viewState.selectedObjectIDs = newSelectedIDs
     }
 
