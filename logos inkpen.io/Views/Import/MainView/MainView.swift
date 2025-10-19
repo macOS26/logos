@@ -117,8 +117,8 @@ struct MainView: View {
                     document.defaultStrokeWidth = newDocument.defaultStrokeWidth
 
                     document.selectedLayerIndex = newDocument.selectedLayerIndex
-                    document.viewState.selectedObjectIDs = newDocument.selectedShapeIDs
-                    document.viewState.selectedObjectIDs = newDocument.selectedTextIDs
+                    document.viewState.selectedObjectIDs = newDocument.viewState.selectedObjectIDs
+                    document.viewState.selectedObjectIDs = newDocument.viewState.selectedObjectIDs
                     document.viewState.currentTool = newDocument.viewState.currentTool
                     document.viewState.viewMode = newDocument.viewState.viewMode
                     document.viewState.zoomLevel = newDocument.viewState.zoomLevel
@@ -271,8 +271,8 @@ struct MainView: View {
         document.colorSwatches = importedDoc.colorSwatches
         document.documentColorDefaults = importedDoc.documentColorDefaults
         document.selectedLayerIndex = importedDoc.selectedLayerIndex
-        document.viewState.selectedObjectIDs = importedDoc.selectedShapeIDs
-        document.viewState.selectedObjectIDs = importedDoc.selectedTextIDs
+        document.viewState.selectedObjectIDs = importedDoc.viewState.selectedObjectIDs
+        document.viewState.selectedObjectIDs = importedDoc.viewState.selectedObjectIDs
         document.viewState.currentTool = appState.defaultTool
         document.viewState.viewMode = .color
 
@@ -469,8 +469,8 @@ struct MainView: View {
                         document.unifiedObjects = savedState.unifiedObjects
                         document.layers = savedState.layers
                         document.viewState.selectedObjectIDs = savedState.viewState.selectedObjectIDs
-                        document.viewState.selectedObjectIDs = savedState.selectedTextIDs
-                        document.viewState.selectedObjectIDs = savedState.selectedShapeIDs
+                        document.viewState.selectedObjectIDs = savedState.viewState.selectedObjectIDs
+                        document.viewState.selectedObjectIDs = savedState.viewState.selectedObjectIDs
                     }
                 } else {
                     pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: true, includeBackground: includeBackground)
