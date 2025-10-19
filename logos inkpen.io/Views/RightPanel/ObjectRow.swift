@@ -473,37 +473,14 @@ struct ObjectRow: View {
                         if isCommandPressed {
                             if document.viewState.selectedObjectIDs.contains(childShape.id) {
                                 document.viewState.selectedObjectIDs.remove(childShape.id)
-                                if childShape.typography != nil {
-                                    document.viewState.selectedObjectIDs.remove(childShape.id)
-                                } else {
-                                    document.viewState.selectedObjectIDs.remove(childShape.id)
-                                }
                             } else {
                                 document.viewState.selectedObjectIDs.insert(childShape.id)
-                                if childShape.typography != nil {
-                                    document.viewState.selectedObjectIDs.insert(childShape.id)
-                                } else {
-                                    document.viewState.selectedObjectIDs.insert(childShape.id)
-                                }
                             }
                         } else if isShiftPressed {
                             document.viewState.selectedObjectIDs.insert(childShape.id)
-                            if childShape.typography != nil {
-                                document.viewState.selectedObjectIDs.insert(childShape.id)
-                            } else {
-                                document.viewState.selectedObjectIDs.insert(childShape.id)
-                            }
                         } else {
                             document.viewState.selectedObjectIDs = [childShape.id]
-                            if childShape.typography != nil {
-                                document.viewState.selectedObjectIDs = [childShape.id]
-                                document.viewState.selectedObjectIDs.removeAll()
-                            } else {
-                                document.viewState.selectedObjectIDs = [childShape.id]
-                                document.viewState.selectedObjectIDs.removeAll()
-                            }
                         }
-                        document
                     }
                 }
             }
