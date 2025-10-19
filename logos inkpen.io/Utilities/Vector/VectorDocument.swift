@@ -40,7 +40,7 @@ class VectorDocument: ObservableObject, Codable {
     var activeLayerIndexDuringDrag: Int? = nil
 
     var isHandleScalingActive = false
-    @Published var unifiedObjects: [VectorObject] = [] {
+    var unifiedObjects: [VectorObject] = [] {
         didSet {
             if oldValue.count != unifiedObjects.count {
                 rebuildIndexCache()
@@ -63,7 +63,7 @@ class VectorDocument: ObservableObject, Codable {
     // Lightweight change notifier - avoids copying unifiedObjects array
     let changeNotifier = DocumentChangeNotifier()
 
-    @Published var cachedStackingOrder: [VectorObject]? = nil
+    var cachedStackingOrder: [VectorObject]? = nil
 
     internal var objectsByLayerCache: [Int: [VectorObject]] = [:]
 
