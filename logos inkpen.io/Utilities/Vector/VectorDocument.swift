@@ -40,7 +40,7 @@ class VectorDocument: ObservableObject, Codable {
     var activeLayerIndexDuringDrag: Int? = nil
 
     var isHandleScalingActive = false
-    var unifiedObjects: [VectorObject] = [] {
+    @Published var unifiedObjects: [VectorObject] = [] {
         didSet {
             if oldValue.count != unifiedObjects.count {
                 rebuildIndexCache()
@@ -63,7 +63,7 @@ class VectorDocument: ObservableObject, Codable {
     // Lightweight change notifier - avoids copying unifiedObjects array
     let changeNotifier = DocumentChangeNotifier()
 
-    var cachedStackingOrder: [VectorObject]? = nil
+    @Published var cachedStackingOrder: [VectorObject]? = nil
 
     internal var objectsByLayerCache: [Int: [VectorObject]] = [:]
 
@@ -510,6 +510,15 @@ class VectorDocument: ObservableObject, Codable {
     func setSelectedLayerIndex(_ index: Int?) {
         selectedLayerIndex = index
         changeNotifier.notifySelectionChanged()
+    }
+
+    func toggleActiveLayerVisibility() {
+        guard let activeIndex = selectedLayerIndex,
+              activeIndex >= 0,
+              activeIndex < layers.count else { return }
+
+        layers[activeIndex].isVisible.toggle()
+        layers[activeIndex].isVisible.toggle()
     }
 
     // MARK: - Drag/Transform Preview Helpers (O(1) updates)
