@@ -58,7 +58,7 @@ class VectorDocument: ObservableObject, Codable {
     // Lightweight change notifier - avoids copying unifiedObjects array
     let changeNotifier = DocumentChangeNotifier()
 
-    internal var objectsByLayerCache: [Int: [VectorObject]] = [:]
+    //internal var objectsByLayerCache: [Int: [VectorObject]] = [:]
 
     var textPreviewTypography: [UUID: TypographyProperties] = [:]
 
@@ -87,58 +87,8 @@ class VectorDocument: ObservableObject, Codable {
         case fill = "Fill"
         case noFill = "No Fill"
     }
-    
-    @Published var currentBrushThickness: Double = 20.0 {
-        didSet { UserDefaults.standard.set(currentBrushThickness, forKey: "brushThickness") }
-    }
-    @Published var currentBrushSmoothingTolerance: Double = 5.0 {
-        didSet { UserDefaults.standard.set(currentBrushSmoothingTolerance, forKey: "brushSmoothingTolerance") }
-    }
-    @Published var currentBrushMinTaperThickness: Double = 0.5 {
-        didSet { UserDefaults.standard.set(currentBrushMinTaperThickness, forKey: "brushMinTaperThickness") }
-    }
-    @Published var currentBrushTaperStart: Double = 0.15 {
-        didSet { UserDefaults.standard.set(currentBrushTaperStart, forKey: "brushTaperStart") }
-    }
-    @Published var currentBrushTaperEnd: Double = 0.15 {
-        didSet { UserDefaults.standard.set(currentBrushTaperEnd, forKey: "brushTaperEnd") }
-    }
+
     @Published var hasPressureInput: Bool = false
-    @Published var brushApplyNoStroke: Bool = true {
-        didSet { UserDefaults.standard.set(brushApplyNoStroke, forKey: "brushApplyNoStroke") }
-    }
-    @Published var brushRemoveOverlap: Bool = true {
-        didSet { UserDefaults.standard.set(brushRemoveOverlap, forKey: "brushRemoveOverlap") }
-    }
-    
-    @Published var advancedSmoothingEnabled: Bool {
-        didSet { UserDefaults.standard.set(advancedSmoothingEnabled, forKey: "advancedSmoothingEnabled") }
-    }
-    @Published var chaikinSmoothingIterations: Int {
-        didSet { UserDefaults.standard.set(chaikinSmoothingIterations, forKey: "chaikinSmoothingIterations") }
-    }
-    
-    @Published var freehandSmoothingTolerance: Double {
-        didSet { UserDefaults.standard.set(freehandSmoothingTolerance, forKey: "freehandSmoothingTolerance") }
-    }
-    @Published var realTimeSmoothingEnabled: Bool {
-        didSet { UserDefaults.standard.set(realTimeSmoothingEnabled, forKey: "realTimeSmoothingEnabled") }
-    }
-    @Published var realTimeSmoothingStrength: Double {
-        didSet { UserDefaults.standard.set(realTimeSmoothingStrength, forKey: "realTimeSmoothingStrength") }
-    }
-    @Published var preserveSharpCorners: Bool {
-        didSet { UserDefaults.standard.set(preserveSharpCorners, forKey: "preserveSharpCorners") }
-    }
-    @Published var freehandFillMode: FreehandFillMode = .noFill {
-        didSet { UserDefaults.standard.set(freehandFillMode.rawValue, forKey: "freehandFillMode") }
-    }
-    @Published var freehandExpandStroke: Bool = false {
-        didSet { UserDefaults.standard.set(freehandExpandStroke, forKey: "freehandExpandStroke") }
-    }
-    @Published var freehandClosePath: Bool = false {
-        didSet { UserDefaults.standard.set(freehandClosePath, forKey: "freehandClosePath") }
-    }
     
     @Published var viewMode: ViewMode = .color
     @Published var zoomLevel: Double = 1.0
@@ -179,37 +129,6 @@ class VectorDocument: ObservableObject, Codable {
     @Published var lastColorChangeType: ColorChangeType = .fillOpacity
     
     internal let maxUndoStackSize = 50
-    
-    @Published var currentMarkerSmoothingTolerance: Double {
-        didSet { UserDefaults.standard.set(currentMarkerSmoothingTolerance, forKey: "markerSmoothingTolerance") }
-    }
-    @Published var currentMarkerTipSize: Double {
-        didSet { UserDefaults.standard.set(currentMarkerTipSize, forKey: "markerTipSize") }
-    }
-    @Published var currentMarkerOpacity: Double {
-        didSet { UserDefaults.standard.set(currentMarkerOpacity, forKey: "markerOpacity") }
-    }
-    @Published var currentMarkerFeathering: Double {
-        didSet { UserDefaults.standard.set(currentMarkerFeathering, forKey: "markerFeathering") }
-    }
-    @Published var currentMarkerTaperStart: Double {
-        didSet { UserDefaults.standard.set(currentMarkerTaperStart, forKey: "markerTaperStart") }
-    }
-    @Published var currentMarkerTaperEnd: Double {
-        didSet { UserDefaults.standard.set(currentMarkerTaperEnd, forKey: "markerTaperEnd") }
-    }
-    @Published var currentMarkerMinTaperThickness: Double {
-        didSet { UserDefaults.standard.set(currentMarkerMinTaperThickness, forKey: "markerMinTaperThickness") }
-    }
-    @Published var markerUseFillAsStroke: Bool {
-        didSet { UserDefaults.standard.set(markerUseFillAsStroke, forKey: "markerUseFillAsStroke") }
-    }
-    @Published var markerApplyNoStroke: Bool {
-        didSet { UserDefaults.standard.set(markerApplyNoStroke, forKey: "markerApplyNoStroke") }
-    }
-    @Published var markerRemoveOverlap: Bool {
-        didSet { UserDefaults.standard.set(markerRemoveOverlap, forKey: "markerRemoveOverlap") }
-    }
 
     var originalHandlePositions: [String: VectorPoint] = [:]
     
@@ -237,34 +156,7 @@ class VectorDocument: ObservableObject, Codable {
         self.customRgbSwatches = []
         self.customCmykSwatches = []
         self.customHsbSwatches = []
-        
-        self.currentBrushThickness = UserDefaults.standard.object(forKey: "brushThickness") as? Double ?? 20.0
-        self.currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 5.0
-        self.currentBrushTaperStart = UserDefaults.standard.object(forKey: "brushTaperStart") as? Double ?? 0.15
-        self.currentBrushTaperEnd = UserDefaults.standard.object(forKey: "brushTaperEnd") as? Double ?? 0.15
 
-        self.advancedSmoothingEnabled = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? false
-        self.chaikinSmoothingIterations = UserDefaults.standard.object(forKey: "chaikinSmoothingIterations") as? Int ?? 1
-        
-        self.freehandSmoothingTolerance = UserDefaults.standard.object(forKey: "freehandSmoothingTolerance") as? Double ?? 2.0
-        self.realTimeSmoothingEnabled = UserDefaults.standard.object(forKey: "realTimeSmoothingEnabled") as? Bool ?? true
-        self.realTimeSmoothingStrength = UserDefaults.standard.object(forKey: "realTimeSmoothingStrength") as? Double ?? 0.3
-        self.preserveSharpCorners = UserDefaults.standard.object(forKey: "preserveSharpCorners") as? Bool ?? true
-        self.freehandFillMode = FreehandFillMode(rawValue: UserDefaults.standard.string(forKey: "freehandFillMode") ?? "No Fill") ?? .noFill
-        self.freehandExpandStroke = UserDefaults.standard.object(forKey: "freehandExpandStroke") as? Bool ?? false
-        self.freehandClosePath = UserDefaults.standard.object(forKey: "freehandClosePath") as? Bool ?? false
-        
-        self.currentMarkerSmoothingTolerance = UserDefaults.standard.object(forKey: "markerSmoothingTolerance") as? Double ?? 20.0
-        self.currentMarkerTipSize = UserDefaults.standard.object(forKey: "markerTipSize") as? Double ?? 31.0
-        self.currentMarkerOpacity = UserDefaults.standard.object(forKey: "markerOpacity") as? Double ?? 1.0
-        self.currentMarkerFeathering = UserDefaults.standard.object(forKey: "markerFeathering") as? Double ?? 0.3
-        self.currentMarkerTaperStart = UserDefaults.standard.object(forKey: "markerTaperStart") as? Double ?? 0.1
-        self.currentMarkerTaperEnd = UserDefaults.standard.object(forKey: "markerTaperEnd") as? Double ?? 0.1
-        self.currentMarkerMinTaperThickness = UserDefaults.standard.object(forKey: "markerMinTaperThickness") as? Double ?? 2.0
-        self.markerUseFillAsStroke = UserDefaults.standard.object(forKey: "markerUseFillAsStroke") as? Bool ?? true
-        self.markerApplyNoStroke = UserDefaults.standard.object(forKey: "markerApplyNoStroke") as? Bool ?? false
-        self.markerRemoveOverlap = UserDefaults.standard.object(forKey: "markerRemoveOverlap") as? Bool ?? true
-        
         loadStrokeStyleDefaults()
         
         self.selectedLayerIndex = nil
@@ -391,42 +283,12 @@ class VectorDocument: ObservableObject, Codable {
         defaultStrokeMiterLimit = 10.0
         
         hasPressureInput = false
-        brushApplyNoStroke = UserDefaults.standard.object(forKey: "brushApplyNoStroke") as? Bool ?? true
-        brushRemoveOverlap = UserDefaults.standard.object(forKey: "brushRemoveOverlap") as? Bool ?? true
-        
+
         activeColorTarget = .fill
         colorChangeNotification = UUID()
         lastColorChangeType = .fillOpacity
-        
-        originalHandlePositions = [:]
-        
-        currentBrushThickness = UserDefaults.standard.object(forKey: "brushThickness") as? Double ?? 20.0
-        currentBrushSmoothingTolerance = UserDefaults.standard.object(forKey: "brushSmoothingTolerance") as? Double ?? 5.0
-        currentBrushMinTaperThickness = UserDefaults.standard.object(forKey: "brushMinTaperThickness") as? Double ?? 0.5
-        currentBrushTaperStart = UserDefaults.standard.object(forKey: "brushTaperStart") as? Double ?? 0.15
-        currentBrushTaperEnd = UserDefaults.standard.object(forKey: "brushTaperEnd") as? Double ?? 0.15
 
-        advancedSmoothingEnabled = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? false
-        chaikinSmoothingIterations = UserDefaults.standard.object(forKey: "chaikinSmoothingIterations") as? Int ?? 1
-        
-        freehandSmoothingTolerance = UserDefaults.standard.object(forKey: "freehandSmoothingTolerance") as? Double ?? 2.0
-        realTimeSmoothingEnabled = UserDefaults.standard.object(forKey: "realTimeSmoothingEnabled") as? Bool ?? true
-        realTimeSmoothingStrength = UserDefaults.standard.object(forKey: "realTimeSmoothingStrength") as? Double ?? 0.3
-        preserveSharpCorners = UserDefaults.standard.object(forKey: "preserveSharpCorners") as? Bool ?? true
-        freehandFillMode = FreehandFillMode(rawValue: UserDefaults.standard.string(forKey: "freehandFillMode") ?? "No Fill") ?? .noFill
-        freehandExpandStroke = UserDefaults.standard.object(forKey: "freehandExpandStroke") as? Bool ?? false
-        freehandClosePath = UserDefaults.standard.object(forKey: "freehandClosePath") as? Bool ?? false
-        
-        currentMarkerSmoothingTolerance = UserDefaults.standard.object(forKey: "markerSmoothingTolerance") as? Double ?? 20.0
-        currentMarkerTipSize = UserDefaults.standard.object(forKey: "markerTipSize") as? Double ?? 31.0
-        currentMarkerOpacity = UserDefaults.standard.object(forKey: "markerOpacity") as? Double ?? 1.0
-        currentMarkerFeathering = UserDefaults.standard.object(forKey: "markerFeathering") as? Double ?? 0.3
-        currentMarkerTaperStart = UserDefaults.standard.object(forKey: "markerTaperStart") as? Double ?? 0.1
-        currentMarkerTaperEnd = UserDefaults.standard.object(forKey: "markerTaperEnd") as? Double ?? 0.1
-        currentMarkerMinTaperThickness = UserDefaults.standard.object(forKey: "markerMinTaperThickness") as? Double ?? 2.0
-        markerUseFillAsStroke = UserDefaults.standard.object(forKey: "markerUseFillAsStroke") as? Bool ?? true
-        markerApplyNoStroke = UserDefaults.standard.object(forKey: "markerApplyNoStroke") as? Bool ?? false
-        markerRemoveOverlap = UserDefaults.standard.object(forKey: "markerRemoveOverlap") as? Bool ?? true
+        originalHandlePositions = [:]
         
         showRulers = settings.showRulers
         showGrid = settings.showGrid

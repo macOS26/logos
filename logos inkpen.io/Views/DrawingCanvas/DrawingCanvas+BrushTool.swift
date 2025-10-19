@@ -32,7 +32,7 @@ extension DrawingCanvas {
         let startPoint = VectorPoint(location)
         brushPath = VectorPath(elements: [.move(to: startPoint)])
 
-        let strokeStyle: StrokeStyle? = document.brushApplyNoStroke ? nil : StrokeStyle(
+        let strokeStyle: StrokeStyle? = ApplicationSettings.shared.brushApplyNoStroke ? nil : StrokeStyle(
             color: getCurrentStrokeColor(),
             width: getCurrentStrokeWidth(),
             lineCap: document.defaultStrokeLineCap,
@@ -159,7 +159,7 @@ extension DrawingCanvas {
             let newPath = generatePreviewVariableWidthPath(
                 centerPoints: rawPointLocations,
                 recentRawPoints: pointsToProcess,
-                thickness: document.currentBrushThickness,
+                thickness: ApplicationSettings.shared.currentBrushThickness,
                 pressureSensitivity: 0.5,
                 taper: 0.5
             )
@@ -261,7 +261,7 @@ extension DrawingCanvas {
         let brushStrokePath = generateSmoothVariableWidthPath(
             centerPoints: brushSimplifiedPoints,
             rawPoints: brushRawPoints,
-            thickness: document.currentBrushThickness,
+            thickness: ApplicationSettings.shared.currentBrushThickness,
             pressureSensitivity: 0.5,
             taper: 0.5
         )
@@ -269,7 +269,7 @@ extension DrawingCanvas {
         var finalShape = VectorShape(
             name: "Brush Stroke",
             path: brushStrokePath,
-            strokeStyle: document.brushApplyNoStroke ? nil : StrokeStyle(
+            strokeStyle: ApplicationSettings.shared.brushApplyNoStroke ? nil : StrokeStyle(
                 color: getCurrentStrokeColor(),
                 width: getCurrentStrokeWidth(),
                 opacity: getCurrentStrokeOpacity()
@@ -280,7 +280,7 @@ extension DrawingCanvas {
             )
         )
 
-        if document.brushRemoveOverlap {
+        if ApplicationSettings.shared.brushRemoveOverlap {
             let cg = finalShape.path.cgPath
             var cleaned: CGPath? = nil
             cleaned = CoreGraphicsPathOperations.normalized(cg, using: .winding)
@@ -306,7 +306,7 @@ extension DrawingCanvas {
         guard brushRawPoints.count >= 2 else { return }
 
         var dedupedPoints: [BrushPoint] = []
-        let dupThreshold = document.currentBrushSmoothingTolerance
+        let dupThreshold = ApplicationSettings.shared.currentBrushSmoothingTolerance
 
         for point in brushRawPoints {
             if let lastPoint = dedupedPoints.last {
@@ -336,7 +336,7 @@ extension DrawingCanvas {
             finalPath = generatePreviewVariableWidthPath(
                 centerPoints: dedupedLocations,
                 recentRawPoints: dedupedPoints,
-                thickness: document.currentBrushThickness,
+                thickness: ApplicationSettings.shared.currentBrushThickness,
                 pressureSensitivity: 0.5,
                 taper: 0.5
             )
@@ -344,7 +344,7 @@ extension DrawingCanvas {
             finalPath = preview
         }
 
-        let strokeStyle: StrokeStyle? = document.brushApplyNoStroke ? nil : StrokeStyle(
+        let strokeStyle: StrokeStyle? = ApplicationSettings.shared.brushApplyNoStroke ? nil : StrokeStyle(
             color: getCurrentStrokeColor(),
             width: getCurrentStrokeWidth(),
             lineCap: document.defaultStrokeLineCap,
@@ -354,7 +354,7 @@ extension DrawingCanvas {
         )
         let fillStyle = FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
 
-        if document.brushRemoveOverlap {
+        if ApplicationSettings.shared.brushRemoveOverlap {
             let currentPath = finalPath.cgPath
             var cleaned: CGPath? = nil
             cleaned = CoreGraphicsPathOperations.union(currentPath, currentPath, using: .winding)
@@ -440,8 +440,8 @@ extension DrawingCanvas {
                 mappedPressure = getThicknessFromPressureCurve(pressure: closestPressure, curve: curve)
             }
 
-            let taperStart = max(0.0, document.currentBrushTaperStart)
-            let taperEnd = max(0.0, document.currentBrushTaperEnd)
+            let taperStart = max(0.0, ApplicationSettings.shared.currentBrushTaperStart)
+            let taperEnd = max(0.0, ApplicationSettings.shared.currentBrushTaperEnd)
             var taperMultiplier = 1.0
 
             if taperStart > 0 && progress < taperStart {
@@ -454,7 +454,7 @@ extension DrawingCanvas {
 
             finalThickness *= (taperMultiplier * mappedPressure)
 
-            let minThickness = document.currentBrushMinTaperThickness
+            let minThickness = ApplicationSettings.shared.currentBrushMinTaperThickness
             if finalThickness > 0 {
                 finalThickness = max(finalThickness, minThickness)
             }
@@ -542,8 +542,8 @@ extension DrawingCanvas {
                 mappedPressure = getThicknessFromPressureCurve(pressure: interpolatedPressure, curve: curve)
             }
 
-            let taperStart = max(0.0, document.currentBrushTaperStart)
-            let taperEnd = max(0.0, document.currentBrushTaperEnd)
+            let taperStart = max(0.0, ApplicationSettings.shared.currentBrushTaperStart)
+            let taperEnd = max(0.0, ApplicationSettings.shared.currentBrushTaperEnd)
             var taperMultiplier = 1.0
 
             if taperStart > 0 && progress < taperStart {
@@ -556,7 +556,7 @@ extension DrawingCanvas {
 
             finalThickness *= (taperMultiplier * mappedPressure)
 
-            let minThickness = document.currentBrushMinTaperThickness
+            let minThickness = ApplicationSettings.shared.currentBrushMinTaperThickness
             if finalThickness > 0 {
                 finalThickness = max(finalThickness, minThickness)
             }

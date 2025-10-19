@@ -20,15 +20,15 @@ struct VariableStrokeSection: View {
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("\(formatNumberForDisplay(document.currentBrushThickness))pt")
+                    Text("\(formatNumberForDisplay(ApplicationSettings.shared.currentBrushThickness))pt")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.primaryText)
                         .monospacedDigit()
                 }
 
                 Slider(value: Binding(
-                    get: { document.currentBrushThickness },
-                    set: { document.currentBrushThickness = $0 }
+                    get: { ApplicationSettings.shared.currentBrushThickness },
+                    set: { ApplicationSettings.shared.currentBrushThickness = $0 }
                 ), in: 0.25...72)
                 .controlSize(.regular)
                 .help("Adjust brush stroke thickness (0.25-72 points)")
@@ -56,15 +56,15 @@ struct VariableStrokeSection: View {
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("\(formatNumberForDisplay(document.currentBrushSmoothingTolerance))px")
+                    Text("\(formatNumberForDisplay(ApplicationSettings.shared.currentBrushSmoothingTolerance))px")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.primaryText)
                         .monospacedDigit()
                 }
 
                 Slider(value: Binding(
-                    get: { document.currentBrushSmoothingTolerance },
-                    set: { document.currentBrushSmoothingTolerance = $0 }
+                    get: { ApplicationSettings.shared.currentBrushSmoothingTolerance },
+                    set: { ApplicationSettings.shared.currentBrushSmoothingTolerance = $0 }
                 ), in: 0...10)
                 .controlSize(.regular)
                 .help("Point reduction threshold - higher values remove more duplicate points for smoother strokes (0-10 pixels)")
@@ -76,15 +76,15 @@ struct VariableStrokeSection: View {
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("\(Int(document.currentBrushTaperStart * 100))%")
+                    Text("\(Int(ApplicationSettings.shared.currentBrushTaperStart * 100))%")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.primaryText)
                         .monospacedDigit()
                 }
 
                 Slider(value: Binding(
-                    get: { document.currentBrushTaperStart },
-                    set: { document.currentBrushTaperStart = $0 }
+                    get: { ApplicationSettings.shared.currentBrushTaperStart },
+                    set: { ApplicationSettings.shared.currentBrushTaperStart = $0 }
                 ), in: 0...1)
                 .controlSize(.regular)
                 .help("Controls how much of the beginning tapers (0-100%)")
@@ -96,15 +96,15 @@ struct VariableStrokeSection: View {
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("\(Int(document.currentBrushTaperEnd * 100))%")
+                    Text("\(Int(ApplicationSettings.shared.currentBrushTaperEnd * 100))%")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.primaryText)
                         .monospacedDigit()
                 }
 
                 Slider(value: Binding(
-                    get: { document.currentBrushTaperEnd },
-                    set: { document.currentBrushTaperEnd = $0 }
+                    get: { ApplicationSettings.shared.currentBrushTaperEnd },
+                    set: { ApplicationSettings.shared.currentBrushTaperEnd = $0 }
                 ), in: 0...1)
                 .controlSize(.regular)
                 .help("Controls how much of the end tapers (0-100%)")
@@ -116,15 +116,15 @@ struct VariableStrokeSection: View {
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("\(formatNumberForDisplay(document.currentBrushMinTaperThickness))pt")
+                    Text("\(formatNumberForDisplay(ApplicationSettings.shared.currentBrushMinTaperThickness))pt")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.primaryText)
                         .monospacedDigit()
                 }
 
                 Slider(value: Binding(
-                    get: { document.currentBrushMinTaperThickness },
-                    set: { document.currentBrushMinTaperThickness = $0 }
+                    get: { ApplicationSettings.shared.currentBrushMinTaperThickness },
+                    set: { ApplicationSettings.shared.currentBrushMinTaperThickness = $0 }
                 ), in: 0...15)
                 .controlSize(.regular)
                 .help("Minimum thickness at taper ends (0-15 points)")
@@ -162,8 +162,8 @@ struct VariableStrokeSection: View {
                     }
                     Spacer()
                     Toggle("", isOn: Binding(
-                        get: { document.brushApplyNoStroke },
-                        set: { document.brushApplyNoStroke = $0 }
+                        get: { ApplicationSettings.shared.brushApplyNoStroke },
+                        set: { ApplicationSettings.shared.brushApplyNoStroke = $0 }
                     ))
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                     .controlSize(.small)
@@ -181,8 +181,8 @@ struct VariableStrokeSection: View {
                     }
                     Spacer()
                     Toggle("", isOn: Binding(
-                        get: { document.brushRemoveOverlap },
-                        set: { document.brushRemoveOverlap = $0 }
+                        get: { ApplicationSettings.shared.brushRemoveOverlap },
+                        set: { ApplicationSettings.shared.brushRemoveOverlap = $0 }
                     ))
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                     .controlSize(.small)

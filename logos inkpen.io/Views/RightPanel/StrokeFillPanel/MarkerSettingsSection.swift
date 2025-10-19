@@ -21,15 +21,15 @@ struct MarkerSettingsSection: View {
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("\(Int(document.currentMarkerTipSize))pt")
+                    Text("\(Int(ApplicationSettings.shared.currentMarkerTipSize))pt")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
 
                 Slider(value: Binding(
-                    get: { document.currentMarkerTipSize },
-                    set: { document.currentMarkerTipSize = $0 }
+                    get: { ApplicationSettings.shared.currentMarkerTipSize },
+                    set: { ApplicationSettings.shared.currentMarkerTipSize = $0 }
                 ), in: 1...50)
                 .controlSize(.regular)
                 .help("Adjust marker tip thickness (1-50 points)")
@@ -41,15 +41,15 @@ struct MarkerSettingsSection: View {
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("\(Int(document.currentMarkerOpacity * 100))%")
+                    Text("\(Int(ApplicationSettings.shared.currentMarkerOpacity * 100))%")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
 
                 Slider(value: Binding(
-                    get: { document.currentMarkerOpacity },
-                    set: { document.currentMarkerOpacity = $0 }
+                    get: { ApplicationSettings.shared.currentMarkerOpacity },
+                    set: { ApplicationSettings.shared.currentMarkerOpacity = $0 }
                 ), in: 0...1)
                 .controlSize(.regular)
                 .help("Adjust marker ink opacity (0-100%)")
@@ -77,15 +77,15 @@ struct MarkerSettingsSection: View {
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("\(Int(document.currentMarkerSmoothingTolerance))%")
+                    Text("\(Int(ApplicationSettings.shared.currentMarkerSmoothingTolerance))%")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
 
                 Slider(value: Binding(
-                    get: { document.currentMarkerSmoothingTolerance },
-                    set: { document.currentMarkerSmoothingTolerance = $0 }
+                    get: { ApplicationSettings.shared.currentMarkerSmoothingTolerance },
+                    set: { ApplicationSettings.shared.currentMarkerSmoothingTolerance = $0 }
                 ), in: 0...100)
                 .controlSize(.regular)
                 .help("Smoothing amount - 0% = no smoothing (preserves exact shape), 100% = maximum smoothing")
@@ -97,15 +97,15 @@ struct MarkerSettingsSection: View {
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("\(Int(document.currentMarkerFeathering * 100))%")
+                    Text("\(Int(ApplicationSettings.shared.currentMarkerFeathering * 100))%")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
 
                 Slider(value: Binding(
-                    get: { document.currentMarkerFeathering },
-                    set: { document.currentMarkerFeathering = $0 }
+                    get: { ApplicationSettings.shared.currentMarkerFeathering },
+                    set: { ApplicationSettings.shared.currentMarkerFeathering = $0 }
                 ), in: 0...1)
                 .controlSize(.regular)
                 .help("Edge softness for felt-tip marker appearance")
@@ -117,15 +117,15 @@ struct MarkerSettingsSection: View {
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("\(Int(document.currentMarkerTaperStart * 100))%")
+                    Text("\(Int(ApplicationSettings.shared.currentMarkerTaperStart * 100))%")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
 
                 Slider(value: Binding(
-                    get: { document.currentMarkerTaperStart },
-                    set: { document.currentMarkerTaperStart = $0 }
+                    get: { ApplicationSettings.shared.currentMarkerTaperStart },
+                    set: { ApplicationSettings.shared.currentMarkerTaperStart = $0 }
                 ), in: 0...0.5)
                 .controlSize(.regular)
                 .help("Thickness tapering at the start of marker strokes")
@@ -137,15 +137,15 @@ struct MarkerSettingsSection: View {
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("\(Int(document.currentMarkerTaperEnd * 100))%")
+                    Text("\(Int(ApplicationSettings.shared.currentMarkerTaperEnd * 100))%")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
 
                 Slider(value: Binding(
-                    get: { document.currentMarkerTaperEnd },
-                    set: { document.currentMarkerTaperEnd = $0 }
+                    get: { ApplicationSettings.shared.currentMarkerTaperEnd },
+                    set: { ApplicationSettings.shared.currentMarkerTaperEnd = $0 }
                 ), in: 0...0.5)
                 .controlSize(.regular)
                 .help("Thickness tapering at the end of marker strokes")
@@ -157,15 +157,15 @@ struct MarkerSettingsSection: View {
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("\(formatNumberForDisplay(document.currentMarkerMinTaperThickness))pt")
+                    Text("\(formatNumberForDisplay(ApplicationSettings.shared.currentMarkerMinTaperThickness))pt")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                         .monospacedDigit()
                 }
 
                 Slider(value: Binding(
-                    get: { document.currentMarkerMinTaperThickness },
-                    set: { document.currentMarkerMinTaperThickness = $0 }
+                    get: { ApplicationSettings.shared.currentMarkerMinTaperThickness },
+                    set: { ApplicationSettings.shared.currentMarkerMinTaperThickness = $0 }
                 ), in: 0...60)
                 .controlSize(.regular)
                 .help("Minimum thickness at taper ends (0-60 points)")
@@ -186,8 +186,8 @@ struct MarkerSettingsSection: View {
                     }
                     Spacer()
                     Toggle("", isOn: Binding(
-                        get: { document.markerUseFillAsStroke },
-                        set: { document.markerUseFillAsStroke = $0 }
+                        get: { ApplicationSettings.shared.markerUseFillAsStroke },
+                        set: { ApplicationSettings.shared.markerUseFillAsStroke = $0 }
                     ))
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                     .controlSize(.small)
@@ -205,8 +205,8 @@ struct MarkerSettingsSection: View {
                     }
                     Spacer()
                     Toggle("", isOn: Binding(
-                        get: { document.markerApplyNoStroke },
-                        set: { document.markerApplyNoStroke = $0 }
+                        get: { ApplicationSettings.shared.markerApplyNoStroke },
+                        set: { ApplicationSettings.shared.markerApplyNoStroke = $0 }
                     ))
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                     .controlSize(.small)
@@ -224,8 +224,8 @@ struct MarkerSettingsSection: View {
                     }
                     Spacer()
                     Toggle("", isOn: Binding(
-                        get: { document.markerRemoveOverlap },
-                        set: { document.markerRemoveOverlap = $0 }
+                        get: { ApplicationSettings.shared.markerRemoveOverlap },
+                        set: { ApplicationSettings.shared.markerRemoveOverlap = $0 }
                     ))
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                     .controlSize(.small)

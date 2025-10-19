@@ -105,9 +105,9 @@ extension DrawingCanvas {
         }
 
         if let preview = markerPreviewPath {
-            let markerFillColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
-            let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
-            let showStroke = !document.markerApplyNoStroke
+            let markerFillColor = ApplicationSettings.shared.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
+            let markerStrokeColor = ApplicationSettings.shared.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
+            let showStroke = !ApplicationSettings.shared.markerApplyNoStroke
 
             if showStroke {
                 let baseStrokeWidth = getCurrentStrokeWidth()
@@ -119,7 +119,7 @@ extension DrawingCanvas {
                     addPathElements(preview.elements, to: &path)
                 }
                 .fill(markerFillColor.color)
-                .opacity(document.currentMarkerOpacity)
+                .opacity(ApplicationSettings.shared.currentMarkerOpacity)
                 .overlay(
                     Path { path in
                         addPathElements(preview.elements, to: &path)
@@ -130,7 +130,7 @@ extension DrawingCanvas {
                         lineJoin: lineJoin,
                         miterLimit: document.defaultStrokeMiterLimit
                     ))
-                    .opacity(document.currentMarkerOpacity)
+                    .opacity(ApplicationSettings.shared.currentMarkerOpacity)
                 )
                 .scaleEffect(document.zoomLevel, anchor: .topLeading)
                 .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
@@ -139,7 +139,7 @@ extension DrawingCanvas {
                     addPathElements(preview.elements, to: &path)
                 }
                 .fill(markerFillColor.color)
-                .opacity(document.currentMarkerOpacity)
+                .opacity(ApplicationSettings.shared.currentMarkerOpacity)
                 .scaleEffect(document.zoomLevel, anchor: .topLeading)
                 .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
             }

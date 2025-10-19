@@ -43,6 +43,7 @@ extension VectorDocument {
     var defaultFillColor: VectorColor {
         get { documentColorDefaults.fillColor }
         set {
+            objectWillChange.send()
             documentColorDefaults.fillColor = newValue
             documentColorDefaults.saveToUserDefaults()
         }
@@ -303,9 +304,9 @@ extension VectorDocument {
         rebuildLayerCache()
     }
 
-    func rebuildLayerCache() {
-        objectsByLayerCache = Dictionary(grouping: unifiedObjects, by: { $0.layerIndex })
-    }
+//    func rebuildLayerCache() {
+//        objectsByLayerCache = Dictionary(grouping: unifiedObjects, by: { $0.layerIndex })
+//    }
 
     func findObject(by id: UUID) -> VectorObject? {
         guard let index = unifiedObjectIndexCache[id], index < unifiedObjects.count else {

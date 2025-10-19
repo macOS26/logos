@@ -32,11 +32,11 @@ extension DrawingCanvas {
         let startPoint = VectorPoint(location)
         markerPath = VectorPath(elements: [.move(to: startPoint)])
 
-        let strokeColor = document.markerApplyNoStroke ? nil : getCurrentStrokeColor()
+        let strokeColor = ApplicationSettings.shared.markerApplyNoStroke ? nil : getCurrentStrokeColor()
         let strokeWidth = getCurrentStrokeWidth()
-        let markerFillColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
-        let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
-        let markerOpacity = document.currentMarkerOpacity
+        let markerFillColor = ApplicationSettings.shared.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
+        let markerStrokeColor = ApplicationSettings.shared.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
+        let markerOpacity = ApplicationSettings.shared.currentMarkerOpacity
         let actualStrokeWidth = (document.defaultStrokePlacement == .center) ? strokeWidth : strokeWidth * 2.0
         let strokeStyle = strokeColor != nil ? StrokeStyle(
             color: markerStrokeColor,
@@ -143,22 +143,22 @@ extension DrawingCanvas {
         let rawPointLocations = markerRawPoints.map { $0.location }
         var processedPoints = rawPointLocations
 
-        if document.advancedSmoothingEnabled {
+        if ApplicationSettings.shared.advancedSmoothingEnabled {
             let chaikinSmoothed = CurveSmoothing.chaikinSmooth(
                 points: processedPoints,
-                iterations: document.chaikinSmoothingIterations,
+                iterations: ApplicationSettings.shared.chaikinSmoothingIterations,
                 ratio: 0.25
             )
             processedPoints = chaikinSmoothed
         }
 
-        let smoothingTolerance = (document.currentMarkerSmoothingTolerance / 100.0) * 3.0
+        let smoothingTolerance = (ApplicationSettings.shared.currentMarkerSmoothingTolerance / 100.0) * 3.0
 
-        markerSimplifiedPoints = document.advancedSmoothingEnabled ?
+        markerSimplifiedPoints = ApplicationSettings.shared.advancedSmoothingEnabled ?
             CurveSmoothing.improvedDouglassPeucker(
                 points: processedPoints,
                 tolerance: smoothingTolerance,
-                preserveSharpCorners: document.preserveSharpCorners
+                preserveSharpCorners: ApplicationSettings.shared.preserveSharpCorners
             ) :
             DrawingCanvasPathHelpers.douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
 
@@ -184,11 +184,11 @@ extension DrawingCanvas {
             recentRawPoints: markerRawPoints
         )
 
-        let strokeColor = document.markerApplyNoStroke ? nil : getCurrentStrokeColor()
+        let strokeColor = ApplicationSettings.shared.markerApplyNoStroke ? nil : getCurrentStrokeColor()
         let strokeWidth = getCurrentStrokeWidth()
-        let markerFillColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
-        let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
-        let markerOpacity = document.currentMarkerOpacity
+        let markerFillColor = ApplicationSettings.shared.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
+        let markerStrokeColor = ApplicationSettings.shared.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
+        let markerOpacity = ApplicationSettings.shared.currentMarkerOpacity
         let actualStrokeWidth = (document.defaultStrokePlacement == .center) ? strokeWidth : strokeWidth * 2.0
         let strokeStyle = strokeColor != nil ? StrokeStyle(
             color: markerStrokeColor,
@@ -211,7 +211,7 @@ extension DrawingCanvas {
             fillStyle: fillStyle
         )
 
-        if document.markerRemoveOverlap {
+        if ApplicationSettings.shared.markerRemoveOverlap {
             var currentPath = finalShape.path.cgPath
             var cleanedFillPath: CGPath? = nil
             cleanedFillPath = CoreGraphicsPathOperations.normalized(currentPath, using: .winding)
@@ -266,11 +266,11 @@ extension DrawingCanvas {
     private func finalizeMarkerFromPreview(_ preview: VectorPath) {
         guard document.selectedLayerIndex != nil else { return }
 
-        let strokeColor = document.markerApplyNoStroke ? nil : getCurrentStrokeColor()
+        let strokeColor = ApplicationSettings.shared.markerApplyNoStroke ? nil : getCurrentStrokeColor()
         let strokeWidth = getCurrentStrokeWidth()
-        let markerFillColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
-        let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
-        let markerOpacity = document.currentMarkerOpacity
+        let markerFillColor = ApplicationSettings.shared.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
+        let markerStrokeColor = ApplicationSettings.shared.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
+        let markerOpacity = ApplicationSettings.shared.currentMarkerOpacity
         let actualStrokeWidth = (document.defaultStrokePlacement == .center) ? strokeWidth : strokeWidth * 2.0
         let strokeStyle = strokeColor != nil ? StrokeStyle(
             color: markerStrokeColor,
@@ -289,7 +289,7 @@ extension DrawingCanvas {
         var finalPath = preview
         var finalStrokeStyle = strokeStyle
 
-        if document.markerRemoveOverlap {
+        if ApplicationSettings.shared.markerRemoveOverlap {
             var currentPath = preview.cgPath
             var cleanedFillPath: CGPath? = nil
             cleanedFillPath = CoreGraphicsPathOperations.normalized(currentPath, using: .winding)
@@ -369,7 +369,7 @@ extension DrawingCanvas {
             let progress = Double(index) / Double(centerPoints.count - 1)
             let pressure = getPressureAtPoint(point, rawPoints: rawPoints)
 
-            var finalThickness = document.currentMarkerTipSize
+            var finalThickness = ApplicationSettings.shared.currentMarkerTipSize
             let strokeLength = Double(centerPoints.count)
             let isShortStroke = strokeLength < 5
 
@@ -381,8 +381,8 @@ extension DrawingCanvas {
                     finalThickness *= pow(endProgress, 1.5)
                 }
             } else {
-                let startTaper = max(0.25, document.currentMarkerTaperStart)
-                let endTaper = max(0.25, document.currentMarkerTaperEnd)
+                let startTaper = max(0.25, ApplicationSettings.shared.currentMarkerTaperStart)
+                let endTaper = max(0.25, ApplicationSettings.shared.currentMarkerTaperEnd)
 
                 if progress < startTaper {
                     finalThickness *= pow(progress / startTaper, 1.5)
@@ -392,7 +392,7 @@ extension DrawingCanvas {
                 }
             }
 
-            let feathering = document.currentMarkerFeathering
+            let feathering = ApplicationSettings.shared.currentMarkerFeathering
             if isShortStroke {
                 finalThickness *= (1.0 - feathering * 0.15)
             } else {
@@ -431,7 +431,7 @@ extension DrawingCanvas {
                 finalThickness *= mappedPressure
             }
 
-            let minThickness = document.currentMarkerMinTaperThickness
+            let minThickness = ApplicationSettings.shared.currentMarkerMinTaperThickness
             if finalThickness > 0 {
                 finalThickness = max(finalThickness, minThickness)
             }
@@ -586,7 +586,7 @@ extension DrawingCanvas {
     }
 
     private func createMarkerDot(at center: CGPoint) -> VectorPath {
-        let radius = document.currentMarkerTipSize / 2.0
+        let radius = ApplicationSettings.shared.currentMarkerTipSize / 2.0
         var elements: [PathElement] = []
         let controlPointDistance = radius * 0.552284749831
 

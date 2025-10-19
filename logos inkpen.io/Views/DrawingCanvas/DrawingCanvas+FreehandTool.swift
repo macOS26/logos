@@ -37,7 +37,7 @@ extension DrawingCanvas {
             miterLimit: document.defaultStrokeMiterLimit,
             opacity: getCurrentStrokeOpacity()
         )
-        let fillStyle: FillStyle? = document.freehandFillMode == .fill
+        let fillStyle: FillStyle? = ApplicationSettings.shared.freehandFillMode == .fill
             ? FillStyle(color: fillColor, opacity: getCurrentFillOpacity())
             : nil
 
@@ -57,12 +57,12 @@ extension DrawingCanvas {
         MetalDrawingOptimizer.shared.trackDrawingStart()
 
         let smoothedLocation: CGPoint
-        if document.advancedSmoothingEnabled && document.realTimeSmoothingEnabled {
+        if ApplicationSettings.shared.advancedSmoothingEnabled && ApplicationSettings.shared.realTimeSmoothingEnabled {
             smoothedLocation = RealTimeSmoothing.applyRealTimeSmoothing(
                 newPoint: location,
                 recentPoints: &freehandRealtimeSmoothingPoints,
                 windowSize: 5,
-                strength: document.realTimeSmoothingStrength
+                strength: ApplicationSettings.shared.realTimeSmoothingStrength
             )
         } else {
             smoothedLocation = location
@@ -110,21 +110,21 @@ extension DrawingCanvas {
 
         var processedPoints = freehandRawPoints
 
-        if document.advancedSmoothingEnabled {
+        if ApplicationSettings.shared.advancedSmoothingEnabled {
             let chaikinSmoothed = CurveSmoothing.chaikinSmooth(
                 points: processedPoints,
-                iterations: document.chaikinSmoothingIterations,
+                iterations: ApplicationSettings.shared.chaikinSmoothingIterations,
                 ratio: 0.25
             )
             processedPoints = chaikinSmoothed
         }
 
-        let tolerance = document.freehandSmoothingTolerance
+        let tolerance = ApplicationSettings.shared.freehandSmoothingTolerance
         let cgPoints = processedPoints.map { CGPoint(x: $0.x, y: $0.y) }
         let optimizedCGPoints = MetalDrawingOptimizer.shared.optimizeFreehandDrawing(points: cgPoints, tolerance: tolerance)
         let simplifiedPoints = optimizedCGPoints.map { VectorPoint($0) }
         let finalCGPoints = simplifiedPoints.map { CGPoint(x: $0.x, y: $0.y) }
-        let smoothPath = document.advancedSmoothingEnabled ?
+        let smoothPath = ApplicationSettings.shared.advancedSmoothingEnabled ?
             createAdvancedSmoothBezierPath(from: finalCGPoints) :
             DrawingCanvasPathHelpers.createSmoothBezierPath(from: finalCGPoints)
 
@@ -151,7 +151,7 @@ extension DrawingCanvas {
             elements.append(contentsOf: curveSegments)
         }
 
-        if document.freehandClosePath {
+        if ApplicationSettings.shared.freehandClosePath {
             elements.append(.close)
         }
 
@@ -187,11 +187,11 @@ extension DrawingCanvas {
             opacity: getCurrentStrokeOpacity()
         )
 
-        let fillStyle: FillStyle? = document.freehandFillMode == .fill
+        let fillStyle: FillStyle? = ApplicationSettings.shared.freehandFillMode == .fill
             ? FillStyle(color: fillColor, opacity: getCurrentFillOpacity())
             : nil
 
-        if document.freehandExpandStroke {
+        if ApplicationSettings.shared.freehandExpandStroke {
             if let expandedPath = PathOperations.outlineStroke(
                 path: smoothPath.cgPath,
                 strokeStyle: strokeStyle

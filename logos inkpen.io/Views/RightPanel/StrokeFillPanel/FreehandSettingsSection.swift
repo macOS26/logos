@@ -21,8 +21,8 @@ struct FreehandSettingsSection: View {
                     .foregroundColor(Color.ui.secondaryText)
 
                 Picker("", selection: Binding(
-                    get: { document.freehandFillMode },
-                    set: { document.freehandFillMode = $0 }
+                    get: { ApplicationSettings.shared.freehandFillMode },
+                    set: { ApplicationSettings.shared.freehandFillMode = $0 }
                 )) {
                     ForEach(VectorDocument.FreehandFillMode.allCases, id: \.self) { mode in
                         Text(mode.rawValue).tag(mode)
@@ -38,15 +38,15 @@ struct FreehandSettingsSection: View {
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("\(formatNumberForDisplay(document.freehandSmoothingTolerance))")
+                    Text("\(formatNumberForDisplay(ApplicationSettings.shared.freehandSmoothingTolerance))")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.primaryText)
                         .monospacedDigit()
                 }
 
                 Slider(value: Binding(
-                    get: { document.freehandSmoothingTolerance },
-                    set: { document.freehandSmoothingTolerance = $0 }
+                    get: { ApplicationSettings.shared.freehandSmoothingTolerance },
+                    set: { ApplicationSettings.shared.freehandSmoothingTolerance = $0 }
                 ), in: 0.1...10)
                 .controlSize(.small)
                 .help("Curve fitting tolerance - lower values preserve more detail, higher values create smoother curves")
@@ -63,8 +63,8 @@ struct FreehandSettingsSection: View {
                 }
                 Spacer()
                 Toggle("", isOn: Binding(
-                    get: { document.freehandClosePath },
-                    set: { document.freehandClosePath = $0 }
+                    get: { ApplicationSettings.shared.freehandClosePath },
+                    set: { ApplicationSettings.shared.freehandClosePath = $0 }
                 ))
                 .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                 .controlSize(.small)
@@ -82,8 +82,8 @@ struct FreehandSettingsSection: View {
                 }
                 Spacer()
                 Toggle("", isOn: Binding(
-                    get: { document.freehandExpandStroke },
-                    set: { document.freehandExpandStroke = $0 }
+                    get: { ApplicationSettings.shared.freehandExpandStroke },
+                    set: { ApplicationSettings.shared.freehandExpandStroke = $0 }
                 ))
                 .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                 .controlSize(.small)
@@ -100,29 +100,29 @@ struct FreehandSettingsSection: View {
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
                     Toggle("", isOn: Binding(
-                        get: { document.realTimeSmoothingEnabled },
-                        set: { document.realTimeSmoothingEnabled = $0 }
+                        get: { ApplicationSettings.shared.realTimeSmoothingEnabled },
+                        set: { ApplicationSettings.shared.realTimeSmoothingEnabled = $0 }
                     ))
                     .toggleStyle(SwitchToggleStyle())
                     .controlSize(.small)
                 }
                 .help("Enable real-time smoothing during drawing")
 
-                if document.realTimeSmoothingEnabled {
+                if ApplicationSettings.shared.realTimeSmoothingEnabled {
                     HStack {
                         Text("Strength")
                             .font(.subheadline)
                             .foregroundColor(Color.ui.secondaryText)
                         Spacer()
-                        Text("\(Int(document.realTimeSmoothingStrength * 100))%")
+                        Text("\(Int(ApplicationSettings.shared.realTimeSmoothingStrength * 100))%")
                             .font(.subheadline)
                             .foregroundColor(Color.ui.primaryText)
                             .monospacedDigit()
                     }
 
                     Slider(value: Binding(
-                        get: { document.realTimeSmoothingStrength },
-                        set: { document.realTimeSmoothingStrength = $0 }
+                        get: { ApplicationSettings.shared.realTimeSmoothingStrength },
+                        set: { ApplicationSettings.shared.realTimeSmoothingStrength = $0 }
                     ), in: 0...1)
                     .controlSize(.small)
                     .help("Strength of real-time smoothing (0-100%)")
@@ -140,8 +140,8 @@ struct FreehandSettingsSection: View {
                 }
                 Spacer()
                 Toggle("", isOn: Binding(
-                    get: { document.preserveSharpCorners },
-                    set: { document.preserveSharpCorners = $0 }
+                    get: { ApplicationSettings.shared.preserveSharpCorners },
+                    set: { ApplicationSettings.shared.preserveSharpCorners = $0 }
                 ))
                 .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                 .controlSize(.small)
@@ -160,30 +160,30 @@ struct FreehandSettingsSection: View {
                         .foregroundColor(Color.ui.primaryText)
                     Spacer()
                     Toggle("", isOn: Binding(
-                        get: { document.advancedSmoothingEnabled },
-                        set: { document.advancedSmoothingEnabled = $0 }
+                        get: { ApplicationSettings.shared.advancedSmoothingEnabled },
+                        set: { ApplicationSettings.shared.advancedSmoothingEnabled = $0 }
                     ))
                     .toggleStyle(SwitchToggleStyle(tint: .purple))
                     .controlSize(.small)
                 }
                 .help("Enable advanced curve smoothing algorithms")
 
-                if document.advancedSmoothingEnabled {
+                if ApplicationSettings.shared.advancedSmoothingEnabled {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("Chaikin Iterations")
                                 .font(.subheadline)
                                 .foregroundColor(Color.ui.secondaryText)
                             Spacer()
-                            Text("\(document.chaikinSmoothingIterations)")
+                            Text("\(ApplicationSettings.shared.chaikinSmoothingIterations)")
                                 .font(.subheadline)
                                 .foregroundColor(Color.ui.primaryText)
                                 .monospacedDigit()
                         }
 
                         Slider(value: Binding<Double>(
-                            get: { Double(document.chaikinSmoothingIterations) },
-                            set: { document.chaikinSmoothingIterations = Int(round($0)) }
+                            get: { Double(ApplicationSettings.shared.chaikinSmoothingIterations) },
+                            set: { ApplicationSettings.shared.chaikinSmoothingIterations = Int(round($0)) }
                         ), in: 1...3)
                         .controlSize(.small)
                         .help("More iterations create smoother curves but may lose detail (1-3)")
@@ -200,8 +200,8 @@ struct FreehandSettingsSection: View {
                         }
                         Spacer()
                         Toggle("", isOn: Binding(
-                            get: { document.preserveSharpCorners },
-                            set: { document.preserveSharpCorners = $0 }
+                            get: { ApplicationSettings.shared.preserveSharpCorners },
+                            set: { ApplicationSettings.shared.preserveSharpCorners = $0 }
                         ))
                         .toggleStyle(SwitchToggleStyle(tint: .purple))
                         .controlSize(.small)
