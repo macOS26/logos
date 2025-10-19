@@ -20,11 +20,7 @@ extension VectorDocument {
             return false
         }
 
-        selectedShapeIDs.remove(id)
-        selectedTextIDs.remove(id)
-        if let unifiedObj = findObject(by: id) {
-            viewState.selectedObjectIDs.remove(unifiedObj.id)
-        }
+        viewState.selectedObjectIDs.remove(id)
     }
 
     func removeTextFromUnifiedSystem(id: UUID) {
@@ -36,10 +32,7 @@ extension VectorDocument {
             return false
         }
 
-        selectedTextIDs.remove(id)
-        if let unifiedObj = findObject(by: id) {
-            viewState.selectedObjectIDs.remove(unifiedObj.id)
-        }
+        viewState.selectedObjectIDs.remove(id)
 
     }
 
