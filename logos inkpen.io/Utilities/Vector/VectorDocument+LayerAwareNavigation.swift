@@ -67,9 +67,10 @@ extension VectorDocument {
                 }
             }
 
-            // Swap with the found object in same layer
+            // REMOVE and INSERT at target position (not swap)
             if let targetIndex = targetIndex {
-                unifiedObjects.swapAt(selectedIndex, targetIndex)
+                let obj = unifiedObjects.remove(at: selectedIndex)
+                unifiedObjects.insert(obj, at: targetIndex)
             }
         }
 
@@ -101,9 +102,10 @@ extension VectorDocument {
                 }
             }
 
-            // Swap with the found object in same layer
+            // REMOVE and INSERT at target position (not swap)
             if let targetIndex = targetIndex {
-                unifiedObjects.swapAt(selectedIndex, targetIndex)
+                let obj = unifiedObjects.remove(at: selectedIndex)
+                unifiedObjects.insert(obj, at: targetIndex)
             }
         }
 
