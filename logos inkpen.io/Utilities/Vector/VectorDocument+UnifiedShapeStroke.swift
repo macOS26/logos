@@ -24,6 +24,9 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
 
+                // Notify granular change for live updates
+                changeNotifier.notifyObjectChanged(id)
+
             case .text:
                 break
             }
@@ -51,6 +54,9 @@ extension VectorDocument {
                     shape: shape,
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
+
+                // Notify granular change for live updates
+                changeNotifier.notifyObjectChanged(id)
 
             case .text:
                 break
@@ -80,6 +86,9 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
 
+                // Notify granular change for live updates
+                changeNotifier.notifyObjectChanged(id)
+
             case .text:
                 break
             }
@@ -106,6 +115,9 @@ extension VectorDocument {
                     shape: shape,
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
+
+                // Notify granular change for live updates
+                changeNotifier.notifyObjectChanged(id)
 
             case .text:
                 break
@@ -139,6 +151,9 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
 
+                // Notify granular change for live updates
+                changeNotifier.notifyObjectChanged(id)
+
             case .text:
                 break
             }
@@ -163,6 +178,9 @@ extension VectorDocument {
                     shape: shape,
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
+
+                // Notify granular change for live updates
+                changeNotifier.notifyObjectChanged(id)
 
             case .text:
                 break
@@ -189,6 +207,9 @@ extension VectorDocument {
                     shape: shape,
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
+
+                // Notify granular change for live updates
+                changeNotifier.notifyObjectChanged(id)
 
             case .text:
                 break
@@ -228,6 +249,9 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
 
+                // Notify granular change for live updates
+                changeNotifier.notifyObjectChanged(id)
+
             case .text:
                 break
             }
@@ -258,6 +282,9 @@ extension VectorDocument {
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
 
+                // Notify granular change for live updates
+                changeNotifier.notifyObjectChanged(id)
+
             case .text:
                 break
             }
@@ -282,6 +309,9 @@ extension VectorDocument {
                     shape: shape,
                     layerIndex: unifiedObjects[objectIndex].layerIndex,
                 )
+
+                // Notify granular change for live updates
+                changeNotifier.notifyObjectChanged(id)
 
             case .text:
                 break
