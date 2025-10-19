@@ -59,7 +59,7 @@ class GroupCommand: BaseCommand {
         }
 
         document.viewState.selectedObjectIDs = newSelectedObjectIDs
-        document.selectedShapeIDs = newSelectedObjectIDs.filter { id in
+        document.viewState.selectedObjectIDs = newSelectedObjectIDs.filter { id in
             if let obj = document.unifiedObjects.first(where: { $0.id == id }) {
                 switch obj.objectType {
                 case .shape, .warp, .group, .clipGroup, .clipMask:
@@ -70,7 +70,7 @@ class GroupCommand: BaseCommand {
             }
             return false
         }
-        document.selectedTextIDs = newSelectedObjectIDs.filter { id in
+        document.viewState.selectedObjectIDs = newSelectedObjectIDs.filter { id in
             if let obj = document.unifiedObjects.first(where: { $0.id == id }) {
                 switch obj.objectType {
                 case .text:
@@ -108,7 +108,7 @@ class GroupCommand: BaseCommand {
         }
 
         document.viewState.selectedObjectIDs = oldSelectedObjectIDs
-        document.selectedShapeIDs = oldSelectedObjectIDs.filter { id in
+        document.viewState.selectedObjectIDs = oldSelectedObjectIDs.filter { id in
             if let obj = document.unifiedObjects.first(where: { $0.id == id }) {
                 switch obj.objectType {
                 case .shape, .warp, .group, .clipGroup, .clipMask:
@@ -119,7 +119,7 @@ class GroupCommand: BaseCommand {
             }
             return false
         }
-        document.selectedTextIDs = oldSelectedObjectIDs.filter { id in
+        document.viewState.selectedObjectIDs = oldSelectedObjectIDs.filter { id in
             if let obj = document.unifiedObjects.first(where: { $0.id == id }) {
                 switch obj.objectType {
                 case .text:
