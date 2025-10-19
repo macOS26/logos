@@ -36,14 +36,9 @@ extension VectorDocument {
         }
     }
 
-    var allObjectsByLayer: [Int: [VectorObject]] {
-        return Dictionary(grouping: unifiedObjects) { $0.layerIndex }
-    }
-
     var defaultFillColor: VectorColor {
         get { documentColorDefaults.fillColor }
         set {
-            objectWillChange.send()
             documentColorDefaults.fillColor = newValue
             documentColorDefaults.saveToUserDefaults()
         }

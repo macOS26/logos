@@ -148,9 +148,6 @@ extension VectorDocument {
         translateAllTextInUnified(delta: delta)
     }
 
-    internal func setupSettingsObservation() {
-    }
-
     func onSettingsChanged() {
         updatePasteboardLayer()
         updateCanvasLayer()

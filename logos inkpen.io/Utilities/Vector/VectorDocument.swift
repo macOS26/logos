@@ -57,7 +57,6 @@ class VectorDocument: ObservableObject, Codable {
     // Lightweight change notifier - avoids copying unifiedObjects array
     let changeNotifier = DocumentChangeNotifier()
 
-
     var textPreviewTypography: [UUID: TypographyProperties] = [:]
 
     @Published var currentTool: DrawingTool = .brush {
@@ -190,9 +189,7 @@ class VectorDocument: ObservableObject, Codable {
             self.settings.selectedLayerId = workingLayer.id
             self.settings.selectedLayerName = workingLayer.name
         }
-        
-        setupSettingsObservation()
-        
+
         if let fillColor = settings.fillColor {
             self.documentColorDefaults.fillColor = fillColor
         } else {
@@ -333,9 +330,7 @@ class VectorDocument: ObservableObject, Codable {
     }
 
     private func refreshSystemLayers() {
-        let temp = unifiedObjects
-        unifiedObjects = []
-        unifiedObjects = temp
+        rebuildIndexCache()
         changeNotifier.notifyGeneralChange()
     }
 
