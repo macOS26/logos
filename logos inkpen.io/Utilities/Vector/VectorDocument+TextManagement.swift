@@ -124,6 +124,17 @@ extension VectorDocument {
         guard !selectedTextIDs.isEmpty else { return }
 
         let selectedTexts = selectedTextIDs.compactMap { textID in findText(by: textID) }
+
+        // Save old state for undo
+        let oldSelection = viewState.selectedObjectIDs
+        let removedTextIDs = Array(selectedTextIDs)
+        let removedTextObjects = unifiedObjects.filter { obj in
+            if case .text(let shape) = obj.objectType {
+                return selectedTextIDs.contains(shape.id)
+            }
+            return false
+        }
+
         var newShapeIDs: Set<UUID> = []
         let shapesBefore = unifiedObjects.compactMap { obj -> UUID? in
             switch obj.objectType {
@@ -161,6 +172,12 @@ extension VectorDocument {
         newShapeIDs = shapesAfterSet.subtracting(shapesBeforeSet)
 
         if !newShapeIDs.isEmpty {
+            // Capture new shape objects for undo
+            let addedShapeObjects = unifiedObjects.filter { obj in
+                newShapeIDs.contains(obj.id)
+            }
+
+            // Remove text objects
             unifiedObjects.removeAll { obj in
                 if case .text(let shape) = obj.objectType {
                     return selectedTextIDs.contains(shape.id)
@@ -170,8 +187,20 @@ extension VectorDocument {
 
             selectedTextIDs.removeAll()
             selectedShapeIDs = newShapeIDs
-
             syncUnifiedSelectionFromLegacy()
+
+            // Use command system for undo/redo
+            let command = TextManagementCommand(
+                operation: .convertToOutlines(
+                    removedTextIDs: removedTextIDs,
+                    removedObjects: removedTextObjects,
+                    addedShapeIDs: Array(newShapeIDs),
+                    addedObjects: addedShapeObjects
+                ),
+                oldSelection: oldSelection,
+                newSelection: newShapeIDs
+            )
+            commandManager.execute(command)
         } else {
             Log.error("❌ TEXT TO OUTLINES FAILED: No new shapes were created", category: .error)
         }
