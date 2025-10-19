@@ -323,7 +323,7 @@ struct logos_inken_ioApp: App {
                         documentState?.createOutlines()
                     }
                     .keyboardShortcut("o", modifiers: [.command, .shift])
-                    .disabled(!(documentState?.document?.selectedTextIDs.isEmpty == false))
+                    .disabled(!(documentState?.document?.viewState.selectedObjectIDs.isEmpty == false))
                     .help("Convert selected text objects to vector outlines")
 
                     Divider()
@@ -1039,7 +1039,7 @@ class ClipboardManager {
                 document.commandManager.execute(command)
             }
 
-            document.syncSelectionArrays()
+            document
         } catch {
             Log.error("❌ Failed to paste objects: \(error)", category: .error)
         }
@@ -1103,7 +1103,7 @@ class ClipboardManager {
                 document.commandManager.execute(command)
             }
 
-            document.syncSelectionArrays()
+            document
         } catch {
             Log.error("❌ Failed to paste in back: \(error)", category: .error)
         }
