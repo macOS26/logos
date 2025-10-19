@@ -54,8 +54,6 @@ extension DocumentState {
             document.unifiedObjects = savedState.unifiedObjects
             document.layers = savedState.layers
             document.viewState.selectedObjectIDs = savedState.viewState.selectedObjectIDs
-            document.viewState.selectedObjectIDs = savedState.selectedTextIDs
-            document.viewState.selectedObjectIDs = savedState.selectedShapeIDs
         }
 
         return exportData
@@ -95,8 +93,6 @@ extension DocumentState {
             document.unifiedObjects = savedState.unifiedObjects
             document.layers = savedState.layers
             document.viewState.selectedObjectIDs = savedState.viewState.selectedObjectIDs
-            document.viewState.selectedObjectIDs = savedState.selectedTextIDs
-            document.viewState.selectedObjectIDs = savedState.selectedShapeIDs
         }
 
         return svgContent

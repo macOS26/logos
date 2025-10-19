@@ -215,8 +215,7 @@ struct DocumentBasedMainView: View {
         document.documentColorDefaults = importedDoc.documentColorDefaults
 
         document.selectedLayerIndex = importedDoc.selectedLayerIndex
-        document.viewState.selectedObjectIDs = importedDoc.selectedShapeIDs
-        document.viewState.selectedObjectIDs = importedDoc.selectedTextIDs
+        document.viewState.selectedObjectIDs = importedDoc.viewState.selectedObjectIDs
         document.viewState.currentTool = appState.defaultTool
         document.viewState.viewMode = .color
         document.gridSettings = importedDoc.gridSettings
