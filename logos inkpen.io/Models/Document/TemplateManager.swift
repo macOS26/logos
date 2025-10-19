@@ -41,8 +41,8 @@ class TemplateManager {
         let document = VectorDocument(settings: blankSettings)
 
         document.selectedLayerIndex = 2
-        document.selectedShapeIDs.removeAll()
-        document.selectedTextIDs.removeAll()
+        document.viewState.selectedObjectIDs.removeAll()
+        document.viewState.selectedObjectIDs.removeAll()
         document.removeAllText()
 
         document.viewState.currentTool = defaultTool

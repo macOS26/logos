@@ -231,7 +231,7 @@ struct VectorText: Identifiable, Codable, Hashable {
     func getState(in document: VectorDocument) -> TextBoxState {
         if isEditing {
             return .editing
-        } else if document.selectedTextIDs.contains(id) {
+        } else if document.viewState.selectedObjectIDs.contains(id) {
             return .selected
         } else {
             return .unselected

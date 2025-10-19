@@ -491,8 +491,8 @@ class ProfessionalTextViewModel: ObservableObject {
         if isDoubleClick || isCornerClick {
             switch currentState {
             case .unselected:
-                document.selectedTextIDs = [textID]
-                document.selectedShapeIDs.removeAll()
+                document.viewState.selectedObjectIDs = [textID]
+                document.viewState.selectedObjectIDs.removeAll()
 
                 if document.viewState.currentTool == .font && isCornerClick {
                     startEditingText(textID: textID)
@@ -513,8 +513,8 @@ class ProfessionalTextViewModel: ObservableObject {
         } else {
             switch currentState {
             case .unselected:
-                document.selectedTextIDs = [textID]
-                document.selectedShapeIDs.removeAll()
+                document.viewState.selectedObjectIDs = [textID]
+                document.viewState.selectedObjectIDs.removeAll()
 
             case .selected:
                 break
@@ -539,8 +539,8 @@ class ProfessionalTextViewModel: ObservableObject {
 
             document.setTextEditingInUnified(id: textObject.id, isEditing: true)
 
-            document.selectedShapeIDs.removeAll()
-            document.selectedTextIDs = [textID]
+            document.viewState.selectedObjectIDs.removeAll()
+            document.viewState.selectedObjectIDs = [textID]
 
             if location != .zero {
                 let cursorPosition = calculateCursorPosition(in: textObject, at: location)

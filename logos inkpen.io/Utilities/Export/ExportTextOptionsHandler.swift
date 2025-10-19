@@ -54,8 +54,8 @@ extension DocumentState {
             document.unifiedObjects = savedState.unifiedObjects
             document.layers = savedState.layers
             document.viewState.selectedObjectIDs = savedState.viewState.selectedObjectIDs
-            document.selectedTextIDs = savedState.selectedTextIDs
-            document.selectedShapeIDs = savedState.selectedShapeIDs
+            document.viewState.selectedObjectIDs = savedState.selectedTextIDs
+            document.viewState.selectedObjectIDs = savedState.selectedShapeIDs
         }
 
         return exportData
@@ -95,8 +95,8 @@ extension DocumentState {
             document.unifiedObjects = savedState.unifiedObjects
             document.layers = savedState.layers
             document.viewState.selectedObjectIDs = savedState.viewState.selectedObjectIDs
-            document.selectedTextIDs = savedState.selectedTextIDs
-            document.selectedShapeIDs = savedState.selectedShapeIDs
+            document.viewState.selectedObjectIDs = savedState.selectedTextIDs
+            document.viewState.selectedObjectIDs = savedState.selectedShapeIDs
         }
 
         return svgContent
