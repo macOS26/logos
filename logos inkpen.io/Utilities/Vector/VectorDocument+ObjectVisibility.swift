@@ -3,9 +3,9 @@ import SwiftUI
 extension VectorDocument {
 
     func lockSelectedObjects() {
-        guard !selectedShapeIDs.isEmpty || !selectedTextIDs.isEmpty else { return }
+        guard !viewState.selectedObjectIDs.isEmpty else { return }
 
-        let allIDs = selectedShapeIDs.union(selectedTextIDs)
+        let allIDs = viewState.selectedObjectIDs
         var oldValues: [UUID: Bool] = [:]
         var newValues: [UUID: Bool] = [:]
 
@@ -32,8 +32,7 @@ extension VectorDocument {
         )
         executeCommand(command)
 
-        selectedShapeIDs.removeAll()
-        selectedTextIDs.removeAll()
+        viewState.selectedObjectIDs.removeAll()
     }
 
     func unlockAllObjects() {
@@ -71,9 +70,9 @@ extension VectorDocument {
     }
 
     func hideSelectedObjects() {
-        guard !selectedShapeIDs.isEmpty || !selectedTextIDs.isEmpty else { return }
+        guard !viewState.selectedObjectIDs.isEmpty else { return }
 
-        let allIDs = selectedShapeIDs.union(selectedTextIDs)
+        let allIDs = viewState.selectedObjectIDs
         var oldValues: [UUID: Bool] = [:]
         var newValues: [UUID: Bool] = [:]
 
@@ -100,8 +99,7 @@ extension VectorDocument {
         )
         executeCommand(command)
 
-        selectedShapeIDs.removeAll()
-        selectedTextIDs.removeAll()
+        viewState.selectedObjectIDs.removeAll()
     }
 
     func showAllObjects() {
