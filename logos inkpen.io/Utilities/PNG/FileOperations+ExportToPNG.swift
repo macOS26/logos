@@ -417,19 +417,43 @@ extension FileOperations {
         }
 
         if hasValidFill, let fillStyle = shape.fillStyle {
-            context.addPath(path)
-            if hasValidStroke, let strokeStyle = shape.strokeStyle {
-                FileOperations.setFillStyle(fillStyle, context: context)
-                FileOperations.setStrokeStyle(strokeStyle, context: context)
-                context.drawPath(using: .fillStroke)
+            // Check if fill is a gradient
+            if case .gradient(let gradient) = fillStyle.color {
+                context.addPath(path)
+                context.saveGState()
+                context.clip()
+
+                FileOperations.drawPDFGradient(gradient, in: context, bounds: path.boundingBox, opacity: fillStyle.opacity)
+
+                context.restoreGState()
             } else {
-                FileOperations.setFillStyle(fillStyle, context: context)
-                context.fillPath()
+                // Solid color fill
+                context.addPath(path)
+                if hasValidStroke, let strokeStyle = shape.strokeStyle {
+                    FileOperations.setFillStyle(fillStyle, context: context)
+                    FileOperations.setStrokeStyle(strokeStyle, context: context)
+                    context.drawPath(using: .fillStroke)
+                } else {
+                    FileOperations.setFillStyle(fillStyle, context: context)
+                    context.fillPath()
+                }
             }
-        } else if hasValidStroke, let strokeStyle = shape.strokeStyle {
-            context.addPath(path)
-            FileOperations.setStrokeStyle(strokeStyle, context: context)
-            context.strokePath()
+        }
+
+        if hasValidStroke, let strokeStyle = shape.strokeStyle {
+            // Only stroke if we didn't already do fillStroke above
+            let fillIsGradient: Bool
+            if let fillStyle = shape.fillStyle, case .gradient = fillStyle.color {
+                fillIsGradient = true
+            } else {
+                fillIsGradient = false
+            }
+
+            if !hasValidFill || (hasValidFill && fillIsGradient) {
+                context.addPath(path)
+                FileOperations.setStrokeStyle(strokeStyle, context: context)
+                context.strokePath()
+            }
         }
 
         context.restoreGState()
