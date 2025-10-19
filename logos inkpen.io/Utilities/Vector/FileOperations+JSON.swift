@@ -18,14 +18,13 @@ extension FileOperations {
     }
 
     static func exportToJSONData(_ document: VectorDocument) throws -> Data {
-
-        let snapshot = DocumentSnapshot(from: document)
+        // Encode VectorDocument directly - no snapshot copy needed
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
 
         do {
-            let jsonData = try encoder.encode(snapshot)
+            let jsonData = try encoder.encode(document)
             return jsonData
         } catch {
             Log.error("❌ JSON data export failed: \(error)", category: .error)
@@ -72,29 +71,5 @@ extension FileOperations {
             Log.error("❌ JSON data import failed: \(error)", category: .error)
             throw VectorImportError.parsingError("Failed to import JSON: \(error.localizedDescription)", line: nil)
         }
-    }
-}
-
-private struct DocumentSnapshot: Codable {
-    let settings: DocumentSettings
-    let layers: [VectorLayer]
-    let currentTool: DrawingTool
-    let viewMode: ViewMode
-    let zoomLevel: Double
-    let canvasOffset: CGPoint
-    let unifiedObjects: [VectorObject]
-
-    init(from document: VectorDocument) {
-        self.settings = document.settings
-        self.layers = document.layers
-        self.currentTool = document.viewState.currentTool
-        self.viewMode = document.viewState.viewMode
-        self.zoomLevel = document.viewState.zoomLevel
-        self.canvasOffset = document.viewState.canvasOffset
-        self.unifiedObjects = document.unifiedObjects
-    }
-
-    enum CodingKeys: CodingKey {
-        case settings, layers, currentTool, viewMode, zoomLevel, canvasOffset, unifiedObjects
     }
 }
