@@ -295,20 +295,20 @@ extension VectorDocument {
 
         if viewState.selectedObjectIDs.isEmpty {
             viewState.selectedObjectIDs = [visibleObjects.first!.id]
-            syncSelectionArrays()
+            
             return
         }
 
         guard let currentID = viewState.selectedObjectIDs.first,
               let currentIndex = visibleObjects.firstIndex(where: { $0.id == currentID }) else {
             viewState.selectedObjectIDs = [visibleObjects.first!.id]
-            syncSelectionArrays()
+            
             return
         }
 
         let nextIndex = (currentIndex > 0) ? currentIndex - 1 : currentIndex
         viewState.selectedObjectIDs = [visibleObjects[nextIndex].id]
-        syncSelectionArrays()
+        
     }
 
     func selectNextObjectDown() {
@@ -330,20 +330,20 @@ extension VectorDocument {
 
         if viewState.selectedObjectIDs.isEmpty {
             viewState.selectedObjectIDs = [visibleObjects.last!.id]
-            syncSelectionArrays()
+            
             return
         }
 
         guard let currentID = viewState.selectedObjectIDs.first,
               let currentIndex = visibleObjects.firstIndex(where: { $0.id == currentID }) else {
             viewState.selectedObjectIDs = [visibleObjects.last!.id]
-            syncSelectionArrays()
+            
             return
         }
 
         let nextIndex = (currentIndex < visibleObjects.count - 1) ? currentIndex + 1 : currentIndex
         viewState.selectedObjectIDs = [visibleObjects[nextIndex].id]
-        syncSelectionArrays()
+        
     }
 
     func moveSelectedObjectsUp() {
