@@ -182,8 +182,6 @@ struct FontSizeControls: View {
     private func updateFontSize(_ newSize: CGFloat, isPreview: Bool = false) {
         currentFontSizeState = newSize
         currentLineHeightState = newSize
-        document.fontManager.selectedFontSize = newSize
-        document.fontManager.selectedLineHeight = newSize
 
         if let textID = document.selectedTextIDs.first {
             // Initialize previewTypography once if not already set
@@ -204,11 +202,11 @@ struct FontSizeControls: View {
                     // Update cached preview
                     previewTypography = updatedTypography
 
-                    // Send preview notification for live update (no findText needed)
-                    document.updateTextFontSizePreviewDirect(id: textID, typography: updatedTypography)
-
-                    // Only update document if not dragging
+                    // Only post notification and update document when dragging ends
                     if !isPreview {
+                        document.fontManager.selectedFontSize = newSize
+                        document.fontManager.selectedLineHeight = newSize
+                        document.updateTextFontSizePreviewDirect(id: textID, typography: updatedTypography)
                         document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
                         previewTypography = nil
                         editingTextID = nil
@@ -220,7 +218,6 @@ struct FontSizeControls: View {
 
     private func updateLineSpacing(_ newSpacing: CGFloat, isPreview: Bool = false) {
         currentLineSpacingState = newSpacing
-        document.fontManager.selectedLineSpacing = Double(newSpacing)
 
         if let textID = document.selectedTextIDs.first {
             // Initialize previewTypography once if not already set
@@ -237,11 +234,10 @@ struct FontSizeControls: View {
                     // Update cached preview
                     previewTypography = updatedTypography
 
-                    // Send preview notification for live update (no findText needed)
-                    document.updateTextLineSpacingPreviewDirect(id: textID, typography: updatedTypography)
-
-                    // Only update document if not dragging
+                    // Only post notification and update document when dragging ends
                     if !isPreview {
+                        document.fontManager.selectedLineSpacing = Double(newSpacing)
+                        document.updateTextLineSpacingPreviewDirect(id: textID, typography: updatedTypography)
                         document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
                         previewTypography = nil
                         editingTextID = nil
@@ -253,7 +249,6 @@ struct FontSizeControls: View {
 
     private func updateLineHeight(_ newHeight: CGFloat, isPreview: Bool = false) {
         currentLineHeightState = newHeight
-        document.fontManager.selectedLineHeight = Double(newHeight)
 
         if let textID = document.selectedTextIDs.first {
             // Initialize previewTypography once if not already set
@@ -270,11 +265,10 @@ struct FontSizeControls: View {
                     // Update cached preview
                     previewTypography = updatedTypography
 
-                    // Send preview notification for live update (no findText needed)
-                    document.updateTextLineHeightPreviewDirect(id: textID, typography: updatedTypography)
-
-                    // Only update document if not dragging
+                    // Only post notification and update document when dragging ends
                     if !isPreview {
+                        document.fontManager.selectedLineHeight = Double(newHeight)
+                        document.updateTextLineHeightPreviewDirect(id: textID, typography: updatedTypography)
                         document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
                         previewTypography = nil
                         editingTextID = nil
