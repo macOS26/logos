@@ -426,11 +426,19 @@ struct LayersPanel: View {
         case .object(let layerIndex, let objectId):
             if !document.processedObjectsDuringDrag.contains(objectId) {
                 if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
-                    if case .shape(var shape) = document.unifiedObjects[objIndex].objectType {
+                    let obj = document.unifiedObjects[objIndex]
+                    var updatedShape: VectorShape?
+
+                    switch obj.objectType {
+                    case .shape(var shape), .text(var shape), .group(var shape), .clipGroup(var shape), .warp(var shape), .clipMask(var shape):
                         shape.isVisible.toggle()
+                        updatedShape = shape
+                    }
+
+                    if let shape = updatedShape {
                         document.unifiedObjects[objIndex] = VectorObject(
                             shape: shape,
-                            layerIndex: layerIndex,
+                            layerIndex: layerIndex
                         )
                         document.processedObjectsDuringDrag.insert(objectId)
                     }
@@ -464,11 +472,19 @@ struct LayersPanel: View {
         case .object(let layerIndex, let objectId):
             if !document.processedObjectsDuringDrag.contains(objectId) {
                 if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
-                    if case .shape(var shape) = document.unifiedObjects[objIndex].objectType {
+                    let obj = document.unifiedObjects[objIndex]
+                    var updatedShape: VectorShape?
+
+                    switch obj.objectType {
+                    case .shape(var shape), .text(var shape), .group(var shape), .clipGroup(var shape), .warp(var shape), .clipMask(var shape):
                         shape.isLocked.toggle()
+                        updatedShape = shape
+                    }
+
+                    if let shape = updatedShape {
                         document.unifiedObjects[objIndex] = VectorObject(
                             shape: shape,
-                            layerIndex: layerIndex,
+                            layerIndex: layerIndex
                         )
                         document.processedObjectsDuringDrag.insert(objectId)
                     }
