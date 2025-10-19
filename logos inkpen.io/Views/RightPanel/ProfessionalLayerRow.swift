@@ -182,7 +182,9 @@ struct ProfessionalLayerRow: View {
                                 ForEach(Color.layerColorPalette, id: \.name) { colorOption in
                                     Button(action: {
                                         layerColor.wrappedValue = colorOption.color
-                                        showColorPicker = false
+                                        DispatchQueue.main.async {
+                                            showColorPicker = false
+                                        }
                                     }) {
                                         HStack(spacing: 6) {
                                             RoundedRectangle(cornerRadius: 2)

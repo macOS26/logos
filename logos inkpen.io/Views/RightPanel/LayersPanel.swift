@@ -538,7 +538,9 @@ struct ColorSwatchButton: View {
                 ForEach(availableColors, id: \.name) { colorOption in
                     Button(action: {
                         color = colorOption.color
-                        showColorPicker = false
+                        DispatchQueue.main.async {
+                            showColorPicker = false
+                        }
                     }) {
                         HStack(spacing: 6) {
                             RoundedRectangle(cornerRadius: 20)
