@@ -330,8 +330,8 @@ struct IsolatedLayerView: View, Equatable {
                 if let cached = cachedImage {
                     Image(nsImage: cached)
                         .resizable()
-                        .frame(width: cached.size.width / zoomLevel, height: cached.size.height / zoomLevel)
-                        .offset(x: canvasOffset.x / zoomLevel, y: canvasOffset.y / zoomLevel)
+                        .frame(width: cached.size.width * zoomLevel, height: cached.size.height * zoomLevel)
+                        .offset(x: canvasOffset.x, y: canvasOffset.y)
                         .allowsHitTesting(false)
                 }
             } else {
