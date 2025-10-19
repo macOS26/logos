@@ -86,10 +86,13 @@ struct GridCanvasView: View {
             }
         }
 
+        // Keep line width visible at all zoom levels with a minimum width
+        let adjustedLineWidth = max(lineWidth / zoomLevel, lineWidth * 0.5)
+
         context.stroke(
             path,
             with: .color(.gray.opacity(opacity)),
-            lineWidth: lineWidth / zoomLevel
+            lineWidth: adjustedLineWidth
         )
     }
 }
