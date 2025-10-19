@@ -186,7 +186,6 @@ struct ProfessionalTextCanvas: View {
         case .gray:
             textBoxState = .green
             document.viewState.selectedObjectIDs = [viewModel.textObject.id]
-            document.viewState.selectedObjectIDs.removeAll()
 
         case .green:
             break
