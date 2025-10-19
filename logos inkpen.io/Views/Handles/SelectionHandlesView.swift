@@ -33,14 +33,14 @@ struct SelectionHandlesView: View {
                          .text(let shape):
                         let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
                         if !isBackgroundShape {
-                            if document.viewState.currentTool == .warp {
+                            if document.viewState.currentTool == .warp && dragPreviewDelta == .zero {
                                 EnvelopeHandles(
                                     document: document,
                                     shape: shape,
                                     zoomLevel: document.viewState.zoomLevel,
                                     canvasOffset: document.viewState.canvasOffset
                                 )
-                            } else if shape.isWarpObject {
+                            } else if shape.isWarpObject && dragPreviewDelta == .zero {
                                 PersistentWarpMarquee(
                                     document: document,
                                     shape: shape,
@@ -102,14 +102,14 @@ struct SelectionHandlesView: View {
     private func renderHandlesForShape(_ shape: VectorShape) -> some View {
         let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
         if !isBackgroundShape {
-            if document.viewState.currentTool == .warp {
+            if document.viewState.currentTool == .warp && dragPreviewDelta == .zero {
                 EnvelopeHandles(
                     document: document,
                     shape: shape,
                     zoomLevel: document.viewState.zoomLevel,
                     canvasOffset: document.viewState.canvasOffset
                 )
-            } else if shape.isWarpObject {
+            } else if shape.isWarpObject && dragPreviewDelta == .zero {
                 PersistentWarpMarquee(
                     document: document,
                     shape: shape,
