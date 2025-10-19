@@ -1,33 +1,5 @@
 import SwiftUI
 
-// Canvas-based view for rendering cached layer snapshots
-struct CachedLayerCanvas: View {
-    let image: NSImage
-    let canvasOffset: CGPoint
-    let zoomLevel: Double
-
-    var body: some View {
-        Canvas { context, size in
-            // Calculate the display size and position
-            let imageSize = image.size
-            let scaledWidth = imageSize.width * zoomLevel
-            let scaledHeight = imageSize.height * zoomLevel
-
-            // Create a rect for the image at the canvas offset
-            let rect = CGRect(
-                x: canvasOffset.x,
-                y: canvasOffset.y,
-                width: scaledWidth,
-                height: scaledHeight
-            )
-
-            // Resolve and draw the image
-            let resolvedImage = context.resolve(Image(nsImage: image))
-            context.draw(resolvedImage, in: rect)
-        }
-    }
-}
-
 struct UnifiedObjectContentView: View {
     let unifiedObject: VectorObject
     @ObservedObject var document: VectorDocument
@@ -354,14 +326,13 @@ struct IsolatedLayerView: View, Equatable {
             let shouldShowCache = isDragging && !hasSelection && cachedImage != nil
 
             if shouldShowCache {
-                // Show cached image using Canvas - SwiftUI views are HIDDEN
+                // Show cached image - SwiftUI views are HIDDEN
                 if let cached = cachedImage {
-                    CachedLayerCanvas(
-                        image: cached,
-                        canvasOffset: canvasOffset,
-                        zoomLevel: zoomLevel
-                    )
-                    .allowsHitTesting(false)
+                    Image(nsImage: cached)
+                        .resizable()
+                        .frame(width: cached.size.width / zoomLevel, height: cached.size.height / zoomLevel)
+                        .offset(x: canvasOffset.x / zoomLevel, y: canvasOffset.y / zoomLevel)
+                        .allowsHitTesting(false)
                 }
             } else {
                 // Render live SwiftUI views
@@ -383,7 +354,7 @@ struct IsolatedLayerView: View, Equatable {
             }
         }
         .opacity(layerOpacity)
-
+        
         .blendMode(layerBlendMode.swiftUIBlendMode)
         .onChange(of: dragPreviewDelta) { oldValue, newValue in
             let isNowDragging = newValue != .zero
