@@ -60,8 +60,8 @@ extension DrawingCanvas {
         }
 
         if !tapHitsText {
-            document.selectedTextIDs.removeAll()
-            document.selectedShapeIDs.removeAll()
+            document.viewState.selectedObjectIDs.removeAll()
+            document.syncSelectionArrays()
 
             for unifiedObj in document.unifiedObjects {
                 switch unifiedObj.objectType {
