@@ -247,9 +247,6 @@ struct ProfessionalLayerRow: View {
                     .onTapGesture {
                         document.selectedLayerIndex = layerIndex
                         document.viewState.selectedObjectIDs.removeAll()
-                        document.viewState.selectedObjectIDs.removeAll()
-                        document.viewState.selectedObjectIDs.removeAll()
-                        document
                     }
                 }
                 .padding(.horizontal, 4)
@@ -447,8 +444,5 @@ struct ProfessionalLayerRow: View {
             selectionRangeMin = nil
             selectionRangeMax = nil
         }
-
-        document
-
     }
 }
