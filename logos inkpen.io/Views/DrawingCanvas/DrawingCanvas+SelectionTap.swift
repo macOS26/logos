@@ -136,7 +136,6 @@ extension DrawingCanvas {
             // For non-selection tools, deselect when clicking empty space
             if !isShiftPressed && !isCommandPressed {
                 document.viewState.selectedObjectIDs = []
-                document
             }
             return
         }
@@ -223,8 +222,6 @@ extension DrawingCanvas {
 
             document.selectedLayerIndex = objectToSelect.layerIndex
 
-            document
-
             if let selectedColor = document.getSelectedObjectColor() {
                 if document.viewState.activeColorTarget == .stroke {
                     document.defaultStrokeColor = selectedColor
@@ -236,7 +233,6 @@ extension DrawingCanvas {
             // Nothing was hit - deselect unless modifier keys pressed
             if !isShiftPressed && !isCommandPressed {
                 document.viewState.selectedObjectIDs = []
-                document
 
                 selectedPoints.removeAll()
                 selectedHandles.removeAll()
