@@ -39,11 +39,17 @@ class LayerReorderCommand: BaseCommand {
             if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == update.objectID }) {
                 let obj = document.unifiedObjects[objIndex]
                 let newLayerIndex = forward ? update.newLayerIndex : update.oldLayerIndex
+                var updatedShape: VectorShape?
 
-                if case .shape(let shape) = obj.objectType {
+                switch obj.objectType {
+                case .shape(let shape), .text(let shape), .group(let shape), .clipGroup(let shape), .warp(let shape), .clipMask(let shape):
+                    updatedShape = shape
+                }
+
+                if let shape = updatedShape {
                     document.unifiedObjects[objIndex] = VectorObject(
                         shape: shape,
-                        layerIndex: newLayerIndex,
+                        layerIndex: newLayerIndex
                     )
                 }
             }
