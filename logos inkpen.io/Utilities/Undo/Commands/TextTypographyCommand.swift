@@ -23,11 +23,11 @@ class TextTypographyCommand: BaseCommand {
     private func applyTypography(_ typography: TypographyProperties?, to document: VectorDocument) {
         if let index = document.unifiedObjects.firstIndex(where: { $0.id == textID }) {
             let obj = document.unifiedObjects[index]
-            if case .shape(var shape) = obj.objectType {
+            if case .text(var shape) = obj.objectType {
                 shape.typography = typography
                 document.unifiedObjects[index] = VectorObject(
                     shape: shape,
-                    layerIndex: obj.layerIndex,
+                    layerIndex: obj.layerIndex
                 )
             }
         }
