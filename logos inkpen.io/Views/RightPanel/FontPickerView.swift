@@ -59,7 +59,14 @@ struct FontPickerView: View {
                         var updatedTypography = freshText.typography
                         updatedTypography.fontFamily = newFamily
                         updatedTypography.fontVariant = defaultVariant
-                        document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+
+                        // Use command system for undo/redo
+                        let command = TextTypographyCommand(
+                            textID: textID,
+                            oldTypography: freshText.typography,
+                            newTypography: updatedTypography
+                        )
+                        document.commandManager.execute(command)
 
                         // Send preview notification so text view updates immediately
                         NotificationCenter.default.post(
@@ -98,7 +105,14 @@ struct FontPickerView: View {
                        let freshText = document.findText(by: textID) {
                         var updatedTypography = freshText.typography
                         updatedTypography.fontVariant = newVariant
-                        document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+
+                        // Use command system for undo/redo
+                        let command = TextTypographyCommand(
+                            textID: textID,
+                            oldTypography: freshText.typography,
+                            newTypography: updatedTypography
+                        )
+                        document.commandManager.execute(command)
 
                         // Send preview notification so text view updates immediately
                         NotificationCenter.default.post(

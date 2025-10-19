@@ -207,7 +207,17 @@ struct FontSizeControls: View {
                 if !isPreview {
                     document.fontManager.selectedFontSize = newSize
                     document.fontManager.selectedLineHeight = newSize
-                    document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+
+                    // Use command system for undo/redo
+                    if let freshText = document.findText(by: textID) {
+                        let command = TextTypographyCommand(
+                            textID: textID,
+                            oldTypography: freshText.typography,
+                            newTypography: updatedTypography
+                        )
+                        document.commandManager.execute(command)
+                    }
+
                     previewTypography = nil
                     editingTextID = nil
                 }
@@ -238,7 +248,17 @@ struct FontSizeControls: View {
                 // Only update fontManager and document when dragging ends
                 if !isPreview {
                     document.fontManager.selectedLineSpacing = Double(newSpacing)
-                    document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+
+                    // Use command system for undo/redo
+                    if let freshText = document.findText(by: textID) {
+                        let command = TextTypographyCommand(
+                            textID: textID,
+                            oldTypography: freshText.typography,
+                            newTypography: updatedTypography
+                        )
+                        document.commandManager.execute(command)
+                    }
+
                     previewTypography = nil
                     editingTextID = nil
                 }
@@ -269,7 +289,17 @@ struct FontSizeControls: View {
                 // Only update fontManager and document when dragging ends
                 if !isPreview {
                     document.fontManager.selectedLineHeight = Double(newHeight)
-                    document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+
+                    // Use command system for undo/redo
+                    if let freshText = document.findText(by: textID) {
+                        let command = TextTypographyCommand(
+                            textID: textID,
+                            oldTypography: freshText.typography,
+                            newTypography: updatedTypography
+                        )
+                        document.commandManager.execute(command)
+                    }
+
                     previewTypography = nil
                     editingTextID = nil
                 }

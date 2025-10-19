@@ -69,7 +69,14 @@ struct FontAlignmentControls: View {
            let freshText = document.findText(by: textID) {
             var updatedTypography = freshText.typography
             updatedTypography.alignment = alignment
-            document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+
+            // Use command system for undo/redo
+            let command = TextTypographyCommand(
+                textID: textID,
+                oldTypography: freshText.typography,
+                newTypography: updatedTypography
+            )
+            document.commandManager.execute(command)
         }
     }
 }
