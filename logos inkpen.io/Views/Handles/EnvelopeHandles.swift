@@ -626,7 +626,6 @@ struct EnvelopeHandles: View {
             }
         } else {
             var warpObject = currentShape
-            warpObject.id = UUID()
             warpObject.name = "Warped " + currentShape.name
             warpObject.isWarpObject = true
             warpObject.warpEnvelope = warpedCorners
@@ -656,10 +655,7 @@ struct EnvelopeHandles: View {
 
             document.updateShapePathUnified(id: warpObject.id, path: warpObject.path)
 
-        document.viewState.selectedObjectIDs.remove(currentShape.id)
-        document.viewState.selectedObjectIDs.insert(warpObject.id)
-
-        if let unifiedObjectIndex = document.unifiedObjects.firstIndex(where: { unifiedObject in
+            if let unifiedObjectIndex = document.unifiedObjects.firstIndex(where: { unifiedObject in
             if case .shape(let targetShape) = unifiedObject.objectType {
                 return targetShape.id == currentShape.id
             }
