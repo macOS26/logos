@@ -326,13 +326,24 @@ struct IsolatedLayerView: View, Equatable {
             let shouldShowCache = !hasSelection && cachedImage != nil
 
             if shouldShowCache {
-                // Show cached image - SwiftUI views are HIDDEN
+                // Show cached image using Canvas at correct zoom/offset position
                 if let cached = cachedImage {
-                    Image(nsImage: cached)
-                        .resizable()
-                        .frame(width: cached.size.width * zoomLevel, height: cached.size.height * zoomLevel)
-                        .offset(x: canvasOffset.x, y: canvasOffset.y)
-                        .allowsHitTesting(false)
+                    Canvas { context, size in
+                        // The cached image is at document size (pageSize)
+                        let pageSize = document.settings.sizeInPoints
+
+                        // Draw at the zoomed and offset position
+                        let drawRect = CGRect(
+                            x: canvasOffset.x,
+                            y: canvasOffset.y,
+                            width: pageSize.width * zoomLevel,
+                            height: pageSize.height * zoomLevel
+                        )
+
+                        let resolvedImage = context.resolve(Image(nsImage: cached))
+                        context.draw(resolvedImage, in: drawRect)
+                    }
+                    .allowsHitTesting(false)
                 }
             } else {
                 // Render live SwiftUI views (active layer with selection)
