@@ -18,33 +18,32 @@ extension DrawingCanvas {
         let tapHitsText = document.unifiedObjects.contains { unifiedObj in
             switch unifiedObj.objectType {
             case .text(let shape):
-                if var textObj = VectorText.from(shape) {
-                    textObj.layerIndex = unifiedObj.layerIndex
-                    if !textObj.isVisible || textObj.isLocked { return false }
+                if !shape.isVisible || shape.isLocked { return false }
 
-                    let exactBounds = CGRect(
-                        x: textObj.position.x + textObj.bounds.minX,
-                        y: textObj.position.y + textObj.bounds.minY,
-                        width: textObj.bounds.width,
-                        height: textObj.bounds.height
-                    )
+                // Use transform.tx/ty for text position (consistent with findTextAt)
+                let textPos = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                let exactBounds = CGRect(
+                    x: textPos.x,
+                    y: textPos.y,
+                    width: shape.bounds.width,
+                    height: shape.bounds.height
+                )
 
-                    let expandedBounds = exactBounds.insetBy(dx: -30, dy: -20)
+                let expandedBounds = exactBounds.insetBy(dx: -30, dy: -20)
 
-                    return expandedBounds.contains(location)
-                }
-                return false
+                return expandedBounds.contains(location)
+
             case .group(let shape):
                 for childShape in shape.groupedShapes {
-                    if childShape.typography != nil, var textObj = VectorText.from(childShape) {
-                        textObj.layerIndex = unifiedObj.layerIndex
-                        if !textObj.isVisible || textObj.isLocked { continue }
+                    if childShape.typography != nil {
+                        if !childShape.isVisible || childShape.isLocked { continue }
 
+                        let textPos = CGPoint(x: childShape.transform.tx, y: childShape.transform.ty)
                         let exactBounds = CGRect(
-                            x: textObj.position.x + textObj.bounds.minX,
-                            y: textObj.position.y + textObj.bounds.minY,
-                            width: textObj.bounds.width,
-                            height: textObj.bounds.height
+                            x: textPos.x,
+                            y: textPos.y,
+                            width: childShape.bounds.width,
+                            height: childShape.bounds.height
                         )
 
                         let expandedBounds = exactBounds.insetBy(dx: -30, dy: -20)
