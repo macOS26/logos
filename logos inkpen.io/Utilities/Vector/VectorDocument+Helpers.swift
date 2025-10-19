@@ -295,7 +295,11 @@ extension VectorDocument {
     }
 
     func rebuildIndexCache() {
-        unifiedObjectIndexCache = Dictionary(uniqueKeysWithValues: unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
+        var newCache: [UUID: Int] = [:]
+        for (index, object) in unifiedObjects.enumerated() {
+            newCache[object.id] = index
+        }
+        unifiedObjectIndexCache = newCache
     }
 
     func findObject(by id: UUID) -> VectorObject? {
