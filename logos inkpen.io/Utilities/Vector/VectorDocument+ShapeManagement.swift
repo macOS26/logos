@@ -8,9 +8,9 @@ extension VectorDocument {
         let command = AddObjectCommand(object: obj)
         executeCommand(command)
 
-        selectedShapeIDs = [shape.id]
         viewState.selectedObjectIDs = [shape.id]
-        syncSelectionArrays()
+        viewState.selectedObjectIDs = [shape.id]
+        
     }
 
     func addShapeToFront(_ shape: VectorShape) {
@@ -21,9 +21,9 @@ extension VectorDocument {
         let command = AddObjectCommand(object: obj)
         executeCommand(command)
 
-        selectedShapeIDs = [shape.id]
         viewState.selectedObjectIDs = [shape.id]
-        syncSelectionArrays()
+        viewState.selectedObjectIDs = [shape.id]
+        
     }
 
     func addShape(_ shape: VectorShape, to layerIndex: Int) {
@@ -43,14 +43,14 @@ extension VectorDocument {
     func removeSelectedShapes() {
         guard let layerIndex = selectedLayerIndex else { return }
 
-        let objectsToRemove = unifiedObjects.filter { selectedShapeIDs.contains($0.id) }
+        let objectsToRemove = unifiedObjects.filter { viewState.selectedObjectIDs.contains($0.id) }
         if !objectsToRemove.isEmpty {
             let command = DeleteObjectCommand(objects: objectsToRemove)
             executeCommand(command)
         }
 
         let shapesToRemove = getShapesForLayer(layerIndex).filter { shape in
-            if selectedShapeIDs.contains(shape.id) {
+            if viewState.selectedObjectIDs.contains(shape.id) {
                 if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
                     Log.error("🚫 PROTECTED: Attempted to delete protected background shape '\(shape.name)' - BLOCKED", category: .error)
                     return false
@@ -64,7 +64,7 @@ extension VectorDocument {
             removeShapesUnified(layerIndex: layerIndex, where: { $0.id == shape.id })
         }
 
-        selectedShapeIDs.removeAll()
+        viewState.selectedObjectIDs.removeAll()
 
     }
 
@@ -111,7 +111,7 @@ extension VectorDocument {
         }
 
         viewState.selectedObjectIDs.removeAll()
-        syncSelectionArrays()
+        
     }
 
     func getSelectedShapes() -> [VectorShape] {
@@ -124,7 +124,7 @@ extension VectorDocument {
                  .group(let shape),
                  .clipGroup(let shape),
                  .clipMask(let shape):
-                if selectedShapeIDs.contains(shape.id) {
+                if viewState.selectedObjectIDs.contains(shape.id) {
                     selectedShapes.append(shape)
                 }
             case .text:
@@ -162,7 +162,7 @@ extension VectorDocument {
             return directSelectedShapeIDs
         }
 
-        return selectedShapeIDs
+        return viewState.selectedObjectIDs
     }
 
     func getActiveShapes() -> [VectorShape] {
@@ -204,14 +204,14 @@ extension VectorDocument {
     func selectShape(_ shapeID: UUID) {
         if let unifiedObject = findObject(by: shapeID) {
             viewState.selectedObjectIDs = [unifiedObject.id]
-            syncSelectionArrays()
+            
         }
     }
 
     func addToSelection(_ shapeID: UUID) {
         if let unifiedObject = findObject(by: shapeID) {
             viewState.selectedObjectIDs.insert(unifiedObject.id)
-            syncSelectionArrays()
+            
         }
     }
 
@@ -249,7 +249,7 @@ extension VectorDocument {
 
         if !visibleObjects.isEmpty {
             viewState.selectedObjectIDs = Set(visibleObjects.map { $0.id })
-            syncSelectionArrays()
+            
         }
     }
 
@@ -294,8 +294,8 @@ extension VectorDocument {
             }
         }
 
-        selectedShapeIDs = newShapeIDs
-        syncUnifiedSelectionFromLegacy()
+        viewState.selectedObjectIDs = newShapeIDs
+        
     }
 
     internal func applyTransformToShapeCoordinates(shape: VectorShape, transform: CGAffineTransform) -> VectorShape {
