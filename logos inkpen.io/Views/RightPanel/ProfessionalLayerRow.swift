@@ -22,6 +22,7 @@ struct ProfessionalLayerRow: View {
             set: { newValue in
                 if document.layers[layerIndex].isVisible != newValue {
                     document.layers[layerIndex].isVisible = newValue
+                    document.changeNotifier.notifyLayersChanged()
                 }
             }
         )
@@ -33,6 +34,7 @@ struct ProfessionalLayerRow: View {
             set: { newValue in
                 if document.layers[layerIndex].isLocked != newValue {
                     document.layers[layerIndex].isLocked = newValue
+                    document.changeNotifier.notifyLayersChanged()
                 }
             }
         )
@@ -66,6 +68,7 @@ struct ProfessionalLayerRow: View {
             get: { document.layers[layerIndex].color },
             set: { newColor in
                 document.layers[layerIndex].color = newColor
+                document.changeNotifier.notifyLayersChanged()
             }
         )
     }
@@ -106,6 +109,7 @@ struct ProfessionalLayerRow: View {
                                     document.processedLayersDuringDrag.removeAll()
                                     document.layers[layerIndex].isVisible.toggle()
                                     document.processedLayersDuringDrag.insert(layerIndex)
+                                    document.changeNotifier.notifyLayersChanged()
                                 }
                             }
                             .onEnded { _ in
@@ -132,6 +136,7 @@ struct ProfessionalLayerRow: View {
                                     document.processedLayersDuringDrag.removeAll()
                                     document.layers[layerIndex].isLocked.toggle()
                                     document.processedLayersDuringDrag.insert(layerIndex)
+                                    document.changeNotifier.notifyLayersChanged()
                                 }
                             }
                             .onEnded { _ in
@@ -199,6 +204,7 @@ struct ProfessionalLayerRow: View {
                                 TextField("Layer Name", text: $editedName, onCommit: {
                                     if !editedName.isEmpty {
                                         document.layers[layerIndex].name = editedName
+                                        document.changeNotifier.notifyLayersChanged()
                                     }
                                     isEditingName = false
                                 })
