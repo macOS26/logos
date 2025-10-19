@@ -24,6 +24,7 @@ extension VectorDocument {
             return false
         }) {
             unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
+            changeNotifier.notifyObjectChanged(shape.id)
         }
     }
 
@@ -63,6 +64,9 @@ extension VectorDocument {
                 unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
                 unifiedObjectIndexCache[shapeID] = index
             }
+
+            // Notify only this specific object changed
+            changeNotifier.notifyObjectChanged(shapeID)
             return
         }
 
@@ -80,6 +84,9 @@ extension VectorDocument {
                         let updatedObject = VectorObject(shape: groupShape, layerIndex: layerIndex)
                         unifiedObjects[groupIndex] = updatedObject
                         unifiedObjectIndexCache[groupShape.id] = groupIndex
+
+                        // Notify that the group changed (since child changed)
+                        changeNotifier.notifyObjectChanged(groupShape.id)
                         return
                     }
                 }

@@ -18,6 +18,8 @@ extension VectorDocument {
             settings.selectedLayerName = layers[index].name
             onSettingsChanged()
         }
+
+        changeNotifier.notifyLayersChanged()
     }
 
     func duplicateLayer(at index: Int) {
@@ -54,7 +56,7 @@ extension VectorDocument {
         settings.selectedLayerId = duplicatedLayer.id
         settings.selectedLayerName = duplicatedLayer.name
         onSettingsChanged()
-
+        changeNotifier.notifyLayersChanged()
     }
 
     func moveLayer(from sourceIndex: Int, to targetIndex: Int) {
@@ -108,6 +110,8 @@ extension VectorDocument {
                 selectedLayerIndex = selectedIndex + 1
             }
         }
+
+        changeNotifier.notifyLayersChanged()
     }
 
     private func extractShape(from object: VectorObject) -> VectorShape {
@@ -166,6 +170,7 @@ extension VectorDocument {
         settings.selectedLayerId = newLayer.id
         settings.selectedLayerName = newLayer.name
         onSettingsChanged()
+        changeNotifier.notifyLayersChanged()
     }
 
     func removeLayer(at index: Int) {
@@ -185,6 +190,8 @@ extension VectorDocument {
         if removingSelectedLayer || settings.selectedLayerId == nil {
             validateSelectedLayer()
         }
+
+        changeNotifier.notifyLayersChanged()
     }
 
     func validateSelectedLayer() {

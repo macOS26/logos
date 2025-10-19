@@ -5,7 +5,7 @@ class VectorDocument: ObservableObject, Codable {
     // View-only state (doesn't trigger document saves)
     @Published var viewState: DocumentViewState = DocumentViewState()
     @Published var settings: DocumentSettings
-    @Published var layers: [VectorLayer] = []
+    var layers: [VectorLayer] = []
     var layerIndex: Int = 0
     var selectedLayerIndex: Int?
     var directSelectedShapeIDs: Set<UUID> = []
@@ -33,16 +33,19 @@ class VectorDocument: ObservableObject, Codable {
     var isHandleScalingActive = false
     var unifiedObjects: [VectorObject] = [] {
         didSet {
+            // Only trigger full refresh when objects are added/removed
             if oldValue.count != unifiedObjects.count {
                 rebuildIndexCache()
+                changeNotifier.notifyGeneralChange()
             } else {
+                // For single object updates, just update the index cache
+                // Individual object changes should use changeNotifier.notifyObjectChanged(id)
                 for (index, object) in unifiedObjects.enumerated() {
                     if index < oldValue.count && oldValue[index].id == object.id {
                         unifiedObjectIndexCache[object.id] = index
                     }
                 }
             }
-            changeNotifier.notifyGeneralChange()
         }
     }
 
