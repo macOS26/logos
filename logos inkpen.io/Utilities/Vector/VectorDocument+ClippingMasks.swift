@@ -6,7 +6,6 @@ extension VectorDocument {
         let selectedShapes = getSelectedShapesInStackingOrder()
         guard selectedShapes.count >= 2 else { return }
 
-        let allSelectedIDs = selectedShapeIDs.union(selectedTextIDs)
         guard let layerIndex = selectedLayerIndex else { return }
 
         var shapesInOrder = selectedShapes
@@ -17,7 +16,7 @@ extension VectorDocument {
         let clippingGroup = VectorShape.group(from: groupShapes, name: "Clipping Group", isClippingGroup: true)
 
         var removedShapes: [UUID: VectorShape] = [:]
-        let objectsToRemove = unifiedObjects.filter { allSelectedIDs.contains($0.id) }
+        let objectsToRemove = unifiedObjects.filter { viewState.selectedObjectIDs.contains($0.id) }
         for obj in objectsToRemove {
             if case .shape(let shape) = obj.objectType {
                 removedShapes[obj.id] = shape
@@ -29,7 +28,7 @@ extension VectorDocument {
         let command = GroupCommand(
             operation: .group,
             layerIndex: layerIndex,
-            removedObjectIDs: Array(allSelectedIDs),
+            removedObjectIDs: Array(viewState.selectedObjectIDs),
             removedShapes: removedShapes,
             addedObjectIDs: [clippingGroup.id],
             addedShapes: [clippingGroup.id: clippingGroup],
@@ -39,8 +38,6 @@ extension VectorDocument {
 
         commandManager.execute(command)
 
-        selectedShapeIDs = [clippingGroup.id]
-        selectedTextIDs.removeAll()
         viewState.selectedObjectIDs = [clippingGroup.id]
     }
 
