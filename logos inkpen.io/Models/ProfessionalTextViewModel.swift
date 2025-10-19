@@ -492,7 +492,6 @@ class ProfessionalTextViewModel: ObservableObject {
             switch currentState {
             case .unselected:
                 document.viewState.selectedObjectIDs = [textID]
-                document.viewState.selectedObjectIDs.removeAll()
 
                 if document.viewState.currentTool == .font && isCornerClick {
                     startEditingText(textID: textID)
@@ -514,7 +513,6 @@ class ProfessionalTextViewModel: ObservableObject {
             switch currentState {
             case .unselected:
                 document.viewState.selectedObjectIDs = [textID]
-                document.viewState.selectedObjectIDs.removeAll()
 
             case .selected:
                 break
@@ -539,7 +537,6 @@ class ProfessionalTextViewModel: ObservableObject {
 
             document.setTextEditingInUnified(id: textObject.id, isEditing: true)
 
-            document.viewState.selectedObjectIDs.removeAll()
             document.viewState.selectedObjectIDs = [textID]
 
             if location != .zero {
