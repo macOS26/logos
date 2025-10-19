@@ -187,18 +187,21 @@ struct ProfessionalLayerRow: View {
                                         }
                                     }) {
                                         HStack(spacing: 6) {
-                                            RoundedRectangle(cornerRadius: 2)
+                                            RoundedRectangle(cornerRadius: 20)
                                                 .fill(colorOption.color)
-                                                .frame(width: 14, height: 14)
+                                                .padding(.horizontal, -3)
+                                                .frame(width: 14, height: 16)
                                             Text(colorOption.name)
-                                                .font(.system(size: 11))
+                                                .layerLabel()
                                         }
+                                        .offset(x: 1)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                 }
                             }
-                            .padding(6)
+                            .padding(.horizontal, 15)
+                            .padding(.vertical, 10)
                         }
                         
                         HStack(spacing: 0) {
