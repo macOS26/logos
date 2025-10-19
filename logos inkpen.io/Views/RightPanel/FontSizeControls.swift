@@ -202,11 +202,13 @@ struct FontSizeControls: View {
                     // Update cached preview
                     previewTypography = updatedTypography
 
-                    // Only post notification and update document when dragging ends
+                    // Always post notification for live preview
+                    document.updateTextFontSizePreviewDirect(id: textID, typography: updatedTypography)
+
+                    // Only update fontManager and document when dragging ends
                     if !isPreview {
                         document.fontManager.selectedFontSize = newSize
                         document.fontManager.selectedLineHeight = newSize
-                        document.updateTextFontSizePreviewDirect(id: textID, typography: updatedTypography)
                         document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
                         previewTypography = nil
                         editingTextID = nil
@@ -234,10 +236,12 @@ struct FontSizeControls: View {
                     // Update cached preview
                     previewTypography = updatedTypography
 
-                    // Only post notification and update document when dragging ends
+                    // Always post notification for live preview
+                    document.updateTextLineSpacingPreviewDirect(id: textID, typography: updatedTypography)
+
+                    // Only update fontManager and document when dragging ends
                     if !isPreview {
                         document.fontManager.selectedLineSpacing = Double(newSpacing)
-                        document.updateTextLineSpacingPreviewDirect(id: textID, typography: updatedTypography)
                         document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
                         previewTypography = nil
                         editingTextID = nil
@@ -265,10 +269,12 @@ struct FontSizeControls: View {
                     // Update cached preview
                     previewTypography = updatedTypography
 
-                    // Only post notification and update document when dragging ends
+                    // Always post notification for live preview
+                    document.updateTextLineHeightPreviewDirect(id: textID, typography: updatedTypography)
+
+                    // Only update fontManager and document when dragging ends
                     if !isPreview {
                         document.fontManager.selectedLineHeight = Double(newHeight)
-                        document.updateTextLineHeightPreviewDirect(id: textID, typography: updatedTypography)
                         document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
                         previewTypography = nil
                         editingTextID = nil
