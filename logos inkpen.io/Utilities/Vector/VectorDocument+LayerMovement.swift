@@ -20,7 +20,7 @@ extension VectorDocument {
 
         moveObjectToLayer(objectId: shapeId, targetLayerIndex: toLayerIndex)
 
-        selectedShapeIDs = [shapeId]
+        viewState.selectedObjectIDs = [shapeId]
         selectedLayerIndex = toLayerIndex
     }
 
@@ -41,8 +41,7 @@ extension VectorDocument {
 
         moveObjectToLayer(objectId: textId, targetLayerIndex: toLayerIndex)
 
-        selectedTextIDs = [textId]
-        selectedShapeIDs.removeAll()
+        viewState.selectedObjectIDs = [textId]
         selectedLayerIndex = toLayerIndex
     }
 
