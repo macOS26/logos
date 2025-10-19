@@ -111,6 +111,34 @@ extension VectorDocument {
         }
     }
 
+    // Direct preview methods that take typography directly (no findText call)
+    func updateTextFontSizePreviewDirect(id: UUID, typography: TypographyProperties) {
+        textPreviewTypography[id] = typography
+        NotificationCenter.default.post(
+            name: Notification.Name("TextPreviewUpdate"),
+            object: nil,
+            userInfo: ["textID": id, "typography": typography]
+        )
+    }
+
+    func updateTextLineSpacingPreviewDirect(id: UUID, typography: TypographyProperties) {
+        textPreviewTypography[id] = typography
+        NotificationCenter.default.post(
+            name: Notification.Name("TextPreviewUpdate"),
+            object: nil,
+            userInfo: ["textID": id, "typography": typography]
+        )
+    }
+
+    func updateTextLineHeightPreviewDirect(id: UUID, typography: TypographyProperties) {
+        textPreviewTypography[id] = typography
+        NotificationCenter.default.post(
+            name: Notification.Name("TextPreviewUpdate"),
+            object: nil,
+            userInfo: ["textID": id, "typography": typography]
+        )
+    }
+
     func clearTextPreviewTypography(id: UUID) {
         textPreviewTypography.removeValue(forKey: id)
     }
