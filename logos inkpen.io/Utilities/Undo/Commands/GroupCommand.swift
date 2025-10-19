@@ -59,28 +59,6 @@ class GroupCommand: BaseCommand {
         }
 
         document.viewState.selectedObjectIDs = newSelectedObjectIDs
-        document.viewState.selectedObjectIDs = newSelectedObjectIDs.filter { id in
-            if let obj = document.unifiedObjects.first(where: { $0.id == id }) {
-                switch obj.objectType {
-                case .shape, .warp, .group, .clipGroup, .clipMask:
-                    return true
-                case .text:
-                    return false
-                }
-            }
-            return false
-        }
-        document.viewState.selectedObjectIDs = newSelectedObjectIDs.filter { id in
-            if let obj = document.unifiedObjects.first(where: { $0.id == id }) {
-                switch obj.objectType {
-                case .text:
-                    return true
-                case .shape, .warp, .group, .clipGroup, .clipMask:
-                    return false
-                }
-            }
-            return false
-        }
     }
 
     override func undo(on document: VectorDocument) {
@@ -108,27 +86,5 @@ class GroupCommand: BaseCommand {
         }
 
         document.viewState.selectedObjectIDs = oldSelectedObjectIDs
-        document.viewState.selectedObjectIDs = oldSelectedObjectIDs.filter { id in
-            if let obj = document.unifiedObjects.first(where: { $0.id == id }) {
-                switch obj.objectType {
-                case .shape, .warp, .group, .clipGroup, .clipMask:
-                    return true
-                case .text:
-                    return false
-                }
-            }
-            return false
-        }
-        document.viewState.selectedObjectIDs = oldSelectedObjectIDs.filter { id in
-            if let obj = document.unifiedObjects.first(where: { $0.id == id }) {
-                switch obj.objectType {
-                case .text:
-                    return true
-                case .shape, .warp, .group, .clipGroup, .clipMask:
-                    return false
-                }
-            }
-            return false
-        }
     }
 }
