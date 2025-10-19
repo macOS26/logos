@@ -8,8 +8,6 @@ class VectorDocument: ObservableObject, Codable {
     @Published var layers: [VectorLayer] = []
     var layerIndex: Int = 0
     var selectedLayerIndex: Int?
-    var selectedShapeIDs: Set<UUID> = []
-    var selectedTextIDs: Set<UUID> = []
     var directSelectedShapeIDs: Set<UUID> = []
     @Published var documentColorDefaults: ColorDefaults = ColorDefaults() {
         didSet {
@@ -112,11 +110,9 @@ class VectorDocument: ObservableObject, Codable {
         self.strokeDefaults = .default
 
         loadStrokeStyleDefaults()
-        
+
         self.selectedLayerIndex = nil
-        self.selectedShapeIDs = []
-        self.selectedTextIDs = []
-        
+
         if let lastToolRaw = UserDefaults.standard.string(forKey: "lastUsedTool"),
            let lastTool = DrawingTool(rawValue: lastToolRaw) {
             self.viewState.currentTool = lastTool
@@ -197,10 +193,8 @@ class VectorDocument: ObservableObject, Codable {
         colorSwatches = .empty
         gridSettings = .default
         strokeDefaults = .default
-        
+
         selectedLayerIndex = try? container.decodeIfPresent(Int.self, forKey: .selectedLayerIndex)
-        selectedShapeIDs = (try? container.decodeIfPresent(Set<UUID>.self, forKey: .selectedShapeIDs)) ?? []
-        selectedTextIDs = (try? container.decodeIfPresent(Set<UUID>.self, forKey: .selectedTextIDs)) ?? []
         viewState.selectedObjectIDs = (try? container.decodeIfPresent(Set<UUID>.self, forKey: .selectedObjectIDs)) ?? []
         directSelectedShapeIDs = []
         isHandleScalingActive = false

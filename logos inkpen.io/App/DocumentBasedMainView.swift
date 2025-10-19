@@ -242,9 +242,6 @@ struct DocumentBasedMainView: View {
                     }
 
                     document.viewState.selectedObjectIDs = newShapeIDs
-                    document.viewState.selectedObjectIDs = newShapeIDs
-                    document
-
                     calculateInitialZoom()
                 } else {
                     Log.error("❌ Import failed: \(result.errors.map { $0.localizedDescription }.joined(separator: ", "))", category: .error)

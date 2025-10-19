@@ -18,36 +18,4 @@ extension VectorDocument {
 
     }
 
-    func syncSelectionArrays() {
-
-        selectedShapeIDs.removeAll()
-        selectedTextIDs.removeAll()
-
-        for objectID in viewState.selectedObjectIDs {
-            if let unifiedObject = findObject(by: objectID) {
-                switch unifiedObject.objectType {
-                case .text(let shape):
-                    selectedTextIDs.insert(shape.id)
-                case .shape(let shape),
-                     .warp(let shape),
-                     .group(let shape),
-                     .clipGroup(let shape),
-                     .clipMask(let shape):
-                    selectedShapeIDs.insert(shape.id)
-                }
-            }
-        }
-    }
-
-    func syncUnifiedSelectionFromLegacy() {
-        viewState.selectedObjectIDs.removeAll()
-
-        let allSelectedIDs = selectedShapeIDs.union(selectedTextIDs)
-
-        for object in unifiedObjects {
-            if allSelectedIDs.contains(object.id) {
-                viewState.selectedObjectIDs.insert(object.id)
-            }
-        }
-    }
 }

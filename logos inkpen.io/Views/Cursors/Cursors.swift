@@ -217,13 +217,10 @@ struct DrawingCanvas: View {
         if !directSelectedShapeIDs.isEmpty {
             document.viewState.selectedObjectIDs = Set(directSelectedShapeIDs)
             document.viewState.selectedObjectIDs = directSelectedShapeIDs
-            document
         } else if document.viewState.currentTool == .directSelection ||
                   document.viewState.currentTool == .convertAnchorPoint ||
                   document.viewState.currentTool == .penPlusMinus {
             document.viewState.selectedObjectIDs.removeAll()
-            document.viewState.selectedObjectIDs.removeAll()
-            document
         }
     }
     @State internal var originalPointPositions: [PointID: VectorPoint] = [:]

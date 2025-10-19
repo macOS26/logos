@@ -118,7 +118,6 @@ struct MainView: View {
 
                     document.selectedLayerIndex = newDocument.selectedLayerIndex
                     document.viewState.selectedObjectIDs = newDocument.viewState.selectedObjectIDs
-                    document.viewState.selectedObjectIDs = newDocument.viewState.selectedObjectIDs
                     document.viewState.currentTool = newDocument.viewState.currentTool
                     document.viewState.viewMode = newDocument.viewState.viewMode
                     document.viewState.zoomLevel = newDocument.viewState.zoomLevel
@@ -272,7 +271,6 @@ struct MainView: View {
         document.documentColorDefaults = importedDoc.documentColorDefaults
         document.selectedLayerIndex = importedDoc.selectedLayerIndex
         document.viewState.selectedObjectIDs = importedDoc.viewState.selectedObjectIDs
-        document.viewState.selectedObjectIDs = importedDoc.viewState.selectedObjectIDs
         document.viewState.currentTool = appState.defaultTool
         document.viewState.viewMode = .color
 
@@ -318,8 +316,6 @@ struct MainView: View {
                     }
 
                     document.viewState.selectedObjectIDs = newShapeIDs
-                    document.viewState.selectedObjectIDs = newShapeIDs
-                    document
 
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                         document.requestZoom(to: 0.0, mode: .fitToPage)
@@ -468,8 +464,6 @@ struct MainView: View {
                     await MainActor.run {
                         document.unifiedObjects = savedState.unifiedObjects
                         document.layers = savedState.layers
-                        document.viewState.selectedObjectIDs = savedState.viewState.selectedObjectIDs
-                        document.viewState.selectedObjectIDs = savedState.viewState.selectedObjectIDs
                         document.viewState.selectedObjectIDs = savedState.viewState.selectedObjectIDs
                     }
                 } else {

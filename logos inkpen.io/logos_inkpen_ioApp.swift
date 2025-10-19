@@ -1039,7 +1039,6 @@ class ClipboardManager {
                 document.commandManager.execute(command)
             }
 
-            document
         } catch {
             Log.error("❌ Failed to paste objects: \(error)", category: .error)
         }
@@ -1103,7 +1102,6 @@ class ClipboardManager {
                 document.commandManager.execute(command)
             }
 
-            document
         } catch {
             Log.error("❌ Failed to paste in back: \(error)", category: .error)
         }

@@ -650,7 +650,6 @@ if event.keyCode == 126 {
                 if currentIndex < layerObjects.count - 1 {
                     let nextObject = layerObjects[currentIndex + 1]
                     document.viewState.selectedObjectIDs = [nextObject.id]
-                    document
                 }
             }
         }
@@ -666,7 +665,6 @@ if event.keyCode == 126 {
                 if currentIndex > 0 {
                     let prevObject = layerObjects[currentIndex - 1]
                     document.viewState.selectedObjectIDs = [prevObject.id]
-                    document
                 }
             }
         }
