@@ -54,18 +54,16 @@ struct SelectionHandlesView: View {
                                                          .equilateralTriangle, .rightTriangle, .acuteTriangle, .isoscelesTriangle,
                                                          .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon].contains(document.viewState.currentTool)
 
-                                if document.viewState.currentTool == .selection || isShapeDrawingTool {
-                                    if dragPreviewDelta == .zero {
-                                        TransformBoxHandles(
-                                            document: document,
-                                            shape: shape,
-                                            zoomLevel: document.viewState.zoomLevel,
-                                            canvasOffset: document.viewState.canvasOffset,
-                                            isShiftPressed: isShiftPressed,
-                                            transformOrigin: document.viewState.transformOrigin,
-                                            strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5)
-                                        )
-                                    }
+                                if (document.viewState.currentTool == .selection || isShapeDrawingTool) && dragPreviewDelta == .zero {
+                                    TransformBoxHandles(
+                                        document: document,
+                                        shape: shape,
+                                        zoomLevel: document.viewState.zoomLevel,
+                                        canvasOffset: document.viewState.canvasOffset,
+                                        isShiftPressed: isShiftPressed,
+                                        transformOrigin: document.viewState.transformOrigin,
+                                        strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5)
+                                    )
                                 } else if document.viewState.currentTool == .scale {
                                     ScaleHandles(
                                         document: document,
@@ -125,18 +123,16 @@ struct SelectionHandlesView: View {
                                          .equilateralTriangle, .rightTriangle, .acuteTriangle, .isoscelesTriangle,
                                          .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon].contains(document.viewState.currentTool)
 
-                if document.viewState.currentTool == .selection || isShapeDrawingTool {
-                    if dragPreviewDelta == .zero {
-                        TransformBoxHandles(
-                            document: document,
-                            shape: shape,
-                            zoomLevel: document.viewState.zoomLevel,
-                            canvasOffset: document.viewState.canvasOffset,
-                            isShiftPressed: isShiftPressed,
-                            transformOrigin: document.viewState.transformOrigin,
-                            strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5)
-                        )
-                    }
+                if (document.viewState.currentTool == .selection || isShapeDrawingTool) && dragPreviewDelta == .zero {
+                    TransformBoxHandles(
+                        document: document,
+                        shape: shape,
+                        zoomLevel: document.viewState.zoomLevel,
+                        canvasOffset: document.viewState.canvasOffset,
+                        isShiftPressed: isShiftPressed,
+                        transformOrigin: document.viewState.transformOrigin,
+                        strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5)
+                    )
                 } else if document.viewState.currentTool == .scale {
                     ScaleHandles(
                         document: document,
