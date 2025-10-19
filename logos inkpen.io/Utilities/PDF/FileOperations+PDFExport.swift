@@ -379,9 +379,6 @@ extension FileOperations {
 
         context.saveGState()
 
-        // Apply transform (like we do for shapes)
-        context.concatenate(vectorText.transform)
-
         context.setAlpha(CGFloat(vectorText.typography.fillOpacity))
 
         let cgColor = vectorText.typography.fillColor.cgColor
@@ -426,14 +423,14 @@ extension FileOperations {
                 let glyphX: CGFloat
                 switch vectorText.typography.alignment.nsTextAlignment {
                 case .left, .justified:
-                    glyphX = actualUsedRect.origin.x + glyphLocation.x
+                    glyphX = vectorText.position.x + actualUsedRect.origin.x + glyphLocation.x
                 case .center, .right:
-                    glyphX = lineRect.origin.x + glyphLocation.x
+                    glyphX = vectorText.position.x + lineRect.origin.x + glyphLocation.x
                 default:
-                    glyphX = actualUsedRect.origin.x + glyphLocation.x
+                    glyphX = vectorText.position.x + actualUsedRect.origin.x + glyphLocation.x
                 }
 
-                let glyphY = actualLineRect.origin.y + glyphLocation.y
+                let glyphY = vectorText.position.y + actualLineRect.origin.y + glyphLocation.y
 
                 context.saveGState()
 
@@ -584,9 +581,6 @@ extension FileOperations {
 
         context.saveGState()
 
-        // Apply transform (like we do for shapes)
-        context.concatenate(vectorText.transform)
-
         context.setAlpha(CGFloat(vectorText.typography.fillOpacity))
 
         let renderingAttributes: [NSAttributedString.Key: Any] = [
@@ -615,13 +609,13 @@ extension FileOperations {
             let lineX: CGFloat
             switch vectorText.typography.alignment.nsTextAlignment {
             case .left, .justified:
-                lineX = lineUsedRect.origin.x + glyphLocation.x
+                lineX = vectorText.position.x + lineUsedRect.origin.x + glyphLocation.x
             case .center, .right:
-                lineX = lineRect.origin.x + glyphLocation.x
+                lineX = vectorText.position.x + lineRect.origin.x + glyphLocation.x
             default:
-                lineX = lineUsedRect.origin.x + glyphLocation.x
+                lineX = vectorText.position.x + lineUsedRect.origin.x + glyphLocation.x
             }
-            let lineY = lineRect.origin.y + glyphLocation.y
+            let lineY = vectorText.position.y + lineRect.origin.y + glyphLocation.y
 
             context.saveGState()
 
