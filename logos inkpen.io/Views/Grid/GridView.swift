@@ -11,18 +11,42 @@ struct GridCanvasView: View {
 
     var body: some View {
         Canvas { context, size in
-            // Draw minor grid lines
-            drawGridLines(
-                context: context,
-                gridSpacing: gridSpacing,
-                canvasSize: canvasSize,
-                majorGridInterval: majorGridInterval,
-                isMajor: false,
-                opacity: 0.3,
-                lineWidth: 0.5,
-                zoomLevel: zoomLevel,
-                canvasOffset: canvasOffset
-            )
+            // At 25% zoom or less, only show major grid lines
+            // At 50% zoom, make major lines same thickness as minor
+            // Above 50%, use normal major line thickness
+
+            let minorLineWidth: CGFloat = 0.5
+            let majorLineWidth: CGFloat
+            let shouldShowMinor: Bool
+
+            if zoomLevel <= 0.25 {
+                // 25% or less: hide minor lines, show only major
+                shouldShowMinor = false
+                majorLineWidth = minorLineWidth
+            } else if zoomLevel <= 0.5 {
+                // Between 25% and 50%: show both, but major same as minor
+                shouldShowMinor = true
+                majorLineWidth = minorLineWidth
+            } else {
+                // Above 50%: normal thickness difference
+                shouldShowMinor = true
+                majorLineWidth = 1.0
+            }
+
+            // Draw minor grid lines (if visible at this zoom)
+            if shouldShowMinor {
+                drawGridLines(
+                    context: context,
+                    gridSpacing: gridSpacing,
+                    canvasSize: canvasSize,
+                    majorGridInterval: majorGridInterval,
+                    isMajor: false,
+                    opacity: 0.3,
+                    lineWidth: minorLineWidth,
+                    zoomLevel: zoomLevel,
+                    canvasOffset: canvasOffset
+                )
+            }
 
             // Draw major grid lines
             drawGridLines(
@@ -32,7 +56,7 @@ struct GridCanvasView: View {
                 majorGridInterval: majorGridInterval,
                 isMajor: true,
                 opacity: 0.4,
-                lineWidth: 1.0,
+                lineWidth: majorLineWidth,
                 zoomLevel: zoomLevel,
                 canvasOffset: canvasOffset
             )
