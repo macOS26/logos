@@ -137,12 +137,8 @@ struct EnvelopeHandles: View {
         }
         .onChange(of: document.changeNotifier.changeToken) { _, _ in
             if document.viewState.currentTool == .warp && !isWarping {
-                if let updatedShape = document.unifiedObjects.first(where: { obj in
-                    if case .shape(let s) = obj.objectType {
-                        return s.id == shape.id
-                    }
-                    return false
-                }), case .shape(let s) = updatedShape.objectType {
+                if let updatedObject = document.unifiedObjects.first(where: { $0.id == shape.id }) {
+                    let s = updatedObject.shape
                     if s.isWarpObject && !s.warpEnvelope.isEmpty {
                         warpedCorners = s.warpEnvelope
                     } else {
@@ -613,12 +609,7 @@ struct EnvelopeHandles: View {
             updatedWarpObject.warpEnvelope = warpedCorners
             updatedWarpObject.updateBounds()
 
-            if let objectIndex = document.unifiedObjects.firstIndex(where: { obj in
-                if case .shape(let shape) = obj.objectType {
-                    return shape.id == updatedWarpObject.id
-                }
-                return false
-            }) {
+            if let objectIndex = document.unifiedObjects.firstIndex(where: { $0.id == updatedWarpObject.id }) {
                 document.unifiedObjects[objectIndex] = VectorObject(
                     shape: updatedWarpObject,
                     layerIndex: document.unifiedObjects[objectIndex].layerIndex,
@@ -655,40 +646,29 @@ struct EnvelopeHandles: View {
 
             document.updateShapePathUnified(id: warpObject.id, path: warpObject.path)
 
-            if let unifiedObjectIndex = document.unifiedObjects.firstIndex(where: { unifiedObject in
-            if case .shape(let targetShape) = unifiedObject.objectType {
-                return targetShape.id == currentShape.id
+            if let unifiedObjectIndex = document.unifiedObjects.firstIndex(where: { $0.id == currentShape.id }) {
+                document.unifiedObjects[unifiedObjectIndex] = VectorObject(
+                    shape: warpObject,
+                    layerIndex: unifiedObject.layerIndex,
+                )
+            } else {
+                document.addShapeToUnifiedSystem(warpObject, layerIndex: layerIndex)
             }
-            return false
-        }) {
-            document.unifiedObjects[unifiedObjectIndex] = VectorObject(
-                shape: warpObject,
-                layerIndex: unifiedObject.layerIndex,
-            )
-        } else {
-            document.addShapeToUnifiedSystem(warpObject, layerIndex: layerIndex)
-        }
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                if let objectIndex = self.document.unifiedObjects.firstIndex(where: { obj in
-                    if case .shape(let s) = obj.objectType {
-                        return s.id == warpObject.id
-                    }
-                    return false
-                }) {
-                    if case .shape(var shape) = self.document.unifiedObjects[objectIndex].objectType {
-                        let wasVisible = shape.isVisible
-                        shape.isVisible = !wasVisible
-                        self.document.unifiedObjects[objectIndex] = VectorObject(
-                            shape: shape,
-                            layerIndex: self.document.unifiedObjects[objectIndex].layerIndex,
-                        )
-                        shape.isVisible = wasVisible
-                        self.document.unifiedObjects[objectIndex] = VectorObject(
-                            shape: shape,
-                            layerIndex: self.document.unifiedObjects[objectIndex].layerIndex,
-                        )
-                    }
+                if let objectIndex = self.document.unifiedObjects.firstIndex(where: { $0.id == warpObject.id }) {
+                    var shape = self.document.unifiedObjects[objectIndex].shape
+                    let wasVisible = shape.isVisible
+                    shape.isVisible = !wasVisible
+                    self.document.unifiedObjects[objectIndex] = VectorObject(
+                        shape: shape,
+                        layerIndex: self.document.unifiedObjects[objectIndex].layerIndex,
+                    )
+                    shape.isVisible = wasVisible
+                    self.document.unifiedObjects[objectIndex] = VectorObject(
+                        shape: shape,
+                        layerIndex: self.document.unifiedObjects[objectIndex].layerIndex,
+                    )
                 }
             }
         }
