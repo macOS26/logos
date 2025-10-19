@@ -90,8 +90,10 @@ extension DrawingCanvas {
         case .font:
             if let existingTextID = findTextAt(location: canvasLocation) {
                 startEditingText(textID: existingTextID, at: canvasLocation)
+            } else {
+                // Click on empty canvas - deselect all text
+                handleAggressiveBackgroundTap(at: canvasLocation)
             }
-            handleAggressiveBackgroundTap(at: canvasLocation)
 
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             if !isShiftPressed && !isCommandPressed {
