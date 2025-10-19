@@ -191,9 +191,9 @@ struct VariableStrokeSection: View {
             }
 
             HStack {
-                Image(systemName: document.hasPressureInput ? "hand.point.up.braille" : "hand.tap")
-                    .foregroundColor(document.hasPressureInput ? .green : .orange)
-                Text(document.hasPressureInput ? "Pressure input detected" : "Using simulated pressure")
+                Image(systemName: document.viewState.hasPressureInput ? "hand.point.up.braille" : "hand.tap")
+                    .foregroundColor(document.viewState.hasPressureInput ? .green : .orange)
+                Text(document.viewState.hasPressureInput ? "Pressure input detected" : "Using simulated pressure")
                     .font(.caption)
                     .foregroundColor(Color.ui.secondaryText)
                 Spacer()

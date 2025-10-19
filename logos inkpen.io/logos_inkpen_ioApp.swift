@@ -947,7 +947,7 @@ class ClipboardManager {
         var shapesToCopy: [VectorShape] = []
         var textToCopy: [VectorText] = []
 
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .text(let shape):
@@ -998,7 +998,7 @@ class ClipboardManager {
         do {
             let clipboardData = try JSONDecoder().decode(ClipboardData.self, from: data)
 
-            document.selectedObjectIDs.removeAll()
+            document.viewState.selectedObjectIDs.removeAll()
 
             guard let layerIndex = document.selectedLayerIndex else { return }
 
@@ -1021,7 +1021,7 @@ class ClipboardManager {
                 let newShape = regenerateUUIDs(for: shape)
                 let unifiedObject = VectorObject(shape: newShape, layerIndex: layerIndex)
                 objectsToAdd.append(unifiedObject)
-                document.selectedObjectIDs.insert(newShape.id)
+                document.viewState.selectedObjectIDs.insert(newShape.id)
             }
 
             for text in clipboardData.texts {
@@ -1031,7 +1031,7 @@ class ClipboardManager {
                 let textShape = VectorShape.from(newText)
                 let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex)
                 objectsToAdd.append(unifiedObject)
-                document.selectedObjectIDs.insert(newText.id)
+                document.viewState.selectedObjectIDs.insert(newText.id)
             }
 
             if !objectsToAdd.isEmpty {
@@ -1050,8 +1050,8 @@ class ClipboardManager {
 
         do {
             let clipboardData = try JSONDecoder().decode(ClipboardData.self, from: data)
-            let originalSelectedObjectIDs = document.selectedObjectIDs
-            document.selectedObjectIDs.removeAll()
+            let originalSelectedObjectIDs = document.viewState.selectedObjectIDs
+            document.viewState.selectedObjectIDs.removeAll()
 
             guard let layerIndex = document.selectedLayerIndex else { return }
 
@@ -1085,7 +1085,7 @@ class ClipboardManager {
                 let newShape = regenerateUUIDs(for: shape)
                 let unifiedObject = VectorObject(shape: newShape, layerIndex: layerIndex)
                 objectsToAdd.append(unifiedObject)
-                document.selectedObjectIDs.insert(newShape.id)
+                document.viewState.selectedObjectIDs.insert(newShape.id)
             }
 
             for text in clipboardData.texts {
@@ -1095,7 +1095,7 @@ class ClipboardManager {
                 let textShape = VectorShape.from(newText)
                 let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex)
                 objectsToAdd.append(unifiedObject)
-                document.selectedObjectIDs.insert(newText.id)
+                document.viewState.selectedObjectIDs.insert(newText.id)
             }
 
             if !objectsToAdd.isEmpty {

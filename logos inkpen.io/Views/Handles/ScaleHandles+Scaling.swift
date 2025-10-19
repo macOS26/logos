@@ -11,7 +11,7 @@ extension ScaleHandles {
             initialTransform = shape.transform
             startLocation = dragValue.startLocation
 
-            scalingAnchorPoint = getAnchorPoint(for: document.scalingAnchor, in: bounds, cornerIndex: index)
+            scalingAnchorPoint = getAnchorPoint(for: document.viewState.scalingAnchor, in: bounds, cornerIndex: index)
         }
 
         let currentLocation = dragValue.location
@@ -51,7 +51,7 @@ extension ScaleHandles {
         scalingStarted = false
         isScaling = false
         document.isHandleScalingActive = false
-        document.scalePreviewDimensions = .zero
+        document.viewState.scalePreviewDimensions = .zero
         liveScaleTransform = .identity
 
         var oldShapes: [UUID: VectorShape] = [:]
@@ -167,7 +167,7 @@ extension ScaleHandles {
         let newWidth = initialBounds.width * abs(scaleX)
         let newHeight = initialBounds.height * abs(scaleY)
 
-        document.scalePreviewDimensions = CGSize(width: newWidth, height: newHeight)
+        document.viewState.scalePreviewDimensions = CGSize(width: newWidth, height: newHeight)
 
         let currentBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         finalMarqueeBounds = currentBounds.applying(scaleTransform)

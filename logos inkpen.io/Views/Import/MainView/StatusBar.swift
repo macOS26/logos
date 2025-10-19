@@ -27,12 +27,12 @@ struct StatusBar: View {
             Spacer()
 
             HStack {
-                if document.selectedObjectIDs.isEmpty {
+                if document.viewState.selectedObjectIDs.isEmpty {
                     Text("No selection")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 } else {
-                    let totalSelected = document.selectedObjectIDs.count
+                    let totalSelected = document.viewState.selectedObjectIDs.count
 
                     if let bounds = getSelectionBounds() {
                         Text("\(totalSelected) selected  •  W: \(formatPreciseDimension(bounds.width))pt H: \(formatPreciseDimension(bounds.height))pt")

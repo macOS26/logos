@@ -141,7 +141,7 @@ struct MainView: View {
                 document: document,
                 title: "Color Picker",
                 onColorSelected: { color in
-                    if document.activeColorTarget == .stroke {
+                    if document.viewState.activeColorTarget == .stroke {
                         document.defaultStrokeColor = color
                     } else {
                         document.defaultFillColor = color
@@ -323,7 +323,7 @@ struct MainView: View {
                     }
 
                     document.selectedShapeIDs = newShapeIDs
-                    document.selectedObjectIDs = newShapeIDs
+                    document.viewState.selectedObjectIDs = newShapeIDs
                     document.syncSelectionArrays()
 
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
@@ -473,7 +473,7 @@ struct MainView: View {
                     await MainActor.run {
                         document.unifiedObjects = savedState.unifiedObjects
                         document.layers = savedState.layers
-                        document.selectedObjectIDs = savedState.selectedObjectIDs
+                        document.viewState.selectedObjectIDs = savedState.selectedObjectIDs
                         document.selectedTextIDs = savedState.selectedTextIDs
                         document.selectedShapeIDs = savedState.selectedShapeIDs
                     }

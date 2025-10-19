@@ -173,7 +173,7 @@ struct ShearHandles: View {
 
                 let anchorScreenX = shearAnchorPoint.x * zoomLevel + canvasOffset.x
                 let anchorScreenY = shearAnchorPoint.y * zoomLevel + canvasOffset.y
-                let isCenterPinned = document.shearAnchor == .center
+                let isCenterPinned = document.viewState.shearAnchor == .center
                 Circle()
                     .fill(isCenterPinned ? Color.red : Color.green)
                     .stroke(Color.white, lineWidth: 1.0)

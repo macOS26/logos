@@ -215,13 +215,13 @@ struct DrawingCanvas: View {
         document.directSelectedShapeIDs = directSelectedShapeIDs
 
         if !directSelectedShapeIDs.isEmpty {
-            document.selectedObjectIDs = Set(directSelectedShapeIDs)
+            document.viewState.selectedObjectIDs = Set(directSelectedShapeIDs)
             document.selectedShapeIDs = directSelectedShapeIDs
             document.syncSelectionArrays()
         } else if document.viewState.currentTool == .directSelection ||
                   document.viewState.currentTool == .convertAnchorPoint ||
                   document.viewState.currentTool == .penPlusMinus {
-            document.selectedObjectIDs.removeAll()
+            document.viewState.selectedObjectIDs.removeAll()
             document.selectedShapeIDs.removeAll()
             document.syncSelectionArrays()
         }
@@ -277,7 +277,7 @@ struct DrawingCanvas: View {
                         }
                     }
                 }
-                .onChange(of: document.scalePreviewDimensions) { _, newValue in
+                .onChange(of: document.viewState.scalePreviewDimensions) { _, newValue in
                     liveScaleDimensions = newValue
                 }
         }

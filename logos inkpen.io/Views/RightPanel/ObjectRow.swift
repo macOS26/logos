@@ -400,7 +400,7 @@ struct ObjectRow: View {
             
             if objectType == .group, isGroupExpanded, let shapes = groupedShapes {
                 ForEach(Array(shapes.reversed().enumerated()), id: \.element.id) { index, childShape in
-                    let isChildSelected = document.selectedObjectIDs.contains(childShape.id)
+                    let isChildSelected = document.viewState.selectedObjectIDs.contains(childShape.id)
                     let childVisBinding = childVisibilityBinding(for: childShape.id)
                     let childLockBinding = childLockBinding(for: childShape.id)
 
@@ -471,15 +471,15 @@ struct ObjectRow: View {
                         let isCommandPressed = NSEvent.modifierFlags.contains(.command)
                         
                         if isCommandPressed {
-                            if document.selectedObjectIDs.contains(childShape.id) {
-                                document.selectedObjectIDs.remove(childShape.id)
+                            if document.viewState.selectedObjectIDs.contains(childShape.id) {
+                                document.viewState.selectedObjectIDs.remove(childShape.id)
                                 if childShape.typography != nil {
                                     document.selectedTextIDs.remove(childShape.id)
                                 } else {
                                     document.selectedShapeIDs.remove(childShape.id)
                                 }
                             } else {
-                                document.selectedObjectIDs.insert(childShape.id)
+                                document.viewState.selectedObjectIDs.insert(childShape.id)
                                 if childShape.typography != nil {
                                     document.selectedTextIDs.insert(childShape.id)
                                 } else {
@@ -487,14 +487,14 @@ struct ObjectRow: View {
                                 }
                             }
                         } else if isShiftPressed {
-                            document.selectedObjectIDs.insert(childShape.id)
+                            document.viewState.selectedObjectIDs.insert(childShape.id)
                             if childShape.typography != nil {
                                 document.selectedTextIDs.insert(childShape.id)
                             } else {
                                 document.selectedShapeIDs.insert(childShape.id)
                             }
                         } else {
-                            document.selectedObjectIDs = [childShape.id]
+                            document.viewState.selectedObjectIDs = [childShape.id]
                             if childShape.typography != nil {
                                 document.selectedTextIDs = [childShape.id]
                                 document.selectedShapeIDs.removeAll()

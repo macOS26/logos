@@ -20,7 +20,7 @@ extension DrawingCanvas {
 
         isBrushDrawing = true
 
-        document.hasPressureInput = PressureManager.shared.hasRealPressureInput
+        document.viewState.hasPressureInput = PressureManager.shared.hasRealPressureInput
 
         // Use current pressure instead of hardcoded 1.0 to avoid false positive bulge at start
         let startPressure = PressureManager.shared.currentPressure
@@ -104,7 +104,7 @@ extension DrawingCanvas {
         cancelBrushDrawing()
 
         document.selectedShapeIDs.removeAll()
-        document.selectedObjectIDs.removeAll()
+        document.viewState.selectedObjectIDs.removeAll()
         document.selectedTextIDs.removeAll()
     }
 

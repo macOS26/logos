@@ -334,8 +334,8 @@ struct LayersPanel: View {
                 .highPriorityGesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in
-                            if !document.isDraggingVisibility {
-                                document.isDraggingVisibility = true
+                            if !document.viewState.isDraggingVisibility {
+                                document.viewState.isDraggingVisibility = true
                                 document.processedLayersDuringDrag.removeAll()
                                 document.processedObjectsDuringDrag.removeAll()
 
@@ -355,7 +355,7 @@ struct LayersPanel: View {
                             }
                         }
                         .onEnded { _ in
-                            document.isDraggingVisibility = false
+                            document.viewState.isDraggingVisibility = false
                             document.processedLayersDuringDrag.removeAll()
                             document.processedObjectsDuringDrag.removeAll()
                         }
@@ -375,8 +375,8 @@ struct LayersPanel: View {
                 .highPriorityGesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in
-                            if !document.isDraggingLock {
-                                document.isDraggingLock = true
+                            if !document.viewState.isDraggingLock {
+                                document.viewState.isDraggingLock = true
                                 document.processedLayersDuringDrag.removeAll()
                                 document.processedObjectsDuringDrag.removeAll()
 
@@ -396,7 +396,7 @@ struct LayersPanel: View {
                             }
                         }
                         .onEnded { _ in
-                            document.isDraggingLock = false
+                            document.viewState.isDraggingLock = false
                             document.processedLayersDuringDrag.removeAll()
                             document.processedObjectsDuringDrag.removeAll()
                         }
@@ -603,7 +603,7 @@ if event.keyCode == 126 {
 
         private func selectNextLayer(document: VectorDocument) {
             DispatchQueue.main.async {
-                if !document.selectedObjectIDs.isEmpty {
+                if !document.viewState.selectedObjectIDs.isEmpty {
                     self.selectNextObject(document: document)
                 } else {
                     guard let currentIndex = document.selectedLayerIndex else {
@@ -622,7 +622,7 @@ if event.keyCode == 126 {
 
         private func selectPreviousLayer(document: VectorDocument) {
             DispatchQueue.main.async {
-                if !document.selectedObjectIDs.isEmpty {
+                if !document.viewState.selectedObjectIDs.isEmpty {
                     self.selectPreviousObject(document: document)
                 } else {
                     guard let currentIndex = document.selectedLayerIndex else {
@@ -641,7 +641,7 @@ if event.keyCode == 126 {
 
         private func selectNextObject(document: VectorDocument) {
             guard let currentLayerIndex = document.selectedLayerIndex,
-                  let firstSelectedId = document.selectedObjectIDs.first else { return }
+                  let firstSelectedId = document.viewState.selectedObjectIDs.first else { return }
             let layerObjects = Array(document.unifiedObjects
                 .filter { $0.layerIndex == currentLayerIndex }
                 .reversed())
@@ -649,7 +649,7 @@ if event.keyCode == 126 {
             if let currentIndex = layerObjects.firstIndex(where: { $0.id == firstSelectedId }) {
                 if currentIndex < layerObjects.count - 1 {
                     let nextObject = layerObjects[currentIndex + 1]
-                    document.selectedObjectIDs = [nextObject.id]
+                    document.viewState.selectedObjectIDs = [nextObject.id]
                     document.syncSelectionArrays()
                 }
             }
@@ -657,7 +657,7 @@ if event.keyCode == 126 {
 
         private func selectPreviousObject(document: VectorDocument) {
             guard let currentLayerIndex = document.selectedLayerIndex,
-                  let firstSelectedId = document.selectedObjectIDs.first else { return }
+                  let firstSelectedId = document.viewState.selectedObjectIDs.first else { return }
             let layerObjects = Array(document.unifiedObjects
                 .filter { $0.layerIndex == currentLayerIndex }
                 .reversed())
@@ -665,7 +665,7 @@ if event.keyCode == 126 {
             if let currentIndex = layerObjects.firstIndex(where: { $0.id == firstSelectedId }) {
                 if currentIndex > 0 {
                     let prevObject = layerObjects[currentIndex - 1]
-                    document.selectedObjectIDs = [prevObject.id]
+                    document.viewState.selectedObjectIDs = [prevObject.id]
                     document.syncSelectionArrays()
                 }
             }

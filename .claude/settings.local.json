@@ -28,7 +28,8 @@
       "Bash(xcrun xcodebuild:*)",
       "Read(//Users/toddbruss/Desktop/**)",
       "Read(//tmp/**)",
-      "Bash(git revert:*)"
+      "Bash(git revert:*)",
+      "Bash({} ;)"
     ],
     "deny": [],
     "ask": []

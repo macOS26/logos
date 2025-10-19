@@ -58,7 +58,7 @@ class GroupCommand: BaseCommand {
             document.unifiedObjects.insert(newObject, at: insertionIndex + offset)
         }
 
-        document.selectedObjectIDs = newSelectedObjectIDs
+        document.viewState.selectedObjectIDs = newSelectedObjectIDs
         document.selectedShapeIDs = newSelectedObjectIDs.filter { id in
             if let obj = document.unifiedObjects.first(where: { $0.id == id }) {
                 switch obj.objectType {
@@ -107,7 +107,7 @@ class GroupCommand: BaseCommand {
             print("🔵 UNDO GROUP: Inserted \(objectID) at \(insertionIndex + offset)")
         }
 
-        document.selectedObjectIDs = oldSelectedObjectIDs
+        document.viewState.selectedObjectIDs = oldSelectedObjectIDs
         document.selectedShapeIDs = oldSelectedObjectIDs.filter { id in
             if let obj = document.unifiedObjects.first(where: { $0.id == id }) {
                 switch obj.objectType {

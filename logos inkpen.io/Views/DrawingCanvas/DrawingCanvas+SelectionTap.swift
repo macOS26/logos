@@ -135,7 +135,7 @@ extension DrawingCanvas {
               document.viewState.currentTool == .warp else {
             // For non-selection tools, deselect when clicking empty space
             if !isShiftPressed && !isCommandPressed {
-                document.selectedObjectIDs = []
+                document.viewState.selectedObjectIDs = []
                 document.syncSelectionArrays()
             }
             return
@@ -206,19 +206,19 @@ extension DrawingCanvas {
             let objectToSelect = hitObject
 
             if isShiftPressed {
-                document.selectedObjectIDs.insert(objectToSelect.id)
+                document.viewState.selectedObjectIDs.insert(objectToSelect.id)
             } else if isCommandPressed {
-                if document.selectedObjectIDs.contains(objectToSelect.id) {
-                    document.selectedObjectIDs.remove(objectToSelect.id)
+                if document.viewState.selectedObjectIDs.contains(objectToSelect.id) {
+                    document.viewState.selectedObjectIDs.remove(objectToSelect.id)
                 } else {
-                    document.selectedObjectIDs.insert(objectToSelect.id)
+                    document.viewState.selectedObjectIDs.insert(objectToSelect.id)
                 }
             } else {
-                document.selectedObjectIDs = [objectToSelect.id]
+                document.viewState.selectedObjectIDs = [objectToSelect.id]
             }
 
             if case .text = objectToSelect.objectType {
-                document.transformOrigin = .topLeft
+                document.viewState.transformOrigin = .topLeft
             }
 
             document.selectedLayerIndex = objectToSelect.layerIndex
@@ -226,7 +226,7 @@ extension DrawingCanvas {
             document.syncSelectionArrays()
 
             if let selectedColor = document.getSelectedObjectColor() {
-                if document.activeColorTarget == .stroke {
+                if document.viewState.activeColorTarget == .stroke {
                     document.defaultStrokeColor = selectedColor
                 } else {
                     document.defaultFillColor = selectedColor
@@ -235,7 +235,7 @@ extension DrawingCanvas {
         } else {
             // Nothing was hit - deselect unless modifier keys pressed
             if !isShiftPressed && !isCommandPressed {
-                document.selectedObjectIDs = []
+                document.viewState.selectedObjectIDs = []
                 document.syncSelectionArrays()
 
                 selectedPoints.removeAll()
@@ -320,7 +320,7 @@ extension DrawingCanvas {
     }
 
     private func isLocationWithinSelectionBox(_ location: CGPoint) -> Bool {
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .text(let shape):

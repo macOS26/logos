@@ -95,7 +95,7 @@ extension DrawingCanvas {
 
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             if !isShiftPressed && !isCommandPressed {
-                document.selectedObjectIDs = []
+                document.viewState.selectedObjectIDs = []
                 document.syncSelectionArrays()
             }
 
@@ -237,7 +237,7 @@ extension DrawingCanvas {
 
     private func handleUnifiedSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         if !isDrawing && !document.isHandleScalingActive {
-            for objectID in document.selectedObjectIDs {
+            for objectID in document.viewState.selectedObjectIDs {
                 if let unifiedObject = document.findObject(by: objectID),
                    case .shape(let shape) = unifiedObject.objectType {
                     if shape.name != "Canvas Background" && shape.name != "Pasteboard Background" {
@@ -256,11 +256,11 @@ extension DrawingCanvas {
         let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
 
         if !isDrawing {
-            if document.selectedObjectIDs.isEmpty || !isDraggingSelectedObject(at: startLocation) {
+            if document.viewState.selectedObjectIDs.isEmpty || !isDraggingSelectedObject(at: startLocation) {
                 selectObjectAt(startLocation)
             }
 
-            if !document.selectedObjectIDs.isEmpty {
+            if !document.viewState.selectedObjectIDs.isEmpty {
                 selectionDragStart = value.startLocation
                 startSelectionDrag()
                 isDrawing = true
@@ -379,7 +379,7 @@ extension DrawingCanvas {
         }
 
         if !matchingObjectIDs.isEmpty {
-            document.selectedObjectIDs = matchingObjectIDs
+            document.viewState.selectedObjectIDs = matchingObjectIDs
             document.syncSelectionArrays()
         }
     }

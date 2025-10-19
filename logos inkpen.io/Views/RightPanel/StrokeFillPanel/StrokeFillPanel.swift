@@ -14,7 +14,7 @@ struct StrokeFillPanel: View {
     @State private var isDragging: Bool = false
 
     private var selectedStrokeColor: VectorColor {
-        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .text(let shape):
@@ -35,7 +35,7 @@ struct StrokeFillPanel: View {
     }
 
     private var selectedFillColor: VectorColor {
-        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .text(let shape):
@@ -54,7 +54,7 @@ struct StrokeFillPanel: View {
     }
 
     private var strokeWidth: Double {
-        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .text(let shape):
@@ -71,7 +71,7 @@ struct StrokeFillPanel: View {
     }
 
     private var strokePlacement: StrokePlacement {
-        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .text:
@@ -88,7 +88,7 @@ struct StrokeFillPanel: View {
     }
 
     private var fillOpacity: Double {
-        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .text(let shape):
@@ -107,7 +107,7 @@ struct StrokeFillPanel: View {
     }
 
     private var strokeOpacity: Double {
-        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .text(let shape):
@@ -126,7 +126,7 @@ struct StrokeFillPanel: View {
     }
 
     private var strokeLineJoin: CGLineJoin {
-        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .text:
@@ -143,7 +143,7 @@ struct StrokeFillPanel: View {
     }
 
     private var strokeLineCap: CGLineCap {
-        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .text:
@@ -160,7 +160,7 @@ struct StrokeFillPanel: View {
     }
 
     private var strokeMiterLimit: Double {
-        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .text:
@@ -177,7 +177,7 @@ struct StrokeFillPanel: View {
     }
 
     private var hasSelectedImages: Bool {
-        return document.selectedObjectIDs.contains { objectID in
+        return document.viewState.selectedObjectIDs.contains { objectID in
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .text:
@@ -195,7 +195,7 @@ struct StrokeFillPanel: View {
     }
 
     private var selectedImageOpacity: Double {
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .text:
@@ -223,11 +223,11 @@ struct StrokeFillPanel: View {
                         strokeOpacity: strokeOpacityState,
                         fillOpacity: fillOpacityState,
                         onStrokeColorTap: {
-                            document.activeColorTarget = .stroke
+                            document.viewState.activeColorTarget = .stroke
                             appState.persistentInkHUD.show(document: document)
                         },
                         onFillColorTap: {
-                            document.activeColorTarget = .fill
+                            document.viewState.activeColorTarget = .fill
                             appState.persistentInkHUD.show(document: document)
                         }
                     )
@@ -276,7 +276,7 @@ struct StrokeFillPanel: View {
                                 }
 
                                 cachedIndexMap.removeAll()
-                                for objectID in document.selectedObjectIDs {
+                                for objectID in document.viewState.selectedObjectIDs {
                                     document.clearTextPreviewTypography(id: objectID)
                                 }
 
@@ -543,7 +543,7 @@ struct StrokeFillPanel: View {
         .onAppear {
             syncOpacityStates()
         }
-        .onChange(of: document.selectedObjectIDs) { _, _ in
+        .onChange(of: document.viewState.selectedObjectIDs) { _, _ in
             syncOpacityStates()
         }
         .onChange(of: document.changeNotifier.changeToken) { _, _ in
@@ -568,7 +568,7 @@ struct StrokeFillPanel: View {
         var oldOpacities: [UUID: Double] = [:]
         var newOpacities: [UUID: Double] = [:]
 
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             if let obj = document.findObject(by: objectID) {
                 switch obj.objectType {
                 case .text(let shape):
@@ -588,7 +588,7 @@ struct StrokeFillPanel: View {
 
         if !oldOpacities.isEmpty {
             let command = OpacityCommand(
-                objectIDs: Array(document.selectedObjectIDs),
+                objectIDs: Array(document.viewState.selectedObjectIDs),
                 target: .fill,
                 oldOpacities: oldOpacities,
                 newOpacities: newOpacities
@@ -598,7 +598,7 @@ struct StrokeFillPanel: View {
     }
 
     private func updateFillOpacityDirectNoUndo(_ opacity: Double) {
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             guard let index = cachedIndexMap[objectID] else { continue }
             switch document.unifiedObjects[index].objectType {
             case .text(var shape):
@@ -618,7 +618,7 @@ struct StrokeFillPanel: View {
     }
 
     private func updateFillOpacityLive(_ opacity: Double, isEditing: Bool) {
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .text(let shape):
@@ -643,7 +643,7 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokeOpacityLive(_ opacity: Double, isEditing: Bool) {
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .text:
@@ -664,7 +664,7 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokeWidthLive(_ width: Double, isEditing: Bool) {
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .text(let shape):
@@ -689,7 +689,7 @@ struct StrokeFillPanel: View {
     private func updateStrokePlacementLive(_ placement: StrokePlacement) {
         document.defaultStrokePlacement = placement
 
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .text:
@@ -711,7 +711,7 @@ struct StrokeFillPanel: View {
         var oldWidths: [UUID: Double] = [:]
         var newWidths: [UUID: Double] = [:]
 
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             if let obj = document.findObject(by: objectID) {
                 switch obj.objectType {
                 case .text(let shape):
@@ -731,7 +731,7 @@ struct StrokeFillPanel: View {
 
         if !oldWidths.isEmpty {
             let command = StrokeWidthCommand(
-                objectIDs: Array(document.selectedObjectIDs),
+                objectIDs: Array(document.viewState.selectedObjectIDs),
                 oldWidths: oldWidths,
                 newWidths: newWidths
             )
@@ -740,7 +740,7 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokeWidthDirectNoUndo(_ width: Double) {
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             guard let index = cachedIndexMap[objectID] else { continue }
             switch document.unifiedObjects[index].objectType {
             case .text(var shape):
@@ -877,7 +877,7 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokeOpacityDirectNoUndo(_ opacity: Double) {
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             guard let index = cachedIndexMap[objectID] else { continue }
             switch document.unifiedObjects[index].objectType {
             case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
@@ -1067,7 +1067,7 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokeMiterLimitDirectNoUndo(_ miterLimit: Double) {
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             guard let index = cachedIndexMap[objectID] else { continue }
             switch document.unifiedObjects[index].objectType {
             case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):

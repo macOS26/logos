@@ -61,7 +61,7 @@ extension DrawingCanvas {
     private func finishTextEditingButKeepSelected(_ textID: UUID) {
         document.setTextEditingInUnified(id: textID, isEditing: false)
 
-        document.selectedObjectIDs = [textID]
+        document.viewState.selectedObjectIDs = [textID]
 
         isEditingText = false
         editingTextID = nil
@@ -74,7 +74,7 @@ extension DrawingCanvas {
 
         if newTool == .selection {
             if !directSelectedShapeIDs.isEmpty {
-                document.selectedObjectIDs = directSelectedShapeIDs
+                document.viewState.selectedObjectIDs = directSelectedShapeIDs
                 directSelectedShapeIDs.removeAll()
                 selectedPoints.removeAll()
                 selectedHandles.removeAll()
@@ -83,8 +83,8 @@ extension DrawingCanvas {
         }
 
         else if newTool == .directSelection {
-            if !document.selectedObjectIDs.isEmpty {
-                directSelectedShapeIDs = document.selectedObjectIDs
+            if !document.viewState.selectedObjectIDs.isEmpty {
+                directSelectedShapeIDs = document.viewState.selectedObjectIDs
                 syncDirectSelectionWithDocument()
             }
             else if oldTool == .convertAnchorPoint || oldTool == .penPlusMinus {
@@ -94,15 +94,15 @@ extension DrawingCanvas {
         }
 
         else if newTool == .convertAnchorPoint || newTool == .penPlusMinus {
-            if !document.selectedObjectIDs.isEmpty {
-                directSelectedShapeIDs = document.selectedObjectIDs
+            if !document.viewState.selectedObjectIDs.isEmpty {
+                directSelectedShapeIDs = document.viewState.selectedObjectIDs
                 syncDirectSelectionWithDocument()
             }
         }
 
         else if (oldTool == .directSelection || oldTool == .convertAnchorPoint || oldTool == .penPlusMinus) &&
                  newTool != .selection && newTool != .directSelection && newTool != .convertAnchorPoint && newTool != .penPlusMinus {
-            document.selectedObjectIDs.removeAll()
+            document.viewState.selectedObjectIDs.removeAll()
             directSelectedShapeIDs.removeAll()
             selectedPoints.removeAll()
             selectedHandles.removeAll()

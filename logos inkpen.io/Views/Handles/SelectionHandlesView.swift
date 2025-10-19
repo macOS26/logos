@@ -17,13 +17,13 @@ struct SelectionHandlesView: View {
 
                 if case .group(let groupShape) = unifiedObject.objectType {
                     ForEach(groupShape.groupedShapes, id: \.id) { childShape in
-                        if document.selectedObjectIDs.contains(childShape.id) {
+                        if document.viewState.selectedObjectIDs.contains(childShape.id) {
                             renderHandlesForShape(childShape)
                         }
                     }
                 }
 
-                if document.selectedObjectIDs.contains(unifiedObject.id) {
+                if document.viewState.selectedObjectIDs.contains(unifiedObject.id) {
                     switch unifiedObject.objectType {
                     case .shape(let shape),
                          .warp(let shape),
@@ -61,7 +61,7 @@ struct SelectionHandlesView: View {
                                         zoomLevel: document.viewState.zoomLevel,
                                         canvasOffset: document.viewState.canvasOffset,
                                         isShiftPressed: isShiftPressed,
-                                        transformOrigin: document.transformOrigin,
+                                        transformOrigin: document.viewState.transformOrigin,
                                         strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5)
                                     )
                                     .offset(x: dragPreviewDelta.x * document.viewState.zoomLevel,
@@ -132,7 +132,7 @@ struct SelectionHandlesView: View {
                         zoomLevel: document.viewState.zoomLevel,
                         canvasOffset: document.viewState.canvasOffset,
                         isShiftPressed: isShiftPressed,
-                        transformOrigin: document.transformOrigin,
+                        transformOrigin: document.viewState.transformOrigin,
                         strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5)
                     )
                     .offset(x: dragPreviewDelta.x * document.viewState.zoomLevel,

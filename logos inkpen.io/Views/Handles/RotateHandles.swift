@@ -293,7 +293,7 @@ struct RotateHandles: View {
     }
 
     private func isRotationPinnedAnchorCorner(cornerIndex: Int) -> Bool {
-        switch document.rotationAnchor {
+        switch document.viewState.rotationAnchor {
         case .center:
             return false
         case .topLeft:
@@ -407,7 +407,7 @@ struct RotateHandles: View {
         initialTransform = shape.transform
 
         let originalBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-        rotationAnchorPoint = getRotationAnchorPoint(for: document.rotationAnchor, in: originalBounds, cornerIndex: cornerIndex)
+        rotationAnchorPoint = getRotationAnchorPoint(for: document.viewState.rotationAnchor, in: originalBounds, cornerIndex: cornerIndex)
     }
 
     private func calculatePreviewRotation(angle: CGFloat, anchor: CGPoint) {
@@ -483,7 +483,7 @@ struct RotateHandles: View {
     }
 
     private func isPinnedAnchorCorner(cornerIndex: Int) -> Bool {
-        switch document.rotationAnchor {
+        switch document.viewState.rotationAnchor {
         case .center: return false
         case .topLeft: return cornerIndex == 0
         case .topRight: return cornerIndex == 1

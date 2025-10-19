@@ -4,11 +4,11 @@ import Combine
 extension DrawingCanvas {
     internal func startSelectionDrag() {
         guard document.selectedLayerIndex != nil,
-              !document.selectedObjectIDs.isEmpty else { return }
+              !document.viewState.selectedObjectIDs.isEmpty else { return }
 
         dragUpdateCounter = 0
 
-        let selectedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
+        let selectedObjects = document.unifiedObjects.filter { document.viewState.selectedObjectIDs.contains($0.id) }
 
         for unifiedObject in selectedObjects {
             if unifiedObject.layerIndex < document.layers.count {
@@ -86,9 +86,9 @@ extension DrawingCanvas {
 
     internal func handleSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         guard document.selectedLayerIndex != nil,
-              !document.selectedObjectIDs.isEmpty else { return }
+              !document.viewState.selectedObjectIDs.isEmpty else { return }
 
-        let selectedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
+        let selectedObjects = document.unifiedObjects.filter { document.viewState.selectedObjectIDs.contains($0.id) }
 
         for unifiedObject in selectedObjects {
             if unifiedObject.layerIndex < document.layers.count {
@@ -124,7 +124,7 @@ extension DrawingCanvas {
         )
 
         if document.snapToGrid || document.snapToPoint {
-            if let firstObjectID = document.selectedObjectIDs.first,
+            if let firstObjectID = document.viewState.selectedObjectIDs.first,
                let initialCenter = initialObjectPositions[firstObjectID],
                let firstObject = document.findObject(by: firstObjectID) {
 
@@ -156,7 +156,7 @@ extension DrawingCanvas {
         liveDragOffset = canvasDelta
 
         // Set active layer for performance optimization (hides other layers during drag)
-        if document.activeLayerIndexDuringDrag == nil, let firstSelected = document.selectedObjectIDs.first {
+        if document.activeLayerIndexDuringDrag == nil, let firstSelected = document.viewState.selectedObjectIDs.first {
             if let obj = document.findObject(by: firstSelected) {
                 document.activeLayerIndexDuringDrag = obj.layerIndex
 
@@ -188,7 +188,7 @@ extension DrawingCanvas {
 
             var oldShapes: [UUID: VectorShape] = [:]
             var affectedObjectIDs: Set<UUID> = []
-            let selectedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
+            let selectedObjects = document.unifiedObjects.filter { document.viewState.selectedObjectIDs.contains($0.id) }
 
             for unifiedObject in selectedObjects {
                 if case .shape(let shape) = unifiedObject.objectType {
@@ -575,7 +575,7 @@ extension DrawingCanvas {
         for i in document.unifiedObjects.indices {
             let unifiedObject = document.unifiedObjects[i]
 
-            guard document.selectedObjectIDs.contains(unifiedObject.id) else { continue }
+            guard document.viewState.selectedObjectIDs.contains(unifiedObject.id) else { continue }
 
             switch unifiedObject.objectType {
             case .text(let oldShape):

@@ -154,7 +154,7 @@ class DocumentState: ObservableObject {
 
         canUndo = document.commandManager.canUndo
         canRedo = document.commandManager.canRedo
-        hasSelection = !document.selectedObjectIDs.isEmpty
+        hasSelection = !document.viewState.selectedObjectIDs.isEmpty
         canCut = hasSelection
         canCopy = hasSelection
         canPaste = ClipboardManager.shared.canPaste()
@@ -169,11 +169,11 @@ class DocumentState: ObservableObject {
         }
 
         let selectedShapes = document.unifiedObjects.filter { unifiedObject in
-            document.selectedObjectIDs.contains(unifiedObject.id) && isShape(unifiedObject)
+            document.viewState.selectedObjectIDs.contains(unifiedObject.id) && isShape(unifiedObject)
         }
         let selectedShapeCount = selectedShapes.count
 
-        let totalSelectedCount = document.selectedObjectIDs.count
+        let totalSelectedCount = document.viewState.selectedObjectIDs.count
         canGroup = totalSelectedCount > 1
         canUngroup = selectedShapes.contains { unifiedObject in
             if case .group(let shape) = unifiedObject.objectType {
@@ -257,7 +257,7 @@ class DocumentState: ObservableObject {
                                 document.addShape(shape, to: layerIndex)
                                 newObjectIDs.insert(shape.id)
                             }
-                            document.selectedObjectIDs = newObjectIDs
+                            document.viewState.selectedObjectIDs = newObjectIDs
                             document.syncSelectionArrays()
                         }
                         self.updateAllStates()

@@ -80,12 +80,12 @@ struct ProfessionalTextCanvas: View {
 
     private func shouldApplyDragPreview() -> Bool {
         // Check if this text object is directly selected
-        if document.selectedObjectIDs.contains(textObjectID) {
+        if document.viewState.selectedObjectIDs.contains(textObjectID) {
             return true
         }
 
         // Check if this text is inside a selected group
-        for selectedID in document.selectedObjectIDs {
+        for selectedID in document.viewState.selectedObjectIDs {
             if let selectedObject = document.findObject(by: selectedID) {
                 switch selectedObject.objectType {
                 case .group(let selectedShape), .clipGroup(let selectedShape):

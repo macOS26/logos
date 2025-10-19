@@ -25,9 +25,9 @@ struct MainToolbarContent: ToolbarContent {
     }
 
     private func hasSelectedPathsToClose() -> Bool {
-        guard !document.selectedObjectIDs.isEmpty else { return false }
+        guard !document.viewState.selectedObjectIDs.isEmpty else { return false }
 
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .text:
@@ -64,7 +64,7 @@ struct MainToolbarContent: ToolbarContent {
         var newShapes: [UUID: VectorShape] = [:]
         var objectIDs: [UUID] = []
 
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .text:
@@ -342,7 +342,7 @@ struct MainToolbarContent: ToolbarContent {
     private func getSelectionBoundsForDocument() -> CGRect? {
         var combinedBounds: CGRect?
 
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 if unifiedObject.layerIndex >= 2 {
                     switch unifiedObject.objectType {
@@ -382,7 +382,7 @@ struct MainToolbarContent: ToolbarContent {
         var newShapes: [UUID: VectorShape] = [:]
         var objectIDs: [UUID] = []
 
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .text(let shape):
@@ -415,7 +415,7 @@ struct MainToolbarContent: ToolbarContent {
             }
         }
 
-        document.selectedObjectIDs.removeAll()
+        document.viewState.selectedObjectIDs.removeAll()
 
         if !objectIDs.isEmpty {
             let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
@@ -460,7 +460,7 @@ struct MainToolbarContent: ToolbarContent {
         var newShapes: [UUID: VectorShape] = [:]
         var objectIDs: [UUID] = []
 
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .text(let shape):
@@ -491,7 +491,7 @@ struct MainToolbarContent: ToolbarContent {
             }
         }
 
-        document.selectedObjectIDs.removeAll()
+        document.viewState.selectedObjectIDs.removeAll()
 
         if !objectIDs.isEmpty {
             let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)

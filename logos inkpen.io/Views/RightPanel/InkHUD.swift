@@ -28,7 +28,7 @@ struct StableInkHUDContent: View {
             .fixedSize()
             .background(Color(NSColor.windowBackgroundColor))
             .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
-            .onChange(of: document.selectedObjectIDs) { _, _ in
+            .onChange(of: document.viewState.selectedObjectIDs) { _, _ in
                 if document.getSelectedObjectColor() != nil {
                     colorPanelKey = UUID()
                 }

@@ -81,12 +81,12 @@ struct TransformationControls: View {
     @State private var updateTrigger: Bool = false
 
     var hasSelection: Bool {
-        !document.selectedObjectIDs.isEmpty
+        !document.viewState.selectedObjectIDs.isEmpty
     }
 
     var body: some View {
         HStack(spacing: 10) {
-            NinePointOriginSelector(selectedOrigin: $document.transformOrigin)
+            NinePointOriginSelector(selectedOrigin: $document.viewState.transformOrigin)
                 .disabled(!hasSelection)
                 .opacity(hasSelection ? 1.0 : 0.5)
 
@@ -223,13 +223,13 @@ struct TransformationControls: View {
         .onAppear {
             updateValuesFromSelection()
         }
-        .onChange(of: document.selectedObjectIDs) { _, _ in
+        .onChange(of: document.viewState.selectedObjectIDs) { _, _ in
             updateValuesFromSelection()
         }
-        .onChange(of: document.transformOrigin) { _, _ in
+        .onChange(of: document.viewState.transformOrigin) { _, _ in
             updateValuesFromSelection()
         }
-        .onChange(of: document.objectPositionUpdateTrigger) { _, _ in
+        .onChange(of: document.viewState.objectPositionUpdateTrigger) { _, _ in
             if !document.isHandleScalingActive {
                 updateValuesFromSelection()
             }
@@ -254,7 +254,7 @@ struct TransformationControls: View {
             return
         }
 
-        let origin = document.transformOrigin.point
+        let origin = document.viewState.transformOrigin.point
         let pageOrigin = document.settings.pageOrigin ?? .zero
         let x = bounds.minX + bounds.width * origin.x + liveDragOffset.x - pageOrigin.x
         let y = bounds.minY + bounds.height * origin.y + liveDragOffset.y - pageOrigin.y
@@ -273,7 +273,7 @@ struct TransformationControls: View {
             return
         }
 
-        let origin = document.transformOrigin.point
+        let origin = document.viewState.transformOrigin.point
         let pageOrigin = document.settings.pageOrigin ?? .zero
         let x = bounds.minX + bounds.width * origin.x - pageOrigin.x
         let y = bounds.minY + bounds.height * origin.y - pageOrigin.y
@@ -307,11 +307,11 @@ struct TransformationControls: View {
     }
 
     private func getSelectionBounds() -> CGRect? {
-        guard !document.selectedObjectIDs.isEmpty else { return nil }
+        guard !document.viewState.selectedObjectIDs.isEmpty else { return nil }
 
         var combinedBounds: CGRect?
 
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .text(let shape):
@@ -349,14 +349,14 @@ struct TransformationControls: View {
         var oldShapes: [UUID: VectorShape] = [:]
         var objectIDs: [UUID] = []
 
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             if let shape = document.findShape(by: objectID) {
                 oldShapes[objectID] = shape
                 objectIDs.append(objectID)
             }
         }
 
-        let originOffset = document.transformOrigin.point
+        let originOffset = document.viewState.transformOrigin.point
         let currentOriginX = currentBounds.minX + currentBounds.width * originOffset.x
         let currentOriginY = currentBounds.minY + currentBounds.height * originOffset.y
         let pageOrigin = document.settings.pageOrigin ?? .zero
@@ -365,7 +365,7 @@ struct TransformationControls: View {
         let scaleX = newWidth / currentBounds.width
         let scaleY = newHeight / currentBounds.height
 
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID),
                case .shape(var shape) = unifiedObject.objectType {
 

@@ -141,7 +141,7 @@ extension ScaleHandles {
     }
 
     func isPinnedAnchorCorner(cornerIndex: Int) -> Bool {
-        switch document.scalingAnchor {
+        switch document.viewState.scalingAnchor {
         case .center:
             return false
         case .topLeft:

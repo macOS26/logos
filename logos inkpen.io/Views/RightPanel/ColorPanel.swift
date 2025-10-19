@@ -118,18 +118,18 @@ struct ColorPanel: View {
             PantoneColorPickerSheet(document: document)
         }
         .onAppear {
-            currentPreviewColor = (document.activeColorTarget == .stroke) ? document.defaultStrokeColor : document.defaultFillColor
+            currentPreviewColor = (document.viewState.activeColorTarget == .stroke) ? document.defaultStrokeColor : document.defaultFillColor
         }
-        .onChange(of: document.activeColorTarget) { _, newTarget in
+        .onChange(of: document.viewState.activeColorTarget) { _, newTarget in
             currentPreviewColor = (newTarget == .stroke) ? document.defaultStrokeColor : document.defaultFillColor
         }
         .onChange(of: document.defaultFillColor) { _, newFill in
-            if document.activeColorTarget == .fill {
+            if document.viewState.activeColorTarget == .fill {
                 currentPreviewColor = newFill
             }
         }
         .onChange(of: document.defaultStrokeColor) { _, newStroke in
-            if document.activeColorTarget == .stroke {
+            if document.viewState.activeColorTarget == .stroke {
                 currentPreviewColor = newStroke
             }
         }
@@ -164,7 +164,7 @@ struct ColorPanel: View {
 
             currentPreviewColor = color
 
-            if document.activeColorTarget == .stroke {
+            if document.viewState.activeColorTarget == .stroke {
                 document.setActiveColor(color)
             } else {
                 document.setActiveColor(color)

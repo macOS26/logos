@@ -101,15 +101,15 @@ struct ProfessionalLayerRow: View {
                     .gesture(
                         DragGesture(minimumDistance: 5)
                             .onChanged { _ in
-                                if !document.isDraggingVisibility {
-                                    document.isDraggingVisibility = true
+                                if !document.viewState.isDraggingVisibility {
+                                    document.viewState.isDraggingVisibility = true
                                     document.processedLayersDuringDrag.removeAll()
                                     document.layers[layerIndex].isVisible.toggle()
                                     document.processedLayersDuringDrag.insert(layerIndex)
                                 }
                             }
                             .onEnded { _ in
-                                document.isDraggingVisibility = false
+                                document.viewState.isDraggingVisibility = false
                                 document.processedLayersDuringDrag.removeAll()
                             }
                     )
@@ -127,15 +127,15 @@ struct ProfessionalLayerRow: View {
                     .gesture(
                         DragGesture(minimumDistance: 5)
                             .onChanged { _ in
-                                if !document.isDraggingLock {
-                                    document.isDraggingLock = true
+                                if !document.viewState.isDraggingLock {
+                                    document.viewState.isDraggingLock = true
                                     document.processedLayersDuringDrag.removeAll()
                                     document.layers[layerIndex].isLocked.toggle()
                                     document.processedLayersDuringDrag.insert(layerIndex)
                                 }
                             }
                             .onEnded { _ in
-                                document.isDraggingLock = false
+                                document.viewState.isDraggingLock = false
                                 document.processedLayersDuringDrag.removeAll()
                             }
                     )
@@ -247,7 +247,7 @@ struct ProfessionalLayerRow: View {
                     .onTapGesture {
                         document.selectedLayerIndex = layerIndex
                         document.selectedShapeIDs.removeAll()
-                        document.selectedObjectIDs.removeAll()
+                        document.viewState.selectedObjectIDs.removeAll()
                         document.selectedTextIDs.removeAll()
                         document.syncSelectionArrays()
                     }
@@ -266,7 +266,7 @@ struct ProfessionalLayerRow: View {
                                 objectType: .text,
                                 objectId: shape.id,
                                 name: shape.textContent?.isEmpty != false ? "Text" : (shape.textContent ?? "Text"),
-                                isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
+                                isSelected: document.viewState.selectedObjectIDs.contains(unifiedObject.id),
                                 onSelect: { isShiftPressed, isCommandPressed in
                                     handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
                                 },
@@ -281,7 +281,7 @@ struct ProfessionalLayerRow: View {
                                 objectType: .group,
                                 objectId: shape.id,
                                 name: shape.name,
-                                isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
+                                isSelected: document.viewState.selectedObjectIDs.contains(unifiedObject.id),
                                 onSelect: { isShiftPressed, isCommandPressed in
                                     handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
                                 },
@@ -298,7 +298,7 @@ struct ProfessionalLayerRow: View {
                                 objectType: .shape,
                                 objectId: shape.id,
                                 name: shape.name,
-                                isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
+                                isSelected: document.viewState.selectedObjectIDs.contains(unifiedObject.id),
                                 onSelect: { isShiftPressed, isCommandPressed in
                                     handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
                                 },
@@ -390,8 +390,8 @@ struct ProfessionalLayerRow: View {
                 return true
 
             case .vectorObject(let vectorObj):
-                if document.selectedObjectIDs.contains(vectorObj.objectId) && document.selectedObjectIDs.count > 1 {
-                    document.moveObjectsToLayer(objectIds: Array(document.selectedObjectIDs), targetLayerIndex: layerIndex)
+                if document.viewState.selectedObjectIDs.contains(vectorObj.objectId) && document.viewState.selectedObjectIDs.count > 1 {
+                    document.moveObjectsToLayer(objectIds: Array(document.viewState.selectedObjectIDs), targetLayerIndex: layerIndex)
                 } else {
                     document.moveObjectToLayer(objectId: vectorObj.objectId, targetLayerIndex: layerIndex)
                 }
@@ -407,10 +407,10 @@ struct ProfessionalLayerRow: View {
         document.selectedLayerIndex = layerIndex
 
         if isCommandPressed {
-            if document.selectedObjectIDs.contains(objectID) {
-                document.selectedObjectIDs.remove(objectID)
+            if document.viewState.selectedObjectIDs.contains(objectID) {
+                document.viewState.selectedObjectIDs.remove(objectID)
             } else {
-                document.selectedObjectIDs.insert(objectID)
+                document.viewState.selectedObjectIDs.insert(objectID)
             }
         } else if isShiftPressed {
             if let anchorID = selectionAnchorID {
@@ -433,16 +433,16 @@ struct ProfessionalLayerRow: View {
                     let rangeObjects = currentLayerObjects[newMin...newMax]
                     let rangeIDs = Set(rangeObjects.map { $0.id })
 
-                    document.selectedObjectIDs = rangeIDs
+                    document.viewState.selectedObjectIDs = rangeIDs
                 } else {
-                    document.selectedObjectIDs.insert(objectID)
+                    document.viewState.selectedObjectIDs.insert(objectID)
                 }
             } else {
-                document.selectedObjectIDs.insert(objectID)
+                document.viewState.selectedObjectIDs.insert(objectID)
                 selectionAnchorID = objectID
             }
         } else {
-            document.selectedObjectIDs = [objectID]
+            document.viewState.selectedObjectIDs = [objectID]
             selectionAnchorID = objectID
             selectionRangeMin = nil
             selectionRangeMax = nil

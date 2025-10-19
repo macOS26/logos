@@ -492,20 +492,20 @@ struct GradientFillSection: View {
         guard let gradient = currentGradient else { return }
 
         if isLiveDrag {
-            for objectID in document.selectedObjectIDs {
+            for objectID in document.viewState.selectedObjectIDs {
                 if let unifiedObject = document.findObject(by: objectID) {
                     if case .shape(let shape) = unifiedObject.objectType,
                        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
                        document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
 
-                        document.updateShapeGradientInUnified(id: shape.id, gradient: gradient, target: document.activeColorTarget)
+                        document.updateShapeGradientInUnified(id: shape.id, gradient: gradient, target: document.viewState.activeColorTarget)
                     }
                 }
             }
             return
         }
 
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(let shape),
@@ -518,7 +518,7 @@ struct GradientFillSection: View {
                         if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }),
                            let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
                             var updatedShape = currentShape
-                            switch document.activeColorTarget {
+                            switch document.viewState.activeColorTarget {
                             case .fill:
                                 updatedShape.fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
                             case .stroke:

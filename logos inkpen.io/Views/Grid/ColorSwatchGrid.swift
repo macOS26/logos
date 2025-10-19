@@ -15,7 +15,7 @@ struct ColorSwatchGrid: View {
     ]
 
     private var currentFillColor: VectorColor {
-        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .text(let shape):
@@ -37,7 +37,7 @@ struct ColorSwatchGrid: View {
     }
 
     private var currentStrokeColor: VectorColor {
-        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .text(let shape):
@@ -63,7 +63,7 @@ struct ColorSwatchGrid: View {
     }
 
     private var currentFillOpacity: Double {
-        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .text(let shape):
@@ -85,7 +85,7 @@ struct ColorSwatchGrid: View {
     }
 
     private var currentStrokeOpacity: Double {
-        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .text(let shape):
@@ -110,7 +110,7 @@ struct ColorSwatchGrid: View {
         VStack(spacing: 4) {
             ZStack {
                 Button {
-                    document.activeColorTarget = .stroke
+                    document.viewState.activeColorTarget = .stroke
                 } label: {
                     if case .clear = currentStrokeColor {
                         ZStack {
@@ -122,7 +122,7 @@ struct ColorSwatchGrid: View {
 	                                .fill(Color.clear)
 	                                .frame(width: 22, height: 22)
 
-                            if document.activeColorTarget == .stroke {
+                            if document.viewState.activeColorTarget == .stroke {
 	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
 	                                Rectangle().inset(by: 1)
@@ -145,7 +145,7 @@ struct ColorSwatchGrid: View {
                             GradientSwatchNSView(gradient: gradient, size: 22)
                                 .frame(width: 22, height: 22)
 
-                            if document.activeColorTarget == .stroke {
+                            if document.viewState.activeColorTarget == .stroke {
 	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
 	                                Rectangle().inset(by: 1)
@@ -162,7 +162,7 @@ struct ColorSwatchGrid: View {
                                 .fill(currentStrokeColor.color.opacity(currentStrokeOpacity))
                                 .frame(width: 22, height: 22)
 
-                            if document.activeColorTarget == .stroke {
+                            if document.viewState.activeColorTarget == .stroke {
 	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
 	                                Rectangle().inset(by: 1)
@@ -176,7 +176,7 @@ struct ColorSwatchGrid: View {
                 .help("Current Stroke Color (Opacity: \(Int(currentStrokeOpacity * 100))%) - Click to make active")
                 .offset(x: 6, y: 6)
                 Button {
-                    document.activeColorTarget = .fill
+                    document.viewState.activeColorTarget = .fill
                 } label: {
                     if case .clear = currentFillColor {
                         ZStack {
@@ -188,7 +188,7 @@ struct ColorSwatchGrid: View {
 	                                .fill(Color.clear)
 	                                .frame(width: 22, height: 22)
 
-                            if document.activeColorTarget == .fill {
+                            if document.viewState.activeColorTarget == .fill {
 	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
 	                                Rectangle().inset(by: 1)
@@ -211,7 +211,7 @@ struct ColorSwatchGrid: View {
                             GradientSwatchNSView(gradient: gradient, size: 22)
                                 .frame(width: 22, height: 22)
 
-                            if document.activeColorTarget == .fill {
+                            if document.viewState.activeColorTarget == .fill {
 	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
 	                                Rectangle().inset(by: 1)
@@ -228,7 +228,7 @@ struct ColorSwatchGrid: View {
                                 .fill(currentFillColor.color.opacity(currentFillOpacity))
                                 .frame(width: 22, height: 22)
 
-                            if document.activeColorTarget == .fill {
+                            if document.viewState.activeColorTarget == .fill {
 	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
 	                                Rectangle().inset(by: 1)
@@ -249,7 +249,7 @@ struct ColorSwatchGrid: View {
             LazyVGrid(columns: columns, spacing: 1) {
                 ForEach(Array(document.currentSwatches.enumerated()), id: \.offset) { index, color in
                     Button {
-                        if document.activeColorTarget == .stroke {
+                        if document.viewState.activeColorTarget == .stroke {
                             selectedStrokeColor = color
                             document.setActiveColor(color)
                         } else {
@@ -290,7 +290,7 @@ struct ColorSwatchGrid: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(BorderlessButtonStyle())
-                    .help("\(colorDescription(for: color)) (Click to apply to \(document.activeColorTarget == .fill ? "fill" : "stroke"))")
+                    .help("\(colorDescription(for: color)) (Click to apply to \(document.viewState.activeColorTarget == .fill ? "fill" : "stroke"))")
                 }
             }
             .padding(.horizontal, 2)

@@ -90,7 +90,7 @@ extension DrawingCanvas {
         cancelMarkerDrawing()
 
         document.selectedShapeIDs.removeAll()
-        document.selectedObjectIDs.removeAll()
+        document.viewState.selectedObjectIDs.removeAll()
     }
 
     private func calculateMarkerPressure(at location: CGPoint) -> Double {

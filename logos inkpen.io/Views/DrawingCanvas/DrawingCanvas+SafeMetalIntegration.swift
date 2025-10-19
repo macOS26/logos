@@ -316,8 +316,8 @@ extension DrawingCanvas {
                     handleZoomGestureEnded(value: value, geometry: geometry)
                 }
         )
-        .onChange(of: document.zoomRequest) {
-            if let request = document.zoomRequest {
+        .onChange(of: document.viewState.zoomRequest) {
+            if let request = document.viewState.zoomRequest {
                 handleZoomRequest(request, geometry: geometry)
             }
         }

@@ -94,7 +94,7 @@ struct DocumentBasedMainView: View {
                 document: document,
                 title: "Color Picker",
                 onColorSelected: { color in
-                    if document.activeColorTarget == .stroke {
+                    if document.viewState.activeColorTarget == .stroke {
                         document.defaultStrokeColor = color
                     } else {
                         document.defaultFillColor = color
@@ -246,7 +246,7 @@ struct DocumentBasedMainView: View {
                     }
 
                     document.selectedShapeIDs = newShapeIDs
-                    document.selectedObjectIDs = newShapeIDs
+                    document.viewState.selectedObjectIDs = newShapeIDs
                     document.syncSelectionArrays()
 
                     calculateInitialZoom()

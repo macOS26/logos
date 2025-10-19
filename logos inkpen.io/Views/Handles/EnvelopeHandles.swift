@@ -296,7 +296,7 @@ struct EnvelopeHandles: View {
             return
         }
 
-        if let storedCorners = document.warpEnvelopeCorners[shape.id], storedCorners.count == 4 {
+        if let storedCorners = document.viewState.warpEnvelopeCorners[shape.id], storedCorners.count == 4 {
             originalCorners = storedCorners
             warpedCorners = storedCorners
             return
@@ -307,15 +307,15 @@ struct EnvelopeHandles: View {
             originalCorners = newOriginalCorners
             warpedCorners = newOriginalCorners
 
-            if document.warpBounds[shape.id] == nil {
+            if document.viewState.warpBounds[shape.id] == nil {
                 let minX = newOriginalCorners.map { $0.x }.min() ?? 0
                 let maxX = newOriginalCorners.map { $0.x }.max() ?? 0
                 let minY = newOriginalCorners.map { $0.y }.min() ?? 0
                 let maxY = newOriginalCorners.map { $0.y }.max() ?? 0
                 let newBounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
                 Log.warning("⚠️ INITIALIZING NEW WARP BOUNDS (4-point shape): \(newBounds)", category: .general)
-                document.warpBounds[shape.id] = newBounds
-                document.warpEnvelopeCorners[shape.id] = newOriginalCorners
+                document.viewState.warpBounds[shape.id] = newBounds
+                document.viewState.warpEnvelopeCorners[shape.id] = newOriginalCorners
             }
         } else {
             let bounds = shape.bounds
@@ -328,10 +328,10 @@ struct EnvelopeHandles: View {
             originalCorners = newOriginalCorners
             warpedCorners = newOriginalCorners
 
-            if document.warpBounds[shape.id] == nil {
+            if document.viewState.warpBounds[shape.id] == nil {
                 Log.warning("⚠️ INITIALIZING NEW WARP BOUNDS (regular shape): \(bounds)", category: .general)
-                document.warpBounds[shape.id] = bounds
-                document.warpEnvelopeCorners[shape.id] = newOriginalCorners
+                document.viewState.warpBounds[shape.id] = bounds
+                document.viewState.warpEnvelopeCorners[shape.id] = newOriginalCorners
             }
         }
 
@@ -365,13 +365,13 @@ struct EnvelopeHandles: View {
 
         warpedCorners[cornerIndex] = canvasLocation
 
-        document.warpEnvelopeCorners[shape.id] = warpedCorners
+        document.viewState.warpEnvelopeCorners[shape.id] = warpedCorners
 
         let minX = warpedCorners.map { $0.x }.min() ?? 0
         let maxX = warpedCorners.map { $0.x }.max() ?? 0
         let minY = warpedCorners.map { $0.y }.min() ?? 0
         let maxY = warpedCorners.map { $0.y }.max() ?? 0
-        document.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+        document.viewState.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
 
         calculateEnvelopeWarpPreview()
     }
@@ -398,12 +398,12 @@ struct EnvelopeHandles: View {
         draggingCornerIndex = cornerIndex
 
         if warpedCorners.count == 4 {
-            document.warpEnvelopeCorners[shape.id] = warpedCorners
+            document.viewState.warpEnvelopeCorners[shape.id] = warpedCorners
             let minX = warpedCorners.map { $0.x }.min() ?? 0
             let maxX = warpedCorners.map { $0.x }.max() ?? 0
             let minY = warpedCorners.map { $0.y }.min() ?? 0
             let maxY = warpedCorners.map { $0.y }.max() ?? 0
-            document.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+            document.viewState.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
         }
 
     }
@@ -560,8 +560,8 @@ struct EnvelopeHandles: View {
             let maxX = warpedCorners.map { $0.x }.max() ?? 0
             let minY = warpedCorners.map { $0.y }.min() ?? 0
             let maxY = warpedCorners.map { $0.y }.max() ?? 0
-            document.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-            document.warpEnvelopeCorners[shape.id] = warpedCorners
+            document.viewState.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+            document.viewState.warpEnvelopeCorners[shape.id] = warpedCorners
         }
 
         updateShapeWithCurrentWarp()
@@ -657,8 +657,8 @@ struct EnvelopeHandles: View {
 
             document.updateShapePathUnified(id: warpObject.id, path: warpObject.path)
 
-        document.selectedObjectIDs.remove(currentShape.id)
-        document.selectedObjectIDs.insert(warpObject.id)
+        document.viewState.selectedObjectIDs.remove(currentShape.id)
+        document.viewState.selectedObjectIDs.insert(warpObject.id)
 
         if let unifiedObjectIndex = document.unifiedObjects.firstIndex(where: { unifiedObject in
             if case .shape(let targetShape) = unifiedObject.objectType {
@@ -705,8 +705,8 @@ struct EnvelopeHandles: View {
             let maxX = warpedCorners.map { $0.x }.max() ?? 0
             let minY = warpedCorners.map { $0.y }.min() ?? 0
             let maxY = warpedCorners.map { $0.y }.max() ?? 0
-            document.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-            document.warpEnvelopeCorners[shape.id] = warpedCorners
+            document.viewState.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+            document.viewState.warpEnvelopeCorners[shape.id] = warpedCorners
         }
 
     }

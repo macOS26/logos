@@ -135,14 +135,14 @@ extension DrawingCanvas {
             }
         }
 
-        document.objectPositionUpdateTrigger.toggle()
+        document.viewState.objectPositionUpdateTrigger.toggle()
     }
 
     private func handleDirectSelectionShapeDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         if !isDraggingDirectSelectedShapes {
             isDraggingDirectSelectedShapes = true
 
-            document.selectedObjectIDs = directSelectedShapeIDs
+            document.viewState.selectedObjectIDs = directSelectedShapeIDs
 
             startSelectionDrag()
             selectionDragStart = value.startLocation

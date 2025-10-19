@@ -53,7 +53,7 @@ extension DocumentState {
         await MainActor.run {
             document.unifiedObjects = savedState.unifiedObjects
             document.layers = savedState.layers
-            document.selectedObjectIDs = savedState.selectedObjectIDs
+            document.viewState.selectedObjectIDs = savedState.selectedObjectIDs
             document.selectedTextIDs = savedState.selectedTextIDs
             document.selectedShapeIDs = savedState.selectedShapeIDs
         }
@@ -94,7 +94,7 @@ extension DocumentState {
         await MainActor.run {
             document.unifiedObjects = savedState.unifiedObjects
             document.layers = savedState.layers
-            document.selectedObjectIDs = savedState.selectedObjectIDs
+            document.viewState.selectedObjectIDs = savedState.selectedObjectIDs
             document.selectedTextIDs = savedState.selectedTextIDs
             document.selectedShapeIDs = savedState.selectedShapeIDs
         }

@@ -256,7 +256,7 @@ struct TransformBoxHandles: View {
         ]
 
         if index < handleToOrigin.count {
-            document.transformOrigin = handleToOrigin[index]
+            document.viewState.transformOrigin = handleToOrigin[index]
         }
     }
 
@@ -353,14 +353,14 @@ struct TransformBoxHandles: View {
 
         let currentBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         let newBounds = currentBounds.applying(scaleTransform)
-        document.scalePreviewDimensions = CGSize(width: newBounds.width, height: newBounds.height)
+        document.viewState.scalePreviewDimensions = CGSize(width: newBounds.width, height: newBounds.height)
     }
 
     private func endScaling() {
         print("🔴 END SCALING CALLED for shape id: \(shape.id)")
         isScaling = false
         document.isHandleScalingActive = false
-        document.scalePreviewDimensions = .zero
+        document.viewState.scalePreviewDimensions = .zero
 
         var oldShapes: [UUID: VectorShape] = [:]
         if let unifiedObj = document.findObject(by: shape.id) {

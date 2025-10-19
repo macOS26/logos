@@ -24,7 +24,7 @@ class TextManagementCommand: BaseCommand {
         case .addText(let textID, let shape, let layerIndex):
             let newObject = VectorObject(shape: shape, layerIndex: layerIndex)
             document.unifiedObjects.append(newObject)
-            document.selectedObjectIDs = [textID]
+            document.viewState.selectedObjectIDs = [textID]
             document.selectedTextIDs = [textID]
             document.selectedShapeIDs.removeAll()
 
@@ -38,13 +38,13 @@ class TextManagementCommand: BaseCommand {
                 }
             }
             document.selectedTextIDs.removeAll()
-            document.selectedObjectIDs = newSelection
+            document.viewState.selectedObjectIDs = newSelection
 
         case .duplicateText(_, let duplicatedObjects):
             for obj in duplicatedObjects {
                 document.unifiedObjects.append(obj)
             }
-            document.selectedObjectIDs = newSelection
+            document.viewState.selectedObjectIDs = newSelection
             document.selectedTextIDs = newSelection
 
         case .convertToOutlines(let removedTextIDs, _, _, let addedObjects):
@@ -61,7 +61,7 @@ class TextManagementCommand: BaseCommand {
             }
             document.selectedTextIDs.removeAll()
             document.selectedShapeIDs = newSelection
-            document.selectedObjectIDs = newSelection
+            document.viewState.selectedObjectIDs = newSelection
         }
     }
 
@@ -69,18 +69,18 @@ class TextManagementCommand: BaseCommand {
         switch operation {
         case .addText(let textID, _, _):
             document.unifiedObjects.removeAll { $0.id == textID }
-            document.selectedObjectIDs = oldSelection
+            document.viewState.selectedObjectIDs = oldSelection
 
         case .removeText(_, let removedObjects):
             for obj in removedObjects {
                 document.unifiedObjects.append(obj)
             }
-            document.selectedObjectIDs = oldSelection
+            document.viewState.selectedObjectIDs = oldSelection
 
         case .duplicateText(_, let duplicatedObjects):
             let duplicatedIDs = duplicatedObjects.map { $0.id }
             document.unifiedObjects.removeAll { duplicatedIDs.contains($0.id) }
-            document.selectedObjectIDs = oldSelection
+            document.viewState.selectedObjectIDs = oldSelection
 
         case .convertToOutlines(_, let removedObjects, let addedShapeIDs, _):
             document.unifiedObjects.removeAll { obj in
@@ -89,7 +89,7 @@ class TextManagementCommand: BaseCommand {
             for obj in removedObjects {
                 document.unifiedObjects.append(obj)
             }
-            document.selectedObjectIDs = oldSelection
+            document.viewState.selectedObjectIDs = oldSelection
         }
     }
 }

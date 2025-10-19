@@ -7,7 +7,7 @@ extension DrawingCanvas {
 
     internal func isDraggingSelectedObject(at location: CGPoint) -> Bool {
 
-        for objectID in document.selectedObjectIDs {
+        for objectID in document.viewState.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .text(let shape):

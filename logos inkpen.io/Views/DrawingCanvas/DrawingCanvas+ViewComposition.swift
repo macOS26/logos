@@ -201,7 +201,7 @@ extension DrawingCanvas {
                 document: document,
                 zoomLevel: document.viewState.zoomLevel,
                 canvasOffset: document.viewState.canvasOffset,
-                selectedObjectIDs: document.selectedObjectIDs,
+                selectedObjectIDs: document.viewState.selectedObjectIDs,
                 viewMode: document.viewState.viewMode,
                 dragPreviewDelta: currentDragDelta,
                 dragPreviewTrigger: dragPreviewUpdateTrigger
@@ -211,7 +211,7 @@ extension DrawingCanvas {
                 document: document,
                 zoomLevel: document.viewState.zoomLevel,
                 canvasOffset: document.viewState.canvasOffset,
-                selectedObjectIDs: document.selectedObjectIDs,
+                selectedObjectIDs: document.viewState.selectedObjectIDs,
                 viewMode: document.viewState.viewMode,
                 dragPreviewDelta: currentDragDelta,
                 dragPreviewTrigger: dragPreviewUpdateTrigger
@@ -233,7 +233,7 @@ extension DrawingCanvas {
                         document: document,
                         zoomLevel: document.viewState.zoomLevel,
                         canvasOffset: document.viewState.canvasOffset,
-                        selectedObjectIDs: document.selectedObjectIDs,
+                        selectedObjectIDs: document.viewState.selectedObjectIDs,
                         viewMode: document.viewState.viewMode,
                         dragPreviewDelta: isActiveLayer ? currentDragDelta : .zero,
                         dragPreviewTrigger: dragPreviewUpdateTrigger,
@@ -357,8 +357,8 @@ extension DrawingCanvas {
                         handleZoomGestureEnded(value: value, geometry: geometry)
                     }
             )
-            .onChange(of: document.zoomRequest) {
-                if let request = document.zoomRequest {
+            .onChange(of: document.viewState.zoomRequest) {
+                if let request = document.viewState.zoomRequest {
                     handleZoomRequest(request, geometry: geometry)
                 }
             }
@@ -513,8 +513,8 @@ private struct BrushPreviewStyleModifier: ViewModifier {
 
     @ViewBuilder
     internal func draggedObjectPreview(geometry: GeometryProxy, dragDelta: CGPoint) -> some View {
-        if dragDelta != .zero && !document.selectedObjectIDs.isEmpty {
-            let draggedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
+        if dragDelta != .zero && !document.viewState.selectedObjectIDs.isEmpty {
+            let draggedObjects = document.unifiedObjects.filter { document.viewState.selectedObjectIDs.contains($0.id) }
             ForEach(draggedObjects, id: \.id) { unifiedObject in
                 draggedObjectView(unifiedObject, dragDelta: dragDelta)
             }

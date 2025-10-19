@@ -299,7 +299,7 @@ extension DrawingCanvas {
         document.addShape(shape)
 
         document.selectedTextIDs = [shape.id]
-        document.selectedObjectIDs = [shape.id]
+        document.viewState.selectedObjectIDs = [shape.id]
         document.selectedShapeIDs.removeAll()
 
         isEditingText = true
@@ -720,7 +720,7 @@ extension DrawingCanvas {
         document.addShape(shape)
 
         // Select it
-        document.selectedObjectIDs = [shape.id]
+        document.viewState.selectedObjectIDs = [shape.id]
         document.selectedTextIDs = [shape.id]
         document.selectedShapeIDs.removeAll()
 

@@ -104,7 +104,7 @@ struct SelectionOutline: View {
                     let minY = shape.warpEnvelope.map { $0.y }.min() ?? 0
                     let maxY = shape.warpEnvelope.map { $0.y }.max() ?? 0
                     return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-                } else if let warpBounds = document.warpBounds[shape.id] {
+                } else if let warpBounds = document.viewState.warpBounds[shape.id] {
                     return warpBounds
                 } else {
                     return shape.isGroupContainer ? shape.groupBounds : shape.bounds

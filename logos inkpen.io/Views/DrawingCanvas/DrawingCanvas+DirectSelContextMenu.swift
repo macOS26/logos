@@ -37,12 +37,12 @@ extension DrawingCanvas {
             }
         }
 
-        if !document.selectedObjectIDs.isEmpty {
+        if !document.viewState.selectedObjectIDs.isEmpty {
             Divider()
             Button("Make Clipping Mask") {
                 document.makeClippingMaskFromSelection()
             }
-            .disabled(document.selectedObjectIDs.count < 2)
+            .disabled(document.viewState.selectedObjectIDs.count < 2)
             Button("Release Clipping Mask") {
                 document.releaseClippingMaskForSelection()
             }
