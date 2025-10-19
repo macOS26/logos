@@ -427,19 +427,19 @@ struct VectorText: Identifiable, Codable, Hashable {
     }
 }
 
-class FontManager {
+class FontManager: ObservableObject {
     var availableFonts: [String] = []
     var systemFonts: [String] = []
     var googleFonts: [String] = []
 
     private var fontVariantsCache: [String: [String]] = [:]
 
-    var selectedFontFamily: String = "Helvetica Neue"
-    var selectedFontVariant: String = "Regular"
-    var selectedFontSize: Double = 24.0
-    var selectedLineSpacing: Double = 0.0
-    var selectedLineHeight: Double = 24.0
-    var selectedTextAlignment: TextAlignment = .center
+    @Published var selectedFontFamily: String = "Helvetica Neue"
+    @Published var selectedFontVariant: String = "Regular"
+    @Published var selectedFontSize: Double = 24.0
+    @Published var selectedLineSpacing: Double = 0.0
+    @Published var selectedLineHeight: Double = 24.0
+    @Published var selectedTextAlignment: TextAlignment = .center
 
     init() {
         loadAvailableFonts()
