@@ -9,18 +9,18 @@ extension DrawingCanvas {
             currentMousePosition = location
             if isTextEditingMode {
                 NSCursor.iBeam.set()
-            } else if document.currentTool == .hand {
+            } else if document.viewState.currentTool == .hand {
                 switch isPanGestureActive {
                 case true: HandClosedCursor.set()
                 case false: HandOpenCursor.set()
                 }
-            } else if document.currentTool == .eyedropper {
+            } else if document.viewState.currentTool == .eyedropper {
                 EyedropperCursor.set()
-            } else if document.currentTool == .zoom {
+            } else if document.viewState.currentTool == .zoom {
                 MagnifyingGlassCursor.set()
             }
 
-            if isBezierDrawing && document.currentTool == .bezierPen && bezierPoints.count > 0 {
+            if isBezierDrawing && document.viewState.currentTool == .bezierPen && bezierPoints.count > 0 {
                 let canvasLocation = screenToCanvas(location, geometry: geometry)
 
                 if bezierPoints.count >= 3 {
@@ -38,7 +38,7 @@ extension DrawingCanvas {
                     }
                 } else {
                 }
-            } else if document.currentTool == .bezierPen && !isBezierDrawing {
+            } else if document.viewState.currentTool == .bezierPen && !isBezierDrawing {
                 let (shouldShow, hintLocation) = shouldShowContinuePathHint()
                 if shouldShow, let location = hintLocation {
                     showContinuePathHint = true

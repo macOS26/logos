@@ -12,16 +12,16 @@ struct VerticalToolbar: View {
     @ViewBuilder
     private func toolIconView(for toolItem: ToolItem) -> some View {
         if toolItem.tool == .shear {
-            SkewedRectangleIcon(isSelected: document.currentTool == toolItem.tool)
+            SkewedRectangleIcon(isSelected: document.viewState.currentTool == toolItem.tool)
         } else if toolItem.tool == .star, let starVariant = toolItem.starVariant {
             starVariant.iconView(
-                isSelected: document.currentTool == .star && toolGroupManager.selectedVariant == starVariant,
-                color: (document.currentTool == .star && toolGroupManager.selectedVariant == starVariant) ? .white : .primary
+                isSelected: document.viewState.currentTool == .star && toolGroupManager.selectedVariant == starVariant,
+                color: (document.viewState.currentTool == .star && toolGroupManager.selectedVariant == starVariant) ? .white : .primary
             )
         } else if toolItem.tool == .star {
             toolGroupManager.selectedVariant.iconView(
-                isSelected: document.currentTool == toolItem.tool,
-                color: document.currentTool == toolItem.tool ? .white : .primary
+                isSelected: document.viewState.currentTool == toolItem.tool,
+                color: document.viewState.currentTool == toolItem.tool ? .white : .primary
             )
         } else {
             customShapeIconView(for: toolItem)
@@ -32,39 +32,39 @@ struct VerticalToolbar: View {
     private func customShapeIconView(for toolItem: ToolItem) -> some View {
         switch toolItem.tool {
         case .rectangle:
-            RectangleIcon(isSelected: document.currentTool == toolItem.tool)
+            RectangleIcon(isSelected: document.viewState.currentTool == toolItem.tool)
         case .square:
-            SquareIcon(isSelected: document.currentTool == toolItem.tool)
+            SquareIcon(isSelected: document.viewState.currentTool == toolItem.tool)
         case .roundedRectangle:
-            RoundedRectangleIcon(isSelected: document.currentTool == toolItem.tool)
+            RoundedRectangleIcon(isSelected: document.viewState.currentTool == toolItem.tool)
         case .pill:
-            PillIcon(isSelected: document.currentTool == toolItem.tool)
+            PillIcon(isSelected: document.viewState.currentTool == toolItem.tool)
         case .ellipse:
-            EllipseIcon(isSelected: document.currentTool == toolItem.tool)
+            EllipseIcon(isSelected: document.viewState.currentTool == toolItem.tool)
         case .oval:
-            OvalIcon(isSelected: document.currentTool == toolItem.tool)
+            OvalIcon(isSelected: document.viewState.currentTool == toolItem.tool)
         case .circle:
-            CircleIcon(isSelected: document.currentTool == toolItem.tool)
+            CircleIcon(isSelected: document.viewState.currentTool == toolItem.tool)
         case .egg:
-            EggIcon(isSelected: document.currentTool == toolItem.tool)
+            EggIcon(isSelected: document.viewState.currentTool == toolItem.tool)
         case .cone:
-            ConeIcon(isSelected: document.currentTool == toolItem.tool)
+            ConeIcon(isSelected: document.viewState.currentTool == toolItem.tool)
         case .equilateralTriangle:
-            EquilateralTriangleIcon(isSelected: document.currentTool == toolItem.tool)
+            EquilateralTriangleIcon(isSelected: document.viewState.currentTool == toolItem.tool)
         case .rightTriangle:
-            RightTriangleIcon(isSelected: document.currentTool == toolItem.tool)
+            RightTriangleIcon(isSelected: document.viewState.currentTool == toolItem.tool)
         case .acuteTriangle:
-            AcuteTriangleIcon(isSelected: document.currentTool == toolItem.tool)
+            AcuteTriangleIcon(isSelected: document.viewState.currentTool == toolItem.tool)
         case .pentagon:
-            PentagonIcon(isSelected: document.currentTool == toolItem.tool)
+            PentagonIcon(isSelected: document.viewState.currentTool == toolItem.tool)
         case .hexagon:
-            HexagonIcon(isSelected: document.currentTool == toolItem.tool)
+            HexagonIcon(isSelected: document.viewState.currentTool == toolItem.tool)
         case .heptagon:
-            HeptagonIcon(isSelected: document.currentTool == toolItem.tool)
+            HeptagonIcon(isSelected: document.viewState.currentTool == toolItem.tool)
         case .octagon:
-            OctagonIcon(isSelected: document.currentTool == toolItem.tool)
+            OctagonIcon(isSelected: document.viewState.currentTool == toolItem.tool)
         case .nonagon:
-            NonagonIcon(isSelected: document.currentTool == toolItem.tool)
+            NonagonIcon(isSelected: document.viewState.currentTool == toolItem.tool)
         default:
             Image(systemName: toolItem.tool.iconName)
                 .font(.system(size: 16))
@@ -166,9 +166,9 @@ struct VerticalToolbar: View {
 
     private func isToolSelected(_ toolItem: ToolItem) -> Bool {
         if let starVariant = toolItem.starVariant {
-            return document.currentTool == .star && toolGroupManager.selectedVariant == starVariant
+            return document.viewState.currentTool == .star && toolGroupManager.selectedVariant == starVariant
         } else {
-            return document.currentTool == toolItem.tool
+            return document.viewState.currentTool == toolItem.tool
         }
     }
 
@@ -220,10 +220,10 @@ struct VerticalToolbar: View {
                                         onTap: {
                                             if let starVariant = toolItem.starVariant {
                                                 toolGroupManager.selectStarVariant(starVariant)
-                                                document.currentTool = .star
+                                                document.viewState.currentTool = .star
                                                 toolGroupManager.setSelectedToolInGroup(.star)
                                             } else {
-                                                document.currentTool = toolItem.tool
+                                                document.viewState.currentTool = toolItem.tool
                                                 toolGroupManager.setSelectedToolInGroup(toolItem.tool)
                                             }
                                         },

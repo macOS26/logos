@@ -19,7 +19,7 @@ extension DrawingCanvas {
             y: value.location.y - handToolDragStart.y
         )
 
-        if document.currentTool == .hand {
+        if document.viewState.currentTool == .hand {
             HandClosedCursor.set()
         }
         document.viewState.canvasOffset = CGPoint(

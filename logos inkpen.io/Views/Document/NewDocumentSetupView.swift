@@ -451,7 +451,7 @@ struct NewDocumentSetupView: View {
     private func createDocument() {
         let document = VectorDocument(settings: setupData.documentSettings)
 
-        document.currentTool = appState.defaultTool
+        document.viewState.currentTool = appState.defaultTool
 
         let filename = setupData.filename.trimmingCharacters(in: .whitespacesAndNewlines)
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first

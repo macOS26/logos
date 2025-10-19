@@ -82,7 +82,7 @@ extension DrawingCanvas {
 
     @ViewBuilder
     internal func rubberBandPreview(geometry: GeometryProxy) -> some View {
-        if isBezierDrawing && document.currentTool == .bezierPen,
+        if isBezierDrawing && document.viewState.currentTool == .bezierPen,
            let mouseLocation = currentMouseLocation,
            bezierPoints.count > 0 {
             let rawCanvasMouseLocation = screenToCanvas(mouseLocation, geometry: geometry)

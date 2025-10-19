@@ -169,20 +169,20 @@ struct MainToolbarContent: ToolbarContent {
             .disabled(!hasOpenPaths())
 
             Button {
-                document.viewMode = document.viewMode == .color ? .keyline : .color
+                document.viewState.viewMode = document.viewState.viewMode == .color ? .keyline : .color
             } label: {
-                Image(systemName: document.viewMode.iconName)
+                Image(systemName: document.viewState.viewMode.iconName)
                     .font(.system(size: 20))
-                    .foregroundColor(document.viewMode == .keyline ? InkPenUIColors.shared.toolOrange : .primary)
+                    .foregroundColor(document.viewState.viewMode == .keyline ? InkPenUIColors.shared.toolOrange : .primary)
                     .offset(y: 1)
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        document.viewMode = document.viewMode == .color ? .keyline : .color
+                        document.viewState.viewMode = document.viewState.viewMode == .color ? .keyline : .color
                     }
             }
             .buttonStyle(BorderlessButtonStyle())
-            .help(document.viewMode.description)
+            .help(document.viewState.viewMode.description)
 
             Button {
                 document.showRulers.toggle()

@@ -5,19 +5,19 @@ struct StatusBar: View {
     var body: some View {
         HStack {
             HStack(spacing: 2) {
-                Text("Tool: \(document.currentTool.rawValue)")
+                Text("Tool: \(document.viewState.currentTool.rawValue)")
                     .font(.caption)
                     .foregroundColor(.secondary)
 
-                if document.currentTool == .bezierPen {
+                if document.viewState.currentTool == .bezierPen {
                     Text("• Click to place points • Click near first point to close")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                } else if document.currentTool == .directSelection {
+                } else if document.viewState.currentTool == .directSelection {
                     Text("• Select anchor points and handles")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                } else if document.currentTool == .warp {
+                } else if document.viewState.currentTool == .warp {
                     Text("• Select objects to warp • Drag handles to distort")
                         .font(.caption)
                         .foregroundColor(.secondary)

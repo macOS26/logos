@@ -4,7 +4,7 @@ extension DrawingCanvas {
 
     @ViewBuilder
     func cornerRadiusTool(geometry: GeometryProxy) -> some View {
-        if document.currentTool == .cornerRadius,
+        if document.viewState.currentTool == .cornerRadius,
            let selectedShape = getSelectedRectangleShape() {
             let boundsToUse = getProperShapeBounds(for: selectedShape)
             let corners = getCornerScreenPositions(bounds: boundsToUse, shape: selectedShape, geometry: geometry)

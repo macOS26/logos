@@ -3,7 +3,7 @@ import SwiftUI
 extension DrawingCanvas {
     @ViewBuilder
     internal var directSelectionContextMenu: some View {
-        if document.currentTool == .bezierPen && isBezierDrawing && bezierPoints.count >= 3 {
+        if document.viewState.currentTool == .bezierPen && isBezierDrawing && bezierPoints.count >= 3 {
             Button("Close Path") {
                 closeBezierPath()
             }
@@ -20,7 +20,7 @@ extension DrawingCanvas {
             .keyboardShortcut(.escape)
         }
 
-        if document.currentTool == .directSelection && !selectedPoints.isEmpty {
+        if document.viewState.currentTool == .directSelection && !selectedPoints.isEmpty {
             Button("Close Path") {
                 closeSelectedPaths()
             }

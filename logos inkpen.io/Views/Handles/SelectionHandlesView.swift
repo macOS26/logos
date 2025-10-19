@@ -33,7 +33,7 @@ struct SelectionHandlesView: View {
                          .text(let shape):
                         let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
                         if !isBackgroundShape {
-                            if document.currentTool == .warp {
+                            if document.viewState.currentTool == .warp {
                                 EnvelopeHandles(
                                     document: document,
                                     shape: shape,
@@ -52,9 +52,9 @@ struct SelectionHandlesView: View {
                                 let isShapeDrawingTool = [.rectangle, .square, .roundedRectangle, .pill,
                                                          .circle, .ellipse, .oval, .egg, .cone,
                                                          .equilateralTriangle, .rightTriangle, .acuteTriangle, .isoscelesTriangle,
-                                                         .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon].contains(document.currentTool)
+                                                         .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon].contains(document.viewState.currentTool)
 
-                                if document.currentTool == .selection || isShapeDrawingTool {
+                                if document.viewState.currentTool == .selection || isShapeDrawingTool {
                                     TransformBoxHandles(
                                         document: document,
                                         shape: shape,
@@ -66,7 +66,7 @@ struct SelectionHandlesView: View {
                                     )
                                     .offset(x: dragPreviewDelta.x * document.viewState.zoomLevel,
                                             y: dragPreviewDelta.y * document.viewState.zoomLevel)
-                                } else if document.currentTool == .scale {
+                                } else if document.viewState.currentTool == .scale {
                                     ScaleHandles(
                                         document: document,
                                         shape: shape,
@@ -75,7 +75,7 @@ struct SelectionHandlesView: View {
                                         isShiftPressed: isShiftPressed,
                                         liveScaleTransform: $liveScaleTransform
                                     )
-                                } else if document.currentTool == .rotate {
+                                } else if document.viewState.currentTool == .rotate {
                                     RotateHandles(
                                         document: document,
                                         shape: shape,
@@ -83,7 +83,7 @@ struct SelectionHandlesView: View {
                                         canvasOffset: document.viewState.canvasOffset,
                                         isShiftPressed: isShiftPressed
                                     )
-                                } else if document.currentTool == .shear {
+                                } else if document.viewState.currentTool == .shear {
                                     ShearHandles(
                                         document: document,
                                         shape: shape,
@@ -104,7 +104,7 @@ struct SelectionHandlesView: View {
     private func renderHandlesForShape(_ shape: VectorShape) -> some View {
         let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
         if !isBackgroundShape {
-            if document.currentTool == .warp {
+            if document.viewState.currentTool == .warp {
                 EnvelopeHandles(
                     document: document,
                     shape: shape,
@@ -123,9 +123,9 @@ struct SelectionHandlesView: View {
                 let isShapeDrawingTool = [.rectangle, .square, .roundedRectangle, .pill,
                                          .circle, .ellipse, .oval, .egg, .cone,
                                          .equilateralTriangle, .rightTriangle, .acuteTriangle, .isoscelesTriangle,
-                                         .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon].contains(document.currentTool)
+                                         .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon].contains(document.viewState.currentTool)
 
-                if document.currentTool == .selection || isShapeDrawingTool {
+                if document.viewState.currentTool == .selection || isShapeDrawingTool {
                     TransformBoxHandles(
                         document: document,
                         shape: shape,
@@ -137,7 +137,7 @@ struct SelectionHandlesView: View {
                     )
                     .offset(x: dragPreviewDelta.x * document.viewState.zoomLevel,
                             y: dragPreviewDelta.y * document.viewState.zoomLevel)
-                } else if document.currentTool == .scale {
+                } else if document.viewState.currentTool == .scale {
                     ScaleHandles(
                         document: document,
                         shape: shape,
@@ -146,7 +146,7 @@ struct SelectionHandlesView: View {
                         isShiftPressed: isShiftPressed,
                         liveScaleTransform: $liveScaleTransform
                     )
-                } else if document.currentTool == .rotate {
+                } else if document.viewState.currentTool == .rotate {
                     RotateHandles(
                         document: document,
                         shape: shape,
@@ -154,7 +154,7 @@ struct SelectionHandlesView: View {
                         canvasOffset: document.viewState.canvasOffset,
                         isShiftPressed: isShiftPressed
                     )
-                } else if document.currentTool == .shear {
+                } else if document.viewState.currentTool == .shear {
                     ShearHandles(
                         document: document,
                         shape: shape,

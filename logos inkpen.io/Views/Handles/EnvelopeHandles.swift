@@ -77,7 +77,7 @@ struct EnvelopeHandles: View {
 
             envelopeCornerHandles()
 
-            if document.currentTool == .warp && warpedCorners.count == 4 {
+            if document.viewState.currentTool == .warp && warpedCorners.count == 4 {
                 envelopeGridPreview()
             }
 
@@ -99,7 +99,7 @@ struct EnvelopeHandles: View {
                 initializeEnvelopeCorners()
             }
         }
-        .onChange(of: document.currentTool) { oldTool, newTool in
+        .onChange(of: document.viewState.currentTool) { oldTool, newTool in
             if oldTool == .warp && newTool != .warp {
                 if previewPath != nil {
                     commitEnvelopeWarp()
@@ -114,7 +114,7 @@ struct EnvelopeHandles: View {
             }
         }
         .onChange(of: document.selectedShapeIDs) { oldSelection, newSelection in
-            if document.currentTool == .warp && oldSelection != newSelection {
+            if document.viewState.currentTool == .warp && oldSelection != newSelection {
                 if previewPath != nil {
                     commitEnvelopeWarp()
                 }
@@ -131,12 +131,12 @@ struct EnvelopeHandles: View {
             }
         }
         .onChange(of: shape.warpEnvelope) { _, newEnvelope in
-            if document.currentTool == .warp && !newEnvelope.isEmpty && newEnvelope != warpedCorners {
+            if document.viewState.currentTool == .warp && !newEnvelope.isEmpty && newEnvelope != warpedCorners {
                 initializeEnvelopeCorners()
             }
         }
         .onChange(of: document.changeNotifier.changeToken) { _, _ in
-            if document.currentTool == .warp && !isWarping {
+            if document.viewState.currentTool == .warp && !isWarping {
                 if let updatedShape = document.unifiedObjects.first(where: { obj in
                     if case .shape(let s) = obj.objectType {
                         return s.id == shape.id

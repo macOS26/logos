@@ -73,7 +73,7 @@ struct ProfessionalTextCanvas: View {
 
             viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
         }
-        .onChange(of: document.currentTool) { oldTool, newTool in
+        .onChange(of: document.viewState.currentTool) { oldTool, newTool in
             handleToolChange(oldTool: oldTool, newTool: newTool)
         }
     }
@@ -150,7 +150,7 @@ struct ProfessionalTextCanvas: View {
             return
         }
 
-        let isTextToolActive = document.currentTool == .font
+        let isTextToolActive = document.viewState.currentTool == .font
         let isThisTextSelected = selectedIDs.contains(currentTextObject.id)
 
         if isTextToolActive && currentTextObject.isEditing {

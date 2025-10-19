@@ -61,10 +61,10 @@ extension DrawingCanvas {
         }
 
         if let currentPath = currentPath,
-           (document.currentTool == .polygon || document.currentTool == .pentagon ||
-            document.currentTool == .hexagon || document.currentTool == .heptagon ||
-            document.currentTool == .octagon || document.currentTool == .nonagon ||
-            document.currentTool == .star) {
+           (document.viewState.currentTool == .polygon || document.viewState.currentTool == .pentagon ||
+            document.viewState.currentTool == .hexagon || document.viewState.currentTool == .heptagon ||
+            document.viewState.currentTool == .octagon || document.viewState.currentTool == .nonagon ||
+            document.viewState.currentTool == .star) {
             let actualBounds = currentPath.cgPath.boundingBoxOfPath
             Path { path in
                 path.addRect(actualBounds)
@@ -150,7 +150,7 @@ extension DrawingCanvas {
         bezierClosePathHint()
         bezierContinuePathHint()
 
-        if !(document.currentTool == .bezierPen && isBezierDrawing) &&
+        if !(document.viewState.currentTool == .bezierPen && isBezierDrawing) &&
            !isCornerRadiusEditMode {
             SelectionHandlesView(
                 document: document,
@@ -164,11 +164,11 @@ extension DrawingCanvas {
             )
         }
 
-        if isBezierDrawing && document.currentTool == .bezierPen {
+        if isBezierDrawing && document.viewState.currentTool == .bezierPen {
             bezierDrawingDimensionsOverlay()
         }
 
-        if document.currentTool == .directSelection || document.currentTool == .convertAnchorPoint || document.currentTool == .penPlusMinus {
+        if document.viewState.currentTool == .directSelection || document.viewState.currentTool == .convertAnchorPoint || document.viewState.currentTool == .penPlusMinus {
             ProfessionalDirectSelectionView(
                 document: document,
                 selectedPoints: selectedPoints,
@@ -180,15 +180,15 @@ extension DrawingCanvas {
             )
         }
 
-        if document.currentTool == .gradient {
+        if document.viewState.currentTool == .gradient {
             gradientCenterPointOverlay(geometry: geometry)
         }
 
-        if document.currentTool == .cornerRadius {
+        if document.viewState.currentTool == .cornerRadius {
             cornerRadiusTool(geometry: geometry)
         }
 
-        if document.currentTool == .selection && isCornerRadiusEditMode {
+        if document.viewState.currentTool == .selection && isCornerRadiusEditMode {
             cornerRadiusEditTool(geometry: geometry)
         }
     }
@@ -202,7 +202,7 @@ extension DrawingCanvas {
                 zoomLevel: document.viewState.zoomLevel,
                 canvasOffset: document.viewState.canvasOffset,
                 selectedObjectIDs: document.selectedObjectIDs,
-                viewMode: document.viewMode,
+                viewMode: document.viewState.viewMode,
                 dragPreviewDelta: currentDragDelta,
                 dragPreviewTrigger: dragPreviewUpdateTrigger
             )
@@ -212,7 +212,7 @@ extension DrawingCanvas {
                 zoomLevel: document.viewState.zoomLevel,
                 canvasOffset: document.viewState.canvasOffset,
                 selectedObjectIDs: document.selectedObjectIDs,
-                viewMode: document.viewMode,
+                viewMode: document.viewState.viewMode,
                 dragPreviewDelta: currentDragDelta,
                 dragPreviewTrigger: dragPreviewUpdateTrigger
             )
@@ -234,7 +234,7 @@ extension DrawingCanvas {
                         zoomLevel: document.viewState.zoomLevel,
                         canvasOffset: document.viewState.canvasOffset,
                         selectedObjectIDs: document.selectedObjectIDs,
-                        viewMode: document.viewMode,
+                        viewMode: document.viewState.viewMode,
                         dragPreviewDelta: isActiveLayer ? currentDragDelta : .zero,
                         dragPreviewTrigger: dragPreviewUpdateTrigger,
                         liveScaleTransform: liveScaleTransform,
@@ -322,12 +322,12 @@ extension DrawingCanvas {
         }
         .onAppear {
             setupCanvas()
-            previousTool = document.currentTool
+            previousTool = document.viewState.currentTool
         }
             .onDisappear {
                 // teardownKeyEventMonitoring()
             }
-            .onChange(of: document.currentTool) { oldTool, newTool in
+            .onChange(of: document.viewState.currentTool) { oldTool, newTool in
                 handleToolChange(oldTool: oldTool, newTool: newTool)
             }
             .onHover { isHovering in
@@ -375,7 +375,7 @@ extension DrawingCanvas {
 
     @ViewBuilder
     internal func pressureSensitiveOverlay(geometry: GeometryProxy) -> some View {
-        if document.currentTool == .brush || document.currentTool == .freehand || document.currentTool == .marker {
+        if document.viewState.currentTool == .brush || document.viewState.currentTool == .freehand || document.viewState.currentTool == .marker {
             PressureSensitiveCanvasRepresentable(
                                             onPressureEvent: { location, pressure, eventType, isTabletEvent in
                                 handlePressureEvent(location: location, pressure: pressure, eventType: eventType, isTabletEvent: isTabletEvent, geometry: geometry)
@@ -411,7 +411,7 @@ extension DrawingCanvas {
 
     private func handlePressureDrawingStart(at location: CGPoint) {
 
-        switch document.currentTool {
+        switch document.viewState.currentTool {
         case .brush:
             if !isBrushDrawing {
                 handleBrushDragStart(at: location)
@@ -433,7 +433,7 @@ extension DrawingCanvas {
 
         let currentPressure = PressureManager.shared.currentPressure
 
-        switch document.currentTool {
+        switch document.viewState.currentTool {
         case .brush:
             if isBrushDrawing {
                 handleBrushDragUpdate(at: location)
@@ -452,7 +452,7 @@ extension DrawingCanvas {
     }
 
     private func handlePressureDrawingEnd(at location: CGPoint) {
-        switch document.currentTool {
+        switch document.viewState.currentTool {
         case .brush:
             if isBrushDrawing {
                 handleBrushDragEnd()

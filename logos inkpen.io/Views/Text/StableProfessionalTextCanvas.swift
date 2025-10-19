@@ -72,7 +72,7 @@ struct StableProfessionalTextCanvas: View {
 
     private func getDocumentMode() -> String {
         if let currentTextObject = document.findText(by: textObjectID) {
-            if document.currentTool == .font {
+            if document.viewState.currentTool == .font {
                 return "font-tool"
             } else {
                 return "\(currentTextObject.content)-\(currentTextObject.isEditing)"

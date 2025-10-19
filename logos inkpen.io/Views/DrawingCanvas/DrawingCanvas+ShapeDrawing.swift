@@ -60,7 +60,7 @@ extension DrawingCanvas {
                                               .star, .polygon, .pentagon, .hexagon, .heptagon,
                                               .octagon, .nonagon, .equilateralTriangle,
                                               .rightTriangle, .acuteTriangle, .isoscelesTriangle]
-            if (document.snapToPoint || document.snapToGrid) && shapeTools.contains(document.currentTool) {
+            if (document.snapToPoint || document.snapToGrid) && shapeTools.contains(document.viewState.currentTool) {
                 initialPoint = applySnapping(to: initialPoint)
             }
 
@@ -90,7 +90,7 @@ extension DrawingCanvas {
                                           .star, .polygon, .pentagon, .hexagon, .heptagon,
                                           .octagon, .nonagon, .equilateralTriangle,
                                           .rightTriangle, .acuteTriangle, .isoscelesTriangle]
-        if (document.snapToPoint || document.snapToGrid) && shapeTools.contains(document.currentTool) {
+        if (document.snapToPoint || document.snapToGrid) && shapeTools.contains(document.viewState.currentTool) {
             currentLocation = applySnapping(to: currentLocation)
         }
 
@@ -99,7 +99,7 @@ extension DrawingCanvas {
 
         guard let startPoint = drawingStartPoint else { return }
 
-        switch document.currentTool {
+        switch document.viewState.currentTool {
         case .line:
             currentPath = VectorPath(elements: [
                 .move(to: VectorPoint(startPoint)),
@@ -893,24 +893,24 @@ extension DrawingCanvas {
             opacity: document.defaultFillOpacity
         )
 
-        var shapeGeometricType = geometricTypeForTool(document.currentTool)
+        var shapeGeometricType = geometricTypeForTool(document.viewState.currentTool)
 
-        if document.currentTool == .rectangle && isShiftPressed {
+        if document.viewState.currentTool == .rectangle && isShiftPressed {
             shapeGeometricType = .square
         }
-        else if document.currentTool == .ellipse && isShiftPressed {
+        else if document.viewState.currentTool == .ellipse && isShiftPressed {
             shapeGeometricType = .circle
         }
 
-        let shapeName = shapeGeometricType?.rawValue ?? document.currentTool.rawValue
+        let shapeName = shapeGeometricType?.rawValue ?? document.viewState.currentTool.rawValue
 
-        if document.currentTool == .rectangle || document.currentTool == .square ||
-           document.currentTool == .roundedRectangle || document.currentTool == .pill {
+        if document.viewState.currentTool == .rectangle || document.viewState.currentTool == .square ||
+           document.viewState.currentTool == .roundedRectangle || document.viewState.currentTool == .pill {
 
             let startPoint = shapeStartPoint
             let currentLocation = screenToCanvas(value.location, geometry: geometry)
             let originalBounds: CGRect
-            if document.currentTool == .square {
+            if document.viewState.currentTool == .square {
                 let dragDeltaX = currentLocation.x - startPoint.x
                 let dragDeltaY = currentLocation.y - startPoint.y
                 let size = max(abs(dragDeltaX), abs(dragDeltaY))
@@ -933,7 +933,7 @@ extension DrawingCanvas {
             let initialRadius: Double
             let cornerRadii: [Double]
 
-            switch document.currentTool {
+            switch document.viewState.currentTool {
             case .rectangle, .square:
                 initialRadius = 0.0
                 cornerRadii = [0.0, 0.0, 0.0, 0.0]

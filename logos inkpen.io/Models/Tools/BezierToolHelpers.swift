@@ -206,7 +206,7 @@ extension DrawingCanvas {
     }
 
     internal func shouldShowContinuePathHint() -> (Bool, CGPoint?) {
-        guard document.currentTool == .bezierPen && !isBezierDrawing else {
+        guard document.viewState.currentTool == .bezierPen && !isBezierDrawing else {
             return (false, nil)
         }
 

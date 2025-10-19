@@ -20,7 +20,7 @@ struct PersistentWarpMarquee: View {
                 } else {
                     warpCornerDots()
 
-                    if document.currentTool == .selection {
+                    if document.viewState.currentTool == .selection {
                         warpGridOverlay()
                     }
                 }

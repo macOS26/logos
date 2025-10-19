@@ -154,7 +154,7 @@ struct DocumentBasedMainView: View {
         })
         .onAppear {
             if !hasInitializedTool {
-                document.currentTool = appState.defaultTool
+                document.viewState.currentTool = appState.defaultTool
                 hasInitializedTool = true
             }
 
@@ -219,8 +219,8 @@ struct DocumentBasedMainView: View {
         document.selectedLayerIndex = importedDoc.selectedLayerIndex
         document.selectedShapeIDs = importedDoc.selectedShapeIDs
         document.selectedTextIDs = importedDoc.selectedTextIDs
-        document.currentTool = appState.defaultTool
-        document.viewMode = .color
+        document.viewState.currentTool = appState.defaultTool
+        document.viewState.viewMode = .color
         document.showRulers = importedDoc.showRulers
         document.snapToGrid = importedDoc.snapToGrid
 

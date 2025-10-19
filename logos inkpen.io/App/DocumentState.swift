@@ -1121,7 +1121,7 @@ class DocumentState: ObservableObject {
 
     func switchToTool(_ tool: DrawingTool) {
         guard let document = document else { return }
-        document.currentTool = tool
+        document.viewState.currentTool = tool
 
         ToolGroupManager.shared.handleKeyboardToolSwitch(tool: tool)
     }

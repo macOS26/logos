@@ -72,9 +72,9 @@ extension DrawingCanvas {
 
         initialZoomLevel = finalZoomLevel
 
-        if isCanvasHovering && document.currentTool == .zoom {
+        if isCanvasHovering && document.viewState.currentTool == .zoom {
             MagnifyingGlassCursor.set()
-            DispatchQueue.main.async { if isCanvasHovering && document.currentTool == .zoom { MagnifyingGlassCursor.set() } }
+            DispatchQueue.main.async { if isCanvasHovering && document.viewState.currentTool == .zoom { MagnifyingGlassCursor.set() } }
         }
     }
 
@@ -102,7 +102,7 @@ extension DrawingCanvas {
         document.clearZoomRequest()
 
         if isCanvasHovering {
-            switch document.currentTool {
+            switch document.viewState.currentTool {
             case .hand:
                 NSCursor.openHand.set()
             case .eyedropper:
@@ -116,7 +116,7 @@ extension DrawingCanvas {
             }
             DispatchQueue.main.async {
                 if isCanvasHovering {
-                    switch document.currentTool {
+                    switch document.viewState.currentTool {
                     case .hand:
                         NSCursor.openHand.set()
                     case .eyedropper:

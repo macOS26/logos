@@ -525,7 +525,7 @@ struct StrokeFillPanel: View {
                     }
                     .padding(.horizontal, 12)
 
-                    switch document.currentTool {
+                    switch document.viewState.currentTool {
                     case .freehand:
                         FreehandSettingsSection(document: document)
                     case .brush:

@@ -30,7 +30,7 @@ struct UnifiedObjectContentView: View {
                         dragPreviewTrigger: dragPreviewTrigger,
                         viewMode: viewMode
                     )
-                    .allowsHitTesting(document.currentTool == .font)
+                    .allowsHitTesting(document.viewState.currentTool == .font)
                 } else {
                     EmptyView()
                 }
@@ -84,7 +84,7 @@ struct UnifiedObjectContentView: View {
                                         dragPreviewTrigger: dragPreviewTrigger,
                                         viewMode: viewMode
                                     )
-                                    .allowsHitTesting(document.currentTool == .font)
+                                    .allowsHitTesting(document.viewState.currentTool == .font)
                                 } else {
                                     let _ = print("🔴 RENDER GROUP: SKIPPING textShape \(textShape.id) - textContent or typography is nil")
                                 }

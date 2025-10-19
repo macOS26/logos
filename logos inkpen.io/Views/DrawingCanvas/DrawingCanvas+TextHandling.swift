@@ -178,16 +178,16 @@ extension DrawingCanvas {
                 document.selectedTextIDs = [textID]
                 document.selectedShapeIDs.removeAll()
 
-                if document.currentTool == .font && isCornerClick {
+                if document.viewState.currentTool == .font && isCornerClick {
                     startEditingText(textID: textID, at: .zero)
                 }
 
             case .selected:
                 if isDoubleClick {
-                    document.currentTool = .font
+                    document.viewState.currentTool = .font
 
                     startEditingText(textID: textID, at: .zero)
-                } else if document.currentTool == .font {
+                } else if document.viewState.currentTool == .font {
                     startEditingText(textID: textID, at: .zero)
                 }
 

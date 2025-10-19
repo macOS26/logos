@@ -218,9 +218,9 @@ struct DrawingCanvas: View {
             document.selectedObjectIDs = Set(directSelectedShapeIDs)
             document.selectedShapeIDs = directSelectedShapeIDs
             document.syncSelectionArrays()
-        } else if document.currentTool == .directSelection ||
-                  document.currentTool == .convertAnchorPoint ||
-                  document.currentTool == .penPlusMinus {
+        } else if document.viewState.currentTool == .directSelection ||
+                  document.viewState.currentTool == .convertAnchorPoint ||
+                  document.viewState.currentTool == .penPlusMinus {
             document.selectedObjectIDs.removeAll()
             document.selectedShapeIDs.removeAll()
             document.syncSelectionArrays()

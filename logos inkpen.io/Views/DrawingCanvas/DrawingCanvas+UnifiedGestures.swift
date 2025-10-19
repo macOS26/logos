@@ -22,7 +22,7 @@ extension DrawingCanvas {
         let canvasLocation = screenToCanvas(location, geometry: geometry)
 
         if let textID = findTextAt(location: canvasLocation) {
-            document.currentTool = .font
+            document.viewState.currentTool = .font
 
             startEditingText(textID: textID, at: canvasLocation)
 
@@ -67,11 +67,11 @@ extension DrawingCanvas {
 
         detectAdvancedClickTypes(at: location, geometry: geometry, clickType: clickType)
 
-        if document.currentTool != .bezierPen && isBezierDrawing {
+        if document.viewState.currentTool != .bezierPen && isBezierDrawing {
             cancelBezierDrawing()
         }
 
-        switch document.currentTool {
+        switch document.viewState.currentTool {
         case .selection, .scale, .rotate, .shear, .warp:
             handleSelectionTap(at: canvasLocation)
 
@@ -110,11 +110,11 @@ extension DrawingCanvas {
                 targetZoom = nextAllowedStepUp(from: currentZoom)
             }
             handleZoomAtPoint(newZoomLevel: targetZoom, focalPoint: focalPoint, geometry: geometry)
-            if isCanvasHovering && document.currentTool == .zoom {
+            if isCanvasHovering && document.viewState.currentTool == .zoom {
                 MagnifyingGlassCursor.set()
             }
             DispatchQueue.main.async {
-                if isCanvasHovering && document.currentTool == .zoom {
+                if isCanvasHovering && document.viewState.currentTool == .zoom {
                     MagnifyingGlassCursor.set()
                 }
             }
@@ -131,7 +131,7 @@ extension DrawingCanvas {
     }
 
     internal func handleUnifiedDragChanged(value: DragGesture.Value, geometry: GeometryProxy) {
-        switch document.currentTool {
+        switch document.viewState.currentTool {
         case .hand:
             handlePanGesture(value: value, geometry: geometry)
 
@@ -192,7 +192,7 @@ extension DrawingCanvas {
 
     internal func handleUnifiedDragEnded(value: DragGesture.Value, geometry: GeometryProxy) {
 
-        switch document.currentTool {
+        switch document.viewState.currentTool {
         case .hand:
             finishPanGesture()
 
@@ -277,7 +277,7 @@ extension DrawingCanvas {
         handToolDragStart = CGPoint.zero
         isPanGestureActive = false
 
-        if isCanvasHovering && document.currentTool == .hand {
+        if isCanvasHovering && document.viewState.currentTool == .hand {
             NSCursor.openHand.set()
         } else {
             NSCursor.arrow.set()

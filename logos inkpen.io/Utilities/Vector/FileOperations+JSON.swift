@@ -87,8 +87,8 @@ private struct DocumentSnapshot: Codable {
     init(from document: VectorDocument) {
         self.settings = document.settings
         self.layers = document.layers
-        self.currentTool = document.currentTool
-        self.viewMode = document.viewMode
+        self.currentTool = document.viewState.currentTool
+        self.viewMode = document.viewState.viewMode
         self.zoomLevel = document.viewState.zoomLevel
         self.canvasOffset = document.viewState.canvasOffset
         self.unifiedObjects = document.unifiedObjects

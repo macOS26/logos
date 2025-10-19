@@ -7,13 +7,13 @@ extension DrawingCanvas {
 
         let validatedLocation = validateAndCorrectLocation(location)
 
-        if isOptionPressed && document.currentTool == .selection {
-            document.currentTool = .directSelection
+        if isOptionPressed && document.viewState.currentTool == .selection {
+            document.viewState.currentTool = .directSelection
             handleDirectSelectionTap(at: validatedLocation)
             return
         }
 
-        if isCommandPressed && document.currentTool == .selection {
+        if isCommandPressed && document.viewState.currentTool == .selection {
             var hitShape: VectorShape?
             var hitLayerIndex: Int?
             outerHit: for unifiedObject in document.unifiedObjects.reversed() {
@@ -56,7 +56,7 @@ extension DrawingCanvas {
             if let shape = hitShape, let layerIndex = hitLayerIndex {
                 let isAlreadySelected = document.selectedShapeIDs.contains(shape.id)
                 if isAlreadySelected {
-                    document.currentTool = .directSelection
+                    document.viewState.currentTool = .directSelection
                     directSelectedShapeIDs = [shape.id]
                     selectedPoints.removeAll()
                     selectedHandles.removeAll()
@@ -75,7 +75,7 @@ extension DrawingCanvas {
             return
         }
 
-        if isControlPressed && document.currentTool == .selection {
+        if isControlPressed && document.viewState.currentTool == .selection {
             var clickedShape: VectorShape?
 
             for unifiedObject in document.unifiedObjects.reversed() {
@@ -128,11 +128,11 @@ extension DrawingCanvas {
         syncDirectSelectionWithDocument()
         isCornerRadiusEditMode = false
 
-        guard document.currentTool == .selection ||
-              document.currentTool == .scale ||
-              document.currentTool == .rotate ||
-              document.currentTool == .shear ||
-              document.currentTool == .warp else {
+        guard document.viewState.currentTool == .selection ||
+              document.viewState.currentTool == .scale ||
+              document.viewState.currentTool == .rotate ||
+              document.viewState.currentTool == .shear ||
+              document.viewState.currentTool == .warp else {
             // For non-selection tools, deselect when clicking empty space
             if !isShiftPressed && !isCommandPressed {
                 document.selectedObjectIDs = []

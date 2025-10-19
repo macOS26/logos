@@ -45,7 +45,7 @@ class TemplateManager {
         document.selectedTextIDs.removeAll()
         document.removeAllText()
 
-        document.currentTool = defaultTool
+        document.viewState.currentTool = defaultTool
 
         return document
     }

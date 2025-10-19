@@ -494,16 +494,16 @@ class ProfessionalTextViewModel: ObservableObject {
                 document.selectedTextIDs = [textID]
                 document.selectedShapeIDs.removeAll()
 
-                if document.currentTool == .font && isCornerClick {
+                if document.viewState.currentTool == .font && isCornerClick {
                     startEditingText(textID: textID)
                 }
 
             case .selected:
                 if isDoubleClick {
-                    document.currentTool = .font
+                    document.viewState.currentTool = .font
 
                     startEditingText(textID: textID)
-                } else if document.currentTool == .font {
+                } else if document.viewState.currentTool == .font {
                     startEditingText(textID: textID)
                 }
 

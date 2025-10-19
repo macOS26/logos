@@ -111,7 +111,7 @@ extension DrawingCanvas {
     }
 
     internal func clearToolState() {
-        if document.currentTool != .bezierPen {
+        if document.viewState.currentTool != .bezierPen {
             showClosePathHint = false
             showContinuePathHint = false
         }

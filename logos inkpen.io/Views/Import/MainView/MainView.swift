@@ -121,8 +121,8 @@ struct MainView: View {
                     document.selectedLayerIndex = newDocument.selectedLayerIndex
                     document.selectedShapeIDs = newDocument.selectedShapeIDs
                     document.selectedTextIDs = newDocument.selectedTextIDs
-                    document.currentTool = newDocument.currentTool
-                    document.viewMode = newDocument.viewMode
+                    document.viewState.currentTool = newDocument.currentTool
+                    document.viewState.viewMode = newDocument.viewMode
                     document.viewState.zoomLevel = newDocument.zoomLevel
                     document.viewState.canvasOffset = newDocument.canvasOffset
                     document.showRulers = newDocument.showRulers
@@ -182,7 +182,7 @@ struct MainView: View {
         }
         .frame(minWidth: 1400, minHeight: 900)
         .onAppear {
-            document.currentTool = appState.defaultTool
+            document.viewState.currentTool = appState.defaultTool
 
             documentState.setDocument(document)
 
@@ -278,8 +278,8 @@ struct MainView: View {
         document.selectedLayerIndex = importedDoc.selectedLayerIndex
         document.selectedShapeIDs = importedDoc.selectedShapeIDs
         document.selectedTextIDs = importedDoc.selectedTextIDs
-        document.currentTool = appState.defaultTool
-        document.viewMode = .color
+        document.viewState.currentTool = appState.defaultTool
+        document.viewState.viewMode = .color
 
         currentDocumentURL = nil
 

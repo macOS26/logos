@@ -201,7 +201,7 @@ extension DrawingCanvas {
 
             CanvasCursorOverlayView(
                 isHovering: isCanvasHovering,
-                currentTool: document.currentTool,
+                currentTool: document.viewState.currentTool,
                 isPanActive: isPanGestureActive,
                 zoomLevel: document.viewState.zoomLevel,
                 canvasOffset: document.viewState.canvasOffset
@@ -209,12 +209,12 @@ extension DrawingCanvas {
         }
         .onAppear {
             setupCanvas()
-            previousTool = document.currentTool
+            previousTool = document.viewState.currentTool
         }
         .onDisappear {
             // teardownKeyEventMonitoring()
         }
-        .onChange(of: document.currentTool) { oldTool, newTool in
+        .onChange(of: document.viewState.currentTool) { oldTool, newTool in
             handleToolChange(oldTool: oldTool, newTool: newTool)
             if isCanvasHovering {
                 if newTool == .hand {
@@ -235,15 +235,15 @@ extension DrawingCanvas {
         .onHover { isHovering in
             isCanvasHovering = isHovering
             if isHovering {
-                if document.currentTool == .hand {
+                if document.viewState.currentTool == .hand {
                     HandOpenCursor.set()
-                } else if document.currentTool == .eyedropper {
+                } else if document.viewState.currentTool == .eyedropper {
                     EyedropperCursor.set()
-                } else if document.currentTool == .selectSameColor {
+                } else if document.viewState.currentTool == .selectSameColor {
                     EyedropperCursor.set()
-                } else if document.currentTool == .zoom {
+                } else if document.viewState.currentTool == .zoom {
                     MagnifyingGlassCursor.set()
-                } else if document.currentTool == .rectangle || document.currentTool == .square || document.currentTool == .circle || document.currentTool == .equilateralTriangle || document.currentTool == .isoscelesTriangle || document.currentTool == .rightTriangle || document.currentTool == .acuteTriangle || document.currentTool == .cone || document.currentTool == .polygon || document.currentTool == .pentagon || document.currentTool == .hexagon || document.currentTool == .heptagon || document.currentTool == .octagon || document.currentTool == .nonagon {
+                } else if document.viewState.currentTool == .rectangle || document.viewState.currentTool == .square || document.viewState.currentTool == .circle || document.viewState.currentTool == .equilateralTriangle || document.viewState.currentTool == .isoscelesTriangle || document.viewState.currentTool == .rightTriangle || document.viewState.currentTool == .acuteTriangle || document.viewState.currentTool == .cone || document.viewState.currentTool == .polygon || document.viewState.currentTool == .pentagon || document.viewState.currentTool == .hexagon || document.viewState.currentTool == .heptagon || document.viewState.currentTool == .octagon || document.viewState.currentTool == .nonagon {
                     CrosshairCursor.set()
                 }
             } else {
@@ -252,7 +252,7 @@ extension DrawingCanvas {
         }
         .onContinuousHover { phase in
             handleHover(phase: phase, geometry: geometry)
-            if isCanvasHovering && document.currentTool == .zoom {
+            if isCanvasHovering && document.viewState.currentTool == .zoom {
                 MagnifyingGlassCursor.set()
             }
         }
@@ -262,7 +262,7 @@ extension DrawingCanvas {
             let insideCanvas = pointInView.x >= 0 && pointInView.y >= 0 &&
                 pointInView.x <= geometry.size.width && pointInView.y <= geometry.size.height
             if insideCanvas || isCanvasHovering {
-                switch document.currentTool {
+                switch document.viewState.currentTool {
                 case .hand:
                     HandOpenCursor.set()
                 case .eyedropper:
@@ -278,7 +278,7 @@ extension DrawingCanvas {
                 }
                 DispatchQueue.main.async {
                     if (insideCanvas || self.isCanvasHovering) {
-                        switch self.document.currentTool {
+                        switch self.document.viewState.currentTool {
                         case .hand:
                             HandOpenCursor.set()
                         case .eyedropper:
@@ -298,7 +298,7 @@ extension DrawingCanvas {
             handleUnifiedTap(at: location, geometry: geometry)
         }
         .simultaneousGesture(
-            document.currentTool != .gradient && document.currentTool != .cornerRadius ?
+            document.viewState.currentTool != .gradient && document.viewState.currentTool != .cornerRadius ?
             DragGesture(minimumDistance: 3)
                 .onChanged { value in
                     handleUnifiedDragChanged(value: value, geometry: geometry)
@@ -323,7 +323,7 @@ extension DrawingCanvas {
         }
         .onChange(of: document.viewState.zoomLevel) { _, _ in
             if isCanvasHovering {
-                switch document.currentTool {
+                switch document.viewState.currentTool {
                 case .hand:
                     HandOpenCursor.set()
                 case .eyedropper:
@@ -339,7 +339,7 @@ extension DrawingCanvas {
                 }
                 DispatchQueue.main.async {
                     if self.isCanvasHovering {
-                        switch self.document.currentTool {
+                        switch self.document.viewState.currentTool {
                         case .hand:
                             HandOpenCursor.set()
                         case .eyedropper:
@@ -357,7 +357,7 @@ extension DrawingCanvas {
         }
         .onChange(of: document.viewState.canvasOffset) { _, _ in
             if isCanvasHovering {
-                switch document.currentTool {
+                switch document.viewState.currentTool {
                 case .hand:
                     HandOpenCursor.set()
                 case .eyedropper:
