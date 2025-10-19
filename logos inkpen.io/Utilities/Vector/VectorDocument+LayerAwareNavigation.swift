@@ -55,13 +55,13 @@ extension VectorDocument {
 
         for selectedObj in selectedObjects {
             guard let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObj.id }) else { continue }
-            guard selectedIndex < unifiedObjects.count - 1 else { continue }
+            guard selectedIndex > 0 else { continue }
 
-            let nextObj = unifiedObjects[selectedIndex + 1]
+            let prevObj = unifiedObjects[selectedIndex - 1]
 
             // Only swap if both objects are in the same layer
-            if selectedObj.layerIndex == nextObj.layerIndex {
-                unifiedObjects.swapAt(selectedIndex, selectedIndex + 1)
+            if selectedObj.layerIndex == prevObj.layerIndex {
+                unifiedObjects.swapAt(selectedIndex - 1, selectedIndex)
             }
         }
 
@@ -81,13 +81,13 @@ extension VectorDocument {
 
         for selectedObj in selectedObjects {
             guard let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObj.id }) else { continue }
-            guard selectedIndex > 0 else { continue }
+            guard selectedIndex < unifiedObjects.count - 1 else { continue }
 
-            let prevObj = unifiedObjects[selectedIndex - 1]
+            let nextObj = unifiedObjects[selectedIndex + 1]
 
             // Only swap if both objects are in the same layer
-            if selectedObj.layerIndex == prevObj.layerIndex {
-                unifiedObjects.swapAt(selectedIndex, selectedIndex - 1)
+            if selectedObj.layerIndex == nextObj.layerIndex {
+                unifiedObjects.swapAt(selectedIndex, selectedIndex + 1)
             }
         }
 
