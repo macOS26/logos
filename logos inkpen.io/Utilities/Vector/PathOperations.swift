@@ -827,7 +827,7 @@ extension ProfessionalPathOperations {
     }
 
     static func cleanupSelectedShapesDuplicates(_ document: VectorDocument, tolerance: Double = 5.0) {
-        guard !document.selectedShapeIDs.isEmpty else {
+        guard !document.viewState.selectedObjectIDs.isEmpty else {
             return
         }
 
@@ -840,7 +840,7 @@ extension ProfessionalPathOperations {
             for shapeIndex in shapes.indices {
                 guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
 
-                if document.selectedShapeIDs.contains(shape.id) {
+                if document.viewState.selectedObjectIDs.contains(shape.id) {
                     let originalShape = shape
                     let cleanedShape = mergeDuplicatePoints(in: originalShape, tolerance: tolerance)
 
