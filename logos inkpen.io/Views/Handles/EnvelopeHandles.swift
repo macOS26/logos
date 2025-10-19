@@ -551,8 +551,8 @@ struct EnvelopeHandles: View {
         draggingCornerIndex = nil
 
         var oldShapes: [UUID: VectorShape] = [:]
-        if case .shape(let oldShape) = document.findObject(by: shape.id)?.objectType {
-            oldShapes[shape.id] = oldShape
+        if let oldObject = document.findObject(by: shape.id) {
+            oldShapes[shape.id] = oldObject.shape
         }
 
         if warpedCorners.count == 4 {
