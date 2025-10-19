@@ -90,58 +90,15 @@ final class AppEventMonitor {
             let arrowRight = "\u{F703}"
 
             if [arrowUp, arrowDown, arrowLeft, arrowRight].contains(characters) {
-                let mods = event.modifierFlags
-                print("🔷 Arrow key - tool: \(activeDoc.currentTool), selected: \(activeDoc.selectedObjectIDs.count), cmd: \(mods.contains(.command)), opt: \(mods.contains(.option)), shift: \(mods.contains(.shift))")
-
-                // Cmd+Arrow: Select next/prev object within same layer
-                if event.modifierFlags.contains(.command) &&
-                   !event.modifierFlags.contains(.control) &&
-                   !event.modifierFlags.contains(.option) {
-
-                    if !activeDoc.selectedObjectIDs.isEmpty {
-                        if characters == arrowUp {
-                            activeDoc.selectNextObjectDownWithinLayer()
-                            return nil
-                        } else if characters == arrowDown {
-                            activeDoc.selectNextObjectUpWithinLayer()
-                            return nil
-                        }
-                    }
-                }
-
-                // Option+Arrow: Move objects up/down in z-order within same layer
-                if event.modifierFlags.contains(.option) &&
-                   !event.modifierFlags.contains(.control) &&
-                   !event.modifierFlags.contains(.command) &&
-                   !activeDoc.selectedObjectIDs.isEmpty {
-
-                    print("🔷 Option+Arrow detected - moving in z-order")
-
-                    if characters == arrowUp {
-                        print("🔷 Moving up in z-order")
-                        activeDoc.moveSelectedObjectsUpWithinLayer()
-                        return nil
-                    } else if characters == arrowDown {
-                        print("🔷 Moving down in z-order")
-                        activeDoc.moveSelectedObjectsDownWithinLayer()
-                        return nil
-                    }
-                }
-
                 // Plain or Shift+arrows: Nudge selected objects (works with any tool)
                 if !event.modifierFlags.contains(.control) &&
                    !event.modifierFlags.contains(.command) &&
                    !event.modifierFlags.contains(.option) {
 
-                    print("🔷 Plain arrow - attempting to nudge")
-
                     // Only nudge if something is selected, but consume the event regardless
                     if activeDoc.selectedObjectIDs.isEmpty {
-                        print("🔷 No objects selected - consuming event")
                         return nil
                     }
-
-                    print("🔷 Nudging \(activeDoc.selectedObjectIDs.count) objects")
 
                     var nudgeDirection: CGVector? = nil
                     switch characters {
