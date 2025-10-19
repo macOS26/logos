@@ -324,44 +324,21 @@ struct IsolatedLayerView: View, Equatable {
         ZStack {
             // DISABLED: Inactive layer caching temporarily disabled
             // TODO: Re-enable after fixing fonts undo/redo
-            let shouldShowCache = false // was: !hasSelection && cachedImage != nil
 
-            if shouldShowCache {
-                // Show cached image using Canvas at correct zoom/offset position
-                if let cached = cachedImage {
-                    Canvas { context, size in
-                        // The cached image is at document size (pageSize)
-                        let pageSize = document.settings.sizeInPoints
-
-                        // Draw at the zoomed and offset position
-                        let drawRect = CGRect(
-                            x: canvasOffset.x,
-                            y: canvasOffset.y,
-                            width: pageSize.width * zoomLevel,
-                            height: pageSize.height * zoomLevel
-                        )
-
-                        let resolvedImage = context.resolve(Image(nsImage: cached))
-                        context.draw(resolvedImage, in: drawRect)
-                    }
-                    .allowsHitTesting(false)
-                }
-            } else {
-                // Render live SwiftUI views
-                ForEach(objects, id: \.id) { unifiedObject in
-                    if unifiedObject.isVisible {
-                        UnifiedObjectContentView(
-                            unifiedObject: unifiedObject,
-                            document: document,
-                            zoomLevel: zoomLevel,
-                            canvasOffset: canvasOffset,
-                            selectedObjectIDs: selectedObjectIDs,
-                            viewMode: viewMode,
-                            dragPreviewDelta: dragPreviewDelta,
-                            dragPreviewTrigger: dragPreviewTrigger,
-                            liveScaleTransform: liveScaleTransform
-                        )
-                    }
+            // Render live SwiftUI views
+            ForEach(objects, id: \.id) { unifiedObject in
+                if unifiedObject.isVisible {
+                    UnifiedObjectContentView(
+                        unifiedObject: unifiedObject,
+                        document: document,
+                        zoomLevel: zoomLevel,
+                        canvasOffset: canvasOffset,
+                        selectedObjectIDs: selectedObjectIDs,
+                        viewMode: viewMode,
+                        dragPreviewDelta: dragPreviewDelta,
+                        dragPreviewTrigger: dragPreviewTrigger,
+                        liveScaleTransform: liveScaleTransform
+                    )
                 }
             }
         }
