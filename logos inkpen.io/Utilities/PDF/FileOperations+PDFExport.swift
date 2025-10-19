@@ -205,6 +205,7 @@ extension FileOperations {
 
     static func renderShapeToPDFWithImageSupport(shape: VectorShape, context: CGContext, isExport: Bool = false, useCMYK: Bool = false, textRenderingMode: AppState.PDFTextRenderingMode = .glyphs, document: VectorDocument? = nil) throws {
         if let doc = document, let object = doc.findObject(by: shape.id), case .text = object.objectType, let vectorText = VectorText.from(shape) {
+            Log.info("📄 PDF Export - Rendering text: '\(vectorText.content)' at position: \(vectorText.position)", category: .general)
             try renderTextToPDF(vectorText: vectorText, context: context, renderingMode: textRenderingMode)
             return
         }
@@ -375,6 +376,9 @@ extension FileOperations {
 
         context.saveGState()
 
+        // Apply transform (like we do for shapes)
+        context.concatenate(vectorText.transform)
+
         context.setAlpha(CGFloat(vectorText.typography.fillOpacity))
 
         let cgColor = vectorText.typography.fillColor.cgColor
@@ -419,14 +423,14 @@ extension FileOperations {
                 let glyphX: CGFloat
                 switch vectorText.typography.alignment.nsTextAlignment {
                 case .left, .justified:
-                    glyphX = vectorText.position.x + actualUsedRect.origin.x + glyphLocation.x
+                    glyphX = actualUsedRect.origin.x + glyphLocation.x
                 case .center, .right:
-                    glyphX = vectorText.position.x + lineRect.origin.x + glyphLocation.x
+                    glyphX = lineRect.origin.x + glyphLocation.x
                 default:
-                    glyphX = vectorText.position.x + actualUsedRect.origin.x + glyphLocation.x
+                    glyphX = actualUsedRect.origin.x + glyphLocation.x
                 }
 
-                let glyphY = vectorText.position.y + actualLineRect.origin.y + glyphLocation.y
+                let glyphY = actualLineRect.origin.y + glyphLocation.y
 
                 context.saveGState()
 
@@ -577,6 +581,9 @@ extension FileOperations {
 
         context.saveGState()
 
+        // Apply transform (like we do for shapes)
+        context.concatenate(vectorText.transform)
+
         context.setAlpha(CGFloat(vectorText.typography.fillOpacity))
 
         let renderingAttributes: [NSAttributedString.Key: Any] = [
@@ -605,13 +612,13 @@ extension FileOperations {
             let lineX: CGFloat
             switch vectorText.typography.alignment.nsTextAlignment {
             case .left, .justified:
-                lineX = vectorText.position.x + lineUsedRect.origin.x + glyphLocation.x
+                lineX = lineUsedRect.origin.x + glyphLocation.x
             case .center, .right:
-                lineX = vectorText.position.x + lineRect.origin.x + glyphLocation.x
+                lineX = lineRect.origin.x + glyphLocation.x
             default:
-                lineX = vectorText.position.x + lineUsedRect.origin.x + glyphLocation.x
+                lineX = lineUsedRect.origin.x + glyphLocation.x
             }
-            let lineY = vectorText.position.y + lineRect.origin.y + glyphLocation.y
+            let lineY = lineRect.origin.y + glyphLocation.y
 
             context.saveGState()
 
