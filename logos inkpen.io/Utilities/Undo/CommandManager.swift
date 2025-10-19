@@ -21,9 +21,11 @@ class CommandManager: ObservableObject {
         document.isUndoRedoOperation = true
         command.execute(on: document)
         document.rebuildIndexCache()
-       // document.changeNotifier.notifyGeneralChange()
+        document.changeNotifier.notifyGeneralChange()
         document.objectWillChange.send()
         document.isUndoRedoOperation = false
+
+        document.toggleActiveLayerVisibility()
 
         if let lastCommand = undoStack.last,
            let mergedCommand = lastCommand.mergeWith(command) {
@@ -39,6 +41,7 @@ class CommandManager: ObservableObject {
         redoStack.removeAll()
 
         updateState()
+
     }
 
     func undo() {
@@ -48,14 +51,15 @@ class CommandManager: ObservableObject {
         let command = undoStack.removeLast()
         command.undo(on: document)
         document.rebuildIndexCache()
-        //document.changeNotifier.notifyGeneralChange()
+        document.toggleActiveLayerVisibility()
+        document.changeNotifier.notifyGeneralChange()
         document.objectWillChange.send()
         redoStack.append(command)
         document.isUndoRedoOperation = false
 
         updateState()
 
-        //NotificationCenter.default.post(name: Notification.Name("ClearPreviewStates"), object: nil)
+        NotificationCenter.default.post(name: Notification.Name("ClearPreviewStates"), object: nil)
     }
 
     func redo() {
@@ -65,7 +69,8 @@ class CommandManager: ObservableObject {
         let command = redoStack.removeLast()
         command.execute(on: document)
         document.rebuildIndexCache()
-       // document.changeNotifier.notifyGeneralChange()
+        document.toggleActiveLayerVisibility()
+        document.changeNotifier.notifyGeneralChange()
         document.objectWillChange.send()
         undoStack.append(command)
         document.isUndoRedoOperation = false
