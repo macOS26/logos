@@ -40,28 +40,28 @@ extension VectorDocument {
     }
 
     func notifyActiveToolsOfFillOpacityChange() {
-        lastColorChangeType = .fillOpacity
-        colorChangeNotification = UUID()
+        viewState.lastColorChangeType = .fillOpacity
+        viewState.colorChangeNotification = UUID()
     }
 
     func notifyActiveToolsOfStrokeColorChange() {
-        lastColorChangeType = .strokeColor
-        colorChangeNotification = UUID()
+        viewState.lastColorChangeType = .strokeColor
+        viewState.colorChangeNotification = UUID()
     }
 
     func notifyActiveToolsOfStrokeOpacityChange() {
-        lastColorChangeType = .strokeOpacity
-        colorChangeNotification = UUID()
+        viewState.lastColorChangeType = .strokeOpacity
+        viewState.colorChangeNotification = UUID()
     }
 
     func notifyActiveToolsOfColorChange() {
-        lastColorChangeType = .fillOpacity
-        colorChangeNotification = UUID()
+        viewState.lastColorChangeType = .fillOpacity
+        viewState.colorChangeNotification = UUID()
     }
 
     private func applyColorToShape(_ shape: inout VectorShape, color: VectorColor, isText: Bool) {
         if isText {
-            switch activeColorTarget {
+            switch viewState.activeColorTarget {
             case .fill:
                 if shape.typography != nil {
                     shape.typography?.fillColor = color
@@ -74,7 +74,7 @@ extension VectorDocument {
                 }
             }
         } else {
-            switch activeColorTarget {
+            switch viewState.activeColorTarget {
             case .fill:
                 if shape.fillStyle == nil {
                     shape.fillStyle = FillStyle(color: color)
@@ -92,18 +92,18 @@ extension VectorDocument {
     }
 
     func setActiveColor(_ color: VectorColor) {
-        let shouldSaveUndo = !selectedObjectIDs.isEmpty
+        let shouldSaveUndo = !viewState.selectedObjectIDs.isEmpty
 
         var oldColors: [UUID: VectorColor] = [:]
         var newColors: [UUID: VectorColor] = [:]
         var oldOpacities: [UUID: Double] = [:]
         var newOpacities: [UUID: Double] = [:]
 
-        for objectID in selectedObjectIDs {
+        for objectID in viewState.selectedObjectIDs {
             if let unifiedObject = findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .text(let shape):
-                    switch activeColorTarget {
+                    switch viewState.activeColorTarget {
                     case .fill:
                         oldColors[objectID] = shape.typography?.fillColor ?? .black
                         newColors[objectID] = color
@@ -116,7 +116,7 @@ extension VectorDocument {
                         newOpacities[objectID] = defaultStrokeOpacity
                     }
                 case .shape(let shape), .warp(let shape), .clipMask(let shape):
-                    switch activeColorTarget {
+                    switch viewState.activeColorTarget {
                     case .fill:
                         oldColors[objectID] = shape.fillStyle?.color ?? .black
                         newColors[objectID] = color
@@ -130,7 +130,7 @@ extension VectorDocument {
                     }
 
                 case .group(let shape), .clipGroup(let shape):
-                    switch activeColorTarget {
+                    switch viewState.activeColorTarget {
                     case .fill:
                         oldColors[objectID] = shape.fillStyle?.color ?? .black
                         newColors[objectID] = color
@@ -178,9 +178,9 @@ extension VectorDocument {
         }
 
         if shouldSaveUndo && !oldColors.isEmpty {
-            let commandTarget: ChangeColorCommand.ColorTarget = (activeColorTarget == .fill) ? .fill : .stroke
+            let commandTarget: ChangeColorCommand.ColorTarget = (viewState.activeColorTarget == .fill) ? .fill : .stroke
             let command = ChangeColorCommand(
-                objectIDs: Array(selectedObjectIDs),
+                objectIDs: Array(viewState.selectedObjectIDs),
                 target: commandTarget,
                 oldColors: oldColors,
                 newColors: newColors,
@@ -190,14 +190,14 @@ extension VectorDocument {
             executeCommand(command)
         }
 
-        switch activeColorTarget {
+        switch viewState.activeColorTarget {
         case .fill:
             defaultFillColor = color
         case .stroke:
             defaultStrokeColor = color
         }
 
-        for objectID in selectedObjectIDs {
+        for objectID in viewState.selectedObjectIDs {
             if let unifiedObject = findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .group(let groupShape):
@@ -237,12 +237,12 @@ extension VectorDocument {
     }
 
     func getSelectedObjectColor() -> VectorColor? {
-        guard let firstSelectedID = selectedObjectIDs.first else { return nil }
+        guard let firstSelectedID = viewState.selectedObjectIDs.first else { return nil }
 
         if let unifiedObject = findObject(by: firstSelectedID) {
             switch unifiedObject.objectType {
             case .text(let shape):
-                if activeColorTarget == .stroke {
+                if viewState.activeColorTarget == .stroke {
                     return shape.typography?.strokeColor
                 } else {
                     return shape.typography?.fillColor
@@ -252,7 +252,7 @@ extension VectorDocument {
                  .group(let shape),
                  .clipGroup(let shape),
                  .clipMask(let shape):
-                if activeColorTarget == .stroke {
+                if viewState.activeColorTarget == .stroke {
                     return shape.strokeStyle?.color
                 } else {
                     return shape.fillStyle?.color

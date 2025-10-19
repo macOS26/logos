@@ -9,7 +9,7 @@ extension VectorDocument {
         executeCommand(command)
 
         selectedShapeIDs = [shape.id]
-        selectedObjectIDs = [shape.id]
+        viewState.selectedObjectIDs = [shape.id]
         syncSelectionArrays()
     }
 
@@ -22,7 +22,7 @@ extension VectorDocument {
         executeCommand(command)
 
         selectedShapeIDs = [shape.id]
-        selectedObjectIDs = [shape.id]
+        viewState.selectedObjectIDs = [shape.id]
         syncSelectionArrays()
     }
 
@@ -69,7 +69,7 @@ extension VectorDocument {
     }
 
     func removeSelectedObjects() {
-        let candidateObjects = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
+        let candidateObjects = unifiedObjects.filter { viewState.selectedObjectIDs.contains($0.id) }
 
         // Filter out protected objects (locked layers, Canvas/Pasteboard layers, background shapes)
         let objectsToDelete = candidateObjects.filter { object in
@@ -110,7 +110,7 @@ extension VectorDocument {
             executeCommand(command)
         }
 
-        selectedObjectIDs.removeAll()
+        viewState.selectedObjectIDs.removeAll()
         syncSelectionArrays()
     }
 
@@ -157,7 +157,7 @@ extension VectorDocument {
     }
 
     func getActiveShapeIDs() -> Set<UUID> {
-        if currentTool == .directSelection || currentTool == .convertAnchorPoint || currentTool == .penPlusMinus,
+        if viewState.currentTool == .directSelection || viewState.currentTool == .convertAnchorPoint || viewState.currentTool == .penPlusMinus,
            !directSelectedShapeIDs.isEmpty {
             return directSelectedShapeIDs
         }
@@ -185,7 +185,7 @@ extension VectorDocument {
         // Array position IS the stacking order now
         let sortedSelectedObjects = unifiedObjects
             .filter { object in
-                selectedObjectIDs.contains(object.id)
+                viewState.selectedObjectIDs.contains(object.id)
             }
 
         return sortedSelectedObjects.compactMap { obj in
@@ -203,14 +203,14 @@ extension VectorDocument {
 
     func selectShape(_ shapeID: UUID) {
         if let unifiedObject = findObject(by: shapeID) {
-            selectedObjectIDs = [unifiedObject.id]
+            viewState.selectedObjectIDs = [unifiedObject.id]
             syncSelectionArrays()
         }
     }
 
     func addToSelection(_ shapeID: UUID) {
         if let unifiedObject = findObject(by: shapeID) {
-            selectedObjectIDs.insert(unifiedObject.id)
+            viewState.selectedObjectIDs.insert(unifiedObject.id)
             syncSelectionArrays()
         }
     }
@@ -248,7 +248,7 @@ extension VectorDocument {
         }
 
         if !visibleObjects.isEmpty {
-            selectedObjectIDs = Set(visibleObjects.map { $0.id })
+            viewState.selectedObjectIDs = Set(visibleObjects.map { $0.id })
             syncSelectionArrays()
         }
     }
@@ -257,7 +257,7 @@ extension VectorDocument {
         guard let layerIndex = selectedLayerIndex else { return }
 
         let selectedShapes = unifiedObjects.filter { unifiedObject in
-            guard selectedObjectIDs.contains(unifiedObject.id) &&
+            guard viewState.selectedObjectIDs.contains(unifiedObject.id) &&
                   unifiedObject.layerIndex == layerIndex else { return false }
 
             switch unifiedObject.objectType {

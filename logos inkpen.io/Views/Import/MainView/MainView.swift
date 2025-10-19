@@ -121,10 +121,10 @@ struct MainView: View {
                     document.selectedLayerIndex = newDocument.selectedLayerIndex
                     document.selectedShapeIDs = newDocument.selectedShapeIDs
                     document.selectedTextIDs = newDocument.selectedTextIDs
-                    document.viewState.currentTool = newDocument.currentTool
-                    document.viewState.viewMode = newDocument.viewMode
-                    document.viewState.zoomLevel = newDocument.zoomLevel
-                    document.viewState.canvasOffset = newDocument.canvasOffset
+                    document.viewState.currentTool = newDocument.viewState.currentTool
+                    document.viewState.viewMode = newDocument.viewState.viewMode
+                    document.viewState.zoomLevel = newDocument.viewState.zoomLevel
+                    document.viewState.canvasOffset = newDocument.viewState.canvasOffset
                     document.showRulers = newDocument.showRulers
                     document.snapToGrid = newDocument.snapToGrid
 
@@ -473,7 +473,7 @@ struct MainView: View {
                     await MainActor.run {
                         document.unifiedObjects = savedState.unifiedObjects
                         document.layers = savedState.layers
-                        document.viewState.selectedObjectIDs = savedState.selectedObjectIDs
+                        document.viewState.selectedObjectIDs = savedState.viewState.selectedObjectIDs
                         document.selectedTextIDs = savedState.selectedTextIDs
                         document.selectedShapeIDs = savedState.selectedShapeIDs
                     }

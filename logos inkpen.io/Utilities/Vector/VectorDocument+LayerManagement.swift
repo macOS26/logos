@@ -293,21 +293,21 @@ extension VectorDocument {
 
         guard !visibleObjects.isEmpty else { return }
 
-        if selectedObjectIDs.isEmpty {
-            selectedObjectIDs = [visibleObjects.first!.id]
+        if viewState.selectedObjectIDs.isEmpty {
+            viewState.selectedObjectIDs = [visibleObjects.first!.id]
             syncSelectionArrays()
             return
         }
 
-        guard let currentID = selectedObjectIDs.first,
+        guard let currentID = viewState.selectedObjectIDs.first,
               let currentIndex = visibleObjects.firstIndex(where: { $0.id == currentID }) else {
-            selectedObjectIDs = [visibleObjects.first!.id]
+            viewState.selectedObjectIDs = [visibleObjects.first!.id]
             syncSelectionArrays()
             return
         }
 
         let nextIndex = (currentIndex > 0) ? currentIndex - 1 : currentIndex
-        selectedObjectIDs = [visibleObjects[nextIndex].id]
+        viewState.selectedObjectIDs = [visibleObjects[nextIndex].id]
         syncSelectionArrays()
     }
 
@@ -328,29 +328,29 @@ extension VectorDocument {
 
         guard !visibleObjects.isEmpty else { return }
 
-        if selectedObjectIDs.isEmpty {
-            selectedObjectIDs = [visibleObjects.last!.id]
+        if viewState.selectedObjectIDs.isEmpty {
+            viewState.selectedObjectIDs = [visibleObjects.last!.id]
             syncSelectionArrays()
             return
         }
 
-        guard let currentID = selectedObjectIDs.first,
+        guard let currentID = viewState.selectedObjectIDs.first,
               let currentIndex = visibleObjects.firstIndex(where: { $0.id == currentID }) else {
-            selectedObjectIDs = [visibleObjects.last!.id]
+            viewState.selectedObjectIDs = [visibleObjects.last!.id]
             syncSelectionArrays()
             return
         }
 
         let nextIndex = (currentIndex < visibleObjects.count - 1) ? currentIndex + 1 : currentIndex
-        selectedObjectIDs = [visibleObjects[nextIndex].id]
+        viewState.selectedObjectIDs = [visibleObjects[nextIndex].id]
         syncSelectionArrays()
     }
 
     func moveSelectedObjectsUp() {
-        guard !selectedObjectIDs.isEmpty else { return }
+        guard !viewState.selectedObjectIDs.isEmpty else { return }
 
         var selectedObjects: [VectorObject] = []
-        for objectID in selectedObjectIDs {
+        for objectID in viewState.selectedObjectIDs {
             if let obj = findObject(by: objectID) {
                 selectedObjects.append(obj)
             }
@@ -365,10 +365,10 @@ extension VectorDocument {
     }
 
     func moveSelectedObjectsDown() {
-        guard !selectedObjectIDs.isEmpty else { return }
+        guard !viewState.selectedObjectIDs.isEmpty else { return }
 
         var selectedObjects: [VectorObject] = []
-        for objectID in selectedObjectIDs {
+        for objectID in viewState.selectedObjectIDs {
             if let obj = findObject(by: objectID) {
                 selectedObjects.append(obj)
             }

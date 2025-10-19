@@ -35,7 +35,7 @@ extension VectorDocument {
     }
 
     func bringSelectedToFront() {
-        guard !selectedObjectIDs.isEmpty else { return }
+        guard !viewState.selectedObjectIDs.isEmpty else { return }
 
         var affectedObjectIDs: [UUID] = []
         var oldIndices: [UUID: Int] = [:]
@@ -45,7 +45,7 @@ extension VectorDocument {
             let layerObjects = unifiedObjects.enumerated().filter { $0.element.layerIndex == layerIndex }
             guard !layerObjects.isEmpty else { continue }
 
-            let expandedSelectedIDs = expandSelectionForClippingMasks(selectedObjectIDs, in: layerObjects.map { $0.element })
+            let expandedSelectedIDs = expandSelectionForClippingMasks(viewState.selectedObjectIDs, in: layerObjects.map { $0.element })
             let selectedIndices = layerObjects.filter { expandedSelectedIDs.contains($0.element.id) }.map { $0.offset }
             let unselectedIndices = layerObjects.filter { !expandedSelectedIDs.contains($0.element.id) }.map { $0.offset }
 
@@ -90,7 +90,7 @@ extension VectorDocument {
     }
 
     func bringSelectedForward() {
-        guard !selectedObjectIDs.isEmpty else { return }
+        guard !viewState.selectedObjectIDs.isEmpty else { return }
 
         var affectedObjectIDs: [UUID] = []
         var oldIndices: [UUID: Int] = [:]
@@ -100,7 +100,7 @@ extension VectorDocument {
             let layerObjects = unifiedObjects.enumerated().filter { $0.element.layerIndex == layerIndex }
             guard !layerObjects.isEmpty else { continue }
 
-            let expandedSelectedIDs = expandSelectionForClippingMasks(selectedObjectIDs, in: layerObjects.map { $0.element })
+            let expandedSelectedIDs = expandSelectionForClippingMasks(viewState.selectedObjectIDs, in: layerObjects.map { $0.element })
 
             for index in layerObjects.map({ $0.offset }) {
                 let obj = unifiedObjects[index]
@@ -136,7 +136,7 @@ extension VectorDocument {
     }
 
     func sendSelectedBackward() {
-        guard !selectedObjectIDs.isEmpty else { return }
+        guard !viewState.selectedObjectIDs.isEmpty else { return }
 
         var affectedObjectIDs: [UUID] = []
         var oldIndices: [UUID: Int] = [:]
@@ -146,7 +146,7 @@ extension VectorDocument {
             let layerObjects = unifiedObjects.enumerated().filter { $0.element.layerIndex == layerIndex }
             guard !layerObjects.isEmpty else { continue }
 
-            let expandedSelectedIDs = expandSelectionForClippingMasks(selectedObjectIDs, in: layerObjects.map { $0.element })
+            let expandedSelectedIDs = expandSelectionForClippingMasks(viewState.selectedObjectIDs, in: layerObjects.map { $0.element })
 
             for index in layerObjects.map({ $0.offset }) {
                 let obj = unifiedObjects[index]
@@ -182,7 +182,7 @@ extension VectorDocument {
     }
 
     func sendSelectedToBack() {
-        guard !selectedObjectIDs.isEmpty else { return }
+        guard !viewState.selectedObjectIDs.isEmpty else { return }
 
         var affectedObjectIDs: [UUID] = []
         var oldIndices: [UUID: Int] = [:]
@@ -192,7 +192,7 @@ extension VectorDocument {
             let layerObjects = unifiedObjects.enumerated().filter { $0.element.layerIndex == layerIndex }
             guard !layerObjects.isEmpty else { continue }
 
-            let expandedSelectedIDs = expandSelectionForClippingMasks(selectedObjectIDs, in: layerObjects.map { $0.element })
+            let expandedSelectedIDs = expandSelectionForClippingMasks(viewState.selectedObjectIDs, in: layerObjects.map { $0.element })
             let selectedIndices = layerObjects.filter { expandedSelectedIDs.contains($0.element.id) }.map { $0.offset }
             let unselectedIndices = layerObjects.filter { !expandedSelectedIDs.contains($0.element.id) }.map { $0.offset }
 

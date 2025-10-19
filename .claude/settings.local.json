@@ -29,7 +29,16 @@
       "Read(//Users/toddbruss/Desktop/**)",
       "Read(//tmp/**)",
       "Bash(git revert:*)",
-      "Bash({} ;)"
+      "Bash({} ;)",
+      "Bash(VectorDocument+Codable.swift VectorDocument+ColorManagement.swift)",
+      "Bash(while read file)",
+      "Bash(do sed -i '' -e 's/\\([^.]\\)selectedObjectIDs/\\1viewState.selectedObjectIDs/g' -e 's/\\([^.]\\)currentTool/\\1viewState.currentTool/g' -e 's/\\([^.]\\)zoomLevel/\\1viewState.zoomLevel/g' -e 's/\\([^.]\\)viewMode/\\1viewState.viewMode/g' -e 's/\\([^.]\\)zoomRequest/\\1viewState.zoomRequest/g' \"$file\" done)",
+      "Bash(\"logos inkpen.io/App/AppEventMonitor.swift\")",
+      "Bash(\"logos inkpen.io/App/DocumentState.swift\")",
+      "Bash(\"logos inkpen.io/Utilities/Export/ExportTextOptionsHandler.swift\")",
+      "Bash(\"logos inkpen.io/Utilities/Vector/VectorDocument+WarpObjects.swift\")",
+      "Bash(\"logos inkpen.io/Utilities/Vector/VectorDocument+ZoomManagement.swift\")",
+      "Bash(\"logos inkpen.io/Views/Import/MainView/MainView.swift\")"
     ],
     "deny": [],
     "ask": []

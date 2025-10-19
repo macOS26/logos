@@ -28,8 +28,8 @@ extension VectorDocument {
         try container.encode(selectedLayerIndex, forKey: .selectedLayerIndex)
         try container.encode(selectedShapeIDs, forKey: .selectedShapeIDs)
         try container.encode(selectedTextIDs, forKey: .selectedTextIDs)
-        try container.encode(selectedObjectIDs, forKey: .selectedObjectIDs)
-        try container.encode(warpEnvelopeCorners, forKey: .warpEnvelopeCorners)
-        try container.encode(warpBounds, forKey: .warpBounds)
+        try container.encode(viewState.selectedObjectIDs, forKey: .selectedObjectIDs)
+        try container.encode(viewState.warpEnvelopeCorners, forKey: .warpEnvelopeCorners)
+        try container.encode(viewState.warpBounds, forKey: .warpBounds)
     }
 }

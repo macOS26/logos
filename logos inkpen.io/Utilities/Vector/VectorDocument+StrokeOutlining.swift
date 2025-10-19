@@ -85,7 +85,7 @@ extension VectorDocument {
             executeCommand(command)
         }
 
-        selectedObjectIDs = newShapeIDs
+        viewState.selectedObjectIDs = newShapeIDs
     }
 
     var canOutlineStrokes: Bool {

@@ -4,10 +4,10 @@ import Combine
 extension VectorDocument {
 
     func unwrapWarpObject() {
-        guard !selectedObjectIDs.isEmpty else { return }
+        guard !viewState.selectedObjectIDs.isEmpty else { return }
 
         let selectedWarpObjects = unifiedObjects.filter { unifiedObject in
-            guard selectedObjectIDs.contains(unifiedObject.id) else { return false }
+            guard viewState.selectedObjectIDs.contains(unifiedObject.id) else { return false }
             if case .warp(let shape) = unifiedObject.objectType {
                 return shape.isWarpObject
             }
@@ -32,8 +32,8 @@ extension VectorDocument {
                 if let unwrappedShape = shape.unwrapWarpObject() {
                     setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: unwrappedShape)
 
-                    selectedObjectIDs.remove(shape.id)
-                    selectedObjectIDs.insert(unwrappedShape.id)
+                    viewState.selectedObjectIDs.remove(shape.id)
+                    viewState.selectedObjectIDs.insert(unwrappedShape.id)
 
                 }
                }
@@ -58,10 +58,10 @@ extension VectorDocument {
     }
 
     func expandWarpObject() {
-        guard !selectedObjectIDs.isEmpty else { return }
+        guard !viewState.selectedObjectIDs.isEmpty else { return }
 
         let selectedWarpObjects = unifiedObjects.filter { unifiedObject in
-            guard selectedObjectIDs.contains(unifiedObject.id) else { return false }
+            guard viewState.selectedObjectIDs.contains(unifiedObject.id) else { return false }
             if case .warp(let shape) = unifiedObject.objectType {
                 return shape.isWarpObject
             }
@@ -86,8 +86,8 @@ extension VectorDocument {
                 if let expandedShape = shape.expandWarpObject() {
                     setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: expandedShape)
 
-                    selectedObjectIDs.remove(shape.id)
-                    selectedObjectIDs.insert(expandedShape.id)
+                    viewState.selectedObjectIDs.remove(shape.id)
+                    viewState.selectedObjectIDs.insert(expandedShape.id)
 
                 }
                }

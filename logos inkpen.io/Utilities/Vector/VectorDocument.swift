@@ -4,14 +4,12 @@ import Combine
 class VectorDocument: ObservableObject, Codable {
     // View-only state (doesn't trigger document saves)
     @Published var viewState: DocumentViewState = DocumentViewState()
-
     @Published var settings: DocumentSettings
     @Published var layers: [VectorLayer] = []
     var layerIndex: Int = 0
     var selectedLayerIndex: Int?
     var selectedShapeIDs: Set<UUID> = []
     var selectedTextIDs: Set<UUID> = []
-    @Published var selectedObjectIDs: Set<UUID> = []
     var directSelectedShapeIDs: Set<UUID> = []
     @Published var documentColorDefaults: ColorDefaults = ColorDefaults() {
         didSet {
@@ -29,9 +27,7 @@ class VectorDocument: ObservableObject, Codable {
     @Published var customHsbSwatches: [VectorColor] = [] {
         didSet { settings.customHsbSwatches = customHsbSwatches }
     }
-    
-    @Published var isDraggingVisibility: Bool = false
-    @Published var isDraggingLock: Bool = false
+
     var processedLayersDuringDrag: Set<Int> = []
     var processedObjectsDuringDrag: Set<UUID> = []
 
@@ -62,38 +58,14 @@ class VectorDocument: ObservableObject, Codable {
 
     var textPreviewTypography: [UUID: TypographyProperties] = [:]
 
-    @Published var currentTool: DrawingTool = .brush {
-        didSet {
-            UserDefaults.standard.set(currentTool.rawValue, forKey: "lastUsedTool")
-            
-            if currentTool == .freehand && defaultStrokeColor == .clear {
-                defaultStrokeColor = defaultFillColor
-            }
-        }
-    }
-    @Published var scalingAnchor: ScalingAnchor = .center
-    @Published var rotationAnchor: RotationAnchor = .center
-    @Published var shearAnchor: ShearAnchor = .center
-    @Published var transformOrigin: TransformOrigin = .center
-    @Published var objectPositionUpdateTrigger: Bool = false
     var currentDragOffset: CGPoint = .zero
     var cachedSelectionBounds: CGRect? = nil
     var dragPreviewCoordinates: CGPoint = .zero
-    @Published var scalePreviewDimensions: CGSize = .zero
-    @Published var warpEnvelopeCorners: [UUID: [CGPoint]] = [:]
-    @Published var warpBounds: [UUID: CGRect] = [:]
-    
+
     enum FreehandFillMode: String, CaseIterable {
         case fill = "Fill"
         case noFill = "No Fill"
     }
-
-    @Published var hasPressureInput: Bool = false
-    
-    @Published var viewMode: ViewMode = .color
-    @Published var zoomLevel: Double = 1.0
-    @Published var canvasOffset: CGPoint = .zero
-    @Published var zoomRequest: ZoomRequest? = nil
     @Published var showRulers: Bool = false
     @Published var showGrid: Bool = false
     @Published var snapToGrid: Bool = false
@@ -108,9 +80,8 @@ class VectorDocument: ObservableObject, Codable {
         manager.document = self
         return manager
     }()
-    
-    @Published var fontManager: FontManager = FontManager()
 
+    @Published var fontManager: FontManager = FontManager()
     @Published var defaultStrokePlacement: StrokePlacement = .center {
         didSet { saveStrokeStyleDefaults() }
     }
@@ -123,11 +94,7 @@ class VectorDocument: ObservableObject, Codable {
     @Published var defaultStrokeMiterLimit: Double = 10.0 {
         didSet { saveStrokeStyleDefaults() }
     }
-    
-    @Published var activeColorTarget: ColorTarget = .fill
-    @Published var colorChangeNotification: UUID = UUID()
-    @Published var lastColorChangeType: ColorChangeType = .fillOpacity
-    
+
     internal let maxUndoStackSize = 50
 
     var originalHandlePositions: [String: VectorPoint] = [:]
@@ -165,19 +132,13 @@ class VectorDocument: ObservableObject, Codable {
         
         if let lastToolRaw = UserDefaults.standard.string(forKey: "lastUsedTool"),
            let lastTool = DrawingTool(rawValue: lastToolRaw) {
-            self.currentTool = lastTool
             self.viewState.currentTool = lastTool
         } else {
-            self.currentTool = .selection
             self.viewState.currentTool = .selection
         }
-        self.scalingAnchor = .center
         self.viewState.scalingAnchor = .center
-        self.viewMode = .color
         self.viewState.viewMode = .color
-        self.zoomLevel = 1.0
         self.viewState.zoomLevel = 1.0
-        self.canvasOffset = .zero
         self.viewState.canvasOffset = .zero
         self.showRulers = settings.showRulers
         self.showGrid = settings.showGrid
@@ -254,44 +215,26 @@ class VectorDocument: ObservableObject, Codable {
         selectedLayerIndex = try? container.decodeIfPresent(Int.self, forKey: .selectedLayerIndex)
         selectedShapeIDs = (try? container.decodeIfPresent(Set<UUID>.self, forKey: .selectedShapeIDs)) ?? []
         selectedTextIDs = (try? container.decodeIfPresent(Set<UUID>.self, forKey: .selectedTextIDs)) ?? []
-        selectedObjectIDs = (try? container.decodeIfPresent(Set<UUID>.self, forKey: .selectedObjectIDs)) ?? []
-        viewState.selectedObjectIDs = selectedObjectIDs
+        viewState.selectedObjectIDs = (try? container.decodeIfPresent(Set<UUID>.self, forKey: .selectedObjectIDs)) ?? []
         directSelectedShapeIDs = []
         isHandleScalingActive = false
-        isDraggingVisibility = false
-        viewState.isDraggingVisibility = false
-        isDraggingLock = false
-        viewState.isDraggingLock = false
-        
-        currentTool = decodedCurrentTool
+
         viewState.currentTool = decodedCurrentTool
-        scalingAnchor = .center
         viewState.scalingAnchor = .center
-        rotationAnchor = .center
         viewState.rotationAnchor = .center
-        shearAnchor = .center
         viewState.shearAnchor = .center
-        transformOrigin = .center
         viewState.transformOrigin = .center
-        objectPositionUpdateTrigger = false
         viewState.objectPositionUpdateTrigger = false
         currentDragOffset = .zero
         cachedSelectionBounds = nil
         dragPreviewCoordinates = .zero
-        scalePreviewDimensions = .zero
         viewState.scalePreviewDimensions = .zero
-        warpEnvelopeCorners = (try? container.decodeIfPresent([UUID: [CGPoint]].self, forKey: .warpEnvelopeCorners)) ?? [:]
-        viewState.warpEnvelopeCorners = warpEnvelopeCorners
-        warpBounds = (try? container.decodeIfPresent([UUID: CGRect].self, forKey: .warpBounds)) ?? [:]
-        viewState.warpBounds = warpBounds
+        viewState.warpEnvelopeCorners = (try? container.decodeIfPresent([UUID: [CGPoint]].self, forKey: .warpEnvelopeCorners)) ?? [:]
+        viewState.warpBounds = (try? container.decodeIfPresent([UUID: CGRect].self, forKey: .warpBounds)) ?? [:]
 
-        viewMode = decodedViewMode
         viewState.viewMode = decodedViewMode
-        zoomLevel = decodedZoomLevel
         viewState.zoomLevel = decodedZoomLevel
-        canvasOffset = decodedCanvasOffset
         viewState.canvasOffset = decodedCanvasOffset
-        zoomRequest = nil
         viewState.zoomRequest = nil
         
         isUndoRedoOperation = false
@@ -303,16 +246,13 @@ class VectorDocument: ObservableObject, Codable {
         defaultStrokeLineJoin = .miter
         defaultStrokeLineCap = .butt
         defaultStrokeMiterLimit = 10.0
-        
-        hasPressureInput = false
-        viewState.hasPressureInput = false
 
-        activeColorTarget = .fill
+        viewState.hasPressureInput = false
         viewState.activeColorTarget = .fill
-        colorChangeNotification = UUID()
         viewState.colorChangeNotification = UUID()
-        lastColorChangeType = .fillOpacity
         viewState.lastColorChangeType = .fillOpacity
+        viewState.isDraggingVisibility = false
+        viewState.isDraggingLock = false
 
         originalHandlePositions = [:]
         

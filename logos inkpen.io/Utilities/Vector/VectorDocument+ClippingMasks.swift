@@ -33,7 +33,7 @@ extension VectorDocument {
             removedShapes: removedShapes,
             addedObjectIDs: [clippingGroup.id],
             addedShapes: [clippingGroup.id: clippingGroup],
-            oldSelectedObjectIDs: selectedObjectIDs,
+            oldSelectedObjectIDs: viewState.selectedObjectIDs,
             newSelectedObjectIDs: newSelectedIDs
         )
 
@@ -41,7 +41,7 @@ extension VectorDocument {
 
         selectedShapeIDs = [clippingGroup.id]
         selectedTextIDs.removeAll()
-        selectedObjectIDs = [clippingGroup.id]
+        viewState.selectedObjectIDs = [clippingGroup.id]
     }
 
     func releaseClippingMaskForSelection() {

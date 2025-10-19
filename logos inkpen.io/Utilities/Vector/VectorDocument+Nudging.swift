@@ -2,20 +2,20 @@ import SwiftUI
 
 extension VectorDocument {
     func nudgeSelectedObjects(by nudgeAmount: CGVector) {
-        guard !selectedObjectIDs.isEmpty else { return }
+        guard !viewState.selectedObjectIDs.isEmpty else { return }
 
         var oldShapes: [UUID: VectorShape] = [:]
         var newShapes: [UUID: VectorShape] = [:]
         var objectIDs: [UUID] = []
 
-        for objectID in selectedObjectIDs {
+        for objectID in viewState.selectedObjectIDs {
             if let shape = findShape(by: objectID) {
                 oldShapes[objectID] = shape
                 objectIDs.append(objectID)
             }
         }
 
-        for objectID in selectedObjectIDs {
+        for objectID in viewState.selectedObjectIDs {
             if let unifiedObject = findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .shape(var shape),
@@ -90,7 +90,7 @@ extension VectorDocument {
             }
         }
 
-        objectPositionUpdateTrigger.toggle()
+        viewState.objectPositionUpdateTrigger.toggle()
 
         for objectID in objectIDs {
             if let updatedShape = findShape(by: objectID) {

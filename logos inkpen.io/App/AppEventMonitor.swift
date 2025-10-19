@@ -45,10 +45,10 @@ final class AppEventMonitor {
         if event.type == .keyDown,
            let characters = event.charactersIgnoringModifiers,
            characters == " " {
-            if activeDoc.currentTool != .hand && temporaryTool == nil {
-                previousTool = activeDoc.currentTool
+            if activeDoc.viewState.currentTool != .hand && temporaryTool == nil {
+                previousTool = activeDoc.viewState.currentTool
                 temporaryTool = .hand
-                activeDoc.currentTool = .hand
+                activeDoc.viewState.currentTool = .hand
             }
             return nil
         }
@@ -57,7 +57,7 @@ final class AppEventMonitor {
            let characters = event.charactersIgnoringModifiers,
            characters == " " {
             if let previous = previousTool, temporaryTool == .hand {
-                activeDoc.currentTool = previous
+                activeDoc.viewState.currentTool = previous
                 temporaryTool = nil
                 previousTool = nil
             }
@@ -68,7 +68,7 @@ final class AppEventMonitor {
         if event.type == .keyDown,
            let characters = event.charactersIgnoringModifiers,
            characters == "\t" {
-            activeDoc.selectedObjectIDs = []
+            activeDoc.viewState.selectedObjectIDs = []
             activeDoc.syncSelectionArrays()
 
             // Clear text editing state
@@ -96,7 +96,7 @@ final class AppEventMonitor {
                    !event.modifierFlags.contains(.option) {
 
                     // Only nudge if something is selected, but consume the event regardless
-                    if activeDoc.selectedObjectIDs.isEmpty {
+                    if activeDoc.viewState.selectedObjectIDs.isEmpty {
                         return nil
                     }
 

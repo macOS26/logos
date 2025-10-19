@@ -903,7 +903,7 @@ class DocumentState: ObservableObject {
     }
 
     func deselectAll() {
-        document?.selectedObjectIDs.removeAll()
+        document?.viewState.selectedObjectIDs.removeAll()
         updateAllStates()
     }
 
@@ -1030,15 +1030,15 @@ class DocumentState: ObservableObject {
     }
 
     func actualSize() {
-        document?.zoomLevel = 1.0
+        document?.viewState.zoomLevel = 1.0
     }
 
     func toggleColorKeylineView() {
         guard let doc = document else { return }
-        if doc.viewMode == .color {
-            doc.viewMode = .keyline
+        if doc.viewState.viewMode == .color {
+            doc.viewState.viewMode = .keyline
         } else {
-            doc.viewMode = .color
+            doc.viewState.viewMode = .color
         }
     }
 

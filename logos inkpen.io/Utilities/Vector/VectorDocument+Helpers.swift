@@ -79,10 +79,10 @@ extension VectorDocument {
     func syncEncodableStorage() {
         _encodableSettings = settings
         _encodableLayers = layers
-        _encodableCurrentTool = currentTool
-        _encodableViewMode = viewMode
-        _encodableZoomLevel = zoomLevel
-        _encodableCanvasOffset = canvasOffset
+        _encodableCurrentTool = viewState.currentTool
+        _encodableViewMode = viewState.viewMode
+        _encodableZoomLevel = viewState.zoomLevel
+        _encodableCanvasOffset = viewState.canvasOffset
         _encodableUnifiedObjects = unifiedObjects
     }
 
@@ -126,10 +126,10 @@ extension VectorDocument {
     }
 
     func updateTransformPanelValues() {
-        guard !selectedObjectIDs.isEmpty else { return }
+        guard !viewState.selectedObjectIDs.isEmpty else { return }
 
         var combinedBounds: CGRect?
-        for objectID in selectedObjectIDs {
+        for objectID in viewState.selectedObjectIDs {
             if let unifiedObject = findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .group(let shape):
@@ -154,7 +154,7 @@ extension VectorDocument {
             }
         }
 
-        objectPositionUpdateTrigger.toggle()
+        viewState.objectPositionUpdateTrigger.toggle()
     }
 
     func cleanupImageRegistry() {

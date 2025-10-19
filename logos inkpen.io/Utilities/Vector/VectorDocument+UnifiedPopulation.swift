@@ -23,7 +23,7 @@ extension VectorDocument {
         selectedShapeIDs.removeAll()
         selectedTextIDs.removeAll()
 
-        for objectID in selectedObjectIDs {
+        for objectID in viewState.selectedObjectIDs {
             if let unifiedObject = findObject(by: objectID) {
                 switch unifiedObject.objectType {
                 case .text(let shape):
@@ -40,13 +40,13 @@ extension VectorDocument {
     }
 
     func syncUnifiedSelectionFromLegacy() {
-        selectedObjectIDs.removeAll()
+        viewState.selectedObjectIDs.removeAll()
 
         let allSelectedIDs = selectedShapeIDs.union(selectedTextIDs)
 
         for object in unifiedObjects {
             if allSelectedIDs.contains(object.id) {
-                selectedObjectIDs.insert(object.id)
+                viewState.selectedObjectIDs.insert(object.id)
             }
         }
     }

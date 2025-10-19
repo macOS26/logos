@@ -23,7 +23,7 @@ extension VectorDocument {
         selectedShapeIDs.remove(id)
         selectedTextIDs.remove(id)
         if let unifiedObj = findObject(by: id) {
-            selectedObjectIDs.remove(unifiedObj.id)
+            viewState.selectedObjectIDs.remove(unifiedObj.id)
         }
     }
 
@@ -38,7 +38,7 @@ extension VectorDocument {
 
         selectedTextIDs.remove(id)
         if let unifiedObj = findObject(by: id) {
-            selectedObjectIDs.remove(unifiedObj.id)
+            viewState.selectedObjectIDs.remove(unifiedObj.id)
         }
 
     }

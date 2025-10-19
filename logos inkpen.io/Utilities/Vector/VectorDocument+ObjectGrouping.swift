@@ -3,16 +3,16 @@ import SwiftUI
 extension VectorDocument {
     func groupSelectedObjects() {
         guard let layerIndex = selectedLayerIndex,
-              selectedObjectIDs.count > 1 else {
+              viewState.selectedObjectIDs.count > 1 else {
             return
         }
 
-        print("🔴 GROUP: selectedObjectIDs = \(selectedObjectIDs)")
+        print("🔴 GROUP: viewState.selectedObjectIDs = \(viewState.selectedObjectIDs)")
         print("🔴 GROUP: selectedShapeIDs = \(selectedShapeIDs)")
         print("🔴 GROUP: selectedTextIDs = \(selectedTextIDs)")
 
         var removedShapes: [UUID: VectorShape] = [:]
-        let objectsToRemove = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
+        let objectsToRemove = unifiedObjects.filter { viewState.selectedObjectIDs.contains($0.id) }
 
         print("🔴 GROUP: objectsToRemove count = \(objectsToRemove.count)")
         for (index, obj) in objectsToRemove.enumerated() {
@@ -62,7 +62,7 @@ extension VectorDocument {
             removedShapes: removedShapes,
             addedObjectIDs: [groupShape.id],
             addedShapes: [groupShape.id: groupShape],
-            oldSelectedObjectIDs: selectedObjectIDs,
+            oldSelectedObjectIDs: viewState.selectedObjectIDs,
             newSelectedObjectIDs: newSelectedIDs
         )
 
@@ -70,7 +70,7 @@ extension VectorDocument {
 
         selectedShapeIDs = [groupShape.id]
         selectedTextIDs.removeAll()
-        selectedObjectIDs = [groupShape.id]
+        viewState.selectedObjectIDs = [groupShape.id]
     }
 
     func flattenSelectedObjects() {
@@ -78,7 +78,7 @@ extension VectorDocument {
               selectedShapeIDs.count > 1 else { return }
 
         var removedShapes: [UUID: VectorShape] = [:]
-        let objectsToRemove = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
+        let objectsToRemove = unifiedObjects.filter { viewState.selectedObjectIDs.contains($0.id) }
         for obj in objectsToRemove {
             switch obj.objectType {
             case .text(let shape),
@@ -118,25 +118,25 @@ extension VectorDocument {
         let command = GroupCommand(
             operation: .flatten,
             layerIndex: layerIndex,
-            removedObjectIDs: Array(selectedObjectIDs),
+            removedObjectIDs: Array(viewState.selectedObjectIDs),
             removedShapes: removedShapes,
             addedObjectIDs: [flattenedShape.id],
             addedShapes: [flattenedShape.id: flattenedShape],
-            oldSelectedObjectIDs: selectedObjectIDs,
+            oldSelectedObjectIDs: viewState.selectedObjectIDs,
             newSelectedObjectIDs: newSelectedIDs
         )
 
         commandManager.execute(command)
 
         selectedShapeIDs = [flattenedShape.id]
-        selectedObjectIDs = [flattenedShape.id]
+        viewState.selectedObjectIDs = [flattenedShape.id]
     }
 
     func ungroupSelectedObjects() {
-        print("🟡 UNGROUP: Starting, selectedObjectIDs=\(selectedObjectIDs)")
+        print("🟡 UNGROUP: Starting, viewState.selectedObjectIDs=\(viewState.selectedObjectIDs)")
         guard let layerIndex = selectedLayerIndex,
-              !selectedObjectIDs.isEmpty else {
-            print("🔴 UNGROUP: FAILED - layerIndex=\(selectedLayerIndex as Any), isEmpty=\(selectedObjectIDs.isEmpty)")
+              !viewState.selectedObjectIDs.isEmpty else {
+            print("🔴 UNGROUP: FAILED - layerIndex=\(selectedLayerIndex as Any), isEmpty=\(viewState.selectedObjectIDs.isEmpty)")
             return
         }
 
@@ -146,7 +146,7 @@ extension VectorDocument {
 
         var removedShapes: [UUID: VectorShape] = [:]
 
-        for objectID in selectedObjectIDs {
+        for objectID in viewState.selectedObjectIDs {
             print("🟡 UNGROUP: Processing objectID=\(objectID)")
 
             if let unifiedObject = findObject(by: objectID) {
@@ -193,13 +193,13 @@ extension VectorDocument {
             removedShapes: removedShapes,
             addedObjectIDs: addedObjectIDsInOrder,
             addedShapes: addedShapes,
-            oldSelectedObjectIDs: selectedObjectIDs,
+            oldSelectedObjectIDs: viewState.selectedObjectIDs,
             newSelectedObjectIDs: newSelectedShapeIDs
         )
 
         commandManager.execute(command)
 
-        selectedObjectIDs = newSelectedShapeIDs
+        viewState.selectedObjectIDs = newSelectedShapeIDs
         syncSelectionArrays()
     }
 
@@ -243,14 +243,14 @@ extension VectorDocument {
             removedShapes: removedShapes,
             addedObjectIDs: Array(newSelectedIDs),
             addedShapes: addedShapes,
-            oldSelectedObjectIDs: selectedObjectIDs,
+            oldSelectedObjectIDs: viewState.selectedObjectIDs,
             newSelectedObjectIDs: newSelectedIDs
         )
 
         commandManager.execute(command)
 
         selectedShapeIDs = newSelectedIDs
-        selectedObjectIDs = newSelectedIDs
+        viewState.selectedObjectIDs = newSelectedIDs
     }
 
     func makeCompoundPath() {
@@ -258,7 +258,7 @@ extension VectorDocument {
               selectedShapeIDs.count > 1 else { return }
 
         var removedShapes: [UUID: VectorShape] = [:]
-        let objectsToRemove = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
+        let objectsToRemove = unifiedObjects.filter { viewState.selectedObjectIDs.contains($0.id) }
         for obj in objectsToRemove {
             switch obj.objectType {
             case .text(let shape),
@@ -291,18 +291,18 @@ extension VectorDocument {
         let command = GroupCommand(
             operation: .makeCompound,
             layerIndex: layerIndex,
-            removedObjectIDs: Array(selectedObjectIDs),
+            removedObjectIDs: Array(viewState.selectedObjectIDs),
             removedShapes: removedShapes,
             addedObjectIDs: [compoundShape.id],
             addedShapes: [compoundShape.id: compoundShape],
-            oldSelectedObjectIDs: selectedObjectIDs,
+            oldSelectedObjectIDs: viewState.selectedObjectIDs,
             newSelectedObjectIDs: newSelectedIDs
         )
 
         commandManager.execute(command)
 
         selectedShapeIDs = [compoundShape.id]
-        selectedObjectIDs = [compoundShape.id]
+        viewState.selectedObjectIDs = [compoundShape.id]
     }
 
     func makeLoopingPath() {
@@ -310,7 +310,7 @@ extension VectorDocument {
               selectedShapeIDs.count > 1 else { return }
 
         var removedShapes: [UUID: VectorShape] = [:]
-        let objectsToRemove = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
+        let objectsToRemove = unifiedObjects.filter { viewState.selectedObjectIDs.contains($0.id) }
         for obj in objectsToRemove {
             switch obj.objectType {
             case .text(let shape),
@@ -343,18 +343,18 @@ extension VectorDocument {
         let command = GroupCommand(
             operation: .makeLooping,
             layerIndex: layerIndex,
-            removedObjectIDs: Array(selectedObjectIDs),
+            removedObjectIDs: Array(viewState.selectedObjectIDs),
             removedShapes: removedShapes,
             addedObjectIDs: [loopingShape.id],
             addedShapes: [loopingShape.id: loopingShape],
-            oldSelectedObjectIDs: selectedObjectIDs,
+            oldSelectedObjectIDs: viewState.selectedObjectIDs,
             newSelectedObjectIDs: newSelectedIDs
         )
 
         commandManager.execute(command)
 
         selectedShapeIDs = [loopingShape.id]
-        selectedObjectIDs = [loopingShape.id]
+        viewState.selectedObjectIDs = [loopingShape.id]
     }
 
     func releaseCompoundPath() {
@@ -402,14 +402,14 @@ extension VectorDocument {
             removedShapes: removedShapes,
             addedObjectIDs: Array(newSelectedIDs),
             addedShapes: addedShapes,
-            oldSelectedObjectIDs: selectedObjectIDs,
+            oldSelectedObjectIDs: viewState.selectedObjectIDs,
             newSelectedObjectIDs: newSelectedIDs
         )
 
         commandManager.execute(command)
 
         selectedShapeIDs = newSelectedIDs
-        selectedObjectIDs = newSelectedIDs
+        viewState.selectedObjectIDs = newSelectedIDs
     }
 
     func releaseLoopingPath() {
@@ -457,14 +457,14 @@ extension VectorDocument {
             removedShapes: removedShapes,
             addedObjectIDs: Array(newSelectedIDs),
             addedShapes: addedShapes,
-            oldSelectedObjectIDs: selectedObjectIDs,
+            oldSelectedObjectIDs: viewState.selectedObjectIDs,
             newSelectedObjectIDs: newSelectedIDs
         )
 
         commandManager.execute(command)
 
         selectedShapeIDs = newSelectedIDs
-        selectedObjectIDs = newSelectedIDs
+        viewState.selectedObjectIDs = newSelectedIDs
     }
 
     private func extractSubpaths(from cgPath: CGPath) -> [CGPath] {

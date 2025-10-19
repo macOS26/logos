@@ -8,7 +8,7 @@ extension VectorDocument {
     func addText(_ text: VectorText) {
         guard let layerIndex = selectedLayerIndex else { return }
 
-        let oldSelection = selectedObjectIDs
+        let oldSelection = viewState.selectedObjectIDs
         let shape = VectorShape.from(text)
         let command = TextManagementCommand(
             operation: .addText(textID: text.id, shape: shape, layerIndex: layerIndex),
@@ -19,7 +19,7 @@ extension VectorDocument {
         commandManager.execute(command)
 
         selectedTextIDs = [text.id]
-        selectedObjectIDs = [text.id]
+        viewState.selectedObjectIDs = [text.id]
         selectedShapeIDs.removeAll()
         syncSelectionArrays()
     }
@@ -31,7 +31,7 @@ extension VectorDocument {
             return
         }
 
-        let oldSelection = selectedObjectIDs
+        let oldSelection = viewState.selectedObjectIDs
         var modifiedText = text
         modifiedText.layerIndex = layerIndex
 
@@ -45,14 +45,14 @@ extension VectorDocument {
         commandManager.execute(command)
 
         selectedTextIDs = [text.id]
-        selectedObjectIDs = [text.id]
+        viewState.selectedObjectIDs = [text.id]
         selectedShapeIDs.removeAll()
         selectedLayerIndex = layerIndex
         syncSelectionArrays()
     }
 
     func removeSelectedText() {
-        let oldSelection = selectedObjectIDs
+        let oldSelection = viewState.selectedObjectIDs
         let removedObjects = unifiedObjects.filter { obj in
             if case .text(let shape) = obj.objectType {
                 return selectedTextIDs.contains(shape.id)
@@ -74,7 +74,7 @@ extension VectorDocument {
     func duplicateSelectedText() {
         guard !selectedTextIDs.isEmpty else { return }
 
-        let oldSelection = selectedObjectIDs
+        let oldSelection = viewState.selectedObjectIDs
         var newTextIDs: Set<UUID> = []
         var duplicatedObjects: [VectorObject] = []
 
