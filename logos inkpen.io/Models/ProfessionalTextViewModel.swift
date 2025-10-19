@@ -181,13 +181,13 @@ class ProfessionalTextViewModel: ObservableObject {
     }
 
     func updateDocumentTextBounds(_ frame: CGRect) {
-        document.updateTextPositionInUnified(id: textObject.id, position: CGPoint(x: frame.minX, y: frame.minY))
-        document.updateTextBoundsInUnified(id: textObject.id, bounds: CGRect(
-            x: 0, y: 0,
-            width: frame.width,
-            height: frame.height
-        ))
-        document.updateTextAreaSizeInUnified(id: textObject.id, areaSize: CGSize(width: frame.width, height: frame.height))
+        // Batch all three updates into ONE to avoid multiple layer panel refreshes
+        document.updateShapeByID(textObject.id) { shape in
+            shape.transform = CGAffineTransform(translationX: frame.minX, y: frame.minY)
+            shape.textPosition = CGPoint(x: frame.minX, y: frame.minY)
+            shape.bounds = CGRect(x: 0, y: 0, width: frame.width, height: frame.height)
+            shape.areaSize = CGSize(width: frame.width, height: frame.height)
+        }
     }
 
     private func isRectangleGlyph(_ path: CGPath) -> Bool {
