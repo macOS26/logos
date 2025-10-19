@@ -56,6 +56,9 @@ class VectorDocument: ObservableObject, Codable {
     // Lightweight change notifier - avoids copying unifiedObjects array
     let changeNotifier = DocumentChangeNotifier()
 
+    // Combine subscriptions for nested ObservableObjects
+    private var cancellables = Set<AnyCancellable>()
+
     var textPreviewTypography: [UUID: TypographyProperties] = [:]
 
     var currentDragOffset: CGPoint = .zero
@@ -181,7 +184,8 @@ class VectorDocument: ObservableObject, Codable {
         if let hsbSwatches = settings.customHsbSwatches {
             self.customHsbSwatches = hsbSwatches
         }
-        
+
+        setupViewStateForwarding()
         syncEncodableStorage()
     }
 
@@ -293,11 +297,18 @@ class VectorDocument: ObservableObject, Codable {
         
         loadStrokeStyleDefaults()
 
+        setupViewStateForwarding()
         migrateLegacyTextObjects()
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             self?.refreshSystemLayers()
         }
+    }
+
+    private func setupViewStateForwarding() {
+        viewState.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }.store(in: &cancellables)
     }
 
     private func refreshSystemLayers() {
