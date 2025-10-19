@@ -55,17 +55,17 @@ struct SelectionHandlesView: View {
                                                          .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon].contains(document.viewState.currentTool)
 
                                 if document.viewState.currentTool == .selection || isShapeDrawingTool {
-                                    TransformBoxHandles(
-                                        document: document,
-                                        shape: shape,
-                                        zoomLevel: document.viewState.zoomLevel,
-                                        canvasOffset: document.viewState.canvasOffset,
-                                        isShiftPressed: isShiftPressed,
-                                        transformOrigin: document.viewState.transformOrigin,
-                                        strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5)
-                                    )
-                                    .offset(x: dragPreviewDelta.x * document.viewState.zoomLevel,
-                                            y: dragPreviewDelta.y * document.viewState.zoomLevel)
+                                    if dragPreviewDelta == .zero {
+                                        TransformBoxHandles(
+                                            document: document,
+                                            shape: shape,
+                                            zoomLevel: document.viewState.zoomLevel,
+                                            canvasOffset: document.viewState.canvasOffset,
+                                            isShiftPressed: isShiftPressed,
+                                            transformOrigin: document.viewState.transformOrigin,
+                                            strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5)
+                                        )
+                                    }
                                 } else if document.viewState.currentTool == .scale {
                                     ScaleHandles(
                                         document: document,
@@ -126,17 +126,17 @@ struct SelectionHandlesView: View {
                                          .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon].contains(document.viewState.currentTool)
 
                 if document.viewState.currentTool == .selection || isShapeDrawingTool {
-                    TransformBoxHandles(
-                        document: document,
-                        shape: shape,
-                        zoomLevel: document.viewState.zoomLevel,
-                        canvasOffset: document.viewState.canvasOffset,
-                        isShiftPressed: isShiftPressed,
-                        transformOrigin: document.viewState.transformOrigin,
-                        strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5)
-                    )
-                    .offset(x: dragPreviewDelta.x * document.viewState.zoomLevel,
-                            y: dragPreviewDelta.y * document.viewState.zoomLevel)
+                    if dragPreviewDelta == .zero {
+                        TransformBoxHandles(
+                            document: document,
+                            shape: shape,
+                            zoomLevel: document.viewState.zoomLevel,
+                            canvasOffset: document.viewState.canvasOffset,
+                            isShiftPressed: isShiftPressed,
+                            transformOrigin: document.viewState.transformOrigin,
+                            strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5)
+                        )
+                    }
                 } else if document.viewState.currentTool == .scale {
                     ScaleHandles(
                         document: document,
