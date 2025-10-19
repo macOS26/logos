@@ -145,12 +145,15 @@ extension FileOperations {
                 context.beginTransparencyLayer(auxiliaryInfo: nil)
 
                 let shapesInLayer = document.getShapesForLayer(index)
+                Log.info("📄 PDF Export - Layer \(index) has \(shapesInLayer.count) shapes", category: .general)
                 for shape in shapesInLayer where shape.isVisible {
                     if !includeBackground && shape.name == "Canvas Background" {
                         continue
                     }
 
                     guard !renderedShapeIds.contains(shape.id) else { continue }
+
+                    Log.info("📄 PDF Export - Processing shape: \(shape.name), hasTypography: \(shape.typography != nil)", category: .general)
 
                     if shape.clippedByShapeID != nil {
                         continue

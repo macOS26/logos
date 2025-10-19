@@ -101,10 +101,20 @@ extension VectorDocument {
         return unifiedObjects
             .filter { $0.layerIndex == layerIndex }
             .compactMap { object -> VectorShape? in
-                if case .shape(let shape) = object.objectType {
+                switch object.objectType {
+                case .shape(let shape):
+                    return shape
+                case .text(let shape):
+                    return shape
+                case .group(let shape):
+                    return shape
+                case .warp(let shape):
+                    return shape
+                case .clipGroup(let shape):
+                    return shape
+                case .clipMask(let shape):
                     return shape
                 }
-                return nil
             }
     }
 
