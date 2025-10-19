@@ -319,12 +319,4 @@ class VectorDocument: ObservableObject, Codable {
         rebuildIndexCache()
         changeNotifier.notifyGeneralChange()
     }
-
-    func toggleActiveLayerVisibility() {
-        guard let activeIndex = selectedLayerIndex,
-              activeIndex >= 0,
-              activeIndex < layers.count else { return }
-
-        layers[activeIndex].isVisible.toggle()
-    }
 }

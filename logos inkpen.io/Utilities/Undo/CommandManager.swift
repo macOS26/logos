@@ -25,8 +25,6 @@ class CommandManager: ObservableObject {
         document.objectWillChange.send()
         document.isUndoRedoOperation = false
 
-        document.toggleActiveLayerVisibility()
-
         if let lastCommand = undoStack.last,
            let mergedCommand = lastCommand.mergeWith(command) {
             undoStack[undoStack.count - 1] = mergedCommand
@@ -51,7 +49,6 @@ class CommandManager: ObservableObject {
         let command = undoStack.removeLast()
         command.undo(on: document)
         document.rebuildIndexCache()
-        document.toggleActiveLayerVisibility()
         document.changeNotifier.notifyGeneralChange()
         document.objectWillChange.send()
         redoStack.append(command)
@@ -69,7 +66,6 @@ class CommandManager: ObservableObject {
         let command = redoStack.removeLast()
         command.execute(on: document)
         document.rebuildIndexCache()
-        document.toggleActiveLayerVisibility()
         document.changeNotifier.notifyGeneralChange()
         document.objectWillChange.send()
         undoStack.append(command)
