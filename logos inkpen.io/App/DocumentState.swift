@@ -258,7 +258,7 @@ class DocumentState: ObservableObject {
                                 newObjectIDs.insert(shape.id)
                             }
                             document.viewState.selectedObjectIDs = newObjectIDs
-                            document.syncSelectionArrays()
+                            document
                         }
                         self.updateAllStates()
                     } else {
@@ -955,9 +955,9 @@ class DocumentState: ObservableObject {
 
     func duplicate() {
         guard let document = document else { return }
-        if !document.selectedShapeIDs.isEmpty {
+        if !document.viewState.selectedObjectIDs.isEmpty {
             document.duplicateSelectedShapes()
-        } else if !document.selectedTextIDs.isEmpty {
+        } else if !document.viewState.selectedObjectIDs.isEmpty {
             document.duplicateSelectedText()
         }
         updateAllStates()
@@ -1062,7 +1062,7 @@ class DocumentState: ObservableObject {
     }
 
     func createOutlines() {
-        guard let document = document, !document.selectedTextIDs.isEmpty else { return }
+        guard let document = document, !document.viewState.selectedObjectIDs.isEmpty else { return }
         document.convertSelectedTextToOutlines()
         updateAllStates()
     }
@@ -1073,7 +1073,7 @@ class DocumentState: ObservableObject {
             let shapes = document.getShapesForLayer(layerIndex)
             for shapeIndex in shapes.indices {
                 guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
-                guard document.selectedShapeIDs.contains(shape.id) else { continue }
+                guard document.viewState.selectedObjectIDs.contains(shape.id) else { continue }
                 var nsImage: NSImage? = ImageContentRegistry.image(for: shape.id)
                 if nsImage == nil, let path = shape.linkedImagePath {
                     let url = URL(fileURLWithPath: NSString(string: path).expandingTildeInPath)
@@ -1101,7 +1101,7 @@ class DocumentState: ObservableObject {
 
     func cleanupDuplicatePoints() {
         guard let document = document else { return }
-        if !document.selectedShapeIDs.isEmpty {
+        if !document.viewState.selectedObjectIDs.isEmpty {
             ProfessionalPathOperations.cleanupSelectedShapesDuplicates(document, tolerance: 5.0)
         } else {
             ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
@@ -1149,6 +1149,6 @@ class DocumentState: ObservableObject {
             return false
         }
 
-        document.selectedTextIDs.removeAll()
+        document.viewState.selectedObjectIDs.removeAll()
     }
 }

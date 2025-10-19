@@ -215,8 +215,8 @@ struct DocumentBasedMainView: View {
         document.documentColorDefaults = importedDoc.documentColorDefaults
 
         document.selectedLayerIndex = importedDoc.selectedLayerIndex
-        document.selectedShapeIDs = importedDoc.selectedShapeIDs
-        document.selectedTextIDs = importedDoc.selectedTextIDs
+        document.viewState.selectedObjectIDs = importedDoc.selectedShapeIDs
+        document.viewState.selectedObjectIDs = importedDoc.selectedTextIDs
         document.viewState.currentTool = appState.defaultTool
         document.viewState.viewMode = .color
         document.gridSettings = importedDoc.gridSettings
@@ -242,9 +242,9 @@ struct DocumentBasedMainView: View {
                         newShapeIDs.insert(shape.id)
                     }
 
-                    document.selectedShapeIDs = newShapeIDs
                     document.viewState.selectedObjectIDs = newShapeIDs
-                    document.syncSelectionArrays()
+                    document.viewState.selectedObjectIDs = newShapeIDs
+                    document
 
                     calculateInitialZoom()
                 } else {
