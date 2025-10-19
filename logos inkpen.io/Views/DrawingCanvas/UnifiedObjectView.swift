@@ -292,6 +292,13 @@ struct IsolatedLayerView: View, Equatable {
         // If objects array changed, need to re-render
         guard lhs.objects.count == rhs.objects.count else { return false }
 
+        // Check if objects were reordered (same count but different order)
+        for (index, obj) in lhs.objects.enumerated() {
+            if index < rhs.objects.count && obj.id != rhs.objects[index].id {
+                return false  // Objects reordered - force update
+            }
+        }
+
         // Check if this layer has selection
         let lhsHasSelection = lhs.hasSelection
         let rhsHasSelection = rhs.hasSelection
