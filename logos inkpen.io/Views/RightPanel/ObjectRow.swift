@@ -370,23 +370,18 @@ struct ObjectRow: View {
                 }
                 
                 Divider()
-                
-                if objectType == .shape {
-                    Button("Duplicate Shape") {
-                    }
-                    Button("Delete Shape") {
-                        document.viewState.selectedObjectIDs = [objectId]
+
+                Button("Duplicate") {
+                }
+                Button("Delete") {
+                    document.viewState.selectedObjectIDs = [objectId]
+                    if objectType == .shape {
                         document.removeSelectedShapes()
-                    }
-                } else {
-                    Button("Duplicate Text") {
-                    }
-                    Button("Delete Text") {
-                        document.viewState.selectedObjectIDs = [objectId]
+                    } else {
                         document.removeSelectedText()
                     }
                 }
-                
+
                 Divider()
 
                 Button(isVisibleBinding.wrappedValue ? "Hide" : "Show") {
