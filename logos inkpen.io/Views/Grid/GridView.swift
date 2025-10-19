@@ -86,8 +86,17 @@ struct GridCanvasView: View {
             }
         }
 
-        // Keep line width visible at all zoom levels with a minimum width
-        let adjustedLineWidth = max(lineWidth / zoomLevel, lineWidth * 0.5)
+        // Smart line width scaling:
+        // - When zoomed out (< 100%): divide by zoom to keep lines from getting thick
+        // - When zoomed in (> 100%): clamp minimum so lines don't disappear
+        let adjustedLineWidth: CGFloat
+        if zoomLevel < 1.0 {
+            // Zoomed out - scale down to prevent thick lines
+            adjustedLineWidth = lineWidth / zoomLevel
+        } else {
+            // Zoomed in - use minimum to keep visible, max at base width
+            adjustedLineWidth = max(lineWidth / zoomLevel, lineWidth * 0.75)
+        }
 
         context.stroke(
             path,
