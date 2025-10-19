@@ -69,7 +69,6 @@ final class AppEventMonitor {
            let characters = event.charactersIgnoringModifiers,
            characters == "\t" {
             activeDoc.viewState.selectedObjectIDs = []
-            activeDoc
 
             // Clear text editing state
             for unifiedObj in activeDoc.unifiedObjects {
