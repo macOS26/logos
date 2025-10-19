@@ -185,28 +185,34 @@ struct FontSizeControls: View {
         document.fontManager.selectedFontSize = newSize
         document.fontManager.selectedLineHeight = newSize
 
-        if let textID = document.selectedTextIDs.first,
-           let freshText = document.findText(by: textID) {
-            var updatedTypography = freshText.typography
-            let oldFontSize = updatedTypography.fontSize
-
-            if abs(oldFontSize - newSize) > 0.01 {
-                let lineHeightRatio = updatedTypography.lineHeight / oldFontSize
-                updatedTypography.fontSize = newSize
-                updatedTypography.lineHeight = newSize * lineHeightRatio
-
-                // Store in @State for preview
-                previewTypography = updatedTypography
+        if let textID = document.selectedTextIDs.first {
+            // Initialize previewTypography once if not already set
+            if previewTypography == nil, let freshText = document.findText(by: textID) {
+                previewTypography = freshText.typography
                 editingTextID = textID
+            }
 
-                // Send preview notification for live update
-                document.updateTextFontSizePreview(id: textID, fontSize: newSize)
+            // Use cached previewTypography for updates
+            if var updatedTypography = previewTypography {
+                let oldFontSize = updatedTypography.fontSize
 
-                // Only update document if not dragging
-                if !isPreview {
-                    document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
-                    previewTypography = nil
-                    editingTextID = nil
+                if abs(oldFontSize - newSize) > 0.01 {
+                    let lineHeightRatio = updatedTypography.lineHeight / oldFontSize
+                    updatedTypography.fontSize = newSize
+                    updatedTypography.lineHeight = newSize * lineHeightRatio
+
+                    // Update cached preview
+                    previewTypography = updatedTypography
+
+                    // Send preview notification for live update (no findText needed)
+                    document.updateTextFontSizePreviewDirect(id: textID, typography: updatedTypography)
+
+                    // Only update document if not dragging
+                    if !isPreview {
+                        document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+                        previewTypography = nil
+                        editingTextID = nil
+                    }
                 }
             }
         }
@@ -216,25 +222,30 @@ struct FontSizeControls: View {
         currentLineSpacingState = newSpacing
         document.fontManager.selectedLineSpacing = Double(newSpacing)
 
-        if let textID = document.selectedTextIDs.first,
-           let freshText = document.findText(by: textID) {
-            var updatedTypography = freshText.typography
-
-            if abs(updatedTypography.lineSpacing - Double(newSpacing)) > 0.01 {
-                updatedTypography.lineSpacing = Double(newSpacing)
-
-                // Store in @State for preview
-                previewTypography = updatedTypography
+        if let textID = document.selectedTextIDs.first {
+            // Initialize previewTypography once if not already set
+            if previewTypography == nil, let freshText = document.findText(by: textID) {
+                previewTypography = freshText.typography
                 editingTextID = textID
+            }
 
-                // Send preview notification for live update
-                document.updateTextLineSpacingPreview(id: textID, lineSpacing: Double(newSpacing))
+            // Use cached previewTypography for updates
+            if var updatedTypography = previewTypography {
+                if abs(updatedTypography.lineSpacing - Double(newSpacing)) > 0.01 {
+                    updatedTypography.lineSpacing = Double(newSpacing)
 
-                // Only update document if not dragging
-                if !isPreview {
-                    document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
-                    previewTypography = nil
-                    editingTextID = nil
+                    // Update cached preview
+                    previewTypography = updatedTypography
+
+                    // Send preview notification for live update (no findText needed)
+                    document.updateTextLineSpacingPreviewDirect(id: textID, typography: updatedTypography)
+
+                    // Only update document if not dragging
+                    if !isPreview {
+                        document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+                        previewTypography = nil
+                        editingTextID = nil
+                    }
                 }
             }
         }
@@ -244,25 +255,30 @@ struct FontSizeControls: View {
         currentLineHeightState = newHeight
         document.fontManager.selectedLineHeight = Double(newHeight)
 
-        if let textID = document.selectedTextIDs.first,
-           let freshText = document.findText(by: textID) {
-            var updatedTypography = freshText.typography
-
-            if abs(updatedTypography.lineHeight - Double(newHeight)) > 0.01 {
-                updatedTypography.lineHeight = Double(newHeight)
-
-                // Store in @State for preview
-                previewTypography = updatedTypography
+        if let textID = document.selectedTextIDs.first {
+            // Initialize previewTypography once if not already set
+            if previewTypography == nil, let freshText = document.findText(by: textID) {
+                previewTypography = freshText.typography
                 editingTextID = textID
+            }
 
-                // Send preview notification for live update
-                document.updateTextLineHeightPreview(id: textID, lineHeight: Double(newHeight))
+            // Use cached previewTypography for updates
+            if var updatedTypography = previewTypography {
+                if abs(updatedTypography.lineHeight - Double(newHeight)) > 0.01 {
+                    updatedTypography.lineHeight = Double(newHeight)
 
-                // Only update document if not dragging
-                if !isPreview {
-                    document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
-                    previewTypography = nil
-                    editingTextID = nil
+                    // Update cached preview
+                    previewTypography = updatedTypography
+
+                    // Send preview notification for live update (no findText needed)
+                    document.updateTextLineHeightPreviewDirect(id: textID, typography: updatedTypography)
+
+                    // Only update document if not dragging
+                    if !isPreview {
+                        document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+                        previewTypography = nil
+                        editingTextID = nil
+                    }
                 }
             }
         }
