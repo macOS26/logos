@@ -598,7 +598,6 @@ extension DrawingCanvas {
 
         if !hitAnyTextBox {
             document.viewState.selectedObjectIDs.removeAll()
-            document.viewState.selectedObjectIDs.removeAll()
 
             for unifiedObj in document.unifiedObjects {
                 if case .text(let shape) = unifiedObj.objectType, shape.isEditing == true {

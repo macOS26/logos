@@ -84,7 +84,6 @@ extension DrawingCanvas {
         cancelFreehandDrawing()
 
         document.viewState.selectedObjectIDs.removeAll()
-        document.viewState.selectedObjectIDs.removeAll()
 
     }
 

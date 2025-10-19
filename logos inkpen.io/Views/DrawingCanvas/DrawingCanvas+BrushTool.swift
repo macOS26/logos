@@ -104,8 +104,6 @@ extension DrawingCanvas {
         cancelBrushDrawing()
 
         document.viewState.selectedObjectIDs.removeAll()
-        document.viewState.selectedObjectIDs.removeAll()
-        document.viewState.selectedObjectIDs.removeAll()
     }
 
     private func updateBrushPreview() {

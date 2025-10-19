@@ -42,7 +42,6 @@ class TemplateManager {
 
         document.selectedLayerIndex = 2
         document.viewState.selectedObjectIDs.removeAll()
-        document.viewState.selectedObjectIDs.removeAll()
         document.removeAllText()
 
         document.viewState.currentTool = defaultTool
