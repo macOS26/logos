@@ -141,7 +141,6 @@ extension DrawingCanvas {
 
             document.setTextEditingInUnified(id: textObject.id, isEditing: true)
 
-            document.viewState.selectedObjectIDs.removeAll()
             document.viewState.selectedObjectIDs = [textID]
 
             isEditingText = true
@@ -174,7 +173,6 @@ extension DrawingCanvas {
             switch currentState {
             case .unselected:
                 document.viewState.selectedObjectIDs = [textID]
-                document.viewState.selectedObjectIDs.removeAll()
 
                 if document.viewState.currentTool == .font && isCornerClick {
                     startEditingText(textID: textID, at: .zero)
@@ -196,7 +194,6 @@ extension DrawingCanvas {
             switch currentState {
             case .unselected:
                 document.viewState.selectedObjectIDs = [textID]
-                document.viewState.selectedObjectIDs.removeAll()
 
             case .selected:
                 break
@@ -297,7 +294,6 @@ extension DrawingCanvas {
         document.addShape(shape)
 
         document.viewState.selectedObjectIDs = [shape.id]
-        document.viewState.selectedObjectIDs.removeAll()
 
         isEditingText = true
         editingTextID = shape.id
@@ -503,7 +499,6 @@ extension DrawingCanvas {
     func handleTextSelectionChange(textID: UUID, isSelected: Bool) {
         if isSelected {
             document.viewState.selectedObjectIDs.insert(textID)
-            document.viewState.selectedObjectIDs.removeAll()
         } else {
             document.viewState.selectedObjectIDs.remove(textID)
         }
@@ -519,7 +514,6 @@ extension DrawingCanvas {
             }
 
             document.viewState.selectedObjectIDs.insert(textID)
-            document.viewState.selectedObjectIDs.removeAll()
 
         } else {
             if let textObj = document.findText(by: textID) {
@@ -718,7 +712,6 @@ extension DrawingCanvas {
 
         // Select it
         document.viewState.selectedObjectIDs = [shape.id]
-        document.viewState.selectedObjectIDs.removeAll()
 
         isEditingText = true
         editingTextID = shape.id
