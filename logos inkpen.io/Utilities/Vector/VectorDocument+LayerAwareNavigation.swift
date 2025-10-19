@@ -46,112 +46,110 @@ extension VectorDocument {
     func moveSelectedObjectsUpWithinLayer() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        print("🔶 moveSelectedObjectsUpWithinLayer - selected count: \(selectedObjectIDs.count)")
+        var affectedObjectIDs: [UUID] = []
+        var oldIndices: [UUID: Int] = [:]
+        var newIndices: [UUID: Int] = [:]
 
-        var selectedObjects: [VectorObject] = []
-        for objectID in selectedObjectIDs {
-            if let obj = findObject(by: objectID) {
-                selectedObjects.append(obj)
-                print("🔶   Found selected object id=\(obj.id), layer=\(obj.layerIndex)")
-            }
-        }
+        for layerIndex in layers.indices {
+            let layerObjects = unifiedObjects.enumerated().filter { $0.element.layerIndex == layerIndex }
+            guard !layerObjects.isEmpty else { continue }
 
-        for selectedObj in selectedObjects {
-            guard let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObj.id }) else {
-                print("🔶   ERROR: Could not find object in unifiedObjects")
-                continue
+            // Record old indices for all objects in this layer
+            for (offset, obj) in layerObjects {
+                oldIndices[obj.id] = offset
+                affectedObjectIDs.append(obj.id)
             }
 
-            let currentLayer = selectedObj.layerIndex
-            print("🔶   Object at index \(selectedIndex), layer \(currentLayer)")
+            // Process each selected object in this layer
+            for objectID in selectedObjectIDs {
+                guard let obj = findObject(by: objectID),
+                      obj.layerIndex == layerIndex,
+                      let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == objectID }) else { continue }
 
-            // Show all objects in this layer
-            let objectsInLayer = unifiedObjects.enumerated().filter { $0.element.layerIndex == currentLayer }
-            print("🔶   Objects in layer \(currentLayer): \(objectsInLayer.count) total")
-            for (idx, obj) in objectsInLayer {
-                let marker = obj.id == selectedObj.id ? " <- SELECTED" : ""
-                print("🔶     [\(idx)] layer=\(obj.layerIndex)\(marker)")
-            }
+                // Find next object UP (lower index) in same layer
+                var targetIndex: Int? = nil
+                for i in stride(from: selectedIndex - 1, through: 0, by: -1) {
+                    if unifiedObjects[i].layerIndex == layerIndex {
+                        targetIndex = i
+                        break
+                    }
+                }
 
-            // Find the next object UP (toward front/lower index) in the SAME layer
-            var targetIndex: Int? = nil
-            for i in stride(from: selectedIndex - 1, through: 0, by: -1) {
-                if unifiedObjects[i].layerIndex == currentLayer {
-                    targetIndex = i
-                    print("🔶   Found target at index \(i)")
-                    break
+                // Move the object
+                if let targetIndex = targetIndex {
+                    let movedObj = unifiedObjects.remove(at: selectedIndex)
+                    unifiedObjects.insert(movedObj, at: targetIndex)
                 }
             }
+        }
 
-            // REMOVE and INSERT at target position (not swap)
-            if let targetIndex = targetIndex {
-                print("🔶   MOVING: remove at \(selectedIndex), insert at \(targetIndex)")
-                let obj = unifiedObjects.remove(at: selectedIndex)
-                unifiedObjects.insert(obj, at: targetIndex)
-                print("🔶   MOVED successfully")
-            } else {
-                print("🔶   NO TARGET - already at front of layer")
+        // Record new indices
+        for id in affectedObjectIDs {
+            if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
+                newIndices[id] = index
             }
         }
 
-        // Trigger UI update
-        objectPositionUpdateTrigger.toggle()
-        print("🔶 Done - triggered UI update")
+        let command = ObjectArrangementCommand(
+            affectedObjectIDs: affectedObjectIDs,
+            oldIndices: oldIndices,
+            newIndices: newIndices
+        )
+        commandManager.execute(command)
     }
 
     func moveSelectedObjectsDownWithinLayer() {
         guard !selectedObjectIDs.isEmpty else { return }
 
-        print("🔶 moveSelectedObjectsDownWithinLayer - selected count: \(selectedObjectIDs.count)")
+        var affectedObjectIDs: [UUID] = []
+        var oldIndices: [UUID: Int] = [:]
+        var newIndices: [UUID: Int] = [:]
 
-        var selectedObjects: [VectorObject] = []
-        for objectID in selectedObjectIDs {
-            if let obj = findObject(by: objectID) {
-                selectedObjects.append(obj)
-                print("🔶   Found selected object id=\(obj.id), layer=\(obj.layerIndex)")
-            }
-        }
+        for layerIndex in layers.indices {
+            let layerObjects = unifiedObjects.enumerated().filter { $0.element.layerIndex == layerIndex }
+            guard !layerObjects.isEmpty else { continue }
 
-        for selectedObj in selectedObjects {
-            guard let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObj.id }) else {
-                print("🔶   ERROR: Could not find object in unifiedObjects")
-                continue
+            // Record old indices for all objects in this layer
+            for (offset, obj) in layerObjects {
+                oldIndices[obj.id] = offset
+                affectedObjectIDs.append(obj.id)
             }
 
-            let currentLayer = selectedObj.layerIndex
-            print("🔶   Object at index \(selectedIndex), layer \(currentLayer)")
+            // Process each selected object in this layer
+            for objectID in selectedObjectIDs {
+                guard let obj = findObject(by: objectID),
+                      obj.layerIndex == layerIndex,
+                      let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == objectID }) else { continue }
 
-            // Show all objects in this layer
-            let objectsInLayer = unifiedObjects.enumerated().filter { $0.element.layerIndex == currentLayer }
-            print("🔶   Objects in layer \(currentLayer): \(objectsInLayer.count) total")
-            for (idx, obj) in objectsInLayer {
-                let marker = obj.id == selectedObj.id ? " <- SELECTED" : ""
-                print("🔶     [\(idx)] layer=\(obj.layerIndex)\(marker)")
-            }
+                // Find next object DOWN (higher index) in same layer
+                var targetIndex: Int? = nil
+                for i in (selectedIndex + 1)..<unifiedObjects.count {
+                    if unifiedObjects[i].layerIndex == layerIndex {
+                        targetIndex = i
+                        break
+                    }
+                }
 
-            // Find the next object DOWN (toward back/higher index) in the SAME layer
-            var targetIndex: Int? = nil
-            for i in (selectedIndex + 1)..<unifiedObjects.count {
-                if unifiedObjects[i].layerIndex == currentLayer {
-                    targetIndex = i
-                    print("🔶   Found target at index \(i)")
-                    break
+                // Move the object
+                if let targetIndex = targetIndex {
+                    let movedObj = unifiedObjects.remove(at: selectedIndex)
+                    unifiedObjects.insert(movedObj, at: targetIndex)
                 }
             }
+        }
 
-            // REMOVE and INSERT at target position (not swap)
-            if let targetIndex = targetIndex {
-                print("🔶   MOVING: remove at \(selectedIndex), insert at \(targetIndex)")
-                let obj = unifiedObjects.remove(at: selectedIndex)
-                unifiedObjects.insert(obj, at: targetIndex)
-                print("🔶   MOVED successfully")
-            } else {
-                print("🔶   NO TARGET - already at back of layer")
+        // Record new indices
+        for id in affectedObjectIDs {
+            if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
+                newIndices[id] = index
             }
         }
 
-        // Trigger UI update
-        objectPositionUpdateTrigger.toggle()
-        print("🔶 Done - triggered UI update")
+        let command = ObjectArrangementCommand(
+            affectedObjectIDs: affectedObjectIDs,
+            oldIndices: oldIndices,
+            newIndices: newIndices
+        )
+        commandManager.execute(command)
     }
 }
