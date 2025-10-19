@@ -18,10 +18,10 @@ extension VectorDocument {
 
         commandManager.execute(command)
 
-        selectedTextIDs = [text.id]
         viewState.selectedObjectIDs = [text.id]
-        selectedShapeIDs.removeAll()
-        syncSelectionArrays()
+        viewState.selectedObjectIDs = [text.id]
+        viewState.selectedObjectIDs.removeAll()
+        
     }
 
     func addTextToLayer(_ text: VectorText, layerIndex: Int?) {
@@ -44,41 +44,41 @@ extension VectorDocument {
 
         commandManager.execute(command)
 
-        selectedTextIDs = [text.id]
         viewState.selectedObjectIDs = [text.id]
-        selectedShapeIDs.removeAll()
+        viewState.selectedObjectIDs = [text.id]
+        viewState.selectedObjectIDs.removeAll()
         selectedLayerIndex = layerIndex
-        syncSelectionArrays()
+        
     }
 
     func removeSelectedText() {
         let oldSelection = viewState.selectedObjectIDs
         let removedObjects = unifiedObjects.filter { obj in
             if case .text(let shape) = obj.objectType {
-                return selectedTextIDs.contains(shape.id)
+                return viewState.selectedObjectIDs.contains(shape.id)
             }
             return false
         }
 
         let command = TextManagementCommand(
-            operation: .removeText(textIDs: Array(selectedTextIDs), removedObjects: removedObjects),
+            operation: .removeText(textIDs: Array(viewState.selectedObjectIDs), removedObjects: removedObjects),
             oldSelection: oldSelection,
             newSelection: []
         )
 
         commandManager.execute(command)
 
-        selectedTextIDs.removeAll()
+        viewState.selectedObjectIDs.removeAll()
     }
 
     func duplicateSelectedText() {
-        guard !selectedTextIDs.isEmpty else { return }
+        guard !viewState.selectedObjectIDs.isEmpty else { return }
 
         let oldSelection = viewState.selectedObjectIDs
         var newTextIDs: Set<UUID> = []
         var duplicatedObjects: [VectorObject] = []
 
-        for textID in selectedTextIDs {
+        for textID in viewState.selectedObjectIDs {
             if let originalText = findText(by: textID),
                let obj = unifiedObjects.first(where: { $0.id == textID }) {
                 var duplicateText = originalText
@@ -97,14 +97,14 @@ extension VectorDocument {
         }
 
         let command = TextManagementCommand(
-            operation: .duplicateText(originalIDs: Array(selectedTextIDs), duplicatedObjects: duplicatedObjects),
+            operation: .duplicateText(originalIDs: Array(viewState.selectedObjectIDs), duplicatedObjects: duplicatedObjects),
             oldSelection: oldSelection,
             newSelection: newTextIDs
         )
 
         commandManager.execute(command)
 
-        selectedTextIDs = newTextIDs
+        viewState.selectedObjectIDs = newTextIDs
     }
 
     func updateTextInUnified(_ updatedText: VectorText) {
@@ -121,16 +121,16 @@ extension VectorDocument {
     }
 
     func convertSelectedTextToOutlines() {
-        guard !selectedTextIDs.isEmpty else { return }
+        guard !viewState.selectedObjectIDs.isEmpty else { return }
 
-        let selectedTexts = selectedTextIDs.compactMap { textID in findText(by: textID) }
+        let selectedTexts = viewState.selectedObjectIDs.compactMap { textID in findText(by: textID) }
 
         // Save old state for undo
         let oldSelection = viewState.selectedObjectIDs
-        let removedTextIDs = Array(selectedTextIDs)
+        let removedTextIDs = Array(viewState.selectedObjectIDs)
         let removedTextObjects = unifiedObjects.filter { obj in
             if case .text(let shape) = obj.objectType {
-                return selectedTextIDs.contains(shape.id)
+                return viewState.selectedObjectIDs.contains(shape.id)
             }
             return false
         }
@@ -180,14 +180,14 @@ extension VectorDocument {
             // Remove text objects
             unifiedObjects.removeAll { obj in
                 if case .text(let shape) = obj.objectType {
-                    return selectedTextIDs.contains(shape.id)
+                    return viewState.selectedObjectIDs.contains(shape.id)
                 }
                 return false
             }
 
-            selectedTextIDs.removeAll()
-            selectedShapeIDs = newShapeIDs
-            syncUnifiedSelectionFromLegacy()
+            viewState.selectedObjectIDs.removeAll()
+            viewState.selectedObjectIDs = newShapeIDs
+            
 
             // Use command system for undo/redo
             let command = TextManagementCommand(
