@@ -28,7 +28,7 @@ extension VectorDocument {
         }
     }
 
-    func updateShapeByID(_ shapeID: UUID, update: (inout VectorShape) -> Void) {
+    func updateShapeByID(_ shapeID: UUID, silent: Bool = false, update: (inout VectorShape) -> Void) {
         // Find the object by ID
         if let index = unifiedObjects.firstIndex(where: { $0.id == shapeID }) {
             let layerIndex = unifiedObjects[index].layerIndex
@@ -65,8 +65,10 @@ extension VectorDocument {
                 unifiedObjectIndexCache[shapeID] = index
             }
 
-            // Notify only this specific object changed
-            changeNotifier.notifyObjectChanged(shapeID)
+            // Notify only this specific object changed (unless silent)
+            if !silent {
+                changeNotifier.notifyObjectChanged(shapeID)
+            }
             return
         }
 

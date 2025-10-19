@@ -35,6 +35,9 @@ extension DrawingCanvas {
                     .onChanged { value in
                         handleGradientCenterDrag(value: value, geometry: geometry, shape: selectedShape, gradient: selectedGradient)
                     }
+                    .onEnded { value in
+                        handleGradientCenterDragEnd(value: value, geometry: geometry, shape: selectedShape, gradient: selectedGradient)
+                    }
             )
         }
     }
@@ -101,19 +104,38 @@ extension DrawingCanvas {
     private func handleGradientCenterDrag(value: DragGesture.Value, geometry: GeometryProxy, shape: VectorShape, gradient: VectorGradient) {
         let canvasPoint = screenToCanvas(value.location, geometry: geometry)
         let shapeBounds = shape.bounds
-        
+
         switch gradient {
         case .linear(_):
             let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
             let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
-            
+
             updateGradientOriginXYOptimized(relativeX, relativeY, shape: shape, applyToShapes: true, isLiveDrag: true)
-            
+
         case .radial(_):
             let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
             let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
-            
+
             updateGradientOriginXYOptimized(relativeX, relativeY, shape: shape, applyToShapes: true, isLiveDrag: true)
+        }
+    }
+
+    private func handleGradientCenterDragEnd(value: DragGesture.Value, geometry: GeometryProxy, shape: VectorShape, gradient: VectorGradient) {
+        let canvasPoint = screenToCanvas(value.location, geometry: geometry)
+        let shapeBounds = shape.bounds
+
+        switch gradient {
+        case .linear(_):
+            let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
+            let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
+
+            updateGradientOriginXYOptimized(relativeX, relativeY, shape: shape, applyToShapes: true, isLiveDrag: false)
+
+        case .radial(_):
+            let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
+            let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
+
+            updateGradientOriginXYOptimized(relativeX, relativeY, shape: shape, applyToShapes: true, isLiveDrag: false)
         }
     }
     
@@ -175,10 +197,18 @@ extension DrawingCanvas {
     
     private func updateShapeGradientOptimized(shape: VectorShape, newGradient: VectorGradient, isLiveDrag: Bool) {
         guard let layerIndex = document.selectedLayerIndex else { return }
-        
+
         let shapes = document.getShapesForLayer(layerIndex)
         if shapes.contains(where: { $0.id == shape.id }) {
-            document.updateShapeGradientInUnified(id: shape.id, gradient: newGradient, target: .fill)
+            if isLiveDrag {
+                // During drag: silent update to avoid triggering panel refreshes
+                document.updateShapeByID(shape.id, silent: true) { shape in
+                    shape.fillStyle = FillStyle(gradient: newGradient, opacity: 1.0)
+                }
+            } else {
+                // On drag end: full update with notifications
+                document.updateShapeGradientInUnified(id: shape.id, gradient: newGradient, target: .fill)
+            }
         }
     }
     
