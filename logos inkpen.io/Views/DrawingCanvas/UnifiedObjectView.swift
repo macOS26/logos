@@ -394,21 +394,25 @@ struct IsolatedLayerView: View, Equatable {
         guard !objects.isEmpty else { return }
 
         let pageSize = document.settings.sizeInPoints
-        let scale = zoomLevel
+        let retinaScale: CGFloat = 2.0 // Retina resolution
+        let renderScale = retinaScale
+
+        // Use Display P3 color space for better color accuracy
+        guard let colorSpace = CGColorSpace(name: CGColorSpace.displayP3) else { return }
 
         guard let context = CGContext(
             data: nil,
-            width: Int(pageSize.width * scale),
-            height: Int(pageSize.height * scale),
+            width: Int(pageSize.width * renderScale),
+            height: Int(pageSize.height * renderScale),
             bitsPerComponent: 8,
             bytesPerRow: 0,
-            space: CGColorSpaceCreateDeviceRGB(),
+            space: colorSpace,
             bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
         ) else { return }
 
-        context.clear(CGRect(x: 0, y: 0, width: pageSize.width * scale, height: pageSize.height * scale))
-        context.translateBy(x: 0, y: pageSize.height * scale)
-        context.scaleBy(x: scale, y: -scale)
+        context.clear(CGRect(x: 0, y: 0, width: pageSize.width * renderScale, height: pageSize.height * renderScale))
+        context.translateBy(x: 0, y: pageSize.height * renderScale)
+        context.scaleBy(x: renderScale, y: -renderScale)
 
         // Render all shapes in this layer using Core Graphics
         for object in objects where object.isVisible {
