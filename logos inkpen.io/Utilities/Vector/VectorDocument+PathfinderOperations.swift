@@ -310,7 +310,7 @@ extension VectorDocument {
 
         for resultShape in resultShapes {
             addShape(resultShape)
-            selectedShapeIDs.insert(resultShape.id)
+            viewState.selectedObjectIDs.insert(resultShape.id)
         }
 
         var newShapes: [UUID: VectorShape] = [:]
