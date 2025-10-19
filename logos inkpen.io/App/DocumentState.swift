@@ -258,7 +258,6 @@ class DocumentState: ObservableObject {
                                 newObjectIDs.insert(shape.id)
                             }
                             document.viewState.selectedObjectIDs = newObjectIDs
-                            document
                         }
                         self.updateAllStates()
                     } else {
