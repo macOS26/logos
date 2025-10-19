@@ -55,13 +55,21 @@ extension VectorDocument {
 
         for selectedObj in selectedObjects {
             guard let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObj.id }) else { continue }
-            guard selectedIndex > 0 else { continue }
 
-            let prevObj = unifiedObjects[selectedIndex - 1]
+            let currentLayer = selectedObj.layerIndex
 
-            // Only swap if both objects are in the same layer
-            if selectedObj.layerIndex == prevObj.layerIndex {
-                unifiedObjects.swapAt(selectedIndex - 1, selectedIndex)
+            // Find the next object UP (toward front/lower index) in the SAME layer
+            var targetIndex: Int? = nil
+            for i in stride(from: selectedIndex - 1, through: 0, by: -1) {
+                if unifiedObjects[i].layerIndex == currentLayer {
+                    targetIndex = i
+                    break
+                }
+            }
+
+            // Swap with the found object in same layer
+            if let targetIndex = targetIndex {
+                unifiedObjects.swapAt(selectedIndex, targetIndex)
             }
         }
 
@@ -81,13 +89,21 @@ extension VectorDocument {
 
         for selectedObj in selectedObjects {
             guard let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObj.id }) else { continue }
-            guard selectedIndex < unifiedObjects.count - 1 else { continue }
 
-            let nextObj = unifiedObjects[selectedIndex + 1]
+            let currentLayer = selectedObj.layerIndex
 
-            // Only swap if both objects are in the same layer
-            if selectedObj.layerIndex == nextObj.layerIndex {
-                unifiedObjects.swapAt(selectedIndex, selectedIndex + 1)
+            // Find the next object DOWN (toward back/higher index) in the SAME layer
+            var targetIndex: Int? = nil
+            for i in (selectedIndex + 1)..<unifiedObjects.count {
+                if unifiedObjects[i].layerIndex == currentLayer {
+                    targetIndex = i
+                    break
+                }
+            }
+
+            // Swap with the found object in same layer
+            if let targetIndex = targetIndex {
+                unifiedObjects.swapAt(selectedIndex, targetIndex)
             }
         }
 
