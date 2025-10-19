@@ -518,19 +518,27 @@ struct LayersPanel: View {
     }
 }
 
-struct ColorSwatchButton: View {
+struct ColorSwatchButton<Content: View>: View {
     @Binding var color: Color
     let availableColors: [(name: String, color: Color)]
+    let buttonContent: () -> Content
     @State private var showColorPicker: Bool = false
+
+    init(
+        color: Binding<Color>,
+        availableColors: [(name: String, color: Color)],
+        @ViewBuilder buttonContent: @escaping () -> Content
+    ) {
+        self._color = color
+        self.availableColors = availableColors
+        self.buttonContent = buttonContent
+    }
 
     var body: some View {
         Button(action: {
             showColorPicker = true
         }) {
-            RoundedRectangle(cornerRadius: 20)
-                .fill(color)
-                .padding(.horizontal, -3)
-                .frame(width: 14, height: 16)
+            buttonContent()
         }
         .buttonStyle(PlainButtonStyle())
         .popover(isPresented: $showColorPicker, arrowEdge: .bottom) {
@@ -558,6 +566,22 @@ struct ColorSwatchButton: View {
             }
             .padding(.horizontal, 15)
             .padding(.vertical, 10)
+        }
+    }
+}
+
+// Convenience extension for default swatch button style
+extension ColorSwatchButton where Content == AnyView {
+    init(color: Binding<Color>, availableColors: [(name: String, color: Color)]) {
+        self._color = color
+        self.availableColors = availableColors
+        self.buttonContent = {
+            AnyView(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(color.wrappedValue)
+                    .padding(.horizontal, -3)
+                    .frame(width: 14, height: 16)
+            )
         }
     }
 }

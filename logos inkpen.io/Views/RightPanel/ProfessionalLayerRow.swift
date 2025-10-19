@@ -8,7 +8,6 @@ struct ProfessionalLayerRow: View {
     @ObservedObject var document: VectorDocument
     @State private var isEditingName: Bool = false
     @State private var editedName: String = ""
-    @State private var showColorPicker: Bool = false
     @State private var isExpanded: Bool
     @State private var layerObjects: [VectorObject] = []
     @State private var previewOpacity: Double? = nil
@@ -169,39 +168,13 @@ struct ProfessionalLayerRow: View {
                         .buttonStyle(BorderlessButtonStyle())
                         .help("Click to expand/collapse layer. Option-click to expand/collapse all layers.")
                         
-                        Button(action: {
-                            showColorPicker = true
-                        }) {
+                        ColorSwatchButton(
+                            color: layerColor,
+                            availableColors: Color.layerColorPalette
+                        ) {
                             RoundedRectangle(cornerRadius: 2)
                                 .fill(layerColor.wrappedValue)
                                 .frame(width: 4, height: 16)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .popover(isPresented: $showColorPicker, arrowEdge: .bottom) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                ForEach(Color.layerColorPalette, id: \.name) { colorOption in
-                                    Button(action: {
-                                        layerColor.wrappedValue = colorOption.color
-                                        DispatchQueue.main.async {
-                                            showColorPicker = false
-                                        }
-                                    }) {
-                                        HStack(spacing: 6) {
-                                            RoundedRectangle(cornerRadius: 20)
-                                                .fill(colorOption.color)
-                                                .padding(.horizontal, -3)
-                                                .frame(width: 14, height: 16)
-                                            Text(colorOption.name)
-                                                .layerLabel()
-                                        }
-                                        .offset(x: 1)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
-                            }
-                            .padding(.horizontal, 15)
-                            .padding(.vertical, 10)
                         }
                         
                         HStack(spacing: 0) {
