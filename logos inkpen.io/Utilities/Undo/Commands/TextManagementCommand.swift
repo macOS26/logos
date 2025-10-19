@@ -25,8 +25,6 @@ class TextManagementCommand: BaseCommand {
             let newObject = VectorObject(shape: shape, layerIndex: layerIndex)
             document.unifiedObjects.append(newObject)
             document.viewState.selectedObjectIDs = [textID]
-            document.selectedTextIDs = [textID]
-            document.selectedShapeIDs.removeAll()
 
         case .removeText(let textIDs, _):
             document.unifiedObjects.removeAll { obj in
@@ -37,7 +35,6 @@ class TextManagementCommand: BaseCommand {
                     return false
                 }
             }
-            document.selectedTextIDs.removeAll()
             document.viewState.selectedObjectIDs = newSelection
 
         case .duplicateText(_, let duplicatedObjects):
@@ -45,7 +42,6 @@ class TextManagementCommand: BaseCommand {
                 document.unifiedObjects.append(obj)
             }
             document.viewState.selectedObjectIDs = newSelection
-            document.selectedTextIDs = newSelection
 
         case .convertToOutlines(let removedTextIDs, _, _, let addedObjects):
             document.unifiedObjects.removeAll { obj in
@@ -59,8 +55,6 @@ class TextManagementCommand: BaseCommand {
             for obj in addedObjects {
                 document.unifiedObjects.append(obj)
             }
-            document.selectedTextIDs.removeAll()
-            document.selectedShapeIDs = newSelection
             document.viewState.selectedObjectIDs = newSelection
         }
     }
