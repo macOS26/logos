@@ -309,6 +309,10 @@ class VectorDocument: ObservableObject, Codable {
         viewState.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }.store(in: &cancellables)
+
+        changeNotifier.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }.store(in: &cancellables)
     }
 
     private func refreshSystemLayers() {
