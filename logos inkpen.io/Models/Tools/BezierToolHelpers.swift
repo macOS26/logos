@@ -76,7 +76,7 @@ extension DrawingCanvas {
             let firstPoint = bezierPoints[0]
             let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
             let baseCloseTolerance: Double = 5.0
-            let zoomLevel = document.zoomLevel
+            let zoomLevel = document.viewState.zoomLevel
             let closeTolerance = max(2.0, baseCloseTolerance / zoomLevel)
 
             if distance(constrainedLocation, firstPointLocation) <= closeTolerance {
@@ -117,7 +117,7 @@ extension DrawingCanvas {
 
         let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
         let baseThreshold: Double = 8.0
-        let zoomLevel = document.zoomLevel
+        let zoomLevel = document.viewState.zoomLevel
         let zoomAwareThreshold = max(2.0, baseThreshold / zoomLevel)
 
         if !isBezierDrawing && activeBezierShape == nil {
@@ -526,7 +526,7 @@ extension DrawingCanvas {
             let lastPoint = bezierPoints.last
             let distanceToLastPoint = lastPoint.map { distance(startLocation, CGPoint(x: $0.x, y: $0.y)) } ?? Double.infinity
             let baseDuplicateTolerance: Double = 5.0
-            let zoomLevel = document.zoomLevel
+            let zoomLevel = document.viewState.zoomLevel
             let duplicateTolerance = max(1.0, baseDuplicateTolerance / zoomLevel)
 
             if distanceToLastPoint > duplicateTolerance {

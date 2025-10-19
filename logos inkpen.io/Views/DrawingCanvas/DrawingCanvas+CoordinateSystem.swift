@@ -9,9 +9,9 @@ extension DrawingCanvas {
 
     internal func screenToCanvas(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
         if false {
-            let preciseOffsetX = Double(document.canvasOffset.x)
-            let preciseOffsetY = Double(document.canvasOffset.y)
-            let preciseZoom = Double(document.zoomLevel)
+            let preciseOffsetX = Double(document.viewState.canvasOffset.x)
+            let preciseOffsetY = Double(document.viewState.canvasOffset.y)
+            let preciseZoom = Double(document.viewState.zoomLevel)
             let inverseTransform = CGAffineTransform(
                 a: 1.0 / preciseZoom, b: 0,
                 c: 0, d: 1.0 / preciseZoom,
@@ -31,9 +31,9 @@ extension DrawingCanvas {
     }
 
     private func screenToCanvasCPU(_ points: [CGPoint]) -> [CGPoint] {
-        let preciseOffsetX = Double(document.canvasOffset.x)
-        let preciseOffsetY = Double(document.canvasOffset.y)
-        let preciseZoom = Double(document.zoomLevel)
+        let preciseOffsetX = Double(document.viewState.canvasOffset.x)
+        let preciseOffsetY = Double(document.viewState.canvasOffset.y)
+        let preciseZoom = Double(document.viewState.zoomLevel)
 
         return points.map { point in
             let preciseScreenX = Double(point.x)
@@ -51,9 +51,9 @@ extension DrawingCanvas {
 
     internal func canvasToScreen(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
         if false {
-            let preciseOffsetX = Double(document.canvasOffset.x)
-            let preciseOffsetY = Double(document.canvasOffset.y)
-            let preciseZoom = Double(document.zoomLevel)
+            let preciseOffsetX = Double(document.viewState.canvasOffset.x)
+            let preciseOffsetY = Double(document.viewState.canvasOffset.y)
+            let preciseZoom = Double(document.viewState.zoomLevel)
             let transform = CGAffineTransform(
                 a: preciseZoom, b: 0,
                 c: 0, d: preciseZoom,
@@ -73,9 +73,9 @@ extension DrawingCanvas {
     }
 
     private func canvasToScreenCPU(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
-        let preciseOffsetX = Double(document.canvasOffset.x)
-        let preciseOffsetY = Double(document.canvasOffset.y)
-        let preciseZoom = Double(document.zoomLevel)
+        let preciseOffsetX = Double(document.viewState.canvasOffset.x)
+        let preciseOffsetY = Double(document.viewState.canvasOffset.y)
+        let preciseZoom = Double(document.viewState.zoomLevel)
 
         return points.map { point in
             let preciseCanvasX = Double(point.x)
@@ -99,7 +99,7 @@ extension DrawingCanvas {
         let scaleY = availableHeight / documentBounds.height
         let uniformScale = min(scaleX, scaleY)
         let defaultZoom = max(0.25, min(1.5, uniformScale))
-        document.zoomLevel = defaultZoom
+        document.viewState.zoomLevel = defaultZoom
 
         let rulerBorderCompensationY: CGFloat = document.showRulers ? 0.5 : 0.0
         let visibleCenter = CGPoint(
@@ -112,12 +112,12 @@ extension DrawingCanvas {
             y: documentBounds.midY
         )
 
-        document.canvasOffset = CGPoint(
-            x: visibleCenter.x - (documentCenter.x * document.zoomLevel),
-            y: visibleCenter.y - (documentCenter.y * document.zoomLevel)
+        document.viewState.canvasOffset = CGPoint(
+            x: visibleCenter.x - (documentCenter.x * document.viewState.zoomLevel),
+            y: visibleCenter.y - (documentCenter.y * document.viewState.zoomLevel)
         )
 
-        initialZoomLevel = document.zoomLevel
+        initialZoomLevel = document.viewState.zoomLevel
 
     }
 
@@ -132,7 +132,7 @@ extension DrawingCanvas {
         let scaleY = availableHeight / documentBounds.height
         let fitZoom = min(scaleX, scaleY)
 
-        document.zoomLevel = max(0.1, min(16.0, fitZoom))
+        document.viewState.zoomLevel = max(0.1, min(16.0, fitZoom))
 
         let visibleCenter = CGPoint(
             x: (viewSize.width + rulerOffset) / 2.0,
@@ -144,12 +144,12 @@ extension DrawingCanvas {
             y: documentBounds.midY
         )
 
-        document.canvasOffset = CGPoint(
-            x: visibleCenter.x - (documentCenter.x * document.zoomLevel),
-            y: visibleCenter.y - (documentCenter.y * document.zoomLevel)
+        document.viewState.canvasOffset = CGPoint(
+            x: visibleCenter.x - (documentCenter.x * document.viewState.zoomLevel),
+            y: visibleCenter.y - (documentCenter.y * document.viewState.zoomLevel)
         )
 
-        initialZoomLevel = document.zoomLevel
+        initialZoomLevel = document.viewState.zoomLevel
 
     }
 
@@ -170,9 +170,9 @@ extension DrawingCanvas {
             y: documentBounds.midY
         )
 
-        document.zoomLevel = newZoomLevel
+        document.viewState.zoomLevel = newZoomLevel
 
-        document.canvasOffset = CGPoint(
+        document.viewState.canvasOffset = CGPoint(
             x: visibleCenter.x - (documentCenter.x * CGFloat(newZoomLevel)),
             y: visibleCenter.y - (documentCenter.y * CGFloat(newZoomLevel))
         )
@@ -182,7 +182,7 @@ extension DrawingCanvas {
     }
 
     internal func handleZoomAtPoint(newZoomLevel: CGFloat, focalPoint: CGPoint, geometry: GeometryProxy) {
-        let oldZoomLevel = document.zoomLevel
+        let oldZoomLevel = document.viewState.zoomLevel
 
         guard abs(newZoomLevel - oldZoomLevel) > 0.001 else { return }
 
@@ -190,26 +190,26 @@ extension DrawingCanvas {
         let preciseNewZoom = Double(newZoomLevel)
         let preciseFocalX = Double(focalPoint.x)
         let preciseFocalY = Double(focalPoint.y)
-        let preciseOffsetX = Double(document.canvasOffset.x)
-        let preciseOffsetY = Double(document.canvasOffset.y)
+        let preciseOffsetX = Double(document.viewState.canvasOffset.x)
+        let preciseOffsetY = Double(document.viewState.canvasOffset.y)
         let canvasPointAtFocus = CGPoint(
             x: (preciseFocalX - preciseOffsetX) / preciseOldZoom,
             y: (preciseFocalY - preciseOffsetY) / preciseOldZoom
         )
 
-        document.zoomLevel = newZoomLevel
+        document.viewState.zoomLevel = newZoomLevel
 
         let newOffset = CGPoint(
             x: preciseFocalX - (Double(canvasPointAtFocus.x) * preciseNewZoom),
             y: preciseFocalY - (Double(canvasPointAtFocus.y) * preciseNewZoom)
         )
 
-        document.canvasOffset = newOffset
+        document.viewState.canvasOffset = newOffset
 
     }
 
     internal func handleSimplifiedZoom(newZoomLevel: CGFloat, geometry: GeometryProxy) {
-        let oldZoomLevel = document.zoomLevel
+        let oldZoomLevel = document.viewState.zoomLevel
 
         guard abs(newZoomLevel - oldZoomLevel) > 0.001 else { return }
 
@@ -224,14 +224,14 @@ extension DrawingCanvas {
             y: geometry.size.height / 2.0
         )
 
-        document.zoomLevel = newZoomLevel
+        document.viewState.zoomLevel = newZoomLevel
 
         let newOffset = CGPoint(
             x: viewCenter.x - (documentCenter.x * newZoomLevel),
             y: viewCenter.y - (documentCenter.y * newZoomLevel)
         )
 
-        document.canvasOffset = newOffset
+        document.viewState.canvasOffset = newOffset
 
     }
 }

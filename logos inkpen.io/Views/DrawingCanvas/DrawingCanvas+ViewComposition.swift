@@ -45,9 +45,9 @@ extension DrawingCanvas {
             Path { path in
                 addPathElements(currentPath.elements, to: &path)
             }
-            .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel)
-            .scaleEffect(document.zoomLevel, anchor: .topLeading)
-            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+            .stroke(Color.blue, lineWidth: 1.0 / document.viewState.zoomLevel)
+            .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+            .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
             drawingDimensionsOverlay(for: currentPath)
         }
 
@@ -56,8 +56,8 @@ extension DrawingCanvas {
                 addPathElements(boundingBoxPath.elements, to: &path)
             }
             .stroke(Color.red, style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [5, 5]))
-            .scaleEffect(document.zoomLevel, anchor: .topLeading)
-            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+            .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+            .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
         }
 
         if let currentPath = currentPath,
@@ -69,9 +69,9 @@ extension DrawingCanvas {
             Path { path in
                 path.addRect(actualBounds)
             }
-            .stroke(Color.blue.opacity(0.3), style: SwiftUI.StrokeStyle(lineWidth: 1.0 / document.zoomLevel, dash: [4 / document.zoomLevel, 2 / document.zoomLevel]))
-            .scaleEffect(document.zoomLevel, anchor: .topLeading)
-            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+            .stroke(Color.blue.opacity(0.3), style: SwiftUI.StrokeStyle(lineWidth: 1.0 / document.viewState.zoomLevel, dash: [4 / document.viewState.zoomLevel, 2 / document.viewState.zoomLevel]))
+            .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+            .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
         }
 
         rubberBandPreview(geometry: geometry)
@@ -83,15 +83,15 @@ extension DrawingCanvas {
                 }
                 .fill(document.defaultFillColor.color)
                 .opacity(document.defaultFillOpacity)
-                .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+                .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
             } else {
                 Path { path in
                     addPathElements(preview.elements, to: &path)
                 }
-                .stroke(Color.blue, lineWidth: max(1.0, 1.0 / document.zoomLevel))
-                .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                .stroke(Color.blue, lineWidth: max(1.0, 1.0 / document.viewState.zoomLevel))
+                .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+                .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
             }
         }
 
@@ -100,8 +100,8 @@ extension DrawingCanvas {
                 addPathElements(preview.elements, to: &path)
             }
             .modifier(FreehandPreviewStyleModifier(appState: appState, document: document, preview: preview))
-            .scaleEffect(document.zoomLevel, anchor: .topLeading)
-            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+            .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+            .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
         }
 
         if let preview = markerPreviewPath {
@@ -132,16 +132,16 @@ extension DrawingCanvas {
                     ))
                     .opacity(ApplicationSettings.shared.currentMarkerOpacity)
                 )
-                .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+                .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
             } else {
                 Path { path in
                     addPathElements(preview.elements, to: &path)
                 }
                 .fill(markerFillColor.color)
                 .opacity(ApplicationSettings.shared.currentMarkerOpacity)
-                .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+                .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
             }
         }
 
@@ -199,8 +199,8 @@ extension DrawingCanvas {
 
             PasteboardBackgroundView(
                 document: document,
-                zoomLevel: document.zoomLevel,
-                canvasOffset: document.canvasOffset,
+                zoomLevel: document.viewState.zoomLevel,
+                canvasOffset: document.viewState.canvasOffset,
                 selectedObjectIDs: document.selectedObjectIDs,
                 viewMode: document.viewMode,
                 dragPreviewDelta: currentDragDelta,
@@ -209,8 +209,8 @@ extension DrawingCanvas {
 
             CanvasBackgroundView(
                 document: document,
-                zoomLevel: document.zoomLevel,
-                canvasOffset: document.canvasOffset,
+                zoomLevel: document.viewState.zoomLevel,
+                canvasOffset: document.viewState.canvasOffset,
                 selectedObjectIDs: document.selectedObjectIDs,
                 viewMode: document.viewMode,
                 dragPreviewDelta: currentDragDelta,
@@ -231,8 +231,8 @@ extension DrawingCanvas {
                         objects: objects,
                         layerID: document.layers[layerIndex].id,
                         document: document,
-                        zoomLevel: document.zoomLevel,
-                        canvasOffset: document.canvasOffset,
+                        zoomLevel: document.viewState.zoomLevel,
+                        canvasOffset: document.viewState.canvasOffset,
                         selectedObjectIDs: document.selectedObjectIDs,
                         viewMode: document.viewMode,
                         dragPreviewDelta: isActiveLayer ? currentDragDelta : .zero,
@@ -271,8 +271,8 @@ extension DrawingCanvas {
                 .background(Color.black.opacity(0.8))
                 .cornerRadius(4)
                 .position(labelPosition)
-                .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+                .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
         }
     }
 
@@ -297,8 +297,8 @@ extension DrawingCanvas {
                 .background(Color.black.opacity(0.8))
                 .cornerRadius(4)
                 .position(labelPosition)
-                .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+                .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
         }
     }
 
@@ -502,7 +502,7 @@ private struct BrushPreviewStyleModifier: ViewModifier {
             ZStack {
                 content.opacity(0.001)
                 Path { p in addPathElements(preview.elements, to: &p) }
-                    .stroke(Color.blue, lineWidth: max(1.0, 1.0 / document.zoomLevel))
+                    .stroke(Color.blue, lineWidth: max(1.0, 1.0 / document.viewState.zoomLevel))
             }
         case .fill:
             Path { p in addPathElements(preview.elements, to: &p) }
@@ -548,19 +548,19 @@ private struct BrushPreviewStyleModifier: ViewModifier {
             }
             .stroke(shape.strokeStyle?.color.color ?? .clear, lineWidth: shape.strokeStyle?.width ?? 0)
         )
-        .scaleEffect(document.zoomLevel, anchor: .topLeading)
-        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+        .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+        .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
         .opacity(0.8)
     }
 
     @ViewBuilder
     private func draggedTextView(_ text: VectorText, dragDelta: CGPoint) -> some View {
         Text(text.content)
-            .font(.system(size: text.typography.fontSize * document.zoomLevel))
+            .font(.system(size: text.typography.fontSize * document.viewState.zoomLevel))
             .foregroundColor(text.typography.fillColor.color)
             .position(
-                x: (text.position.x + dragDelta.x) * document.zoomLevel + document.canvasOffset.x,
-                y: (text.position.y + dragDelta.y) * document.zoomLevel + document.canvasOffset.y
+                x: (text.position.x + dragDelta.x) * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                y: (text.position.y + dragDelta.y) * document.viewState.zoomLevel + document.viewState.canvasOffset.y
             )
             .opacity(0.8)
     }

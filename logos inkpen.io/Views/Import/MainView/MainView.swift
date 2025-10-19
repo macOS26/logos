@@ -123,8 +123,8 @@ struct MainView: View {
                     document.selectedTextIDs = newDocument.selectedTextIDs
                     document.currentTool = newDocument.currentTool
                     document.viewMode = newDocument.viewMode
-                    document.zoomLevel = newDocument.zoomLevel
-                    document.canvasOffset = newDocument.canvasOffset
+                    document.viewState.zoomLevel = newDocument.zoomLevel
+                    document.viewState.canvasOffset = newDocument.canvasOffset
                     document.showRulers = newDocument.showRulers
                     document.snapToGrid = newDocument.snapToGrid
 
@@ -267,8 +267,8 @@ struct MainView: View {
     }
 
     private func loadImportedDocument(_ importedDoc: VectorDocument) {
-        document.zoomLevel = 1.0
-        document.canvasOffset = .zero
+        document.viewState.zoomLevel = 1.0
+        document.viewState.canvasOffset = .zero
         document.settings = importedDoc.settings
         document.layers = importedDoc.layers
         document.customRgbSwatches = importedDoc.customRgbSwatches

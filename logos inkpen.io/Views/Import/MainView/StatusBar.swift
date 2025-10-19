@@ -54,7 +54,7 @@ struct StatusBar: View {
 
             Spacer()
 
-            Text("Zoom: \(Int(document.zoomLevel * 100))%")
+            Text("Zoom: \(Int(document.viewState.zoomLevel * 100))%")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }

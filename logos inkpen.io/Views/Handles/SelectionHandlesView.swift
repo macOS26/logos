@@ -37,15 +37,15 @@ struct SelectionHandlesView: View {
                                 EnvelopeHandles(
                                     document: document,
                                     shape: shape,
-                                    zoomLevel: document.zoomLevel,
-                                    canvasOffset: document.canvasOffset
+                                    zoomLevel: document.viewState.zoomLevel,
+                                    canvasOffset: document.viewState.canvasOffset
                                 )
                             } else if shape.isWarpObject {
                                 PersistentWarpMarquee(
                                     document: document,
                                     shape: shape,
-                                    zoomLevel: document.zoomLevel,
-                                    canvasOffset: document.canvasOffset,
+                                    zoomLevel: document.viewState.zoomLevel,
+                                    canvasOffset: document.viewState.canvasOffset,
                                     isEnvelopeTool: false
                                 )
                             } else {
@@ -58,20 +58,20 @@ struct SelectionHandlesView: View {
                                     TransformBoxHandles(
                                         document: document,
                                         shape: shape,
-                                        zoomLevel: document.zoomLevel,
-                                        canvasOffset: document.canvasOffset,
+                                        zoomLevel: document.viewState.zoomLevel,
+                                        canvasOffset: document.viewState.canvasOffset,
                                         isShiftPressed: isShiftPressed,
                                         transformOrigin: document.transformOrigin,
                                         strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5)
                                     )
-                                    .offset(x: dragPreviewDelta.x * document.zoomLevel,
-                                            y: dragPreviewDelta.y * document.zoomLevel)
+                                    .offset(x: dragPreviewDelta.x * document.viewState.zoomLevel,
+                                            y: dragPreviewDelta.y * document.viewState.zoomLevel)
                                 } else if document.currentTool == .scale {
                                     ScaleHandles(
                                         document: document,
                                         shape: shape,
-                                        zoomLevel: document.zoomLevel,
-                                        canvasOffset: document.canvasOffset,
+                                        zoomLevel: document.viewState.zoomLevel,
+                                        canvasOffset: document.viewState.canvasOffset,
                                         isShiftPressed: isShiftPressed,
                                         liveScaleTransform: $liveScaleTransform
                                     )
@@ -79,16 +79,16 @@ struct SelectionHandlesView: View {
                                     RotateHandles(
                                         document: document,
                                         shape: shape,
-                                        zoomLevel: document.zoomLevel,
-                                        canvasOffset: document.canvasOffset,
+                                        zoomLevel: document.viewState.zoomLevel,
+                                        canvasOffset: document.viewState.canvasOffset,
                                         isShiftPressed: isShiftPressed
                                     )
                                 } else if document.currentTool == .shear {
                                     ShearHandles(
                                         document: document,
                                         shape: shape,
-                                        zoomLevel: document.zoomLevel,
-                                        canvasOffset: document.canvasOffset,
+                                        zoomLevel: document.viewState.zoomLevel,
+                                        canvasOffset: document.viewState.canvasOffset,
                                         isShiftPressed: isShiftPressed
                                     )
                                 }
@@ -108,15 +108,15 @@ struct SelectionHandlesView: View {
                 EnvelopeHandles(
                     document: document,
                     shape: shape,
-                    zoomLevel: document.zoomLevel,
-                    canvasOffset: document.canvasOffset
+                    zoomLevel: document.viewState.zoomLevel,
+                    canvasOffset: document.viewState.canvasOffset
                 )
             } else if shape.isWarpObject {
                 PersistentWarpMarquee(
                     document: document,
                     shape: shape,
-                    zoomLevel: document.zoomLevel,
-                    canvasOffset: document.canvasOffset,
+                    zoomLevel: document.viewState.zoomLevel,
+                    canvasOffset: document.viewState.canvasOffset,
                     isEnvelopeTool: false
                 )
             } else {
@@ -129,20 +129,20 @@ struct SelectionHandlesView: View {
                     TransformBoxHandles(
                         document: document,
                         shape: shape,
-                        zoomLevel: document.zoomLevel,
-                        canvasOffset: document.canvasOffset,
+                        zoomLevel: document.viewState.zoomLevel,
+                        canvasOffset: document.viewState.canvasOffset,
                         isShiftPressed: isShiftPressed,
                         transformOrigin: document.transformOrigin,
                         strokeColor: isTemporarySelectionViaCommand ? Color.red : Color.black.opacity(0.5)
                     )
-                    .offset(x: dragPreviewDelta.x * document.zoomLevel,
-                            y: dragPreviewDelta.y * document.zoomLevel)
+                    .offset(x: dragPreviewDelta.x * document.viewState.zoomLevel,
+                            y: dragPreviewDelta.y * document.viewState.zoomLevel)
                 } else if document.currentTool == .scale {
                     ScaleHandles(
                         document: document,
                         shape: shape,
-                        zoomLevel: document.zoomLevel,
-                        canvasOffset: document.canvasOffset,
+                        zoomLevel: document.viewState.zoomLevel,
+                        canvasOffset: document.viewState.canvasOffset,
                         isShiftPressed: isShiftPressed,
                         liveScaleTransform: $liveScaleTransform
                     )
@@ -150,16 +150,16 @@ struct SelectionHandlesView: View {
                     RotateHandles(
                         document: document,
                         shape: shape,
-                        zoomLevel: document.zoomLevel,
-                        canvasOffset: document.canvasOffset,
+                        zoomLevel: document.viewState.zoomLevel,
+                        canvasOffset: document.viewState.canvasOffset,
                         isShiftPressed: isShiftPressed
                     )
                 } else if document.currentTool == .shear {
                     ShearHandles(
                         document: document,
                         shape: shape,
-                        zoomLevel: document.zoomLevel,
-                        canvasOffset: document.canvasOffset,
+                        zoomLevel: document.viewState.zoomLevel,
+                        canvasOffset: document.viewState.canvasOffset,
                         isShiftPressed: isShiftPressed
                     )
                 }

@@ -68,8 +68,8 @@ struct HorizontalRuler: View {
     private func drawHorizontalRuler(context: GraphicsContext, size: CGSize) {
         let unit = document.settings.unit
         let pointsPerUnit = unit.pointsPerUnit
-        let zoomLevel = document.zoomLevel
-        let canvasOffset = document.canvasOffset
+        let zoomLevel = document.viewState.zoomLevel
+        let canvasOffset = document.viewState.canvasOffset
         let pageOrigin = document.settings.pageOrigin ?? .zero
         let startX = (-canvasOffset.x) / zoomLevel
         let endX = (size.width - canvasOffset.x) / zoomLevel
@@ -288,8 +288,8 @@ struct VerticalRuler: View {
     private func drawVerticalRuler(context: GraphicsContext, size: CGSize) {
         let unit = document.settings.unit
         let pointsPerUnit = unit.pointsPerUnit
-        let zoomLevel = document.zoomLevel
-        let canvasOffset = document.canvasOffset
+        let zoomLevel = document.viewState.zoomLevel
+        let canvasOffset = document.viewState.canvasOffset
         let pageOrigin = document.settings.pageOrigin ?? .zero
         let startY = (-canvasOffset.y) / zoomLevel
         let endY = (size.height - canvasOffset.y) / zoomLevel
@@ -620,7 +620,7 @@ struct GuidelinesView: View {
                 Rectangle()
                     .fill(Color.cyan)
                     .frame(height: 1)
-                    .position(x: geometry.size.width / 2, y: y * document.zoomLevel + document.canvasOffset.y)
+                    .position(x: geometry.size.width / 2, y: y * document.viewState.zoomLevel + document.viewState.canvasOffset.y)
                     .opacity(0.7)
             }
 
@@ -628,7 +628,7 @@ struct GuidelinesView: View {
                 Rectangle()
                     .fill(Color.cyan)
                     .frame(width: 1)
-                    .position(x: x * document.zoomLevel + document.canvasOffset.x, y: geometry.size.height / 2)
+                    .position(x: x * document.viewState.zoomLevel + document.viewState.canvasOffset.x, y: geometry.size.height / 2)
                     .opacity(0.7)
             }
         }
@@ -763,15 +763,15 @@ struct PageOriginCrosshair: View {
             y: screenPoint.y - rulerThickness
         )
         return CGPoint(
-            x: (canvasScreenPoint.x - document.canvasOffset.x) / document.zoomLevel,
-            y: (canvasScreenPoint.y - document.canvasOffset.y) / document.zoomLevel
+            x: (canvasScreenPoint.x - document.viewState.canvasOffset.x) / document.viewState.zoomLevel,
+            y: (canvasScreenPoint.y - document.viewState.canvasOffset.y) / document.viewState.zoomLevel
         )
     }
 
     private func canvasToScreenPosition(_ canvasPoint: CGPoint) -> CGPoint {
         return CGPoint(
-            x: canvasPoint.x * document.zoomLevel + document.canvasOffset.x,
-            y: canvasPoint.y * document.zoomLevel + document.canvasOffset.y
+            x: canvasPoint.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+            y: canvasPoint.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
         )
     }
 

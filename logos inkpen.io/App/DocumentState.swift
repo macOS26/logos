@@ -1015,13 +1015,13 @@ class DocumentState: ObservableObject {
 
     func zoomIn() {
         guard let document = document else { return }
-        let newZoom = min(document.zoomLevel * 1.25, 50.0)
+        let newZoom = min(document.viewState.zoomLevel * 1.25, 50.0)
         document.requestZoom(to: newZoom, mode: .zoomIn)
     }
 
     func zoomOut() {
         guard let document = document else { return }
-        let newZoom = max(document.zoomLevel / 1.25, 0.01)
+        let newZoom = max(document.viewState.zoomLevel / 1.25, 0.01)
         document.requestZoom(to: newZoom, mode: .zoomOut)
     }
 

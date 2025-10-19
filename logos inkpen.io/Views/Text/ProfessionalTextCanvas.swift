@@ -28,7 +28,7 @@ struct ProfessionalTextCanvas: View {
                 textBoxState: textBoxState,
                 isResizeHandleActive: isResizeHandleActive,
                 onTextBoxSelect: handleTextBoxSelect,
-                zoomLevel: CGFloat(document.zoomLevel),
+                zoomLevel: CGFloat(document.viewState.zoomLevel),
                 viewMode: viewMode
             )
 
@@ -44,7 +44,7 @@ struct ProfessionalTextCanvas: View {
                     viewModel: viewModel,
                     dragOffset: dragOffset,
                     resizeOffset: resizeOffset,
-                    zoomLevel: CGFloat(document.zoomLevel),
+                    zoomLevel: CGFloat(document.viewState.zoomLevel),
                     viewMode: viewMode,
                     onResizeChanged: handleResizeChanged,
                     onResizeEnded: handleResizeEnded,
@@ -52,10 +52,10 @@ struct ProfessionalTextCanvas: View {
                 )
             }
         }
-        .scaleEffect(document.zoomLevel, anchor: .topLeading)
-        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-        .offset(x: shouldApplyDragPreview() ? dragPreviewDelta.x * document.zoomLevel : 0,
-                y: shouldApplyDragPreview() ? dragPreviewDelta.y * document.zoomLevel : 0)
+        .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+        .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
+        .offset(x: shouldApplyDragPreview() ? dragPreviewDelta.x * document.viewState.zoomLevel : 0,
+                y: shouldApplyDragPreview() ? dragPreviewDelta.y * document.viewState.zoomLevel : 0)
         .id(dragPreviewTrigger)
         .onKeyPress(action: handleKeyPress)
         .onChange(of: document.selectedTextIDs) { _, selectedIDs in

@@ -42,10 +42,10 @@ struct ProfessionalDirectSelectionView: View {
                         path.move(to: handleInfo.pointLocation)
                         path.addLine(to: handleInfo.handleLocation)
                     }
-                    .stroke(Color.blue.opacity(0.5), lineWidth: 1.0 / document.zoomLevel)
+                    .stroke(Color.blue.opacity(0.5), lineWidth: 1.0 / document.viewState.zoomLevel)
                     .transformEffect(shape.transform)
-                    .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                    .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+                    .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
 
                     let transformedHandle = CGPoint(x: handleInfo.handleLocation.x, y: handleInfo.handleLocation.y).applying(shape.transform)
                     Circle()
@@ -53,8 +53,8 @@ struct ProfessionalDirectSelectionView: View {
                         .stroke(Color.white, lineWidth: 1.0)
                         .frame(width: 8, height: 8)
                         .position(CGPoint(
-                            x: transformedHandle.x * document.zoomLevel + document.canvasOffset.x,
-                            y: transformedHandle.y * document.zoomLevel + document.canvasOffset.y
+                            x: transformedHandle.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                            y: transformedHandle.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
                         ))
                 }
             }
@@ -68,8 +68,8 @@ struct ProfessionalDirectSelectionView: View {
                         .stroke(Color.white, lineWidth: 1.0)
                         .frame(width: 10, height: 10)
                         .position(CGPoint(
-                            x: transformedPoint.x * document.zoomLevel + document.canvasOffset.x,
-                            y: transformedPoint.y * document.zoomLevel + document.canvasOffset.y
+                            x: transformedPoint.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                            y: transformedPoint.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
                         ))
                 }
             }
@@ -280,10 +280,10 @@ struct ProfessionalDirectSelectionView: View {
             path.move(to: offsetFrom)
             path.addLine(to: offsetTo)
         }
-        .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel)
+        .stroke(Color.blue, lineWidth: 1.0 / document.viewState.zoomLevel)
         .transformEffect(shape.transform)
-        .scaleEffect(document.zoomLevel, anchor: .topLeading)
-        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+        .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+        .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
 
         let transformedTo = CGPoint(x: offsetTo.x, y: offsetTo.y).applying(shape.transform)
         Circle()
@@ -291,8 +291,8 @@ struct ProfessionalDirectSelectionView: View {
             .stroke(Color.white, lineWidth: 0.5)
             .frame(width: 6, height: 6)
             .position(CGPoint(
-                x: transformedTo.x * document.zoomLevel + document.canvasOffset.x,
-                y: transformedTo.y * document.zoomLevel + document.canvasOffset.y
+                x: transformedTo.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                y: transformedTo.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
             ))
     }
 
@@ -314,8 +314,8 @@ struct ProfessionalDirectSelectionView: View {
                 .stroke(hasCoincidentPoints ? Color.orange : Color.blue, lineWidth: hasCoincidentPoints ? 2.0 : 1.0)
                 .frame(width: 8, height: 8)
                 .position(CGPoint(
-                    x: transformedPointLocation.x * document.zoomLevel + document.canvasOffset.x,
-                    y: transformedPointLocation.y * document.zoomLevel + document.canvasOffset.y
+                    x: transformedPointLocation.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                    y: transformedPointLocation.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
                 ))
         }
     }

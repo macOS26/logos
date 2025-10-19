@@ -39,8 +39,8 @@ extension DrawingCanvas {
     }
 
     private func checkAnchorPointsInShape(_ shape: VectorShape, at location: CGPoint, tolerance: Double) -> Bool {
-        let pointSelectionRadius: Double = 6.0 / document.zoomLevel
-        let handleSelectionRadius: Double = 4.0 / document.zoomLevel
+        let pointSelectionRadius: Double = 6.0 / document.viewState.zoomLevel
+        let handleSelectionRadius: Double = 4.0 / document.viewState.zoomLevel
         let pointCount = shape.path.elements.filter {
             switch $0 {
             case .close: return false
@@ -342,7 +342,7 @@ extension DrawingCanvas {
                             }
                         } else {
                             let basePathTolerance: Double = 8.0
-                            let pathTolerance = max(2.0, basePathTolerance / document.zoomLevel)
+                            let pathTolerance = max(2.0, basePathTolerance / document.viewState.zoomLevel)
 
                             if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: pathTolerance) {
                                 isHit = true
@@ -359,7 +359,7 @@ extension DrawingCanvas {
                         isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
                     } else {
                         let basePathTolerance: Double = 8.0
-                        let pathTolerance = max(2.0, basePathTolerance / document.zoomLevel)
+                        let pathTolerance = max(2.0, basePathTolerance / document.viewState.zoomLevel)
 
                         isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: pathTolerance)
                     }
@@ -392,7 +392,7 @@ extension DrawingCanvas {
     internal func handleDirectSelectionTap(at location: CGPoint) {
 
         let screenTolerance: Double = 15.0
-        let tolerance: Double = screenTolerance / document.zoomLevel
+        let tolerance: Double = screenTolerance / document.viewState.zoomLevel
         var foundSelection = false
 
         if !directSelectedShapeIDs.isEmpty {

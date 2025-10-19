@@ -34,8 +34,8 @@ extension DrawingCanvas {
                 path.closeSubpath()
             }
             .fill(document.defaultFillColor.color.opacity(0.3))
-            .scaleEffect(document.zoomLevel, anchor: .topLeading)
-            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+            .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+            .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
         }
     }
 
@@ -75,8 +75,8 @@ extension DrawingCanvas {
                 path.closeSubpath()
             }
             .fill(document.defaultFillColor.color.opacity(0.15))
-            .scaleEffect(document.zoomLevel, anchor: .topLeading)
-            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+            .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+            .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
         }
     }
 
@@ -97,14 +97,14 @@ extension DrawingCanvas {
                 if let snapPoint = findBestIntersectionPoint(from: lastPointLocation, toward: rawCanvasMouseLocation) {
                     Circle()
                         .fill(Color.purple.opacity(0.3))
-                        .frame(width: 16 / document.zoomLevel, height: 16 / document.zoomLevel)
+                        .frame(width: 16 / document.viewState.zoomLevel, height: 16 / document.viewState.zoomLevel)
                         .overlay(
                             Circle()
-                                .stroke(Color.purple, lineWidth: 2 / document.zoomLevel)
+                                .stroke(Color.purple, lineWidth: 2 / document.viewState.zoomLevel)
                         )
                         .position(
-                            x: snapPoint.x * document.zoomLevel + document.canvasOffset.x,
-                            y: snapPoint.y * document.zoomLevel + document.canvasOffset.y
+                            x: snapPoint.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                            y: snapPoint.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
                         )
 
                     Path { path in
@@ -112,12 +112,12 @@ extension DrawingCanvas {
                         path.addLine(to: snapPoint)
                     }
                     .stroke(Color.purple.opacity(0.5), style: SwiftUI.StrokeStyle(
-                        lineWidth: 1 / document.zoomLevel,
+                        lineWidth: 1 / document.viewState.zoomLevel,
                         lineCap: .round,
                         dash: [4, 2]
                     ))
-                    .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                    .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+                    .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
 
                     let firstPoint = bezierPoints[0]
                     let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
@@ -126,17 +126,17 @@ extension DrawingCanvas {
                         path.addLine(to: firstPointLocation)
                     }
                     .stroke(Color.purple.opacity(0.5), style: SwiftUI.StrokeStyle(
-                        lineWidth: 1 / document.zoomLevel,
+                        lineWidth: 1 / document.viewState.zoomLevel,
                         lineCap: .round,
                         dash: [4, 2]
                     ))
-                    .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                    .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+                    .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
                 }
             }
 
-            let strokeWidth = 2.0 / document.zoomLevel
-            let rubberBandWidth = 1.0 / document.zoomLevel
+            let strokeWidth = 2.0 / document.viewState.zoomLevel
+            let rubberBandWidth = 1.0 / document.viewState.zoomLevel
 
             if bezierPoints.count >= 2 && !showClosePathHint {
                 rubberBandFillPreview(geometry: geometry)
@@ -170,8 +170,8 @@ extension DrawingCanvas {
                     }
                 }
                 .stroke(Color.green, style: SwiftUI.StrokeStyle(lineWidth: strokeWidth, lineCap: .round))
-                .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+                .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
             } else {
                 Path { path in
                     path.move(to: lastPointLocation)
@@ -191,8 +191,8 @@ extension DrawingCanvas {
                     }
                 }
                 .stroke(Color.blue.opacity(0.8), style: SwiftUI.StrokeStyle(lineWidth: rubberBandWidth, lineCap: .round, dash: [4, 2]))
-                .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+                .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
 
             }
         }
@@ -207,16 +207,16 @@ extension DrawingCanvas {
                     .fill(Color.green.opacity(0.1))
                     .frame(width: 16, height: 16)
                     .position(CGPoint(
-                        x: closePathHintLocation.x * document.zoomLevel + document.canvasOffset.x,
-                        y: closePathHintLocation.y * document.zoomLevel + document.canvasOffset.y
+                        x: closePathHintLocation.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                        y: closePathHintLocation.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
                     ))
 
                 Image(systemName: "multiply.circle.fill")
                     .foregroundColor(.green)
                     .font(.system(size: 12))
                     .position(CGPoint(
-                        x: closePathHintLocation.x * document.zoomLevel + document.canvasOffset.x,
-                        y: closePathHintLocation.y * document.zoomLevel + document.canvasOffset.y
+                        x: closePathHintLocation.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                        y: closePathHintLocation.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
                     ))
             }
             .animation(.easeInOut(duration: 0.2), value: showClosePathHint)
@@ -232,16 +232,16 @@ extension DrawingCanvas {
                     .fill(Color.blue.opacity(0.1))
                     .frame(width: 16, height: 16)
                     .position(CGPoint(
-                        x: continuePathHintLocation.x * document.zoomLevel + document.canvasOffset.x,
-                        y: continuePathHintLocation.y * document.zoomLevel + document.canvasOffset.y
+                        x: continuePathHintLocation.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                        y: continuePathHintLocation.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
                     ))
 
                 Image(systemName: "arrow.right.circle.fill")
                     .foregroundColor(.blue)
                     .font(.system(size: 12))
                     .position(CGPoint(
-                        x: continuePathHintLocation.x * document.zoomLevel + document.canvasOffset.x,
-                        y: continuePathHintLocation.y * document.zoomLevel + document.canvasOffset.y
+                        x: continuePathHintLocation.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                        y: continuePathHintLocation.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
                     ))
             }
             .animation(.easeInOut(duration: 0.2), value: showContinuePathHint)
@@ -261,16 +261,16 @@ extension DrawingCanvas {
                             path.move(to: pointLocation)
                             path.addLine(to: control1Location)
                         }
-                        .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel)
-                        .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                        .stroke(Color.blue, lineWidth: 1.0 / document.viewState.zoomLevel)
+                        .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+                        .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
 
                         Circle()
                             .fill(Color.blue)
                             .frame(width: 6, height: 6)
                             .position(CGPoint(
-                                x: control1Location.x * document.zoomLevel + document.canvasOffset.x,
-                                y: control1Location.y * document.zoomLevel + document.canvasOffset.y
+                                x: control1Location.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                                y: control1Location.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
                             ))
                     }
 
@@ -280,16 +280,16 @@ extension DrawingCanvas {
                             path.move(to: pointLocation)
                             path.addLine(to: control2Location)
                         }
-                        .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel)
-                        .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                        .stroke(Color.blue, lineWidth: 1.0 / document.viewState.zoomLevel)
+                        .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+                        .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
 
                         Circle()
                             .fill(Color.blue)
                             .frame(width: 6, height: 6)
                             .position(CGPoint(
-                                x: control2Location.x * document.zoomLevel + document.canvasOffset.x,
-                                y: control2Location.y * document.zoomLevel + document.canvasOffset.y
+                                x: control2Location.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                                y: control2Location.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
                             ))
                     }
                 }
@@ -313,8 +313,8 @@ extension DrawingCanvas {
                     )
                     .frame(width: 8, height: 8)
                     .position(CGPoint(
-                        x: pointLocation.x * document.zoomLevel + document.canvasOffset.x,
-                        y: pointLocation.y * document.zoomLevel + document.canvasOffset.y
+                        x: pointLocation.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                        y: pointLocation.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
                     ))
             }
         }

@@ -10,7 +10,7 @@ extension DrawingCanvas {
         if selectedPoints.isEmpty && selectedHandles.isEmpty && !isDraggingPoint && !isDraggingHandle {
             let canvasLocation = screenToCanvas(value.startLocation, geometry: geometry)
             let screenTolerance: Double = 15.0
-            let tolerance: Double = screenTolerance / document.zoomLevel
+            let tolerance: Double = screenTolerance / document.viewState.zoomLevel
             var foundPointOrHandle = false
 
             if !directSelectedShapeIDs.isEmpty {
@@ -76,7 +76,7 @@ extension DrawingCanvas {
             captureOriginalPositions()
         }
 
-        let preciseZoom = Double(document.zoomLevel)
+        let preciseZoom = Double(document.viewState.zoomLevel)
         let preciseTranslationX = Double(value.translation.width)
         let preciseTranslationY = Double(value.translation.height)
         let delta = CGPoint(

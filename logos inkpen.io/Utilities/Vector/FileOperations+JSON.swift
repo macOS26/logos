@@ -89,8 +89,8 @@ private struct DocumentSnapshot: Codable {
         self.layers = document.layers
         self.currentTool = document.currentTool
         self.viewMode = document.viewMode
-        self.zoomLevel = document.zoomLevel
-        self.canvasOffset = document.canvasOffset
+        self.zoomLevel = document.viewState.zoomLevel
+        self.canvasOffset = document.viewState.canvasOffset
         self.unifiedObjects = document.unifiedObjects
     }
 

@@ -192,7 +192,7 @@ struct DocumentBasedMainView: View {
         let scaleY = availableHeight / documentBounds.height
         let fitZoom = max(0.1, min(16.0, min(scaleX, scaleY)))
 
-        document.zoomLevel = fitZoom
+        document.viewState.zoomLevel = fitZoom
 
         let visibleCenter = CGPoint(
             x: (availableWidth + rulerOffset) / 2.0 + rulerOffset,
@@ -202,7 +202,7 @@ struct DocumentBasedMainView: View {
             x: documentBounds.midX,
             y: documentBounds.midY
         )
-        document.canvasOffset = CGPoint(
+        document.viewState.canvasOffset = CGPoint(
             x: visibleCenter.x - (documentCenter.x * fitZoom),
             y: visibleCenter.y - (documentCenter.y * fitZoom)
         )

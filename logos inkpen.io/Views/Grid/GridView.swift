@@ -86,8 +86,8 @@ struct GridView: View {
                     isMajor: false,
                     opacity: 0.3,
                     lineWidth: 0.5,
-                    zoomLevel: document.zoomLevel,
-                    canvasOffset: document.canvasOffset
+                    zoomLevel: document.viewState.zoomLevel,
+                    canvasOffset: document.viewState.canvasOffset
                 )
                 
                 GridLines(
@@ -97,8 +97,8 @@ struct GridView: View {
                     isMajor: true,
                     opacity: 0.4,
                     lineWidth: 1.0,
-                    zoomLevel: document.zoomLevel,
-                    canvasOffset: document.canvasOffset
+                    zoomLevel: document.viewState.zoomLevel,
+                    canvasOffset: document.viewState.canvasOffset
                 )
             }
         } else {

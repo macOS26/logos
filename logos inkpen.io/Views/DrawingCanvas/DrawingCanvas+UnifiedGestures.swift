@@ -102,7 +102,7 @@ extension DrawingCanvas {
         case .zoom:
             MagnifyingGlassCursor.set()
             let focalPoint = location
-            let currentZoom = CGFloat(document.zoomLevel)
+            let currentZoom = CGFloat(document.viewState.zoomLevel)
             let targetZoom: CGFloat
             if isOptionPressed {
                 targetZoom = nextAllowedStepDown(from: currentZoom)
@@ -138,7 +138,7 @@ extension DrawingCanvas {
         case .zoom:
             if zoomToolDragStartPoint == .zero {
                 zoomToolDragStartPoint = value.startLocation
-                zoomToolInitialZoomLevel = document.zoomLevel
+                zoomToolInitialZoomLevel = document.viewState.zoomLevel
             }
             MagnifyingGlassCursor.set()
             let deltaY = value.location.y - zoomToolDragStartPoint.y
@@ -198,7 +198,7 @@ extension DrawingCanvas {
 
         case .zoom:
             zoomToolDragStartPoint = .zero
-            zoomToolInitialZoomLevel = document.zoomLevel
+            zoomToolInitialZoomLevel = document.viewState.zoomLevel
 
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             finishShapeDrawing(value: value, geometry: geometry)
