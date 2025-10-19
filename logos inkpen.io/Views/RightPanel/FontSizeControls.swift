@@ -193,26 +193,23 @@ struct FontSizeControls: View {
             // Use cached previewTypography for updates
             if var updatedTypography = previewTypography {
                 let oldFontSize = updatedTypography.fontSize
+                let lineHeightRatio = updatedTypography.lineHeight / oldFontSize
+                updatedTypography.fontSize = newSize
+                updatedTypography.lineHeight = newSize * lineHeightRatio
 
-                if abs(oldFontSize - newSize) > 0.01 {
-                    let lineHeightRatio = updatedTypography.lineHeight / oldFontSize
-                    updatedTypography.fontSize = newSize
-                    updatedTypography.lineHeight = newSize * lineHeightRatio
+                // Update cached preview
+                previewTypography = updatedTypography
 
-                    // Update cached preview
-                    previewTypography = updatedTypography
+                // Always post notification for live preview
+                document.updateTextFontSizePreviewDirect(id: textID, typography: updatedTypography)
 
-                    // Always post notification for live preview
-                    document.updateTextFontSizePreviewDirect(id: textID, typography: updatedTypography)
-
-                    // Only update fontManager and document when dragging ends
-                    if !isPreview {
-                        document.fontManager.selectedFontSize = newSize
-                        document.fontManager.selectedLineHeight = newSize
-                        document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
-                        previewTypography = nil
-                        editingTextID = nil
-                    }
+                // Only update fontManager and document when dragging ends
+                if !isPreview {
+                    document.fontManager.selectedFontSize = newSize
+                    document.fontManager.selectedLineHeight = newSize
+                    document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+                    previewTypography = nil
+                    editingTextID = nil
                 }
             }
         }
@@ -230,22 +227,20 @@ struct FontSizeControls: View {
 
             // Use cached previewTypography for updates
             if var updatedTypography = previewTypography {
-                if abs(updatedTypography.lineSpacing - Double(newSpacing)) > 0.01 {
-                    updatedTypography.lineSpacing = Double(newSpacing)
+                updatedTypography.lineSpacing = Double(newSpacing)
 
-                    // Update cached preview
-                    previewTypography = updatedTypography
+                // Update cached preview
+                previewTypography = updatedTypography
 
-                    // Always post notification for live preview
-                    document.updateTextLineSpacingPreviewDirect(id: textID, typography: updatedTypography)
+                // Always post notification for live preview
+                document.updateTextLineSpacingPreviewDirect(id: textID, typography: updatedTypography)
 
-                    // Only update fontManager and document when dragging ends
-                    if !isPreview {
-                        document.fontManager.selectedLineSpacing = Double(newSpacing)
-                        document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
-                        previewTypography = nil
-                        editingTextID = nil
-                    }
+                // Only update fontManager and document when dragging ends
+                if !isPreview {
+                    document.fontManager.selectedLineSpacing = Double(newSpacing)
+                    document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+                    previewTypography = nil
+                    editingTextID = nil
                 }
             }
         }
@@ -263,22 +258,20 @@ struct FontSizeControls: View {
 
             // Use cached previewTypography for updates
             if var updatedTypography = previewTypography {
-                if abs(updatedTypography.lineHeight - Double(newHeight)) > 0.01 {
-                    updatedTypography.lineHeight = Double(newHeight)
+                updatedTypography.lineHeight = Double(newHeight)
 
-                    // Update cached preview
-                    previewTypography = updatedTypography
+                // Update cached preview
+                previewTypography = updatedTypography
 
-                    // Always post notification for live preview
-                    document.updateTextLineHeightPreviewDirect(id: textID, typography: updatedTypography)
+                // Always post notification for live preview
+                document.updateTextLineHeightPreviewDirect(id: textID, typography: updatedTypography)
 
-                    // Only update fontManager and document when dragging ends
-                    if !isPreview {
-                        document.fontManager.selectedLineHeight = Double(newHeight)
-                        document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
-                        previewTypography = nil
-                        editingTextID = nil
-                    }
+                // Only update fontManager and document when dragging ends
+                if !isPreview {
+                    document.fontManager.selectedLineHeight = Double(newHeight)
+                    document.updateTextTypographyInUnified(id: textID, typography: updatedTypography)
+                    previewTypography = nil
+                    editingTextID = nil
                 }
             }
         }
