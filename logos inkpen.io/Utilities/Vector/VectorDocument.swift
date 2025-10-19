@@ -326,6 +326,5 @@ class VectorDocument: ObservableObject, Codable {
               activeIndex < layers.count else { return }
 
         layers[activeIndex].isVisible.toggle()
-        layers[activeIndex].isVisible.toggle()
     }
 }
