@@ -218,8 +218,15 @@ extension DrawingCanvas {
             )
 
             if document.gridSettings.showGrid {
-                GridView(document: document, geometry: geometry)
-                    .allowsHitTesting(false)
+                GridView(
+                    gridSpacing: document.settings.gridSpacing,
+                    canvasSize: document.settings.sizeInPoints,
+                    unit: document.settings.unit,
+                    zoomLevel: document.viewState.zoomLevel,
+                    canvasOffset: document.viewState.canvasOffset
+                )
+                .equatable()
+                .allowsHitTesting(false)
             }
 
             // Render layers directly without parent view to avoid @ObservedObject re-renders

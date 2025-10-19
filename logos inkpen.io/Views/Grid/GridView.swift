@@ -1,68 +1,119 @@
 import SwiftUI
 import AppKit
 
-private func createGridPath(
-    gridSpacing: CGFloat,
-    canvasSize: CGSize,
-    majorGridInterval: Int,
-    isMajor: Bool
-) -> Path {
-    Path { path in
+// Isolated Canvas-based grid view that doesn't update with VectorObject changes
+struct GridCanvasView: View {
+    let gridSpacing: CGFloat
+    let canvasSize: CGSize
+    let majorGridInterval: Int
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+
+    var body: some View {
+        Canvas { context, size in
+            // Draw minor grid lines
+            drawGridLines(
+                context: context,
+                gridSpacing: gridSpacing,
+                canvasSize: canvasSize,
+                majorGridInterval: majorGridInterval,
+                isMajor: false,
+                opacity: 0.3,
+                lineWidth: 0.5,
+                zoomLevel: zoomLevel,
+                canvasOffset: canvasOffset
+            )
+
+            // Draw major grid lines
+            drawGridLines(
+                context: context,
+                gridSpacing: gridSpacing,
+                canvasSize: canvasSize,
+                majorGridInterval: majorGridInterval,
+                isMajor: true,
+                opacity: 0.4,
+                lineWidth: 1.0,
+                zoomLevel: zoomLevel,
+                canvasOffset: canvasOffset
+            )
+        }
+    }
+
+    private func drawGridLines(
+        context: GraphicsContext,
+        gridSpacing: CGFloat,
+        canvasSize: CGSize,
+        majorGridInterval: Int,
+        isMajor: Bool,
+        opacity: Double,
+        lineWidth: CGFloat,
+        zoomLevel: Double,
+        canvasOffset: CGPoint
+    ) {
         let gridSteps = Int(ceil(max(canvasSize.width, canvasSize.height) / gridSpacing)) + 1
-        
+
+        var path = Path()
+
+        // Draw vertical lines
         for i in 0...gridSteps {
             let shouldDraw = isMajor ? (i % majorGridInterval == 0) : (i % majorGridInterval != 0)
             if shouldDraw {
                 let x = CGFloat(i) * gridSpacing
                 if x <= canvasSize.width {
-                    path.move(to: CGPoint(x: x, y: 0))
-                    path.addLine(to: CGPoint(x: x, y: canvasSize.height))
+                    let transformedX = x * zoomLevel + canvasOffset.x
+                    let startY = canvasOffset.y
+                    let endY = canvasSize.height * zoomLevel + canvasOffset.y
+
+                    path.move(to: CGPoint(x: transformedX, y: startY))
+                    path.addLine(to: CGPoint(x: transformedX, y: endY))
                 }
             }
         }
-        
+
+        // Draw horizontal lines
         for i in 0...gridSteps {
             let shouldDraw = isMajor ? (i % majorGridInterval == 0) : (i % majorGridInterval != 0)
             if shouldDraw {
                 let y = CGFloat(i) * gridSpacing
                 if y <= canvasSize.height {
-                    path.move(to: CGPoint(x: 0, y: y))
-                    path.addLine(to: CGPoint(x: canvasSize.width, y: y))
+                    let transformedY = y * zoomLevel + canvasOffset.y
+                    let startX = canvasOffset.x
+                    let endX = canvasSize.width * zoomLevel + canvasOffset.x
+
+                    path.move(to: CGPoint(x: startX, y: transformedY))
+                    path.addLine(to: CGPoint(x: endX, y: transformedY))
                 }
             }
         }
+
+        context.stroke(
+            path,
+            with: .color(.gray.opacity(opacity)),
+            lineWidth: lineWidth / zoomLevel
+        )
     }
 }
 
-private struct GridLines: View {
+// Equatable wrapper to prevent unnecessary updates
+struct GridView: View, Equatable {
     let gridSpacing: CGFloat
     let canvasSize: CGSize
-    let majorGridInterval: Int
-    let isMajor: Bool
-    let opacity: Double
-    let lineWidth: CGFloat
+    let unit: MeasurementUnit
     let zoomLevel: Double
     let canvasOffset: CGPoint
-    var body: some View {
-        createGridPath(
-            gridSpacing: gridSpacing,
-            canvasSize: canvasSize,
-            majorGridInterval: majorGridInterval,
-            isMajor: isMajor
-        )
-        .stroke(Color.gray.opacity(opacity), lineWidth: lineWidth / zoomLevel)
-        .scaleEffect(zoomLevel, anchor: .topLeading)
-        .offset(x: canvasOffset.x, y: canvasOffset.y)
-    }
-}
 
-struct GridView: View {
-    let document: VectorDocument
-    let geometry: GeometryProxy
+    static func == (lhs: GridView, rhs: GridView) -> Bool {
+        lhs.gridSpacing == rhs.gridSpacing &&
+        lhs.canvasSize == rhs.canvasSize &&
+        lhs.unit == rhs.unit &&
+        lhs.zoomLevel == rhs.zoomLevel &&
+        lhs.canvasOffset == rhs.canvasOffset
+    }
+
     var body: some View {
-        let baseSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit
+        let baseSpacing = gridSpacing * unit.pointsPerUnit
         let spacingMultiplier: CGFloat = {
-            switch document.settings.unit {
+            switch unit {
             case .pixels, .points:
                 return 25.0
             case .millimeters:
@@ -73,34 +124,17 @@ struct GridView: View {
                 return 1.0
             }
         }()
-        let gridSpacing = baseSpacing * spacingMultiplier
-        let canvasSize = document.settings.sizeInPoints
+        let actualGridSpacing = baseSpacing * spacingMultiplier
         let majorGridInterval = 4
 
-        if gridSpacing > 0 {
-            ZStack {
-                GridLines(
-                    gridSpacing: gridSpacing,
-                    canvasSize: canvasSize,
-                    majorGridInterval: majorGridInterval,
-                    isMajor: false,
-                    opacity: 0.3,
-                    lineWidth: 0.5,
-                    zoomLevel: document.viewState.zoomLevel,
-                    canvasOffset: document.viewState.canvasOffset
-                )
-                
-                GridLines(
-                    gridSpacing: gridSpacing,
-                    canvasSize: canvasSize,
-                    majorGridInterval: majorGridInterval,
-                    isMajor: true,
-                    opacity: 0.4,
-                    lineWidth: 1.0,
-                    zoomLevel: document.viewState.zoomLevel,
-                    canvasOffset: document.viewState.canvasOffset
-                )
-            }
+        if actualGridSpacing > 0 {
+            GridCanvasView(
+                gridSpacing: actualGridSpacing,
+                canvasSize: canvasSize,
+                majorGridInterval: majorGridInterval,
+                zoomLevel: zoomLevel,
+                canvasOffset: canvasOffset
+            )
         } else {
             EmptyView()
         }
