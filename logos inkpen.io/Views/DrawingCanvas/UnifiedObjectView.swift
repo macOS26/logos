@@ -242,102 +242,6 @@ struct CanvasBackgroundView: View {
     }
 }
 
-// Canvas-based renderer for active layer objects
-struct CanvasLayerView: View {
-    let objects: [VectorObject]
-    let document: VectorDocument
-    let zoomLevel: Double
-    let canvasOffset: CGPoint
-    let selectedObjectIDs: Set<UUID>
-    let viewMode: ViewMode
-    let dragPreviewDelta: CGPoint
-    let liveScaleTransform: CGAffineTransform
-
-    var body: some View {
-        Canvas { context, size in
-            // Render each visible object
-            for object in objects where object.isVisible {
-                switch object.objectType {
-                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape):
-                    drawShape(shape, in: &context, isSelected: selectedObjectIDs.contains(object.id))
-                case .clipMask:
-                    break // Skip clip masks
-                case .text:
-                    break // Text rendering handled separately for now
-                }
-            }
-        }
-    }
-
-    private func drawShape(_ shape: VectorShape, in context: inout GraphicsContext, isSelected: Bool) {
-        // Create path from shape elements
-        var path = Path()
-        for element in shape.path.elements {
-            switch element {
-            case .move(let to):
-                path.move(to: CGPoint(x: to.x, y: to.y))
-            case .line(let to):
-                path.addLine(to: CGPoint(x: to.x, y: to.y))
-            case .curve(let to, let cp1, let cp2):
-                path.addCurve(
-                    to: CGPoint(x: to.x, y: to.y),
-                    control1: CGPoint(x: cp1.x, y: cp1.y),
-                    control2: CGPoint(x: cp2.x, y: cp2.y)
-                )
-            case .quadCurve(let to, let cp):
-                path.addQuadCurve(
-                    to: CGPoint(x: to.x, y: to.y),
-                    control: CGPoint(x: cp.x, y: cp.y)
-                )
-            case .close:
-                path.closeSubpath()
-            }
-        }
-
-        // Apply transform
-        let transformedPath = path.applying(shape.transform)
-
-        // Apply zoom and offset
-        var drawContext = context
-        drawContext.translateBy(x: canvasOffset.x, y: canvasOffset.y)
-        drawContext.scaleBy(x: zoomLevel, y: zoomLevel)
-
-        // Apply drag offset if selected
-        if isSelected && dragPreviewDelta != .zero {
-            drawContext.translateBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
-        }
-
-        // Draw fill
-        if viewMode == .color, let fillStyle = shape.fillStyle, fillStyle.color != .clear {
-            drawContext.fill(
-                transformedPath,
-                with: .color(fillStyle.color.color.opacity(fillStyle.opacity))
-            )
-        }
-
-        // Draw stroke
-        if viewMode == .keyline {
-            drawContext.stroke(
-                transformedPath,
-                with: .color(.black),
-                lineWidth: 1.0 / zoomLevel
-            )
-        } else if let strokeStyle = shape.strokeStyle, strokeStyle.color != .clear {
-            drawContext.stroke(
-                transformedPath,
-                with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity)),
-                style: SwiftUI.StrokeStyle(
-                    lineWidth: strokeStyle.width,
-                    lineCap: strokeStyle.lineCap.cgLineCap.swiftUILineCap,
-                    lineJoin: strokeStyle.lineJoin.cgLineJoin.swiftUILineJoin,
-                    miterLimit: strokeStyle.miterLimit,
-                    dash: strokeStyle.dashPattern.map { CGFloat($0) }
-                )
-            )
-        }
-    }
-}
-
 struct IsolatedLayerView: View, Equatable {
     let objects: [VectorObject]
     let layerID: UUID
@@ -354,7 +258,6 @@ struct IsolatedLayerView: View, Equatable {
 
     @State private var cachedImage: NSImage?
     @State private var isDragging: Bool = false
-    @State private var useCanvasRenderer: Bool = true // Experiment toggle
 
     // Track if this layer has selection
     private var hasSelection: Bool {
@@ -432,35 +335,20 @@ struct IsolatedLayerView: View, Equatable {
                         .allowsHitTesting(false)
                 }
             } else {
-                // Experiment: Use Canvas for active layer (has selection)
-                if hasSelection && useCanvasRenderer {
-                    CanvasLayerView(
-                        objects: objects,
-                        document: document,
-                        zoomLevel: zoomLevel,
-                        canvasOffset: canvasOffset,
-                        selectedObjectIDs: selectedObjectIDs,
-                        viewMode: viewMode,
-                        dragPreviewDelta: dragPreviewDelta,
-                        liveScaleTransform: liveScaleTransform
-                    )
-                    .opacity(layerOpacity)
-                } else {
-                    // Render live SwiftUI views (fallback or inactive layer)
-                    ForEach(objects, id: \.id) { unifiedObject in
-                        if unifiedObject.isVisible {
-                            UnifiedObjectContentView(
-                                unifiedObject: unifiedObject,
-                                document: document,
-                                zoomLevel: zoomLevel,
-                                canvasOffset: canvasOffset,
-                                selectedObjectIDs: selectedObjectIDs,
-                                viewMode: viewMode,
-                                dragPreviewDelta: dragPreviewDelta,
-                                dragPreviewTrigger: dragPreviewTrigger,
-                                liveScaleTransform: liveScaleTransform
-                            )
-                        }
+                // Render live SwiftUI views
+                ForEach(objects, id: \.id) { unifiedObject in
+                    if unifiedObject.isVisible {
+                        UnifiedObjectContentView(
+                            unifiedObject: unifiedObject,
+                            document: document,
+                            zoomLevel: zoomLevel,
+                            canvasOffset: canvasOffset,
+                            selectedObjectIDs: selectedObjectIDs,
+                            viewMode: viewMode,
+                            dragPreviewDelta: dragPreviewDelta,
+                            dragPreviewTrigger: dragPreviewTrigger,
+                            liveScaleTransform: liveScaleTransform
+                        )
                     }
                 }
             }
