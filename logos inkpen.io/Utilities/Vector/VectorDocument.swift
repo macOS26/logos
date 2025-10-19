@@ -29,8 +29,8 @@ class VectorDocument: ObservableObject, Codable {
     
     @Published var isDraggingVisibility: Bool = false
     @Published var isDraggingLock: Bool = false
-    @Published var processedLayersDuringDrag: Set<Int> = []
-    @Published var processedObjectsDuringDrag: Set<UUID> = []
+    var processedLayersDuringDrag: Set<Int> = []
+    var processedObjectsDuringDrag: Set<UUID> = []
 
     // Track active layer during object drag for performance optimization
     var activeLayerIndexDuringDrag: Int? = nil
@@ -210,8 +210,8 @@ class VectorDocument: ObservableObject, Codable {
     @Published var markerRemoveOverlap: Bool {
         didSet { UserDefaults.standard.set(markerRemoveOverlap, forKey: "markerRemoveOverlap") }
     }
-    
-    @Published var originalHandlePositions: [String: VectorPoint] = [:]
+
+    var originalHandlePositions: [String: VectorPoint] = [:]
     
     internal var _encodableSettings: DocumentSettings
     internal var _encodableLayers: [VectorLayer]
@@ -479,32 +479,6 @@ class VectorDocument: ObservableObject, Codable {
         changeNotifier.notifyGeneralChange()
     }
 
-    // MARK: - Selection Helpers (O(1) updates)
-    func setSelectedObjectIDs(_ ids: Set<UUID>) {
-        selectedObjectIDs = ids
-        changeNotifier.notifySelectionChanged()
-    }
-
-    func setSelectedShapeIDs(_ ids: Set<UUID>) {
-        selectedShapeIDs = ids
-        changeNotifier.notifySelectionChanged()
-    }
-
-    func setSelectedTextIDs(_ ids: Set<UUID>) {
-        selectedTextIDs = ids
-        changeNotifier.notifySelectionChanged()
-    }
-
-    func setDirectSelectedShapeIDs(_ ids: Set<UUID>) {
-        directSelectedShapeIDs = ids
-        changeNotifier.notifySelectionChanged()
-    }
-
-    func setSelectedLayerIndex(_ index: Int?) {
-        selectedLayerIndex = index
-        changeNotifier.notifySelectionChanged()
-    }
-
     func toggleActiveLayerVisibility() {
         guard let activeIndex = selectedLayerIndex,
               activeIndex >= 0,
@@ -512,22 +486,5 @@ class VectorDocument: ObservableObject, Codable {
 
         layers[activeIndex].isVisible.toggle()
         layers[activeIndex].isVisible.toggle()
-    }
-
-    // MARK: - Drag/Transform Preview Helpers (O(1) updates)
-    func setIsHandleScalingActive(_ active: Bool) {
-        isHandleScalingActive = active
-    }
-
-    func setCachedSelectionBounds(_ bounds: CGRect?) {
-        cachedSelectionBounds = bounds
-    }
-
-    func setDragPreviewCoordinates(_ coords: CGPoint) {
-        dragPreviewCoordinates = coords
-    }
-
-    func setScalePreviewDimensions(_ size: CGSize) {
-        scalePreviewDimensions = size
     }
 }
