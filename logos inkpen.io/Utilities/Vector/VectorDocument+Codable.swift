@@ -3,7 +3,7 @@ import SwiftUI
 extension VectorDocument {
 
     enum CodingKeys: CodingKey {
-        case settings, layers, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, selectedObjectIDs, currentTool, viewMode, zoomLevel, canvasOffset, unifiedObjects, warpEnvelopeCorners, warpBounds
+        case settings, layers, selectedLayerIndex, selectedObjectIDs, currentTool, viewMode, zoomLevel, canvasOffset, unifiedObjects, warpEnvelopeCorners, warpBounds
     }
 
     func encode(to encoder: Encoder) throws {
@@ -26,8 +26,6 @@ extension VectorDocument {
         try container.encode(_encodableUnifiedObjects, forKey: .unifiedObjects)
 
         try container.encode(selectedLayerIndex, forKey: .selectedLayerIndex)
-        try container.encode(selectedShapeIDs, forKey: .selectedShapeIDs)
-        try container.encode(selectedTextIDs, forKey: .selectedTextIDs)
         try container.encode(viewState.selectedObjectIDs, forKey: .selectedObjectIDs)
         try container.encode(viewState.warpEnvelopeCorners, forKey: .warpEnvelopeCorners)
         try container.encode(viewState.warpBounds, forKey: .warpBounds)
