@@ -205,11 +205,11 @@ struct ProfessionalOffsetPathSection: View {
     }
 
     private func canPerformOffset() -> Bool {
-        return !document.selectedShapeIDs.isEmpty
+        return !document.viewState.selectedObjectIDs.isEmpty
     }
 
     private func performOffsetPath() {
-        guard !document.selectedShapeIDs.isEmpty else { return }
+        guard !document.viewState.selectedObjectIDs.isEmpty else { return }
 
         let selectedShapes = document.getSelectedShapes()
         var oldShapes: [UUID: VectorShape] = [:]
@@ -226,7 +226,7 @@ struct ProfessionalOffsetPathSection: View {
         if let layerIndex = document.selectedLayerIndex {
             let shapes = document.getShapesForLayer(layerIndex)
             for (index, shape) in shapes.enumerated() {
-                if document.selectedShapeIDs.contains(shape.id) {
+                if document.viewState.selectedObjectIDs.contains(shape.id) {
                     originalShapeIndices[shape.id] = index
                 }
             }
@@ -294,7 +294,7 @@ struct ProfessionalOffsetPathSection: View {
             document.removeSelectedShapes()
         }
 
-        document.selectedShapeIDs = newOffsetShapeIDs
+        document.viewState.selectedObjectIDs = newOffsetShapeIDs
         let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
         document.commandManager.execute(command)
     }

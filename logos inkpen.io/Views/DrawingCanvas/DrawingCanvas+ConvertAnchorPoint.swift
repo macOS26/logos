@@ -579,8 +579,8 @@ extension DrawingCanvas {
                         return
                     }
 
-                    document.selectedShapeIDs.removeAll()
-                    document.selectedTextIDs.removeAll()
+                    document.viewState.selectedObjectIDs.removeAll()
+                    document.viewState.selectedObjectIDs.removeAll()
                     selectedPoints.removeAll()
                     selectedHandles.removeAll()
                     directSelectedShapeIDs.removeAll()
@@ -600,8 +600,8 @@ extension DrawingCanvas {
     }
 
     func enableDirectSelectionForConvertedPoint(shapeID: UUID, elementIndex: Int) {
-        document.selectedShapeIDs.removeAll()
-        document.selectedTextIDs.removeAll()
+        document.viewState.selectedObjectIDs.removeAll()
+        document.viewState.selectedObjectIDs.removeAll()
         selectedPoints.removeAll()
         selectedHandles.removeAll()
         directSelectedShapeIDs.removeAll()

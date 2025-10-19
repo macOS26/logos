@@ -83,7 +83,7 @@ extension DrawingCanvas {
         freehandPreviewPath = nil
         cancelFreehandDrawing()
 
-        document.selectedShapeIDs.removeAll()
+        document.viewState.selectedObjectIDs.removeAll()
         document.viewState.selectedObjectIDs.removeAll()
 
     }

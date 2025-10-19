@@ -15,7 +15,7 @@ struct CornerRadiusToolbar: View {
         .onAppear {
             updateCornerValues()
         }
-        .onChange(of: document.selectedShapeIDs) { _, _ in
+        .onChange(of: document.viewState.selectedObjectIDs) { _, _ in
             updateCornerValues()
         }
         .onChange(of: document.layers) { _, _ in
@@ -164,8 +164,8 @@ struct CornerRadiusToolbar: View {
     }
 
     private func getSelectedShape() -> VectorShape? {
-        guard document.selectedShapeIDs.count == 1,
-              let selectedID = document.selectedShapeIDs.first else { return nil }
+        guard document.viewState.selectedObjectIDs.count == 1,
+              let selectedID = document.viewState.selectedObjectIDs.first else { return nil }
         for unifiedObject in document.unifiedObjects {
             if case .shape(let shape) = unifiedObject.objectType,
                shape.id == selectedID {

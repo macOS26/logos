@@ -113,7 +113,7 @@ struct EnvelopeHandles: View {
                 }
             }
         }
-        .onChange(of: document.selectedShapeIDs) { oldSelection, newSelection in
+        .onChange(of: document.viewState.selectedObjectIDs) { oldSelection, newSelection in
             if document.viewState.currentTool == .warp && oldSelection != newSelection {
                 if previewPath != nil {
                     commitEnvelopeWarp()

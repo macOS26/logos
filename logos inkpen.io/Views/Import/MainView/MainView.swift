@@ -117,8 +117,8 @@ struct MainView: View {
                     document.defaultStrokeWidth = newDocument.defaultStrokeWidth
 
                     document.selectedLayerIndex = newDocument.selectedLayerIndex
-                    document.selectedShapeIDs = newDocument.selectedShapeIDs
-                    document.selectedTextIDs = newDocument.selectedTextIDs
+                    document.viewState.selectedObjectIDs = newDocument.selectedShapeIDs
+                    document.viewState.selectedObjectIDs = newDocument.selectedTextIDs
                     document.viewState.currentTool = newDocument.viewState.currentTool
                     document.viewState.viewMode = newDocument.viewState.viewMode
                     document.viewState.zoomLevel = newDocument.viewState.zoomLevel
@@ -271,8 +271,8 @@ struct MainView: View {
         document.colorSwatches = importedDoc.colorSwatches
         document.documentColorDefaults = importedDoc.documentColorDefaults
         document.selectedLayerIndex = importedDoc.selectedLayerIndex
-        document.selectedShapeIDs = importedDoc.selectedShapeIDs
-        document.selectedTextIDs = importedDoc.selectedTextIDs
+        document.viewState.selectedObjectIDs = importedDoc.selectedShapeIDs
+        document.viewState.selectedObjectIDs = importedDoc.selectedTextIDs
         document.viewState.currentTool = appState.defaultTool
         document.viewState.viewMode = .color
 
@@ -317,9 +317,9 @@ struct MainView: View {
                         newShapeIDs.insert(shape.id)
                     }
 
-                    document.selectedShapeIDs = newShapeIDs
                     document.viewState.selectedObjectIDs = newShapeIDs
-                    document.syncSelectionArrays()
+                    document.viewState.selectedObjectIDs = newShapeIDs
+                    document
 
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                         document.requestZoom(to: 0.0, mode: .fitToPage)
@@ -469,8 +469,8 @@ struct MainView: View {
                         document.unifiedObjects = savedState.unifiedObjects
                         document.layers = savedState.layers
                         document.viewState.selectedObjectIDs = savedState.viewState.selectedObjectIDs
-                        document.selectedTextIDs = savedState.selectedTextIDs
-                        document.selectedShapeIDs = savedState.selectedShapeIDs
+                        document.viewState.selectedObjectIDs = savedState.selectedTextIDs
+                        document.viewState.selectedObjectIDs = savedState.selectedShapeIDs
                     }
                 } else {
                     pdfData = try FileOperations.generatePDFDataForExport(from: document, useCMYK: useCMYK, textRenderingMode: textRenderingMode, includeInkpenData: true, includeBackground: includeBackground)

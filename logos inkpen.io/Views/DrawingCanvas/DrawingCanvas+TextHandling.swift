@@ -61,7 +61,6 @@ extension DrawingCanvas {
 
         if !tapHitsText {
             document.viewState.selectedObjectIDs.removeAll()
-            document.syncSelectionArrays()
 
             for unifiedObj in document.unifiedObjects {
                 switch unifiedObj.objectType {
@@ -142,8 +141,8 @@ extension DrawingCanvas {
 
             document.setTextEditingInUnified(id: textObject.id, isEditing: true)
 
-            document.selectedShapeIDs.removeAll()
-            document.selectedTextIDs = [textID]
+            document.viewState.selectedObjectIDs.removeAll()
+            document.viewState.selectedObjectIDs = [textID]
 
             isEditingText = true
             editingTextID = textID
@@ -174,8 +173,8 @@ extension DrawingCanvas {
         if isDoubleClick || isCornerClick {
             switch currentState {
             case .unselected:
-                document.selectedTextIDs = [textID]
-                document.selectedShapeIDs.removeAll()
+                document.viewState.selectedObjectIDs = [textID]
+                document.viewState.selectedObjectIDs.removeAll()
 
                 if document.viewState.currentTool == .font && isCornerClick {
                     startEditingText(textID: textID, at: .zero)
@@ -196,8 +195,8 @@ extension DrawingCanvas {
         } else {
             switch currentState {
             case .unselected:
-                document.selectedTextIDs = [textID]
-                document.selectedShapeIDs.removeAll()
+                document.viewState.selectedObjectIDs = [textID]
+                document.viewState.selectedObjectIDs.removeAll()
 
             case .selected:
                 break
@@ -297,9 +296,9 @@ extension DrawingCanvas {
 
         document.addShape(shape)
 
-        document.selectedTextIDs = [shape.id]
         document.viewState.selectedObjectIDs = [shape.id]
-        document.selectedShapeIDs.removeAll()
+        document.viewState.selectedObjectIDs = [shape.id]
+        document.viewState.selectedObjectIDs.removeAll()
 
         isEditingText = true
         editingTextID = shape.id
@@ -504,10 +503,10 @@ extension DrawingCanvas {
 
     func handleTextSelectionChange(textID: UUID, isSelected: Bool) {
         if isSelected {
-            document.selectedTextIDs.insert(textID)
-            document.selectedShapeIDs.removeAll()
+            document.viewState.selectedObjectIDs.insert(textID)
+            document.viewState.selectedObjectIDs.removeAll()
         } else {
-            document.selectedTextIDs.remove(textID)
+            document.viewState.selectedObjectIDs.remove(textID)
         }
     }
 
@@ -520,8 +519,8 @@ extension DrawingCanvas {
                 document.setTextEditingInUnified(id: textObj.id, isEditing: true)
             }
 
-            document.selectedTextIDs.insert(textID)
-            document.selectedShapeIDs.removeAll()
+            document.viewState.selectedObjectIDs.insert(textID)
+            document.viewState.selectedObjectIDs.removeAll()
 
         } else {
             if let textObj = document.findText(by: textID) {
@@ -605,8 +604,8 @@ extension DrawingCanvas {
         }
 
         if !hitAnyTextBox {
-            document.selectedTextIDs.removeAll()
-            document.selectedShapeIDs.removeAll()
+            document.viewState.selectedObjectIDs.removeAll()
+            document.viewState.selectedObjectIDs.removeAll()
 
             for unifiedObj in document.unifiedObjects {
                 if case .text(let shape) = unifiedObj.objectType, shape.isEditing == true {
@@ -720,8 +719,8 @@ extension DrawingCanvas {
 
         // Select it
         document.viewState.selectedObjectIDs = [shape.id]
-        document.selectedTextIDs = [shape.id]
-        document.selectedShapeIDs.removeAll()
+        document.viewState.selectedObjectIDs = [shape.id]
+        document.viewState.selectedObjectIDs.removeAll()
 
         isEditingText = true
         editingTextID = shape.id

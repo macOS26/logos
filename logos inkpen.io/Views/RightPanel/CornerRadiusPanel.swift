@@ -16,7 +16,7 @@ struct CornerRadiusPanel: View {
         .onAppear {
             updateCornerValues()
         }
-        .onChange(of: document.selectedShapeIDs) { _, _ in
+        .onChange(of: document.viewState.selectedObjectIDs) { _, _ in
             updateCornerValues()
         }
         .onReceive(document.objectWillChange) { _ in
@@ -196,7 +196,7 @@ struct CornerRadiusPanel: View {
     }
 
     private func getSelectedRoundedRectangle() -> VectorShape? {
-        guard let firstSelectedID = document.selectedShapeIDs.first else {
+        guard let firstSelectedID = document.viewState.selectedObjectIDs.first else {
             return nil
         }
 

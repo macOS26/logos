@@ -77,7 +77,7 @@ struct FontSizeControls: View {
                             updateFontSize(preview, isPreview: false)
                         }
                         previewFontSize = nil
-                        if let textID = document.selectedTextIDs.first {
+                        if let textID = document.viewState.selectedObjectIDs.first {
                             document.clearTextPreviewTypography(id: textID)
                         }
                     }
@@ -112,7 +112,7 @@ struct FontSizeControls: View {
                             updateLineSpacing(preview, isPreview: false)
                         }
                         previewLineSpacing = nil
-                        if let textID = document.selectedTextIDs.first {
+                        if let textID = document.viewState.selectedObjectIDs.first {
                             document.clearTextPreviewTypography(id: textID)
                         }
                     }
@@ -146,7 +146,7 @@ struct FontSizeControls: View {
                             updateLineHeight(preview, isPreview: false)
                         }
                         previewLineHeight = nil
-                        if let textID = document.selectedTextIDs.first {
+                        if let textID = document.viewState.selectedObjectIDs.first {
                             document.clearTextPreviewTypography(id: textID)
                         }
                     }
@@ -183,7 +183,7 @@ struct FontSizeControls: View {
         currentFontSizeState = newSize
         currentLineHeightState = newSize
 
-        if let textID = document.selectedTextIDs.first {
+        if let textID = document.viewState.selectedObjectIDs.first {
             // Initialize previewTypography once if not already set
             if previewTypography == nil, let freshText = document.findText(by: textID) {
                 previewTypography = freshText.typography
@@ -228,7 +228,7 @@ struct FontSizeControls: View {
     private func updateLineSpacing(_ newSpacing: CGFloat, isPreview: Bool = false) {
         currentLineSpacingState = newSpacing
 
-        if let textID = document.selectedTextIDs.first {
+        if let textID = document.viewState.selectedObjectIDs.first {
             // Initialize previewTypography once if not already set
             if previewTypography == nil, let freshText = document.findText(by: textID) {
                 previewTypography = freshText.typography
@@ -269,7 +269,7 @@ struct FontSizeControls: View {
     private func updateLineHeight(_ newHeight: CGFloat, isPreview: Bool = false) {
         currentLineHeightState = newHeight
 
-        if let textID = document.selectedTextIDs.first {
+        if let textID = document.viewState.selectedObjectIDs.first {
             // Initialize previewTypography once if not already set
             if previewTypography == nil, let freshText = document.findText(by: textID) {
                 previewTypography = freshText.typography

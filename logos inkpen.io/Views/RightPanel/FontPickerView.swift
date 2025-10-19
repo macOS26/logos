@@ -43,7 +43,7 @@ struct FontPickerView: View {
             
             Picker("", selection: Binding(
                 get: {
-                    if let textID = document.selectedTextIDs.first,
+                    if let textID = document.viewState.selectedObjectIDs.first,
                        let freshText = document.findText(by: textID) {
                         return freshText.typography.fontFamily
                     }
@@ -54,7 +54,7 @@ struct FontPickerView: View {
                     let defaultVariant = document.fontManager.getAvailableVariantNames(for: newFamily).first ?? "Regular"
                     document.fontManager.selectedFontVariant = defaultVariant
 
-                    if let textID = document.selectedTextIDs.first,
+                    if let textID = document.viewState.selectedObjectIDs.first,
                        let freshText = document.findText(by: textID) {
                         var updatedTypography = freshText.typography
                         updatedTypography.fontFamily = newFamily
@@ -90,7 +90,7 @@ struct FontPickerView: View {
             
             Picker("", selection: Binding(
                 get: {
-                    if let textID = document.selectedTextIDs.first,
+                    if let textID = document.viewState.selectedObjectIDs.first,
                        let freshText = document.findText(by: textID),
                        let variant = freshText.typography.fontVariant,
                        !variant.isEmpty {
@@ -101,7 +101,7 @@ struct FontPickerView: View {
                 set: { newVariant in
                     document.fontManager.selectedFontVariant = newVariant
 
-                    if let textID = document.selectedTextIDs.first,
+                    if let textID = document.viewState.selectedObjectIDs.first,
                        let freshText = document.findText(by: textID) {
                         var updatedTypography = freshText.typography
                         updatedTypography.fontVariant = newVariant
@@ -124,7 +124,7 @@ struct FontPickerView: View {
                 }
             )) {
                 let currentFamily = {
-                    if let textID = document.selectedTextIDs.first,
+                    if let textID = document.viewState.selectedObjectIDs.first,
                        let freshText = document.findText(by: textID) {
                         return freshText.typography.fontFamily
                     }

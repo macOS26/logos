@@ -300,14 +300,14 @@ struct ColorPanel: View {
     }
 
     private func updateSelectedTextStrokeColor(color: VectorColor, document: VectorDocument) {
-        guard !document.selectedTextIDs.isEmpty else { return }
+        guard !document.viewState.selectedObjectIDs.isEmpty else { return }
 
         var oldColors: [UUID: VectorColor] = [:]
         var newColors: [UUID: VectorColor] = [:]
         var oldOpacities: [UUID: Double] = [:]
         var newOpacities: [UUID: Double] = [:]
 
-        for textID in document.selectedTextIDs {
+        for textID in document.viewState.selectedObjectIDs {
             if let obj = document.findObject(by: textID) {
                 switch obj.objectType {
                 case .text(let shape):
@@ -323,7 +323,7 @@ struct ColorPanel: View {
 
         if !oldColors.isEmpty {
             let command = ChangeColorCommand(
-                objectIDs: Array(document.selectedTextIDs),
+                objectIDs: Array(document.viewState.selectedObjectIDs),
                 target: .stroke,
                 oldColors: oldColors,
                 newColors: newColors,
@@ -333,7 +333,7 @@ struct ColorPanel: View {
             document.executeCommand(command)
         }
 
-        for textID in document.selectedTextIDs {
+        for textID in document.viewState.selectedObjectIDs {
             document.updateTextStrokeColorInUnified(id: textID, color: color)
         }
     }

@@ -103,9 +103,9 @@ extension DrawingCanvas {
         brushPreviewPath = nil
         cancelBrushDrawing()
 
-        document.selectedShapeIDs.removeAll()
         document.viewState.selectedObjectIDs.removeAll()
-        document.selectedTextIDs.removeAll()
+        document.viewState.selectedObjectIDs.removeAll()
+        document.viewState.selectedObjectIDs.removeAll()
     }
 
     private func updateBrushPreview() {

@@ -40,7 +40,7 @@ extension DrawingCanvas {
     }
     
     private func getSelectedShapeWithGradient() -> VectorShape? {
-        guard let firstSelectedID = document.selectedShapeIDs.first else { return nil }
+        guard let firstSelectedID = document.viewState.selectedObjectIDs.first else { return nil }
         guard let shape = document.findShape(by: firstSelectedID),
               let fillStyle = shape.fillStyle,
               case .gradient = fillStyle.color else {
@@ -183,7 +183,7 @@ extension DrawingCanvas {
     }
     
     private func getSelectedShapeGradient(document: VectorDocument) -> VectorGradient? {
-        guard let firstSelectedID = document.selectedShapeIDs.first else { return nil }
+        guard let firstSelectedID = document.viewState.selectedObjectIDs.first else { return nil }
         guard let shape = document.findShape(by: firstSelectedID),
               let fillStyle = shape.fillStyle,
               case .gradient(let gradient) = fillStyle.color else {

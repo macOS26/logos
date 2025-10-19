@@ -102,7 +102,7 @@ struct StatusBar: View {
         for unifiedObject in document.unifiedObjects {
             switch unifiedObject.objectType {
             case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                if document.selectedShapeIDs.contains(shape.id) {
+                if document.viewState.selectedObjectIDs.contains(shape.id) {
                     let shapeBounds = shape.bounds.applying(shape.transform)
                     if combinedBounds == nil {
                         combinedBounds = shapeBounds
@@ -117,7 +117,7 @@ struct StatusBar: View {
 
         for unifiedObject in document.unifiedObjects {
             if case .text(let shape) = unifiedObject.objectType,
-               document.selectedTextIDs.contains(shape.id),
+               document.viewState.selectedObjectIDs.contains(shape.id),
                let textObj = VectorText.from(shape) {
                 let textBounds = CGRect(
                     x: textObj.position.x + textObj.bounds.minX,

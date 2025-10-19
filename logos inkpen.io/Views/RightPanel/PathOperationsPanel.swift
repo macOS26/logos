@@ -495,7 +495,7 @@ struct PathOperationsPanel: View {
     }
 
     private func removeOverlapFromSelectedShapes() {
-        guard !document.selectedShapeIDs.isEmpty else { return }
+        guard !document.viewState.selectedObjectIDs.isEmpty else { return }
 
         let selectedShapes = document.getSelectedShapes()
         var processedCount = 0
@@ -556,7 +556,7 @@ struct PathOperationsPanel: View {
     }
 
     private func mergeCoincidentPointsInSelectedShapes() {
-        guard !document.selectedShapeIDs.isEmpty else {
+        guard !document.viewState.selectedObjectIDs.isEmpty else {
             Log.info("No shapes selected", category: .general)
             return
         }

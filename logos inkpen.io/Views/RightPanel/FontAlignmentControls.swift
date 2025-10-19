@@ -65,7 +65,7 @@ struct FontAlignmentControls: View {
     private func updateAlignment(_ alignment: TextAlignment) {
         document.fontManager.selectedTextAlignment = alignment
 
-        if let textID = document.selectedTextIDs.first,
+        if let textID = document.viewState.selectedObjectIDs.first,
            let freshText = document.findText(by: textID) {
             var updatedTypography = freshText.typography
             updatedTypography.alignment = alignment

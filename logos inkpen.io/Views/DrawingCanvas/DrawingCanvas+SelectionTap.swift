@@ -54,7 +54,7 @@ extension DrawingCanvas {
                 }
             }
             if let shape = hitShape, let layerIndex = hitLayerIndex {
-                let isAlreadySelected = document.selectedShapeIDs.contains(shape.id)
+                let isAlreadySelected = document.viewState.selectedObjectIDs.contains(shape.id)
                 if isAlreadySelected {
                     document.viewState.currentTool = .directSelection
                     directSelectedShapeIDs = [shape.id]
@@ -63,11 +63,11 @@ extension DrawingCanvas {
                     syncDirectSelectionWithDocument()
                     document.selectedLayerIndex = layerIndex
                 } else {
-                    document.selectedTextIDs.removeAll()
+                    document.viewState.selectedObjectIDs.removeAll()
                     if isShiftPressed {
-                        document.selectedShapeIDs.insert(shape.id)
+                        document.viewState.selectedObjectIDs.insert(shape.id)
                     } else {
-                        document.selectedShapeIDs = [shape.id]
+                        document.viewState.selectedObjectIDs = [shape.id]
                     }
                     document.selectedLayerIndex = layerIndex
                 }
@@ -110,7 +110,7 @@ extension DrawingCanvas {
                 if !shape.isRoundedRectangle {
                 }
 
-                document.selectedShapeIDs = [shape.id]
+                document.viewState.selectedObjectIDs = [shape.id]
                 isCornerRadiusEditMode = true
 
                 selectedPoints.removeAll()
@@ -136,7 +136,7 @@ extension DrawingCanvas {
             // For non-selection tools, deselect when clicking empty space
             if !isShiftPressed && !isCommandPressed {
                 document.viewState.selectedObjectIDs = []
-                document.syncSelectionArrays()
+                document
             }
             return
         }
@@ -223,7 +223,7 @@ extension DrawingCanvas {
 
             document.selectedLayerIndex = objectToSelect.layerIndex
 
-            document.syncSelectionArrays()
+            document
 
             if let selectedColor = document.getSelectedObjectColor() {
                 if document.viewState.activeColorTarget == .stroke {
@@ -236,7 +236,7 @@ extension DrawingCanvas {
             // Nothing was hit - deselect unless modifier keys pressed
             if !isShiftPressed && !isCommandPressed {
                 document.viewState.selectedObjectIDs = []
-                document.syncSelectionArrays()
+                document
 
                 selectedPoints.removeAll()
                 selectedHandles.removeAll()

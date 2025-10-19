@@ -50,7 +50,7 @@ extension DrawingCanvas {
             renderCurrentPathWithMetal(cgContext: cgContext, path: currentPath, geometry: geometry)
         }
 
-        if !document.selectedShapeIDs.isEmpty {
+        if !document.viewState.selectedObjectIDs.isEmpty {
             renderSelectionOverlaysWithMetal(cgContext: cgContext, geometry: geometry)
         }
 
@@ -122,7 +122,7 @@ extension DrawingCanvas {
     private func renderSelectionOverlaysWithMetal(cgContext: CGContext, geometry: GeometryProxy) {
         cgContext.setFillColor(CGColor(red: 0.0, green: 0.5, blue: 1.0, alpha: 0.1))
 
-        for shapeID in document.selectedShapeIDs {
+        for shapeID in document.viewState.selectedObjectIDs {
             if let shape = findShape(by: shapeID) {
                 let bounds = shape.bounds
                 let transformedBounds = transformRectToView(bounds, geometry: geometry)
@@ -180,8 +180,8 @@ extension DrawingCanvas {
             count += 1
         }
 
-        if !document.selectedShapeIDs.isEmpty {
-            count += document.selectedShapeIDs.count * 8
+        if !document.viewState.selectedObjectIDs.isEmpty {
+            count += document.viewState.selectedObjectIDs.count * 8
         }
 
         return count

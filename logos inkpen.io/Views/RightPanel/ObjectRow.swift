@@ -375,14 +375,14 @@ struct ObjectRow: View {
                     Button("Duplicate Shape") {
                     }
                     Button("Delete Shape") {
-                        document.selectedShapeIDs = [objectId]
+                        document.viewState.selectedObjectIDs = [objectId]
                         document.removeSelectedShapes()
                     }
                 } else {
                     Button("Duplicate Text") {
                     }
                     Button("Delete Text") {
-                        document.selectedTextIDs = [objectId]
+                        document.viewState.selectedObjectIDs = [objectId]
                         document.removeSelectedText()
                     }
                 }
@@ -474,36 +474,36 @@ struct ObjectRow: View {
                             if document.viewState.selectedObjectIDs.contains(childShape.id) {
                                 document.viewState.selectedObjectIDs.remove(childShape.id)
                                 if childShape.typography != nil {
-                                    document.selectedTextIDs.remove(childShape.id)
+                                    document.viewState.selectedObjectIDs.remove(childShape.id)
                                 } else {
-                                    document.selectedShapeIDs.remove(childShape.id)
+                                    document.viewState.selectedObjectIDs.remove(childShape.id)
                                 }
                             } else {
                                 document.viewState.selectedObjectIDs.insert(childShape.id)
                                 if childShape.typography != nil {
-                                    document.selectedTextIDs.insert(childShape.id)
+                                    document.viewState.selectedObjectIDs.insert(childShape.id)
                                 } else {
-                                    document.selectedShapeIDs.insert(childShape.id)
+                                    document.viewState.selectedObjectIDs.insert(childShape.id)
                                 }
                             }
                         } else if isShiftPressed {
                             document.viewState.selectedObjectIDs.insert(childShape.id)
                             if childShape.typography != nil {
-                                document.selectedTextIDs.insert(childShape.id)
+                                document.viewState.selectedObjectIDs.insert(childShape.id)
                             } else {
-                                document.selectedShapeIDs.insert(childShape.id)
+                                document.viewState.selectedObjectIDs.insert(childShape.id)
                             }
                         } else {
                             document.viewState.selectedObjectIDs = [childShape.id]
                             if childShape.typography != nil {
-                                document.selectedTextIDs = [childShape.id]
-                                document.selectedShapeIDs.removeAll()
+                                document.viewState.selectedObjectIDs = [childShape.id]
+                                document.viewState.selectedObjectIDs.removeAll()
                             } else {
-                                document.selectedShapeIDs = [childShape.id]
-                                document.selectedTextIDs.removeAll()
+                                document.viewState.selectedObjectIDs = [childShape.id]
+                                document.viewState.selectedObjectIDs.removeAll()
                             }
                         }
-                        document.syncSelectionArrays()
+                        document
                     }
                 }
             }

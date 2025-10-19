@@ -1088,7 +1088,7 @@ struct StrokeFillPanel: View {
         var oldOpacities: [UUID: Double] = [:]
         var newOpacities: [UUID: Double] = [:]
 
-        for shapeID in document.selectedShapeIDs {
+        for shapeID in document.viewState.selectedObjectIDs {
             if let obj = document.findObject(by: shapeID) {
                 switch obj.objectType {
                 case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
@@ -1102,14 +1102,14 @@ struct StrokeFillPanel: View {
 
         if !oldOpacities.isEmpty {
             let command = StrokePropertiesCommand(
-                objectIDs: Array(document.selectedShapeIDs),
+                objectIDs: Array(document.viewState.selectedObjectIDs),
                 imageOpacity: oldOpacities,
                 new: newOpacities
             )
             document.executeCommand(command)
         }
 
-        for shapeID in document.selectedShapeIDs {
+        for shapeID in document.viewState.selectedObjectIDs {
             let shapes = document.getShapesForLayer(layerIndex)
             if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
                let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {

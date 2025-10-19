@@ -58,18 +58,18 @@ struct ProfessionalTextCanvas: View {
                 y: shouldApplyDragPreview() ? dragPreviewDelta.y * document.viewState.zoomLevel : 0)
         .id(dragPreviewTrigger)
         .onKeyPress(action: handleKeyPress)
-        .onChange(of: document.selectedTextIDs) { _, selectedIDs in
+        .onChange(of: document.viewState.selectedObjectIDs) { _, selectedIDs in
             updateTextBoxState(selectedIDs: selectedIDs)
         }
         .onChange(of: viewModel.isEditing) { _, isEditing in
-            updateTextBoxState(selectedIDs: document.selectedTextIDs)
+            updateTextBoxState(selectedIDs: document.viewState.selectedObjectIDs)
         }
         .onChange(of: viewModel.textObject.isEditing) { _, isEditing in
             viewModel.isEditing = isEditing
-            updateTextBoxState(selectedIDs: document.selectedTextIDs)
+            updateTextBoxState(selectedIDs: document.viewState.selectedObjectIDs)
         }
         .onAppear {
-            updateTextBoxState(selectedIDs: document.selectedTextIDs)
+            updateTextBoxState(selectedIDs: document.viewState.selectedObjectIDs)
 
             viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
         }
@@ -104,7 +104,7 @@ struct ProfessionalTextCanvas: View {
     }
 
     private func handleToolChange(oldTool: DrawingTool, newTool: DrawingTool) {
-        let isThisTextSelected = document.selectedTextIDs.contains(textObjectID)
+        let isThisTextSelected = document.viewState.selectedObjectIDs.contains(textObjectID)
 
         if oldTool != .font && newTool == .font && (textBoxState == .green || isThisTextSelected) {
 
@@ -122,7 +122,7 @@ struct ProfessionalTextCanvas: View {
 
             textBoxState = .blue
 
-            updateTextBoxState(selectedIDs: document.selectedTextIDs)
+            updateTextBoxState(selectedIDs: document.viewState.selectedObjectIDs)
         }
 
         if oldTool == .font && newTool != .font && viewModel.isEditing {
@@ -185,8 +185,8 @@ struct ProfessionalTextCanvas: View {
         switch textBoxState {
         case .gray:
             textBoxState = .green
-            document.selectedTextIDs = [viewModel.textObject.id]
-            document.selectedShapeIDs.removeAll()
+            document.viewState.selectedObjectIDs = [viewModel.textObject.id]
+            document.viewState.selectedObjectIDs.removeAll()
 
         case .green:
             break

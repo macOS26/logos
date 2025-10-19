@@ -89,7 +89,7 @@ extension DrawingCanvas {
         markerPreviewPath = nil
         cancelMarkerDrawing()
 
-        document.selectedShapeIDs.removeAll()
+        document.viewState.selectedObjectIDs.removeAll()
         document.viewState.selectedObjectIDs.removeAll()
     }
 

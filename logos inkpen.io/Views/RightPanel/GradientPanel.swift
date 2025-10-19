@@ -121,7 +121,7 @@ struct GradientFillSection: View {
         .padding()
         .background(Color.ui.semiTransparentControlBackground)
         .cornerRadius(12)
-        .onChange(of: document.selectedShapeIDs) { _, _ in updateSelectedGradient() }
+        .onChange(of: document.viewState.selectedObjectIDs) { _, _ in updateSelectedGradient() }
         .onChange(of: document.selectedLayerIndex) { _, _ in updateSelectedGradient() }
         .onReceive(document.objectWillChange) { _ in
             if editingGradientStopId == nil && !isEditingAngle {
@@ -688,7 +688,7 @@ struct GradientFillSection: View {
             }
         }
 
-        guard let firstSelectedID = document.selectedShapeIDs.first else {
+        guard let firstSelectedID = document.viewState.selectedObjectIDs.first else {
             return .black
         }
 

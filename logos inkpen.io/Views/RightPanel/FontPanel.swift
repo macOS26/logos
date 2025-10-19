@@ -7,8 +7,8 @@ struct FontPanel: View {
     @State private var fontFamilyUpdateTrigger: Bool = false
 
     private var selectedTextTypography: TypographyProperties? {
-        guard !document.selectedTextIDs.isEmpty,
-              let textID = document.selectedTextIDs.first else { return nil }
+        guard !document.viewState.selectedObjectIDs.isEmpty,
+              let textID = document.viewState.selectedObjectIDs.first else { return nil }
 
         if let unifiedObj = document.findObject(by: textID),
            case .text(let shape) = unifiedObj.objectType {
@@ -25,7 +25,7 @@ struct FontPanel: View {
     }
 
     private var selectedTextID: UUID? {
-        return document.selectedTextIDs.first
+        return document.viewState.selectedObjectIDs.first
     }
 
     private var selectedTextContent: String? {
@@ -117,7 +117,7 @@ struct FontPanel: View {
         }
         .onAppear {
         }
-        .onChange(of: document.selectedTextIDs) { oldIDs, newIDs in
+        .onChange(of: document.viewState.selectedObjectIDs) { oldIDs, newIDs in
 
             if let firstID = newIDs.first, let newSelectedText = document.findText(by: firstID) {
                 if newSelectedText.id != lastLoggedSelection {

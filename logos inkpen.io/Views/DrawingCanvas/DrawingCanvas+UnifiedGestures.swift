@@ -98,7 +98,7 @@ extension DrawingCanvas {
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             if !isShiftPressed && !isCommandPressed {
                 document.viewState.selectedObjectIDs = []
-                document.syncSelectionArrays()
+                document
             }
 
         case .zoom:
@@ -382,7 +382,7 @@ extension DrawingCanvas {
 
         if !matchingObjectIDs.isEmpty {
             document.viewState.selectedObjectIDs = matchingObjectIDs
-            document.syncSelectionArrays()
+            document
         }
     }
 

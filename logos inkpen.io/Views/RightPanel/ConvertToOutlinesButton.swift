@@ -36,7 +36,7 @@ struct ConvertToOutlinesButton: View {
     }
 
     private func convertSelectedTextToOutlines() {
-        guard !document.selectedTextIDs.isEmpty else {
+        guard !document.viewState.selectedObjectIDs.isEmpty else {
             Log.error("❌ CONVERT TO OUTLINES: No text selected", category: .error)
             return
         }
