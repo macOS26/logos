@@ -127,16 +127,12 @@ struct GridView: View, Equatable {
         let actualGridSpacing = baseSpacing * spacingMultiplier
         let majorGridInterval = 4
 
-        if actualGridSpacing > 0 {
-            GridCanvasView(
-                gridSpacing: actualGridSpacing,
-                canvasSize: canvasSize,
-                majorGridInterval: majorGridInterval,
-                zoomLevel: zoomLevel,
-                canvasOffset: canvasOffset
-            )
-        } else {
-            EmptyView()
-        }
+        GridCanvasView(
+            gridSpacing: actualGridSpacing,
+            canvasSize: canvasSize,
+            majorGridInterval: majorGridInterval,
+            zoomLevel: zoomLevel,
+            canvasOffset: canvasOffset
+        )
     }
 }

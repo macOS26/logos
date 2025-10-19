@@ -217,7 +217,7 @@ extension DrawingCanvas {
                 dragPreviewTrigger: dragPreviewUpdateTrigger
             )
 
-            if document.gridSettings.showGrid {
+            if document.gridSettings.showGrid, document.settings.gridSpacing > 0 {
                 GridView(
                     gridSpacing: document.settings.gridSpacing,
                     canvasSize: document.settings.sizeInPoints,
