@@ -171,21 +171,14 @@ extension VectorDocument {
     }
 
     func getObjectsInStackingOrder() -> [VectorObject] {
-        if let cached = cachedStackingOrder {
-            return cached
-        }
-
         // Array position IS the stacking order now
-        let result = unifiedObjects
+        return unifiedObjects
             .filter { object in
                 guard object.isVisible else { return false }
                 guard object.layerIndex < layers.count else { return false }
                 let layer = layers[object.layerIndex]
                 return layer.isVisible
             }
-
-        cachedStackingOrder = result
-        return result
     }
 
     func getSelectedShapesInStackingOrder() -> [VectorShape] {

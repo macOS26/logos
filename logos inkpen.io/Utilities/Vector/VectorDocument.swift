@@ -3,11 +3,7 @@ import Combine
 
 class VectorDocument: ObservableObject, Codable {
     @Published var settings: DocumentSettings
-    @Published var layers: [VectorLayer] = [] {
-        didSet {
-            cachedStackingOrder = nil
-        }
-    }
+    @Published var layers: [VectorLayer] = []
     var layerIndex: Int = 0
     var selectedLayerIndex: Int?
     var selectedShapeIDs: Set<UUID> = []
@@ -51,7 +47,6 @@ class VectorDocument: ObservableObject, Codable {
                     }
                 }
             }
-            cachedStackingOrder = nil
             rebuildLayerCache()
             changeNotifier.notifyGeneralChange()
         }
@@ -62,8 +57,6 @@ class VectorDocument: ObservableObject, Codable {
 
     // Lightweight change notifier - avoids copying unifiedObjects array
     let changeNotifier = DocumentChangeNotifier()
-
-    var cachedStackingOrder: [VectorObject]? = nil
 
     internal var objectsByLayerCache: [Int: [VectorObject]] = [:]
 
