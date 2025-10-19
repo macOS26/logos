@@ -540,52 +540,7 @@ struct EnvelopeHandles: View {
         return (u: max(0, min(1, u)), v: max(0, min(1, v)))
     }
 
-    private func finishEnvelopeWarp() {
-        warpingStarted = false
-        isWarping = false
-        document.isHandleScalingActive = false
-        draggingCornerIndex = nil
-
-        var oldShapes: [UUID: VectorShape] = [:]
-        if let oldObject = document.findObject(by: shape.id) {
-            oldShapes[shape.id] = oldObject.shape
-        }
-
-        if warpedCorners.count == 4 {
-            let minX = warpedCorners.map { $0.x }.min() ?? 0
-            let maxX = warpedCorners.map { $0.x }.max() ?? 0
-            let minY = warpedCorners.map { $0.y }.min() ?? 0
-            let maxY = warpedCorners.map { $0.y }.max() ?? 0
-            document.viewState.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-            document.viewState.warpEnvelopeCorners[shape.id] = warpedCorners
-        }
-
-        updateShapeWithCurrentWarp()
-        calculateEnvelopeWarpPreview()
-
-        var newShapes: [UUID: VectorShape] = [:]
-        if let warpedShape = document.findShape(by: shape.id) {
-            newShapes[shape.id] = warpedShape
-        }
-
-        if !oldShapes.isEmpty && !newShapes.isEmpty {
-            let command = ShapeModificationCommand(
-                objectIDs: [shape.id],
-                oldShapes: oldShapes,
-                newShapes: newShapes
-            )
-            document.executeCommand(command)
-        }
-    }
-
-    private func updateShapeWithCurrentWarp() {
-        guard let unifiedObject = document.findObject(by: shape.id),
-        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil else { return }
-        let shapes = document.getShapesForLayer(layerIndex)
-        guard let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }) else { return }
-
-        guard let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
-
+    private func buildWarpedShape(from currentShape: VectorShape) -> VectorShape {
         if currentShape.isWarpObject {
             var updatedWarpObject = currentShape
 
@@ -609,12 +564,7 @@ struct EnvelopeHandles: View {
             updatedWarpObject.warpEnvelope = warpedCorners
             updatedWarpObject.updateBounds()
 
-            if let objectIndex = document.unifiedObjects.firstIndex(where: { $0.id == updatedWarpObject.id }) {
-                document.unifiedObjects[objectIndex] = VectorObject(
-                    shape: updatedWarpObject,
-                    layerIndex: document.unifiedObjects[objectIndex].layerIndex,
-                )
-            }
+            return updatedWarpObject
         } else {
             var warpObject = currentShape
             warpObject.name = "Warped " + currentShape.name
@@ -644,34 +594,36 @@ struct EnvelopeHandles: View {
 
             warpObject.updateBounds()
 
-            document.updateShapePathUnified(id: warpObject.id, path: warpObject.path)
-
-            if let unifiedObjectIndex = document.unifiedObjects.firstIndex(where: { $0.id == currentShape.id }) {
-                document.unifiedObjects[unifiedObjectIndex] = VectorObject(
-                    shape: warpObject,
-                    layerIndex: unifiedObject.layerIndex,
-                )
-            } else {
-                document.addShapeToUnifiedSystem(warpObject, layerIndex: layerIndex)
-            }
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                if let objectIndex = self.document.unifiedObjects.firstIndex(where: { $0.id == warpObject.id }) {
-                    var shape = self.document.unifiedObjects[objectIndex].shape
-                    let wasVisible = shape.isVisible
-                    shape.isVisible = !wasVisible
-                    self.document.unifiedObjects[objectIndex] = VectorObject(
-                        shape: shape,
-                        layerIndex: self.document.unifiedObjects[objectIndex].layerIndex,
-                    )
-                    shape.isVisible = wasVisible
-                    self.document.unifiedObjects[objectIndex] = VectorObject(
-                        shape: shape,
-                        layerIndex: self.document.unifiedObjects[objectIndex].layerIndex,
-                    )
-                }
-            }
+            return warpObject
         }
+    }
+
+    private func finishEnvelopeWarp() {
+        warpingStarted = false
+        isWarping = false
+        document.isHandleScalingActive = false
+        draggingCornerIndex = nil
+
+        guard let oldObject = document.findObject(by: shape.id) else { return }
+        let oldShape = oldObject.shape
+
+        if warpedCorners.count == 4 {
+            let minX = warpedCorners.map { $0.x }.min() ?? 0
+            let maxX = warpedCorners.map { $0.x }.max() ?? 0
+            let minY = warpedCorners.map { $0.y }.min() ?? 0
+            let maxY = warpedCorners.map { $0.y }.max() ?? 0
+            document.viewState.warpBounds[shape.id] = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+            document.viewState.warpEnvelopeCorners[shape.id] = warpedCorners
+        }
+
+        let newShape = buildWarpedShape(from: oldShape)
+
+        let command = ShapeModificationCommand(
+            objectIDs: [shape.id],
+            oldShapes: [shape.id: oldShape],
+            newShapes: [shape.id: newShape]
+        )
+        document.executeCommand(command)
     }
 
     private func commitEnvelopeWarp() {
