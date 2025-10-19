@@ -107,9 +107,7 @@ struct MainView: View {
                 onDocumentCreated: { newDocument, suggestedURL in
                     document.settings = newDocument.settings
                     document.layers = newDocument.layers
-                    document.customRgbSwatches = newDocument.customRgbSwatches
-                    document.customCmykSwatches = newDocument.customCmykSwatches
-                    document.customHsbSwatches = newDocument.customHsbSwatches
+                    document.colorSwatches = newDocument.colorSwatches
                     document.documentColorDefaults = newDocument.documentColorDefaults
 
                     document.defaultFillColor = newDocument.defaultFillColor
@@ -125,8 +123,7 @@ struct MainView: View {
                     document.viewState.viewMode = newDocument.viewState.viewMode
                     document.viewState.zoomLevel = newDocument.viewState.zoomLevel
                     document.viewState.canvasOffset = newDocument.viewState.canvasOffset
-                    document.showRulers = newDocument.showRulers
-                    document.snapToGrid = newDocument.snapToGrid
+                    document.gridSettings = newDocument.gridSettings
 
                     currentDocumentURL = suggestedURL
 
@@ -271,9 +268,7 @@ struct MainView: View {
         document.viewState.canvasOffset = .zero
         document.settings = importedDoc.settings
         document.layers = importedDoc.layers
-        document.customRgbSwatches = importedDoc.customRgbSwatches
-        document.customCmykSwatches = importedDoc.customCmykSwatches
-        document.customHsbSwatches = importedDoc.customHsbSwatches
+        document.colorSwatches = importedDoc.colorSwatches
         document.documentColorDefaults = importedDoc.documentColorDefaults
         document.selectedLayerIndex = importedDoc.selectedLayerIndex
         document.selectedShapeIDs = importedDoc.selectedShapeIDs

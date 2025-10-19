@@ -42,7 +42,7 @@ extension DrawingCanvas {
 
     private func renderCanvasWithMetal(cgContext: CGContext, size: CGSize, geometry: GeometryProxy) {
 
-        if document.snapToGrid {
+        if document.gridSettings.snapToGrid {
             renderGridWithMetal(cgContext: cgContext, size: size, geometry: geometry)
         }
 
@@ -54,7 +54,7 @@ extension DrawingCanvas {
             renderSelectionOverlaysWithMetal(cgContext: cgContext, geometry: geometry)
         }
 
-        if document.snapToPoint, let snapPoint = currentSnapPoint {
+        if document.gridSettings.snapToPoint, let snapPoint = currentSnapPoint {
             let mouseLocation = currentMouseLocation ?? bezierPoints.last?.cgPoint ?? .zero
             let mousePointView = transformPointToView(mouseLocation, geometry: geometry)
             let snapPointView = transformPointToView(snapPoint, geometry: geometry)

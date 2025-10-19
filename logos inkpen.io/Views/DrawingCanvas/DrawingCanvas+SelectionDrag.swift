@@ -123,7 +123,7 @@ extension DrawingCanvas {
             y: cursorDelta.y / preciseZoom
         )
 
-        if document.snapToGrid || document.snapToPoint {
+        if document.gridSettings.snapToGrid || document.gridSettings.snapToPoint {
             if let firstObjectID = document.viewState.selectedObjectIDs.first,
                let initialCenter = initialObjectPositions[firstObjectID],
                let firstObject = document.findObject(by: firstObjectID) {

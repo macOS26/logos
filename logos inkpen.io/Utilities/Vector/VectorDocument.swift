@@ -18,14 +18,12 @@ class VectorDocument: ObservableObject, Codable {
         }
     }
     
-    @Published var customRgbSwatches: [VectorColor] = [] {
-        didSet { settings.customRgbSwatches = customRgbSwatches }
-    }
-    @Published var customCmykSwatches: [VectorColor] = [] {
-        didSet { settings.customCmykSwatches = customCmykSwatches }
-    }
-    @Published var customHsbSwatches: [VectorColor] = [] {
-        didSet { settings.customHsbSwatches = customHsbSwatches }
+    @Published var colorSwatches: ColorSwatches = .empty {
+        didSet {
+            settings.customRgbSwatches = colorSwatches.rgb
+            settings.customCmykSwatches = colorSwatches.cmyk
+            settings.customHsbSwatches = colorSwatches.hsb
+        }
     }
 
     var processedLayersDuringDrag: Set<Int> = []
@@ -69,11 +67,7 @@ class VectorDocument: ObservableObject, Codable {
         case fill = "Fill"
         case noFill = "No Fill"
     }
-    @Published var showRulers: Bool = false
-    @Published var showGrid: Bool = false
-    @Published var snapToGrid: Bool = false
-    @Published var snapToPoint: Bool = false
-    @Published var gridSpacing: Double = 12.0
+    @Published var gridSettings: GridSettings = .default
     @Published var backgroundColor: VectorColor = .white
     
     internal var isUndoRedoOperation: Bool = false
@@ -85,16 +79,7 @@ class VectorDocument: ObservableObject, Codable {
     }()
 
     @Published var fontManager: FontManager = FontManager()
-    @Published var defaultStrokePlacement: StrokePlacement = .center {
-        didSet { saveStrokeStyleDefaults() }
-    }
-    @Published var defaultStrokeLineJoin: CGLineJoin = .miter {
-        didSet { saveStrokeStyleDefaults() }
-    }
-    @Published var defaultStrokeLineCap: CGLineCap = .butt {
-        didSet { saveStrokeStyleDefaults() }
-    }
-    @Published var defaultStrokeMiterLimit: Double = 10.0 {
+    @Published var strokeDefaults: StrokeDefaults = .default {
         didSet { saveStrokeStyleDefaults() }
     }
 
@@ -122,10 +107,9 @@ class VectorDocument: ObservableObject, Codable {
         self.settings = settings
         
         self.documentColorDefaults = ColorDefaults()
-        
-        self.customRgbSwatches = []
-        self.customCmykSwatches = []
-        self.customHsbSwatches = []
+        self.colorSwatches = .empty
+        self.gridSettings = .default
+        self.strokeDefaults = .default
 
         loadStrokeStyleDefaults()
         
@@ -143,11 +127,13 @@ class VectorDocument: ObservableObject, Codable {
         self.viewState.viewMode = .color
         self.viewState.zoomLevel = 1.0
         self.viewState.canvasOffset = .zero
-        self.showRulers = settings.showRulers
-        self.showGrid = settings.showGrid
-        self.snapToGrid = settings.snapToGrid
-        self.snapToPoint = settings.snapToPoint
-        self.gridSpacing = settings.gridSpacing
+        self.gridSettings = GridSettings(
+            showRulers: settings.showRulers,
+            showGrid: settings.showGrid,
+            snapToGrid: settings.snapToGrid,
+            snapToPoint: settings.snapToPoint,
+            gridSpacing: settings.gridSpacing
+        )
         self.backgroundColor = settings.backgroundColor
         
         createCanvasAndWorkingLayers()
@@ -174,16 +160,12 @@ class VectorDocument: ObservableObject, Codable {
         } else {
             self.documentColorDefaults.strokeColor = ColorManager.shared.colorDefaults.strokeColor
         }
-        
-        if let rgbSwatches = settings.customRgbSwatches {
-            self.customRgbSwatches = rgbSwatches
-        }
-        if let cmykSwatches = settings.customCmykSwatches {
-            self.customCmykSwatches = cmykSwatches
-        }
-        if let hsbSwatches = settings.customHsbSwatches {
-            self.customHsbSwatches = hsbSwatches
-        }
+
+        self.colorSwatches = ColorSwatches(
+            rgb: settings.customRgbSwatches ?? [],
+            cmyk: settings.customCmykSwatches ?? [],
+            hsb: settings.customHsbSwatches ?? []
+        )
 
         setupViewStateForwarding()
         syncEncodableStorage()
@@ -212,9 +194,9 @@ class VectorDocument: ObservableObject, Codable {
         layerIndex = 0
         
         documentColorDefaults = ColorDefaults()
-        customRgbSwatches = []
-        customCmykSwatches = []
-        customHsbSwatches = []
+        colorSwatches = .empty
+        gridSettings = .default
+        strokeDefaults = .default
         
         selectedLayerIndex = try? container.decodeIfPresent(Int.self, forKey: .selectedLayerIndex)
         selectedShapeIDs = (try? container.decodeIfPresent(Set<UUID>.self, forKey: .selectedShapeIDs)) ?? []
@@ -245,11 +227,6 @@ class VectorDocument: ObservableObject, Codable {
         fontManager = FontManager()
         
         unifiedObjects = decodedUnifiedObjects
-        
-        defaultStrokePlacement = .center
-        defaultStrokeLineJoin = .miter
-        defaultStrokeLineCap = .butt
-        defaultStrokeMiterLimit = 10.0
 
         viewState.hasPressureInput = false
         viewState.activeColorTarget = .fill
@@ -259,12 +236,14 @@ class VectorDocument: ObservableObject, Codable {
         viewState.isDraggingLock = false
 
         originalHandlePositions = [:]
-        
-        showRulers = settings.showRulers
-        showGrid = settings.showGrid
-        snapToGrid = settings.snapToGrid
-        snapToPoint = settings.snapToPoint
-        gridSpacing = settings.gridSpacing
+
+        gridSettings = GridSettings(
+            showRulers: settings.showRulers,
+            showGrid: settings.showGrid,
+            snapToGrid: settings.snapToGrid,
+            snapToPoint: settings.snapToPoint,
+            gridSpacing: settings.gridSpacing
+        )
         backgroundColor = settings.backgroundColor
         
         if unifiedObjects.isEmpty {
@@ -284,17 +263,13 @@ class VectorDocument: ObservableObject, Codable {
         } else {
             documentColorDefaults.strokeColor = ColorManager.shared.colorDefaults.strokeColor
         }
-        
-        if let rgbSwatches = settings.customRgbSwatches {
-            customRgbSwatches = rgbSwatches
-        }
-        if let cmykSwatches = settings.customCmykSwatches {
-            customCmykSwatches = cmykSwatches
-        }
-        if let hsbSwatches = settings.customHsbSwatches {
-            customHsbSwatches = hsbSwatches
-        }
-        
+
+        colorSwatches = ColorSwatches(
+            rgb: settings.customRgbSwatches ?? [],
+            cmyk: settings.customCmykSwatches ?? [],
+            hsb: settings.customHsbSwatches ?? []
+        )
+
         loadStrokeStyleDefaults()
 
         setupViewStateForwarding()

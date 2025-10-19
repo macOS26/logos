@@ -4,7 +4,7 @@ import Combine
 extension DrawingCanvas {
 
     internal func snapToGrid(_ point: CGPoint) -> CGPoint {
-        guard document.snapToGrid else { return point }
+        guard document.gridSettings.snapToGrid else { return point }
 
         let baseSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit
         let spacingMultiplier: CGFloat = {
@@ -40,10 +40,10 @@ extension DrawingCanvas {
                     id: shape.id,
                     color: document.defaultStrokeColor,
                     width: document.defaultStrokeWidth,
-                    placement: document.defaultStrokePlacement,
-                    lineCap: document.defaultStrokeLineCap,
-                    lineJoin: document.defaultStrokeLineJoin,
-                    miterLimit: document.defaultStrokeMiterLimit,
+                    placement: document.strokeDefaults.placement,
+                    lineCap: document.strokeDefaults.lineCap,
+                    lineJoin: document.strokeDefaults.lineJoin,
+                    miterLimit: document.strokeDefaults.miterLimit,
                     opacity: document.defaultStrokeOpacity
                 )
 
@@ -164,10 +164,10 @@ extension DrawingCanvas {
                         id: activeBezierShape.id,
                         color: document.defaultStrokeColor,
                         width: document.defaultStrokeWidth,
-                        placement: document.defaultStrokePlacement,
-                        lineCap: document.defaultStrokeLineCap,
-                        lineJoin: document.defaultStrokeLineJoin,
-                        miterLimit: document.defaultStrokeMiterLimit,
+                        placement: document.strokeDefaults.placement,
+                        lineCap: document.strokeDefaults.lineCap,
+                        lineJoin: document.strokeDefaults.lineJoin,
+                        miterLimit: document.strokeDefaults.miterLimit,
                         opacity: document.defaultStrokeOpacity
                     )
 
@@ -348,11 +348,11 @@ extension DrawingCanvas {
         let strokeStyle = StrokeStyle(
             color: document.defaultStrokeColor,
             width: document.defaultStrokeWidth,
-            placement: document.defaultStrokePlacement,
+            placement: document.strokeDefaults.placement,
             dashPattern: [],
-            lineCap: document.defaultStrokeLineCap,
-            lineJoin: document.defaultStrokeLineJoin,
-            miterLimit: document.defaultStrokeMiterLimit,
+            lineCap: document.strokeDefaults.lineCap,
+            lineJoin: document.strokeDefaults.lineJoin,
+            miterLimit: document.strokeDefaults.miterLimit,
             opacity: document.defaultStrokeOpacity
         )
         let fillStyle: FillStyle? = nil
@@ -382,11 +382,11 @@ extension DrawingCanvas {
         let strokeStyle = StrokeStyle(
             color: document.defaultStrokeColor,
             width: document.defaultStrokeWidth,
-            placement: document.defaultStrokePlacement,
+            placement: document.strokeDefaults.placement,
             dashPattern: [],
-            lineCap: document.defaultStrokeLineCap,
-            lineJoin: document.defaultStrokeLineJoin,
-            miterLimit: document.defaultStrokeMiterLimit,
+            lineCap: document.strokeDefaults.lineCap,
+            lineJoin: document.strokeDefaults.lineJoin,
+            miterLimit: document.strokeDefaults.miterLimit,
             opacity: document.defaultStrokeOpacity
         )
         let fillStyle: FillStyle? = nil
@@ -577,10 +577,10 @@ extension DrawingCanvas {
                     id: shape.id,
                     color: document.defaultStrokeColor,
                     width: document.defaultStrokeWidth,
-                    placement: document.defaultStrokePlacement,
-                    lineCap: document.defaultStrokeLineCap,
-                    lineJoin: document.defaultStrokeLineJoin,
-                    miterLimit: document.defaultStrokeMiterLimit,
+                    placement: document.strokeDefaults.placement,
+                    lineCap: document.strokeDefaults.lineCap,
+                    lineJoin: document.strokeDefaults.lineJoin,
+                    miterLimit: document.strokeDefaults.miterLimit,
                     opacity: document.defaultStrokeOpacity
                 )
 

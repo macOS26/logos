@@ -328,7 +328,7 @@ struct DocumentSettingsView: View {
                             .settingsToggleLabel()
 
                         StylusToggleButton(isOn: $document.settings.showRulers) { newValue in
-                            document.showRulers = newValue
+                            document.gridSettings.showRulers = newValue
                             UserDefaults.standard.set(newValue, forKey: "showRulers")
                             document.onSettingsChanged()
                         }
@@ -339,7 +339,7 @@ struct DocumentSettingsView: View {
                             .settingsToggleLabel()
 
                         StylusToggleButton(isOn: $document.settings.snapToPoint) { newValue in
-                            document.snapToPoint = newValue
+                            document.gridSettings.snapToPoint = newValue
                             UserDefaults.standard.set(newValue, forKey: "snapToPoint")
                             document.onSettingsChanged()
                         }
@@ -352,7 +352,7 @@ struct DocumentSettingsView: View {
                             .settingsToggleLabel()
 
                         StylusToggleButton(isOn: $document.settings.showGrid) { newValue in
-                            document.showGrid = newValue
+                            document.gridSettings.showGrid = newValue
                             UserDefaults.standard.set(newValue, forKey: "showGrid")
                             document.onSettingsChanged()
                         }
@@ -363,7 +363,7 @@ struct DocumentSettingsView: View {
                             .settingsToggleLabel()
 
                         StylusToggleButton(isOn: $document.settings.snapToGrid) { newValue in
-                            document.snapToGrid = newValue
+                            document.gridSettings.snapToGrid = newValue
                             UserDefaults.standard.set(newValue, forKey: "snapToGrid")
                             document.onSettingsChanged()
                         }

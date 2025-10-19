@@ -522,7 +522,7 @@ struct GradientFillSection: View {
                             case .fill:
                                 updatedShape.fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
                             case .stroke:
-                                updatedShape.strokeStyle = StrokeStyle(gradient: gradient, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: 1.0)
+                                updatedShape.strokeStyle = StrokeStyle(gradient: gradient, width: document.defaultStrokeWidth, placement: document.strokeDefaults.placement, lineCap: document.strokeDefaults.lineCap, lineJoin: document.strokeDefaults.lineJoin, miterLimit: document.strokeDefaults.miterLimit, opacity: 1.0)
                             }
                             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                         }

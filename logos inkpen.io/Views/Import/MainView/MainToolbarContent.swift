@@ -185,33 +185,33 @@ struct MainToolbarContent: ToolbarContent {
             .help(document.viewState.viewMode.description)
 
             Button {
-                document.showRulers.toggle()
+                document.gridSettings.showRulers.toggle()
             } label: {
-                Image(systemName: document.showRulers ? "ruler.fill" : "ruler")
+                Image(systemName: document.gridSettings.showRulers ? "ruler.fill" : "ruler")
                     .font(.system(size: 20))
                     .offset(y: 1)
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
 
                     .onTapGesture {
-                        document.showRulers.toggle()
+                        document.gridSettings.showRulers.toggle()
                     }
             }
             .buttonStyle(BorderlessButtonStyle())
             .help("Toggle Rulers")
 
             Button {
-                document.showGrid.toggle()
-                document.snapToGrid = document.showGrid
+                document.gridSettings.showGrid.toggle()
+                document.gridSettings.snapToGrid = document.gridSettings.showGrid
             } label: {
-                Image(systemName: document.showGrid ? "grid.circle.fill" : "grid.circle")
+                Image(systemName: document.gridSettings.showGrid ? "grid.circle.fill" : "grid.circle")
                     .font(.system(size: 20))
                     .offset(y: 1)
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        document.showGrid.toggle()
-                        document.snapToGrid = document.showGrid
+                        document.gridSettings.showGrid.toggle()
+                        document.gridSettings.snapToGrid = document.gridSettings.showGrid
                     }
             }
             .buttonStyle(BorderlessButtonStyle())

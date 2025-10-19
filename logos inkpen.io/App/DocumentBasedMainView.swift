@@ -185,7 +185,7 @@ struct DocumentBasedMainView: View {
         }
 
         let windowSize = window.frame.size
-        let rulerOffset: CGFloat = document.showRulers ? 20 : 0
+        let rulerOffset: CGFloat = document.gridSettings.showRulers ? 20 : 0
         let availableWidth = windowSize.width - 48 - 280 - rulerOffset
         let availableHeight = windowSize.height - 24 - rulerOffset
         let scaleX = availableWidth / documentBounds.width
@@ -211,9 +211,7 @@ struct DocumentBasedMainView: View {
     private func loadImportedDocument(_ importedDoc: VectorDocument) {
         document.settings = importedDoc.settings
         document.layers = importedDoc.layers
-        document.customRgbSwatches = importedDoc.customRgbSwatches
-        document.customCmykSwatches = importedDoc.customCmykSwatches
-        document.customHsbSwatches = importedDoc.customHsbSwatches
+        document.colorSwatches = importedDoc.colorSwatches
         document.documentColorDefaults = importedDoc.documentColorDefaults
 
         document.selectedLayerIndex = importedDoc.selectedLayerIndex
@@ -221,8 +219,7 @@ struct DocumentBasedMainView: View {
         document.selectedTextIDs = importedDoc.selectedTextIDs
         document.viewState.currentTool = appState.defaultTool
         document.viewState.viewMode = .color
-        document.showRulers = importedDoc.showRulers
-        document.snapToGrid = importedDoc.snapToGrid
+        document.gridSettings = importedDoc.gridSettings
 
         calculateInitialZoom()
     }

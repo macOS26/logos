@@ -7,7 +7,7 @@ struct RulersView: View {
     private let rulerThickness: CGFloat = 20
 
     var body: some View {
-        if document.showRulers {
+        if document.gridSettings.showRulers {
             ZStack {
                 HorizontalRuler(document: document, geometry: geometry)
                     .frame(height: rulerThickness)
@@ -637,7 +637,7 @@ struct GuidelinesView: View {
 
 extension VectorDocument {
     func snapToGrid(_ point: CGPoint) -> CGPoint {
-        guard snapToGrid else { return point }
+        guard gridSettings.snapToGrid else { return point }
 
         let gridSpacing = settings.gridSpacing * settings.unit.pointsPerUnit
 

@@ -10,7 +10,7 @@ extension DrawingCanvas {
     }
 
     func findNearestSnapPoint(to point: CGPoint, threshold: CGFloat = 10.0) -> SnapPoint? {
-        guard document.snapToPoint else { return nil }
+        guard document.gridSettings.snapToPoint else { return nil }
 
         var nearestSnapPoint: SnapPoint?
         var nearestDistance = threshold
@@ -97,7 +97,7 @@ extension DrawingCanvas {
     }
 
     func applySnapping(to point: CGPoint) -> CGPoint {
-        if document.snapToPoint {
+        if document.gridSettings.snapToPoint {
             if let snapPoint = findNearestSnapPoint(to: point) {
                 currentSnapPoint = snapPoint.point
                 return snapPoint.point
@@ -106,7 +106,7 @@ extension DrawingCanvas {
             }
         }
 
-        if document.snapToGrid {
+        if document.gridSettings.snapToGrid {
             return snapToGrid(point)
         }
 
@@ -115,7 +115,7 @@ extension DrawingCanvas {
     }
 
     func drawSnapPointFeedback(in context: CGContext, at mousePoint: CGPoint, snapPointView: CGPoint) {
-        guard document.snapToPoint else { return }
+        guard document.gridSettings.snapToPoint else { return }
 
         context.saveGState()
 
@@ -144,7 +144,7 @@ extension DrawingCanvas {
     }
 
     func drawSnapPointFeedback(in context: CGContext, at mousePoint: CGPoint) {
-        guard document.snapToPoint, let snapPoint = currentSnapPoint else { return }
+        guard document.gridSettings.snapToPoint, let snapPoint = currentSnapPoint else { return }
 
         drawSnapPointFeedback(in: context, at: mousePoint, snapPointView: snapPoint)
     }

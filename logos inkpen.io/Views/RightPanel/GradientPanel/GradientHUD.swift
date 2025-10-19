@@ -96,10 +96,7 @@ struct GradientColorPickerSheet: View {
         localDoc.defaultFillColor = editingGradientStopColor
 
         localDoc.settings = document.settings
-
-        localDoc.customRgbSwatches = document.customRgbSwatches
-        localDoc.customCmykSwatches = document.customCmykSwatches
-        localDoc.customHsbSwatches = document.customHsbSwatches
+        localDoc.colorSwatches = document.colorSwatches
         localDoc.documentColorDefaults = document.documentColorDefaults
 
         self._localDocument = State(initialValue: localDoc)

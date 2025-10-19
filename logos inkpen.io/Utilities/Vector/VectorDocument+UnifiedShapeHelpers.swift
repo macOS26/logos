@@ -68,7 +68,7 @@ extension VectorDocument {
                 print("🟠 UPDATE STROKE: Found object at index \(index), isGroupContainer=\(shape.isGroupContainer)")
                 // Update the shape itself
                 if shape.strokeStyle == nil {
-                    shape.strokeStyle = StrokeStyle(color: color, width: defaultStrokeWidth, placement: defaultStrokePlacement, lineCap: defaultStrokeLineCap, lineJoin: defaultStrokeLineJoin, miterLimit: defaultStrokeMiterLimit, opacity: defaultStrokeOpacity)
+                    shape.strokeStyle = StrokeStyle(color: color, width: defaultStrokeWidth, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
                 } else {
                     shape.strokeStyle?.color = color
                 }
@@ -80,7 +80,7 @@ extension VectorDocument {
                     for var childShape in shape.groupedShapes {
                         print("🟠 UPDATE STROKE: Updating child \(childShape.id)")
                         if childShape.strokeStyle == nil {
-                            childShape.strokeStyle = StrokeStyle(color: color, width: defaultStrokeWidth, placement: defaultStrokePlacement, lineCap: defaultStrokeLineCap, lineJoin: defaultStrokeLineJoin, miterLimit: defaultStrokeMiterLimit, opacity: defaultStrokeOpacity)
+                            childShape.strokeStyle = StrokeStyle(color: color, width: defaultStrokeWidth, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
                         } else {
                             childShape.strokeStyle?.color = color
                         }
@@ -139,7 +139,7 @@ extension VectorDocument {
             switch updatedObject.objectType {
             case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 if shape.strokeStyle == nil {
-                    shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: width, placement: defaultStrokePlacement, lineCap: defaultStrokeLineCap, lineJoin: defaultStrokeLineJoin, miterLimit: defaultStrokeMiterLimit, opacity: defaultStrokeOpacity)
+                    shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: width, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
                 } else {
                     shape.strokeStyle?.width = width
                 }
@@ -248,7 +248,7 @@ extension VectorDocument {
             switch updatedObject.objectType {
             case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 if shape.strokeStyle == nil {
-                    shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: defaultStrokePlacement, lineCap: defaultStrokeLineCap, lineJoin: defaultStrokeLineJoin, miterLimit: defaultStrokeMiterLimit, opacity: opacity)
+                    shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: opacity)
                 } else {
                     shape.strokeStyle?.opacity = opacity
                 }
@@ -294,7 +294,7 @@ extension VectorDocument {
             switch updatedObject.objectType {
             case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 if shape.strokeStyle == nil {
-                    shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: placement, lineCap: defaultStrokeLineCap, lineJoin: defaultStrokeLineJoin, miterLimit: defaultStrokeMiterLimit, opacity: defaultStrokeOpacity)
+                    shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
                 } else {
                     shape.strokeStyle?.placement = placement
                 }

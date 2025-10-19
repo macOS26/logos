@@ -92,7 +92,7 @@ extension DrawingCanvas {
         let documentBounds = document.documentBounds
         let viewSize = geometry.size
         let rulerThickness: CGFloat = 20
-        let rulerOffset = document.showRulers ? rulerThickness : 0
+        let rulerOffset = document.gridSettings.showRulers ? rulerThickness : 0
         let availableWidth = viewSize.width - rulerOffset
         let availableHeight = viewSize.height - rulerOffset
         let scaleX = availableWidth / documentBounds.width
@@ -101,7 +101,7 @@ extension DrawingCanvas {
         let defaultZoom = max(0.25, min(1.5, uniformScale))
         document.viewState.zoomLevel = defaultZoom
 
-        let rulerBorderCompensationY: CGFloat = document.showRulers ? 0.5 : 0.0
+        let rulerBorderCompensationY: CGFloat = document.gridSettings.showRulers ? 0.5 : 0.0
         let visibleCenter = CGPoint(
             x: (viewSize.width - rulerOffset) / 2.0 + rulerOffset,
             y: (viewSize.height - rulerOffset) / 2.0 + rulerOffset + rulerBorderCompensationY
@@ -125,7 +125,7 @@ extension DrawingCanvas {
         let documentBounds = document.documentBounds
         let viewSize = geometry.size
         let rulerThickness: CGFloat = 20
-        let rulerOffset = document.showRulers ? rulerThickness : 0
+        let rulerOffset = document.gridSettings.showRulers ? rulerThickness : 0
         let availableWidth = viewSize.width - rulerOffset
         let availableHeight = viewSize.height - rulerOffset
         let scaleX = availableWidth / documentBounds.width
@@ -156,9 +156,9 @@ extension DrawingCanvas {
     internal func actualSize(geometry: GeometryProxy) {
         let newZoomLevel: Double = 1.0
         let rulerThickness: CGFloat = 20
-        let rulerOffset = document.showRulers ? rulerThickness : 0
+        let rulerOffset = document.gridSettings.showRulers ? rulerThickness : 0
         let viewSize = geometry.size
-        let rulerBorderCompensationY: CGFloat = document.showRulers ? 0.5 : 0.0
+        let rulerBorderCompensationY: CGFloat = document.gridSettings.showRulers ? 0.5 : 0.0
         let visibleCenter = CGPoint(
             x: (viewSize.width - rulerOffset) / 2.0 + rulerOffset,
             y: (viewSize.height - rulerOffset) / 2.0 + rulerOffset + rulerBorderCompensationY

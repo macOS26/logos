@@ -37,7 +37,7 @@ extension DrawingCanvas {
         let markerFillColor = ApplicationSettings.shared.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
         let markerStrokeColor = ApplicationSettings.shared.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
         let markerOpacity = ApplicationSettings.shared.currentMarkerOpacity
-        let actualStrokeWidth = (document.defaultStrokePlacement == .center) ? strokeWidth : strokeWidth * 2.0
+        let actualStrokeWidth = (document.strokeDefaults.placement == .center) ? strokeWidth : strokeWidth * 2.0
         let strokeStyle = strokeColor != nil ? StrokeStyle(
             color: markerStrokeColor,
             width: actualStrokeWidth,
@@ -189,7 +189,7 @@ extension DrawingCanvas {
         let markerFillColor = ApplicationSettings.shared.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
         let markerStrokeColor = ApplicationSettings.shared.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
         let markerOpacity = ApplicationSettings.shared.currentMarkerOpacity
-        let actualStrokeWidth = (document.defaultStrokePlacement == .center) ? strokeWidth : strokeWidth * 2.0
+        let actualStrokeWidth = (document.strokeDefaults.placement == .center) ? strokeWidth : strokeWidth * 2.0
         let strokeStyle = strokeColor != nil ? StrokeStyle(
             color: markerStrokeColor,
             width: actualStrokeWidth,
@@ -271,7 +271,7 @@ extension DrawingCanvas {
         let markerFillColor = ApplicationSettings.shared.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
         let markerStrokeColor = ApplicationSettings.shared.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
         let markerOpacity = ApplicationSettings.shared.currentMarkerOpacity
-        let actualStrokeWidth = (document.defaultStrokePlacement == .center) ? strokeWidth : strokeWidth * 2.0
+        let actualStrokeWidth = (document.strokeDefaults.placement == .center) ? strokeWidth : strokeWidth * 2.0
         let strokeStyle = strokeColor != nil ? StrokeStyle(
             color: markerStrokeColor,
             width: actualStrokeWidth,

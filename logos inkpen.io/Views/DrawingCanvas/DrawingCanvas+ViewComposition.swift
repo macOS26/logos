@@ -111,7 +111,7 @@ extension DrawingCanvas {
 
             if showStroke {
                 let baseStrokeWidth = getCurrentStrokeWidth()
-                let strokeWidth = (document.defaultStrokePlacement == .center) ? baseStrokeWidth : baseStrokeWidth * 2.0
+                let strokeWidth = (document.strokeDefaults.placement == .center) ? baseStrokeWidth : baseStrokeWidth * 2.0
                 let lineCap: CGLineCap = .round
                 let lineJoin: CGLineJoin = .round
 
@@ -128,7 +128,7 @@ extension DrawingCanvas {
                         lineWidth: strokeWidth,
                         lineCap: lineCap,
                         lineJoin: lineJoin,
-                        miterLimit: document.defaultStrokeMiterLimit
+                        miterLimit: document.strokeDefaults.miterLimit
                     ))
                     .opacity(ApplicationSettings.shared.currentMarkerOpacity)
                 )
@@ -217,7 +217,7 @@ extension DrawingCanvas {
                 dragPreviewTrigger: dragPreviewUpdateTrigger
             )
 
-            if document.showGrid {
+            if document.gridSettings.showGrid {
                 GridView(document: document, geometry: geometry)
                     .allowsHitTesting(false)
             }

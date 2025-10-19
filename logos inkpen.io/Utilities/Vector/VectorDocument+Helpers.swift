@@ -5,19 +5,19 @@ extension VectorDocument {
 
     var rgbSwatches: [VectorColor] {
         var swatches = ColorManager.shared.colorDefaults.rgbSwatches
-        swatches.append(contentsOf: customRgbSwatches)
+        swatches.append(contentsOf: colorSwatches.rgb)
         return swatches
     }
 
     var cmykSwatches: [VectorColor] {
         var swatches = ColorManager.shared.colorDefaults.cmykSwatches
-        swatches.append(contentsOf: customCmykSwatches)
+        swatches.append(contentsOf: colorSwatches.cmyk)
         return swatches
     }
 
     var hsbSwatches: [VectorColor] {
         var swatches = ColorManager.shared.colorDefaults.hsbSwatches
-        swatches.append(contentsOf: customHsbSwatches)
+        swatches.append(contentsOf: colorSwatches.hsb)
         return swatches
     }
 
@@ -100,16 +100,16 @@ extension VectorDocument {
     func addCustomSwatch(_ color: VectorColor) {
         switch settings.colorMode {
         case .rgb:
-            if !customRgbSwatches.contains(where: { $0 == color }) {
-                customRgbSwatches.append(color)
+            if !colorSwatches.rgb.contains(where: { $0 == color }) {
+                colorSwatches.rgb.append(color)
             }
         case .cmyk:
-            if !customCmykSwatches.contains(where: { $0 == color }) {
-                customCmykSwatches.append(color)
+            if !colorSwatches.cmyk.contains(where: { $0 == color }) {
+                colorSwatches.cmyk.append(color)
             }
         case .pms:
-            if !customHsbSwatches.contains(where: { $0 == color }) {
-                customHsbSwatches.append(color)
+            if !colorSwatches.hsb.contains(where: { $0 == color }) {
+                colorSwatches.hsb.append(color)
             }
         }
     }
@@ -117,11 +117,11 @@ extension VectorDocument {
     func removeCustomSwatch(_ color: VectorColor) {
         switch settings.colorMode {
         case .rgb:
-            customRgbSwatches.removeAll(where: { $0 == color })
+            colorSwatches.rgb.removeAll(where: { $0 == color })
         case .cmyk:
-            customCmykSwatches.removeAll(where: { $0 == color })
+            colorSwatches.cmyk.removeAll(where: { $0 == color })
         case .pms:
-            customHsbSwatches.removeAll(where: { $0 == color })
+            colorSwatches.hsb.removeAll(where: { $0 == color })
         }
     }
 
@@ -270,10 +270,10 @@ extension VectorDocument {
 
     func saveStrokeStyleDefaults() {
         var prefs: [String: Any] = [:]
-        prefs["strokePlace"] = defaultStrokePlacement.rawValue
-        prefs["strokeJoin"] = Int(defaultStrokeLineJoin.rawValue)
-        prefs["strokeCap"] = Int(defaultStrokeLineCap.rawValue)
-        prefs["strokeMiter"] = defaultStrokeMiterLimit
+        prefs["strokePlace"] = strokeDefaults.placement.rawValue
+        prefs["strokeJoin"] = Int(strokeDefaults.lineJoin.rawValue)
+        prefs["strokeCap"] = Int(strokeDefaults.lineCap.rawValue)
+        prefs["strokeMiter"] = strokeDefaults.miterLimit
         UserDefaults.standard.set(prefs, forKey: "strokeStylePrefs")
     }
 
@@ -281,16 +281,16 @@ extension VectorDocument {
         guard let prefs = UserDefaults.standard.dictionary(forKey: "strokeStylePrefs") else { return }
 
         if let placement = prefs["strokePlace"] as? String {
-            defaultStrokePlacement = StrokePlacement(rawValue: placement) ?? .center
+            strokeDefaults.placement = StrokePlacement(rawValue: placement) ?? .center
         }
         if let joinInt = prefs["strokeJoin"] as? Int {
-            defaultStrokeLineJoin = CGLineJoin(rawValue: Int32(joinInt)) ?? .miter
+            strokeDefaults.lineJoin = CGLineJoin(rawValue: Int32(joinInt)) ?? .miter
         }
         if let capInt = prefs["strokeCap"] as? Int {
-            defaultStrokeLineCap = CGLineCap(rawValue: Int32(capInt)) ?? .butt
+            strokeDefaults.lineCap = CGLineCap(rawValue: Int32(capInt)) ?? .butt
         }
         if let miter = prefs["strokeMiter"] as? Double {
-            defaultStrokeMiterLimit = miter
+            strokeDefaults.miterLimit = miter
         }
     }
 

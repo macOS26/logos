@@ -13,9 +13,9 @@ extension VectorDocument {
 
         _encodableSettings.fillColor = documentColorDefaults.fillColor
         _encodableSettings.strokeColor = documentColorDefaults.strokeColor
-        _encodableSettings.customRgbSwatches = customRgbSwatches.isEmpty ? nil : customRgbSwatches
-        _encodableSettings.customCmykSwatches = customCmykSwatches.isEmpty ? nil : customCmykSwatches
-        _encodableSettings.customHsbSwatches = customHsbSwatches.isEmpty ? nil : customHsbSwatches
+        _encodableSettings.customRgbSwatches = colorSwatches.rgb.isEmpty ? nil : colorSwatches.rgb
+        _encodableSettings.customCmykSwatches = colorSwatches.cmyk.isEmpty ? nil : colorSwatches.cmyk
+        _encodableSettings.customHsbSwatches = colorSwatches.hsb.isEmpty ? nil : colorSwatches.hsb
 
         try container.encode(_encodableSettings, forKey: .settings)
         try container.encode(_encodableLayers, forKey: .layers)

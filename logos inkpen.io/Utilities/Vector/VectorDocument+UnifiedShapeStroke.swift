@@ -14,7 +14,7 @@ extension VectorDocument {
             switch unifiedObjects[objectIndex].objectType {
             case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 if shape.strokeStyle == nil {
-                    shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: defaultStrokePlacement, lineJoin: lineJoin, opacity: defaultStrokeOpacity)
+                    shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: strokeDefaults.placement, lineJoin: lineJoin, opacity: defaultStrokeOpacity)
                 } else {
                     shape.strokeStyle?.lineJoin = LineJoin(lineJoin)
                 }
@@ -43,7 +43,7 @@ extension VectorDocument {
             switch unifiedObjects[objectIndex].objectType {
             case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 if shape.strokeStyle == nil {
-                    shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: defaultStrokePlacement, lineCap: lineCap, opacity: defaultStrokeOpacity)
+                    shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: strokeDefaults.placement, lineCap: lineCap, opacity: defaultStrokeOpacity)
                 } else {
                     shape.strokeStyle?.lineCap = LineCap(lineCap)
                 }
@@ -72,7 +72,7 @@ extension VectorDocument {
             switch unifiedObjects[objectIndex].objectType {
             case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 if shape.strokeStyle == nil {
-                    shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: defaultStrokePlacement, miterLimit: miterLimit, opacity: defaultStrokeOpacity)
+                    shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: strokeDefaults.placement, miterLimit: miterLimit, opacity: defaultStrokeOpacity)
                 } else {
                     shape.strokeStyle?.miterLimit = miterLimit
                 }
@@ -222,10 +222,10 @@ extension VectorDocument {
                     shape.strokeStyle = StrokeStyle(
                         gradient: gradient,
                         width: currentStroke?.width ?? defaultStrokeWidth,
-                        placement: currentStroke?.placement ?? defaultStrokePlacement,
-                        lineCap: currentStroke?.lineCap.cgLineCap ?? defaultStrokeLineCap,
-                        lineJoin: currentStroke?.lineJoin.cgLineJoin ?? defaultStrokeLineJoin,
-                        miterLimit: currentStroke?.miterLimit ?? defaultStrokeMiterLimit,
+                        placement: currentStroke?.placement ?? strokeDefaults.placement,
+                        lineCap: currentStroke?.lineCap.cgLineCap ?? strokeDefaults.lineCap,
+                        lineJoin: currentStroke?.lineJoin.cgLineJoin ?? strokeDefaults.lineJoin,
+                        miterLimit: currentStroke?.miterLimit ?? strokeDefaults.miterLimit,
                         opacity: currentStroke?.opacity ?? 1.0
                     )
                 }

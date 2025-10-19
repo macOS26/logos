@@ -35,9 +35,9 @@ extension DrawingCanvas {
         let strokeStyle: StrokeStyle? = ApplicationSettings.shared.brushApplyNoStroke ? nil : StrokeStyle(
             color: getCurrentStrokeColor(),
             width: getCurrentStrokeWidth(),
-            lineCap: document.defaultStrokeLineCap,
-            lineJoin: document.defaultStrokeLineJoin,
-            miterLimit: document.defaultStrokeMiterLimit,
+            lineCap: document.strokeDefaults.lineCap,
+            lineJoin: document.strokeDefaults.lineJoin,
+            miterLimit: document.strokeDefaults.miterLimit,
             opacity: getCurrentStrokeOpacity()
         )
         let fillStyle = FillStyle(
@@ -347,9 +347,9 @@ extension DrawingCanvas {
         let strokeStyle: StrokeStyle? = ApplicationSettings.shared.brushApplyNoStroke ? nil : StrokeStyle(
             color: getCurrentStrokeColor(),
             width: getCurrentStrokeWidth(),
-            lineCap: document.defaultStrokeLineCap,
-            lineJoin: document.defaultStrokeLineJoin,
-            miterLimit: document.defaultStrokeMiterLimit,
+            lineCap: document.strokeDefaults.lineCap,
+            lineJoin: document.strokeDefaults.lineJoin,
+            miterLimit: document.strokeDefaults.miterLimit,
             opacity: getCurrentStrokeOpacity()
         )
         let fillStyle = FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())

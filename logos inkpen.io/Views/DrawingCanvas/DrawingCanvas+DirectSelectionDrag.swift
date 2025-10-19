@@ -86,7 +86,7 @@ extension DrawingCanvas {
 
         var snappedDelta = delta
 
-        if (document.snapToPoint || document.snapToGrid) && !selectedPoints.isEmpty {
+        if (document.gridSettings.snapToPoint || document.gridSettings.snapToGrid) && !selectedPoints.isEmpty {
             if let firstPointID = selectedPoints.first,
                let originalPosition = originalPointPositions[firstPointID] {
                 let unsnappedPosition = CGPoint(

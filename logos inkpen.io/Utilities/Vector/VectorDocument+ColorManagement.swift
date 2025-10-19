@@ -6,16 +6,16 @@ extension VectorDocument {
     func addColorToCurrentMode(_ color: VectorColor) {
         switch settings.colorMode {
         case .rgb:
-            if !customRgbSwatches.contains(color) {
-                customRgbSwatches.append(color)
+            if !colorSwatches.rgb.contains(color) {
+                colorSwatches.rgb.append(color)
             }
         case .cmyk:
-            if !customCmykSwatches.contains(color) {
-                customCmykSwatches.append(color)
+            if !colorSwatches.cmyk.contains(color) {
+                colorSwatches.cmyk.append(color)
             }
         case .pms:
-            if !customHsbSwatches.contains(color) {
-                customHsbSwatches.append(color)
+            if !colorSwatches.hsb.contains(color) {
+                colorSwatches.hsb.append(color)
             }
         }
     }
@@ -31,11 +31,11 @@ extension VectorDocument {
     func removeColorFromCurrentMode(_ color: VectorColor) {
         switch settings.colorMode {
         case .rgb:
-            customRgbSwatches.removeAll { $0 == color }
+            colorSwatches.rgb.removeAll { $0 == color }
         case .cmyk:
-            customCmykSwatches.removeAll { $0 == color }
+            colorSwatches.cmyk.removeAll { $0 == color }
         case .pms:
-            customHsbSwatches.removeAll { $0 == color }
+            colorSwatches.hsb.removeAll { $0 == color }
         }
     }
 

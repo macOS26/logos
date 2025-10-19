@@ -34,7 +34,7 @@ extension DrawingCanvas {
             width: getCurrentStrokeWidth(),
             lineCap: .round,
             lineJoin: .round,
-            miterLimit: document.defaultStrokeMiterLimit,
+            miterLimit: document.strokeDefaults.miterLimit,
             opacity: getCurrentStrokeOpacity()
         )
         let fillStyle: FillStyle? = ApplicationSettings.shared.freehandFillMode == .fill
@@ -183,7 +183,7 @@ extension DrawingCanvas {
             width: getCurrentStrokeWidth(),
             lineCap: .round,
             lineJoin: .round,
-            miterLimit: document.defaultStrokeMiterLimit,
+            miterLimit: document.strokeDefaults.miterLimit,
             opacity: getCurrentStrokeOpacity()
         )
 

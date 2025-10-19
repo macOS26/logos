@@ -60,7 +60,7 @@ extension DrawingCanvas {
                                               .star, .polygon, .pentagon, .hexagon, .heptagon,
                                               .octagon, .nonagon, .equilateralTriangle,
                                               .rightTriangle, .acuteTriangle, .isoscelesTriangle]
-            if (document.snapToPoint || document.snapToGrid) && shapeTools.contains(document.viewState.currentTool) {
+            if (document.gridSettings.snapToPoint || document.gridSettings.snapToGrid) && shapeTools.contains(document.viewState.currentTool) {
                 initialPoint = applySnapping(to: initialPoint)
             }
 
@@ -90,7 +90,7 @@ extension DrawingCanvas {
                                           .star, .polygon, .pentagon, .hexagon, .heptagon,
                                           .octagon, .nonagon, .equilateralTriangle,
                                           .rightTriangle, .acuteTriangle, .isoscelesTriangle]
-        if (document.snapToPoint || document.snapToGrid) && shapeTools.contains(document.viewState.currentTool) {
+        if (document.gridSettings.snapToPoint || document.gridSettings.snapToGrid) && shapeTools.contains(document.viewState.currentTool) {
             currentLocation = applySnapping(to: currentLocation)
         }
 
@@ -363,7 +363,7 @@ extension DrawingCanvas {
                 )
             }
 
-            if document.snapToGrid {
+            if document.gridSettings.snapToGrid {
                 currentPath = createEquilateralTrianglePathWithGridSnapping(rect: triangleRect, gridSpacing: document.settings.gridSpacing, unit: document.settings.unit)
             } else {
                 let centerX = triangleRect.midX
@@ -523,7 +523,7 @@ extension DrawingCanvas {
             }
             let innerRadius = Double(outerRadius) * innerRatio
             let finalCenter: CGPoint
-            if document.snapToGrid {
+            if document.gridSettings.snapToGrid {
                 let baseSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit
                 let spacingMultiplier: CGFloat = {
                     switch document.settings.unit {
@@ -578,7 +578,7 @@ extension DrawingCanvas {
 			let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
 			let radius = Double(min(normalizedRect.width, normalizedRect.height) / 2.0)
 			let finalCenter: CGPoint
-			if document.snapToGrid {
+			if document.gridSettings.snapToGrid {
 				let baseSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit
 				let spacingMultiplier: CGFloat = {
 					switch document.settings.unit {
@@ -632,7 +632,7 @@ extension DrawingCanvas {
 			let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
 			let radius = Double(min(normalizedRect.width, normalizedRect.height) / 2.0)
 			let finalCenter: CGPoint
-			if document.snapToGrid {
+			if document.gridSettings.snapToGrid {
 				let baseSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit
 				let spacingMultiplier: CGFloat = {
 					switch document.settings.unit {
@@ -686,7 +686,7 @@ extension DrawingCanvas {
 			let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
 			let radius = Double(min(normalizedRect.width, normalizedRect.height) / 2.0)
 			let finalCenter: CGPoint
-			if document.snapToGrid {
+			if document.gridSettings.snapToGrid {
 				let baseSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit
 				let spacingMultiplier: CGFloat = {
 					switch document.settings.unit {
@@ -740,7 +740,7 @@ extension DrawingCanvas {
 			let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
 			let radius = Double(min(normalizedRect.width, normalizedRect.height) / 2.0)
 			let finalCenter: CGPoint
-			if document.snapToGrid {
+			if document.gridSettings.snapToGrid {
 				let baseSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit
 				let spacingMultiplier: CGFloat = {
 					switch document.settings.unit {
@@ -794,7 +794,7 @@ extension DrawingCanvas {
 			let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
 			let radius = Double(min(normalizedRect.width, normalizedRect.height) / 2.0)
 			let finalCenter: CGPoint
-			if document.snapToGrid {
+			if document.gridSettings.snapToGrid {
 				let baseSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit
 				let spacingMultiplier: CGFloat = {
 					switch document.settings.unit {
@@ -848,7 +848,7 @@ extension DrawingCanvas {
 			let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
 			let radius = Double(min(normalizedRect.width, normalizedRect.height) / 2.0)
 			let finalCenter: CGPoint
-			if document.snapToGrid {
+			if document.gridSettings.snapToGrid {
 				let baseSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit
 				let spacingMultiplier: CGFloat = {
 					switch document.settings.unit {
@@ -883,9 +883,9 @@ extension DrawingCanvas {
         let strokeStyle = StrokeStyle(
             color: document.defaultStrokeColor,
             width: document.defaultStrokeWidth,
-            lineCap: document.defaultStrokeLineCap,
-            lineJoin: document.defaultStrokeLineJoin,
-            miterLimit: document.defaultStrokeMiterLimit,
+            lineCap: document.strokeDefaults.lineCap,
+            lineJoin: document.strokeDefaults.lineJoin,
+            miterLimit: document.strokeDefaults.miterLimit,
             opacity: document.defaultStrokeOpacity
         )
         let fillStyle = FillStyle(

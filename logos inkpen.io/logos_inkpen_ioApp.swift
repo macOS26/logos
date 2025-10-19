@@ -472,7 +472,7 @@ struct logos_inken_ioApp: App {
                         documentState?.toggleRulers()
                     } label: {
                         HStack {
-                            if documentState?.document?.showRulers == true {
+                            if documentState?.document?.gridSettings.showRulers == true {
                                 Image(systemName: "checkmark")
                             }
                             Text("Toggle Rulers")
@@ -484,7 +484,7 @@ struct logos_inken_ioApp: App {
                         documentState?.toggleGrid()
                     } label: {
                         HStack {
-                            if documentState?.document?.showGrid == true {
+                            if documentState?.document?.gridSettings.showGrid == true {
                                 Image(systemName: "checkmark")
                             }
                             Text("Toggle Grid")
@@ -496,7 +496,7 @@ struct logos_inken_ioApp: App {
                         documentState?.toggleSnapToGrid()
                     } label: {
                         HStack {
-                            if documentState?.document?.snapToGrid == true {
+                            if documentState?.document?.gridSettings.snapToGrid == true {
                                 Image(systemName: "checkmark")
                             }
                             Text("Toggle Snap to Grid")
@@ -508,7 +508,7 @@ struct logos_inken_ioApp: App {
                         documentState?.toggleSnapToPoint()
                     } label: {
                         HStack {
-                            if documentState?.document?.snapToPoint == true {
+                            if documentState?.document?.gridSettings.snapToPoint == true {
                                 Image(systemName: "checkmark")
                             }
                             Text("Toggle Snap to Point")

@@ -75,16 +75,16 @@ struct StrokeFillPanel: View {
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .text:
-                return document.defaultStrokePlacement
+                return document.strokeDefaults.placement
             case .shape(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
                  .clipMask(let shape):
-                return shape.strokeStyle?.placement ?? document.defaultStrokePlacement
+                return shape.strokeStyle?.placement ?? document.strokeDefaults.placement
             }
         }
-        return document.defaultStrokePlacement
+        return document.strokeDefaults.placement
     }
 
     private var fillOpacity: Double {
@@ -130,16 +130,16 @@ struct StrokeFillPanel: View {
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .text:
-                return document.defaultStrokeLineJoin
+                return document.strokeDefaults.lineJoin
             case .shape(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
                  .clipMask(let shape):
-                return shape.strokeStyle?.lineJoin.cgLineJoin ?? document.defaultStrokeLineJoin
+                return shape.strokeStyle?.lineJoin.cgLineJoin ?? document.strokeDefaults.lineJoin
             }
         }
-        return document.defaultStrokeLineJoin
+        return document.strokeDefaults.lineJoin
     }
 
     private var strokeLineCap: CGLineCap {
@@ -147,16 +147,16 @@ struct StrokeFillPanel: View {
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .text:
-                return document.defaultStrokeLineCap
+                return document.strokeDefaults.lineCap
             case .shape(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
                  .clipMask(let shape):
-                return shape.strokeStyle?.lineCap.cgLineCap ?? document.defaultStrokeLineCap
+                return shape.strokeStyle?.lineCap.cgLineCap ?? document.strokeDefaults.lineCap
             }
         }
-        return document.defaultStrokeLineCap
+        return document.strokeDefaults.lineCap
     }
 
     private var strokeMiterLimit: Double {
@@ -164,16 +164,16 @@ struct StrokeFillPanel: View {
            let unifiedObject = document.findObject(by: firstSelectedObjectID) {
             switch unifiedObject.objectType {
             case .text:
-                return document.defaultStrokeMiterLimit
+                return document.strokeDefaults.miterLimit
             case .shape(let shape),
                  .warp(let shape),
                  .group(let shape),
                  .clipGroup(let shape),
                  .clipMask(let shape):
-                return shape.strokeStyle?.miterLimit ?? document.defaultStrokeMiterLimit
+                return shape.strokeStyle?.miterLimit ?? document.strokeDefaults.miterLimit
             }
         }
-        return document.defaultStrokeMiterLimit
+        return document.strokeDefaults.miterLimit
     }
 
     private var hasSelectedImages: Bool {
@@ -327,11 +327,11 @@ struct StrokeFillPanel: View {
                             updateStrokePlacement(value)
                         },
                         onUpdateLineJoin: { value in
-                            document.defaultStrokeLineJoin = value
+                            document.strokeDefaults.lineJoin = value
                             updateStrokeLineJoin(value)
                         },
                         onUpdateLineCap: { value in
-                            document.defaultStrokeLineCap = value
+                            document.strokeDefaults.lineCap = value
                             updateStrokeLineCap(value)
                         },
                         onUpdateMiterLimit: { value in
@@ -452,7 +452,7 @@ struct StrokeFillPanel: View {
                                     }
                                 }
 
-                                document.defaultStrokeMiterLimit = strokeMiterLimitState
+                                document.strokeDefaults.miterLimit = strokeMiterLimitState
                                 updateStrokeMiterLimit(strokeMiterLimitState)
 
                                 cachedIndexMap.removeAll()
@@ -687,7 +687,7 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokePlacementLive(_ placement: StrokePlacement) {
-        document.defaultStrokePlacement = placement
+        document.strokeDefaults.placement = placement
 
         for objectID in document.viewState.selectedObjectIDs {
             if let unifiedObject = document.findObject(by: objectID) {
@@ -760,7 +760,7 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokePlacement(_ placement: StrokePlacement) {
-        document.defaultStrokePlacement = placement
+        document.strokeDefaults.placement = placement
         let activeShapeIDs = document.getActiveShapeIDs()
         if activeShapeIDs.isEmpty {
             return
@@ -893,7 +893,7 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokeLineJoin(_ lineJoin: CGLineJoin) {
-        document.defaultStrokeLineJoin = lineJoin
+        document.strokeDefaults.lineJoin = lineJoin
 
         let activeShapeIDs = document.getActiveShapeIDs()
         if !activeShapeIDs.isEmpty {
@@ -951,7 +951,7 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokeLineCap(_ lineCap: CGLineCap) {
-        document.defaultStrokeLineCap = lineCap
+        document.strokeDefaults.lineCap = lineCap
 
         let activeShapeIDs = document.getActiveShapeIDs()
         if !activeShapeIDs.isEmpty {
@@ -1009,7 +1009,7 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokeMiterLimit(_ miterLimit: Double) {
-        document.defaultStrokeMiterLimit = miterLimit
+        document.strokeDefaults.miterLimit = miterLimit
 
         let activeShapeIDs = document.getActiveShapeIDs()
         if !activeShapeIDs.isEmpty {

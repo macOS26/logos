@@ -1043,22 +1043,22 @@ class DocumentState: ObservableObject {
     }
 
     func toggleRulers() {
-        document?.showRulers.toggle()
+        document?.gridSettings.showRulers.toggle()
     }
 
     func toggleGrid() {
         document?.settings.showGrid.toggle()
-        document?.showGrid = document?.settings.showGrid ?? false
+        document?.gridSettings.showGrid = document?.settings.showGrid ?? false
     }
 
     func toggleSnapToGrid() {
-        document?.snapToGrid.toggle()
-        document?.settings.snapToGrid = document?.snapToGrid ?? false
+        document?.gridSettings.snapToGrid.toggle()
+        document?.settings.snapToGrid = document?.gridSettings.snapToGrid ?? false
     }
 
     func toggleSnapToPoint() {
-        document?.snapToPoint.toggle()
-        document?.settings.snapToPoint = document?.snapToPoint ?? false
+        document?.gridSettings.snapToPoint.toggle()
+        document?.settings.snapToPoint = document?.gridSettings.snapToPoint ?? false
     }
 
     func createOutlines() {
