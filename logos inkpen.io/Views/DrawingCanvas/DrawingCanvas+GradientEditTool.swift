@@ -40,10 +40,10 @@ extension DrawingCanvas {
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
-                        handleGradientCenterDrag(value: value, geometry: geometry, shape: selectedShape, gradient: selectedGradient)
+                        handleGradientCenterDrag(value: value, geometry: geometry, shape: selectedShape, gradient: selectedGradient, dragStartGradient: selectedGradient)
                     }
                     .onEnded { value in
-                        handleGradientCenterDragEnd(value: value, geometry: geometry, shape: selectedShape, gradient: selectedGradient)
+                        handleGradientCenterDragEnd(value: value, geometry: geometry, shape: selectedShape, dragStartGradient: selectedGradient)
                     }
             )
         }
@@ -108,7 +108,7 @@ extension DrawingCanvas {
         }
     }
     
-    private func handleGradientCenterDrag(value: DragGesture.Value, geometry: GeometryProxy, shape: VectorShape, gradient: VectorGradient) {
+    private func handleGradientCenterDrag(value: DragGesture.Value, geometry: GeometryProxy, shape: VectorShape, gradient: VectorGradient, dragStartGradient: VectorGradient) {
         let canvasPoint = screenToCanvas(value.location, geometry: geometry)
         let shapeBounds = shape.bounds
 
@@ -123,15 +123,38 @@ extension DrawingCanvas {
         updateGradientOriginXYOptimized(relativeX, relativeY, shape: shape, applyToShapes: true, isLiveDrag: true)
     }
 
-    private func handleGradientCenterDragEnd(value: DragGesture.Value, geometry: GeometryProxy, shape: VectorShape, gradient: VectorGradient) {
+    private func handleGradientCenterDragEnd(value: DragGesture.Value, geometry: GeometryProxy, shape: VectorShape, dragStartGradient: VectorGradient) {
         let canvasPoint = screenToCanvas(value.location, geometry: geometry)
         let shapeBounds = shape.bounds
 
         let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
         let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
 
-        // Final update with notification
-        updateGradientOriginXYOptimized(relativeX, relativeY, shape: shape, applyToShapes: true, isLiveDrag: false)
+        // Get the final gradient
+        var finalGradient = dragStartGradient
+        switch finalGradient {
+        case .linear(var linear):
+            linear.originPoint.x = relativeX
+            linear.originPoint.y = relativeY
+            finalGradient = .linear(linear)
+        case .radial(var radial):
+            radial.originPoint.x = relativeX
+            radial.originPoint.y = relativeY
+            radial.focalPoint = CGPoint(x: relativeX, y: relativeY)
+            finalGradient = .radial(radial)
+        }
+
+        // Create undo command
+        let oldOpacity = shape.fillStyle?.opacity ?? 1.0
+        let command = GradientCommand(
+            objectIDs: [shape.id],
+            target: .fill,
+            oldGradients: [shape.id: dragStartGradient],
+            newGradients: [shape.id: finalGradient],
+            oldOpacities: [shape.id: oldOpacity],
+            newOpacities: [shape.id: oldOpacity]
+        )
+        document.commandManager.execute(command)
 
         // Clear live state
         liveGradientOriginX = nil

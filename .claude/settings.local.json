@@ -48,7 +48,12 @@
       "Bash(find \"/Users/toddbruss/Documents/GitHub/logos/logos inkpen.io/Views\" -name \"*.swift\" -exec grep -l \"struct.*ObjectView\\|renderShape\\|fillStyle.*gradient\" {})",
       "Bash(find \"/Users/toddbruss/Documents/GitHub/logos/logos inkpen.io\" -name \"*.swift\" -exec grep -l \"struct ShapeView\" {} ;)",
       "Bash(git add -A)",
-      "Bash(git commit -m \"Add live gradient origin binding\")"
+      "Bash(git commit -m \"Add live gradient origin binding\")",
+      "Bash(git add \"logos inkpen.io/Views/Shape/ShapeView.swift\")",
+      "Bash(git commit -m \"Apply live gradient only to selected shapes\")",
+      "Bash(git commit -m \"Make canvas centerpoint tool live\")",
+      "Bash(git commit -m \"Use same live update method as Grade panel\")",
+      "Bash(git commit -m \"Add gradient undo/redo for canvas tool\")"
     ],
     "deny": [],
     "ask": []
