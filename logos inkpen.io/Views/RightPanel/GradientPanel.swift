@@ -690,11 +690,11 @@ struct GradientFillSection: View {
                 centerPoint: CGPoint(x: 0, y: 0),
                 radius: 0.5,
                 stops: validStops,
-                focalPoint: CGPoint(x: 0, y: 0),
+                focalPoint: CGPoint(x: 0.5, y: 0.5),
                 spreadMethod: .pad,
                 units: .objectBoundingBox
             )
-            radial.originPoint = CGPoint(x: 0, y: 0)
+            radial.originPoint = CGPoint(x: 0.5, y: 0.5)
             radial.scaleX = 1.0
             radial.scaleY = 1.0
             return .radial(radial)
