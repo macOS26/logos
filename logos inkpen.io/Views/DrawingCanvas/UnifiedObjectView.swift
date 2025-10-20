@@ -203,24 +203,21 @@ struct LayerCanvasView: View {
     let dragPreviewDelta: CGPoint
 
     var body: some View {
-        GeometryReader { geometry in
-            Canvas { context, size in
-                for object in objects {
-                    guard object.isVisible else { continue }
+        Canvas { context, size in
+            for object in objects {
+                guard object.isVisible else { continue }
 
-                    switch object.objectType {
-                    case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                        // Skip shapes with typography (handled by SwiftUI)
-                        if shape.typography != nil { continue }
+                switch object.objectType {
+                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                    // Skip shapes with typography (handled by SwiftUI)
+                    if shape.typography != nil { continue }
 
-                        renderShape(shape, in: context, isSelected: selectedObjectIDs.contains(object.id))
+                    renderShape(shape, in: context, isSelected: selectedObjectIDs.contains(object.id))
 
-                    case .text:
-                        continue  // Text handled by SwiftUI
-                    }
+                case .text:
+                    continue  // Text handled by SwiftUI
                 }
             }
-            .frame(width: geometry.size.width, height: geometry.size.height)
         }
     }
 
