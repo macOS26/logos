@@ -201,14 +201,10 @@ extension DrawingCanvas {
         let shapes = document.getShapesForLayer(layerIndex)
         if shapes.contains(where: { $0.id == shape.id }) {
             let currentOpacity = shape.fillStyle?.opacity ?? 1.0
-            if isLiveDrag {
-                // During drag: update with notification for UI refresh
-                document.updateShapeByID(shape.id, silent: false) { shape in
-                    shape.fillStyle = FillStyle(gradient: newGradient, opacity: currentOpacity)
-                }
-            } else {
-                // On drag end: full update with notifications
-                document.updateShapeGradientInUnified(id: shape.id, gradient: newGradient, target: .fill)
+
+            // Batch update: silent during drag, notify only at end
+            document.updateShapeByID(shape.id, silent: isLiveDrag) { shape in
+                shape.fillStyle = FillStyle(gradient: newGradient, opacity: currentOpacity)
             }
         }
     }
