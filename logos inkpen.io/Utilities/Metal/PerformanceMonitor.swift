@@ -61,18 +61,6 @@ class PerformanceMonitor {
         lastDisplayTime = now
     }
 
-    func pause() {
-        if let link = displayLink {
-            CVDisplayLinkStop(link)
-        }
-    }
-
-    func resume() {
-        if let link = displayLink {
-            CVDisplayLinkStart(link)
-        }
-    }
-
     deinit {
         if let link = displayLink {
             CVDisplayLinkStop(link)

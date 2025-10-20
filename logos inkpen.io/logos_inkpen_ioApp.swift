@@ -753,6 +753,16 @@ struct logos_inken_ioApp: App {
                     .help("Switch to corner radius tool")
                 }
 
+                CommandMenu("Debug") {
+                    Button(action: {
+                        appState.showPerformanceOverlay.toggle()
+                    }) {
+                        Label(appState.showPerformanceOverlay ? "Hide Performance Overlay" : "Show Performance Overlay", systemImage: "gauge")
+                    }
+                    .keyboardShortcut("d", modifiers: [.command, .shift])
+                    .help("Toggle our custom performance overlay")
+                }
+
                 if SandboxChecker.isNotSandboxed {
                     CommandMenu("Donate") {
                         Button(action: {

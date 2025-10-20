@@ -7,7 +7,7 @@ extension DrawingCanvas {
 
     @ViewBuilder
     internal func optionalMetalAcceleratedOverlay(geometry: GeometryProxy) -> some View {
-        SafeMetalView { cgContext, size in
+        SafeMetalView(performanceMonitor: metalPerformanceMonitor) { cgContext, size in
             renderCanvasWithMetal(cgContext: cgContext, size: size, geometry: geometry)
             if let preview = brushPreviewPath {
                 cgContext.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 0))
@@ -159,6 +159,14 @@ extension DrawingCanvas {
 }
 
 extension DrawingCanvas {
+    @ViewBuilder
+    private func performanceOverlay() -> some View {
+        IsolatedPerformanceOverlay(
+            monitor: metalPerformanceMonitor,
+            document: document
+        )
+    }
+
     private func countActiveDrawElements() -> Int {
         var count = 0
 
@@ -206,6 +214,10 @@ extension DrawingCanvas {
                 zoomLevel: document.viewState.zoomLevel,
                 canvasOffset: document.viewState.canvasOffset
             )
+
+            if appState.showPerformanceOverlay {
+                performanceOverlay()
+            }
         }
         .onAppear {
             setupCanvas()
@@ -375,6 +387,53 @@ extension DrawingCanvas {
         }
         .contextMenu {
             directSelectionContextMenu
+        }
+    }
+}
+
+// Simple performance overlay using Canvas for no SwiftUI interference
+private struct IsolatedPerformanceOverlay: View {
+    var monitor: PerformanceMonitor
+    let document: VectorDocument
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 0.5)) { _ in
+            Canvas { context, size in
+                let totalObjects = document.unifiedObjects.count
+                let visibleLayers = document.layers.filter { $0.isVisible }.count
+
+                let padding: CGFloat = 16
+                let boxPadding: CGFloat = 8
+                let lineHeight: CGFloat = 14
+                let fontSize: CGFloat = 10
+
+                let texts = [
+                    "FPS: \(Int(monitor.fps))",
+                    "\(monitor.renderingMode)",
+                    "Device: \(monitor.metalDeviceName)",
+                    "Memory: \(String(format: "%.1f", monitor.memoryUsage)) MB",
+                    "Objects: \(totalObjects)",
+                    "Layers: \(visibleLayers)/\(document.layers.count)"
+                ]
+
+                let boxWidth: CGFloat = 200
+                let boxHeight = CGFloat(texts.count) * lineHeight + boxPadding * 2
+
+                // Draw background box
+                let boxRect = CGRect(x: padding, y: padding, width: boxWidth, height: boxHeight)
+                context.fill(Path(roundedRect: boxRect, cornerRadius: 6), with: .color(.black.opacity(0.75)))
+
+                // Draw text
+                for (index, text) in texts.enumerated() {
+                    let yPos = padding + boxPadding + CGFloat(index) * lineHeight
+                    context.draw(Text(text)
+                        .font(.system(size: fontSize, design: .monospaced))
+                        .foregroundColor(.green),
+                        at: CGPoint(x: padding + boxPadding, y: yPos),
+                        anchor: .topLeading)
+                }
+            }
+            .allowsHitTesting(false)
         }
     }
 }

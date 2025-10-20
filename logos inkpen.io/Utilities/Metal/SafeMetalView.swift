@@ -3,15 +3,21 @@ import MetalKit
 
 struct SafeMetalView: NSViewRepresentable {
     let renderContent: (CGContext, CGSize) -> Void
+    let performanceMonitor: PerformanceMonitor?
+
+    init(performanceMonitor: PerformanceMonitor? = nil, renderContent: @escaping (CGContext, CGSize) -> Void) {
+        self.performanceMonitor = performanceMonitor
+        self.renderContent = renderContent
+    }
 
     class Coordinator {
         let metalManager: MetalDeviceManager
         let performanceMonitor: PerformanceMonitor
         let renderer: MetalRenderer
 
-        init(renderContent: @escaping (CGContext, CGSize) -> Void) {
+        init(renderContent: @escaping (CGContext, CGSize) -> Void, performanceMonitor: PerformanceMonitor?) {
             self.metalManager = MetalDeviceManager()
-            self.performanceMonitor = PerformanceMonitor()
+            self.performanceMonitor = performanceMonitor ?? PerformanceMonitor()
             self.renderer = MetalRenderer(
                 renderContent: renderContent,
                 performanceMonitor: self.performanceMonitor,
@@ -22,7 +28,7 @@ struct SafeMetalView: NSViewRepresentable {
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(renderContent: renderContent)
+        Coordinator(renderContent: renderContent, performanceMonitor: performanceMonitor)
     }
 
     func makeNSView(context: Context) -> MTKView {
@@ -40,7 +46,7 @@ struct SafeMetalView: NSViewRepresentable {
     }
 
     func updateNSView(_ metalView: MTKView, context: Context) {
-        metalView.setNeedsDisplay(metalView.bounds)
+        // Don't force draws - let the system handle it
     }
 }
 

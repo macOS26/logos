@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct PerformanceOverlay: View {
-    @ObservedObject var performanceMonitor: PerformanceMonitor
+    @Bindable var performanceMonitor: PerformanceMonitor
     @State private var isExpanded: Bool = false
     @State private var showDetailedStats: Bool = false
 

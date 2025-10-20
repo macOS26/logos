@@ -77,7 +77,19 @@
       "Bash(awk 'NR>=230 && NR<=260 {printf \"\"\"\"%d: %s\\n\"\"\"\", NR, $0}' \"logos inkpen.io/Utilities/PDF/FileOperations+PDFExport.swift\")",
       "Bash(awk 'NR>=350 && NR<=390 {printf \"\"\"\"%d: %s\\n\"\"\"\", NR, $0}' \"logos inkpen.io/Utilities/PNG/FileOperations+ExportToPNG.swift\")",
       "Bash(awk 'NR>=90 && NR<=105 {printf \"\"%d: %s\\n\"\", NR, $0}' \"logos inkpen.io/Utilities/CoreGraphics/ClippingMask.swift\")",
-      "Bash(awk 'NR>=70 && NR<=90 {printf \"\"%d: %s\\n\"\", NR, $0}' \"logos inkpen.io/Utilities/CoreGraphics/ClippingMask.swift\")"
+      "Bash(awk 'NR>=70 && NR<=90 {printf \"\"%d: %s\\n\"\", NR, $0}' \"logos inkpen.io/Utilities/CoreGraphics/ClippingMask.swift\")",
+      "Bash(awk 'NR>=200 && NR<=210' \"/Users/toddbruss/Documents/GitHub/logos/logos inkpen.io/Views/Cursors/Cursors.swift\")",
+      "Bash(awk 'NR>=210 && NR<=240' \"/Users/toddbruss/Documents/GitHub/logos/logos inkpen.io/Views/DrawingCanvas/DrawingCanvas+SafeMetalIntegration.swift\")",
+      "Bash(awk 'NR>=755 && NR<=770' \"/Users/toddbruss/Documents/GitHub/logos/logos inkpen.io/logos_inkpen_ioApp.swift\")",
+      "Bash(awk 'NR>=98 && NR<=110' \"/Users/toddbruss/Documents/GitHub/logos/logos inkpen.io/Utilities/Metal/SafeMetalView.swift\")",
+      "Bash(awk 'NR>=215 && NR<=225' \"/Users/toddbruss/Documents/GitHub/logos/logos inkpen.io/Views/DrawingCanvas/DrawingCanvas+SafeMetalIntegration.swift\")",
+      "Bash(awk 'NR>=230 && NR<=240' \"/Users/toddbruss/Documents/GitHub/logos/logos inkpen.io/Views/DrawingCanvas/DrawingCanvas+SafeMetalIntegration.swift\")",
+      "Bash(awk 'NR>=90 && NR<=113' \"/Users/toddbruss/Documents/GitHub/logos/logos inkpen.io/Utilities/Metal/PerformanceMonitor.swift\")",
+      "Bash(awk 'NR>=125 && NR<=145' \"/Users/toddbruss/Documents/GitHub/logos/logos inkpen.io/Utilities/Metal/PerformanceMonitor.swift\")",
+      "Bash(git add \"logos inkpen.io/Models/AppState.swift\")",
+      "Bash(git commit -m \"Add performance overlay toggle\")",
+      "Bash(git add \"logos inkpen.io/Utilities/Metal/PerformanceMonitor.swift\")",
+      "Bash(git commit -m \"Add CVDisplayLink for real FPS tracking\")"
     ],
     "deny": [],
     "ask": []
