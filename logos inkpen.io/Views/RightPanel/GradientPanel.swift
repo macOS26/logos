@@ -24,6 +24,8 @@ struct GradientFillSection: View {
     @State private var showingGradientColorPicker = false
     @State private var editingGradientStopId: UUID?
     @State private var editingGradientStopColor: VectorColor = .black
+    @State private var localOriginX: Double = 0.5
+    @State private var localOriginY: Double = 0.5
 
     enum GradientType: String, CaseIterable {
         case linear = "Linear"
@@ -36,13 +38,19 @@ struct GradientFillSection: View {
         if let selectedGradient = Self.getSelectedShapeGradient(document: document) {
             _currentGradient = State(initialValue: selectedGradient)
             switch selectedGradient {
-            case .linear(_):
+            case .linear(let linear):
                 _gradientType = State(initialValue: .linear)
-            case .radial(_):
+                _localOriginX = State(initialValue: linear.originPoint.x)
+                _localOriginY = State(initialValue: linear.originPoint.y)
+            case .radial(let radial):
                 _gradientType = State(initialValue: .radial)
+                _localOriginX = State(initialValue: radial.originPoint.x)
+                _localOriginY = State(initialValue: radial.originPoint.y)
             }
         } else {
             _currentGradient = State(initialValue: Self.createDefaultGradient(type: .linear))
+            _localOriginX = State(initialValue: 0.5)
+            _localOriginY = State(initialValue: 0.5)
         }
     }
 
@@ -71,10 +79,16 @@ struct GradientFillSection: View {
             GradientOriginControlView(
                 currentGradient: currentGradient,
                 document: document,
-                getOriginX: getGradientOriginX,
-                getOriginY: getGradientOriginY,
-                updateOriginX: { updateGradientOriginXOptimized($0, applyToShapes: true, isLiveDrag: true) },
-                updateOriginY: { updateGradientOriginYOptimized($0, applyToShapes: true, isLiveDrag: true) }
+                originX: $localOriginX,
+                originY: $localOriginY,
+                updateOriginX: { newX in
+                    localOriginX = newX
+                    updateGradientOriginXOptimized(newX, applyToShapes: true, isLiveDrag: true)
+                },
+                updateOriginY: { newY in
+                    localOriginY = newY
+                    updateGradientOriginYOptimized(newY, applyToShapes: true, isLiveDrag: true)
+                }
             )
 
             GradientScaleControlView(
@@ -190,10 +204,14 @@ struct GradientFillSection: View {
         if let selectedGradient = Self.getSelectedShapeGradient(document: document) {
             currentGradient = selectedGradient
             switch selectedGradient {
-            case .linear(_):
+            case .linear(let linear):
                 gradientType = .linear
-            case .radial(_):
+                localOriginX = linear.originPoint.x
+                localOriginY = linear.originPoint.y
+            case .radial(let radial):
                 gradientType = .radial
+                localOriginX = radial.originPoint.x
+                localOriginY = radial.originPoint.y
             }
             gradientId = UUID()
         }
@@ -204,10 +222,14 @@ struct GradientFillSection: View {
         if let selectedGradient = Self.getSelectedShapeGradient(document: document) {
             currentGradient = selectedGradient
             switch selectedGradient {
-            case .linear(_):
+            case .linear(let linear):
                 gradientType = .linear
-            case .radial(_):
+                localOriginX = linear.originPoint.x
+                localOriginY = linear.originPoint.y
+            case .radial(let radial):
                 gradientType = .radial
+                localOriginX = radial.originPoint.x
+                localOriginY = radial.originPoint.y
             }
         }
     }

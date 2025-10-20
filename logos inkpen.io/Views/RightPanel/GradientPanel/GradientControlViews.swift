@@ -150,8 +150,8 @@ struct GradientAngleControlView: View {
 struct GradientOriginControlView: View {
     let currentGradient: VectorGradient?
     let document: VectorDocument
-    let getOriginX: (VectorGradient) -> Double
-    let getOriginY: (VectorGradient) -> Double
+    @Binding var originX: Double
+    @Binding var originY: Double
     let updateOriginX: (Double) -> Void
     let updateOriginY: (Double) -> Void
     var body: some View {
@@ -171,24 +171,24 @@ struct GradientOriginControlView: View {
 
                 HStack(spacing: 8) {
                     GradientSliderControl(
-                        label: "X: \(currentGradient.map { formatNumberForDisplay(getOriginX($0)) } ?? "0")",
-                        value: currentGradient.map { getOriginX($0) } ?? 0.0,
+                        label: "X: \(formatNumberForDisplay(originX))",
+                        value: originX,
                         range: 0.0...1.0,
                         textFieldWidth: 50,
                         onChange: updateOriginX,
                         onEditingChanged: { _ in
-                          
+
                         }
                     )
 
                     GradientSliderControl(
-                        label: "Y: \(currentGradient.map { formatNumberForDisplay(getOriginY($0)) } ?? "0")",
-                        value: currentGradient.map { getOriginY($0) } ?? 0.0,
+                        label: "Y: \(formatNumberForDisplay(originY))",
+                        value: originY,
                         range: 0.0...1.0,
                         textFieldWidth: 50,
                         onChange: updateOriginY,
                         onEditingChanged: { _ in
-                           
+
                         }
                     )
                 }
