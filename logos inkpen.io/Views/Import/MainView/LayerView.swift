@@ -58,7 +58,9 @@ struct LayerView: View {
                         isPasteboardLayer: isPasteboardLayer,
                         dragPreviewDelta: dragPreviewDelta,
                         dragPreviewTrigger: dragPreviewTrigger,
-                        liveScaleTransform: .identity
+                        liveScaleTransform: .identity,
+                        liveGradientOriginX: nil,
+                        liveGradientOriginY: nil
                     )
                 }
             }

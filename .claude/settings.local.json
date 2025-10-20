@@ -34,7 +34,21 @@
       "Bash(git add \"logos inkpen.io/Utilities/Vector/FileOperations+JSON.swift\")",
       "Bash(git commit -m \"Remove DocumentSnapshot deep copy\")",
       "Bash(git add \"logos inkpen.io/Utilities/Vector/VectorDocument+UnifiedShapeStroke.swift\")",
-      "Bash(git commit -m \"Add granular notifications to shape updates\")"
+      "Bash(git commit -m \"Add granular notifications to shape updates\")",
+      "Bash(git add \"logos inkpen.io/Utilities/Vector/VectorDocument+UnifiedCore.swift\" \"logos inkpen.io/Views/DrawingCanvas/DrawingCanvas+GradientEditTool.swift\")",
+      "Bash(git commit -m \"Batch gradient drag updates\")",
+      "Bash(git add \"logos inkpen.io/Views/DrawingCanvas/DrawingCanvas+GradientEditTool.swift\")",
+      "Bash(git commit -m \"Fix gradient drag opacity & UI updates\")",
+      "Bash(git commit -m \"Preserve opacity in updateShapeGradientInUnified\")",
+      "Bash(git add \"logos inkpen.io/Views/RightPanel/GradientPanel.swift\" \"logos inkpen.io/Views/RightPanel/GradientPanel/GradientControlViews.swift\")",
+      "Bash(git commit -m \"Add local state for gradient origin controls\")",
+      "Bash(git add \"logos inkpen.io/Views/Cursors/Cursors.swift\" \"logos inkpen.io/Views/DrawingCanvas/DrawingCanvas+GradientEditTool.swift\")",
+      "Bash(git commit -m \"Add live state for gradient centerpoint tool\")",
+      "Bash(git commit -m \"Use only live state during gradient drag\")",
+      "Bash(find \"/Users/toddbruss/Documents/GitHub/logos/logos inkpen.io/Views\" -name \"*.swift\" -exec grep -l \"struct.*ObjectView\\|renderShape\\|fillStyle.*gradient\" {})",
+      "Bash(find \"/Users/toddbruss/Documents/GitHub/logos/logos inkpen.io\" -name \"*.swift\" -exec grep -l \"struct ShapeView\" {} ;)",
+      "Bash(git add -A)",
+      "Bash(git commit -m \"Add live gradient origin binding\")"
     ],
     "deny": [],
     "ask": []

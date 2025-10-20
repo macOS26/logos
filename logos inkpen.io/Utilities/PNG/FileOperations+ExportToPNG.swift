@@ -220,7 +220,9 @@ extension FileOperations {
                         dragPreviewTrigger: false,
                         liveScaleTransform: .identity,
                         layerOpacity: document.layers[layerIndex].opacity,
-                        layerBlendMode: document.layers[layerIndex].blendMode
+                        layerBlendMode: document.layers[layerIndex].blendMode,
+                        liveGradientOriginX: nil,
+                        liveGradientOriginY: nil
                     )
                 }
             }

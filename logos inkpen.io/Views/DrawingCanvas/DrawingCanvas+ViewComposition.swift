@@ -246,7 +246,9 @@ extension DrawingCanvas {
                         dragPreviewTrigger: dragPreviewUpdateTrigger,
                         liveScaleTransform: liveScaleTransform,
                         layerOpacity: layerPreviewOpacities[document.layers[layerIndex].id] ?? document.layers[layerIndex].opacity,
-                        layerBlendMode: document.layers[layerIndex].blendMode
+                        layerBlendMode: document.layers[layerIndex].blendMode,
+                        liveGradientOriginX: liveGradientOriginX,
+                        liveGradientOriginY: liveGradientOriginY
                     )
                     .equatable()
                     .allowsHitTesting(isActiveLayer)

@@ -13,6 +13,8 @@ struct ShapeView: View {
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
     let liveScaleTransform: CGAffineTransform
+    let liveGradientOriginX: Double?
+    let liveGradientOriginY: Double?
 
     @State private var previewFillOpacity: Double? = nil
     @State private var previewStrokeOpacity: Double? = nil
@@ -285,7 +287,24 @@ struct ShapeView: View {
 
         switch fillStyle.color {
         case .gradient(let vectorGradient):
-            GradientFillView(gradient: vectorGradient, path: path.cgPath)
+            // Apply live gradient origin if dragging
+            let effectiveGradient: VectorGradient = {
+                if let liveX = liveGradientOriginX, let liveY = liveGradientOriginY {
+                    switch vectorGradient {
+                    case .linear(var linear):
+                        linear.originPoint.x = liveX
+                        linear.originPoint.y = liveY
+                        return .linear(linear)
+                    case .radial(var radial):
+                        radial.originPoint.x = liveX
+                        radial.originPoint.y = liveY
+                        radial.focalPoint = CGPoint(x: liveX, y: liveY)
+                        return .radial(radial)
+                    }
+                }
+                return vectorGradient
+            }()
+            GradientFillView(gradient: effectiveGradient, path: path.cgPath)
                 .opacity(actualFillOpacity)
 
         default:

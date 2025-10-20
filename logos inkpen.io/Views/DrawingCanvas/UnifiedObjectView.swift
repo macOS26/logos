@@ -10,6 +10,8 @@ struct UnifiedObjectContentView: View {
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
     let liveScaleTransform: CGAffineTransform
+    let liveGradientOriginX: Double?
+    let liveGradientOriginY: Double?
 
     private var layerIsVisible: Bool {
         guard unifiedObject.layerIndex >= 0 && unifiedObject.layerIndex < document.layers.count else {
@@ -111,7 +113,9 @@ struct UnifiedObjectContentView: View {
             isPasteboardLayer: unifiedObject.layerIndex == 0,
             dragPreviewDelta: dragPreviewDelta,
             dragPreviewTrigger: dragPreviewTrigger,
-            liveScaleTransform: liveScaleTransform
+            liveScaleTransform: liveScaleTransform,
+            liveGradientOriginX: liveGradientOriginX,
+            liveGradientOriginY: liveGradientOriginY
         )
         .id("\(shape.id)-\(shape.path.isClosed)-\(latestShape.bounds.hashValue)-\(shape.isClippingPath)-\(shape.clippedByShapeID?.uuidString ?? "none")")
     }
@@ -183,7 +187,9 @@ struct PasteboardBackgroundView: View {
                     viewMode: viewMode,
                     dragPreviewDelta: dragPreviewDelta,
                     dragPreviewTrigger: dragPreviewTrigger,
-                    liveScaleTransform: .identity
+                    liveScaleTransform: .identity,
+                    liveGradientOriginX: nil,
+                    liveGradientOriginY: nil
                 )
             }
         }
@@ -232,7 +238,9 @@ struct CanvasBackgroundView: View {
                     viewMode: viewMode,
                     dragPreviewDelta: dragPreviewDelta,
                     dragPreviewTrigger: dragPreviewTrigger,
-                    liveScaleTransform: .identity
+                    liveScaleTransform: .identity,
+                    liveGradientOriginX: nil,
+                    liveGradientOriginY: nil
                 )
             }
         }
@@ -255,6 +263,8 @@ struct IsolatedLayerView: View, Equatable {
     let liveScaleTransform: CGAffineTransform
     let layerOpacity: Double
     let layerBlendMode: BlendMode
+    let liveGradientOriginX: Double?
+    let liveGradientOriginY: Double?
 
     @State private var cachedImage: NSImage?
 
@@ -337,7 +347,9 @@ struct IsolatedLayerView: View, Equatable {
                         viewMode: viewMode,
                         dragPreviewDelta: dragPreviewDelta,
                         dragPreviewTrigger: dragPreviewTrigger,
-                        liveScaleTransform: liveScaleTransform
+                        liveScaleTransform: liveScaleTransform,
+                        liveGradientOriginX: liveGradientOriginX,
+                        liveGradientOriginY: liveGradientOriginY
                     )
                 }
             }
