@@ -195,17 +195,8 @@ extension DrawingCanvas {
     }
     
     private func updateShapeGradientOptimized(shape: VectorShape, newGradient: VectorGradient, isLiveDrag: Bool) {
-        guard let layerIndex = document.selectedLayerIndex else { return }
-
-        let shapes = document.getShapesForLayer(layerIndex)
-        if shapes.contains(where: { $0.id == shape.id }) {
-            let currentOpacity = shape.fillStyle?.opacity ?? 1.0
-
-            // Batch update: silent during drag, notify only at end
-            document.updateShapeByID(shape.id, silent: isLiveDrag) { shape in
-                shape.fillStyle = FillStyle(gradient: newGradient, opacity: currentOpacity)
-            }
-        }
+        // Use the same method as the Grade panel for live updates
+        document.updateShapeGradientInUnified(id: shape.id, gradient: newGradient, target: document.viewState.activeColorTarget)
     }
     
     private func getSelectedShapeGradient(document: VectorDocument) -> VectorGradient? {
