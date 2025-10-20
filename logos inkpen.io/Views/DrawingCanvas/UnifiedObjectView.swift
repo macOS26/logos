@@ -291,6 +291,10 @@ struct LayerCanvasView: View {
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         ) else { return }
 
+        // Flip the coordinate system to match SwiftUI's top-left origin
+        cgContext.translateBy(x: 0, y: CGFloat(height))
+        cgContext.scaleBy(x: 1.0, y: -1.0)
+
         // Translate to compensate for path bounds
         cgContext.translateBy(x: -pathBounds.minX, y: -pathBounds.minY)
 
