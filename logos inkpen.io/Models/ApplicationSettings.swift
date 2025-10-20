@@ -26,6 +26,12 @@ class ApplicationSettings: ObservableObject {
     @Published var brushRemoveOverlap: Bool = UserDefaults.standard.object(forKey: "brushRemoveOverlap") as? Bool ?? true {
         didSet { UserDefaults.standard.set(brushRemoveOverlap, forKey: "brushRemoveOverlap") }
     }
+    @Published var brushCoincidentPointPasses: Int = UserDefaults.standard.object(forKey: "brushCoincidentPointPasses") as? Int ?? 3 {
+        didSet { UserDefaults.standard.set(brushCoincidentPointPasses, forKey: "brushCoincidentPointPasses") }
+    }
+    @Published var brushUseCanvasPreview: Bool = UserDefaults.standard.object(forKey: "brushUseCanvasPreview") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(brushUseCanvasPreview, forKey: "brushUseCanvasPreview") }
+    }
 
     // MARK: - Advanced Smoothing
     @Published var advancedSmoothingEnabled: Bool = UserDefaults.standard.object(forKey: "advancedSmoothingEnabled") as? Bool ?? false {

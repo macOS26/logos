@@ -202,6 +202,7 @@ struct DrawingCanvas: View {
     @State internal var liveGradientOriginY: Double? = nil
     @State internal var doubleClickTimeout: TimeInterval = 0.3
     @State internal var isTextEditingMode = false
+    @StateObject internal var metalPerformanceMonitor = PerformanceMonitor()
 
     @State internal var zoomToolDragStartPoint: CGPoint = .zero
     @State internal var zoomToolInitialZoomLevel: CGFloat = 1.0

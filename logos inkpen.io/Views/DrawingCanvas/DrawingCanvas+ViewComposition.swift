@@ -76,22 +76,80 @@ extension DrawingCanvas {
 
         rubberBandPreview(geometry: geometry)
 
+        // Brush preview - Canvas (GPU) or Path (CPU) based on setting
         if let preview = brushPreviewPath {
-            if appState.brushPreviewStyle == .fill {
-                Path { path in
-                    addPathElements(preview.elements, to: &path)
+            if ApplicationSettings.shared.brushUseCanvasPreview {
+                // GPU-accelerated Canvas rendering for 60fps
+                Canvas { context, size in
+                    var path = Path()
+                    for element in preview.elements {
+                        switch element {
+                        case .move(let to):
+                            let transformed = CGPoint(
+                                x: to.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                                y: to.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
+                            )
+                            path.move(to: transformed)
+                        case .line(let to):
+                            let transformed = CGPoint(
+                                x: to.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                                y: to.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
+                            )
+                            path.addLine(to: transformed)
+                        case .curve(let to, let c1, let c2):
+                            let transformedTo = CGPoint(
+                                x: to.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                                y: to.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
+                            )
+                            let transformedC1 = CGPoint(
+                                x: c1.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                                y: c1.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
+                            )
+                            let transformedC2 = CGPoint(
+                                x: c2.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                                y: c2.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
+                            )
+                            path.addCurve(to: transformedTo, control1: transformedC1, control2: transformedC2)
+                        case .quadCurve(let to, let control):
+                            let transformedTo = CGPoint(
+                                x: to.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                                y: to.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
+                            )
+                            let transformedControl = CGPoint(
+                                x: control.x * document.viewState.zoomLevel + document.viewState.canvasOffset.x,
+                                y: control.y * document.viewState.zoomLevel + document.viewState.canvasOffset.y
+                            )
+                            path.addQuadCurve(to: transformedTo, control: transformedControl)
+                        case .close:
+                            path.closeSubpath()
+                        }
+                    }
+
+                    if appState.brushPreviewStyle == .fill {
+                        context.fill(path, with: .color(document.defaultFillColor.color.opacity(document.defaultFillOpacity)))
+                    } else {
+                        context.stroke(path, with: .color(.blue), lineWidth: max(1.0, 1.0 / document.viewState.zoomLevel))
+                    }
                 }
-                .fill(document.defaultFillColor.color)
-                .opacity(document.defaultFillOpacity)
-                .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
-                .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
+                .allowsHitTesting(false)
             } else {
-                Path { path in
-                    addPathElements(preview.elements, to: &path)
+                // Original SwiftUI Path rendering (CPU)
+                if appState.brushPreviewStyle == .fill {
+                    Path { path in
+                        addPathElements(preview.elements, to: &path)
+                    }
+                    .fill(document.defaultFillColor.color)
+                    .opacity(document.defaultFillOpacity)
+                    .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+                    .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
+                } else {
+                    Path { path in
+                        addPathElements(preview.elements, to: &path)
+                    }
+                    .stroke(Color.blue, lineWidth: max(1.0, 1.0 / document.viewState.zoomLevel))
+                    .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+                    .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
                 }
-                .stroke(Color.blue, lineWidth: max(1.0, 1.0 / document.viewState.zoomLevel))
-                .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
-                .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
             }
         }
 

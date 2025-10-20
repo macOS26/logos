@@ -109,8 +109,7 @@ extension DrawingCanvas {
     private func updateBrushPreview() {
         guard brushRawPoints.count >= 2 else { return }
 
-        let newPreviewPath = generateLivePreviewPath()
-        brushPreviewPath = newPreviewPath
+        brushPreviewPath = generateLivePreviewPath()
     }
 
     private func generateLivePreviewPath() -> VectorPath {
@@ -289,7 +288,8 @@ extension DrawingCanvas {
                 finalShape.path = VectorPath(cgPath: cleanedPath)
             }
 
-            for _ in 0..<3 {
+            let passes = max(0, min(3, ApplicationSettings.shared.brushCoincidentPointPasses))
+            for _ in 0..<passes {
                 finalShape.path = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: finalShape.path, tolerance: 1.1)
             }
         }
@@ -364,7 +364,8 @@ extension DrawingCanvas {
                 finalPath = VectorPath(cgPath: cleanedPath, fillRule: .winding)
             }
 
-            for _ in 0..<3 {
+            let passes = max(0, min(3, ApplicationSettings.shared.brushCoincidentPointPasses))
+            for _ in 0..<passes {
                 finalPath = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: finalPath, tolerance: 1.1)
             }
         }

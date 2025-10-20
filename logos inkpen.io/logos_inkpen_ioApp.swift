@@ -753,6 +753,23 @@ struct logos_inken_ioApp: App {
                     .help("Switch to corner radius tool")
                 }
 
+                CommandMenu("Debug") {
+                    Button(action: {
+                        appState.showPerformanceOverlay.toggle()
+                    }) {
+                        Label(appState.showPerformanceOverlay ? "Hide Performance Overlay" : "Show Performance Overlay", systemImage: "gauge")
+                    }
+                    .keyboardShortcut("d", modifiers: [.command, .shift])
+                    .help("Toggle our custom performance overlay")
+
+                    Button(action: {
+                        appState.enableSystemMetalHUD.toggle()
+                    }) {
+                        Label(appState.enableSystemMetalHUD ? "Hide Apple Metal HUD" : "Show Apple Metal HUD", systemImage: "cpu")
+                    }
+                    .help("Toggle Apple's system Metal HUD (note: may render behind canvas)")
+                }
+
                 if SandboxChecker.isNotSandboxed {
                     CommandMenu("Donate") {
                         Button(action: {

@@ -3,15 +3,21 @@ import MetalKit
 
 struct SafeMetalView: NSViewRepresentable {
     let renderContent: (CGContext, CGSize) -> Void
+    let performanceMonitor: PerformanceMonitor?
+
+    init(performanceMonitor: PerformanceMonitor? = nil, renderContent: @escaping (CGContext, CGSize) -> Void) {
+        self.performanceMonitor = performanceMonitor
+        self.renderContent = renderContent
+    }
 
     class Coordinator {
         let metalManager: MetalDeviceManager
         let performanceMonitor: PerformanceMonitor
         let renderer: MetalRenderer
 
-        init(renderContent: @escaping (CGContext, CGSize) -> Void) {
+        init(renderContent: @escaping (CGContext, CGSize) -> Void, externalMonitor: PerformanceMonitor?) {
             self.metalManager = MetalDeviceManager()
-            self.performanceMonitor = PerformanceMonitor()
+            self.performanceMonitor = externalMonitor ?? PerformanceMonitor()
             self.renderer = MetalRenderer(
                 renderContent: renderContent,
                 performanceMonitor: self.performanceMonitor,
@@ -22,7 +28,7 @@ struct SafeMetalView: NSViewRepresentable {
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(renderContent: renderContent)
+        Coordinator(renderContent: renderContent, externalMonitor: performanceMonitor)
     }
 
     func makeNSView(context: Context) -> MTKView {
@@ -32,6 +38,15 @@ struct SafeMetalView: NSViewRepresentable {
         metalView.colorPixelFormat = .bgra8Unorm
         metalView.framebufferOnly = false
         metalView.clearColor = MTLClearColorMake(0, 0, 0, 0)
+
+        // Support high refresh rate displays (120fps ProMotion, etc)
+        if let screen = NSScreen.main {
+            let maxFPS = Int(screen.maximumFramesPerSecond)
+            metalView.preferredFramesPerSecond = maxFPS
+        } else {
+            metalView.preferredFramesPerSecond = 120 // Default to 120fps for ProMotion
+        }
+
         metalView.isPaused = true
         metalView.enableSetNeedsDisplay = true
         metalView.layer?.isOpaque = false

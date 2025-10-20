@@ -2,7 +2,7 @@ import SwiftUI
 
 struct UnifiedObjectContentView: View {
     let unifiedObject: VectorObject
-    @ObservedObject var document: VectorDocument
+    var document: VectorDocument
     let zoomLevel: Double
     let canvasOffset: CGPoint
     let selectedObjectIDs: Set<UUID>
