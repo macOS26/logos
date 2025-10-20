@@ -7,13 +7,7 @@ extension DrawingCanvas {
         let filtered = allObjects.filter { obj in
             guard obj.layerIndex < document.layers.count else { return false }
             guard document.layers[obj.layerIndex].isVisible else { return false }
-
-            switch obj.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.name != "Canvas Background" && shape.name != "Pasteboard Background"
-            case .text:
-                return true
-            }
+            return true
         }
 
         let objectsByLayer = Dictionary(grouping: filtered, by: { $0.layerIndex })
@@ -27,13 +21,7 @@ extension DrawingCanvas {
             guard obj.layerIndex == layerIndex else { return false }
             guard obj.layerIndex < document.layers.count else { return false }
             guard document.layers[obj.layerIndex].isVisible else { return false }
-
-            switch obj.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.name != "Canvas Background" && shape.name != "Pasteboard Background"
-            case .text:
-                return true
-            }
+            return true
         }
 
         return filtered.isEmpty ? nil : filtered
@@ -198,23 +186,23 @@ extension DrawingCanvas {
         ZStack {
 
             PasteboardBackgroundView(
-                document: document,
+                pasteboardSize: CGSize(
+                    width: document.settings.sizeInPoints.width * 10,
+                    height: document.settings.sizeInPoints.height * 10
+                ),
+                pasteboardOrigin: CGPoint(
+                    x: -(document.settings.sizeInPoints.width * 10 - document.settings.sizeInPoints.width) / 2,
+                    y: -(document.settings.sizeInPoints.height * 10 - document.settings.sizeInPoints.height) / 2
+                ),
                 zoomLevel: document.viewState.zoomLevel,
-                canvasOffset: document.viewState.canvasOffset,
-                selectedObjectIDs: document.viewState.selectedObjectIDs,
-                viewMode: document.viewState.viewMode,
-                dragPreviewDelta: currentDragDelta,
-                dragPreviewTrigger: dragPreviewUpdateTrigger
+                canvasOffset: document.viewState.canvasOffset
             )
 
             CanvasBackgroundView(
-                document: document,
+                canvasSize: document.settings.sizeInPoints,
+                backgroundColor: document.settings.backgroundColor.color,
                 zoomLevel: document.viewState.zoomLevel,
-                canvasOffset: document.viewState.canvasOffset,
-                selectedObjectIDs: document.viewState.selectedObjectIDs,
-                viewMode: document.viewState.viewMode,
-                dragPreviewDelta: currentDragDelta,
-                dragPreviewTrigger: dragPreviewUpdateTrigger
+                canvasOffset: document.viewState.canvasOffset
             )
 
             if document.gridSettings.showGrid, document.settings.gridSpacing > 0 {
