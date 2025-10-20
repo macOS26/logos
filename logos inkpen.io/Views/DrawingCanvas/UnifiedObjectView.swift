@@ -194,6 +194,233 @@ struct CanvasBackgroundView: View {
     }
 }
 
+struct LayerCanvasView: View {
+    let objects: [VectorObject]
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+    let selectedObjectIDs: Set<UUID>
+    let viewMode: ViewMode
+    let dragPreviewDelta: CGPoint
+
+    var body: some View {
+        GeometryReader { geometry in
+            Canvas { context, size in
+                for object in objects {
+                    guard object.isVisible else { continue }
+
+                    switch object.objectType {
+                    case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                        // Skip shapes with typography (handled by SwiftUI)
+                        if shape.typography != nil { continue }
+
+                        renderShape(shape, in: context, isSelected: selectedObjectIDs.contains(object.id))
+
+                    case .text:
+                        continue  // Text handled by SwiftUI
+                    }
+                }
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+        }
+    }
+
+    private func renderShape(_ shape: VectorShape, in context: GraphicsContext, isSelected: Bool) {
+        // Create CGPath from VectorPath
+        let cgPath = createCGPath(from: shape.path, transform: shape.transform)
+
+        // Apply zoom and offset transform
+        var transformedPath = cgPath
+        var canvasTransform = CGAffineTransform.identity
+            .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
+            .scaledBy(x: zoomLevel, y: zoomLevel)
+
+        if let scaledPath = transformedPath.copy(using: &canvasTransform) {
+            transformedPath = scaledPath
+        }
+
+        var ctx = context
+
+        // Render fill
+        if viewMode == .color, let fillStyle = shape.fillStyle {
+            if let gradient = fillStyle.gradient {
+                // Use CGImage for gradient rendering
+                renderGradientToContext(gradient: gradient, path: transformedPath, isStroke: false, strokeStyle: nil, in: &ctx)
+            } else if fillStyle.color != .clear {
+                ctx.fill(Path(transformedPath), with: .color(fillStyle.color.color.opacity(fillStyle.opacity)))
+            }
+        }
+
+        // Render stroke
+        if viewMode == .keyline {
+            ctx.stroke(Path(transformedPath), with: .color(.black), lineWidth: 1.0 / zoomLevel)
+        } else if let strokeStyle = shape.strokeStyle {
+            if let gradient = strokeStyle.gradient {
+                renderGradientToContext(gradient: gradient, path: transformedPath, isStroke: true, strokeStyle: strokeStyle, in: &ctx)
+            } else if strokeStyle.color != .clear {
+                ctx.stroke(
+                    Path(transformedPath),
+                    with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity)),
+                    style: SwiftUI.StrokeStyle(
+                        lineWidth: strokeStyle.width,
+                        lineCap: strokeStyle.lineCap.cgLineCap,
+                        lineJoin: strokeStyle.lineJoin.cgLineJoin,
+                        miterLimit: strokeStyle.miterLimit
+                    )
+                )
+            }
+        }
+    }
+
+    private func renderGradientToContext(gradient: VectorGradient, path: CGPath, isStroke: Bool, strokeStyle: StrokeStyle?, in context: inout GraphicsContext) {
+        let pathBounds = path.boundingBoxOfPath
+        guard pathBounds.width > 0 && pathBounds.height > 0 else { return }
+
+        // Create an offscreen CGContext to render the gradient
+        let width = Int(pathBounds.width.rounded(.up))
+        let height = Int(pathBounds.height.rounded(.up))
+
+        guard width > 0 && height > 0 else { return }
+
+        guard let cgContext = CGContext(
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return }
+
+        // Translate to compensate for path bounds
+        cgContext.translateBy(x: -pathBounds.minX, y: -pathBounds.minY)
+
+        // Render gradient using existing logic
+        let finalPath = isStroke ? createStrokedPath(path, strokeStyle: strokeStyle, in: cgContext) : path
+        renderCGGradientFill(gradient: gradient, path: finalPath, in: cgContext)
+
+        // Convert to CGImage and draw
+        if let cgImage = cgContext.makeImage() {
+            let image = Image(decorative: cgImage, scale: 1.0)
+            context.draw(image, at: CGPoint(x: pathBounds.midX, y: pathBounds.midY), anchor: .center)
+        }
+    }
+
+    private func createStrokedPath(_ path: CGPath, strokeStyle: StrokeStyle?, in cgContext: CGContext) -> CGPath {
+        guard let strokeStyle = strokeStyle else { return path }
+
+        cgContext.setLineWidth(strokeStyle.width)
+        cgContext.setLineCap(strokeStyle.lineCap.cgLineCap)
+        cgContext.setLineJoin(strokeStyle.lineJoin.cgLineJoin)
+        cgContext.setMiterLimit(strokeStyle.miterLimit)
+        cgContext.addPath(path)
+        cgContext.replacePathWithStrokedPath()
+
+        return cgContext.path ?? path
+    }
+
+    private func renderCGGradientFill(gradient: VectorGradient, path: CGPath, in cgContext: CGContext) {
+        cgContext.saveGState()
+
+        let pathBounds = path.boundingBoxOfPath
+        let colors = gradient.stops.map { stop -> CGColor in
+            if case .clear = stop.color {
+                return stop.color.cgColor
+            } else {
+                return stop.color.color.opacity(stop.opacity).cgColor ?? stop.color.cgColor
+            }
+        }
+        let locations: [CGFloat] = gradient.stops.map { CGFloat($0.position) }
+
+        guard let cgGradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: locations) else {
+            cgContext.restoreGState()
+            return
+        }
+
+        cgContext.addPath(path)
+        cgContext.clip()
+
+        switch gradient {
+        case .linear(let linear):
+            let originX = linear.originPoint.x
+            let originY = linear.originPoint.y
+            let scale = CGFloat(linear.scaleX)
+            let scaledOriginX = originX * scale
+            let scaledOriginY = originY * scale
+            let centerX = pathBounds.minX + pathBounds.width * scaledOriginX
+            let centerY = pathBounds.minY + pathBounds.height * scaledOriginY
+            let gradientAngle = CGFloat(linear.storedAngle * .pi / 180.0)
+            let gradientVector = CGPoint(x: linear.endPoint.x - linear.startPoint.x, y: linear.endPoint.y - linear.startPoint.y)
+            let gradientLength = sqrt(gradientVector.x * gradientVector.x + gradientVector.y * gradientVector.y)
+            let scaledLength = gradientLength * CGFloat(scale) * max(pathBounds.width, pathBounds.height)
+
+            let startX = centerX - cos(gradientAngle) * scaledLength / 2
+            let startY = centerY - sin(gradientAngle) * scaledLength / 2
+            let endX = centerX + cos(gradientAngle) * scaledLength / 2
+            let endY = centerY + sin(gradientAngle) * scaledLength / 2
+            let startPoint = CGPoint(x: startX, y: startY)
+            let endPoint = CGPoint(x: endX, y: endY)
+
+            cgContext.drawLinearGradient(cgGradient, start: startPoint, end: endPoint, options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+
+        case .radial(let radial):
+            let originX = radial.originPoint.x
+            let originY = radial.originPoint.y
+            let center = CGPoint(x: pathBounds.minX + pathBounds.width * originX,
+                                 y: pathBounds.minY + pathBounds.height * originY)
+
+            cgContext.saveGState()
+            cgContext.translateBy(x: center.x, y: center.y)
+
+            let angleRadians = CGFloat(radial.angle * .pi / 180.0)
+            cgContext.rotate(by: angleRadians)
+
+            let scaleX = CGFloat(radial.scaleX)
+            let scaleY = CGFloat(radial.scaleY)
+            cgContext.scaleBy(x: scaleX, y: scaleY)
+
+            let focalPoint: CGPoint
+            if let focal = radial.focalPoint {
+                focalPoint = CGPoint(x: focal.x, y: focal.y)
+            } else {
+                focalPoint = CGPoint.zero
+            }
+
+            let radius = max(pathBounds.width, pathBounds.height) * CGFloat(radial.radius)
+            cgContext.drawRadialGradient(cgGradient, startCenter: focalPoint, startRadius: 0, endCenter: CGPoint.zero, endRadius: radius, options: [.drawsAfterEndLocation])
+
+            cgContext.restoreGState()
+        }
+
+        cgContext.restoreGState()
+    }
+
+    private func createCGPath(from vectorPath: VectorPath, transform: CGAffineTransform) -> CGPath {
+        let path = CGMutablePath()
+
+        for element in vectorPath.elements {
+            switch element {
+            case .move(let to):
+                path.move(to: to.cgPoint)
+            case .line(let to):
+                path.addLine(to: to.cgPoint)
+            case .curve(let to, let control1, let control2):
+                path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+            case .quadCurve(let to, let control):
+                path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+            case .close:
+                path.closeSubpath()
+            }
+        }
+
+        if !transform.isIdentity {
+            var mutableTransform = transform
+            return path.copy(using: &mutableTransform) ?? path
+        }
+
+        return path
+    }
+}
+
 struct IsolatedLayerView: View, Equatable {
     let objects: [VectorObject]
     let layerID: UUID
@@ -276,31 +503,51 @@ struct IsolatedLayerView: View, Equatable {
 
     var body: some View {
         ZStack {
-            // DISABLED: Inactive layer caching temporarily disabled
-            // TODO: Re-enable after fixing fonts undo/redo
+            // Render paths using Canvas (gradients and text still use SwiftUI)
+            LayerCanvasView(
+                objects: objects,
+                zoomLevel: zoomLevel,
+                canvasOffset: canvasOffset,
+                selectedObjectIDs: selectedObjectIDs,
+                viewMode: viewMode,
+                dragPreviewDelta: dragPreviewDelta
+            )
 
-            // Render live SwiftUI views
+            // Render text and gradients using SwiftUI views
             ForEach(objects, id: \.id) { unifiedObject in
                 if unifiedObject.isVisible {
-                    UnifiedObjectContentView(
-                        unifiedObject: unifiedObject,
-                        document: document,
-                        zoomLevel: zoomLevel,
-                        canvasOffset: canvasOffset,
-                        selectedObjectIDs: selectedObjectIDs,
-                        viewMode: viewMode,
-                        dragPreviewDelta: dragPreviewDelta,
-                        dragPreviewTrigger: dragPreviewTrigger,
-                        liveScaleTransform: liveScaleTransform,
-                        liveGradientOriginX: liveGradientOriginX,
-                        liveGradientOriginY: liveGradientOriginY
-                    )
+                    let needsSwiftUIRendering = checkNeedsSwiftUIRendering(unifiedObject)
+                    if needsSwiftUIRendering {
+                        UnifiedObjectContentView(
+                            unifiedObject: unifiedObject,
+                            document: document,
+                            zoomLevel: zoomLevel,
+                            canvasOffset: canvasOffset,
+                            selectedObjectIDs: selectedObjectIDs,
+                            viewMode: viewMode,
+                            dragPreviewDelta: dragPreviewDelta,
+                            dragPreviewTrigger: dragPreviewTrigger,
+                            liveScaleTransform: liveScaleTransform,
+                            liveGradientOriginX: liveGradientOriginX,
+                            liveGradientOriginY: liveGradientOriginY
+                        )
+                    }
                 }
             }
         }
         .opacity(layerOpacity)
-
         .blendMode(layerBlendMode.swiftUIBlendMode)
+    }
+
+    private func checkNeedsSwiftUIRendering(_ object: VectorObject) -> Bool {
+        switch object.objectType {
+        case .text:
+            return true  // Text needs SwiftUI
+        case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+            // Only text shapes with typography need SwiftUI, all others rendered by Canvas (including gradients)
+            if shape.typography != nil { return true }
+            return false
+        }
     }
 
     private func renderLayerToCache() {
