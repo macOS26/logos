@@ -89,7 +89,15 @@
       "Bash(git add \"logos inkpen.io/Models/AppState.swift\")",
       "Bash(git commit -m \"Add performance overlay toggle\")",
       "Bash(git add \"logos inkpen.io/Utilities/Metal/PerformanceMonitor.swift\")",
-      "Bash(git commit -m \"Add CVDisplayLink for real FPS tracking\")"
+      "Bash(git commit -m \"Add CVDisplayLink for real FPS tracking\")",
+      "Bash(git add \"logos inkpen.io/Views/DrawingCanvas/UnifiedObjectView.swift\")",
+      "Bash(git commit -m \"Canvas/Pasteboard to SwiftUI Canvas\")",
+      "Bash(git add \"logos inkpen.io/Views/DrawingCanvas/DrawingCanvas+ViewComposition.swift\")",
+      "Bash(git commit -m \"Update background view params\")",
+      "Bash(git add \"logos inkpen.io/Utilities/Vector/VectorDocument+CanvasManagement.swift\")",
+      "Bash(git commit -m \"Remove background shape management\")",
+      "Bash(git commit -m \"Render backgrounds per layer visibility\")",
+      "Bash(git commit -m \"Fix grid z-order over Canvas background\")"
     ],
     "deny": [],
     "ask": []

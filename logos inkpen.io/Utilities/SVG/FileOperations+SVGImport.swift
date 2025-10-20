@@ -95,9 +95,6 @@ extension FileOperations {
             document.settings.height = docSize.height / 72.0
         }
 
-        document.updateCanvasLayer()
-        document.updatePasteboardLayer()
-
         let importedLayer = VectorLayer(name: "Imported SVG", isVisible: true, isLocked: false, opacity: 1.0, blendMode: .normal)
 
         if document.layers.count < 3 {

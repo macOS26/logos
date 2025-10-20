@@ -77,9 +77,6 @@ extension FileOperations {
         document.settings.height = canvasHeight / 72.0
         document.settings.unit = .inches
 
-        document.updateCanvasLayer()
-        document.updatePasteboardLayer()
-
         for shape in result.shapes {
             var importedShape = shape
 

@@ -183,23 +183,23 @@ extension FileOperations {
         let contentView = ZStack {
             if includeBackground {
                 PasteboardBackgroundView(
-                    document: document,
+                    pasteboardSize: CGSize(
+                        width: document.settings.sizeInPoints.width * 10,
+                        height: document.settings.sizeInPoints.height * 10
+                    ),
+                    pasteboardOrigin: CGPoint(
+                        x: -(document.settings.sizeInPoints.width * 10 - document.settings.sizeInPoints.width) / 2,
+                        y: -(document.settings.sizeInPoints.height * 10 - document.settings.sizeInPoints.height) / 2
+                    ),
                     zoomLevel: scale,
-                    canvasOffset: .zero,
-                    selectedObjectIDs: [],
-                    viewMode: .color,
-                    dragPreviewDelta: .zero,
-                    dragPreviewTrigger: false
+                    canvasOffset: .zero
                 )
 
                 CanvasBackgroundView(
-                    document: document,
+                    canvasSize: document.settings.sizeInPoints,
+                    backgroundColor: document.settings.backgroundColor.color,
                     zoomLevel: scale,
-                    canvasOffset: .zero,
-                    selectedObjectIDs: [],
-                    viewMode: .color,
-                    dragPreviewDelta: .zero,
-                    dragPreviewTrigger: false
+                    canvasOffset: .zero
                 )
             }
 

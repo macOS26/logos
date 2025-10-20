@@ -47,4 +47,33 @@ extension VectorDocument {
     func onSettingsChanged() {
         // Background layers now rendered via SwiftUI Canvas - no update needed
     }
+
+    /// Migrate old documents that have background shapes to new Canvas-based rendering
+    func migrateBackgroundShapesToCanvas() {
+        var needsMigration = false
+
+        // Check if Pasteboard layer (index 0) has a background shape
+        if layers.count > 0 && layers[0].name == "Pasteboard" {
+            let pasteboardShapes = getShapesForLayer(0)
+            if let bgShape = pasteboardShapes.first(where: { $0.name == "Pasteboard Background" }) {
+                needsMigration = true
+                Log.info("🔄 Found old Pasteboard Background shape - removing for Canvas migration", category: .general)
+                removeShapeFromUnifiedSystem(id: bgShape.id)
+            }
+        }
+
+        // Check if Canvas layer (index 1) has a background shape
+        if layers.count > 1 && layers[1].name == "Canvas" {
+            let canvasShapes = getShapesForLayer(1)
+            if let bgShape = canvasShapes.first(where: { $0.name == "Canvas Background" }) {
+                needsMigration = true
+                Log.info("🔄 Found old Canvas Background shape - removing for Canvas migration", category: .general)
+                removeShapeFromUnifiedSystem(id: bgShape.id)
+            }
+        }
+
+        if needsMigration {
+            Log.info("✅ Document migrated to SwiftUI Canvas-based backgrounds", category: .general)
+        }
+    }
 }
