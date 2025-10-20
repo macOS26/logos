@@ -1,26 +1,12 @@
 import SwiftUI
 
 extension DrawingCanvas {
-    // Get visible layer indices
-    private func visibleLayerIndices() -> [Int] {
-        let allObjects = document.getObjectsInStackingOrder()
-        let filtered = allObjects.filter { obj in
-            guard obj.layerIndex < document.layers.count else { return false }
-            guard document.layers[obj.layerIndex].isVisible else { return false }
-            return true
-        }
-
-        let objectsByLayer = Dictionary(grouping: filtered, by: { $0.layerIndex })
-        return objectsByLayer.keys.sorted()
-    }
-
     // Get objects for a specific layer
     private func objectsForLayer(_ layerIndex: Int) -> [VectorObject]? {
         let allObjects = document.getObjectsInStackingOrder()
         let filtered = allObjects.filter { obj in
             guard obj.layerIndex == layerIndex else { return false }
             guard obj.layerIndex < document.layers.count else { return false }
-            guard document.layers[obj.layerIndex].isVisible else { return false }
             return true
         }
 
@@ -185,26 +171,6 @@ extension DrawingCanvas {
     internal func canvasBaseContent(geometry: GeometryProxy) -> some View {
         ZStack {
 
-            PasteboardBackgroundView(
-                pasteboardSize: CGSize(
-                    width: document.settings.sizeInPoints.width * 10,
-                    height: document.settings.sizeInPoints.height * 10
-                ),
-                pasteboardOrigin: CGPoint(
-                    x: -(document.settings.sizeInPoints.width * 10 - document.settings.sizeInPoints.width) / 2,
-                    y: -(document.settings.sizeInPoints.height * 10 - document.settings.sizeInPoints.height) / 2
-                ),
-                zoomLevel: document.viewState.zoomLevel,
-                canvasOffset: document.viewState.canvasOffset
-            )
-
-            CanvasBackgroundView(
-                canvasSize: document.settings.sizeInPoints,
-                backgroundColor: document.settings.backgroundColor.color,
-                zoomLevel: document.viewState.zoomLevel,
-                canvasOffset: document.viewState.canvasOffset
-            )
-
             if document.gridSettings.showGrid, document.settings.gridSpacing > 0 {
                 GridView(
                     gridSpacing: document.settings.gridSpacing,
@@ -217,29 +183,61 @@ extension DrawingCanvas {
                 .allowsHitTesting(false)
             }
 
-            // Render layers directly without parent view to avoid @ObservedObject re-renders
-            ForEach(visibleLayerIndices(), id: \.self) { layerIndex in
-                if let objects = objectsForLayer(layerIndex) {
-                    let isActiveLayer = document.activeLayerIndexDuringDrag == nil || document.activeLayerIndexDuringDrag == layerIndex
+            // Render layers with background fills for special layers
+            ForEach(document.layers.indices, id: \.self) { layerIndex in
+                if document.layers[layerIndex].isVisible {
+                    let layer = document.layers[layerIndex]
+                    let layerOpacity = layerPreviewOpacities[layer.id] ?? layer.opacity
+                    let layerBlendMode = layer.blendMode
 
-                    IsolatedLayerView(
-                        objects: objects,
-                        layerID: document.layers[layerIndex].id,
-                        document: document,
-                        zoomLevel: document.viewState.zoomLevel,
-                        canvasOffset: document.viewState.canvasOffset,
-                        selectedObjectIDs: document.viewState.selectedObjectIDs,
-                        viewMode: document.viewState.viewMode,
-                        dragPreviewDelta: isActiveLayer ? currentDragDelta : .zero,
-                        dragPreviewTrigger: dragPreviewUpdateTrigger,
-                        liveScaleTransform: liveScaleTransform,
-                        layerOpacity: layerPreviewOpacities[document.layers[layerIndex].id] ?? document.layers[layerIndex].opacity,
-                        layerBlendMode: document.layers[layerIndex].blendMode,
-                        liveGradientOriginX: liveGradientOriginX,
-                        liveGradientOriginY: liveGradientOriginY
-                    )
-                    .equatable()
-                    .allowsHitTesting(isActiveLayer)
+                    if layer.name == "Pasteboard" {
+                        PasteboardBackgroundView(
+                            pasteboardSize: CGSize(
+                                width: document.settings.sizeInPoints.width * 10,
+                                height: document.settings.sizeInPoints.height * 10
+                            ),
+                            pasteboardOrigin: CGPoint(
+                                x: -(document.settings.sizeInPoints.width * 10 - document.settings.sizeInPoints.width) / 2,
+                                y: -(document.settings.sizeInPoints.height * 10 - document.settings.sizeInPoints.height) / 2
+                            ),
+                            zoomLevel: document.viewState.zoomLevel,
+                            canvasOffset: document.viewState.canvasOffset
+                        )
+                        .opacity(layerOpacity)
+                        .blendMode(layerBlendMode.swiftUIBlendMode)
+                    } else if layer.name == "Canvas" {
+                        CanvasBackgroundView(
+                            canvasSize: document.settings.sizeInPoints,
+                            backgroundColor: document.settings.backgroundColor.color,
+                            zoomLevel: document.viewState.zoomLevel,
+                            canvasOffset: document.viewState.canvasOffset
+                        )
+                        .opacity(layerOpacity)
+                        .blendMode(layerBlendMode.swiftUIBlendMode)
+                    }
+
+                    if let objects = objectsForLayer(layerIndex) {
+                        let isActiveLayer = document.activeLayerIndexDuringDrag == nil || document.activeLayerIndexDuringDrag == layerIndex
+
+                        IsolatedLayerView(
+                            objects: objects,
+                            layerID: layer.id,
+                            document: document,
+                            zoomLevel: document.viewState.zoomLevel,
+                            canvasOffset: document.viewState.canvasOffset,
+                            selectedObjectIDs: document.viewState.selectedObjectIDs,
+                            viewMode: document.viewState.viewMode,
+                            dragPreviewDelta: isActiveLayer ? currentDragDelta : .zero,
+                            dragPreviewTrigger: dragPreviewUpdateTrigger,
+                            liveScaleTransform: liveScaleTransform,
+                            layerOpacity: layerOpacity,
+                            layerBlendMode: layerBlendMode,
+                            liveGradientOriginX: liveGradientOriginX,
+                            liveGradientOriginY: liveGradientOriginY
+                        )
+                        .equatable()
+                        .allowsHitTesting(isActiveLayer)
+                    }
                 }
             }
 
