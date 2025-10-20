@@ -468,6 +468,7 @@ struct GradientFillSection: View {
 
     func addColorStop() {
         guard let gradient = currentGradient else { return }
+        let oldGradient = gradient
 
         let stops = getGradientStops(gradient)
         let newPosition = stops.count > 1 ? (stops[stops.count-2].position + stops[stops.count-1].position) / 2 : 0.5
@@ -485,10 +486,16 @@ struct GradientFillSection: View {
             currentGradient = .radial(radial)
             applyGradientToSelectedShapes()
         }
+
+        // Create undo command
+        if let newGradient = currentGradient {
+            createGradientUndoCommand(oldGradient: oldGradient, newGradient: newGradient)
+        }
     }
 
     func removeColorStop(stopId: UUID) {
         guard let gradient = currentGradient else { return }
+        let oldGradient = gradient
 
         switch gradient {
         case .linear(var linear):
@@ -506,10 +513,81 @@ struct GradientFillSection: View {
                 applyGradientToSelectedShapes()
             }
         }
+
+        // Create undo command
+        if let newGradient = currentGradient {
+            createGradientUndoCommand(oldGradient: oldGradient, newGradient: newGradient)
+        }
+    }
+
+    private func createGradientUndoCommand(oldGradient: VectorGradient, newGradient: VectorGradient) {
+        var oldGradients: [UUID: VectorGradient?] = [:]
+        var newGradients: [UUID: VectorGradient?] = [:]
+        var oldOpacities: [UUID: Double] = [:]
+        var newOpacities: [UUID: Double] = [:]
+
+        for objectID in document.viewState.selectedObjectIDs {
+            if let shape = document.findShape(by: objectID) {
+                oldGradients[objectID] = oldGradient
+                newGradients[objectID] = newGradient
+                let opacity = shape.fillStyle?.opacity ?? 1.0
+                oldOpacities[objectID] = opacity
+                newOpacities[objectID] = opacity
+            }
+        }
+
+        let command = GradientCommand(
+            objectIDs: Array(document.viewState.selectedObjectIDs),
+            target: .fill,
+            oldGradients: oldGradients,
+            newGradients: newGradients,
+            oldOpacities: oldOpacities,
+            newOpacities: newOpacities
+        )
+        document.commandManager.execute(command)
     }
 
     func applyGradientToSelectedShapes() {
+        guard let newGradient = currentGradient else { return }
+
+        // Capture old gradients before applying
+        var oldGradients: [UUID: VectorGradient?] = [:]
+        var oldOpacities: [UUID: Double] = [:]
+
+        for objectID in document.viewState.selectedObjectIDs {
+            if let shape = document.findShape(by: objectID) {
+                if let fillStyle = shape.fillStyle, case .gradient(let gradient) = fillStyle.color {
+                    oldGradients[objectID] = gradient
+                    oldOpacities[objectID] = fillStyle.opacity
+                } else {
+                    oldGradients[objectID] = nil
+                    oldOpacities[objectID] = 1.0
+                }
+            }
+        }
+
         applyGradientToSelectedShapesOptimized(isLiveDrag: false)
+
+        // Create undo command
+        var newGradients: [UUID: VectorGradient?] = [:]
+        var newOpacities: [UUID: Double] = [:]
+
+        for objectID in document.viewState.selectedObjectIDs {
+            if let shape = document.findShape(by: objectID) {
+                newGradients[objectID] = newGradient
+                newOpacities[objectID] = shape.fillStyle?.opacity ?? 1.0
+            }
+        }
+
+        let command = GradientCommand(
+            objectIDs: Array(document.viewState.selectedObjectIDs),
+            target: .fill,
+            oldGradients: oldGradients,
+            newGradients: newGradients,
+            oldOpacities: oldOpacities,
+            newOpacities: newOpacities
+        )
+        document.commandManager.execute(command)
     }
 
     func applyGradientToSelectedShapesOptimized(isLiveDrag: Bool) {
