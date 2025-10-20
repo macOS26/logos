@@ -170,19 +170,6 @@ extension DrawingCanvas {
     @ViewBuilder
     internal func canvasBaseContent(geometry: GeometryProxy) -> some View {
         ZStack {
-
-            if document.gridSettings.showGrid, document.settings.gridSpacing > 0 {
-                GridView(
-                    gridSpacing: document.settings.gridSpacing,
-                    canvasSize: document.settings.sizeInPoints,
-                    unit: document.settings.unit,
-                    zoomLevel: document.viewState.zoomLevel,
-                    canvasOffset: document.viewState.canvasOffset
-                )
-                .equatable()
-                .allowsHitTesting(false)
-            }
-
             // Render layers with background fills for special layers
             ForEach(document.layers.indices, id: \.self) { layerIndex in
                 if document.layers[layerIndex].isVisible {
@@ -206,12 +193,26 @@ extension DrawingCanvas {
                         .opacity(layerOpacity)
                         .blendMode(layerBlendMode.swiftUIBlendMode)
                     } else if layer.name == "Canvas" {
-                        CanvasBackgroundView(
-                            canvasSize: document.settings.sizeInPoints,
-                            backgroundColor: document.settings.backgroundColor.color,
-                            zoomLevel: document.viewState.zoomLevel,
-                            canvasOffset: document.viewState.canvasOffset
-                        )
+                        ZStack {
+                            CanvasBackgroundView(
+                                canvasSize: document.settings.sizeInPoints,
+                                backgroundColor: document.settings.backgroundColor.color,
+                                zoomLevel: document.viewState.zoomLevel,
+                                canvasOffset: document.viewState.canvasOffset
+                            )
+
+                            if document.gridSettings.showGrid, document.settings.gridSpacing > 0 {
+                                GridView(
+                                    gridSpacing: document.settings.gridSpacing,
+                                    canvasSize: document.settings.sizeInPoints,
+                                    unit: document.settings.unit,
+                                    zoomLevel: document.viewState.zoomLevel,
+                                    canvasOffset: document.viewState.canvasOffset
+                                )
+                                .equatable()
+                                .allowsHitTesting(false)
+                            }
+                        }
                         .opacity(layerOpacity)
                         .blendMode(layerBlendMode.swiftUIBlendMode)
                     }
