@@ -228,11 +228,16 @@ struct LayerCanvasView: View {
         // Create CGPath from VectorPath
         let cgPath = createCGPath(from: shape.path, transform: shape.transform)
 
-        // Apply zoom and offset transform
+        // Apply zoom and offset transform, plus drag preview for selected shapes
         var transformedPath = cgPath
         var canvasTransform = CGAffineTransform.identity
             .translatedBy(x: canvasOffset.x, y: canvasOffset.y)
             .scaledBy(x: zoomLevel, y: zoomLevel)
+
+        // Apply drag preview delta for selected shapes
+        if isSelected && dragPreviewDelta != .zero {
+            canvasTransform = canvasTransform.translatedBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+        }
 
         if let scaledPath = transformedPath.copy(using: &canvasTransform) {
             transformedPath = scaledPath
