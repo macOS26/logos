@@ -172,25 +172,6 @@ struct VariableStrokeSection: View {
 
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("GPU Preview")
-                            .font(.subheadline)
-                            .foregroundColor(Color.ui.primaryText)
-                        Text("Use Canvas for faster brush preview")
-                            .font(.caption)
-                            .foregroundColor(Color.ui.secondaryText)
-                    }
-                    Spacer()
-                    Toggle("", isOn: Binding(
-                        get: { ApplicationSettings.shared.brushUseCanvasPreview },
-                        set: { ApplicationSettings.shared.brushUseCanvasPreview = $0 }
-                    ))
-                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-                    .controlSize(.small)
-                    .help("Use GPU-accelerated Canvas for brush preview (faster)")
-                }
-
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
                         Text("Remove Overlap")
                             .font(.subheadline)
                             .foregroundColor(Color.ui.primaryText)
@@ -206,28 +187,6 @@ struct VariableStrokeSection: View {
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                     .controlSize(.small)
                     .help("When enabled, overlapping parts of brush strokes will be merged using union operation")
-                }
-
-                if ApplicationSettings.shared.brushRemoveOverlap {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Coincident Point Passes")
-                                .font(.subheadline)
-                                .foregroundColor(Color.ui.secondaryText)
-                            Spacer()
-                            Text("\(ApplicationSettings.shared.brushCoincidentPointPasses)")
-                                .font(.subheadline)
-                                .foregroundColor(Color.ui.primaryText)
-                                .monospacedDigit()
-                        }
-
-                        Slider(value: Binding(
-                            get: { Double(ApplicationSettings.shared.brushCoincidentPointPasses) },
-                            set: { ApplicationSettings.shared.brushCoincidentPointPasses = Int($0) }
-                        ), in: 0...3, step: 1)
-                        .controlSize(.regular)
-                        .help("Number of passes to remove duplicate/coincident points (0-3). Lower values preserve more path detail.")
-                    }
                 }
             }
 

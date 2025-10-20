@@ -7,35 +7,51 @@ extension DrawingCanvas {
 
     @ViewBuilder
     internal func optionalMetalAcceleratedOverlay(geometry: GeometryProxy) -> some View {
-        SafeMetalView(performanceMonitor: metalPerformanceMonitor) { cgContext, size in
+        SafeMetalView { cgContext, size in
             renderCanvasWithMetal(cgContext: cgContext, size: size, geometry: geometry)
+            if let preview = brushPreviewPath {
+                cgContext.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 0))
+                cgContext.setStrokeColor(CGColor(red: 0, green: 0, blue: 0, alpha: 0))
+                let cgPath = CGMutablePath()
+                for e in preview.elements {
+                    switch e {
+                    case .move(let to):
+                        cgPath.move(to: transformPointToView(to.cgPoint, geometry: geometry))
+                    case .line(let to):
+                        cgPath.addLine(to: transformPointToView(to.cgPoint, geometry: geometry))
+                    case .curve(let to, let c1, let c2):
+                        cgPath.addCurve(to: transformPointToView(to.cgPoint, geometry: geometry),
+                                        control1: transformPointToView(c1.cgPoint, geometry: geometry),
+                                        control2: transformPointToView(c2.cgPoint, geometry: geometry))
+                    case .quadCurve(let to, let c):
+                        cgPath.addQuadCurve(to: transformPointToView(to.cgPoint, geometry: geometry),
+                                            control: transformPointToView(c.cgPoint, geometry: geometry))
+                    case .close:
+                        if !cgPath.isEmpty {
+                            cgPath.closeSubpath()
+                        }
+                    }
+                }
+                cgContext.addPath(cgPath)
+                cgContext.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 0.0))
+                cgContext.fillPath()
+            }
         }
         .allowsHitTesting(true)
     }
 
     private func renderCanvasWithMetal(cgContext: CGContext, size: CGSize, geometry: GeometryProxy) {
-        // Calculate viewport bounds for culling off-screen content
-        let viewportBounds = CGRect(
-            x: -document.viewState.canvasOffset.x / document.viewState.zoomLevel,
-            y: -document.viewState.canvasOffset.y / document.viewState.zoomLevel,
-            width: size.width / document.viewState.zoomLevel,
-            height: size.height / document.viewState.zoomLevel
-        )
 
         if document.gridSettings.snapToGrid {
             renderGridWithMetal(cgContext: cgContext, size: size, geometry: geometry)
         }
 
         if let currentPath = currentPath, isDrawing {
-            // Only render if visible in viewport
-            let pathBounds = currentPath.cgPath.boundingBoxOfPath
-            if viewportBounds.intersects(pathBounds) {
-                renderCurrentPathWithMetal(cgContext: cgContext, path: currentPath, geometry: geometry)
-            }
+            renderCurrentPathWithMetal(cgContext: cgContext, path: currentPath, geometry: geometry)
         }
 
         if !document.viewState.selectedObjectIDs.isEmpty {
-            renderSelectionOverlaysWithMetal(cgContext: cgContext, geometry: geometry, viewportBounds: viewportBounds)
+            renderSelectionOverlaysWithMetal(cgContext: cgContext, geometry: geometry)
         }
 
         if document.gridSettings.snapToPoint, let snapPoint = currentSnapPoint {
@@ -103,17 +119,14 @@ extension DrawingCanvas {
         cgContext.strokePath()
     }
 
-    private func renderSelectionOverlaysWithMetal(cgContext: CGContext, geometry: GeometryProxy, viewportBounds: CGRect) {
+    private func renderSelectionOverlaysWithMetal(cgContext: CGContext, geometry: GeometryProxy) {
         cgContext.setFillColor(CGColor(red: 0.0, green: 0.5, blue: 1.0, alpha: 0.1))
 
         for shapeID in document.viewState.selectedObjectIDs {
             if let shape = findShape(by: shapeID) {
                 let bounds = shape.bounds
-                // Cull shapes outside viewport
-                if viewportBounds.intersects(bounds) {
-                    let transformedBounds = transformRectToView(bounds, geometry: geometry)
-                    cgContext.fill(transformedBounds)
-                }
+                let transformedBounds = transformRectToView(bounds, geometry: geometry)
+                cgContext.fill(transformedBounds)
             }
         }
     }
@@ -178,30 +191,6 @@ extension DrawingCanvas {
 extension DrawingCanvas {
 
     @ViewBuilder
-    private func performanceOverlay() -> some View {
-        let totalObjects = document.unifiedObjects.count
-        let visibleLayers = document.layers.filter { $0.isVisible }.count
-
-        VStack(alignment: .leading, spacing: 4) {
-            Text("FPS: \(Int(metalPerformanceMonitor.fps))")
-            Text("Frame: \(String(format: "%.1f", metalPerformanceMonitor.frameTime))ms")
-            Text("\(metalPerformanceMonitor.renderingMode)")
-            Text("Device: \(metalPerformanceMonitor.metalDeviceName)")
-            Text("Draws: \(metalPerformanceMonitor.drawCallCount)")
-            Text("Objects: \(totalObjects)")
-            Text("Layers: \(visibleLayers)/\(document.layers.count)")
-        }
-        .font(.system(size: 10, design: .monospaced))
-        .padding(8)
-        .background(Color.black.opacity(0.75))
-        .foregroundColor(Color.green)
-        .cornerRadius(6)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(16)
-        .allowsHitTesting(false)
-    }
-
-    @ViewBuilder
     internal func enhancedCanvasMainContent(geometry: GeometryProxy) -> some View {
         ZStack {
             optionalMetalAcceleratedOverlay(geometry: geometry)
@@ -217,10 +206,6 @@ extension DrawingCanvas {
                 zoomLevel: document.viewState.zoomLevel,
                 canvasOffset: document.viewState.canvasOffset
             )
-
-            if appState.showPerformanceOverlay {
-                performanceOverlay()
-            }
         }
         .onAppear {
             setupCanvas()
