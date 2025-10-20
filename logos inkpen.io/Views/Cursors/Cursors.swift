@@ -197,6 +197,9 @@ struct DrawingCanvas: View {
     @State internal var isPanGestureActive = false
     @State internal var lastClickTime: Date = Date.distantPast
     @State internal var lastClickLocation: CGPoint = .zero
+
+    @State internal var liveGradientOriginX: Double? = nil
+    @State internal var liveGradientOriginY: Double? = nil
     @State internal var doubleClickTimeout: TimeInterval = 0.3
     @State internal var isTextEditingMode = false
 
