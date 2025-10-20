@@ -230,7 +230,8 @@ extension VectorDocument {
             case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
                 switch target {
                 case .fill:
-                    shape.fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
+                    let currentOpacity = shape.fillStyle?.opacity ?? 1.0
+                    shape.fillStyle = FillStyle(gradient: gradient, opacity: currentOpacity)
                 case .stroke:
                     let currentStroke = shape.strokeStyle
                     shape.strokeStyle = StrokeStyle(
