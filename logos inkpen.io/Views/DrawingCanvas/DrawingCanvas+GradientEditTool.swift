@@ -115,12 +115,9 @@ extension DrawingCanvas {
         let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
         let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
 
-        // Update live state for immediate UI feedback
+        // Update live state ONLY for immediate UI feedback
         liveGradientOriginX = relativeX
         liveGradientOriginY = relativeY
-
-        // Silent update to document
-        updateGradientOriginXYOptimized(relativeX, relativeY, shape: shape, applyToShapes: true, isLiveDrag: true)
     }
 
     private func handleGradientCenterDragEnd(value: DragGesture.Value, geometry: GeometryProxy, shape: VectorShape, gradient: VectorGradient) {
