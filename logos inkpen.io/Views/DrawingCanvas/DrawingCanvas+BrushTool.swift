@@ -630,6 +630,12 @@ extension DrawingCanvas {
             offsetPoints.append(offsetPoint)
         }
 
+        // Apply coincident point removal based on user setting
+        let passes = ApplicationSettings.shared.brushCoincidentPointPasses
+        if passes > 0 {
+            return DrawingCanvasPathHelpers.removeCoincidentPoints(offsetPoints, passes: passes, tolerance: 0.1)
+        }
+
         return offsetPoints
     }
 

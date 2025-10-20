@@ -130,6 +130,26 @@ struct VariableStrokeSection: View {
                 .help("Minimum thickness at taper ends (0-15 points)")
             }
 
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Coincident Point Passes")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.secondaryText)
+                    Spacer()
+                    Text("\(ApplicationSettings.shared.brushCoincidentPointPasses)")
+                        .font(.subheadline)
+                        .foregroundColor(Color.ui.primaryText)
+                        .monospacedDigit()
+                }
+
+                Slider(value: Binding(
+                    get: { Double(ApplicationSettings.shared.brushCoincidentPointPasses) },
+                    set: { ApplicationSettings.shared.brushCoincidentPointPasses = Int($0) }
+                ), in: 0...3, step: 1)
+                .controlSize(.regular)
+                .help("Number of passes to remove duplicate/coincident points (0-3)")
+            }
+
             VStack(alignment: .leading, spacing: 12) {
                 Divider()
                     .padding(.vertical, 4)

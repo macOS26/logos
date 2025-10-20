@@ -97,7 +97,8 @@
       "Bash(git add \"logos inkpen.io/Utilities/Vector/VectorDocument+CanvasManagement.swift\")",
       "Bash(git commit -m \"Remove background shape management\")",
       "Bash(git commit -m \"Render backgrounds per layer visibility\")",
-      "Bash(git commit -m \"Fix grid z-order over Canvas background\")"
+      "Bash(git commit -m \"Fix grid z-order over Canvas background\")",
+      "Bash(git commit -m \"Add coincident point removal slider\")"
     ],
     "deny": [],
     "ask": []

@@ -115,4 +115,35 @@ enum DrawingCanvasPathHelpers {
             return CGPoint(x: 1, y: 0)
         }
     }
+
+    /// Remove coincident (duplicate) points from an array
+    /// - Parameters:
+    ///   - points: Input points
+    ///   - passes: Number of removal passes (0-3)
+    ///   - tolerance: Distance threshold for considering points coincident (default 0.1)
+    /// - Returns: Filtered points with coincident points removed
+    static func removeCoincidentPoints(_ points: [CGPoint], passes: Int, tolerance: Double = 0.1) -> [CGPoint] {
+        guard passes > 0 && points.count > 1 else { return points }
+
+        var filtered = points
+        for _ in 0..<min(passes, 3) {
+            var result: [CGPoint] = []
+            result.append(filtered[0])
+
+            for i in 1..<filtered.count {
+                let current = filtered[i]
+                let previous = result.last!
+
+                let distance = hypot(current.x - previous.x, current.y - previous.y)
+                if distance >= tolerance {
+                    result.append(current)
+                }
+            }
+
+            filtered = result
+            if filtered.count <= 2 { break }
+        }
+
+        return filtered
+    }
 }
