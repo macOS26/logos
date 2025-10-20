@@ -1,15 +1,16 @@
 import SwiftUI
 import Combine
 
-class PerformanceMonitor: ObservableObject {
+@Observable
+class PerformanceMonitor {
 
-    @Published var fps: Double = 0.0
-    @Published var frameTime: Double = 0.0
-    @Published var renderingMode: String = "Unknown"
-    @Published var metalDeviceName: String = "None"
-    @Published var memoryUsage: Double = 0.0
-    @Published var drawCallCount: Int = 0
-    @Published var vertexCount: Int = 0
+    var fps: Double = 0.0
+    var frameTime: Double = 0.0
+    var renderingMode: String = "Unknown"
+    var metalDeviceName: String = "None"
+    var memoryUsage: Double = 0.0
+    var drawCallCount: Int = 0
+    var vertexCount: Int = 0
 
     private var frameStartTime: CFTimeInterval = 0
     private var frameCount: Int = 0
@@ -20,9 +21,62 @@ class PerformanceMonitor: ObservableObject {
     private var metalDevice: MTLDevice?
     private var commandBufferStartTime: CFTimeInterval = 0
 
+    private var displayLink: CVDisplayLink?
+    private var lastDisplayTime: CFTimeInterval = 0
+
     init() {
         setupMetalTracking()
         startPerformanceTracking()
+        startDisplayLink()
+    }
+
+    private func startDisplayLink() {
+        var displayLink: CVDisplayLink?
+        CVDisplayLinkCreateWithActiveCGDisplays(&displayLink)
+
+        if let link = displayLink {
+            CVDisplayLinkSetOutputCallback(link, { (displayLink, inNow, inOutputTime, flagsIn, flagsOut, displayLinkContext) -> CVReturn in
+                let monitor = Unmanaged<PerformanceMonitor>.fromOpaque(displayLinkContext!).takeUnretainedValue()
+                monitor.displayLinkCallback()
+                return kCVReturnSuccess
+            }, Unmanaged.passUnretained(self).toOpaque())
+
+            CVDisplayLinkStart(link)
+            self.displayLink = link
+        }
+    }
+
+    private func displayLinkCallback() {
+        let now = CACurrentMediaTime()
+        if lastDisplayTime > 0 {
+            let frameTime = (now - lastDisplayTime) * 1000.0
+            self.frameTime = frameTime
+
+            if now - lastFPSUpdate >= 0.5 {
+                let fps = 1.0 / (now - lastDisplayTime)
+                self.fps = fps
+                lastFPSUpdate = now
+            }
+        }
+        lastDisplayTime = now
+    }
+
+    func pause() {
+        if let link = displayLink {
+            CVDisplayLinkStop(link)
+        }
+    }
+
+    func resume() {
+        if let link = displayLink {
+            CVDisplayLinkStart(link)
+        }
+    }
+
+    deinit {
+        if let link = displayLink {
+            CVDisplayLinkStop(link)
+        }
     }
 
     private func setupMetalTracking() {
@@ -50,9 +104,8 @@ class PerformanceMonitor: ObservableObject {
         let frameEndTime = CACurrentMediaTime()
         let currentFrameTime = (frameEndTime - frameStartTime) * 1000.0
 
-        DispatchQueue.main.async {
-            self.frameTime = currentFrameTime
-        }
+        // Direct assignment works with @Observable
+        self.frameTime = currentFrameTime
 
         frameTimeHistory.append(currentFrameTime)
         if frameTimeHistory.count > maxHistorySize {
@@ -61,9 +114,8 @@ class PerformanceMonitor: ObservableObject {
 
         if frameEndTime - lastFPSUpdate >= 0.5 {
             let fps = Double(frameCount) / (frameEndTime - lastFPSUpdate)
-            DispatchQueue.main.async {
-                self.fps = fps
-            }
+            // Direct assignment works with @Observable
+            self.fps = fps
             frameCount = 0
             lastFPSUpdate = frameEndTime
         }
@@ -79,17 +131,13 @@ class PerformanceMonitor: ObservableObject {
     }
 
     func recordDrawCall(vertexCount: Int = 0) {
-        DispatchQueue.main.async {
-            self.drawCallCount += 1
-            self.vertexCount += vertexCount
-        }
+        self.drawCallCount += 1
+        self.vertexCount += vertexCount
     }
 
     func resetDrawingStats() {
-        DispatchQueue.main.async {
-            self.drawCallCount = 0
-            self.vertexCount = 0
-        }
+        self.drawCallCount = 0
+        self.vertexCount = 0
     }
 
     private func updateMemoryUsage() {
@@ -106,9 +154,7 @@ class PerformanceMonitor: ObservableObject {
 
         if kerr == KERN_SUCCESS {
             let memoryUsageMB = Double(info.resident_size) / (1024.0 * 1024.0)
-            DispatchQueue.main.async {
-                self.memoryUsage = memoryUsageMB
-            }
+            self.memoryUsage = memoryUsageMB
         }
     }
 
