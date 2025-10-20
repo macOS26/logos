@@ -12,6 +12,10 @@ class AppState {
         didSet { UserDefaults.standard.set(enablePressureLogging, forKey: "enablePressureLogging") }
     }
 
+    var showPerformanceOverlay: Bool = true {
+        didSet { UserDefaults.standard.set(showPerformanceOverlay, forKey: "showPerformanceOverlay") }
+    }
+
     var defaultTool: DrawingTool = .brush {
         didSet {
             UserDefaults.standard.set(defaultTool.rawValue, forKey: "defaultTool")
