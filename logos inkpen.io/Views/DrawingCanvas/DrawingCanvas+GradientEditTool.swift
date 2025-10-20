@@ -124,35 +124,23 @@ extension DrawingCanvas {
     }
 
     private func handleGradientCenterDragEnd(value: DragGesture.Value, geometry: GeometryProxy, shape: VectorShape, dragStartGradient: VectorGradient) {
-        let canvasPoint = screenToCanvas(value.location, geometry: geometry)
-        let shapeBounds = shape.bounds
-
-        let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
-        let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
-
-        // Get the final gradient
-        var finalGradient = dragStartGradient
-        switch finalGradient {
-        case .linear(var linear):
-            linear.originPoint.x = relativeX
-            linear.originPoint.y = relativeY
-            finalGradient = .linear(linear)
-        case .radial(var radial):
-            radial.originPoint.x = relativeX
-            radial.originPoint.y = relativeY
-            radial.focalPoint = CGPoint(x: relativeX, y: relativeY)
-            finalGradient = .radial(radial)
+        // Get the final gradient from the document (it was already applied during drag)
+        guard let finalShape = document.findShape(by: shape.id),
+              let fillStyle = finalShape.fillStyle,
+              case .gradient(let finalGradient) = fillStyle.color else {
+            liveGradientOriginX = nil
+            liveGradientOriginY = nil
+            return
         }
 
-        // Create undo command
-        let oldOpacity = shape.fillStyle?.opacity ?? 1.0
+        // Create undo command with before/after state
         let command = GradientCommand(
             objectIDs: [shape.id],
             target: .fill,
             oldGradients: [shape.id: dragStartGradient],
             newGradients: [shape.id: finalGradient],
-            oldOpacities: [shape.id: oldOpacity],
-            newOpacities: [shape.id: oldOpacity]
+            oldOpacities: [shape.id: fillStyle.opacity],
+            newOpacities: [shape.id: fillStyle.opacity]
         )
         document.commandManager.execute(command)
 
