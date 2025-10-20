@@ -79,6 +79,10 @@ class VectorDocument: ObservableObject, Codable {
         return manager
     }()
 
+    // Per-document image storage (isolated from other documents)
+    internal var imageStorage: [UUID: NSImage] = [:]
+    internal var baseDirectoryURL: URL? = nil
+
     @Published var fontManager: FontManager = FontManager()
     @Published var strokeDefaults: StrokeDefaults = .default {
         didSet { saveStrokeStyleDefaults() }

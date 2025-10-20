@@ -75,7 +75,7 @@ class SVGExporter {
                 if let object = document.findObject(by: shape.id), case .text = object.objectType {
                     svg += exportTextShape(shape, dpiScale: 1.0, renderingMode: textRenderingMode)
                 } else {
-                    svg += exportShape(shape, dpiScale: 1.0)
+                    svg += exportShape(shape, dpiScale: 1.0, document: document)
                 }
             }
 
@@ -87,7 +87,7 @@ class SVGExporter {
         return svg
     }
 
-    private func exportShape(_ shape: VectorShape, dpiScale: CGFloat) -> String {
+    private func exportShape(_ shape: VectorShape, dpiScale: CGFloat, document: VectorDocument? = nil) -> String {
         var svg = ""
 
         if shape.isClippingPath {
@@ -98,15 +98,15 @@ class SVGExporter {
             svg += "<g id=\"group_\(shape.id.uuidString)\">\n"
 
             for groupedShape in shape.groupedShapes {
-                svg += exportShape(groupedShape, dpiScale: dpiScale)
+                svg += exportShape(groupedShape, dpiScale: dpiScale, document: document)
             }
 
             svg += "</g>\n"
             return svg
         }
 
-        if let image = ImageContentRegistry.image(for: shape.id) ??
-                       ImageContentRegistry.hydrateImageIfAvailable(for: shape) {
+        if let doc = document, let image = ImageContentRegistry.image(for: shape.id, in: doc) ??
+                       ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: doc) {
             return exportImageShape(shape, image: image, dpiScale: dpiScale)
         }
 

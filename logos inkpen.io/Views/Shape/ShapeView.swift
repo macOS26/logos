@@ -84,8 +84,8 @@ struct ShapeView: View {
                         transform: shape.transform,
                         opacity: shape.opacity
                     )
-                } else if ImageContentRegistry.containsImage(shape),
-                          let image = ImageContentRegistry.image(for: shape.id) {
+                } else if let imageData = shape.embeddedImageData,
+                          let image = NSImage(data: imageData) {
                     let pathBounds = shape.path.cgPath.boundingBoxOfPath
                     let transformedBounds = pathBounds.applying(shape.transform)
 
@@ -98,13 +98,13 @@ struct ShapeView: View {
                     )
                     .offset(x: isSelected ? dragPreviewDelta.x : 0,
                             y: isSelected ? dragPreviewDelta.y : 0)
-                } else if shape.linkedImagePath != nil || shape.embeddedImageData != nil {
-                    if let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: shape) {
+                } else if shape.embeddedImageData != nil || shape.linkedImagePath != nil {
+                    if let imageData = shape.embeddedImageData, let image = NSImage(data: imageData) {
                         let pathBounds = shape.path.cgPath.boundingBoxOfPath
                         let transformedBounds = pathBounds.applying(shape.transform)
 
                         ImageNSView(
-                            image: hydrated,
+                            image: image,
                             bounds: transformedBounds,
                             opacity: shape.opacity,
                             fillStyle: shape.fillStyle,
@@ -145,8 +145,8 @@ struct ShapeView: View {
         .offset(x: canvasOffset.x, y: canvasOffset.y)
         .transformEffect(shape.isGroupContainer ? shape.transform : .identity)
         .transformEffect(isSelected && liveScaleTransform != .identity ? liveScaleTransform : .identity)
-        .offset(x: isSelected && !ImageContentRegistry.containsImage(shape) ? dragPreviewDelta.x * zoomLevel : 0,
-                y: isSelected && !ImageContentRegistry.containsImage(shape) ? dragPreviewDelta.y * zoomLevel : 0)
+        .offset(x: isSelected && shape.embeddedImageData == nil ? dragPreviewDelta.x * zoomLevel : 0,
+                y: isSelected && shape.embeddedImageData == nil ? dragPreviewDelta.y * zoomLevel : 0)
         .id(dragPreviewTrigger)
         .opacity(shape.opacity)
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ShapePreviewUpdate"))) { notification in
@@ -364,8 +364,8 @@ struct ShapeView: View {
                 ZStack {
                     ForEach(contentShapes, id: \.id) { contentShape in
                         if contentShape.typography == nil {
-                            if ImageContentRegistry.containsImage(contentShape),
-                               let image = ImageContentRegistry.image(for: contentShape.id) {
+                            if let imageData = contentShape.embeddedImageData,
+                               let image = NSImage(data: imageData) {
                                 let pathBounds = contentShape.path.cgPath.boundingBoxOfPath
                                 let transformedBounds = pathBounds.applying(contentShape.transform)
 
@@ -376,13 +376,13 @@ struct ShapeView: View {
                                     fillStyle: contentShape.fillStyle,
                                     viewMode: effectiveViewMode
                                 )
-                            } else if contentShape.linkedImagePath != nil || contentShape.embeddedImageData != nil,
-                                      let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: contentShape) {
+                            } else if let imageData = contentShape.embeddedImageData,
+                                      let image = NSImage(data: imageData) {
                                 let pathBounds = contentShape.path.cgPath.boundingBoxOfPath
                                 let transformedBounds = pathBounds.applying(contentShape.transform)
 
                                 ImageNSView(
-                                    image: hydrated,
+                                    image: image,
                                     bounds: transformedBounds,
                                     opacity: contentShape.opacity,
                                     fillStyle: contentShape.fillStyle,

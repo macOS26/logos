@@ -187,7 +187,7 @@ struct StrokeFillPanel: View {
                      .group(let shape),
                      .clipGroup(let shape),
                      .clipMask(let shape):
-                    return ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil
+                    return ImageContentRegistry.containsImage(shape, in: document) || shape.linkedImagePath != nil || shape.embeddedImageData != nil
                 }
             }
             return false
@@ -205,7 +205,7 @@ struct StrokeFillPanel: View {
                      .group(let shape),
                      .clipGroup(let shape),
                      .clipMask(let shape):
-                    if ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
+                    if ImageContentRegistry.containsImage(shape, in: document) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
                         return shape.opacity
                     }
                 }
@@ -1113,7 +1113,7 @@ struct StrokeFillPanel: View {
             let shapes = document.getShapesForLayer(layerIndex)
             if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
                let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                if ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
+                if ImageContentRegistry.containsImage(shape, in: document) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
                     document.updateShapeOpacityInUnified(id: shape.id, opacity: opacity)
                 }
             }

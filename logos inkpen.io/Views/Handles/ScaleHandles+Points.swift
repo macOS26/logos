@@ -75,7 +75,7 @@ extension ScaleHandles {
             } else {
                 let cornerIndex = index - pathPoints.count
                 let bounds: CGRect
-                if ImageContentRegistry.containsImage(shape) {
+                if ImageContentRegistry.containsImage(shape, in: document) {
                     let pathBounds = shape.path.cgPath.boundingBoxOfPath
                     bounds = pathBounds.applying(shape.transform)
                 } else {

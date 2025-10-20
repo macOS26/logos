@@ -86,10 +86,9 @@ extension FileOperations {
             importedShape.isLocked = false
             importedShape.isVisible = true
 
+            // Image data is already embedded in shape - will be hydrated when needed
             if let imageData = importedShape.embeddedImageData {
-                if let nsImage = NSImage(data: imageData) {
-                    ImageContentRegistry.register(image: nsImage, for: importedShape.id)
-                } else {
+                if NSImage(data: imageData) == nil {
                     Log.error("PDF IMPORT: ❌ Failed to create NSImage from \(imageData.count) bytes of data", category: .error)
                     Log.error("❌ Could not create NSImage from embedded data for '\(importedShape.name)'", category: .error)
                 }

@@ -11,7 +11,7 @@ extension VectorDocument {
                  .clipGroup(let shape),
                  .clipMask(let shape):
                 if shape.id == id {
-                    ImageContentRegistry.remove(for: id)
+                    ImageContentRegistry.remove(for: id, in: self)
                     return true
                 }
             case .text:

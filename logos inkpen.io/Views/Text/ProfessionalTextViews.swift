@@ -16,10 +16,9 @@ struct ProfessionalTextBoxView: View {
         }
 
         switch textBoxState {
-        case .gray: return Color.clear
+        case .gray : return Color.clear
         case .green: return Color.clear
-        case .blue:
-            return Color.blue.opacity(0.5)
+        case .blue : return Color.blue.opacity(0.5)
         }
     }
 

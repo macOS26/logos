@@ -252,7 +252,7 @@ extension FileOperations {
             return
         }
 
-        if let image = ImageContentRegistry.hydrateImageIfAvailable(for: shape) {
+        if let doc = document, let image = ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: doc) {
             if let tiffRep = image.tiffRepresentation {
                 try renderImageToPDF(shape: shape, imageData: tiffRep, context: context)
                 return

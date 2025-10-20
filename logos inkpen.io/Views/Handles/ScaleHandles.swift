@@ -24,7 +24,7 @@ struct ScaleHandles: View {
     let handleSize: CGFloat = 10
 
     private var calculatedBounds: CGRect {
-        if ImageContentRegistry.containsImage(shape) {
+        if ImageContentRegistry.containsImage(shape, in: document) {
             let pathBounds = shape.path.cgPath.boundingBoxOfPath
             return pathBounds.applying(shape.transform)
         } else {

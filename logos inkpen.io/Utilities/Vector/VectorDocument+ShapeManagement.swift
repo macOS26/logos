@@ -279,9 +279,9 @@ extension VectorDocument {
                  .clipMask(let shape):
                 var newShape = shape
                 newShape.id = UUID()
-                if ImageContentRegistry.containsImage(shape),
-                   let image = ImageContentRegistry.image(for: shape.id) {
-                    ImageContentRegistry.register(image: image, for: newShape.id)
+                if ImageContentRegistry.containsImage(shape, in: self),
+                   let image = ImageContentRegistry.image(for: shape.id, in: self) {
+                    ImageContentRegistry.register(image: image, for: newShape.id, in: self)
                 }
 
                 let offsetTransform = CGAffineTransform(translationX: 10, y: 10)

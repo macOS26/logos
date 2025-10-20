@@ -261,7 +261,7 @@ extension DrawingCanvas {
             let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
             return isHit
         } else {
-            let isImageShape = ImageContentRegistry.containsImage(shape)
+            let isImageShape = ImageContentRegistry.containsImage(shape, in: document)
             let isStrokeOnly = (shape.fillStyle?.color == .clear || shape.fillStyle == nil)
 
             if isImageShape {

@@ -73,7 +73,11 @@
       "Bash(git add \"logos inkpen.io/Models/ApplicationSettings.swift\" \"logos inkpen.io/Views/DrawingCanvas/DrawingCanvas+BrushTool.swift\")",
       "Bash(git commit -m \"Add coincident point passes slider\")",
       "Bash(git add \"logos inkpen.io/Views/RightPanel/StrokeFillPanel/VariableStrokeSection.swift\" \"logos inkpen.io/Models/AppState.swift\" \"logos inkpen.io/App/AppDelegate.swift\" \"logos inkpen.io/logos_inkpen_ioApp.swift\")",
-      "Bash(git commit -m \"Add coincident passes slider + Apple Metal HUD\")"
+      "Bash(git commit -m \"Add coincident passes slider + Apple Metal HUD\")",
+      "Bash(awk 'NR>=230 && NR<=260 {printf \"\"\"\"%d: %s\\n\"\"\"\", NR, $0}' \"logos inkpen.io/Utilities/PDF/FileOperations+PDFExport.swift\")",
+      "Bash(awk 'NR>=350 && NR<=390 {printf \"\"\"\"%d: %s\\n\"\"\"\", NR, $0}' \"logos inkpen.io/Utilities/PNG/FileOperations+ExportToPNG.swift\")",
+      "Bash(awk 'NR>=90 && NR<=105 {printf \"\"%d: %s\\n\"\", NR, $0}' \"logos inkpen.io/Utilities/CoreGraphics/ClippingMask.swift\")",
+      "Bash(awk 'NR>=70 && NR<=90 {printf \"\"%d: %s\\n\"\", NR, $0}' \"logos inkpen.io/Utilities/CoreGraphics/ClippingMask.swift\")"
     ],
     "deny": [],
     "ask": []

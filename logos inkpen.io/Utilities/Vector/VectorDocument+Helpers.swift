@@ -179,7 +179,7 @@ extension VectorDocument {
             }
         }
 
-        ImageContentRegistry.cleanup(keepingShapes: allShapeIDs)
+        ImageContentRegistry.cleanup(keepingShapes: allShapeIDs, in: self)
     }
 
     func collectUsedColors() -> Set<VectorColor> {

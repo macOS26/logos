@@ -26,7 +26,7 @@ struct RotateHandles: View {
     private let handleSize: CGFloat = 10
 
     private var calculatedBounds: CGRect {
-        if ImageContentRegistry.containsImage(shape) && !shape.transform.isIdentity {
+        if ImageContentRegistry.containsImage(shape, in: document) && !shape.transform.isIdentity {
             let baseBounds = shape.bounds
             let t = shape.transform
             let corners = [

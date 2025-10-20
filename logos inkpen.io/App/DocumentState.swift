@@ -223,7 +223,7 @@ class DocumentState: ObservableObject {
                      .clipGroup(let shape),
                      .clipMask(let shape):
                     if shape.linkedImagePath != nil { return true }
-                    if ImageContentRegistry.containsImage(shape) { return true }
+                    if ImageContentRegistry.containsImage(shape, in: document) { return true }
                 case .text:
                     break
                 }
@@ -1073,11 +1073,11 @@ class DocumentState: ObservableObject {
             for shapeIndex in shapes.indices {
                 guard let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { continue }
                 guard document.viewState.selectedObjectIDs.contains(shape.id) else { continue }
-                var nsImage: NSImage? = ImageContentRegistry.image(for: shape.id)
+                var nsImage: NSImage? = ImageContentRegistry.image(for: shape.id, in: document)
                 if nsImage == nil, let path = shape.linkedImagePath {
                     let url = URL(fileURLWithPath: NSString(string: path).expandingTildeInPath)
                     nsImage = NSImage(contentsOf: url)
-                    if let img = nsImage { ImageContentRegistry.register(image: img, for: shape.id) }
+                    if let img = nsImage { ImageContentRegistry.register(image: img, for: shape.id, in: document) }
                 }
                 guard let image = nsImage else { continue }
                 var embedded: Data? = nil

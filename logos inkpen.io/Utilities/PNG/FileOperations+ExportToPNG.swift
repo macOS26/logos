@@ -49,7 +49,7 @@ extension FileOperations {
             let shapesInLayer = document.getShapesForLayer(index)
             for shape in shapesInLayer {
                 if !shape.isVisible { continue }
-                drawShapeInPDF(shape, context: context)
+                drawShapeInPDF(shape, context: context, document: document)
             }
 
             context.restoreGState()
@@ -121,7 +121,7 @@ extension FileOperations {
                 let shapesInLayer = document.getShapesForLayer(index)
                 for shape in shapesInLayer {
                     if !shape.isVisible { continue }
-                    drawShapeInPDF(shape, context: context)
+                    drawShapeInPDF(shape, context: context, document: document)
                 }
 
                 context.restoreGState()
@@ -328,7 +328,7 @@ extension FileOperations {
             for shape in shapesInLayer {
                 if !shape.isVisible { continue }
 
-                drawShapeInPDF(shape, context: context)
+                drawShapeInPDF(shape, context: context, document: document)
             }
 
             context.endTransparencyLayer()
@@ -351,7 +351,7 @@ extension FileOperations {
 
     }
 
-    internal static func drawShapeInPDF(_ shape: VectorShape, context: CGContext) {
+    internal static func drawShapeInPDF(_ shape: VectorShape, context: CGContext, document: VectorDocument? = nil) {
         context.saveGState()
 
         context.setAlpha(shape.opacity)
@@ -362,7 +362,7 @@ extension FileOperations {
 
         if shape.isGroup && !shape.groupedShapes.isEmpty {
             for groupedShape in shape.groupedShapes {
-                drawShapeInPDF(groupedShape, context: context)
+                drawShapeInPDF(groupedShape, context: context, document: document)
             }
             context.restoreGState()
             return
@@ -383,8 +383,9 @@ extension FileOperations {
             }
             context.restoreGState()
             return
-        } else if let image = ImageContentRegistry.image(for: shape.id) {
-            if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+        } else if let doc = document, let image = ImageContentRegistry.image(for: shape.id, in: doc) {
+            var rect: NSRect = .zero
+            if let cgImage = image.cgImage(forProposedRect: &rect, context: nil, hints: nil) {
                 let bounds = shape.bounds
 
                 context.saveGState()

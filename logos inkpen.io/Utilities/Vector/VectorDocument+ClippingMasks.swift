@@ -96,7 +96,7 @@ extension VectorDocument {
     private func moveShapeByPathCoordinates(layerIndex: Int, shapeIndex: Int, by offset: CGPoint) {
         guard var shape = getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) else { return }
 
-        if ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
+        if ImageContentRegistry.containsImage(shape, in: self) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
             shape.transform = shape.transform.translatedBy(x: offset.x, y: offset.y)
 
             var updatedElements: [PathElement] = []

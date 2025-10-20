@@ -242,7 +242,12 @@ class VectorImportManager {
         if let bookmark = try? url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil) {
             rectShape.linkedImageBookmarkData = bookmark
         }
-        ImageContentRegistry.register(image: nsImage, for: rectShape.id)
+        // Store image data in shape - will be loaded into document's imageStorage when document is created
+        if let tiffData = nsImage.tiffRepresentation,
+           let bitmapRep = NSBitmapImageRep(data: tiffData),
+           let pngData = bitmapRep.representation(using: .png, properties: [:]) {
+            rectShape.embeddedImageData = pngData
+        }
         let meta = VectorImportMetadata(
             originalFormat: .pdf,
             documentSize: size,

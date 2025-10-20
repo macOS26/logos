@@ -303,7 +303,7 @@ extension DrawingCanvas {
 
     private func applyDragDeltaToShape(shape: VectorShape, delta: CGPoint) {
 
-        if ImageContentRegistry.containsImage(shape) {
+        if ImageContentRegistry.containsImage(shape, in: document) {
             var updatedShape = shape
 
             if updatedShape.transform.isIdentity {

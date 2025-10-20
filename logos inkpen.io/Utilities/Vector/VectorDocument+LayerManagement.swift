@@ -45,9 +45,9 @@ extension VectorDocument {
         for shape in originalShapes {
             var duplicatedShape = shape
             duplicatedShape.id = UUID()
-            if ImageContentRegistry.containsImage(shape),
-               let image = ImageContentRegistry.image(for: shape.id) {
-                ImageContentRegistry.register(image: image, for: duplicatedShape.id)
+            if ImageContentRegistry.containsImage(shape, in: self),
+               let image = ImageContentRegistry.image(for: shape.id, in: self) {
+                ImageContentRegistry.register(image: image, for: duplicatedShape.id, in: self)
             }
             addShape(duplicatedShape, to: index + 1)
         }

@@ -99,8 +99,9 @@ class ClippingMaskNSView: NSView {
         context.addPath(maskPath)
         context.clip()
 
-        if ImageContentRegistry.containsImage(clippedShape),
-           let image = ImageContentRegistry.image(for: clippedShape.id) {
+        // Try to render image if available
+        var imageRendered = false
+        if let imageData = clippedShape.embeddedImageData, let image = NSImage(data: imageData) {
             let pathBounds = clippedShape.path.cgPath.boundingBoxOfPath
             let transformedBounds = pathBounds.applying(clippedShape.transform)
             let effectiveOpacity = viewMode == .keyline ? min(clippedShape.opacity * 0.2, 0.2) : clippedShape.opacity
@@ -109,23 +110,14 @@ class ClippingMaskNSView: NSView {
             context.translateBy(x: transformedBounds.minX, y: transformedBounds.maxY)
             context.scaleBy(x: 1.0, y: -1.0)
 
-            if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            var rect: NSRect = .zero
+            if let cgImage = image.cgImage(forProposedRect: &rect, context: nil, hints: nil) {
                 context.draw(cgImage, in: CGRect(origin: .zero, size: transformedBounds.size))
+                imageRendered = true
             }
-        } else if clippedShape.linkedImagePath != nil || clippedShape.embeddedImageData != nil,
-                  let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: clippedShape) {
-            let pathBounds = clippedShape.path.cgPath.boundingBoxOfPath
-            let transformedBounds = pathBounds.applying(clippedShape.transform)
-            let effectiveOpacity = viewMode == .keyline ? min(clippedShape.opacity * 0.2, 0.2) : clippedShape.opacity
-            context.setAlpha(CGFloat(effectiveOpacity))
+        }
 
-            context.translateBy(x: transformedBounds.minX, y: transformedBounds.maxY)
-            context.scaleBy(x: 1.0, y: -1.0)
-
-            if let cgImage = hydrated.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-                context.draw(cgImage, in: CGRect(origin: .zero, size: transformedBounds.size))
-            }
-        } else {
+        if !imageRendered {
             context.addPath(clippedPath)
 
             if let fillStyle = clippedShape.fillStyle, fillStyle.color != .clear {

@@ -105,10 +105,10 @@ struct DocumentBasedMainView: View {
         }
         .onAppear {
             if let url = fileURL {
-                ImageContentRegistry.setBaseDirectory(url.deletingLastPathComponent())
+                ImageContentRegistry.setBaseDirectory(url.deletingLastPathComponent(), for: document)
                 for unifiedObject in document.unifiedObjects {
                     if case .shape(let shape) = unifiedObject.objectType {
-                        ImageContentRegistry.hydrateImageIfAvailable(for: shape)
+                        ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document)
                     }
                 }
             }

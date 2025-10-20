@@ -7,7 +7,7 @@ extension FileOperations {
 
         let jsonData = try exportToJSONData(document)
         let baseDir = url.deletingLastPathComponent()
-        ImageContentRegistry.setBaseDirectory(baseDir)
+        ImageContentRegistry.setBaseDirectory(baseDir, for: document)
 
         do {
             try jsonData.write(to: url)
@@ -40,10 +40,10 @@ extension FileOperations {
             decoder.dateDecodingStrategy = .iso8601
 
             let document = try decoder.decode(VectorDocument.self, from: jsonData)
-            ImageContentRegistry.setBaseDirectory(url.deletingLastPathComponent())
+            ImageContentRegistry.setBaseDirectory(url.deletingLastPathComponent(), for: document)
             for unifiedObject in document.unifiedObjects {
                 if case .shape(let shape) = unifiedObject.objectType {
-                    ImageContentRegistry.hydrateImageIfAvailable(for: shape)
+                    ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document)
                 }
             }
             return document
@@ -60,10 +60,10 @@ extension FileOperations {
 
         do {
             let document = try decoder.decode(VectorDocument.self, from: data)
-            ImageContentRegistry.setBaseDirectory(nil)
+            ImageContentRegistry.setBaseDirectory(nil, for: document)
             for unifiedObject in document.unifiedObjects {
                 if case .shape(let shape) = unifiedObject.objectType {
-                    ImageContentRegistry.hydrateImageIfAvailable(for: shape)
+                    ImageContentRegistry.hydrateImageIfAvailable(for: shape, in: document)
                 }
             }
             return document
