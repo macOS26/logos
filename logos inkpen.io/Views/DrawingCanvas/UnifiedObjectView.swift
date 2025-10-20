@@ -149,104 +149,48 @@ struct UnifiedObjectContentView: View {
 }
 
 struct PasteboardBackgroundView: View {
-    @ObservedObject var document: VectorDocument
+    let pasteboardSize: CGSize
+    let pasteboardOrigin: CGPoint
     let zoomLevel: Double
     let canvasOffset: CGPoint
-    let selectedObjectIDs: Set<UUID>
-    let viewMode: ViewMode
-    let dragPreviewDelta: CGPoint
-    let dragPreviewTrigger: Bool
-
-    private var pasteboardBackground: VectorObject? {
-        document.getObjectsInStackingOrder().first { obj in
-            switch obj.objectType {
-            case .shape(let shape),
-                 .warp(let shape),
-                 .group(let shape),
-                 .clipGroup(let shape),
-                 .clipMask(let shape):
-                return shape.name == "Pasteboard Background"
-            case .text:
-                return false
-            }
-        }
-    }
-
-    @State private var layerOpacities: [Double] = []
-    @State private var layerBlendModes: [BlendMode] = []
 
     var body: some View {
-        ZStack {
-            if let pasteboardBackground = pasteboardBackground {
-                UnifiedObjectContentView(
-                    unifiedObject: pasteboardBackground,
-                    document: document,
-                    zoomLevel: zoomLevel,
-                    canvasOffset: canvasOffset,
-                    selectedObjectIDs: selectedObjectIDs,
-                    viewMode: viewMode,
-                    dragPreviewDelta: dragPreviewDelta,
-                    dragPreviewTrigger: dragPreviewTrigger,
-                    liveScaleTransform: .identity,
-                    liveGradientOriginX: nil,
-                    liveGradientOriginY: nil
-                )
-            }
+        Canvas { context, size in
+            let scaledRect = CGRect(
+                x: pasteboardOrigin.x * zoomLevel + canvasOffset.x,
+                y: pasteboardOrigin.y * zoomLevel + canvasOffset.y,
+                width: pasteboardSize.width * zoomLevel,
+                height: pasteboardSize.height * zoomLevel
+            )
+
+            context.fill(
+                Path(roundedRect: scaledRect, cornerRadius: 0),
+                with: .color(.black.opacity(0.2))
+            )
         }
-        .compositingGroup()
-        .opacity(pasteboardBackground.map { $0.layerIndex < document.layers.count ? document.layers[$0.layerIndex].opacity : 1.0 } ?? 1.0)
-        .blendMode(pasteboardBackground.map { $0.layerIndex < document.layers.count ? document.layers[$0.layerIndex].blendMode.swiftUIBlendMode : .normal } ?? .normal)
     }
 }
 
 struct CanvasBackgroundView: View {
-    @ObservedObject var document: VectorDocument
+    let canvasSize: CGSize
+    let backgroundColor: Color
     let zoomLevel: Double
     let canvasOffset: CGPoint
-    let selectedObjectIDs: Set<UUID>
-    let viewMode: ViewMode
-    let dragPreviewDelta: CGPoint
-    let dragPreviewTrigger: Bool
-
-    private var canvasBackground: VectorObject? {
-        document.getObjectsInStackingOrder().first { obj in
-            switch obj.objectType {
-            case .shape(let shape),
-                 .warp(let shape),
-                 .group(let shape),
-                 .clipGroup(let shape),
-                 .clipMask(let shape):
-                return shape.name == "Canvas Background"
-            case .text:
-                return false
-            }
-        }
-    }
-//
-//    @State private var layerOpacities: [Double] = []
-//    @State private var layerBlendModes: [BlendMode] = []
 
     var body: some View {
-        ZStack {
-            if let canvasBackground = canvasBackground {
-                UnifiedObjectContentView(
-                    unifiedObject: canvasBackground,
-                    document: document,
-                    zoomLevel: zoomLevel,
-                    canvasOffset: canvasOffset,
-                    selectedObjectIDs: selectedObjectIDs,
-                    viewMode: viewMode,
-                    dragPreviewDelta: dragPreviewDelta,
-                    dragPreviewTrigger: dragPreviewTrigger,
-                    liveScaleTransform: .identity,
-                    liveGradientOriginX: nil,
-                    liveGradientOriginY: nil
-                )
-            }
+        Canvas { context, size in
+            let scaledRect = CGRect(
+                x: canvasOffset.x,
+                y: canvasOffset.y,
+                width: canvasSize.width * zoomLevel,
+                height: canvasSize.height * zoomLevel
+            )
+
+            context.fill(
+                Path(roundedRect: scaledRect, cornerRadius: 0),
+                with: .color(backgroundColor)
+            )
         }
-        .compositingGroup()
-        .opacity(canvasBackground.map { $0.layerIndex < document.layers.count ? document.layers[$0.layerIndex].opacity : 1.0 } ?? 1.0)
-        .blendMode(canvasBackground.map { $0.layerIndex < document.layers.count ? document.layers[$0.layerIndex].blendMode.swiftUIBlendMode : .normal } ?? .normal)
     }
 }
 
