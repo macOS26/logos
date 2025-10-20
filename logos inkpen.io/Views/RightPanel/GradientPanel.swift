@@ -542,9 +542,11 @@ struct GradientFillSection: View {
                             var updatedShape = currentShape
                             switch document.viewState.activeColorTarget {
                             case .fill:
-                                updatedShape.fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
+                                let currentOpacity = currentShape.fillStyle?.opacity ?? 1.0
+                                updatedShape.fillStyle = FillStyle(gradient: gradient, opacity: currentOpacity)
                             case .stroke:
-                                updatedShape.strokeStyle = StrokeStyle(gradient: gradient, width: document.defaultStrokeWidth, placement: document.strokeDefaults.placement, lineCap: document.strokeDefaults.lineCap, lineJoin: document.strokeDefaults.lineJoin, miterLimit: document.strokeDefaults.miterLimit, opacity: 1.0)
+                                let currentStroke = currentShape.strokeStyle
+                                updatedShape.strokeStyle = StrokeStyle(gradient: gradient, width: currentStroke?.width ?? document.defaultStrokeWidth, placement: currentStroke?.placement ?? document.strokeDefaults.placement, lineCap: currentStroke?.lineCap.cgLineCap ?? document.strokeDefaults.lineCap, lineJoin: currentStroke?.lineJoin.cgLineJoin ?? document.strokeDefaults.lineJoin, miterLimit: currentStroke?.miterLimit ?? document.strokeDefaults.miterLimit, opacity: currentStroke?.opacity ?? 1.0)
                             }
                             document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
                         }
