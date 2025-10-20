@@ -287,9 +287,9 @@ struct ShapeView: View {
 
         switch fillStyle.color {
         case .gradient(let vectorGradient):
-            // Apply live gradient origin if dragging
+            // Apply live gradient origin if dragging AND shape is selected
             let effectiveGradient: VectorGradient = {
-                if let liveX = liveGradientOriginX, let liveY = liveGradientOriginY {
+                if isSelected, let liveX = liveGradientOriginX, let liveY = liveGradientOriginY {
                     switch vectorGradient {
                     case .linear(var linear):
                         linear.originPoint.x = liveX
