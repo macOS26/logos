@@ -26,6 +26,8 @@ struct GradientFillSection: View {
     @State private var editingGradientStopColor: VectorColor = .black
     @State private var localOriginX: Double = 0.5
     @State private var localOriginY: Double = 0.5
+    @State private var dragStartGradient: VectorGradient? = nil
+    @State private var dragStartOpacities: [UUID: Double] = [:]
 
     enum GradientType: String, CaseIterable {
         case linear = "Linear"

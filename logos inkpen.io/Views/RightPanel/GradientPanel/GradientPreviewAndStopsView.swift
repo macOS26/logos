@@ -72,6 +72,9 @@ struct GradientPreviewAndStopsView: View {
         }
     }
 
+    @State private var dragStartGradient: VectorGradient? = nil
+    @State private var dragStartOpacities: [UUID: Double] = [:]
+
     private func createDraggableDot(geometry: GeometryProxy, squareSize: CGFloat, centerX: CGFloat, centerY: CGFloat) -> some View {
         Circle()
             .fill(Color.white)
@@ -81,6 +84,15 @@ struct GradientPreviewAndStopsView: View {
             .gesture(
                 DragGesture()
                     .onChanged { value in
+                        if dragStartGradient == nil {
+                            dragStartGradient = currentGradient
+                            // Capture old opacities
+                            for objectID in document.viewState.selectedObjectIDs {
+                                if let shape = document.findShape(by: objectID) {
+                                    dragStartOpacities[objectID] = shape.fillStyle?.opacity ?? 1.0
+                                }
+                            }
+                        }
                         let normalizedX = max(0.0, min(1.0, value.location.x / squareSize))
                         let normalizedY = max(0.0, min(1.0, value.location.y / squareSize))
                         updateOriginXOptimized(normalizedX, true, true)
@@ -88,6 +100,34 @@ struct GradientPreviewAndStopsView: View {
                     }
                     .onEnded { _ in
                         applyGradientToSelectedShapesOptimized(false)
+
+                        // Create undo command
+                        if let startGradient = dragStartGradient, let endGradient = currentGradient {
+                            var oldGradients: [UUID: VectorGradient?] = [:]
+                            var newGradients: [UUID: VectorGradient?] = [:]
+                            var newOpacities: [UUID: Double] = [:]
+
+                            for objectID in document.viewState.selectedObjectIDs {
+                                oldGradients[objectID] = startGradient
+                                newGradients[objectID] = endGradient
+                                if let shape = document.findShape(by: objectID) {
+                                    newOpacities[objectID] = shape.fillStyle?.opacity ?? 1.0
+                                }
+                            }
+
+                            let command = GradientCommand(
+                                objectIDs: Array(document.viewState.selectedObjectIDs),
+                                target: .fill,
+                                oldGradients: oldGradients,
+                                newGradients: newGradients,
+                                oldOpacities: dragStartOpacities,
+                                newOpacities: newOpacities
+                            )
+                            document.commandManager.execute(command)
+                        }
+
+                        dragStartGradient = nil
+                        dragStartOpacities.removeAll()
                     }
             )
     }
