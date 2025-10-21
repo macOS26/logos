@@ -17,10 +17,10 @@ struct ProfessionalLayerRow: View {
 
     private var isVisibleBinding: Binding<Bool> {
         Binding(
-            get: { document.newLayers[layerIndex].isVisible },
+            get: { document.snapshot.layers[layerIndex].isVisible },
             set: { newValue in
-                if document.newLayers[layerIndex].isVisible != newValue {
-                    document.newLayers[layerIndex].isVisible = newValue
+                if document.snapshot.layers[layerIndex].isVisible != newValue {
+                    document.snapshot.layers[layerIndex].isVisible = newValue
                     document.changeNotifier.notifyLayersChanged()
                 }
             }
@@ -29,10 +29,10 @@ struct ProfessionalLayerRow: View {
 
     private var isLockedBinding: Binding<Bool> {
         Binding(
-            get: { document.newLayers[layerIndex].isLocked },
+            get: { document.snapshot.layers[layerIndex].isLocked },
             set: { newValue in
-                if document.newLayers[layerIndex].isLocked != newValue {
-                    document.newLayers[layerIndex].isLocked = newValue
+                if document.snapshot.layers[layerIndex].isLocked != newValue {
+                    document.snapshot.layers[layerIndex].isLocked = newValue
                     document.changeNotifier.notifyLayersChanged()
                 }
             }
@@ -65,12 +65,12 @@ struct ProfessionalLayerRow: View {
     private var layerColor: Binding<Color> {
         Binding(
             get: {
-                let colorName = document.newLayers[layerIndex].color.name
+                let colorName = document.snapshot.layers[layerIndex].color.name
                 return Color.layerColorPalette.first { $0.name == colorName }?.color ?? .blue
             },
             set: { newColor in
                 if let match = Color.layerColorPalette.first(where: { $0.color.description == newColor.description }) {
-                    document.newLayers[layerIndex].color = LayerColor(name: match.name)
+                    document.snapshot.layers[layerIndex].color = LayerColor(name: match.name)
                     document.changeNotifier.notifyLayersChanged()
                 }
             }
@@ -111,7 +111,7 @@ struct ProfessionalLayerRow: View {
                                 if !document.viewState.isDraggingVisibility {
                                     document.viewState.isDraggingVisibility = true
                                     document.processedLayersDuringDrag.removeAll()
-                                    document.newLayers[layerIndex].isVisible.toggle()
+                                    document.snapshot.layers[layerIndex].isVisible.toggle()
                                     document.processedLayersDuringDrag.insert(layerIndex)
                                     document.changeNotifier.notifyLayersChanged()
                                 }
@@ -138,7 +138,7 @@ struct ProfessionalLayerRow: View {
                                 if !document.viewState.isDraggingLock {
                                     document.viewState.isDraggingLock = true
                                     document.processedLayersDuringDrag.removeAll()
-                                    document.newLayers[layerIndex].isLocked.toggle()
+                                    document.snapshot.layers[layerIndex].isLocked.toggle()
                                     document.processedLayersDuringDrag.insert(layerIndex)
                                     document.changeNotifier.notifyLayersChanged()
                                 }
@@ -155,7 +155,7 @@ struct ProfessionalLayerRow: View {
                                 if NSEvent.modifierFlags.contains(.option) {
                                     var updatedSettings = document.settings
                                     let shouldExpand = !isExpanded
-                                    for layer in document.newLayers {
+                                    for layer in document.snapshot.layers {
                                         updatedSettings.layerExpansionState[layer.id] = shouldExpand
                                     }
                                     document.settings = updatedSettings
@@ -186,7 +186,7 @@ struct ProfessionalLayerRow: View {
                             if isEditingName {
                                 TextField("Layer Name", text: $editedName, onCommit: {
                                     if !editedName.isEmpty {
-                                        document.newLayers[layerIndex].name = editedName
+                                        document.snapshot.layers[layerIndex].name = editedName
                                         document.changeNotifier.notifyLayersChanged()
                                     }
                                     isEditingName = false
@@ -323,7 +323,7 @@ struct ProfessionalLayerRow: View {
 
                         if let opacity = userInfo["opacity"] as? Double {
                             print("   ✅ Setting layer opacity to \(opacity)")
-                            document.newLayers[layerIndex].opacity = opacity
+                            document.snapshot.layers[layerIndex].opacity = opacity
                         }
                     }
                 }
@@ -363,8 +363,8 @@ struct ProfessionalLayerRow: View {
 
                 let targetLayerId: UUID
                 if layerIndex <= 1 {
-                    if document.newLayers.count > 2 {
-                        targetLayerId = document.newLayers[2].id
+                    if document.snapshot.layers.count > 2 {
+                        targetLayerId = document.snapshot.layers[2].id
                     } else {
                         return false
                     }

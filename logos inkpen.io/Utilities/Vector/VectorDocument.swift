@@ -4,8 +4,6 @@ import Combine
 class VectorDocument: ObservableObject, Codable {
     // MARK: - New Structure
     var snapshot: DocumentSnapshot = DocumentSnapshot()
-    var newLayers: [Layer] = []
-    var objects: [UUID: VectorObject] = [:]
 
     // MARK: - Legacy Structure (to be migrated)
     // View-only state (doesn't trigger document saves)

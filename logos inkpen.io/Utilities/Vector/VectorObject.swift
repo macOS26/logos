@@ -2,7 +2,7 @@ import SwiftUI
 
 struct VectorObject: Identifiable, Hashable {
     let id: UUID
-    let layerIndex: Int
+    let layerIndex: Int  // DEPRECATED: Layer membership now tracked via Layer.objectIDs
     let objectType: ObjectType
 
     enum ObjectType: Hashable {

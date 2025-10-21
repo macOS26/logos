@@ -7,15 +7,15 @@ extension VectorDocument {
     /// Migrate legacy data to new structure after loading
     func migrateToNewStructure() {
         // Build objects dictionary from unifiedObjects array
-        objects = buildObjectsDictionary()
+        let objectsDict = buildObjectsDictionary()
 
         // Convert legacy VectorLayers to new Layers
-        newLayers = convertLegacyLayers()
+        let newLayersArray = convertLegacyLayers()
 
         // Populate snapshot
         snapshot = DocumentSnapshot(
-            objects: objects,
-            layers: newLayers,
+            objects: objectsDict,
+            layers: newLayersArray,
             settings: settings,
             colorSwatches: colorSwatches,
             gridSettings: gridSettings
