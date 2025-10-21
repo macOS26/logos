@@ -1,18 +1,6 @@
 import SwiftUI
 
 extension DrawingCanvas {
-    // Get objects for a specific layer
-    private func objectsForLayer(_ layerIndex: Int) -> [VectorObject]? {
-        let allObjects = document.getObjectsInStackingOrder()
-        let filtered = allObjects.filter { obj in
-            guard obj.layerIndex == layerIndex else { return false }
-            guard obj.layerIndex < document.layers.count else { return false }
-            return true
-        }
-
-        return filtered.isEmpty ? nil : filtered
-    }
-
     @ViewBuilder
     internal func canvasOverlays(geometry: GeometryProxy) -> some View {
         if let currentPath = currentPath {
@@ -171,9 +159,8 @@ extension DrawingCanvas {
     internal func canvasBaseContent(geometry: GeometryProxy) -> some View {
         ZStack {
             // Render layers with background fills for special layers
-            ForEach(document.layers.indices, id: \.self) { layerIndex in
-                if document.layers[layerIndex].isVisible {
-                    let layer = document.layers[layerIndex]
+            ForEach(Array(document.snapshot.layers.enumerated()), id: \.offset) { layerIndex, layer in
+                if layer.isVisible {
                     let layerOpacity = layerPreviewOpacities[layer.id] ?? layer.opacity
                     let layerBlendMode = layer.blendMode
 
@@ -217,7 +204,12 @@ extension DrawingCanvas {
                         .blendMode(layerBlendMode.swiftUIBlendMode)
                     }
 
-                    if let objects = objectsForLayer(layerIndex) {
+                    // Get objects for this layer from snapshot
+                    let objects = layer.objectIDs.compactMap { objectID in
+                        document.snapshot.objects[objectID]
+                    }.filter { $0.isVisible }
+
+                    if !objects.isEmpty {
                         let isActiveLayer = document.activeLayerIndexDuringDrag == nil || document.activeLayerIndexDuringDrag == layerIndex
 
                         // Get full data of selected objects in this layer for Equatable comparison
