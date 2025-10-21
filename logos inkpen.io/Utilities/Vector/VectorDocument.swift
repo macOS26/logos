@@ -31,7 +31,7 @@ class VectorDocument: ObservableObject, Codable {
     var activeLayerIndexDuringDrag: Int? = nil
 
     var isHandleScalingActive = false
-    var unifiedObjects: [VectorObject] = [] {
+    @Published var unifiedObjects: [VectorObject] = [] {
         didSet {
             // Only trigger full refresh when objects are added/removed
             if oldValue.count != unifiedObjects.count {

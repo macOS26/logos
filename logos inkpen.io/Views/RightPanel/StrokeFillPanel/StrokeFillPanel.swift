@@ -631,7 +631,6 @@ struct StrokeFillPanel: View {
                 document.unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
             }
         }
-        document.objectWillChange.send()
     }
 
     private func updateStrokeOpacityLive(_ opacity: Double, isEditing: Bool) {
@@ -647,28 +646,22 @@ struct StrokeFillPanel: View {
                 document.unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
             }
         }
-        document.objectWillChange.send()
     }
 
     private func updateStrokeWidthLive(_ width: Double, isEditing: Bool) {
         for objectID in document.viewState.selectedObjectIDs {
-            if let unifiedObject = document.findObject(by: objectID) {
-                switch unifiedObject.objectType {
-                case .text(let shape):
-                    if !isEditing {
-                        document.updateTextStrokeWidthInUnified(id: shape.id, width: width)
-                    }
-                case .shape(let shape),
-                     .warp(let shape),
-                     .group(let shape),
-                     .clipGroup(let shape),
-                     .clipMask(let shape):
-                    if isEditing {
-                        document.updateShapeStrokeWidthPreview(id: shape.id, width: width)
-                    } else {
-                        document.updateShapeStrokeWidthInUnified(id: shape.id, width: width)
-                    }
+            guard let index = cachedIndexMap[objectID] else { continue }
+
+            let layerIndex = document.unifiedObjects[index].layerIndex
+            switch document.unifiedObjects[index].objectType {
+            case .text(var shape):
+                if shape.typography?.hasStroke == true {
+                    shape.typography?.strokeWidth = width
+                    document.unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
                 }
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+                shape.strokeStyle?.width = width
+                document.unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
             }
         }
     }
