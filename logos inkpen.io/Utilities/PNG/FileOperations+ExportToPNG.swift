@@ -222,7 +222,8 @@ extension FileOperations {
                         layerOpacity: document.layers[layerIndex].opacity,
                         layerBlendMode: document.layers[layerIndex].blendMode,
                         liveGradientOriginX: nil,
-                        liveGradientOriginY: nil
+                        liveGradientOriginY: nil,
+                        fillStrokeTrigger: false
                     )
                 }
             }

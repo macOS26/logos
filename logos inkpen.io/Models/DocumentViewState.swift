@@ -31,6 +31,7 @@ class DocumentViewState: ObservableObject {
 
     // MARK: - Preview/Transient State
     @Published var objectPositionUpdateTrigger: Bool = false
+    @Published var fillStrokeTrigger: Bool = false
     @Published var scalePreviewDimensions: CGSize = .zero
     @Published var warpEnvelopeCorners: [UUID: [CGPoint]] = [:]
     @Published var warpBounds: [UUID: CGRect] = [:]

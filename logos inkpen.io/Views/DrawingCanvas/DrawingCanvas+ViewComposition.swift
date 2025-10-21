@@ -234,7 +234,8 @@ extension DrawingCanvas {
                             layerOpacity: layerOpacity,
                             layerBlendMode: layerBlendMode,
                             liveGradientOriginX: liveGradientOriginX,
-                            liveGradientOriginY: liveGradientOriginY
+                            liveGradientOriginY: liveGradientOriginY,
+                            fillStrokeTrigger: document.viewState.fillStrokeTrigger
                         )
                         .equatable()
                         .allowsHitTesting(isActiveLayer)

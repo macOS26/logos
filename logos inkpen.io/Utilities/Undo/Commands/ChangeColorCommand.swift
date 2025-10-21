@@ -30,10 +30,12 @@ class ChangeColorCommand: BaseCommand {
 
     override func execute(on document: VectorDocument) {
         applyColors(newColors, opacities: newOpacities, to: document)
+        document.viewState.fillStrokeTrigger.toggle()
     }
 
     override func undo(on document: VectorDocument) {
         applyColors(oldColors, opacities: oldOpacities, to: document)
+        document.viewState.fillStrokeTrigger.toggle()
     }
 
     private func applyColors(_ colors: [UUID: VectorColor],

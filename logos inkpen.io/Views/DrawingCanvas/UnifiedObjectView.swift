@@ -442,6 +442,7 @@ struct IsolatedLayerView: View, Equatable {
     let layerBlendMode: BlendMode
     let liveGradientOriginX: Double?
     let liveGradientOriginY: Double?
+    let fillStrokeTrigger: Bool
 
     @State private var cachedImage: NSImage?
 
@@ -492,7 +493,8 @@ struct IsolatedLayerView: View, Equatable {
                    lhs.layerOpacity == rhs.layerOpacity &&
                    lhs.layerBlendMode == rhs.layerBlendMode &&
                    lhs.liveScaleTransform == rhs.liveScaleTransform &&
-                   lhs.viewMode == rhs.viewMode
+                   lhs.viewMode == rhs.viewMode &&
+                   lhs.fillStrokeTrigger == rhs.fillStrokeTrigger
         }
 
         // Layer has selection - check all properties
@@ -504,7 +506,8 @@ struct IsolatedLayerView: View, Equatable {
                lhs.canvasOffset == rhs.canvasOffset &&
                lhs.layerOpacity == rhs.layerOpacity &&
                lhs.layerBlendMode == rhs.layerBlendMode &&
-               lhs.viewMode == rhs.viewMode
+               lhs.viewMode == rhs.viewMode &&
+               lhs.fillStrokeTrigger == rhs.fillStrokeTrigger
     }
 
     var body: some View {

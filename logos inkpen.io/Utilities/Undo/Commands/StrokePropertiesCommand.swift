@@ -122,6 +122,7 @@ class StrokePropertiesCommand: BaseCommand {
         case .imageOpacity:
             applyImageOpacities(newOpacities!, to: document)
         }
+        document.viewState.fillStrokeTrigger.toggle()
     }
 
     override func undo(on document: VectorDocument) {
@@ -137,6 +138,7 @@ class StrokePropertiesCommand: BaseCommand {
         case .imageOpacity:
             applyImageOpacities(oldOpacities!, to: document)
         }
+        document.viewState.fillStrokeTrigger.toggle()
     }
 
     private func applyPlacements(_ placements: [UUID: StrokePlacement], to document: VectorDocument) {

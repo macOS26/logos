@@ -14,10 +14,12 @@ class StrokeWidthCommand: BaseCommand {
 
     override func execute(on document: VectorDocument) {
         applyWidths(newWidths, to: document)
+        document.viewState.fillStrokeTrigger.toggle()
     }
 
     override func undo(on document: VectorDocument) {
         applyWidths(oldWidths, to: document)
+        document.viewState.fillStrokeTrigger.toggle()
     }
 
     private func applyWidths(_ widths: [UUID: Double], to document: VectorDocument) {
