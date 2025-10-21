@@ -265,19 +265,81 @@ struct LayerCanvasView: View {
             let strokeWidth = shape.strokeStyle?.width ?? 1.0
             ctx.stroke(Path(transformedPath), with: .color(.black), lineWidth: strokeWidth * zoomLevel)
         } else if let strokeStyle = shape.strokeStyle {
-            if let gradient = strokeStyle.gradient {
-                renderGradientToContext(gradient: gradient, path: transformedPath, isStroke: true, strokeStyle: strokeStyle, in: &ctx)
-            } else if strokeStyle.color != .clear {
-                ctx.stroke(
-                    Path(transformedPath),
-                    with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity)),
-                    style: SwiftUI.StrokeStyle(
-                        lineWidth: strokeStyle.width * zoomLevel,
-                        lineCap: strokeStyle.lineCap.cgLineCap,
-                        lineJoin: strokeStyle.lineJoin.cgLineJoin,
-                        miterLimit: strokeStyle.miterLimit
+            if strokeStyle.placement == .center {
+                // Standard center stroke
+                if let gradient = strokeStyle.gradient {
+                    renderGradientToContext(gradient: gradient, path: transformedPath, isStroke: true, strokeStyle: strokeStyle, in: &ctx)
+                } else if strokeStyle.color != .clear {
+                    ctx.stroke(
+                        Path(transformedPath),
+                        with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity)),
+                        style: SwiftUI.StrokeStyle(
+                            lineWidth: strokeStyle.width * zoomLevel,
+                            lineCap: strokeStyle.lineCap.cgLineCap,
+                            lineJoin: strokeStyle.lineJoin.cgLineJoin,
+                            miterLimit: strokeStyle.miterLimit
+                        )
                     )
-                )
+                }
+            } else {
+                // Inside or outside stroke - use path operations
+                renderStrokeWithPlacement(strokeStyle: strokeStyle, path: transformedPath, in: &ctx)
+            }
+        }
+    }
+
+    private func renderStrokeWithPlacement(strokeStyle: StrokeStyle, path: CGPath, in context: inout GraphicsContext) {
+        // Double the width for inside/outside strokes (will be masked)
+        let effectiveWidth = strokeStyle.width * 2 * zoomLevel
+
+        // Create the stroked path with double width
+        context.withCGContext { cgContext in
+            cgContext.saveGState()
+
+            // Create stroked path
+            cgContext.setLineWidth(effectiveWidth)
+            cgContext.setLineCap(strokeStyle.lineCap.cgLineCap)
+            cgContext.setLineJoin(strokeStyle.lineJoin.cgLineJoin)
+            cgContext.setMiterLimit(strokeStyle.miterLimit)
+            cgContext.addPath(path)
+            cgContext.replacePathWithStrokedPath()
+
+            guard let strokedPath = cgContext.path else {
+                cgContext.restoreGState()
+                return
+            }
+
+            // Apply placement masking
+            let finalPath: CGPath
+            switch strokeStyle.placement {
+            case .inside:
+                // Intersect stroke with original path
+                if let insidePath = CoreGraphicsPathOperations.intersection(strokedPath, path, using: .winding) {
+                    finalPath = insidePath
+                } else {
+                    finalPath = strokedPath
+                }
+            case .outside:
+                // Subtract original path from stroke
+                if let outsidePath = CoreGraphicsPathOperations.subtract(path, from: strokedPath, using: .winding) {
+                    finalPath = outsidePath
+                } else {
+                    finalPath = strokedPath
+                }
+            case .center:
+                finalPath = strokedPath
+            }
+
+            cgContext.restoreGState()
+
+            // Now render the final path with fill (since it's already the stroked shape)
+            if let gradient = strokeStyle.gradient {
+                renderCGGradientFill(gradient: gradient, path: finalPath, in: cgContext)
+            } else {
+                cgContext.setFillColor(strokeStyle.color.cgColor)
+                cgContext.setAlpha(strokeStyle.opacity)
+                cgContext.addPath(finalPath)
+                cgContext.fillPath()
             }
         }
     }
