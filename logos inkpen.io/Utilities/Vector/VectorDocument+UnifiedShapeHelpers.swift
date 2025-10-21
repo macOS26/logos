@@ -102,51 +102,21 @@ extension VectorDocument {
     }
 
     func updateShapeFillOpacityInUnified(id: UUID, opacity: Double) {
-        if let index = unifiedObjects.firstIndex(where: { obj in
-            switch obj.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.id == id
-            case .text:
-                return false
-            }
-        }) {
-            var updatedObject = unifiedObjects[index]
-            switch updatedObject.objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                if shape.fillStyle == nil {
-                    shape.fillStyle = FillStyle(color: defaultFillColor, opacity: opacity)
-                } else {
-                    shape.fillStyle?.opacity = opacity
-                }
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
-                unifiedObjects[index] = updatedObject
-            case .text:
-                break
+        updateShapeByID(id) { shape in
+            if shape.fillStyle == nil {
+                shape.fillStyle = FillStyle(color: defaultFillColor, opacity: opacity)
+            } else {
+                shape.fillStyle?.opacity = opacity
             }
         }
     }
 
     func updateShapeStrokeWidthInUnified(id: UUID, width: Double) {
-        if let index = unifiedObjects.firstIndex(where: { obj in
-            switch obj.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.id == id
-            case .text:
-                return false
-            }
-        }) {
-            var updatedObject = unifiedObjects[index]
-            switch updatedObject.objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                if shape.strokeStyle == nil {
-                    shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: width, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
-                } else {
-                    shape.strokeStyle?.width = width
-                }
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
-                unifiedObjects[index] = updatedObject
-            case .text:
-                break
+        updateShapeByID(id) { shape in
+            if shape.strokeStyle == nil {
+                shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: width, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
+            } else {
+                shape.strokeStyle?.width = width
             }
         }
     }
@@ -236,79 +206,34 @@ extension VectorDocument {
     }
 
     func updateShapeStrokeOpacityInUnified(id: UUID, opacity: Double) {
-        if let index = unifiedObjects.firstIndex(where: { obj in
-            switch obj.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.id == id
-            case .text:
-                return false
-            }
-        }) {
-            var updatedObject = unifiedObjects[index]
-            switch updatedObject.objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                if shape.strokeStyle == nil {
-                    shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: opacity)
-                } else {
-                    shape.strokeStyle?.opacity = opacity
-                }
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
-                unifiedObjects[index] = updatedObject
-            case .text:
-                break
+        updateShapeByID(id) { shape in
+            if shape.strokeStyle == nil {
+                shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: opacity)
+            } else {
+                shape.strokeStyle?.opacity = opacity
             }
         }
     }
 
     func updateShapeOpacityInUnified(id: UUID, opacity: Double) {
-        if let index = unifiedObjects.firstIndex(where: { obj in
-            switch obj.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.id == id
-            case .text:
-                return false
-            }
-        }) {
-            var updatedObject = unifiedObjects[index]
-            switch updatedObject.objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                shape.opacity = opacity
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
-                unifiedObjects[index] = updatedObject
-            case .text:
-                break
-            }
+        updateShapeByID(id) { shape in
+            shape.opacity = opacity
         }
     }
 
     func updateShapeStrokePlacementInUnified(id: UUID, placement: StrokePlacement) {
-        if let index = unifiedObjects.firstIndex(where: { obj in
-            switch obj.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.id == id
-            case .text:
-                return false
-            }
-        }) {
-            var updatedObject = unifiedObjects[index]
-            switch updatedObject.objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                if shape.strokeStyle == nil {
-                    shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
-                } else {
-                    shape.strokeStyle?.placement = placement
-                }
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
-                unifiedObjects[index] = updatedObject
-
-                NotificationCenter.default.post(
-                    name: Notification.Name("ShapePreviewUpdate"),
-                    object: nil,
-                    userInfo: ["shapeID": id, "strokePlacement": placement.rawValue]
-                )
-            case .text:
-                break
+        updateShapeByID(id) { shape in
+            if shape.strokeStyle == nil {
+                shape.strokeStyle = StrokeStyle(color: defaultStrokeColor, width: defaultStrokeWidth, placement: placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
+            } else {
+                shape.strokeStyle?.placement = placement
             }
         }
+
+        NotificationCenter.default.post(
+            name: Notification.Name("ShapePreviewUpdate"),
+            object: nil,
+            userInfo: ["shapeID": id, "strokePlacement": placement.rawValue]
+        )
     }
 }
