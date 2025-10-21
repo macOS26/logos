@@ -619,48 +619,35 @@ struct StrokeFillPanel: View {
 
     private func updateFillOpacityLive(_ opacity: Double, isEditing: Bool) {
         for objectID in document.viewState.selectedObjectIDs {
-            if let unifiedObject = document.findObject(by: objectID) {
-                switch unifiedObject.objectType {
-                case .text(let shape):
-                    if isEditing {
-                        document.updateTextFillOpacityPreview(id: shape.id, opacity: opacity)
-                    } else {
-                        document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
-                    }
-                case .shape(let shape),
-                     .warp(let shape),
-                     .group(let shape),
-                     .clipGroup(let shape),
-                     .clipMask(let shape):
-                    if isEditing {
-                        document.updateShapeFillOpacityPreview(id: shape.id, opacity: opacity)
-                    } else {
-                        document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
-                    }
-                }
+            guard let index = cachedIndexMap[objectID] else { continue }
+
+            let layerIndex = document.unifiedObjects[index].layerIndex
+            switch document.unifiedObjects[index].objectType {
+            case .text(var shape):
+                shape.typography?.fillOpacity = opacity
+                document.unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+                shape.fillStyle?.opacity = opacity
+                document.unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
             }
         }
+        document.objectWillChange.send()
     }
 
     private func updateStrokeOpacityLive(_ opacity: Double, isEditing: Bool) {
         for objectID in document.viewState.selectedObjectIDs {
-            if let unifiedObject = document.findObject(by: objectID) {
-                switch unifiedObject.objectType {
-                case .text:
-                    break
-                case .shape(let shape),
-                     .warp(let shape),
-                     .group(let shape),
-                     .clipGroup(let shape),
-                     .clipMask(let shape):
-                    if isEditing {
-                        document.updateShapeStrokeOpacityPreview(id: shape.id, opacity: opacity)
-                    } else {
-                        document.updateShapeStrokeOpacityInUnified(id: shape.id, opacity: opacity)
-                    }
-                }
+            guard let index = cachedIndexMap[objectID] else { continue }
+
+            let layerIndex = document.unifiedObjects[index].layerIndex
+            switch document.unifiedObjects[index].objectType {
+            case .text:
+                break
+            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
+                shape.strokeStyle?.opacity = opacity
+                document.unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
             }
         }
+        document.objectWillChange.send()
     }
 
     private func updateStrokeWidthLive(_ width: Double, isEditing: Bool) {
