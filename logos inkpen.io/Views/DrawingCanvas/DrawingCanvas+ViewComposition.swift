@@ -220,6 +220,12 @@ extension DrawingCanvas {
                     if let objects = objectsForLayer(layerIndex) {
                         let isActiveLayer = document.activeLayerIndexDuringDrag == nil || document.activeLayerIndexDuringDrag == layerIndex
 
+                        // Get full data of selected objects in this layer for Equatable comparison
+                        let selectedData = Dictionary(uniqueKeysWithValues:
+                            objects.filter { document.viewState.selectedObjectIDs.contains($0.id) }
+                                   .map { ($0.id, $0) }
+                        )
+
                         IsolatedLayerView(
                             objects: objects,
                             layerID: layer.id,
@@ -235,7 +241,7 @@ extension DrawingCanvas {
                             layerBlendMode: layerBlendMode,
                             liveGradientOriginX: liveGradientOriginX,
                             liveGradientOriginY: liveGradientOriginY,
-                            canvasTriggers: document.viewState.canvasTriggers
+                            selectedObjectData: selectedData
                         )
                         .equatable()
                         .allowsHitTesting(isActiveLayer)

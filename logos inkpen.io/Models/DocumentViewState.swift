@@ -29,9 +29,6 @@ class DocumentViewState: ObservableObject {
     @Published var colorChangeNotification: UUID = UUID()
     @Published var lastColorChangeType: ColorChangeType = .fillOpacity
 
-    // MARK: - Canvas Update Triggers
-    @Published var canvasTriggers = CanvasUpdateTriggers()
-
     // MARK: - Preview/Transient State
     @Published var objectPositionUpdateTrigger: Bool = false
     @Published var scalePreviewDimensions: CGSize = .zero
@@ -47,41 +44,4 @@ class DocumentViewState: ObservableObject {
     @Published var selectedObjectIDs: Set<UUID> = []
 
     init() {}
-
-    // MARK: - Canvas Trigger Helpers
-    func triggerFillColorUpdate() {
-        var triggers = canvasTriggers
-        triggers.fillColor.toggle()
-        canvasTriggers = triggers
-    }
-
-    func triggerStrokeColorUpdate() {
-        var triggers = canvasTriggers
-        triggers.strokeColor.toggle()
-        canvasTriggers = triggers
-    }
-
-    func triggerFillOpacityUpdate() {
-        var triggers = canvasTriggers
-        triggers.fillOpacity.toggle()
-        canvasTriggers = triggers
-    }
-
-    func triggerStrokeOpacityUpdate() {
-        var triggers = canvasTriggers
-        triggers.strokeOpacity.toggle()
-        canvasTriggers = triggers
-    }
-
-    func triggerStrokeWidthUpdate() {
-        var triggers = canvasTriggers
-        triggers.strokeWidth.toggle()
-        canvasTriggers = triggers
-    }
-
-    func triggerStrokePlacementUpdate() {
-        var triggers = canvasTriggers
-        triggers.strokePlacement.toggle()
-        canvasTriggers = triggers
-    }
 }

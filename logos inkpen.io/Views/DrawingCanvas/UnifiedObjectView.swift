@@ -442,7 +442,7 @@ struct IsolatedLayerView: View, Equatable {
     let layerBlendMode: BlendMode
     let liveGradientOriginX: Double?
     let liveGradientOriginY: Double?
-    let canvasTriggers: CanvasUpdateTriggers
+    let selectedObjectData: [UUID: VectorObject]  // Full data of selected objects
 
     @State private var cachedImage: NSImage?
 
@@ -453,12 +453,14 @@ struct IsolatedLayerView: View, Equatable {
 
     // Equatable: Only re-render if layer has selection and drag changed, or if objects changed
     static func == (lhs: IsolatedLayerView, rhs: IsolatedLayerView) -> Bool {
+        
         // If layer ID changed, definitely need to re-render
         guard lhs.layerID == rhs.layerID else { return false }
 
         // If objects array changed, need to re-render
         guard lhs.objects.count == rhs.objects.count else { return false }
-
+        
+        guard lhs.selectedObjectIDs == rhs.selectedObjectIDs else { return false}
         // Check if objects were reordered (same count but different order)
         for (index, obj) in lhs.objects.enumerated() {
             if index < rhs.objects.count && obj.id != rhs.objects[index].id {
@@ -466,27 +468,19 @@ struct IsolatedLayerView: View, Equatable {
             }
         }
 
-        // Check if this layer has selection
-        let lhsHasSelection = lhs.hasSelection
-        let rhsHasSelection = rhs.hasSelection
-
-        // Check if drag state changed (started or stopped)
-        let lhsDragging = lhs.dragPreviewDelta != .zero
-        let rhsDragging = rhs.dragPreviewDelta != .zero
-        let dragStateChanged = lhsDragging != rhsDragging
-
-        // If layer has no selection
-        if !lhsHasSelection && !rhsHasSelection {
-            // Always update if drag state changed (started/stopped) - needed for caching
-            if dragStateChanged {
-                return false  // Not equal - force update
-            }
-
-            // During drag, don't re-render (use cached image)
-            if lhsDragging && rhsDragging {
-                return true  // Equal - skip re-render
-            }
-
+        // Layer has selection - check all properties INCLUDING selected object data
+        
+        if lhs.selectedObjectIDs == rhs.selectedObjectIDs {
+            return lhs.selectedObjectData == rhs.selectedObjectData &&
+                   lhs.dragPreviewDelta == rhs.dragPreviewDelta &&
+                   lhs.dragPreviewTrigger == rhs.dragPreviewTrigger &&
+                   lhs.liveScaleTransform == rhs.liveScaleTransform &&
+                   lhs.zoomLevel == rhs.zoomLevel &&
+                   lhs.canvasOffset == rhs.canvasOffset &&
+                   lhs.layerOpacity == rhs.layerOpacity &&
+                   lhs.layerBlendMode == rhs.layerBlendMode &&
+                   lhs.viewMode == rhs.viewMode
+        } else {
             // Not dragging - only re-render if zoom, offset, opacity, blend mode, or scale transform changed
             return lhs.zoomLevel == rhs.zoomLevel &&
                    lhs.canvasOffset == rhs.canvasOffset &&
@@ -494,20 +488,8 @@ struct IsolatedLayerView: View, Equatable {
                    lhs.layerBlendMode == rhs.layerBlendMode &&
                    lhs.liveScaleTransform == rhs.liveScaleTransform &&
                    lhs.viewMode == rhs.viewMode &&
-                   lhs.canvasTriggers == rhs.canvasTriggers
+                   lhs.selectedObjectData == rhs.selectedObjectData
         }
-
-        // Layer has selection - check all properties INCLUDING canvasTriggers
-        return lhs.selectedObjectIDs == rhs.selectedObjectIDs &&
-               lhs.dragPreviewDelta == rhs.dragPreviewDelta &&
-               lhs.dragPreviewTrigger == rhs.dragPreviewTrigger &&
-               lhs.liveScaleTransform == rhs.liveScaleTransform &&
-               lhs.zoomLevel == rhs.zoomLevel &&
-               lhs.canvasOffset == rhs.canvasOffset &&
-               lhs.layerOpacity == rhs.layerOpacity &&
-               lhs.layerBlendMode == rhs.layerBlendMode &&
-               lhs.viewMode == rhs.viewMode &&
-               lhs.canvasTriggers == rhs.canvasTriggers
     }
 
     var body: some View {
