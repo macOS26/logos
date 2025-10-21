@@ -121,7 +121,10 @@ extension VectorDocument {
     }
 
     func addShapeToUnifiedSystem(_ shape: VectorShape, layerIndex: Int) {
-        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else {
+            print("❌ addShapeToUnifiedSystem: Invalid layer index \(layerIndex), layers count: \(snapshot.layers.count)")
+            return
+        }
 
         let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex)
 
@@ -137,6 +140,17 @@ extension VectorDocument {
         snapshot.objects[shape.id] = unifiedObject
         if !snapshot.layers[layerIndex].objectIDs.contains(shape.id) {
             snapshot.layers[layerIndex].objectIDs.append(shape.id)
+            print("✅ Added shape \(shape.id) to layer \(layerIndex), layer now has \(snapshot.layers[layerIndex].objectIDs.count) objects")
+
+            // Debug: Check if we can retrieve it immediately
+            let testObjects = snapshot.layers[layerIndex].objectIDs.compactMap { id in
+                snapshot.objects[id]
+            }.filter { $0.isVisible }
+            print("🔍 TEST: Can retrieve \(testObjects.count) visible objects from layer \(layerIndex)")
+            if testObjects.isEmpty && !snapshot.layers[layerIndex].objectIDs.isEmpty {
+                print("   ❌ Objects exist but can't retrieve them!")
+                print("   Object visible? \(unifiedObject.isVisible)")
+            }
         }
 
         // Keep unifiedObjects in sync for now (for undo/redo)
@@ -146,6 +160,8 @@ extension VectorDocument {
         } else {
             unifiedObjects.append(unifiedObject)
         }
+
+        print("📊 Snapshot now has \(snapshot.objects.count) objects total")
     }
 
     func addShapeToFrontOfUnifiedSystem(_ shape: VectorShape, layerIndex: Int) {

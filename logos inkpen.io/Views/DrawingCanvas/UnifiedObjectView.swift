@@ -542,14 +542,8 @@ struct IsolatedLayerView: View, Equatable {
 
         guard lhs.selectedObjectIDs == rhs.selectedObjectIDs else { return false}
 
-       
-
-        // Check if objects were reordered (same count but different order)
-        for (index, obj) in lhs.objects.enumerated() {
-            if index < rhs.objects.count && obj.id != rhs.objects[index].id {
-                return false  // Objects reordered - force update
-            }
-        }
+        // Check if objects themselves changed (not just count/order)
+        guard lhs.objects == rhs.objects else { return false }
 
         // Layer has selection - check all properties INCLUDING selected object data
         

@@ -156,88 +156,93 @@ extension DrawingCanvas {
     }
 
     @ViewBuilder
+    private func renderLayer(layerIndex: Int, layer: Layer, geometry: GeometryProxy) -> some View {
+        let layerOpacity = layerPreviewOpacities[layer.id] ?? layer.opacity
+        let layerBlendMode = layer.blendMode
+
+        if layer.name == "Pasteboard" {
+            PasteboardBackgroundView(
+                pasteboardSize: CGSize(
+                    width: document.settings.sizeInPoints.width * 10,
+                    height: document.settings.sizeInPoints.height * 10
+                ),
+                pasteboardOrigin: CGPoint(
+                    x: -(document.settings.sizeInPoints.width * 10 - document.settings.sizeInPoints.width) / 2,
+                    y: -(document.settings.sizeInPoints.height * 10 - document.settings.sizeInPoints.height) / 2
+                ),
+                zoomLevel: document.viewState.zoomLevel,
+                canvasOffset: document.viewState.canvasOffset
+            )
+            .opacity(layerOpacity)
+            .blendMode(layerBlendMode.swiftUIBlendMode)
+        } else if layer.name == "Canvas" {
+            ZStack {
+                CanvasBackgroundView(
+                    canvasSize: document.settings.sizeInPoints,
+                    backgroundColor: document.settings.backgroundColor.color,
+                    zoomLevel: document.viewState.zoomLevel,
+                    canvasOffset: document.viewState.canvasOffset
+                )
+
+                if document.gridSettings.showGrid, document.settings.gridSpacing > 0 {
+                    GridView(
+                        gridSpacing: document.settings.gridSpacing,
+                        canvasSize: document.settings.sizeInPoints,
+                        unit: document.settings.unit,
+                        zoomLevel: document.viewState.zoomLevel,
+                        canvasOffset: document.viewState.canvasOffset
+                    )
+                    .equatable()
+                    .allowsHitTesting(false)
+                }
+            }
+            .opacity(layerOpacity)
+            .blendMode(layerBlendMode.swiftUIBlendMode)
+        }
+
+        // Get objects for this layer from snapshot
+        let objects = layer.objectIDs.compactMap { objectID in
+            document.snapshot.objects[objectID]
+        }.filter { $0.isVisible }
+
+        if !objects.isEmpty {
+            let isActiveLayer = document.activeLayerIndexDuringDrag == nil || document.activeLayerIndexDuringDrag == layerIndex
+
+            // Get full data of selected objects in this layer for Equatable comparison
+            let selectedData = Dictionary(uniqueKeysWithValues:
+                objects.filter { document.viewState.selectedObjectIDs.contains($0.id) }
+                       .map { ($0.id, $0) }
+            )
+
+            IsolatedLayerView(
+                objects: objects,
+                layerID: layer.id,
+                document: document,
+                zoomLevel: document.viewState.zoomLevel,
+                canvasOffset: document.viewState.canvasOffset,
+                selectedObjectIDs: document.viewState.selectedObjectIDs,
+                viewMode: document.viewState.viewMode,
+                dragPreviewDelta: isActiveLayer ? currentDragDelta : .zero,
+                dragPreviewTrigger: dragPreviewUpdateTrigger,
+                liveScaleTransform: liveScaleTransform,
+                layerOpacity: layerOpacity,
+                layerBlendMode: layerBlendMode,
+                liveGradientOriginX: liveGradientOriginX,
+                liveGradientOriginY: liveGradientOriginY,
+                selectedObjectData: selectedData
+            )
+            // .equatable() // Temporarily disabled to test rendering
+            .allowsHitTesting(isActiveLayer)
+        }
+    }
+
+    @ViewBuilder
     internal func canvasBaseContent(geometry: GeometryProxy) -> some View {
         ZStack {
             // Render layers with background fills for special layers
             ForEach(Array(document.snapshot.layers.enumerated()), id: \.offset) { layerIndex, layer in
                 if layer.isVisible {
-                    let layerOpacity = layerPreviewOpacities[layer.id] ?? layer.opacity
-                    let layerBlendMode = layer.blendMode
-
-                    if layer.name == "Pasteboard" {
-                        PasteboardBackgroundView(
-                            pasteboardSize: CGSize(
-                                width: document.settings.sizeInPoints.width * 10,
-                                height: document.settings.sizeInPoints.height * 10
-                            ),
-                            pasteboardOrigin: CGPoint(
-                                x: -(document.settings.sizeInPoints.width * 10 - document.settings.sizeInPoints.width) / 2,
-                                y: -(document.settings.sizeInPoints.height * 10 - document.settings.sizeInPoints.height) / 2
-                            ),
-                            zoomLevel: document.viewState.zoomLevel,
-                            canvasOffset: document.viewState.canvasOffset
-                        )
-                        .opacity(layerOpacity)
-                        .blendMode(layerBlendMode.swiftUIBlendMode)
-                    } else if layer.name == "Canvas" {
-                        ZStack {
-                            CanvasBackgroundView(
-                                canvasSize: document.settings.sizeInPoints,
-                                backgroundColor: document.settings.backgroundColor.color,
-                                zoomLevel: document.viewState.zoomLevel,
-                                canvasOffset: document.viewState.canvasOffset
-                            )
-
-                            if document.gridSettings.showGrid, document.settings.gridSpacing > 0 {
-                                GridView(
-                                    gridSpacing: document.settings.gridSpacing,
-                                    canvasSize: document.settings.sizeInPoints,
-                                    unit: document.settings.unit,
-                                    zoomLevel: document.viewState.zoomLevel,
-                                    canvasOffset: document.viewState.canvasOffset
-                                )
-                                .equatable()
-                                .allowsHitTesting(false)
-                            }
-                        }
-                        .opacity(layerOpacity)
-                        .blendMode(layerBlendMode.swiftUIBlendMode)
-                    }
-
-                    // Get objects for this layer from snapshot
-                    let objects = layer.objectIDs.compactMap { objectID in
-                        document.snapshot.objects[objectID]
-                    }.filter { $0.isVisible }
-
-                    if !objects.isEmpty {
-                        let isActiveLayer = document.activeLayerIndexDuringDrag == nil || document.activeLayerIndexDuringDrag == layerIndex
-
-                        // Get full data of selected objects in this layer for Equatable comparison
-                        let selectedData = Dictionary(uniqueKeysWithValues:
-                            objects.filter { document.viewState.selectedObjectIDs.contains($0.id) }
-                                   .map { ($0.id, $0) }
-                        )
-
-                        IsolatedLayerView(
-                            objects: objects,
-                            layerID: layer.id,
-                            document: document,
-                            zoomLevel: document.viewState.zoomLevel,
-                            canvasOffset: document.viewState.canvasOffset,
-                            selectedObjectIDs: document.viewState.selectedObjectIDs,
-                            viewMode: document.viewState.viewMode,
-                            dragPreviewDelta: isActiveLayer ? currentDragDelta : .zero,
-                            dragPreviewTrigger: dragPreviewUpdateTrigger,
-                            liveScaleTransform: liveScaleTransform,
-                            layerOpacity: layerOpacity,
-                            layerBlendMode: layerBlendMode,
-                            liveGradientOriginX: liveGradientOriginX,
-                            liveGradientOriginY: liveGradientOriginY,
-                            selectedObjectData: selectedData
-                        )
-                        .equatable()
-                        .allowsHitTesting(isActiveLayer)
-                    }
+                    renderLayer(layerIndex: layerIndex, layer: layer, geometry: geometry)
                 }
             }
 

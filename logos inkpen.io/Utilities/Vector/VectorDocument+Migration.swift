@@ -20,6 +20,11 @@ extension VectorDocument {
             colorSwatches: colorSwatches,
             gridSettings: gridSettings
         )
+
+        print("🔄 Migration complete: \(snapshot.layers.count) layers, \(snapshot.objects.count) objects")
+        for (i, layer) in snapshot.layers.enumerated() {
+            print("  Layer \(i): \(layer.name) - \(layer.objectIDs.count) objects")
+        }
     }
 
     /// Build objects dictionary from unifiedObjects array

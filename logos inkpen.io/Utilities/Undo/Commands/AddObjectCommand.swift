@@ -15,6 +15,15 @@ class AddObjectCommand: BaseCommand {
     override func execute(on document: VectorDocument) {
         for obj in objects {
             document.unifiedObjects.append(obj)
+
+            // Also update snapshot
+            let layerIndex = obj.layerIndex
+            if layerIndex >= 0 && layerIndex < document.snapshot.layers.count {
+                document.snapshot.objects[obj.id] = obj
+                if !document.snapshot.layers[layerIndex].objectIDs.contains(obj.id) {
+                    document.snapshot.layers[layerIndex].objectIDs.append(obj.id)
+                }
+            }
         }
     }
 
