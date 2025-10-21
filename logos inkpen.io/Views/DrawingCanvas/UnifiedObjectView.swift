@@ -24,7 +24,9 @@ struct UnifiedObjectContentView: View {
         Group {
             switch unifiedObject.objectType {
             case .text(let shape):
-                if shape.textContent != nil, shape.typography != nil {
+                // Only show NSTextView when editing (blue mode)
+                // When NOT editing (green/gray mode), text is rendered on Canvas
+                if shape.textContent != nil, shape.typography != nil, shape.isEditing == true {
                     StableProfessionalTextCanvas(
                         document: document,
                         textObjectID: shape.id,
