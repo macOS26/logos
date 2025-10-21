@@ -21,10 +21,22 @@ class OpacityCommand: BaseCommand {
 
     override func execute(on document: VectorDocument) {
         applyOpacities(newOpacities, to: document)
+        switch target {
+        case .fill:
+            document.viewState.canvasTriggers.fillOpacity.toggle()
+        case .stroke:
+            document.viewState.canvasTriggers.strokeOpacity.toggle()
+        }
     }
 
     override func undo(on document: VectorDocument) {
         applyOpacities(oldOpacities, to: document)
+        switch target {
+        case .fill:
+            document.viewState.canvasTriggers.fillOpacity.toggle()
+        case .stroke:
+            document.viewState.canvasTriggers.strokeOpacity.toggle()
+        }
     }
 
     private func applyOpacities(_ opacities: [UUID: Double], to document: VectorDocument) {
