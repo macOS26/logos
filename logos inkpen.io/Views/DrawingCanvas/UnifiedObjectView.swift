@@ -312,17 +312,17 @@ struct LayerCanvasView: View {
             // Apply placement masking
             let finalPath: CGPath
             switch strokeStyle.placement {
-            case .outside:
-                // Subtract original path from stroke (keeps only the outside part)
-                if let outsidePath = CoreGraphicsPathOperations.subtract(path, from: strokedPath, using: .winding) {
-                    finalPath = outsidePath
-                } else {
-                    finalPath = strokedPath
-                }
             case .inside:
                 // Intersect stroke with original path (keeps only the inside part)
                 if let insidePath = CoreGraphicsPathOperations.intersection(strokedPath, path, using: .winding) {
                     finalPath = insidePath
+                } else {
+                    finalPath = strokedPath
+                }
+            case .outside:
+                // Subtract original path from stroke (keeps only the outside part)
+                if let outsidePath = CoreGraphicsPathOperations.subtract(path, from: strokedPath, using: .winding) {
+                    finalPath = outsidePath
                 } else {
                     finalPath = strokedPath
                 }
