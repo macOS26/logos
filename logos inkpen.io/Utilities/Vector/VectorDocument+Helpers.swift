@@ -209,8 +209,8 @@ extension VectorDocument {
             }
         }
 
-        if backgroundColor != .white {
-            colors.insert(backgroundColor)
+        if settings.backgroundColor != .white {
+            colors.insert(settings.backgroundColor)
         }
 
         return colors

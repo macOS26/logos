@@ -69,8 +69,7 @@ class VectorDocument: ObservableObject, Codable {
         case noFill = "No Fill"
     }
     @Published var gridSettings: GridSettings = .default
-    @Published var backgroundColor: VectorColor = .white
-    
+
     internal var isUndoRedoOperation: Bool = false
     
     lazy var commandManager: CommandManager = {
@@ -137,8 +136,7 @@ class VectorDocument: ObservableObject, Codable {
             snapToPoint: settings.snapToPoint,
             gridSpacing: settings.gridSpacing
         )
-        self.backgroundColor = settings.backgroundColor
-        
+
         createCanvasAndWorkingLayers()
         
         populateUnifiedObjectsFromLayersPreservingOrder()
@@ -245,8 +243,7 @@ class VectorDocument: ObservableObject, Codable {
             snapToPoint: settings.snapToPoint,
             gridSpacing: settings.gridSpacing
         )
-        backgroundColor = settings.backgroundColor
-        
+
         if unifiedObjects.isEmpty {
             populateUnifiedObjectsFromLayersPreservingOrder()
         }
