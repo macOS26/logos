@@ -55,6 +55,9 @@ class TransformCommand: BaseCommand {
                     obj = VectorObject(shape: shape, layerIndex: obj.layerIndex)
                     document.unifiedObjects[index] = obj
                 }
+
+                // Also update snapshot
+                document.snapshot.objects[id] = obj
             }
         }
 

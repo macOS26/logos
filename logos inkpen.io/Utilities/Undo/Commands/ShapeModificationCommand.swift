@@ -27,10 +27,14 @@ class ShapeModificationCommand: BaseCommand {
             if let index = document.unifiedObjects.firstIndex(where: { $0.id == id }),
                let shape = shapes[id] {
                 let obj = document.unifiedObjects[index]
-                document.unifiedObjects[index] = VectorObject(
+                let updatedObj = VectorObject(
                     shape: shape,
                     layerIndex: obj.layerIndex,
                 )
+                document.unifiedObjects[index] = updatedObj
+
+                // Also update snapshot
+                document.snapshot.objects[id] = updatedObj
             }
         }
     }

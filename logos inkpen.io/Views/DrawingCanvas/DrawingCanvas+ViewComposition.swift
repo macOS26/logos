@@ -231,7 +231,7 @@ extension DrawingCanvas {
                 liveGradientOriginY: liveGradientOriginY,
                 selectedObjectData: selectedData
             )
-            // .equatable() // Temporarily disabled to test rendering
+            .id("\(layer.id)-\(currentDragDelta)")  // Force update when drag changes
             .allowsHitTesting(isActiveLayer)
         }
     }
