@@ -2,6 +2,12 @@ import SwiftUI
 import Combine
 
 class VectorDocument: ObservableObject, Codable {
+    // MARK: - New Structure
+    var snapshot: DocumentSnapshot = DocumentSnapshot()
+    var newLayers: [Layer] = []
+    var objects: [UUID: VectorObject] = [:]
+
+    // MARK: - Legacy Structure (to be migrated)
     // View-only state (doesn't trigger document saves)
     @Published var viewState: DocumentViewState = DocumentViewState()
     @Published var settings: DocumentSettings
@@ -11,6 +17,7 @@ class VectorDocument: ObservableObject, Codable {
     var directSelectedShapeIDs: Set<UUID> = []
     @Published var documentColorDefaults: ColorDefaults = ColorDefaults() {
         didSet {
+            
             settings.fillColor = documentColorDefaults.fillColor
             settings.strokeColor = documentColorDefaults.strokeColor
         }
