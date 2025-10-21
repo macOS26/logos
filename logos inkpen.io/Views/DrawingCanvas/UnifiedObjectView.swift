@@ -14,10 +14,10 @@ struct UnifiedObjectContentView: View {
     let liveGradientOriginY: Double?
 
     private var layerIsVisible: Bool {
-        guard unifiedObject.layerIndex >= 0 && unifiedObject.layerIndex < document.layers.count else {
+        guard unifiedObject.layerIndex >= 0 && unifiedObject.layerIndex < document.snapshot.layers.count else {
             return true
         }
-        return document.layers[unifiedObject.layerIndex].isVisible
+        return document.snapshot.layers[unifiedObject.layerIndex].isVisible
     }
 
     var body: some View {
@@ -45,7 +45,7 @@ struct UnifiedObjectContentView: View {
                  .group(let shape),
                  .clipGroup(let shape):
                 if let clipID = shape.clippedByShapeID {
-                    if let maskUnifiedObject = document.findObject(by: clipID) {
+                    if let maskUnifiedObject = document.snapshot.objects[clipID] {
                         let maskShape = maskUnifiedObject.shape
                         let clippedPath = createPreTransformedPath(for: shape)
                         let maskPath = createPreTransformedPath(for: maskShape)
@@ -562,8 +562,7 @@ struct IsolatedLayerView: View, Equatable {
                    lhs.canvasOffset == rhs.canvasOffset &&
                    lhs.layerOpacity == rhs.layerOpacity &&
                    lhs.layerBlendMode == rhs.layerBlendMode &&
-                   lhs.viewMode == rhs.viewMode &&
-                   lhs.document.unifiedObjectIndexCache == rhs.document.unifiedObjectIndexCache
+                   lhs.viewMode == rhs.viewMode
         } else {
             // Not dragging - only re-render if zoom, offset, opacity, blend mode, or scale transform changed
             return lhs.zoomLevel == rhs.zoomLevel &&
