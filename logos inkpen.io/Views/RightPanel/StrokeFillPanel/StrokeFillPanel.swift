@@ -15,7 +15,7 @@ struct StrokeFillPanel: View {
 
     private var selectedStrokeColor: VectorColor {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
+           let unifiedObject = document.snapshot.objects[firstSelectedObjectID] {
             switch unifiedObject.objectType {
             case .text(let shape):
                 return shape.typography?.hasStroke == true ? shape.typography?.strokeColor ?? .clear : .clear
@@ -36,7 +36,7 @@ struct StrokeFillPanel: View {
 
     private var selectedFillColor: VectorColor {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
+           let unifiedObject = document.snapshot.objects[firstSelectedObjectID] {
             switch unifiedObject.objectType {
             case .text(let shape):
                 return shape.typography?.fillColor ?? .black
@@ -55,7 +55,7 @@ struct StrokeFillPanel: View {
 
     private var strokeWidth: Double {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
+           let unifiedObject = document.snapshot.objects[ firstSelectedObjectID] {
             switch unifiedObject.objectType {
             case .text(let shape):
                 return shape.typography?.strokeWidth ?? document.defaultStrokeWidth
@@ -72,7 +72,7 @@ struct StrokeFillPanel: View {
 
     private var strokePlacement: StrokePlacement {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
+           let unifiedObject = document.snapshot.objects[ firstSelectedObjectID] {
             switch unifiedObject.objectType {
             case .text:
                 return document.strokeDefaults.placement
@@ -89,7 +89,7 @@ struct StrokeFillPanel: View {
 
     private var fillOpacity: Double {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
+           let unifiedObject = document.snapshot.objects[ firstSelectedObjectID] {
             switch unifiedObject.objectType {
             case .text(let shape):
                 return shape.typography?.fillOpacity ?? document.defaultFillOpacity
@@ -108,7 +108,7 @@ struct StrokeFillPanel: View {
 
     private var strokeOpacity: Double {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
+           let unifiedObject = document.snapshot.objects[ firstSelectedObjectID] {
             switch unifiedObject.objectType {
             case .text(let shape):
                 return shape.typography?.strokeOpacity ?? document.defaultStrokeOpacity
@@ -127,7 +127,7 @@ struct StrokeFillPanel: View {
 
     private var strokeLineJoin: CGLineJoin {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
+           let unifiedObject = document.snapshot.objects[ firstSelectedObjectID] {
             switch unifiedObject.objectType {
             case .text:
                 return document.strokeDefaults.lineJoin
@@ -144,7 +144,7 @@ struct StrokeFillPanel: View {
 
     private var strokeLineCap: CGLineCap {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
+           let unifiedObject = document.snapshot.objects[ firstSelectedObjectID] {
             switch unifiedObject.objectType {
             case .text:
                 return document.strokeDefaults.lineCap
@@ -161,7 +161,7 @@ struct StrokeFillPanel: View {
 
     private var strokeMiterLimit: Double {
         if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.findObject(by: firstSelectedObjectID) {
+           let unifiedObject = document.snapshot.objects[ firstSelectedObjectID] {
             switch unifiedObject.objectType {
             case .text:
                 return document.strokeDefaults.miterLimit
@@ -178,7 +178,7 @@ struct StrokeFillPanel: View {
 
     private var hasSelectedImages: Bool {
         return document.viewState.selectedObjectIDs.contains { objectID in
-            if let unifiedObject = document.findObject(by: objectID) {
+            if let unifiedObject = document.snapshot.objects[objectID] {
                 switch unifiedObject.objectType {
                 case .text:
                     return false
@@ -196,7 +196,7 @@ struct StrokeFillPanel: View {
 
     private var selectedImageOpacity: Double {
         for objectID in document.viewState.selectedObjectIDs {
-            if let unifiedObject = document.findObject(by: objectID) {
+            if let unifiedObject = document.snapshot.objects[objectID] {
                 switch unifiedObject.objectType {
                 case .text:
                     continue
@@ -569,7 +569,7 @@ struct StrokeFillPanel: View {
         var newOpacities: [UUID: Double] = [:]
 
         for objectID in document.viewState.selectedObjectIDs {
-            if let obj = document.findObject(by: objectID) {
+            if let obj = document.snapshot.objects[objectID] {
                 switch obj.objectType {
                 case .text(let shape):
                     oldOpacities[objectID] = shape.typography?.fillOpacity ?? 1.0
@@ -670,7 +670,7 @@ struct StrokeFillPanel: View {
         document.strokeDefaults.placement = placement
 
         for objectID in document.viewState.selectedObjectIDs {
-            if let unifiedObject = document.findObject(by: objectID) {
+            if let unifiedObject = document.snapshot.objects[objectID] {
                 switch unifiedObject.objectType {
                 case .text:
                     break
@@ -692,7 +692,7 @@ struct StrokeFillPanel: View {
         var newWidths: [UUID: Double] = [:]
 
         for objectID in document.viewState.selectedObjectIDs {
-            if let obj = document.findObject(by: objectID) {
+            if let obj = document.snapshot.objects[objectID] {
                 switch obj.objectType {
                 case .text(let shape):
                     oldWidths[objectID] = shape.typography?.strokeWidth ?? 1.0
@@ -750,7 +750,7 @@ struct StrokeFillPanel: View {
         var newPlacements: [UUID: StrokePlacement] = [:]
 
         for shapeID in activeShapeIDs {
-            if let obj = document.findObject(by: shapeID) {
+            if let obj = document.snapshot.objects[shapeID] {
                 switch obj.objectType {
                 case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                     oldPlacements[shapeID] = shape.strokeStyle?.placement ?? .center
@@ -808,7 +808,7 @@ struct StrokeFillPanel: View {
             var newOpacities: [UUID: Double] = [:]
 
             for shapeID in activeShapeIDs {
-                if let obj = document.findObject(by: shapeID) {
+                if let obj = document.snapshot.objects[shapeID] {
                     switch obj.objectType {
                     case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                         oldOpacities[shapeID] = shape.strokeStyle?.opacity ?? 1.0
@@ -881,7 +881,7 @@ struct StrokeFillPanel: View {
             var newLineJoins: [UUID: CGLineJoin] = [:]
 
             for shapeID in activeShapeIDs {
-                if let obj = document.findObject(by: shapeID) {
+                if let obj = document.snapshot.objects[shapeID] {
                     switch obj.objectType {
                     case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                         oldLineJoins[shapeID] = shape.strokeStyle?.lineJoin.cgLineJoin ?? .miter
@@ -939,7 +939,7 @@ struct StrokeFillPanel: View {
             var newLineCaps: [UUID: CGLineCap] = [:]
 
             for shapeID in activeShapeIDs {
-                if let obj = document.findObject(by: shapeID) {
+                if let obj = document.snapshot.objects[shapeID] {
                     switch obj.objectType {
                     case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                         oldLineCaps[shapeID] = shape.strokeStyle?.lineCap.cgLineCap ?? .butt
@@ -997,7 +997,7 @@ struct StrokeFillPanel: View {
             var newMiterLimits: [UUID: Double] = [:]
 
             for shapeID in activeShapeIDs {
-                if let obj = document.findObject(by: shapeID) {
+                if let obj = document.snapshot.objects[shapeID] {
                     switch obj.objectType {
                     case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                         oldMiterLimits[shapeID] = shape.strokeStyle?.miterLimit ?? 10.0
@@ -1069,7 +1069,7 @@ struct StrokeFillPanel: View {
         var newOpacities: [UUID: Double] = [:]
 
         for shapeID in document.viewState.selectedObjectIDs {
-            if let obj = document.findObject(by: shapeID) {
+            if let obj = document.snapshot.objects[shapeID] {
                 switch obj.objectType {
                 case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                     oldOpacities[shapeID] = shape.opacity
@@ -1110,7 +1110,7 @@ struct StrokeFillPanel: View {
         var newOpacities: [UUID: Double] = [:]
 
         for shapeID in activeShapeIDs {
-            if let obj = document.findObject(by: shapeID) {
+            if let obj = document.snapshot.objects[shapeID] {
                 switch obj.objectType {
                 case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
                     oldColors[shapeID] = shape.fillStyle?.color ?? .black
