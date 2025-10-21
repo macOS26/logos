@@ -171,34 +171,49 @@ extension VectorDocument {
     }
 
     func getObjectsInStackingOrder() -> [VectorObject] {
-        // Array position IS the stacking order now
-        return unifiedObjects
-            .filter { object in
-                guard object.isVisible else { return false }
-                guard object.layerIndex < layers.count else { return false }
-                let layer = layers[object.layerIndex]
-                return layer.isVisible
+        // Iterate layers in stack order, then objects in draw order
+        var result: [VectorObject] = []
+
+        for layer in snapshot.layers {
+            // Skip invisible layers
+            guard layer.isVisible else { continue }
+
+            // Get objects for this layer in draw order
+            for objectID in layer.objectIDs {
+                guard let object = snapshot.objects[objectID] else { continue }
+                // Skip invisible objects
+                guard object.isVisible else { continue }
+
+                result.append(object)
             }
+        }
+
+        return result
     }
 
     func getSelectedShapesInStackingOrder() -> [VectorShape] {
-        // Array position IS the stacking order now
-        let sortedSelectedObjects = unifiedObjects
-            .filter { object in
-                viewState.selectedObjectIDs.contains(object.id)
-            }
+        // Iterate layers in stack order, then objects in draw order
+        var result: [VectorShape] = []
 
-        return sortedSelectedObjects.compactMap { obj in
-            switch obj.objectType {
-            case .text(let shape),
-                 .shape(let shape),
-                 .warp(let shape),
-                 .group(let shape),
-                 .clipGroup(let shape),
-                 .clipMask(let shape):
-                return shape
+        for layer in snapshot.layers {
+            for objectID in layer.objectIDs {
+                // Only include selected objects
+                guard viewState.selectedObjectIDs.contains(objectID) else { continue }
+                guard let object = snapshot.objects[objectID] else { continue }
+
+                switch object.objectType {
+                case .text(let shape),
+                     .shape(let shape),
+                     .warp(let shape),
+                     .group(let shape),
+                     .clipGroup(let shape),
+                     .clipMask(let shape):
+                    result.append(shape)
+                }
             }
         }
+
+        return result
     }
 
     func selectShape(_ shapeID: UUID) {
