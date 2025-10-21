@@ -214,8 +214,12 @@ struct LayerCanvasView: View {
 
                     renderShape(shape, in: context, isSelected: selectedObjectIDs.contains(object.id))
 
-                case .text:
-                    continue  // Text handled by SwiftUI
+                case .text(let shape):
+                    // Filter out text objects that are in editing mode (blue mode)
+                    if shape.isEditing == true { continue }
+
+                    // Render text on Canvas when NOT editing (green/gray mode)
+                    renderText(shape, in: context)
                 }
             }
         }
@@ -398,6 +402,97 @@ struct LayerCanvasView: View {
         }
 
         cgContext.restoreGState()
+    }
+
+    private func renderText(_ shape: VectorShape, in context: GraphicsContext) {
+        // Convert VectorShape to VectorText (same as PDF export)
+        guard let vectorText = VectorText.from(shape) else { return }
+        guard !vectorText.content.isEmpty else { return }
+
+        // Use CoreGraphics to render CTLine directly on Canvas (same as PDF export)
+        context.withCGContext { cgContext in
+            // Apply zoom and canvas offset transform
+            cgContext.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+            cgContext.scaleBy(x: zoomLevel, y: zoomLevel)
+
+            // EXACT SAME CODE AS PDF EXPORT (renderTextToPDF_Lines)
+            let nsFont = vectorText.typography.nsFont
+            let paragraphStyle = NSMutableParagraphStyle()
+            paragraphStyle.alignment = vectorText.typography.alignment.nsTextAlignment
+            paragraphStyle.lineSpacing = max(0, vectorText.typography.lineSpacing)
+            paragraphStyle.minimumLineHeight = vectorText.typography.lineHeight
+            paragraphStyle.maximumLineHeight = vectorText.typography.lineHeight
+
+            let layoutAttributes: [NSAttributedString.Key: Any] = [
+                .font: nsFont,
+                .paragraphStyle: paragraphStyle,
+                .kern: vectorText.typography.letterSpacing
+            ]
+
+            let attributedString = NSAttributedString(string: vectorText.content, attributes: layoutAttributes)
+            let textStorage = NSTextStorage(attributedString: attributedString)
+            let layoutManager = NSLayoutManager()
+            textStorage.addLayoutManager(layoutManager)
+
+            let textBoxWidth = vectorText.areaSize?.width ?? vectorText.bounds.width
+            let textContainer = NSTextContainer(size: CGSize(width: textBoxWidth, height: CGFloat.greatestFiniteMagnitude))
+            textContainer.lineFragmentPadding = 0
+            textContainer.lineBreakMode = .byWordWrapping
+            layoutManager.addTextContainer(textContainer)
+
+            layoutManager.ensureGlyphs(forGlyphRange: NSRange(location: 0, length: vectorText.content.count))
+            layoutManager.ensureLayout(for: textContainer)
+
+            cgContext.saveGState()
+
+            cgContext.setAlpha(CGFloat(vectorText.typography.fillOpacity))
+
+            let renderingAttributes: [NSAttributedString.Key: Any] = [
+                .font: nsFont,
+                .paragraphStyle: paragraphStyle,
+                .kern: vectorText.typography.letterSpacing,
+                .foregroundColor: NSColor(cgColor: vectorText.typography.fillColor.cgColor) ?? NSColor.black
+            ]
+
+            let glyphRange = layoutManager.glyphRange(for: textContainer)
+
+            layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { (lineRect, lineUsedRect, container, lineRange, stop) in
+                let lineRange = NSRange(location: lineRange.location, length: lineRange.length)
+                let lineString = (vectorText.content as NSString).substring(with: lineRange)
+                let lineAttribString = NSAttributedString(string: lineString, attributes: renderingAttributes)
+                var line = CTLineCreateWithAttributedString(lineAttribString)
+
+                if vectorText.typography.alignment.nsTextAlignment == .justified {
+                    if let justifiedLine = CTLineCreateJustifiedLine(line, 1.0, lineUsedRect.width) {
+                        line = justifiedLine
+                    }
+                }
+
+                let firstGlyphIndex = lineRange.location
+                let glyphLocation = layoutManager.location(forGlyphAt: firstGlyphIndex)
+                let lineX: CGFloat
+                switch vectorText.typography.alignment.nsTextAlignment {
+                case .left, .justified:
+                    lineX = vectorText.position.x + lineUsedRect.origin.x + glyphLocation.x
+                case .center, .right:
+                    lineX = vectorText.position.x + lineRect.origin.x + glyphLocation.x
+                default:
+                    lineX = vectorText.position.x + lineUsedRect.origin.x + glyphLocation.x
+                }
+                let lineY = vectorText.position.y + lineRect.origin.y + glyphLocation.y
+
+                cgContext.saveGState()
+
+                cgContext.textMatrix = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: 0)
+
+                cgContext.textPosition = CGPoint(x: lineX, y: lineY)
+                CTLineDraw(line, cgContext)
+
+                cgContext.restoreGState()
+            }
+
+            cgContext.restoreGState()
+        }
     }
 
     private func createCGPath(from vectorPath: VectorPath, transform: CGAffineTransform) -> CGPath {
