@@ -145,9 +145,11 @@ class VectorDocument: ObservableObject, Codable {
         )
 
         createCanvasAndWorkingLayers()
-        
+
         populateUnifiedObjectsFromLayersPreservingOrder()
-        
+
+        migrateToNewStructure()
+
         self.selectedLayerIndex = 2
         self.layerIndex = 2
         
@@ -280,6 +282,7 @@ class VectorDocument: ObservableObject, Codable {
         setupViewStateForwarding()
         migrateLegacyTextObjects()
         migrateBackgroundShapesToCanvas()
+        migrateToNewStructure()
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             self?.refreshSystemLayers()

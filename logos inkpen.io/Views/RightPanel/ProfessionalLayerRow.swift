@@ -4,7 +4,7 @@ import AppKit
 
 struct ProfessionalLayerRow: View {
     let layerIndex: Int
-    let layer: VectorLayer
+    let layer: Layer
     @ObservedObject var document: VectorDocument
     @State private var isEditingName: Bool = false
     @State private var editedName: String = ""
@@ -17,10 +17,10 @@ struct ProfessionalLayerRow: View {
 
     private var isVisibleBinding: Binding<Bool> {
         Binding(
-            get: { document.layers[layerIndex].isVisible },
+            get: { document.newLayers[layerIndex].isVisible },
             set: { newValue in
-                if document.layers[layerIndex].isVisible != newValue {
-                    document.layers[layerIndex].isVisible = newValue
+                if document.newLayers[layerIndex].isVisible != newValue {
+                    document.newLayers[layerIndex].isVisible = newValue
                     document.changeNotifier.notifyLayersChanged()
                 }
             }
@@ -29,17 +29,17 @@ struct ProfessionalLayerRow: View {
 
     private var isLockedBinding: Binding<Bool> {
         Binding(
-            get: { document.layers[layerIndex].isLocked },
+            get: { document.newLayers[layerIndex].isLocked },
             set: { newValue in
-                if document.layers[layerIndex].isLocked != newValue {
-                    document.layers[layerIndex].isLocked = newValue
+                if document.newLayers[layerIndex].isLocked != newValue {
+                    document.newLayers[layerIndex].isLocked = newValue
                     document.changeNotifier.notifyLayersChanged()
                 }
             }
         )
     }
 
-    init(layerIndex: Int, layer: VectorLayer, document: VectorDocument) {
+    init(layerIndex: Int, layer: Layer, document: VectorDocument) {
         self.layerIndex = layerIndex
         self.layer = layer
         self.document = document
@@ -64,10 +64,15 @@ struct ProfessionalLayerRow: View {
 
     private var layerColor: Binding<Color> {
         Binding(
-            get: { document.layers[layerIndex].color },
+            get: {
+                let colorName = document.newLayers[layerIndex].color.name
+                return Color.layerColorPalette.first { $0.name == colorName }?.color ?? .blue
+            },
             set: { newColor in
-                document.layers[layerIndex].color = newColor
-                document.changeNotifier.notifyLayersChanged()
+                if let match = Color.layerColorPalette.first(where: { $0.color.description == newColor.description }) {
+                    document.newLayers[layerIndex].color = LayerColor(name: match.name)
+                    document.changeNotifier.notifyLayersChanged()
+                }
             }
         )
     }
@@ -106,7 +111,7 @@ struct ProfessionalLayerRow: View {
                                 if !document.viewState.isDraggingVisibility {
                                     document.viewState.isDraggingVisibility = true
                                     document.processedLayersDuringDrag.removeAll()
-                                    document.layers[layerIndex].isVisible.toggle()
+                                    document.newLayers[layerIndex].isVisible.toggle()
                                     document.processedLayersDuringDrag.insert(layerIndex)
                                     document.changeNotifier.notifyLayersChanged()
                                 }
@@ -133,7 +138,7 @@ struct ProfessionalLayerRow: View {
                                 if !document.viewState.isDraggingLock {
                                     document.viewState.isDraggingLock = true
                                     document.processedLayersDuringDrag.removeAll()
-                                    document.layers[layerIndex].isLocked.toggle()
+                                    document.newLayers[layerIndex].isLocked.toggle()
                                     document.processedLayersDuringDrag.insert(layerIndex)
                                     document.changeNotifier.notifyLayersChanged()
                                 }
@@ -150,7 +155,7 @@ struct ProfessionalLayerRow: View {
                                 if NSEvent.modifierFlags.contains(.option) {
                                     var updatedSettings = document.settings
                                     let shouldExpand = !isExpanded
-                                    for layer in document.layers {
+                                    for layer in document.newLayers {
                                         updatedSettings.layerExpansionState[layer.id] = shouldExpand
                                     }
                                     document.settings = updatedSettings
@@ -181,7 +186,7 @@ struct ProfessionalLayerRow: View {
                             if isEditingName {
                                 TextField("Layer Name", text: $editedName, onCommit: {
                                     if !editedName.isEmpty {
-                                        document.layers[layerIndex].name = editedName
+                                        document.newLayers[layerIndex].name = editedName
                                         document.changeNotifier.notifyLayersChanged()
                                     }
                                     isEditingName = false
@@ -318,7 +323,7 @@ struct ProfessionalLayerRow: View {
 
                         if let opacity = userInfo["opacity"] as? Double {
                             print("   ✅ Setting layer opacity to \(opacity)")
-                            document.layers[layerIndex].opacity = opacity
+                            document.newLayers[layerIndex].opacity = opacity
                         }
                     }
                 }
@@ -358,8 +363,8 @@ struct ProfessionalLayerRow: View {
 
                 let targetLayerId: UUID
                 if layerIndex <= 1 {
-                    if document.layers.count > 2 {
-                        targetLayerId = document.layers[2].id
+                    if document.newLayers.count > 2 {
+                        targetLayerId = document.newLayers[2].id
                     } else {
                         return false
                     }

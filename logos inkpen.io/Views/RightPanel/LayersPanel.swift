@@ -107,7 +107,7 @@ struct LayersPanel: View {
     private var visibleRows: [RowType] {
         var rows: [RowType] = []
         
-        for (layerIndex, layer) in document.layers.enumerated().reversed() {
+        for (layerIndex, layer) in document.newLayers.enumerated().reversed() {
             rows.append(.layer(index: layerIndex))
             
             let isExpanded = if layerIndex <= 1 {
@@ -165,7 +165,7 @@ struct LayersPanel: View {
             layersHeader
             Divider().padding(.horizontal, 6.5)
 
-            if let selectedIndex = document.selectedLayerIndex, selectedIndex < document.layers.count {
+            if let selectedIndex = document.selectedLayerIndex, selectedIndex < document.newLayers.count {
                 layerControlsSection(for: selectedIndex)
                 Divider().padding(.horizontal, 6.5)
                     .frame(width: 55)
@@ -180,7 +180,7 @@ struct LayersPanel: View {
         .onAppear {
             validateOverlays()
         }
-        .onChange(of: document.layers.map { $0.id }) { _, _ in
+        .onChange(of: document.newLayers.map { $0.id }) { _, _ in
             validateOverlays()
         }
         .onChange(of: document.changeNotifier.changeToken) { _, _ in
@@ -239,8 +239,8 @@ struct LayersPanel: View {
                         in: 0...1,
                         onEditingChanged: { isEditing in
                             if !isEditing {
-                                document.layers[layerIndex].opacity = layerOpacityState
-                                layerPreviewOpacities.removeValue(forKey: document.layers[layerIndex].id)
+                                document.newLayers[layerIndex].opacity = layerOpacityState
+                                layerPreviewOpacities.removeValue(forKey: document.newLayers[layerIndex].id)
                                 document.changeNotifier.notifyLayersChanged()
                             }
                         }
@@ -249,7 +249,7 @@ struct LayersPanel: View {
                         let currentPercentage = Int(newValue * 100)
                         if currentPercentage != lastSentPercentage {
                             lastSentPercentage = currentPercentage
-                            layerPreviewOpacities[document.layers[layerIndex].id] = newValue
+                            layerPreviewOpacities[document.newLayers[layerIndex].id] = newValue
                         }
                     }
                  
@@ -267,11 +267,11 @@ struct LayersPanel: View {
                     .layerControlLabel()
                 
                 Picker("", selection: Binding(
-                    get: { document.layers[layerIndex].blendMode },
+                    get: { document.newLayers[layerIndex].blendMode },
                     set: { newValue in
-                        var updatedLayer = document.layers[layerIndex]
+                        var updatedLayer = document.newLayers[layerIndex]
                         updatedLayer.blendMode = newValue
-                        document.layers[layerIndex] = updatedLayer
+                        document.newLayers[layerIndex] = updatedLayer
                         document.changeNotifier.notifyLayersChanged()
                     }
                 )) {
@@ -287,10 +287,15 @@ struct LayersPanel: View {
                     .frame(width: 10)
                 ColorSwatchButton(
                     color: Binding(
-                        get: { document.layers[layerIndex].color },
+                        get: {
+                            let colorName = document.newLayers[layerIndex].color.name
+                            return Color.layerColorPalette.first { $0.name == colorName }?.color ?? .blue
+                        },
                         set: { newColor in
-                            document.layers[layerIndex].color = newColor
-                            document.changeNotifier.notifyLayersChanged()
+                            if let match = Color.layerColorPalette.first(where: { $0.color.description == newColor.description }) {
+                                document.newLayers[layerIndex].color = LayerColor(name: match.name)
+                                document.changeNotifier.notifyLayersChanged()
+                            }
                         }
                     ),
                     availableColors: Color.layerColorPalette
@@ -310,11 +315,11 @@ struct LayersPanel: View {
         ScrollView(.vertical, showsIndicators: true) {
             ZStack(alignment: .topLeading) {
                 VStack(spacing: 0) {
-                    ForEach(Array(document.layers.enumerated()).reversed(), id: \.element.id) { (layerIndex, layer) in
+                    ForEach(Array(document.newLayers.enumerated()).reversed(), id: \.element.id) { (layerIndex, layer) in
                         layerRowContent(for: layerIndex)
                     }
                 }
-                .animation(.spring(response: 0.3, dampingFraction: 0.9), value: document.layers.map { $0.id })
+                .animation(.spring(response: 0.3, dampingFraction: 0.9), value: document.newLayers.map { $0.id })
                 .padding(.horizontal, 4)
 
                 if overlaysEnabled {
@@ -414,7 +419,7 @@ struct LayersPanel: View {
     private func layerRowContent(for layerIndex: Int) -> some View {
         ProfessionalLayerRow(
             layerIndex: layerIndex,
-            layer: layerIndex < document.layers.count ? document.layers[layerIndex] : document.layers[0],
+            layer: layerIndex < document.newLayers.count ? document.newLayers[layerIndex] : document.newLayers[0],
             document: document
         )
     }
@@ -423,7 +428,7 @@ struct LayersPanel: View {
         switch rowType {
         case .layer(let index):
             if !document.processedLayersDuringDrag.contains(index) {
-                document.layers[index].isVisible.toggle()
+                document.newLayers[index].isVisible.toggle()
                 document.processedLayersDuringDrag.insert(index)
                 document.changeNotifier.notifyLayersChanged()
             }
@@ -472,7 +477,7 @@ struct LayersPanel: View {
         switch rowType {
         case .layer(let index):
             if !document.processedLayersDuringDrag.contains(index) {
-                document.layers[index].isLocked.toggle()
+                document.newLayers[index].isLocked.toggle()
                 document.processedLayersDuringDrag.insert(index)
                 document.changeNotifier.notifyLayersChanged()
             }
@@ -642,13 +647,13 @@ if event.keyCode == 126 {
                     self.selectNextObject(document: document)
                 } else {
                     guard let currentIndex = document.selectedLayerIndex else {
-                        if document.layers.count > 2 {
+                        if document.newLayers.count > 2 {
                             document.selectedLayerIndex = 2
                         }
                         return
                     }
 
-                    if currentIndex < document.layers.count - 1 {
+                    if currentIndex < document.newLayers.count - 1 {
                         document.selectedLayerIndex = currentIndex + 1
                     }
                 }
@@ -661,8 +666,8 @@ if event.keyCode == 126 {
                     self.selectPreviousObject(document: document)
                 } else {
                     guard let currentIndex = document.selectedLayerIndex else {
-                        if document.layers.count > 2 {
-                            document.selectedLayerIndex = document.layers.count - 1
+                        if document.newLayers.count > 2 {
+                            document.selectedLayerIndex = document.newLayers.count - 1
                         }
                         return
                     }
@@ -710,10 +715,10 @@ if event.keyCode == 126 {
 
                 if currentIndex <= 1 { return }
 
-                if currentIndex < document.layers.count - 1 {
+                if currentIndex < document.newLayers.count - 1 {
                     let targetIndex = currentIndex + 1
-                    document.reorderLayer(sourceLayerId: document.layers[currentIndex].id,
-                                          targetLayerId: document.layers[targetIndex].id)
+                    document.reorderLayer(sourceLayerId: document.newLayers[currentIndex].id,
+                                          targetLayerId: document.newLayers[targetIndex].id)
                     document.selectedLayerIndex = targetIndex
                 }
             }
@@ -727,8 +732,8 @@ if event.keyCode == 126 {
 
                 if currentIndex > 2 {
                     let targetIndex = currentIndex - 1
-                    document.reorderLayer(sourceLayerId: document.layers[currentIndex].id,
-                                          targetLayerId: document.layers[targetIndex].id)
+                    document.reorderLayer(sourceLayerId: document.newLayers[currentIndex].id,
+                                          targetLayerId: document.newLayers[targetIndex].id)
                     document.selectedLayerIndex = targetIndex
                 }
             }
