@@ -289,8 +289,11 @@ extension DrawingCanvas {
                 finalShape.path = VectorPath(cgPath: cleanedPath)
             }
 
-            for _ in 0..<3 {
-                finalShape.path = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: finalShape.path, tolerance: 1.1)
+            let passes = ApplicationSettings.shared.brushCoincidentPointPasses
+            if passes > 0 {
+                for _ in 0..<passes {
+                    finalShape.path = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: finalShape.path, tolerance: 1.1)
+                }
             }
         }
 
@@ -364,8 +367,11 @@ extension DrawingCanvas {
                 finalPath = VectorPath(cgPath: cleanedPath, fillRule: .winding)
             }
 
-            for _ in 0..<3 {
-                finalPath = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: finalPath, tolerance: 1.1)
+            let passes = ApplicationSettings.shared.brushCoincidentPointPasses
+            if passes > 0 {
+                for _ in 0..<passes {
+                    finalPath = ProfessionalPathOperations.mergeAdjacentCoincidentPoints(in: finalPath, tolerance: 1.1)
+                }
             }
         }
         let shape = VectorShape(name: "Brush Stroke", path: finalPath, geometricType: .brushStroke, strokeStyle: strokeStyle, fillStyle: fillStyle)

@@ -492,7 +492,9 @@ struct LayerCanvasView: View {
             case .quadCurve(let to, let control):
                 path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
             case .close:
-                path.closeSubpath()
+                if !path.isEmpty {
+                    path.closeSubpath()
+                }
             }
         }
 

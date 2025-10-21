@@ -3,6 +3,7 @@ import SwiftUI
 struct FreehandSettingsSection: View {
     @ObservedObject var document: VectorDocument
     @Environment(AppState.self) private var appState
+    @ObservedObject private var settings = ApplicationSettings.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -20,10 +21,7 @@ struct FreehandSettingsSection: View {
                     .font(.subheadline)
                     .foregroundColor(Color.ui.secondaryText)
 
-                Picker("", selection: Binding(
-                    get: { ApplicationSettings.shared.freehandFillMode },
-                    set: { ApplicationSettings.shared.freehandFillMode = $0 }
-                )) {
+                Picker("", selection: $settings.freehandFillMode) {
                     ForEach(VectorDocument.FreehandFillMode.allCases, id: \.self) { mode in
                         Text(mode.rawValue).tag(mode)
                     }
@@ -38,16 +36,13 @@ struct FreehandSettingsSection: View {
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("\(formatNumberForDisplay(ApplicationSettings.shared.freehandSmoothingTolerance))")
+                    Text("\(formatNumberForDisplay(settings.freehandSmoothingTolerance))")
                         .font(.subheadline)
                         .foregroundColor(Color.ui.primaryText)
                         .monospacedDigit()
                 }
 
-                Slider(value: Binding(
-                    get: { ApplicationSettings.shared.freehandSmoothingTolerance },
-                    set: { ApplicationSettings.shared.freehandSmoothingTolerance = $0 }
-                ), in: 0.1...10)
+                Slider(value: $settings.freehandSmoothingTolerance, in: 0.1...10)
                 .controlSize(.small)
                 .help("Curve fitting tolerance - lower values preserve more detail, higher values create smoother curves")
             }
@@ -62,10 +57,7 @@ struct FreehandSettingsSection: View {
                         .foregroundColor(Color.ui.secondaryText)
                 }
                 Spacer()
-                Toggle("", isOn: Binding(
-                    get: { ApplicationSettings.shared.freehandClosePath },
-                    set: { ApplicationSettings.shared.freehandClosePath = $0 }
-                ))
+                Toggle("", isOn: $settings.freehandClosePath)
                 .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                 .controlSize(.small)
                 .help("When enabled, closes the path by connecting the end to the start")
@@ -81,10 +73,7 @@ struct FreehandSettingsSection: View {
                         .foregroundColor(Color.ui.secondaryText)
                 }
                 Spacer()
-                Toggle("", isOn: Binding(
-                    get: { ApplicationSettings.shared.freehandExpandStroke },
-                    set: { ApplicationSettings.shared.freehandExpandStroke = $0 }
-                ))
+                Toggle("", isOn: $settings.freehandExpandStroke)
                 .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                 .controlSize(.small)
                 .help("When enabled, converts the stroke to a filled path outline")
@@ -99,31 +88,25 @@ struct FreehandSettingsSection: View {
                         .font(.subheadline)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Toggle("", isOn: Binding(
-                        get: { ApplicationSettings.shared.realTimeSmoothingEnabled },
-                        set: { ApplicationSettings.shared.realTimeSmoothingEnabled = $0 }
-                    ))
+                    Toggle("", isOn: $settings.realTimeSmoothingEnabled)
                     .toggleStyle(SwitchToggleStyle())
                     .controlSize(.small)
                 }
                 .help("Enable real-time smoothing during drawing")
 
-                if ApplicationSettings.shared.realTimeSmoothingEnabled {
+                if settings.realTimeSmoothingEnabled {
                     HStack {
                         Text("Strength")
                             .font(.subheadline)
                             .foregroundColor(Color.ui.secondaryText)
                         Spacer()
-                        Text("\(Int(ApplicationSettings.shared.realTimeSmoothingStrength * 100))%")
+                        Text("\(Int(settings.realTimeSmoothingStrength * 100))%")
                             .font(.subheadline)
                             .foregroundColor(Color.ui.primaryText)
                             .monospacedDigit()
                     }
 
-                    Slider(value: Binding(
-                        get: { ApplicationSettings.shared.realTimeSmoothingStrength },
-                        set: { ApplicationSettings.shared.realTimeSmoothingStrength = $0 }
-                    ), in: 0...1)
+                    Slider(value: $settings.realTimeSmoothingStrength, in: 0...1)
                     .controlSize(.small)
                     .help("Strength of real-time smoothing (0-100%)")
                 }
@@ -139,10 +122,7 @@ struct FreehandSettingsSection: View {
                         .foregroundColor(Color.ui.secondaryText)
                 }
                 Spacer()
-                Toggle("", isOn: Binding(
-                    get: { ApplicationSettings.shared.preserveSharpCorners },
-                    set: { ApplicationSettings.shared.preserveSharpCorners = $0 }
-                ))
+                Toggle("", isOn: $settings.preserveSharpCorners)
                 .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                 .controlSize(.small)
                 .help("Preserve sharp corners when simplifying paths")
@@ -159,31 +139,28 @@ struct FreehandSettingsSection: View {
                         .font(.headline)
                         .foregroundColor(Color.ui.primaryText)
                     Spacer()
-                    Toggle("", isOn: Binding(
-                        get: { ApplicationSettings.shared.advancedSmoothingEnabled },
-                        set: { ApplicationSettings.shared.advancedSmoothingEnabled = $0 }
-                    ))
+                    Toggle("", isOn: $settings.advancedSmoothingEnabled)
                     .toggleStyle(SwitchToggleStyle(tint: .purple))
                     .controlSize(.small)
                 }
                 .help("Enable advanced curve smoothing algorithms")
 
-                if ApplicationSettings.shared.advancedSmoothingEnabled {
+                if settings.advancedSmoothingEnabled {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("Chaikin Iterations")
                                 .font(.subheadline)
                                 .foregroundColor(Color.ui.secondaryText)
                             Spacer()
-                            Text("\(ApplicationSettings.shared.chaikinSmoothingIterations)")
+                            Text("\(settings.chaikinSmoothingIterations)")
                                 .font(.subheadline)
                                 .foregroundColor(Color.ui.primaryText)
                                 .monospacedDigit()
                         }
 
                         Slider(value: Binding<Double>(
-                            get: { Double(ApplicationSettings.shared.chaikinSmoothingIterations) },
-                            set: { ApplicationSettings.shared.chaikinSmoothingIterations = Int(round($0)) }
+                            get: { Double(settings.chaikinSmoothingIterations) },
+                            set: { settings.chaikinSmoothingIterations = Int(round($0)) }
                         ), in: 1...3)
                         .controlSize(.small)
                         .help("More iterations create smoother curves but may lose detail (1-3)")
@@ -199,10 +176,7 @@ struct FreehandSettingsSection: View {
                                 .foregroundColor(Color.ui.secondaryText)
                         }
                         Spacer()
-                        Toggle("", isOn: Binding(
-                            get: { ApplicationSettings.shared.preserveSharpCorners },
-                            set: { ApplicationSettings.shared.preserveSharpCorners = $0 }
-                        ))
+                        Toggle("", isOn: $settings.preserveSharpCorners)
                         .toggleStyle(SwitchToggleStyle(tint: .purple))
                         .controlSize(.small)
                         .help("Keep intentional sharp angles during simplification")
