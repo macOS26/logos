@@ -303,10 +303,7 @@ extension VectorDocument {
     }
 
     func findObject(by id: UUID) -> VectorObject? {
-        guard let index = unifiedObjectIndexCache[id], index < unifiedObjects.count else {
-            return nil
-        }
-        return unifiedObjects[index]
+        return snapshot.objects[id]
     }
 
     func findObjectIndex(by id: UUID) -> Int? {
@@ -314,10 +311,9 @@ extension VectorDocument {
     }
 
     func findShape(by id: UUID) -> VectorShape? {
-        guard let index = unifiedObjectIndexCache[id], index < unifiedObjects.count else {
+        guard let object = snapshot.objects[id] else {
             return nil
         }
-        let object = unifiedObjects[index]
         switch object.objectType {
         case .shape(let shape),
              .warp(let shape),
@@ -325,8 +321,8 @@ extension VectorDocument {
              .clipGroup(let shape),
              .clipMask(let shape):
             return shape
-        case .text:
-            return nil
+        case .text(let shape):
+            return shape
         }
     }
 

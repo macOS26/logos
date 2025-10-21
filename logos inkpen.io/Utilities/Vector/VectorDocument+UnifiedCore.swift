@@ -63,12 +63,6 @@ extension VectorDocument {
             // Update snapshot
             snapshot.objects[shapeID] = updatedObject
 
-            // Keep unifiedObjects in sync for now (for undo/redo)
-            if let index = unifiedObjects.firstIndex(where: { $0.id == shapeID }) {
-                unifiedObjects[index] = updatedObject
-                unifiedObjectIndexCache[shapeID] = index
-            }
-
             // Notify only this specific object changed (unless silent)
             if !silent {
                 changeNotifier.notifyObjectChanged(shapeID)
