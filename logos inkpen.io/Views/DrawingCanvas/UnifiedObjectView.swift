@@ -270,7 +270,7 @@ struct LayerCanvasView: View {
                     Path(transformedPath),
                     with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity)),
                     style: SwiftUI.StrokeStyle(
-                        lineWidth: strokeStyle.width,
+                        lineWidth: strokeStyle.width / zoomLevel,
                         lineCap: strokeStyle.lineCap.cgLineCap,
                         lineJoin: strokeStyle.lineJoin.cgLineJoin,
                         miterLimit: strokeStyle.miterLimit
@@ -288,7 +288,7 @@ struct LayerCanvasView: View {
             // Create stroked path if needed
             let finalPath: CGPath
             if isStroke, let strokeStyle = strokeStyle {
-                cgContext.setLineWidth(strokeStyle.width)
+                cgContext.setLineWidth(strokeStyle.width / zoomLevel)
                 cgContext.setLineCap(strokeStyle.lineCap.cgLineCap)
                 cgContext.setLineJoin(strokeStyle.lineJoin.cgLineJoin)
                 cgContext.setMiterLimit(strokeStyle.miterLimit)
