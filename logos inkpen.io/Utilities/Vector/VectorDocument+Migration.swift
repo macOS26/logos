@@ -23,7 +23,7 @@ extension VectorDocument {
     }
 
     /// Build objects dictionary from unifiedObjects array
-    private func buildObjectsDictionary() -> [UUID: VectorObject] {
+    func buildObjectsDictionary() -> [UUID: VectorObject] {
         var dict: [UUID: VectorObject] = [:]
         for object in unifiedObjects {
             dict[object.id] = object
@@ -32,7 +32,7 @@ extension VectorDocument {
     }
 
     /// Convert legacy VectorLayer to new Layer format
-    private func convertLegacyLayers() -> [Layer] {
+    func convertLegacyLayers() -> [Layer] {
         return layers.enumerated().map { (index, vectorLayer) in
             // Get all objects for this layer
             let objectsForLayer = unifiedObjects.filter { $0.layerIndex == index }
@@ -55,7 +55,7 @@ extension VectorDocument {
     }
 
     /// Convert SwiftUI Color to LayerColor
-    private func convertColorToLayerColor(_ color: Color) -> LayerColor {
+    func convertColorToLayerColor(_ color: Color) -> LayerColor {
         let colorString = color.description.lowercased()
 
         // Match against known layer colors

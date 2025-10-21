@@ -162,9 +162,45 @@ extension VectorDocument {
                 }
             }
             unifiedObjects = updatedObjects
+
+            // Add to new structure
+            let layerColor = convertColorToLayerColor(newLayer.color)
+            let newLayerStruct = Layer(
+                id: newLayer.id,
+                name: newLayer.name,
+                objectIDs: [],
+                isVisible: newLayer.isVisible,
+                isLocked: newLayer.isLocked,
+                opacity: newLayer.opacity,
+                blendMode: newLayer.blendMode,
+                color: layerColor
+            )
+            snapshot.layers.insert(newLayerStruct, at: currentIndex + 1)
+
+            // Update layerIndex in snapshot.objects
+            for (objectID, object) in snapshot.objects {
+                if object.layerIndex > currentIndex {
+                    let updatedObject = VectorObject(shape: object.shape, layerIndex: object.layerIndex + 1)
+                    snapshot.objects[objectID] = updatedObject
+                }
+            }
         } else {
             layers.append(newLayer)
             selectedLayerIndex = layers.count - 1
+
+            // Add to new structure
+            let layerColor = convertColorToLayerColor(newLayer.color)
+            let newLayerStruct = Layer(
+                id: newLayer.id,
+                name: newLayer.name,
+                objectIDs: [],
+                isVisible: newLayer.isVisible,
+                isLocked: newLayer.isLocked,
+                opacity: newLayer.opacity,
+                blendMode: newLayer.blendMode,
+                color: layerColor
+            )
+            snapshot.layers.append(newLayerStruct)
         }
 
         settings.selectedLayerId = newLayer.id
