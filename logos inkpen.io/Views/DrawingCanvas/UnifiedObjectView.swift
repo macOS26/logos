@@ -261,7 +261,9 @@ struct LayerCanvasView: View {
 
         // Render stroke
         if viewMode == .keyline {
-            ctx.stroke(Path(transformedPath), with: .color(.black), lineWidth: 1.0 / zoomLevel)
+            // Use actual stroke width if available, otherwise use a default
+            let strokeWidth = shape.strokeStyle?.width ?? 1.0
+            ctx.stroke(Path(transformedPath), with: .color(.black), lineWidth: strokeWidth * zoomLevel)
         } else if let strokeStyle = shape.strokeStyle {
             if let gradient = strokeStyle.gradient {
                 renderGradientToContext(gradient: gradient, path: transformedPath, isStroke: true, strokeStyle: strokeStyle, in: &ctx)
@@ -270,7 +272,7 @@ struct LayerCanvasView: View {
                     Path(transformedPath),
                     with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity)),
                     style: SwiftUI.StrokeStyle(
-                        lineWidth: strokeStyle.width / zoomLevel,
+                        lineWidth: strokeStyle.width * zoomLevel,
                         lineCap: strokeStyle.lineCap.cgLineCap,
                         lineJoin: strokeStyle.lineJoin.cgLineJoin,
                         miterLimit: strokeStyle.miterLimit
@@ -288,7 +290,7 @@ struct LayerCanvasView: View {
             // Create stroked path if needed
             let finalPath: CGPath
             if isStroke, let strokeStyle = strokeStyle {
-                cgContext.setLineWidth(strokeStyle.width / zoomLevel)
+                cgContext.setLineWidth(strokeStyle.width * zoomLevel)
                 cgContext.setLineCap(strokeStyle.lineCap.cgLineCap)
                 cgContext.setLineJoin(strokeStyle.lineJoin.cgLineJoin)
                 cgContext.setMiterLimit(strokeStyle.miterLimit)
