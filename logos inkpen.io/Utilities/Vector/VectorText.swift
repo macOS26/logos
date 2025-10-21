@@ -1,6 +1,11 @@
 import SwiftUI
 import Combine
 
+enum TextRenderMode: String, Codable, Hashable {
+    case nstext     // NSTextView (legacy)
+    case ctline     // CTLine/CTFrame (Canvas rendering)
+}
+
 enum TextBoxState: String, CaseIterable {
     case editing = "editing"
     case selected = "selected"

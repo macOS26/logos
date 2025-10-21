@@ -102,7 +102,12 @@
       "Bash(git commit -m \"Add granular CanvasUpdateTriggers system\")",
       "Bash(git add \"logos inkpen.io/Views/DrawingCanvas/UnifiedObjectView.swift\" \"logos inkpen.io/Utilities/Undo/Commands/OpacityCommand.swift\")",
       "Bash(git commit -m \"Fix Equatable + add opacity triggers\")",
-      "Bash(git commit -m \"Fix Canvas updates for opacity/width sliders\")"
+      "Bash(git commit -m \"Fix Canvas updates for opacity/width sliders\")",
+      "Read(//Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/SwiftUI.framework/**)",
+      "WebSearch",
+      "Bash(git commit -m \"Render text on Canvas with CTLine via withCGContext\")",
+      "Bash(git commit -m \"Show NSTextView only when editing\")",
+      "Bash(git commit -m \"Paint gradients directly to CGContext\")"
     ],
     "deny": [],
     "ask": []
