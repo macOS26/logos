@@ -533,14 +533,17 @@ struct IsolatedLayerView: View, Equatable {
 
     // Equatable: Only re-render if layer has selection and drag changed, or if objects changed
     static func == (lhs: IsolatedLayerView, rhs: IsolatedLayerView) -> Bool {
-        
+
         // If layer ID changed, definitely need to re-render
         guard lhs.layerID == rhs.layerID else { return false }
 
         // If objects array changed, need to re-render
         guard lhs.objects.count == rhs.objects.count else { return false }
-        
+
         guard lhs.selectedObjectIDs == rhs.selectedObjectIDs else { return false}
+
+       
+
         // Check if objects were reordered (same count but different order)
         for (index, obj) in lhs.objects.enumerated() {
             if index < rhs.objects.count && obj.id != rhs.objects[index].id {
@@ -559,7 +562,8 @@ struct IsolatedLayerView: View, Equatable {
                    lhs.canvasOffset == rhs.canvasOffset &&
                    lhs.layerOpacity == rhs.layerOpacity &&
                    lhs.layerBlendMode == rhs.layerBlendMode &&
-                   lhs.viewMode == rhs.viewMode
+                   lhs.viewMode == rhs.viewMode &&
+                   lhs.document.unifiedObjectIndexCache == rhs.document.unifiedObjectIndexCache
         } else {
             // Not dragging - only re-render if zoom, offset, opacity, blend mode, or scale transform changed
             return lhs.zoomLevel == rhs.zoomLevel &&
@@ -567,8 +571,8 @@ struct IsolatedLayerView: View, Equatable {
                    lhs.layerOpacity == rhs.layerOpacity &&
                    lhs.layerBlendMode == rhs.layerBlendMode &&
                    lhs.liveScaleTransform == rhs.liveScaleTransform &&
-                   lhs.viewMode == rhs.viewMode &&
-                   lhs.selectedObjectData == rhs.selectedObjectData
+                   lhs.viewMode == rhs.viewMode
+                   
         }
     }
 
