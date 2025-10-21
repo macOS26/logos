@@ -29,39 +29,43 @@ extension VectorDocument {
     }
 
     func updateShapeByID(_ shapeID: UUID, silent: Bool = false, update: (inout VectorShape) -> Void) {
-        // Find the object by ID
-        if let index = unifiedObjects.firstIndex(where: { $0.id == shapeID }) {
-            let layerIndex = unifiedObjects[index].layerIndex
+        // Update in snapshot (primary)
+        if let object = snapshot.objects[shapeID] {
+            let layerIndex = object.layerIndex
+            var updatedObject = object
 
-            switch unifiedObjects[index].objectType {
+            switch object.objectType {
             case .text(var shape):
                 update(&shape)
-                unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
-                unifiedObjectIndexCache[shapeID] = index
+                updatedObject = VectorObject(shape: shape, layerIndex: layerIndex)
 
             case .shape(var shape):
                 update(&shape)
-                unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
-                unifiedObjectIndexCache[shapeID] = index
+                updatedObject = VectorObject(shape: shape, layerIndex: layerIndex)
 
             case .warp(var shape):
                 update(&shape)
-                unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
-                unifiedObjectIndexCache[shapeID] = index
+                updatedObject = VectorObject(shape: shape, layerIndex: layerIndex)
 
             case .group(var shape):
                 update(&shape)
-                unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
-                unifiedObjectIndexCache[shapeID] = index
+                updatedObject = VectorObject(shape: shape, layerIndex: layerIndex)
 
             case .clipGroup(var shape):
                 update(&shape)
-                unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
-                unifiedObjectIndexCache[shapeID] = index
+                updatedObject = VectorObject(shape: shape, layerIndex: layerIndex)
 
             case .clipMask(var shape):
                 update(&shape)
-                unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
+                updatedObject = VectorObject(shape: shape, layerIndex: layerIndex)
+            }
+
+            // Update snapshot
+            snapshot.objects[shapeID] = updatedObject
+
+            // Keep unifiedObjects in sync for now (for undo/redo)
+            if let index = unifiedObjects.firstIndex(where: { $0.id == shapeID }) {
+                unifiedObjects[index] = updatedObject
                 unifiedObjectIndexCache[shapeID] = index
             }
 
