@@ -25,7 +25,7 @@ struct UnifiedObjectContentView: View {
             switch unifiedObject.objectType {
             case .text(let shape):
                 // Only show NSTextView when editing (blue mode)
-                // When NOT editing (green/gray mode), text is rendered on Canvas
+                // When selected (green) or unselected (gray), render on Canvas
                 if shape.textContent != nil, shape.typography != nil, shape.isEditing == true {
                     StableProfessionalTextCanvas(
                         document: document,
@@ -221,7 +221,8 @@ struct LayerCanvasView: View {
                     if shape.isEditing == true { continue }
 
                     // Render text on Canvas when NOT editing (green/gray mode)
-                    renderText(shape, in: context)
+                    let isSelected = selectedObjectIDs.contains(object.id)
+                    renderText(shape, in: context, isSelected: isSelected)
                 }
             }
         }
@@ -406,7 +407,7 @@ struct LayerCanvasView: View {
         cgContext.restoreGState()
     }
 
-    private func renderText(_ shape: VectorShape, in context: GraphicsContext) {
+    private func renderText(_ shape: VectorShape, in context: GraphicsContext, isSelected: Bool) {
         // Convert VectorShape to VectorText (same as PDF export)
         guard let vectorText = VectorText.from(shape) else { return }
         guard !vectorText.content.isEmpty else { return }
@@ -416,6 +417,11 @@ struct LayerCanvasView: View {
             // Apply zoom and canvas offset transform
             cgContext.translateBy(x: canvasOffset.x, y: canvasOffset.y)
             cgContext.scaleBy(x: zoomLevel, y: zoomLevel)
+
+            // Apply drag preview delta for selected text (like shapes do)
+            if isSelected && dragPreviewDelta != .zero {
+                cgContext.translateBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+            }
 
             // EXACT SAME CODE AS PDF EXPORT (renderTextToPDF_Lines)
             let nsFont = vectorText.typography.nsFont
