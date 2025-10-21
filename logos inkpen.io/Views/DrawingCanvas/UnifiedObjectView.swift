@@ -313,14 +313,14 @@ struct LayerCanvasView: View {
             let finalPath: CGPath
             switch strokeStyle.placement {
             case .inside:
-                // Intersect stroke with original path (keeps only the inside part)
+                // For inside stroke: keep only the part of stroke inside the shape
                 if let insidePath = CoreGraphicsPathOperations.intersection(strokedPath, path, using: .winding) {
                     finalPath = insidePath
                 } else {
                     finalPath = strokedPath
                 }
             case .outside:
-                // Subtract original path from stroke (keeps only the outside part)
+                // For outside stroke: remove the shape from the stroke
                 if let outsidePath = CoreGraphicsPathOperations.subtract(path, from: strokedPath, using: .winding) {
                     finalPath = outsidePath
                 } else {
