@@ -121,27 +121,31 @@ extension VectorDocument {
     }
 
     func addShapeToUnifiedSystem(_ shape: VectorShape, layerIndex: Int) {
-        let existingIndex = unifiedObjects.firstIndex { unifiedObject in
-            if case .shape(let existingShape) = unifiedObject.objectType {
-                return existingShape.id == shape.id
-            }
-            return false
-        }
-
-        if let existingIndex = existingIndex {
-            unifiedObjects.remove(at: existingIndex)
-        }
-
-        if isUndoRedoOperation {
-            if findObject(by: shape.id) != nil {
-                let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex)
-                unifiedObjects.append(unifiedObject)
-                return
-            }
-        }
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
         let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex)
-        unifiedObjects.append(unifiedObject)
+
+        // Remove existing if it exists
+        if snapshot.objects[shape.id] != nil {
+            // Remove from old layer
+            for i in 0..<snapshot.layers.count {
+                snapshot.layers[i].objectIDs.removeAll { $0 == shape.id }
+            }
+        }
+
+        // Add to snapshot
+        snapshot.objects[shape.id] = unifiedObject
+        if !snapshot.layers[layerIndex].objectIDs.contains(shape.id) {
+            snapshot.layers[layerIndex].objectIDs.append(shape.id)
+        }
+
+        // Keep unifiedObjects in sync for now (for undo/redo)
+        let existingIndex = unifiedObjects.firstIndex { $0.id == shape.id }
+        if let existingIndex = existingIndex {
+            unifiedObjects[existingIndex] = unifiedObject
+        } else {
+            unifiedObjects.append(unifiedObject)
+        }
     }
 
     func addShapeToFrontOfUnifiedSystem(_ shape: VectorShape, layerIndex: Int) {
