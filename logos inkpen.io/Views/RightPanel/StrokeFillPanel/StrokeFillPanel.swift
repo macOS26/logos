@@ -10,7 +10,6 @@ struct StrokeFillPanel: View {
     @State private var strokePlacementState: StrokePlacement = .center
     @State private var strokeMiterLimitState: Double = 10.0
     @State private var selectedImageOpacityState: Double = 1.0
-    @State private var cachedIndexMap: [UUID: Int] = [:]
     @State private var isDragging: Bool = false
 
     private var selectedStrokeColor: VectorColor {
@@ -242,7 +241,7 @@ struct StrokeFillPanel: View {
                         },
                         onFillOpacityEditingChanged: { isEditing in
                             if isEditing {
-                                cachedIndexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
+                                // No need for index map when using snapshot directly
                             } else {
                                 var oldShapes: [UUID: VectorShape] = [:]
                                 var objectIDs: [UUID] = []
@@ -256,26 +255,6 @@ struct StrokeFillPanel: View {
 
                                 document.defaultFillOpacity = fillOpacityState
                                 updateFillOpacityLive(fillOpacityState, isEditing: false)
-
-                                for shapeID in activeShapeIDs {
-                                    if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
-                                        if case .shape(let unifiedShape) = unifiedObj.objectType {
-                                            return unifiedShape.id == shapeID
-                                        }
-                                        return false
-                                    }) {
-                                        for layerIndex in document.layers.indices {
-                                            let shapes = document.getShapesForLayer(layerIndex)
-                                            if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
-                                               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex)
-                                                break
-                                            }
-                                        }
-                                    }
-                                }
-
-                                cachedIndexMap.removeAll()
                                 for objectID in document.viewState.selectedObjectIDs {
                                     document.clearTextPreviewTypography(id: objectID)
                                 }
@@ -340,7 +319,7 @@ struct StrokeFillPanel: View {
                         },
                         onStrokeWidthEditingChanged: { isEditing in
                             if isEditing {
-                                cachedIndexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
+                                // No need for index map when using snapshot directly
                             } else {
                                 var oldShapes: [UUID: VectorShape] = [:]
                                 var objectIDs: [UUID] = []
@@ -354,26 +333,6 @@ struct StrokeFillPanel: View {
 
                                 document.defaultStrokeWidth = strokeWidthState
                                 updateStrokeWidthLive(strokeWidthState, isEditing: false)
-
-                                for shapeID in activeShapeIDs {
-                                    if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
-                                        if case .shape(let unifiedShape) = unifiedObj.objectType {
-                                            return unifiedShape.id == shapeID
-                                        }
-                                        return false
-                                    }) {
-                                        for layerIndex in document.layers.indices {
-                                            let shapes = document.getShapesForLayer(layerIndex)
-                                            if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
-                                               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex)
-                                                break
-                                            }
-                                        }
-                                    }
-                                }
-
-                                cachedIndexMap.removeAll()
 
                                 var newShapes: [UUID: VectorShape] = [:]
                                 for shapeID in objectIDs {
@@ -390,7 +349,7 @@ struct StrokeFillPanel: View {
                         },
                         onStrokeOpacityEditingChanged: { isEditing in
                             if isEditing {
-                                cachedIndexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
+                                // No need for index map when using snapshot directly
                             } else {
                                 var oldShapes: [UUID: VectorShape] = [:]
                                 var objectIDs: [UUID] = []
@@ -404,26 +363,6 @@ struct StrokeFillPanel: View {
 
                                 document.defaultStrokeOpacity = strokeOpacityState
                                 updateStrokeOpacityLive(strokeOpacityState, isEditing: false)
-
-                                for shapeID in activeShapeIDs {
-                                    if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
-                                        if case .shape(let unifiedShape) = unifiedObj.objectType {
-                                            return unifiedShape.id == shapeID
-                                        }
-                                        return false
-                                    }) {
-                                        for layerIndex in document.layers.indices {
-                                            let shapes = document.getShapesForLayer(layerIndex)
-                                            if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
-                                               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex)
-                                                break
-                                            }
-                                        }
-                                    }
-                                }
-
-                                cachedIndexMap.removeAll()
 
                                 var newShapes: [UUID: VectorShape] = [:]
                                 for shapeID in objectIDs {
@@ -440,7 +379,7 @@ struct StrokeFillPanel: View {
                         },
                         onMiterLimitEditingChanged: { isEditing in
                             if isEditing {
-                                cachedIndexMap = Dictionary(uniqueKeysWithValues: document.unifiedObjects.enumerated().map { ($0.element.id, $0.offset) })
+                                // No need for index map when using snapshot directly
                             } else {
                                 var oldShapes: [UUID: VectorShape] = [:]
                                 var objectIDs: [UUID] = []
@@ -454,8 +393,6 @@ struct StrokeFillPanel: View {
 
                                 document.strokeDefaults.miterLimit = strokeMiterLimitState
                                 updateStrokeMiterLimit(strokeMiterLimitState)
-
-                                cachedIndexMap.removeAll()
 
                                 var newShapes: [UUID: VectorShape] = [:]
                                 for shapeID in objectIDs {
@@ -599,69 +536,50 @@ struct StrokeFillPanel: View {
 
     private func updateFillOpacityDirectNoUndo(_ opacity: Double) {
         for objectID in document.viewState.selectedObjectIDs {
-            guard let index = cachedIndexMap[objectID] else { continue }
-            switch document.unifiedObjects[index].objectType {
-            case .text(var shape):
-                shape.typography?.fillOpacity = opacity
-                document.unifiedObjects[index] = VectorObject(
-                    shape: shape,
-                    layerIndex: document.unifiedObjects[index].layerIndex,
-                )
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                shape.fillStyle?.opacity = opacity
-                document.unifiedObjects[index] = VectorObject(
-                    shape: shape,
-                    layerIndex: document.unifiedObjects[index].layerIndex,
-                )
+            guard let object = document.snapshot.objects[objectID] else { continue }
+            switch object.objectType {
+            case .text(let shape):
+                document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
             }
         }
     }
 
     private func updateFillOpacityLive(_ opacity: Double, isEditing: Bool) {
         for objectID in document.viewState.selectedObjectIDs {
-            guard let index = cachedIndexMap[objectID] else { continue }
-
-            let layerIndex = document.unifiedObjects[index].layerIndex
-            switch document.unifiedObjects[index].objectType {
-            case .text(var shape):
-                shape.typography?.fillOpacity = opacity
-                document.unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                shape.fillStyle?.opacity = opacity
-                document.unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
+            guard let object = document.snapshot.objects[objectID] else { continue }
+            switch object.objectType {
+            case .text(let shape):
+                document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
             }
         }
     }
 
     private func updateStrokeOpacityLive(_ opacity: Double, isEditing: Bool) {
         for objectID in document.viewState.selectedObjectIDs {
-            guard let index = cachedIndexMap[objectID] else { continue }
-
-            let layerIndex = document.unifiedObjects[index].layerIndex
-            switch document.unifiedObjects[index].objectType {
+            guard let object = document.snapshot.objects[objectID] else { continue }
+            switch object.objectType {
             case .text:
                 break
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                shape.strokeStyle?.opacity = opacity
-                document.unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                document.updateShapeStrokeOpacityInUnified(id: shape.id, opacity: opacity)
             }
         }
     }
 
     private func updateStrokeWidthLive(_ width: Double, isEditing: Bool) {
         for objectID in document.viewState.selectedObjectIDs {
-            guard let index = cachedIndexMap[objectID] else { continue }
-
-            let layerIndex = document.unifiedObjects[index].layerIndex
-            switch document.unifiedObjects[index].objectType {
-            case .text(var shape):
+            guard let object = document.snapshot.objects[objectID] else { continue }
+            switch object.objectType {
+            case .text(let shape):
                 if shape.typography?.hasStroke == true {
-                    shape.typography?.strokeWidth = width
-                    document.unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
+                    document.updateTextStrokeWidthInUnified(id: shape.id, width: width)
                 }
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                shape.strokeStyle?.width = width
-                document.unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                document.updateShapeStrokeWidthInUnified(id: shape.id, width: width)
             }
         }
     }
@@ -721,20 +639,12 @@ struct StrokeFillPanel: View {
 
     private func updateStrokeWidthDirectNoUndo(_ width: Double) {
         for objectID in document.viewState.selectedObjectIDs {
-            guard let index = cachedIndexMap[objectID] else { continue }
-            switch document.unifiedObjects[index].objectType {
-            case .text(var shape):
-                shape.typography?.strokeWidth = width
-                document.unifiedObjects[index] = VectorObject(
-                    shape: shape,
-                    layerIndex: document.unifiedObjects[index].layerIndex,
-                )
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                shape.strokeStyle?.width = width
-                document.unifiedObjects[index] = VectorObject(
-                    shape: shape,
-                    layerIndex: document.unifiedObjects[index].layerIndex,
-                )
+            guard let object = document.snapshot.objects[objectID] else { continue }
+            switch object.objectType {
+            case .text(let shape):
+                document.updateTextStrokeWidthInUnified(id: shape.id, width: width)
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                document.updateShapeStrokeWidthInUnified(id: shape.id, width: width)
             }
         }
     }
@@ -771,31 +681,7 @@ struct StrokeFillPanel: View {
         }
 
         for shapeID in activeShapeIDs {
-            for layerIndex in document.layers.indices {
-                let shapes = document.getShapesForLayer(layerIndex)
-                if shapes.firstIndex(where: { $0.id == shapeID }) != nil {
-                    document.updateShapeStrokePlacementInUnified(id: shapeID, placement: placement)
-                    break
-                }
-            }
-        }
-
-        for shapeID in activeShapeIDs {
-            if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
-                if case .shape(let unifiedShape) = unifiedObj.objectType {
-                    return unifiedShape.id == shapeID
-                }
-                return false
-            }) {
-                for layerIndex in document.layers.indices {
-                    let shapes = document.getShapesForLayer(layerIndex)
-                    if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
-                       let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                        document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex)
-                        break
-                    }
-                }
-            }
+            document.updateShapeStrokePlacementInUnified(id: shapeID, placement: placement)
         }
     }
 
@@ -828,44 +714,17 @@ struct StrokeFillPanel: View {
             document.executeCommand(command)
 
             for shapeID in activeShapeIDs {
-                for layerIndex in document.layers.indices {
-                    if document.getShapesForLayer(layerIndex).contains(where: { $0.id == shapeID }) {
-                        document.updateShapeStrokeOpacityInUnified(id: shapeID, opacity: opacity)
-                        break
-                    }
-                }
-            }
-
-            for shapeID in activeShapeIDs {
-                if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
-                    if case .shape(let unifiedShape) = unifiedObj.objectType {
-                        return unifiedShape.id == shapeID
-                    }
-                    return false
-                }) {
-                    for layerIndex in document.layers.indices {
-                        let shapes = document.getShapesForLayer(layerIndex)
-                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
-                           let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex)
-                            break
-                        }
-                    }
-                }
+                document.updateShapeStrokeOpacityInUnified(id: shapeID, opacity: opacity)
             }
         }
     }
 
     private func updateStrokeOpacityDirectNoUndo(_ opacity: Double) {
         for objectID in document.viewState.selectedObjectIDs {
-            guard let index = cachedIndexMap[objectID] else { continue }
-            switch document.unifiedObjects[index].objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                shape.strokeStyle?.opacity = opacity
-                document.unifiedObjects[index] = VectorObject(
-                    shape: shape,
-                    layerIndex: document.unifiedObjects[index].layerIndex,
-                )
+            guard let object = document.snapshot.objects[objectID] else { continue }
+            switch object.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                document.updateShapeStrokeOpacityInUnified(id: shape.id, opacity: opacity)
             case .text:
                 continue
             }
@@ -902,30 +761,7 @@ struct StrokeFillPanel: View {
             }
 
             for shapeID in activeShapeIDs {
-                for layerIndex in document.layers.indices {
-                    if document.getShapesForLayer(layerIndex).contains(where: { $0.id == shapeID }) {
-                        document.updateShapeStrokeLineJoinInUnified(id: shapeID, lineJoin: lineJoin)
-                        break
-                    }
-                }
-            }
-
-            for shapeID in activeShapeIDs {
-                if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
-                    if case .shape(let unifiedShape) = unifiedObj.objectType {
-                        return unifiedShape.id == shapeID
-                    }
-                    return false
-                }) {
-                    for layerIndex in document.layers.indices {
-                        let shapes = document.getShapesForLayer(layerIndex)
-                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
-                           let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex)
-                            break
-                        }
-                    }
-                }
+                document.updateShapeStrokeLineJoinInUnified(id: shapeID, lineJoin: lineJoin)
             }
         }
     }
@@ -960,30 +796,7 @@ struct StrokeFillPanel: View {
             }
 
             for shapeID in activeShapeIDs {
-                for layerIndex in document.layers.indices {
-                    if document.getShapesForLayer(layerIndex).contains(where: { $0.id == shapeID }) {
-                        document.updateShapeStrokeLineCapInUnified(id: shapeID, lineCap: lineCap)
-                        break
-                    }
-                }
-            }
-
-            for shapeID in activeShapeIDs {
-                if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
-                    if case .shape(let unifiedShape) = unifiedObj.objectType {
-                        return unifiedShape.id == shapeID
-                    }
-                    return false
-                }) {
-                    for layerIndex in document.layers.indices {
-                        let shapes = document.getShapesForLayer(layerIndex)
-                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
-                           let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex)
-                            break
-                        }
-                    }
-                }
+                document.updateShapeStrokeLineCapInUnified(id: shapeID, lineCap: lineCap)
             }
         }
     }
@@ -1018,44 +831,17 @@ struct StrokeFillPanel: View {
             }
 
             for shapeID in activeShapeIDs {
-                for layerIndex in document.layers.indices {
-                    if document.getShapesForLayer(layerIndex).contains(where: { $0.id == shapeID }) {
-                        document.updateShapeStrokeMiterLimitInUnified(id: shapeID, miterLimit: miterLimit)
-                        break
-                    }
-                }
-            }
-
-            for shapeID in activeShapeIDs {
-                if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
-                    if case .shape(let unifiedShape) = unifiedObj.objectType {
-                        return unifiedShape.id == shapeID
-                    }
-                    return false
-                }) {
-                    for layerIndex in document.layers.indices {
-                        let shapes = document.getShapesForLayer(layerIndex)
-                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
-                           let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex)
-                            break
-                        }
-                    }
-                }
+                document.updateShapeStrokeMiterLimitInUnified(id: shapeID, miterLimit: miterLimit)
             }
         }
     }
 
     private func updateStrokeMiterLimitDirectNoUndo(_ miterLimit: Double) {
         for objectID in document.viewState.selectedObjectIDs {
-            guard let index = cachedIndexMap[objectID] else { continue }
-            switch document.unifiedObjects[index].objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                shape.strokeStyle?.miterLimit = miterLimit
-                document.unifiedObjects[index] = VectorObject(
-                    shape: shape,
-                    layerIndex: document.unifiedObjects[index].layerIndex,
-                )
+            guard let object = document.snapshot.objects[objectID] else { continue }
+            switch object.objectType {
+            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
+                document.updateShapeStrokeMiterLimitInUnified(id: shape.id, miterLimit: miterLimit)
             case .text:
                 continue
             }
