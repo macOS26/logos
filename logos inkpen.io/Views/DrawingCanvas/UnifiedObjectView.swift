@@ -1,5 +1,5 @@
 import SwiftUI
-
+import CoreGraphics
 struct UnifiedObjectContentView: View {
     let unifiedObject: VectorObject
     @ObservedObject var document: VectorDocument
@@ -289,65 +289,40 @@ struct LayerCanvasView: View {
     }
 
     private func renderStrokeWithPlacement(strokeStyle: StrokeStyle, path: CGPath, in context: inout GraphicsContext) {
-        // Double the width for inside/outside strokes (will be masked)
-        let effectiveWidth = strokeStyle.width * 2 * zoomLevel
+        // Use PathOperations.outlineStroke for inside/outside strokes
+        // Need to scale the stroke style for zoom level
+        let scaledStrokeStyle = StrokeStyle(
+            color: strokeStyle.color,
+            width: strokeStyle.width * zoomLevel,
+            placement: strokeStyle.placement,
+            dashPattern: strokeStyle.dashPattern,
+            lineCap: strokeStyle.lineCap.cgLineCap,
+            lineJoin: strokeStyle.lineJoin.cgLineJoin,
+            miterLimit: strokeStyle.miterLimit,
+            opacity: strokeStyle.opacity,
+            blendMode: strokeStyle.blendMode
+        )
 
-        // Create the stroked path with double width
+        // Get the outlined stroke path
+        guard let outlinedPath = PathOperations.outlineStroke(path: path, strokeStyle: scaledStrokeStyle) else {
+            return
+        }
+
+        // Render the outlined path with fill
         context.withCGContext { cgContext in
             cgContext.saveGState()
 
-            // Create stroked path
-            cgContext.setLineWidth(effectiveWidth)
-            cgContext.setLineCap(strokeStyle.lineCap.cgLineCap)
-            cgContext.setLineJoin(strokeStyle.lineJoin.cgLineJoin)
-            cgContext.setMiterLimit(strokeStyle.miterLimit)
-            cgContext.addPath(path)
-            cgContext.replacePathWithStrokedPath()
-
-            guard let strokedPath = cgContext.path else {
-                cgContext.restoreGState()
-                return
-            }
-
-            // Apply placement masking
-            let finalPath: CGPath
-            switch strokeStyle.placement {
-            case .inside:
-                print("🔵 INSIDE STROKE: Using intersection")
-                // For inside stroke: keep only the part of stroke inside the shape
-                if let insidePath = CoreGraphicsPathOperations.intersection(strokedPath, path, using: .winding) {
-                    print("   ✅ Intersection succeeded")
-                    finalPath = insidePath
-                } else {
-                    print("   ❌ Intersection failed, using full stroke")
-                    finalPath = strokedPath
-                }
-            case .outside:
-                print("🟠 OUTSIDE STROKE: Using subtract")
-                // For outside stroke: remove the shape from the stroke
-                if let outsidePath = CoreGraphicsPathOperations.subtract(path, from: strokedPath, using: .winding) {
-                    print("   ✅ Subtract succeeded")
-                    finalPath = outsidePath
-                } else {
-                    print("   ❌ Subtract failed, using full stroke")
-                    finalPath = strokedPath
-                }
-            case .center:
-                print("🟢 CENTER STROKE: No masking")
-                finalPath = strokedPath
-            }
-
-            cgContext.restoreGState()
-
-            // Now render the final path with fill (since it's already the stroked shape)
+            // Render with gradient or solid color
             if let gradient = strokeStyle.gradient {
-                renderCGGradientFill(gradient: gradient, path: finalPath, in: cgContext)
+                renderCGGradientFill(gradient: gradient, path: outlinedPath, in: cgContext)
             } else {
                 cgContext.setFillColor(strokeStyle.color.cgColor)
                 cgContext.setAlpha(strokeStyle.opacity)
-                cgContext.addPath(finalPath)
+                cgContext.addPath(outlinedPath)
                 cgContext.fillPath()
             }
+
+            cgContext.restoreGState()
         }
     }
 
