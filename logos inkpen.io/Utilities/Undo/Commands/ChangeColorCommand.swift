@@ -32,9 +32,9 @@ class ChangeColorCommand: BaseCommand {
         applyColors(newColors, opacities: newOpacities, to: document)
         switch target {
         case .fill:
-            document.viewState.canvasTriggers.fillColor.toggle()
+            document.viewState.triggerFillColorUpdate()
         case .stroke:
-            document.viewState.canvasTriggers.strokeColor.toggle()
+            document.viewState.triggerStrokeColorUpdate()
         }
     }
 
@@ -42,9 +42,9 @@ class ChangeColorCommand: BaseCommand {
         applyColors(oldColors, opacities: oldOpacities, to: document)
         switch target {
         case .fill:
-            document.viewState.canvasTriggers.fillColor.toggle()
+            document.viewState.triggerFillColorUpdate()
         case .stroke:
-            document.viewState.canvasTriggers.strokeColor.toggle()
+            document.viewState.triggerStrokeColorUpdate()
         }
     }
 

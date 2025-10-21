@@ -615,6 +615,7 @@ struct StrokeFillPanel: View {
                 )
             }
         }
+        document.viewState.triggerFillOpacityUpdate()
     }
 
     private func updateFillOpacityLive(_ opacity: Double, isEditing: Bool) {
@@ -757,6 +758,7 @@ struct StrokeFillPanel: View {
                 )
             }
         }
+        document.viewState.triggerStrokeWidthUpdate()
     }
 
     private func updateStrokePlacement(_ placement: StrokePlacement) {
@@ -890,6 +892,7 @@ struct StrokeFillPanel: View {
                 continue
             }
         }
+        document.viewState.triggerStrokeOpacityUpdate()
     }
 
     private func updateStrokeLineJoin(_ lineJoin: CGLineJoin) {

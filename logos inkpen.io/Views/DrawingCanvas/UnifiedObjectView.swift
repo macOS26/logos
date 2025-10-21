@@ -466,9 +466,6 @@ struct IsolatedLayerView: View, Equatable {
             }
         }
 
-        // ALWAYS check canvasTriggers first - if triggers changed, force redraw
-        guard lhs.canvasTriggers == rhs.canvasTriggers else { return false }
-
         // Check if this layer has selection
         let lhsHasSelection = lhs.hasSelection
         let rhsHasSelection = rhs.hasSelection
@@ -496,10 +493,11 @@ struct IsolatedLayerView: View, Equatable {
                    lhs.layerOpacity == rhs.layerOpacity &&
                    lhs.layerBlendMode == rhs.layerBlendMode &&
                    lhs.liveScaleTransform == rhs.liveScaleTransform &&
-                   lhs.viewMode == rhs.viewMode
+                   lhs.viewMode == rhs.viewMode &&
+                   lhs.canvasTriggers == rhs.canvasTriggers
         }
 
-        // Layer has selection - check all properties
+        // Layer has selection - check all properties INCLUDING canvasTriggers
         return lhs.selectedObjectIDs == rhs.selectedObjectIDs &&
                lhs.dragPreviewDelta == rhs.dragPreviewDelta &&
                lhs.dragPreviewTrigger == rhs.dragPreviewTrigger &&
@@ -508,7 +506,8 @@ struct IsolatedLayerView: View, Equatable {
                lhs.canvasOffset == rhs.canvasOffset &&
                lhs.layerOpacity == rhs.layerOpacity &&
                lhs.layerBlendMode == rhs.layerBlendMode &&
-               lhs.viewMode == rhs.viewMode
+               lhs.viewMode == rhs.viewMode &&
+               lhs.canvasTriggers == rhs.canvasTriggers
     }
 
     var body: some View {

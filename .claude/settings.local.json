@@ -99,7 +99,10 @@
       "Bash(git commit -m \"Render backgrounds per layer visibility\")",
       "Bash(git commit -m \"Fix grid z-order over Canvas background\")",
       "Bash(git commit -m \"Add coincident point removal slider\")",
-      "Bash(git commit -m \"Add granular CanvasUpdateTriggers system\")"
+      "Bash(git commit -m \"Add granular CanvasUpdateTriggers system\")",
+      "Bash(git add \"logos inkpen.io/Views/DrawingCanvas/UnifiedObjectView.swift\" \"logos inkpen.io/Utilities/Undo/Commands/OpacityCommand.swift\")",
+      "Bash(git commit -m \"Fix Equatable + add opacity triggers\")",
+      "Bash(git commit -m \"Fix Canvas updates for opacity/width sliders\")"
     ],
     "deny": [],
     "ask": []

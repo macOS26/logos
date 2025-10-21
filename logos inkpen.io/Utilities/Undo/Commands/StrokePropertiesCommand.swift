@@ -113,19 +113,19 @@ class StrokePropertiesCommand: BaseCommand {
         switch propertyType {
         case .placement:
             applyPlacements(newPlacements!, to: document)
-            document.viewState.canvasTriggers.strokePlacement.toggle()
+            document.viewState.triggerStrokePlacementUpdate()
         case .lineJoin:
             applyLineJoins(newLineJoins!, to: document)
-            document.viewState.canvasTriggers.strokeColor.toggle()
+            document.viewState.triggerStrokeColorUpdate()
         case .lineCap:
             applyLineCaps(newLineCaps!, to: document)
-            document.viewState.canvasTriggers.strokeColor.toggle()
+            document.viewState.triggerStrokeColorUpdate()
         case .miterLimit:
             applyMiterLimits(newMiterLimits!, to: document)
-            document.viewState.canvasTriggers.strokeColor.toggle()
+            document.viewState.triggerStrokeColorUpdate()
         case .imageOpacity:
             applyImageOpacities(newOpacities!, to: document)
-            document.viewState.canvasTriggers.fillOpacity.toggle()
+            document.viewState.triggerFillOpacityUpdate()
         }
     }
 
@@ -133,19 +133,19 @@ class StrokePropertiesCommand: BaseCommand {
         switch propertyType {
         case .placement:
             applyPlacements(oldPlacements!, to: document)
-            document.viewState.canvasTriggers.strokePlacement.toggle()
+            document.viewState.triggerStrokePlacementUpdate()
         case .lineJoin:
             applyLineJoins(oldLineJoins!, to: document)
-            document.viewState.canvasTriggers.strokeColor.toggle()
+            document.viewState.triggerStrokeColorUpdate()
         case .lineCap:
             applyLineCaps(oldLineCaps!, to: document)
-            document.viewState.canvasTriggers.strokeColor.toggle()
+            document.viewState.triggerStrokeColorUpdate()
         case .miterLimit:
             applyMiterLimits(oldMiterLimits!, to: document)
-            document.viewState.canvasTriggers.strokeColor.toggle()
+            document.viewState.triggerStrokeColorUpdate()
         case .imageOpacity:
             applyImageOpacities(oldOpacities!, to: document)
-            document.viewState.canvasTriggers.fillOpacity.toggle()
+            document.viewState.triggerFillOpacityUpdate()
         }
     }
 

@@ -23,9 +23,9 @@ class OpacityCommand: BaseCommand {
         applyOpacities(newOpacities, to: document)
         switch target {
         case .fill:
-            document.viewState.canvasTriggers.fillOpacity.toggle()
+            document.viewState.triggerFillOpacityUpdate()
         case .stroke:
-            document.viewState.canvasTriggers.strokeOpacity.toggle()
+            document.viewState.triggerStrokeOpacityUpdate()
         }
     }
 
@@ -33,9 +33,9 @@ class OpacityCommand: BaseCommand {
         applyOpacities(oldOpacities, to: document)
         switch target {
         case .fill:
-            document.viewState.canvasTriggers.fillOpacity.toggle()
+            document.viewState.triggerFillOpacityUpdate()
         case .stroke:
-            document.viewState.canvasTriggers.strokeOpacity.toggle()
+            document.viewState.triggerStrokeOpacityUpdate()
         }
     }
 
