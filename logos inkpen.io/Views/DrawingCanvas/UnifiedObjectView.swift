@@ -281,54 +281,29 @@ struct LayerCanvasView: View {
     }
 
     private func renderGradientToContext(gradient: VectorGradient, path: CGPath, isStroke: Bool, strokeStyle: StrokeStyle?, in context: inout GraphicsContext) {
-        let pathBounds = path.boundingBoxOfPath
-        guard pathBounds.width > 0 && pathBounds.height > 0 else { return }
+        // Paint gradient directly to CGContext (like we do for CoreText)
+        context.withCGContext { cgContext in
+            cgContext.saveGState()
 
-        // Create an offscreen CGContext to render the gradient
-        let width = Int(pathBounds.width.rounded(.up))
-        let height = Int(pathBounds.height.rounded(.up))
+            // Create stroked path if needed
+            let finalPath: CGPath
+            if isStroke, let strokeStyle = strokeStyle {
+                cgContext.setLineWidth(strokeStyle.width)
+                cgContext.setLineCap(strokeStyle.lineCap.cgLineCap)
+                cgContext.setLineJoin(strokeStyle.lineJoin.cgLineJoin)
+                cgContext.setMiterLimit(strokeStyle.miterLimit)
+                cgContext.addPath(path)
+                cgContext.replacePathWithStrokedPath()
+                finalPath = cgContext.path ?? path
+            } else {
+                finalPath = path
+            }
 
-        guard width > 0 && height > 0 else { return }
+            // Render gradient directly
+            renderCGGradientFill(gradient: gradient, path: finalPath, in: cgContext)
 
-        guard let cgContext = CGContext(
-            data: nil,
-            width: width,
-            height: height,
-            bitsPerComponent: 8,
-            bytesPerRow: 0,
-            space: CGColorSpaceCreateDeviceRGB(),
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else { return }
-
-        // Flip the coordinate system to match SwiftUI's top-left origin
-        cgContext.translateBy(x: 0, y: CGFloat(height))
-        cgContext.scaleBy(x: 1.0, y: -1.0)
-
-        // Translate to compensate for path bounds
-        cgContext.translateBy(x: -pathBounds.minX, y: -pathBounds.minY)
-
-        // Render gradient using existing logic
-        let finalPath = isStroke ? createStrokedPath(path, strokeStyle: strokeStyle, in: cgContext) : path
-        renderCGGradientFill(gradient: gradient, path: finalPath, in: cgContext)
-
-        // Convert to CGImage and draw
-        if let cgImage = cgContext.makeImage() {
-            let image = Image(decorative: cgImage, scale: 1.0)
-            context.draw(image, at: CGPoint(x: pathBounds.midX, y: pathBounds.midY), anchor: .center)
+            cgContext.restoreGState()
         }
-    }
-
-    private func createStrokedPath(_ path: CGPath, strokeStyle: StrokeStyle?, in cgContext: CGContext) -> CGPath {
-        guard let strokeStyle = strokeStyle else { return path }
-
-        cgContext.setLineWidth(strokeStyle.width)
-        cgContext.setLineCap(strokeStyle.lineCap.cgLineCap)
-        cgContext.setLineJoin(strokeStyle.lineJoin.cgLineJoin)
-        cgContext.setMiterLimit(strokeStyle.miterLimit)
-        cgContext.addPath(path)
-        cgContext.replacePathWithStrokedPath()
-
-        return cgContext.path ?? path
     }
 
     private func renderCGGradientFill(gradient: VectorGradient, path: CGPath, in cgContext: CGContext) {
