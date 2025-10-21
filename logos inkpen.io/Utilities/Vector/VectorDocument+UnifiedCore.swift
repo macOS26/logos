@@ -63,6 +63,12 @@ extension VectorDocument {
             // Update snapshot
             snapshot.objects[shapeID] = updatedObject
 
+            // Keep unifiedObjects in sync (needed for selection and ordering)
+            // Use cached index for O(1) update instead of O(n) search
+            if let index = unifiedObjectIndexCache[shapeID], index < unifiedObjects.count {
+                unifiedObjects[index] = updatedObject
+            }
+
             // Notify only this specific object changed (unless silent)
             if !silent {
                 changeNotifier.notifyObjectChanged(shapeID)
@@ -98,6 +104,7 @@ extension VectorDocument {
 
     func getShapesForLayer(_ layerIndex: Int) -> [VectorShape] {
         // Array position IS the order now - no sorting needed
+        // Use unifiedObjects since it maintains proper draw order
         return unifiedObjects
             .filter { $0.layerIndex == layerIndex }
             .compactMap { object -> VectorShape? in
