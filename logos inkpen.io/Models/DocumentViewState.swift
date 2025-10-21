@@ -29,9 +29,11 @@ class DocumentViewState: ObservableObject {
     @Published var colorChangeNotification: UUID = UUID()
     @Published var lastColorChangeType: ColorChangeType = .fillOpacity
 
+    // MARK: - Canvas Update Triggers
+    @Published var canvasTriggers = CanvasUpdateTriggers()
+
     // MARK: - Preview/Transient State
     @Published var objectPositionUpdateTrigger: Bool = false
-    @Published var fillStrokeTrigger: Bool = false
     @Published var scalePreviewDimensions: CGSize = .zero
     @Published var warpEnvelopeCorners: [UUID: [CGPoint]] = [:]
     @Published var warpBounds: [UUID: CGRect] = [:]

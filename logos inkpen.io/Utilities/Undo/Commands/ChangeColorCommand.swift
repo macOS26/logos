@@ -30,12 +30,22 @@ class ChangeColorCommand: BaseCommand {
 
     override func execute(on document: VectorDocument) {
         applyColors(newColors, opacities: newOpacities, to: document)
-        document.viewState.fillStrokeTrigger.toggle()
+        switch target {
+        case .fill:
+            document.viewState.canvasTriggers.fillColor.toggle()
+        case .stroke:
+            document.viewState.canvasTriggers.strokeColor.toggle()
+        }
     }
 
     override func undo(on document: VectorDocument) {
         applyColors(oldColors, opacities: oldOpacities, to: document)
-        document.viewState.fillStrokeTrigger.toggle()
+        switch target {
+        case .fill:
+            document.viewState.canvasTriggers.fillColor.toggle()
+        case .stroke:
+            document.viewState.canvasTriggers.strokeColor.toggle()
+        }
     }
 
     private func applyColors(_ colors: [UUID: VectorColor],

@@ -223,7 +223,7 @@ extension FileOperations {
                         layerBlendMode: document.layers[layerIndex].blendMode,
                         liveGradientOriginX: nil,
                         liveGradientOriginY: nil,
-                        fillStrokeTrigger: false
+                        canvasTriggers: CanvasUpdateTriggers()
                     )
                 }
             }
