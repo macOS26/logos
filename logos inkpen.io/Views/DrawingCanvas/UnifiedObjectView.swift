@@ -582,41 +582,29 @@ struct IsolatedLayerView: View, Equatable {
                 dragPreviewDelta: dragPreviewDelta
             )
 
-            // Render text and gradients using SwiftUI views
-            ForEach(objects, id: \.id) { unifiedObject in
-                if unifiedObject.isVisible {
-                    let needsSwiftUIRendering = checkNeedsSwiftUIRendering(unifiedObject)
-                    if needsSwiftUIRendering {
-                        UnifiedObjectContentView(
-                            unifiedObject: unifiedObject,
-                            document: document,
-                            zoomLevel: zoomLevel,
-                            canvasOffset: canvasOffset,
-                            selectedObjectIDs: selectedObjectIDs,
-                            viewMode: viewMode,
-                            dragPreviewDelta: dragPreviewDelta,
-                            dragPreviewTrigger: dragPreviewTrigger,
-                            liveScaleTransform: liveScaleTransform,
-                            liveGradientOriginX: liveGradientOriginX,
-                            liveGradientOriginY: liveGradientOriginY
-                        )
-                    }
-                }
+            // For text editor only - filter .text objects first
+            ForEach(objects.filter { object in
+                guard object.isVisible else { return false }
+                if case .text = object.objectType { return true }
+                return false
+            }, id: \.id) { unifiedObject in
+                UnifiedObjectContentView(
+                    unifiedObject: unifiedObject,
+                    document: document,
+                    zoomLevel: zoomLevel,
+                    canvasOffset: canvasOffset,
+                    selectedObjectIDs: selectedObjectIDs,
+                    viewMode: viewMode,
+                    dragPreviewDelta: dragPreviewDelta,
+                    dragPreviewTrigger: dragPreviewTrigger,
+                    liveScaleTransform: liveScaleTransform,
+                    liveGradientOriginX: liveGradientOriginX,
+                    liveGradientOriginY: liveGradientOriginY
+                )
             }
         }
         .opacity(layerOpacity)
         .blendMode(layerBlendMode.swiftUIBlendMode)
-    }
-
-    private func checkNeedsSwiftUIRendering(_ object: VectorObject) -> Bool {
-        switch object.objectType {
-        case .text:
-            return true  // Text needs SwiftUI
-        case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-            // Only text shapes with typography need SwiftUI, all others rendered by Canvas (including gradients)
-            if shape.typography != nil { return true }
-            return false
-        }
     }
 
     private func renderLayerToCache() {
