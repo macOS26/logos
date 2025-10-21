@@ -31,7 +31,7 @@ class VectorDocument: ObservableObject, Codable {
     var activeLayerIndexDuringDrag: Int? = nil
 
     var isHandleScalingActive = false
-    @Published var unifiedObjects: [VectorObject] = [] {
+    var unifiedObjects: [VectorObject] = [] {
         didSet {
             // Only trigger full refresh when objects are added/removed
             if oldValue.count != unifiedObjects.count {
@@ -50,7 +50,7 @@ class VectorDocument: ObservableObject, Codable {
     }
 
     // Index cache: maps UUID -> array index (O(1) lookup, minimal memory)
-    internal var unifiedObjectIndexCache: [UUID: Int] = [:]
+    @Published var unifiedObjectIndexCache: [UUID: Int] = [:]
 
     // Lightweight change notifier - avoids copying unifiedObjects array
     let changeNotifier = DocumentChangeNotifier()
