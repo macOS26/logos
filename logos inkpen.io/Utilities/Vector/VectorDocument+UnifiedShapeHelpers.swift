@@ -5,99 +5,63 @@ extension VectorDocument {
 
     func updateShapeFillColorInUnified(id: UUID, color: VectorColor) {
         print("🔴 UPDATE FILL: Called for shape \(id), color=\(color)")
-        if let index = unifiedObjects.firstIndex(where: { obj in
-            switch obj.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.id == id
-            case .text:
-                return false
+        updateShapeByID(id) { shape in
+            print("🔴 UPDATE FILL: Found shape, isGroupContainer=\(shape.isGroupContainer)")
+            // Update the shape itself
+            if shape.fillStyle == nil {
+                shape.fillStyle = FillStyle(color: color, opacity: defaultFillOpacity)
+            } else {
+                shape.fillStyle?.color = color
             }
-        }) {
-            var updatedObject = unifiedObjects[index]
-            switch updatedObject.objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                print("🔴 UPDATE FILL: Found object at index \(index), isGroupContainer=\(shape.isGroupContainer)")
-                // Update the shape itself
-                if shape.fillStyle == nil {
-                    shape.fillStyle = FillStyle(color: color, opacity: defaultFillOpacity)
-                } else {
-                    shape.fillStyle?.color = color
-                }
 
-                // If this is a group, update all children
-                if shape.isGroupContainer {
-                    print("🔴 UPDATE FILL: Updating \(shape.groupedShapes.count) children")
-                    var updatedChildren: [VectorShape] = []
-                    for var childShape in shape.groupedShapes {
-                        print("🔴 UPDATE FILL: Updating child \(childShape.id)")
-                        if childShape.fillStyle == nil {
-                            childShape.fillStyle = FillStyle(color: color, opacity: defaultFillOpacity)
-                        } else {
-                            childShape.fillStyle?.color = color
-                        }
-                        updatedChildren.append(childShape)
+            // If this is a group, update all children
+            if shape.isGroupContainer {
+                print("🔴 UPDATE FILL: Updating \(shape.groupedShapes.count) children")
+                var updatedChildren: [VectorShape] = []
+                for var childShape in shape.groupedShapes {
+                    print("🔴 UPDATE FILL: Updating child \(childShape.id)")
+                    if childShape.fillStyle == nil {
+                        childShape.fillStyle = FillStyle(color: color, opacity: defaultFillOpacity)
+                    } else {
+                        childShape.fillStyle?.color = color
                     }
-                    shape.groupedShapes = updatedChildren
-                    print("🔴 UPDATE FILL: Updated children saved back to group")
+                    updatedChildren.append(childShape)
                 }
-
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
-                unifiedObjects[index] = updatedObject
-                print("🔴 UPDATE FILL: Updated object saved to unifiedObjects")
-            case .text:
-                break
+                shape.groupedShapes = updatedChildren
+                print("🔴 UPDATE FILL: Updated children saved back to group")
             }
-        } else {
-            print("🔴 UPDATE FILL: Shape \(id) NOT FOUND in unifiedObjects")
+            print("🔴 UPDATE FILL: Updated shape saved to snapshot")
         }
     }
 
     func updateShapeStrokeColorInUnified(id: UUID, color: VectorColor) {
         print("🟠 UPDATE STROKE: Called for shape \(id), color=\(color)")
-        if let index = unifiedObjects.firstIndex(where: { obj in
-            switch obj.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.id == id
-            case .text:
-                return false
+        updateShapeByID(id) { shape in
+            print("🟠 UPDATE STROKE: Found shape, isGroupContainer=\(shape.isGroupContainer)")
+            // Update the shape itself
+            if shape.strokeStyle == nil {
+                shape.strokeStyle = StrokeStyle(color: color, width: defaultStrokeWidth, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
+            } else {
+                shape.strokeStyle?.color = color
             }
-        }) {
-            var updatedObject = unifiedObjects[index]
-            switch updatedObject.objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                print("🟠 UPDATE STROKE: Found object at index \(index), isGroupContainer=\(shape.isGroupContainer)")
-                // Update the shape itself
-                if shape.strokeStyle == nil {
-                    shape.strokeStyle = StrokeStyle(color: color, width: defaultStrokeWidth, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
-                } else {
-                    shape.strokeStyle?.color = color
-                }
 
-                // If this is a group, update all children
-                if shape.isGroupContainer {
-                    print("🟠 UPDATE STROKE: Updating \(shape.groupedShapes.count) children")
-                    var updatedChildren: [VectorShape] = []
-                    for var childShape in shape.groupedShapes {
-                        print("🟠 UPDATE STROKE: Updating child \(childShape.id)")
-                        if childShape.strokeStyle == nil {
-                            childShape.strokeStyle = StrokeStyle(color: color, width: defaultStrokeWidth, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
-                        } else {
-                            childShape.strokeStyle?.color = color
-                        }
-                        updatedChildren.append(childShape)
+            // If this is a group, update all children
+            if shape.isGroupContainer {
+                print("🟠 UPDATE STROKE: Updating \(shape.groupedShapes.count) children")
+                var updatedChildren: [VectorShape] = []
+                for var childShape in shape.groupedShapes {
+                    print("🟠 UPDATE STROKE: Updating child \(childShape.id)")
+                    if childShape.strokeStyle == nil {
+                        childShape.strokeStyle = StrokeStyle(color: color, width: defaultStrokeWidth, placement: strokeDefaults.placement, lineCap: strokeDefaults.lineCap, lineJoin: strokeDefaults.lineJoin, miterLimit: strokeDefaults.miterLimit, opacity: defaultStrokeOpacity)
+                    } else {
+                        childShape.strokeStyle?.color = color
                     }
-                    shape.groupedShapes = updatedChildren
-                    print("🟠 UPDATE STROKE: Updated children saved back to group")
+                    updatedChildren.append(childShape)
                 }
-
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
-                unifiedObjects[index] = updatedObject
-                print("🟠 UPDATE STROKE: Updated object saved to unifiedObjects")
-            case .text:
-                break
+                shape.groupedShapes = updatedChildren
+                print("🟠 UPDATE STROKE: Updated children saved back to group")
             }
-        } else {
-            print("🟠 UPDATE STROKE: Shape \(id) NOT FOUND in unifiedObjects")
+            print("🟠 UPDATE STROKE: Updated shape saved to snapshot")
         }
     }
 
@@ -122,86 +86,26 @@ extension VectorDocument {
     }
 
     func lockShapeInUnified(id: UUID) {
-        if let index = unifiedObjects.firstIndex(where: { obj in
-            switch obj.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.id == id
-            case .text:
-                return false
-            }
-        }) {
-            var updatedObject = unifiedObjects[index]
-            switch updatedObject.objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                shape.isLocked = true
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
-                unifiedObjects[index] = updatedObject
-            case .text:
-                break
-            }
+        updateShapeByID(id) { shape in
+            shape.isLocked = true
         }
     }
 
     func unlockShapeInUnified(id: UUID) {
-        if let index = unifiedObjects.firstIndex(where: { obj in
-            switch obj.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.id == id
-            case .text:
-                return false
-            }
-        }) {
-            var updatedObject = unifiedObjects[index]
-            switch updatedObject.objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                shape.isLocked = false
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
-                unifiedObjects[index] = updatedObject
-            case .text:
-                break
-            }
+        updateShapeByID(id) { shape in
+            shape.isLocked = false
         }
     }
 
     func hideShapeInUnified(id: UUID) {
-        if let index = unifiedObjects.firstIndex(where: { obj in
-            switch obj.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.id == id
-            case .text:
-                return false
-            }
-        }) {
-            var updatedObject = unifiedObjects[index]
-            switch updatedObject.objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                shape.isVisible = false
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
-                unifiedObjects[index] = updatedObject
-            case .text:
-                break
-            }
+        updateShapeByID(id) { shape in
+            shape.isVisible = false
         }
     }
 
     func showShapeInUnified(id: UUID) {
-        if let index = unifiedObjects.firstIndex(where: { obj in
-            switch obj.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                return shape.id == id
-            case .text:
-                return false
-            }
-        }) {
-            var updatedObject = unifiedObjects[index]
-            switch updatedObject.objectType {
-            case .shape(var shape), .warp(var shape), .group(var shape), .clipGroup(var shape), .clipMask(var shape):
-                shape.isVisible = true
-                updatedObject = VectorObject(shape: shape, layerIndex: updatedObject.layerIndex)
-                unifiedObjects[index] = updatedObject
-            case .text:
-                break
-            }
+        updateShapeByID(id) { shape in
+            shape.isVisible = true
         }
     }
 
