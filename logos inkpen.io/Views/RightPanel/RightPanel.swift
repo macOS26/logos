@@ -29,7 +29,11 @@ struct RightPanel: View {
                         document: document
                     )
                 case .color:
-                    ColorPanel(document: document)
+                    ColorPanel(
+                        snapshot: document.snapshot,
+                        selectedObjectIDs: document.viewState.selectedObjectIDs,
+                        document: document
+                    )
                 case .pathOps:
                     PathOperationsPanel(document: document)
                 case .font:

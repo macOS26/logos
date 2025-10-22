@@ -1,7 +1,9 @@
 import SwiftUI
 
 struct ColorPanel: View {
-    @ObservedObject var document: VectorDocument
+    let snapshot: DocumentSnapshot
+    let selectedObjectIDs: Set<UUID>
+    @ObservedObject var document: VectorDocument  // Keep temporarily for methods
     @Environment(AppState.self) private var appState
     @State private var searchText = ""
     @State private var showingPantoneSearch = false
@@ -9,7 +11,9 @@ struct ColorPanel: View {
     let onColorSelected: ((VectorColor) -> Void)?
     let showGradientEditing: Bool
 
-    init(document: VectorDocument, onColorSelected: ((VectorColor) -> Void)? = nil, showGradientEditing: Bool = false) {
+    init(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, document: VectorDocument, onColorSelected: ((VectorColor) -> Void)? = nil, showGradientEditing: Bool = false) {
+        self.snapshot = snapshot
+        self.selectedObjectIDs = selectedObjectIDs
         self.document = document
         self.onColorSelected = onColorSelected
         self.showGradientEditing = showGradientEditing

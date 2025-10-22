@@ -7,7 +7,12 @@ struct ColorPickerModal: View {
     let onColorSelected: (VectorColor) -> Void
     var body: some View {
         NavigationView {
-            ColorPanel(document: document, onColorSelected: onColorSelected)
+            ColorPanel(
+                snapshot: document.snapshot,
+                selectedObjectIDs: document.viewState.selectedObjectIDs,
+                document: document,
+                onColorSelected: onColorSelected
+            )
                 .navigationTitle(title)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {

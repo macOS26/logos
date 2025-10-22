@@ -56,6 +56,8 @@ struct StableColorPanelWrapper: View, Equatable {
 
     var body: some View {
                                 ColorPanel(
+            snapshot: hudManager.getStableDocument().snapshot,
+            selectedObjectIDs: hudManager.getStableDocument().viewState.selectedObjectIDs,
             document: hudManager.getStableDocument(),
             onColorSelected: { newColor in
                 if let stopId = hudManager.editingStopId {
@@ -104,7 +106,11 @@ struct GradientColorPickerSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ColorPanel(document: localDocument, onColorSelected: { newColor in
+            ColorPanel(
+                snapshot: localDocument.snapshot,
+                selectedObjectIDs: localDocument.viewState.selectedObjectIDs,
+                document: localDocument,
+                onColorSelected: { newColor in
                 if let stopId = editingGradientStopId {
                     updateStopColor(stopId, newColor)
                 }

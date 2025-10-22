@@ -7,9 +7,15 @@ struct StableInkHUDContent: View {
     var body: some View {
         if let document = appState.persistentInkHUD.currentDocument {
             VStack(spacing: 0) {
-                ColorPanel(document: document, onColorSelected: { color in
-                    document.setActiveColor(color)
-                }, showGradientEditing: false)
+                ColorPanel(
+                    snapshot: document.snapshot,
+                    selectedObjectIDs: document.viewState.selectedObjectIDs,
+                    document: document,
+                    onColorSelected: { color in
+                        document.setActiveColor(color)
+                    },
+                    showGradientEditing: false
+                )
                 .frame(maxWidth: 350, maxHeight: 520)
                 .id(colorPanelKey)
 
