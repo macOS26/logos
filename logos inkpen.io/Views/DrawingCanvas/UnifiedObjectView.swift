@@ -308,21 +308,16 @@ struct LayerCanvasView: View {
             return
         }
 
-        // Render the outlined path with fill
-        context.withCGContext { cgContext in
-            cgContext.saveGState()
-
-            // Render with gradient or solid color
-            if let gradient = strokeStyle.gradient {
-                renderCGGradientFill(gradient: gradient, path: outlinedPath, in: cgContext)
-            } else {
-                cgContext.setFillColor(strokeStyle.color.cgColor)
-                cgContext.setAlpha(strokeStyle.opacity)
-                cgContext.addPath(outlinedPath)
-                cgContext.fillPath()
-            }
-
-            cgContext.restoreGState()
+        // Render the outlined path as a filled shape
+        if let gradient = strokeStyle.gradient {
+            // Gradients still need CGContext
+            renderGradientToContext(gradient: gradient, path: outlinedPath, isStroke: false, strokeStyle: nil, in: &context)
+        } else if strokeStyle.color != .clear {
+            // Simple fill using SwiftUI's Path
+            context.fill(
+                Path(outlinedPath),
+                with: .color(strokeStyle.color.color.opacity(strokeStyle.opacity))
+            )
         }
     }
 
