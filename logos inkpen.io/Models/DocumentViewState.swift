@@ -41,6 +41,12 @@ class DocumentViewState: ObservableObject {
     @Published var isDraggingLock: Bool = false
 
     // MARK: - Selection State (transient, not saved)
-    @Published var selectedObjectIDs: Set<UUID> = []
+    var selectedObjectIDs: Set<UUID> = [] {
+        didSet {
+            PublishedSelectedObjectIDs = selectedObjectIDs
+        }
+    }
+    
+    @Published var PublishedSelectedObjectIDs: Set<UUID> = []
     init() {}
 }

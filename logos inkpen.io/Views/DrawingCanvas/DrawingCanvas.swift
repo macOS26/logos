@@ -38,6 +38,9 @@ struct DrawingCanvas: View {
     @State internal var isCommandPressed = false
     @State internal var isOptionPressed = false
     @State internal var isControlPressed = false
+
+    // Spatial index for O(1) hit testing
+    @State internal var spatialIndex = SpatialIndex()
     @State internal var isDraggingDirectSelectedShapes = false
     @State internal var keyEventMonitor: Any?
     @State internal var bezierPath: VectorPath?
@@ -172,6 +175,10 @@ struct DrawingCanvas: View {
                 }
                 .onChange(of: viewState.scalePreviewDimensions) { _, newValue in
                     liveScaleDimensions = newValue
+                }
+                .onChange(of: document.snapshot) { _, _ in
+                    // Rebuild spatial index when document changes
+                    spatialIndex.rebuild(from: document.snapshot)
                 }
                 .onChange(of: document.viewState.selectedObjectIDs) { _, newValue in
                     // Sync local selectedObjectIDs with document's viewState

@@ -10,6 +10,12 @@ struct SelectionHandlesView: View {
     let isTemporarySelectionViaCommand: Bool
     let dragPreviewDelta: CGPoint
     @Binding var liveScaleTransform: CGAffineTransform
+
+    // Force view to update when selection changes
+    private var selectionID: String {
+        document.viewState.selectedObjectIDs.map { $0.uuidString }.sorted().joined()
+    }
+
     var body: some View {
         ZStack {
             ForEach(document.unifiedObjects.indices, id: \.self) { unifiedObjectIndex in
@@ -96,6 +102,7 @@ struct SelectionHandlesView: View {
                 }
             }
         }
+        .id(selectionID) // Force re-render when selection changes
     }
 
     @ViewBuilder

@@ -81,7 +81,7 @@ struct TransformationControls: View {
     @State private var updateTrigger: Bool = false
 
     var hasSelection: Bool {
-        !document.viewState.selectedObjectIDs.isEmpty
+        !document.viewState.PublishedSelectedObjectIDs.isEmpty
     }
 
     var body: some View {

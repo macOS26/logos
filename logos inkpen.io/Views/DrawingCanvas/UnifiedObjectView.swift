@@ -309,8 +309,9 @@ struct LayerCanvasView: View {
 
         // Render the outlined path as a filled shape
         if let gradient = strokeStyle.gradient {
-            // Gradients still need CGContext
-            renderGradientToContext(gradient: gradient, path: outlinedPath, isStroke: false, strokeStyle: nil, in: &context)
+            // For outlined strokes, we treat it as a fill but still need stroke opacity
+            // Pass isStroke: false since path is already outlined, but pass strokeStyle for opacity
+            renderGradientToContext(gradient: gradient, path: outlinedPath, isStroke: false, strokeStyle: strokeStyle, fillStyle: nil, in: &context)
         } else if strokeStyle.color != .clear {
             // Simple fill using SwiftUI's Path
             context.fill(
@@ -325,10 +326,11 @@ struct LayerCanvasView: View {
         context.withCGContext { cgContext in
             cgContext.saveGState()
 
-            // Apply opacity based on whether this is a fill or stroke gradient
-            if !isStroke, let fillStyle = fillStyle {
+            // Apply opacity based on whether we have fillStyle or strokeStyle
+            // Note: For outlined strokes, isStroke is false but we still use strokeStyle
+            if let fillStyle = fillStyle {
                 cgContext.setAlpha(CGFloat(fillStyle.opacity))
-            } else if isStroke, let strokeStyle = strokeStyle {
+            } else if let strokeStyle = strokeStyle {
                 cgContext.setAlpha(CGFloat(strokeStyle.opacity))
             }
 
