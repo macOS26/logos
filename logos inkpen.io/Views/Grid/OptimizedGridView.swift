@@ -179,9 +179,9 @@ struct OptimizedGridCanvasView: View {
             let adjustedMajorWidth: CGFloat
 
             if zoomLevel <= 0.5 {
-                // At 50% and lower - major lines at exactly 1px, no scaling
+                // At 50% and lower - major lines at exactly 0.5px, no scaling
                 adjustedMinorWidth = minorLineWidth  // Won't be used anyway
-                adjustedMajorWidth = 1.0  // Exactly 1px
+                adjustedMajorWidth = 0.5  // Exactly 0.5px
             } else if zoomLevel < 1.0 {
                 // Between 50% and 100% - scale down to prevent thick lines
                 adjustedMinorWidth = minorLineWidth / zoomLevel
