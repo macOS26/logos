@@ -79,6 +79,36 @@ struct ProfessionalDirectSelectionView: View {
     @ViewBuilder
     private func professionalBezierDisplay(for shape: VectorShape) -> some View {
         ZStack {
+            // Draw blue 1pt stroke around the selected shape
+            Path { path in
+                for element in shape.path.elements {
+                    switch element {
+                    case .move(let to):
+                        path.move(to: CGPoint(x: to.x, y: to.y))
+                    case .line(let to):
+                        path.addLine(to: CGPoint(x: to.x, y: to.y))
+                    case .curve(let to, let c1, let c2):
+                        path.addCurve(
+                            to: CGPoint(x: to.x, y: to.y),
+                            control1: CGPoint(x: c1.x, y: c1.y),
+                            control2: CGPoint(x: c2.x, y: c2.y)
+                        )
+                    case .quadCurve(let to, let control):
+                        path.addQuadCurve(
+                            to: CGPoint(x: to.x, y: to.y),
+                            control: CGPoint(x: control.x, y: control.y)
+                        )
+                    case .close:
+                        path.closeSubpath()
+                    }
+                }
+            }
+            .stroke(Color.blue, lineWidth: 1.0 / document.viewState.zoomLevel)
+            .transformEffect(shape.transform)
+            .scaleEffect(document.viewState.zoomLevel, anchor: .topLeading)
+            .offset(x: document.viewState.canvasOffset.x, y: document.viewState.canvasOffset.y)
+            .allowsHitTesting(false)
+
             ForEach(Array(shape.path.elements.enumerated()), id: \.offset) { elementIndex, element in
                 bezierElementView(shape: shape, elementIndex: elementIndex, element: element)
             }

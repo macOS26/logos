@@ -48,20 +48,35 @@ struct LayerView: View {
                         viewMode: viewMode
                     )
                 } else {
-                    ShapeView(
-                        shape: currentShape,
-                        zoomLevel: zoomLevel,
-                        canvasOffset: canvasOffset,
-                        isSelected: selectedShapeIDs.contains(currentShape.id),
-                        viewMode: viewMode,
-                        isCanvasLayer: isCanvasLayer,
-                        isPasteboardLayer: isPasteboardLayer,
-                        dragPreviewDelta: dragPreviewDelta,
-                        dragPreviewTrigger: dragPreviewTrigger,
-                        liveScaleTransform: .identity,
-                        liveGradientOriginX: nil,
-                        liveGradientOriginY: nil
-                    )
+                    ZStack {
+                        ShapeView(
+                            shape: currentShape,
+                            zoomLevel: zoomLevel,
+                            canvasOffset: canvasOffset,
+                            isSelected: selectedShapeIDs.contains(currentShape.id),
+                            viewMode: viewMode,
+                            isCanvasLayer: isCanvasLayer,
+                            isPasteboardLayer: isPasteboardLayer,
+                            dragPreviewDelta: dragPreviewDelta,
+                            dragPreviewTrigger: dragPreviewTrigger,
+                            liveScaleTransform: .identity,
+                            liveGradientOriginX: nil,
+                            liveGradientOriginY: nil
+                        )
+
+                        // Only show NSTextView when editing (blue mode)
+                        // When selected (green) or unselected (gray), render on Canvas
+                        if currentShape.textContent != nil, currentShape.typography != nil, currentShape.isEditing == true {
+                            StableProfessionalTextCanvas(
+                                document: document,
+                                textObjectID: currentShape.id,
+                                dragPreviewDelta: dragPreviewDelta,
+                                dragPreviewTrigger: dragPreviewTrigger,
+                                viewMode: viewMode
+                            )
+                            .allowsHitTesting(document.viewState.currentTool == .font)
+                        }
+                    }
                 }
             }
         }
