@@ -24,12 +24,25 @@ class MoveObjectToLayerCommand: BaseCommand {
     }
 
     private func applyMove(objectID: UUID, toLayerIndex: Int, document: VectorDocument) {
-        guard let objectIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) else {
+        guard let object = document.snapshot.objects[objectID] else {
             return
         }
 
-        let object = document.unifiedObjects[objectIndex]
+        let oldLayerIndex = object.layerIndex
 
+        // Remove from old layer's objectIDs
+        if oldLayerIndex >= 0 && oldLayerIndex < document.snapshot.layers.count {
+            if let index = document.snapshot.layers[oldLayerIndex].objectIDs.firstIndex(of: objectID) {
+                document.snapshot.layers[oldLayerIndex].objectIDs.remove(at: index)
+            }
+        }
+
+        // Add to new layer's objectIDs
+        if toLayerIndex >= 0 && toLayerIndex < document.snapshot.layers.count {
+            document.snapshot.layers[toLayerIndex].objectIDs.append(objectID)
+        }
+
+        // Update the object's layerIndex in snapshot.objects
         switch object.objectType {
         case .text(let shape),
              .shape(let shape),
@@ -37,10 +50,12 @@ class MoveObjectToLayerCommand: BaseCommand {
              .group(let shape),
              .clipGroup(let shape),
              .clipMask(let shape):
-            document.unifiedObjects[objectIndex] = VectorObject(
+            document.snapshot.objects[objectID] = VectorObject(
                 shape: shape,
-                layerIndex: toLayerIndex,
+                layerIndex: toLayerIndex
             )
         }
+
+        document.changeNotifier.notifyLayersChanged()
     }
 }
