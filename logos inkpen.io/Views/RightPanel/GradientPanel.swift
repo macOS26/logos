@@ -623,15 +623,34 @@ struct GradientFillSection: View {
         if isLiveDrag {
             for objectID in selectedObjectIDs {
                 print("  🔸 Processing object (live): \(objectID)")
-                if let newVectorObject = snapshot.objects[objectID] {
+                if let newVectorObject = document.snapshot.objects[objectID] {
                     print("    Found object type: \(newVectorObject.objectType)")
-                    if case .shape(let shape) = newVectorObject.objectType,
-                       let layerIndex = newVectorObject.layerIndex < document.layers.count ? newVectorObject.layerIndex : nil,
-                       document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
+                    var shape = newVectorObject.shape
 
-                        print("    ✅ Updating shape gradient (live)")
-                        document.updateShapeGradientInUnified(id: shape.id, gradient: gradient, target: document.viewState.activeColorTarget)
+                    switch document.viewState.activeColorTarget {
+                    case .fill:
+                        let currentOpacity = shape.fillStyle?.opacity ?? 1.0
+                        shape.fillStyle = FillStyle(gradient: gradient, opacity: currentOpacity)
+                    case .stroke:
+                        let currentStroke = shape.strokeStyle
+                        shape.strokeStyle = StrokeStyle(
+                            gradient: gradient,
+                            width: currentStroke?.width ?? document.defaultStrokeWidth,
+                            placement: currentStroke?.placement ?? document.strokeDefaults.placement,
+                            lineCap: currentStroke?.lineCap.cgLineCap ?? document.strokeDefaults.lineCap,
+                            lineJoin: currentStroke?.lineJoin.cgLineJoin ?? document.strokeDefaults.lineJoin,
+                            miterLimit: currentStroke?.miterLimit ?? document.strokeDefaults.miterLimit,
+                            opacity: currentStroke?.opacity ?? 1.0,
+                            blendMode: currentStroke?.blendMode ?? .normal
+                        )
                     }
+
+                    // Create new VectorObject with updated shape
+                    let updatedObject = VectorObject(shape: shape, layerIndex: newVectorObject.layerIndex)
+
+                    // Update the snapshot for live drag
+                    print("    ✅ Updating shape gradient (live)")
+                    document.snapshot.objects[objectID] = updatedObject
                 }
             }
             return
@@ -639,41 +658,39 @@ struct GradientFillSection: View {
 
         for objectID in selectedObjectIDs {
             print("  🔸 Processing object: \(objectID)")
-            if let newVectorObject = snapshot.objects[objectID] {
+            if let newVectorObject = document.snapshot.objects[objectID] {
                 print("    Found object type: \(newVectorObject.objectType)")
-                switch newVectorObject.objectType {
-                case .shape(let shape),
-                     .warp(let shape),
-                     .group(let shape),
-                     .clipGroup(let shape),
-                     .clipMask(let shape):
-                    print("    Processing shape: \(shape.id)")
-                    if let layerIndex = newVectorObject.layerIndex < document.layers.count ? newVectorObject.layerIndex : nil {
-                        print("    Layer index: \(layerIndex)")
-                        let shapes = document.getShapesForLayer(layerIndex)
-                        print("    Shapes in layer: \(shapes.count)")
-                        if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }),
-                           let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                            print("    ✅ Found shape at index \(shapeIndex)")
-                            var updatedShape = currentShape
-                            switch document.viewState.activeColorTarget {
-                            case .fill:
-                                print("    Applying to FILL")
-                                let currentOpacity = currentShape.fillStyle?.opacity ?? 1.0
-                                updatedShape.fillStyle = FillStyle(gradient: gradient, opacity: currentOpacity)
-                            case .stroke:
-                                print("    Applying to STROKE")
-                                let currentStroke = currentShape.strokeStyle
-                                updatedShape.strokeStyle = StrokeStyle(gradient: gradient, width: currentStroke?.width ?? document.defaultStrokeWidth, placement: currentStroke?.placement ?? document.strokeDefaults.placement, lineCap: currentStroke?.lineCap.cgLineCap ?? document.strokeDefaults.lineCap, lineJoin: currentStroke?.lineJoin.cgLineJoin ?? document.strokeDefaults.lineJoin, miterLimit: currentStroke?.miterLimit ?? document.strokeDefaults.miterLimit, opacity: currentStroke?.opacity ?? 1.0)
-                            }
-                            print("    📝 Calling setShapeAtIndex")
-                            document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-                            print("    ✅ Shape updated successfully")
-                        }
-                    }
-                case .text:
-                    break
+                var shape = newVectorObject.shape
+
+                switch document.viewState.activeColorTarget {
+                case .fill:
+                    print("    Applying gradient to FILL")
+                    let currentOpacity = shape.fillStyle?.opacity ?? 1.0
+                    shape.fillStyle = FillStyle(gradient: gradient, opacity: currentOpacity)
+                case .stroke:
+                    print("    Applying gradient to STROKE")
+                    let currentStroke = shape.strokeStyle
+                    shape.strokeStyle = StrokeStyle(
+                        gradient: gradient,
+                        width: currentStroke?.width ?? document.defaultStrokeWidth,
+                        placement: currentStroke?.placement ?? document.strokeDefaults.placement,
+                        lineCap: currentStroke?.lineCap.cgLineCap ?? document.strokeDefaults.lineCap,
+                        lineJoin: currentStroke?.lineJoin.cgLineJoin ?? document.strokeDefaults.lineJoin,
+                        miterLimit: currentStroke?.miterLimit ?? document.strokeDefaults.miterLimit,
+                        opacity: currentStroke?.opacity ?? 1.0,
+                        blendMode: currentStroke?.blendMode ?? .normal
+                    )
                 }
+
+                // Create new VectorObject with updated shape
+                let updatedObject = VectorObject(shape: shape, layerIndex: newVectorObject.layerIndex)
+
+                // Update the snapshot
+                print("    📝 Updating document.snapshot.objects[\(objectID)]")
+                document.snapshot.objects[objectID] = updatedObject
+                print("    ✅ Snapshot updated directly")
+            } else {
+                print("  ❌ Object not found in snapshot: \(objectID)")
             }
         }
     }
