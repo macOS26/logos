@@ -9,11 +9,16 @@ struct ProfessionalLayerRow: View {
     @State private var isEditingName: Bool = false
     @State private var editedName: String = ""
     @State private var isExpanded: Bool
-    @State private var layerObjects: [VectorObject] = []
     @State private var previewOpacity: Double? = nil
     @State private var selectionAnchorID: UUID? = nil
     @State private var selectionRangeMin: Int? = nil
     @State private var selectionRangeMax: Int? = nil
+
+    // Computed property to get objects directly from snapshot
+    private var layerObjects: [VectorObject] {
+        let objectIDs = layerIndex < document.snapshot.layers.count ? document.snapshot.layers[layerIndex].objectIDs : []
+        return objectIDs.reversed().compactMap { document.snapshot.objects[$0] }
+    }
 
     private var isVisibleBinding: Binding<Bool> {
         Binding(
@@ -49,10 +54,6 @@ struct ProfessionalLayerRow: View {
         } else {
             _isExpanded = State(initialValue: document.settings.layerExpansionState[layer.id] ?? true)
         }
-
-        let objectIDs = layerIndex < document.snapshot.layers.count ? document.snapshot.layers[layerIndex].objectIDs : []
-        let objects = objectIDs.compactMap { document.snapshot.objects[$0] }
-        _layerObjects = State(initialValue: Array(objects.reversed()))
     }
 
     private func setExpanded(_ value: Bool) {
@@ -298,16 +299,6 @@ struct ProfessionalLayerRow: View {
                 }
                 .animation(.spring(response: 0.3, dampingFraction: 0.9), value: layerObjects.map { $0.id })
             }
-        }
-        .onAppear {
-            let objectIDs = layerIndex < document.snapshot.layers.count ? document.snapshot.layers[layerIndex].objectIDs : []
-            let objects = objectIDs.compactMap { document.snapshot.objects[$0] }
-            layerObjects = Array(objects.reversed())
-        }
-        .onChange(of: document.changeNotifier.changeToken) { _, _ in
-            let objectIDs = layerIndex < document.snapshot.layers.count ? document.snapshot.layers[layerIndex].objectIDs : []
-            let objects = objectIDs.compactMap { document.snapshot.objects[$0] }
-            layerObjects = Array(objects.reversed())
         }
         .background(
             Group {
