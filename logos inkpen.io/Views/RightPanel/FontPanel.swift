@@ -57,13 +57,13 @@ struct FontPanel: View {
     }
 
     private var editingText: VectorText? {
-        if let unifiedObj = document.unifiedObjects.first(where: { obj in
+        if let obj = document.snapshot.objects.values.first(where: { obj in
             if case .text(let shape) = obj.objectType {
                 return shape.isEditing == true
             }
             return false
         }) {
-            if case .text(let shape) = unifiedObj.objectType {
+            if case .text(let shape) = obj.objectType {
                 return VectorText.from(shape)
             }
         }
@@ -130,7 +130,7 @@ struct FontPanel: View {
             }
         }
         .onChange(of: document.changeNotifier.changeToken) { _, _ in
-            let freshEditingText = document.unifiedObjects.first { obj in
+            let freshEditingText = document.snapshot.objects.values.first { obj in
                 if case .text(let shape) = obj.objectType {
                     return shape.isEditing == true
                 }
