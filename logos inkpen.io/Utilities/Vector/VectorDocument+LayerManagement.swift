@@ -439,15 +439,20 @@ extension VectorDocument {
         let layerIndex = sourceObject.layerIndex
         guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
 
-        guard let sourceObjIndex = snapshot.layers[layerIndex].objectIDs.firstIndex(of: objectId) else {
+        guard let sourceObjIndex = snapshot.layers[layerIndex].objectIDs.firstIndex(of: objectId),
+              let targetObjIndex = snapshot.layers[layerIndex].objectIDs.firstIndex(of: targetObjectId) else {
             return
         }
+
+        let draggingUp = sourceObjIndex > targetObjIndex
 
         snapshot.layers[layerIndex].objectIDs.remove(at: sourceObjIndex)
 
         // Recalculate target index after removal
         if let newTargetIndex = snapshot.layers[layerIndex].objectIDs.firstIndex(of: targetObjectId) {
-            snapshot.layers[layerIndex].objectIDs.insert(objectId, at: newTargetIndex)
+            // If dragging up, insert before target. If dragging down, insert after target
+            let insertIndex = draggingUp ? newTargetIndex : newTargetIndex + 1
+            snapshot.layers[layerIndex].objectIDs.insert(objectId, at: insertIndex)
         }
 
         changeNotifier.notifyLayersChanged()
