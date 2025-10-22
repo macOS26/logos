@@ -86,7 +86,7 @@ extension VectorDocument {
 
                 let shape = VectorShape.from(duplicateText)
                 let layerIndex = obj.layerIndex
-                let newObject = VectorObject(shape: shape, layerIndex: layerIndex)
+                let newObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .text(shape))
                 duplicatedObjects.append(newObject)
                 newTextIDs.insert(duplicateText.id)
             }
