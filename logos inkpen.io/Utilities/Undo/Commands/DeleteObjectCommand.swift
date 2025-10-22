@@ -3,7 +3,6 @@ import Combine
 
 class DeleteObjectCommand: BaseCommand {
     private let objects: [VectorObject]
-    private var removedIndices: [Int] = []
 
     init(objects: [VectorObject]) {
         self.objects = objects
@@ -14,44 +13,31 @@ class DeleteObjectCommand: BaseCommand {
     }
 
     override func execute(on document: VectorDocument) {
-        removedIndices = []
         let idsToRemove = Set(objects.map { $0.id })
 
-        for (index, obj) in document.unifiedObjects.enumerated().reversed() {
-            if idsToRemove.contains(obj.id) {
-                removedIndices.insert(index, at: 0)
-            }
-        }
-
-        document.unifiedObjects.removeAll { idsToRemove.contains($0.id) }
-
-        // CRITICAL FIX: Remove from snapshot.objects dictionary
+        // Remove from snapshot.objects dictionary (O(1) per object)
         for id in idsToRemove {
             document.snapshot.objects.removeValue(forKey: id)
-
-            // Also remove from layer's objectIDs array
-            for index in document.snapshot.layers.indices {
-                document.snapshot.layers[index].objectIDs.removeAll { $0 == id }
-            }
         }
+
+        // Remove object IDs from layers
+        for i in 0..<document.snapshot.layers.count {
+            document.snapshot.layers[i].objectIDs.removeAll { idsToRemove.contains($0) }
+        }
+
+        // Also remove from viewState selection
+        document.viewState.selectedObjectIDs = document.viewState.selectedObjectIDs.subtracting(idsToRemove)
     }
 
     override func undo(on document: VectorDocument) {
-        for (obj, index) in zip(objects, removedIndices) {
-            if index <= document.unifiedObjects.count {
-                document.unifiedObjects.insert(obj, at: index)
-            } else {
-                document.unifiedObjects.append(obj)
-            }
-
-            // Restore to snapshot.objects dictionary
+        // Restore to snapshot.objects dictionary
+        for obj in objects {
             document.snapshot.objects[obj.id] = obj
 
-            // Restore to appropriate layer's objectIDs array
-            let layerIndex = obj.layerIndex
-            if layerIndex < document.snapshot.layers.count {
-                if !document.snapshot.layers[layerIndex].objectIDs.contains(obj.id) {
-                    document.snapshot.layers[layerIndex].objectIDs.append(obj.id)
+            // Add back to appropriate layer
+            if obj.layerIndex < document.snapshot.layers.count {
+                if !document.snapshot.layers[obj.layerIndex].objectIDs.contains(obj.id) {
+                    document.snapshot.layers[obj.layerIndex].objectIDs.append(obj.id)
                 }
             }
         }
