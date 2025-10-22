@@ -261,9 +261,8 @@ struct LayerCanvasView: View {
 
         // Render stroke
         if viewMode == .keyline {
-            // Use actual stroke width if available, otherwise use a default
-            let strokeWidth = shape.strokeStyle?.width ?? 1.0
-            ctx.stroke(Path(transformedPath), with: .color(.black), lineWidth: strokeWidth * zoomLevel)
+            // Always use 1px for keyline mode
+            ctx.stroke(Path(transformedPath), with: .color(.black), lineWidth: 1.0)
         } else if let strokeStyle = shape.strokeStyle {
             if strokeStyle.placement == .center {
                 // Standard center stroke
