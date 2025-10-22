@@ -83,12 +83,12 @@ struct OptimizedGridView: View {
                             )
                         }
 
-                        // Draw major lines (25% darker = 0.5 opacity instead of 0.4)
+                        // Draw major lines (10% lighter = 0.45 opacity instead of 0.5)
                         if !majorPattern.isEmpty {
                             let transformedMajor = majorPattern.applying(transform)
                             context.stroke(
                                 transformedMajor,
-                                with: .color(.gray.opacity(0.5)),
+                                with: .color(.gray.opacity(0.45)),
                                 lineWidth: majorLineWidth
                             )
                         }
