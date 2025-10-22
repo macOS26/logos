@@ -173,6 +173,14 @@ struct DrawingCanvas: View {
                 .onChange(of: viewState.scalePreviewDimensions) { _, newValue in
                     liveScaleDimensions = newValue
                 }
+                .onChange(of: document.viewState.selectedObjectIDs) { _, newValue in
+                    // Sync local selectedObjectIDs with document's viewState
+                    selectedObjectIDs = newValue
+                }
+                .onAppear {
+                    // Initial sync of selectedObjectIDs
+                    selectedObjectIDs = document.viewState.selectedObjectIDs
+                }
         }
     }
 }

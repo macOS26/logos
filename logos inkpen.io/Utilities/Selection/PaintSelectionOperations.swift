@@ -133,11 +133,8 @@ class PaintSelectionOperations {
 
     /// Update fill opacity for selected objects (live update during dragging)
     func updateFillOpacityLive(_ opacity: Double, document: VectorDocument, isEditing: Bool) {
-        let selection = CurrentSelection.shared
-        let selectedObjectIDs = selection.viewState.selectedObjectIDs
-
-        for objectID in selectedObjectIDs {
-            guard let object = selection.snapshot.objects[objectID] else { continue }
+        for objectID in document.viewState.selectedObjectIDs {
+            guard let object = document.snapshot.objects[objectID] else { continue }
             switch object.objectType {
             case .text(let shape):
                 document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)

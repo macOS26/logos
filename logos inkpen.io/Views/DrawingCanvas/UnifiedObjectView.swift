@@ -574,6 +574,8 @@ struct IsolatedLayerView: View, Equatable {
     // Equatable: Only re-render if layer has selection and drag changed, or if objects changed
     static func == (lhs: IsolatedLayerView, rhs: IsolatedLayerView) -> Bool {
 
+        guard lhs.selectedObjectIDs.isEmpty || rhs.selectedObjectIDs.isEmpty else { return false}
+        
         // If layer ID changed, definitely need to re-render
         guard lhs.layerID == rhs.layerID else { return false }
 

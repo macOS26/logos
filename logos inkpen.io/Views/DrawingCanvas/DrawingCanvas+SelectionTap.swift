@@ -140,65 +140,8 @@ extension DrawingCanvas {
             return
         }
 
-        var hitObject: VectorObject?
-        let objectsInOrder = document.getObjectsInStackingOrder()
-
-        for unifiedObject in objectsInOrder.reversed() {
-            if unifiedObject.layerIndex < document.layers.count {
-                let layer = document.layers[unifiedObject.layerIndex]
-                if !layer.isVisible {
-                    continue
-                }
-                if layer.isLocked {
-                    continue
-                }
-            }
-
-            var isHit = false
-
-            switch unifiedObject.objectType {
-            case .text(let shape):
-                if !shape.isVisible || shape.isLocked { continue }
-
-                // Get position from transform (tx, ty are the translation components)
-                let textPos = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
-                let textContentArea = CGRect(
-                    x: textPos.x,
-                    y: textPos.y,
-                    width: shape.bounds.width,
-                    height: shape.bounds.height
-                )
-
-                let contentHit = textContentArea.contains(validatedLocation)
-                isHit = contentHit
-            case .shape(let shape),
-                 .warp(let shape),
-                 .group(let shape),
-                 .clipGroup(let shape),
-                 .clipMask(let shape):
-                if !shape.isVisible { continue }
-
-                let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
-                if isBackgroundShape {
-                    continue
-                }
-
-                if shape.clippedByShapeID != nil {
-                    isHit = false
-                } else if shape.isClippingPath {
-                    let baseTolerance: CGFloat = 8.0
-                    let tolerance = max(2.0, baseTolerance / document.viewState.zoomLevel)
-                    isHit = PathOperations.hitTest(shape.transformedPath, point: validatedLocation, tolerance: tolerance)
-                } else {
-                    isHit = performShapeHitTest(shape: shape, at: validatedLocation)
-                }
-            }
-
-            if isHit {
-                hitObject = unifiedObject
-                break
-            }
-        }
+        // OPTIMIZED: Use direct UUID lookups instead of building array
+        let hitObject = findObjectAtLocationOptimized(validatedLocation)
 
         if let hitObject = hitObject {
 
@@ -234,16 +177,19 @@ extension DrawingCanvas {
             if !isShiftPressed && !isCommandPressed {
                 document.viewState.selectedObjectIDs = []
 
+                // Clear local selection state
                 selectedPoints.removeAll()
                 selectedHandles.removeAll()
                 selectedObjectIDs.removeAll()
+
+                // Sync with document to ensure UI updates
                 syncDirectSelectionWithDocument()
                 isCornerRadiusEditMode = false
             }
         }
     }
 
-    private func performShapeHitTest(shape: VectorShape, at location: CGPoint) -> Bool {
+    internal func performShapeHitTest(shape: VectorShape, at location: CGPoint) -> Bool {
         if shape.typography != nil {
             let textBounds = CGRect(
                 x: shape.transform.tx,
@@ -294,7 +240,7 @@ extension DrawingCanvas {
         }
     }
 
-     private func validateAndCorrectLocation(_ location: CGPoint) -> CGPoint {
+     internal func validateAndCorrectLocation(_ location: CGPoint) -> CGPoint {
          if location.x.isNaN || location.y.isNaN || location.x.isInfinite || location.y.isInfinite {
              Log.error("❌ INVALID COORDINATES: \(location) - using zero point", category: .error)
              return .zero
