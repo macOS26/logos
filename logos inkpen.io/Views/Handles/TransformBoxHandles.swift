@@ -22,11 +22,13 @@ struct TransformBoxHandles: View {
 
     var body: some View {
         let transformedBounds: CGRect = computeTransformedBounds()
+        let isKeylineMode = document.viewState.viewMode == .keyline
+        let effectiveStrokeColor = isKeylineMode ? Color.clear : strokeColor
 
         ZStack {
             if shape.typography != nil {
                 Rectangle()
-                    .stroke(strokeColor, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0]))
+                    .stroke(effectiveStrokeColor, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0]))
                     .frame(width: transformedBounds.width, height: transformedBounds.height)
                     .position(x: transformedBounds.midX, y: transformedBounds.midY)
                     .scaleEffect(zoomLevel, anchor: .topLeading)
@@ -34,7 +36,7 @@ struct TransformBoxHandles: View {
                     .allowsHitTesting(false)
             } else {
                 Path(transformedBounds)
-                    .stroke(strokeColor, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0]))
+                    .stroke(effectiveStrokeColor, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0, 2.0]))
                     .scaleEffect(zoomLevel, anchor: .topLeading)
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
                     .allowsHitTesting(false)
@@ -116,25 +118,26 @@ struct TransformBoxHandles: View {
                 }
             }
 
-            ForEach(0..<9) { index in
-                let pt = handlePosition(index: index, in: transformedBounds)
-                let isAnchorPoint = isHandleTheAnchor(index: index)
-                let isAdjacentToAnchor = isHandleAdjacentToAnchor(index: index)
-                let isDisabled = isAnchorPoint || isAdjacentToAnchor
+            if !isKeylineMode {
+                ForEach(0..<9) { index in
+                    let pt = handlePosition(index: index, in: transformedBounds)
+                    let isAnchorPoint = isHandleTheAnchor(index: index)
+                    let isAdjacentToAnchor = isHandleAdjacentToAnchor(index: index)
+                    let isDisabled = isAnchorPoint || isAdjacentToAnchor
 
-                ZStack {
-                    Circle()
-                        .fill(Color.clear)
-                        .frame(width: handleHitAreaSize, height: handleHitAreaSize)
-                        .contentShape(Circle())
-                        .allowsHitTesting(true)
+                    ZStack {
+                        Circle()
+                            .fill(Color.clear)
+                            .frame(width: handleHitAreaSize, height: handleHitAreaSize)
+                            .contentShape(Circle())
+                            .allowsHitTesting(true)
 
-                    Circle()
-                        .fill(isAnchorPoint ? Color.red : (isDisabled ? Color.orange : Color.blue))
-                        .overlay(Circle().stroke(Color.white, lineWidth: 1.0))
-                        .frame(width: handleSize, height: handleSize)
-                        .allowsHitTesting(false)
-                }
+                        Circle()
+                            .fill(isAnchorPoint ? Color.red : (isDisabled ? Color.orange : Color.blue))
+                            .overlay(Circle().stroke(Color.white, lineWidth: 1.0))
+                            .frame(width: handleSize, height: handleSize)
+                            .allowsHitTesting(false)
+                    }
                 .position(
                     (shape.typography != nil || containsTextBoxInGroup()) ?
                     CGPoint(
@@ -160,6 +163,7 @@ struct TransformBoxHandles: View {
                             endScaling()
                         }
                 )
+                }
             }
         }
         .onAppear {
