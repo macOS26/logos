@@ -14,6 +14,14 @@ struct VectorObject: Identifiable, Hashable {
         case clipMask(VectorShape)
     }
 
+    // New explicit initializer - preferred
+    init(id: UUID, layerIndex: Int, objectType: ObjectType) {
+        self.id = id
+        self.layerIndex = layerIndex
+        self.objectType = objectType
+    }
+
+    // Legacy initializer - kept for compatibility, will be removed later
     init(shape: VectorShape, layerIndex: Int) {
         self.id = shape.id
         self.layerIndex = layerIndex
@@ -81,13 +89,26 @@ extension VectorObject: Codable {
         try container.encode(layerIndex, forKey: .layerIndex)
 
         var objectContainer = container.nestedContainer(keyedBy: ObjectTypeCodingKeys.self, forKey: .objectType)
+
+        // Encode both the type string and the shape
         switch objectType {
-        case .shape(let shape),
-             .text(let shape),
-             .warp(let shape),
-             .group(let shape),
-             .clipGroup(let shape),
-             .clipMask(let shape):
+        case .shape(let shape):
+            try objectContainer.encode("shape", forKey: .type)
+            try objectContainer.encode(shape, forKey: .shape)
+        case .text(let shape):
+            try objectContainer.encode("text", forKey: .type)
+            try objectContainer.encode(shape, forKey: .shape)
+        case .warp(let shape):
+            try objectContainer.encode("warp", forKey: .type)
+            try objectContainer.encode(shape, forKey: .shape)
+        case .group(let shape):
+            try objectContainer.encode("group", forKey: .type)
+            try objectContainer.encode(shape, forKey: .shape)
+        case .clipGroup(let shape):
+            try objectContainer.encode("clipGroup", forKey: .type)
+            try objectContainer.encode(shape, forKey: .shape)
+        case .clipMask(let shape):
+            try objectContainer.encode("clipMask", forKey: .type)
             try objectContainer.encode(shape, forKey: .shape)
         }
     }
@@ -101,22 +122,43 @@ extension VectorObject: Codable {
         let objectContainer = try container.nestedContainer(keyedBy: ObjectTypeCodingKeys.self, forKey: .objectType)
         let shape = try objectContainer.decode(VectorShape.self, forKey: .shape)
 
-        if shape.typography != nil {
-            objectType = .text(shape)
-        } else if shape.isClippingPath {
-            objectType = .clipMask(shape)
-        } else if shape.isClippingGroup {
-            objectType = .clipGroup(shape)
-        } else if shape.isGroup && !shape.groupedShapes.isEmpty {
-            objectType = .group(shape)
-        } else if shape.isWarpObject {
-            objectType = .warp(shape)
+        // Try to decode the explicit type first (for new files)
+        if let typeString = try? objectContainer.decode(String.self, forKey: .type) {
+            switch typeString {
+            case "shape":
+                objectType = .shape(shape)
+            case "text":
+                objectType = .text(shape)
+            case "warp":
+                objectType = .warp(shape)
+            case "group":
+                objectType = .group(shape)
+            case "clipGroup":
+                objectType = .clipGroup(shape)
+            case "clipMask":
+                objectType = .clipMask(shape)
+            default:
+                objectType = .shape(shape) // Fallback
+            }
         } else {
-            objectType = .shape(shape)
+            // Fallback for old files - infer from shape properties
+            if shape.typography != nil {
+                objectType = .text(shape)
+            } else if shape.isClippingPath {
+                objectType = .clipMask(shape)
+            } else if shape.isClippingGroup {
+                objectType = .clipGroup(shape)
+            } else if shape.isGroup && !shape.groupedShapes.isEmpty {
+                objectType = .group(shape)
+            } else if shape.isWarpObject {
+                objectType = .warp(shape)
+            } else {
+                objectType = .shape(shape)
+            }
         }
     }
 
     private enum ObjectTypeCodingKeys: String, CodingKey {
-        case shape
+        case type, shape
     }
 }
