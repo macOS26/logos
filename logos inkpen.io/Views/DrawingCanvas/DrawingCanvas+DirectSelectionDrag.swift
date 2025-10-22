@@ -37,18 +37,16 @@ extension DrawingCanvas {
         guard !selectedPoints.isEmpty || !selectedHandles.isEmpty else { return }
 
         for pointID in selectedPoints {
-            if let unifiedObject = document.findObject(by: pointID.shapeID) {
-                let layerIndex = unifiedObject.layerIndex
-                if document.layers[layerIndex].isLocked {
+            if let layer = document.snapshot.layers.first(where: { $0.objectIDs.contains(pointID.shapeID) }) {
+                if layer.isLocked {
                     return
                 }
             }
         }
 
         for handleID in selectedHandles {
-            if let unifiedObject = document.findObject(by: handleID.shapeID) {
-                let layerIndex = unifiedObject.layerIndex
-                if document.layers[layerIndex].isLocked {
+            if let layer = document.snapshot.layers.first(where: { $0.objectIDs.contains(handleID.shapeID) }) {
+                if layer.isLocked {
                     return
                 }
             }

@@ -20,40 +20,36 @@ extension DrawingCanvas {
     }
 
     internal func getPointPosition(_ pointID: PointID) -> VectorPoint? {
-        for unifiedObject in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType,
-               shape.id == pointID.shapeID {
-                guard pointID.elementIndex < shape.path.elements.count else { return nil }
-                let element = shape.path.elements[pointID.elementIndex]
+        if let object = document.snapshot.objects[pointID.shapeID],
+           case .shape(let shape) = object.objectType {
+            guard pointID.elementIndex < shape.path.elements.count else { return nil }
+            let element = shape.path.elements[pointID.elementIndex]
 
-                switch element {
-                case .move(let to), .line(let to):
-                    return to
-                case .curve(let to, _, _), .quadCurve(let to, _):
-                    return to
-                case .close:
-                    return nil
-                }
+            switch element {
+            case .move(let to), .line(let to):
+                return to
+            case .curve(let to, _, _), .quadCurve(let to, _):
+                return to
+            case .close:
+                return nil
             }
         }
         return nil
     }
 
     internal func getHandlePosition(_ handleID: HandleID) -> VectorPoint? {
-        for unifiedObject in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType,
-               shape.id == handleID.shapeID {
-                guard handleID.elementIndex < shape.path.elements.count else { return nil }
-                let element = shape.path.elements[handleID.elementIndex]
+        if let object = document.snapshot.objects[handleID.shapeID],
+           case .shape(let shape) = object.objectType {
+            guard handleID.elementIndex < shape.path.elements.count else { return nil }
+            let element = shape.path.elements[handleID.elementIndex]
 
-                switch element {
-                case .curve(_, let control1, let control2):
-                    return handleID.handleType == .control1 ? control1 : control2
-                case .quadCurve(_, let control):
-                    return handleID.handleType == .control1 ? control : nil
-                default:
-                    return nil
-                }
+            switch element {
+            case .curve(_, let control1, let control2):
+                return handleID.handleType == .control1 ? control1 : control2
+            case .quadCurve(_, let control):
+                return handleID.handleType == .control1 ? control : nil
+            default:
+                return nil
             }
         }
         return nil
@@ -68,14 +64,8 @@ extension DrawingCanvas {
     }
 
     private func movePointToAbsolutePositionOptimized(_ pointID: PointID, to newPosition: CGPoint, isLiveDrag: Bool, shouldUpdate: Bool = true) {
-        if let unifiedIndex = document.unifiedObjects.firstIndex(where: {
-            if case .shape(let shape) = $0.objectType {
-                return shape.id == pointID.shapeID
-            }
-            return false
-        }) {
-            guard case .shape(let shape) = document.unifiedObjects[unifiedIndex].objectType else { return }
-            let layerIndex = document.unifiedObjects[unifiedIndex].layerIndex
+        guard let object = document.snapshot.objects[pointID.shapeID],
+              case .shape(let shape) = object.objectType else { return }
                 guard pointID.elementIndex < shape.path.elements.count else { return }
 
                 let newPoint = VectorPoint(newPosition.x, newPosition.y)
@@ -122,18 +112,21 @@ extension DrawingCanvas {
 
                 var updatedShape = shape
                 updatedShape.path.elements = elements
+                updatedShape.updateBounds()
 
-                if isLiveDrag {
-                    document.unifiedObjects[unifiedIndex] = VectorObject(shape: updatedShape, layerIndex: layerIndex)
-                } else {
-                    updatedShape.updateBounds()
-                    let shapesInLayer = document.getShapesForLayer(layerIndex)
-                    if let shapeIndex = shapesInLayer.firstIndex(where: { $0.id == updatedShape.id }) {
-                        document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-                    }
+                // Update the object in snapshot
+                var updatedObject = object
+                switch object.objectType {
+                case .shape:
+                    updatedObject = VectorObject(shape: updatedShape, layerIndex: object.layerIndex)
+                case .warp:
+                    updatedObject = VectorObject(shape: updatedShape, layerIndex: object.layerIndex)
+                default:
+                    updatedObject = VectorObject(shape: updatedShape, layerIndex: object.layerIndex)
                 }
-                return
-        }
+
+                // Update in snapshot dictionary (O(1))
+                document.snapshot.objects[pointID.shapeID] = updatedObject
     }
 
     private func isSmoothCurvePoint(elements: [PathElement], elementIndex: Int) -> Bool {
@@ -196,55 +189,53 @@ extension DrawingCanvas {
     }
 
     private func moveHandleToAbsolutePositionOptimized(_ handleID: HandleID, to newPosition: CGPoint, isLiveDrag: Bool, shouldUpdate: Bool = true) {
-        if let unifiedIndex = document.unifiedObjects.firstIndex(where: {
-            if case .shape(let shape) = $0.objectType {
-                return shape.id == handleID.shapeID
+        guard let object = document.snapshot.objects[handleID.shapeID],
+              case .shape(let shape) = object.objectType else { return }
+
+        guard handleID.elementIndex < shape.path.elements.count else { return }
+
+        let newHandle = VectorPoint(newPosition.x, newPosition.y)
+        var elements = shape.path.elements
+
+        switch elements[handleID.elementIndex] {
+        case .curve(let to, let control1, let control2):
+            if handleID.handleType == .control1 {
+                elements[handleID.elementIndex] = .curve(to: to, control1: newHandle, control2: control2)
+            } else {
+                elements[handleID.elementIndex] = .curve(to: to, control1: control1, control2: newHandle)
             }
-            return false
-        }) {
-            guard case .shape(let shape) = document.unifiedObjects[unifiedIndex].objectType else { return }
-            let layerIndex = document.unifiedObjects[unifiedIndex].layerIndex
-                guard handleID.elementIndex < shape.path.elements.count else { return }
-
-                let newHandle = VectorPoint(newPosition.x, newPosition.y)
-                var elements = shape.path.elements
-
-                switch elements[handleID.elementIndex] {
-                case .curve(let to, let control1, let control2):
-                    if handleID.handleType == .control1 {
-                        elements[handleID.elementIndex] = .curve(to: to, control1: newHandle, control2: control2)
-                    } else {
-                        elements[handleID.elementIndex] = .curve(to: to, control1: control1, control2: newHandle)
-                    }
-                case .quadCurve(let to, _):
-                    if handleID.handleType == .control1 {
-                        elements[handleID.elementIndex] = .quadCurve(to: to, control: newHandle)
-                    }
-                default:
-                    break
-                }
-
-                if !optionPressed() {
-                    updateLinkedHandle(
-                        elements: &elements,
-                        draggedHandleID: handleID,
-                        newDraggedPosition: newPosition
-                    )
-                }
-
-                var updatedShape = shape
-                updatedShape.path.elements = elements
-
-                if isLiveDrag {
-                    document.unifiedObjects[unifiedIndex] = VectorObject(shape: updatedShape, layerIndex: layerIndex)
-                } else {
-                    updatedShape.updateBounds()
-                    let shapesInLayer = document.getShapesForLayer(layerIndex)
-                    if let shapeIndex = shapesInLayer.firstIndex(where: { $0.id == updatedShape.id }) {
-                        document.setShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex, shape: updatedShape)
-                    }
-                }
-                return
+        case .quadCurve(let to, _):
+            if handleID.handleType == .control1 {
+                elements[handleID.elementIndex] = .quadCurve(to: to, control: newHandle)
+            }
+        default:
+            break
         }
+
+        if !optionPressed() {
+            updateLinkedHandle(
+                elements: &elements,
+                draggedHandleID: handleID,
+                newDraggedPosition: newPosition
+            )
+        }
+
+        var updatedShape = shape
+        updatedShape.path.elements = elements
+        updatedShape.updateBounds()
+
+        // Update the object in snapshot
+        var updatedObject = object
+        switch object.objectType {
+        case .shape:
+            updatedObject = VectorObject(shape: updatedShape, layerIndex: object.layerIndex)
+        case .warp:
+            updatedObject = VectorObject(shape: updatedShape, layerIndex: object.layerIndex)
+        default:
+            updatedObject = VectorObject(shape: updatedShape, layerIndex: object.layerIndex)
+        }
+
+        // Update in snapshot dictionary (O(1))
+        document.snapshot.objects[handleID.shapeID] = updatedObject
     }
 }

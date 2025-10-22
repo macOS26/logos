@@ -5,19 +5,18 @@ extension DrawingCanvas {
 
     internal func selectIndividualAnchorPointOrHandle(at location: CGPoint, tolerance: Double) -> Bool {
         for shapeID in selectedObjectIDs {
-            if let unifiedObject = document.findObject(by: shapeID),
-               case .shape(let shape) = unifiedObject.objectType {
-                let layerIndex = unifiedObject.layerIndex
-                let layer = document.layers[layerIndex]
+            if let object = document.snapshot.objects[shapeID],
+               case .shape(let shape) = object.objectType {
+                // Find the layer containing this object
+                let layer = document.snapshot.layers.first { $0.objectIDs.contains(shapeID) }
 
-                    if layer.isLocked || shape.isLocked {
-
-                        selectedObjectIDs.removeAll()
-                        selectedPoints.removeAll()
-                        selectedHandles.removeAll()
-                        syncDirectSelectionWithDocument()
-                        return true
-                    }
+                if layer?.isLocked == true || shape.isLocked {
+                    selectedObjectIDs.removeAll()
+                    selectedPoints.removeAll()
+                    selectedHandles.removeAll()
+                    syncDirectSelectionWithDocument()
+                    return true
+                }
 
                     if shape.isGroupContainer {
                         for groupedShape in shape.groupedShapes {
@@ -312,14 +311,16 @@ extension DrawingCanvas {
     }
 
     internal func directSelectWholeShape(at location: CGPoint) -> Bool {
-        for layerIndex in document.layers.indices.reversed() {
-            let layer = document.layers[layerIndex]
-            if !layer.isVisible { continue }
-            if layer.isLocked { continue }
+        // Iterate layers in reverse order (top to bottom)
+        for layer in document.snapshot.layers.reversed() {
+            if !layer.isVisible || layer.isLocked { continue }
 
-            let shapes = document.getShapesForLayer(layerIndex)
-            for shape in shapes.reversed() {
-                if !shape.isVisible { continue }
+            // Get objects for this layer in reverse order
+            for objectID in layer.objectIDs.reversed() {
+                guard let object = document.snapshot.objects[objectID],
+                      object.isVisible else { continue }
+
+                let shape = object.shape
 
                 var isHit = false
                 let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
