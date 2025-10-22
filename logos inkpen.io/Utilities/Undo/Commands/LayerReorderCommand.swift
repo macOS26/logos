@@ -32,29 +32,42 @@ class LayerReorderCommand: BaseCommand {
             return
         }
 
+        // Update layers array
         let layer = document.layers.remove(at: fromIndex)
         document.layers.insert(layer, at: toIndex)
 
+        // Update snapshot.layers
+        guard fromIndex < document.snapshot.layers.count,
+              toIndex <= document.snapshot.layers.count else {
+            return
+        }
+        let snapshotLayer = document.snapshot.layers.remove(at: fromIndex)
+        document.snapshot.layers.insert(snapshotLayer, at: toIndex)
+
+        // Update object layerIndex in snapshot
         for update in affectedObjectUpdates {
-            if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == update.objectID }) {
-                let obj = document.unifiedObjects[objIndex]
+            if var obj = document.snapshot.objects[update.objectID] {
                 let newLayerIndex = forward ? update.newLayerIndex : update.oldLayerIndex
-                var updatedShape: VectorShape?
-
+                // Update layerIndex in the object
                 switch obj.objectType {
-                case .shape(let shape), .text(let shape), .group(let shape), .clipGroup(let shape), .warp(let shape), .clipMask(let shape):
-                    updatedShape = shape
+                case .shape(let shape):
+                    obj = VectorObject(shape: shape, layerIndex: newLayerIndex)
+                case .text(let shape):
+                    obj = VectorObject(shape: shape, layerIndex: newLayerIndex)
+                case .group(let shape):
+                    obj = VectorObject(shape: shape, layerIndex: newLayerIndex)
+                case .clipGroup(let shape):
+                    obj = VectorObject(shape: shape, layerIndex: newLayerIndex)
+                case .warp(let shape):
+                    obj = VectorObject(shape: shape, layerIndex: newLayerIndex)
+                case .clipMask(let shape):
+                    obj = VectorObject(shape: shape, layerIndex: newLayerIndex)
                 }
-
-                if let shape = updatedShape {
-                    document.unifiedObjects[objIndex] = VectorObject(
-                        shape: shape,
-                        layerIndex: newLayerIndex
-                    )
-                }
+                document.snapshot.objects[update.objectID] = obj
             }
         }
 
+        // Update selectedLayerIndex
         if document.selectedLayerIndex == fromIndex {
             document.selectedLayerIndex = toIndex
         } else if let selectedIndex = document.selectedLayerIndex {

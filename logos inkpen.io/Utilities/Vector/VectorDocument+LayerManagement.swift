@@ -487,7 +487,8 @@ extension VectorDocument {
         var affectedObjectUpdates: [(objectID: UUID, oldLayerIndex: Int, newLayerIndex: Int)] = []
 
         let newSourceIndex = targetIndex
-        for object in unifiedObjects {
+        // Use snapshot.objects instead of unifiedObjects
+        for (objectID, object) in snapshot.objects {
             let currentLayerIndex = object.layerIndex
             var newLayerIndex = currentLayerIndex
 
@@ -504,7 +505,7 @@ extension VectorDocument {
             }
 
             if newLayerIndex != currentLayerIndex {
-                affectedObjectUpdates.append((objectID: object.id, oldLayerIndex: currentLayerIndex, newLayerIndex: newLayerIndex))
+                affectedObjectUpdates.append((objectID: objectID, oldLayerIndex: currentLayerIndex, newLayerIndex: newLayerIndex))
             }
         }
 
