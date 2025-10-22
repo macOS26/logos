@@ -32,10 +32,12 @@ struct OptimizedGridView: View {
 
             // Determine what to show based on zoom
             let shouldShowMinor = zoomLevel > 0.5
-            let lineWidth: CGFloat = zoomLevel <= 0.5 ? 0.5 : 0.5
+            // Make lines 25% thicker (was 0.5, now 0.625)
+            let minorLineWidth: CGFloat = zoomLevel <= 0.5 ? 0.625 : 0.625
+            let majorLineWidth: CGFloat = zoomLevel <= 0.5 ? 0.625 : 0.625
 
-            // Create the tile pattern path once (this is our "symbol")
-            let tilePattern = createTilePattern(
+            // Create separate patterns for minor and major lines
+            let (minorPattern, majorPattern) = createTilePatterns(
                 tileSize: tileSize,
                 gridSpacing: actualGridSpacing,
                 majorInterval: majorGridInterval,
@@ -53,8 +55,8 @@ struct OptimizedGridView: View {
             let tileStartY = Int(floor(visibleStartY / tileSize))
             let tileEndY = Int(ceil(visibleEndY / tileSize))
 
-            // Draw grid using the tile pattern as a reusable "symbol"
-            // Only draw visible tiles, reusing the same pattern
+            // Draw grid using the tile patterns as reusable "symbols"
+            // Only draw visible tiles, reusing the same patterns
             for tileX in tileStartX...tileEndX {
                 for tileY in tileStartY...tileEndY {
                     let x = CGFloat(tileX) * tileSize
@@ -62,7 +64,7 @@ struct OptimizedGridView: View {
 
                     // Check if tile is within canvas bounds
                     if x < canvasSize.width && y < canvasSize.height {
-                        // Transform and draw the tile pattern
+                        // Transform for this tile position
                         var transform = CGAffineTransform.identity
                         transform = transform.translatedBy(
                             x: x * zoomLevel + canvasOffset.x,
@@ -70,14 +72,25 @@ struct OptimizedGridView: View {
                         )
                         transform = transform.scaledBy(x: zoomLevel, y: zoomLevel)
 
-                        // Reuse the same tile pattern - this is the "symbol"
-                        let transformedTile = tilePattern.applying(transform)
+                        // Draw minor lines if visible
+                        if shouldShowMinor && !minorPattern.isEmpty {
+                            let transformedMinor = minorPattern.applying(transform)
+                            context.stroke(
+                                transformedMinor,
+                                with: .color(.gray.opacity(0.3)),
+                                lineWidth: minorLineWidth
+                            )
+                        }
 
-                        context.stroke(
-                            transformedTile,
-                            with: .color(.gray.opacity(shouldShowMinor ? 0.3 : 0.4)),
-                            lineWidth: lineWidth
-                        )
+                        // Draw major lines (25% darker = 0.5 opacity instead of 0.4)
+                        if !majorPattern.isEmpty {
+                            let transformedMajor = majorPattern.applying(transform)
+                            context.stroke(
+                                transformedMajor,
+                                with: .color(.gray.opacity(0.5)),
+                                lineWidth: majorLineWidth
+                            )
+                        }
                     }
                 }
             }
@@ -85,14 +98,15 @@ struct OptimizedGridView: View {
         }
     }
 
-    // Creates the tile pattern that acts as our reusable "symbol"
-    private func createTilePattern(
+    // Creates separate tile patterns for minor and major lines
+    private func createTilePatterns(
         tileSize: CGFloat,
         gridSpacing: CGFloat,
         majorInterval: Int,
         showMinor: Bool
-    ) -> Path {
-        var path = Path()
+    ) -> (minor: Path, major: Path) {
+        var minorPath = Path()
+        var majorPath = Path()
 
         // Draw minor grid lines within the tile (if needed)
         if showMinor {
@@ -100,32 +114,32 @@ struct OptimizedGridView: View {
                 let offset = CGFloat(i) * gridSpacing
 
                 // Vertical minor lines
-                path.move(to: CGPoint(x: offset, y: 0))
-                path.addLine(to: CGPoint(x: offset, y: tileSize))
+                minorPath.move(to: CGPoint(x: offset, y: 0))
+                minorPath.addLine(to: CGPoint(x: offset, y: tileSize))
 
                 // Horizontal minor lines
-                path.move(to: CGPoint(x: 0, y: offset))
-                path.addLine(to: CGPoint(x: tileSize, y: offset))
+                minorPath.move(to: CGPoint(x: 0, y: offset))
+                minorPath.addLine(to: CGPoint(x: tileSize, y: offset))
             }
         }
 
         // Draw major lines at ALL tile edges (left, top, right, bottom)
         // Left edge (x = 0)
-        path.move(to: CGPoint(x: 0, y: 0))
-        path.addLine(to: CGPoint(x: 0, y: tileSize))
+        majorPath.move(to: CGPoint(x: 0, y: 0))
+        majorPath.addLine(to: CGPoint(x: 0, y: tileSize))
 
         // Top edge (y = 0)
-        path.move(to: CGPoint(x: 0, y: 0))
-        path.addLine(to: CGPoint(x: tileSize, y: 0))
+        majorPath.move(to: CGPoint(x: 0, y: 0))
+        majorPath.addLine(to: CGPoint(x: tileSize, y: 0))
 
         // Right edge
-        path.move(to: CGPoint(x: tileSize, y: 0))
-        path.addLine(to: CGPoint(x: tileSize, y: tileSize))
+        majorPath.move(to: CGPoint(x: tileSize, y: 0))
+        majorPath.addLine(to: CGPoint(x: tileSize, y: tileSize))
 
         // Bottom edge
-        path.move(to: CGPoint(x: 0, y: tileSize))
-        path.addLine(to: CGPoint(x: tileSize, y: tileSize))
+        majorPath.move(to: CGPoint(x: 0, y: tileSize))
+        majorPath.addLine(to: CGPoint(x: tileSize, y: tileSize))
 
-        return path
+        return (minorPath, majorPath)
     }
 }
