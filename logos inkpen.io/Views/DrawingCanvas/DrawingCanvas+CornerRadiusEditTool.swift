@@ -396,7 +396,8 @@ extension DrawingCanvas {
                 }
                 return false
             }) {
-                document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex)
+                let objectType = VectorObject.determineType(for: shape)
+                document.unifiedObjects[unifiedIndex] = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
             }
         }
     }

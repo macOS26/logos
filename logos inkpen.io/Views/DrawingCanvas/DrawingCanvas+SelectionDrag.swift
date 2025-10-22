@@ -325,8 +325,8 @@ extension DrawingCanvas {
             var updatedGroupedShapes: [VectorShape] = []
 
             for var groupedShape in shape.groupedShapes {
-                let tempObject = VectorObject(shape: groupedShape, layerIndex: 0)
-                if case .text = tempObject.objectType {
+                let objectType = VectorObject.determineType(for: groupedShape)
+                if case .text = objectType {
                     if let textPosition = groupedShape.textPosition {
                         groupedShape.textPosition = CGPoint(x: textPosition.x + delta.x, y: textPosition.y + delta.y)
                     }

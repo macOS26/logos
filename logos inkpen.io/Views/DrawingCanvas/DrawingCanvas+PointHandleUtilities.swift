@@ -118,11 +118,12 @@ extension DrawingCanvas {
                 var updatedObject = object
                 switch object.objectType {
                 case .shape:
-                    updatedObject = VectorObject(shape: updatedShape, layerIndex: object.layerIndex)
+                    updatedObject = VectorObject(id: updatedShape.id, layerIndex: object.layerIndex, objectType: .shape(updatedShape))
                 case .warp:
-                    updatedObject = VectorObject(shape: updatedShape, layerIndex: object.layerIndex)
+                    updatedObject = VectorObject(id: updatedShape.id, layerIndex: object.layerIndex, objectType: .warp(updatedShape))
                 default:
-                    updatedObject = VectorObject(shape: updatedShape, layerIndex: object.layerIndex)
+                    let objectType = VectorObject.determineType(for: updatedShape)
+                    updatedObject = VectorObject(id: updatedShape.id, layerIndex: object.layerIndex, objectType: objectType)
                 }
 
                 // Update in snapshot dictionary (O(1))
@@ -228,11 +229,12 @@ extension DrawingCanvas {
         var updatedObject = object
         switch object.objectType {
         case .shape:
-            updatedObject = VectorObject(shape: updatedShape, layerIndex: object.layerIndex)
+            updatedObject = VectorObject(id: updatedShape.id, layerIndex: object.layerIndex, objectType: .shape(updatedShape))
         case .warp:
-            updatedObject = VectorObject(shape: updatedShape, layerIndex: object.layerIndex)
+            updatedObject = VectorObject(id: updatedShape.id, layerIndex: object.layerIndex, objectType: .warp(updatedShape))
         default:
-            updatedObject = VectorObject(shape: updatedShape, layerIndex: object.layerIndex)
+            let objectType = VectorObject.determineType(for: updatedShape)
+            updatedObject = VectorObject(id: updatedShape.id, layerIndex: object.layerIndex, objectType: objectType)
         }
 
         // Update in snapshot dictionary (O(1))
