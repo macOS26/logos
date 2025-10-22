@@ -82,30 +82,6 @@ struct OptimizedGridView: View {
                 }
             }
 
-            // Draw origin lines (left and top edges) if visible
-            var originPath = Path()
-
-            // Left edge (x = 0)
-            if canvasOffset.x >= 0 && canvasOffset.x <= size.width {
-                originPath.move(to: CGPoint(x: canvasOffset.x, y: canvasOffset.y))
-                originPath.addLine(to: CGPoint(
-                    x: canvasOffset.x,
-                    y: min(size.height, canvasSize.height * zoomLevel + canvasOffset.y)
-                ))
-            }
-
-            // Top edge (y = 0)
-            if canvasOffset.y >= 0 && canvasOffset.y <= size.height {
-                originPath.move(to: CGPoint(x: canvasOffset.x, y: canvasOffset.y))
-                originPath.addLine(to: CGPoint(
-                    x: min(size.width, canvasSize.width * zoomLevel + canvasOffset.x),
-                    y: canvasOffset.y
-                ))
-            }
-
-            if !originPath.isEmpty {
-                context.stroke(originPath, with: .color(.gray.opacity(0.4)), lineWidth: lineWidth)
-            }
         }
     }
 
@@ -133,11 +109,20 @@ struct OptimizedGridView: View {
             }
         }
 
-        // Draw major lines at tile edges (right and bottom)
-        // These connect with adjacent tiles to form continuous major grid
+        // Draw major lines at ALL tile edges (left, top, right, bottom)
+        // Left edge (x = 0)
+        path.move(to: CGPoint(x: 0, y: 0))
+        path.addLine(to: CGPoint(x: 0, y: tileSize))
+
+        // Top edge (y = 0)
+        path.move(to: CGPoint(x: 0, y: 0))
+        path.addLine(to: CGPoint(x: tileSize, y: 0))
+
+        // Right edge
         path.move(to: CGPoint(x: tileSize, y: 0))
         path.addLine(to: CGPoint(x: tileSize, y: tileSize))
 
+        // Bottom edge
         path.move(to: CGPoint(x: 0, y: tileSize))
         path.addLine(to: CGPoint(x: tileSize, y: tileSize))
 
