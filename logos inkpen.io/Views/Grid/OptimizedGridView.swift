@@ -160,7 +160,8 @@ struct OptimizedGridCanvasView: View {
     var body: some View {
         Canvas { context, size in
             // Determine grid visibility based on zoom
-            let shouldShowMinor = zoomLevel > 0.25
+            // At 50% and lower, only show major lines
+            let shouldShowMinor = zoomLevel > 0.5
             let minorLineWidth: CGFloat = 0.5
             let majorLineWidth: CGFloat = zoomLevel <= 0.5 ? minorLineWidth : 1.0
 
