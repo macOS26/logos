@@ -50,9 +50,9 @@ struct ProfessionalLayerRow: View {
             _isExpanded = State(initialValue: document.settings.layerExpansionState[layer.id] ?? true)
         }
 
-        _layerObjects = State(initialValue: Array(document.unifiedObjects
-            .filter { $0.layerIndex == layerIndex }
-            .reversed()))
+        let objectIDs = layerIndex < document.snapshot.layers.count ? document.snapshot.layers[layerIndex].objectIDs : []
+        let objects = objectIDs.compactMap { document.snapshot.objects[$0] }
+        _layerObjects = State(initialValue: Array(objects.reversed()))
     }
 
     private func setExpanded(_ value: Bool) {
@@ -209,7 +209,7 @@ struct ProfessionalLayerRow: View {
                             
                             Spacer()
                             
-                            let objectCount = document.unifiedObjects.filter { $0.layerIndex == layerIndex }.count
+                            let objectCount = layerIndex < document.snapshot.layers.count ? document.snapshot.layers[layerIndex].objectIDs.count : 0
                             Text("\(objectCount)")
                                 .font(.system(size: 9))
                                 .multilineTextAlignment(.trailing)
@@ -300,14 +300,14 @@ struct ProfessionalLayerRow: View {
             }
         }
         .onAppear {
-            layerObjects = Array(document.unifiedObjects
-                .filter { $0.layerIndex == layerIndex }
-                .reversed())
+            let objectIDs = layerIndex < document.snapshot.layers.count ? document.snapshot.layers[layerIndex].objectIDs : []
+            let objects = objectIDs.compactMap { document.snapshot.objects[$0] }
+            layerObjects = Array(objects.reversed())
         }
         .onChange(of: document.changeNotifier.changeToken) { _, _ in
-            layerObjects = Array(document.unifiedObjects
-                .filter { $0.layerIndex == layerIndex }
-                .reversed())
+            let objectIDs = layerIndex < document.snapshot.layers.count ? document.snapshot.layers[layerIndex].objectIDs : []
+            let objects = objectIDs.compactMap { document.snapshot.objects[$0] }
+            layerObjects = Array(objects.reversed())
         }
         .background(
             Group {
@@ -400,9 +400,8 @@ struct ProfessionalLayerRow: View {
             }
         } else if isShiftPressed {
             if let anchorID = selectionAnchorID {
-                let currentLayerObjects = Array(document.unifiedObjects
-                    .filter { $0.layerIndex == layerIndex }
-                    .reversed())
+                let objectIDs = layerIndex < document.snapshot.layers.count ? document.snapshot.layers[layerIndex].objectIDs : []
+                let currentLayerObjects = Array(objectIDs.compactMap { document.snapshot.objects[$0] }.reversed())
 
                 if let anchorIndex = currentLayerObjects.firstIndex(where: { $0.id == anchorID }),
                    let clickedIndex = currentLayerObjects.firstIndex(where: { $0.id == objectID }) {

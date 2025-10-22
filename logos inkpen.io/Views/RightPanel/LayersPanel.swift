@@ -117,18 +117,19 @@ struct LayersPanel: View {
             }
             
             if isExpanded {
-                let layerObjects = document.unifiedObjects
-                    .filter { $0.layerIndex == layerIndex }
-                    .reversed()
+                // Use the layer's objectIDs array from snapshot
+                let objectIDs = document.snapshot.layers[layerIndex].objectIDs.reversed()
 
-                for object in layerObjects {
-                    rows.append(.object(layerIndex: layerIndex, objectId: object.id))
+                for objectID in objectIDs {
+                    if let object = document.snapshot.objects[objectID] {
+                        rows.append(.object(layerIndex: layerIndex, objectId: object.id))
 
-                    if case .shape(let shape) = object.objectType,
-                       shape.isGroupContainer,
-                       document.settings.groupExpansionState[object.id] ?? false {
-                        for childShape in shape.groupedShapes {
-                            rows.append(.childObject(layerIndex: layerIndex, parentObjectId: object.id, childShapeId: childShape.id))
+                        if case .shape(let shape) = object.objectType,
+                           shape.isGroupContainer,
+                           document.settings.groupExpansionState[object.id] ?? false {
+                            for childShape in shape.groupedShapes {
+                                rows.append(.childObject(layerIndex: layerIndex, parentObjectId: object.id, childShapeId: childShape.id))
+                            }
                         }
                     }
                 }
@@ -434,8 +435,7 @@ struct LayersPanel: View {
             }
         case .object(let layerIndex, let objectId):
             if !document.processedObjectsDuringDrag.contains(objectId) {
-                if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
-                    let obj = document.unifiedObjects[objIndex]
+                if let obj = document.snapshot.objects[objectId] {
                     var updatedShape: VectorShape?
 
                     switch obj.objectType {
@@ -449,8 +449,11 @@ struct LayersPanel: View {
                             shape: shape,
                             layerIndex: layerIndex
                         )
-                        document.unifiedObjects[objIndex] = updatedObject
-                        document.updateObjectInNewStructure(updatedObject)
+                        document.snapshot.objects[objectId] = updatedObject
+                        // Also update unifiedObjects if it exists there
+                        if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
+                            document.unifiedObjects[objIndex] = updatedObject
+                        }
                         document.processedObjectsDuringDrag.insert(objectId)
                         document.changeNotifier.notifyObjectChanged(objectId)
                     }
@@ -458,16 +461,19 @@ struct LayersPanel: View {
             }
         case .childObject(let layerIndex, let parentObjectId, let childShapeId):
             if !document.processedObjectsDuringDrag.contains(childShapeId) {
-                if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == parentObjectId }) {
-                    if case .shape(var parentShape) = document.unifiedObjects[objIndex].objectType {
+                if let parentObj = document.snapshot.objects[parentObjectId] {
+                    if case .shape(var parentShape) = parentObj.objectType {
                         if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
                             parentShape.groupedShapes[childIndex].isVisible.toggle()
                             let updatedObject = VectorObject(
                                 shape: parentShape,
                                 layerIndex: layerIndex,
                             )
-                            document.unifiedObjects[objIndex] = updatedObject
-                            document.updateObjectInNewStructure(updatedObject)
+                            document.snapshot.objects[parentObjectId] = updatedObject
+                            // Also update unifiedObjects if it exists there
+                            if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == parentObjectId }) {
+                                document.unifiedObjects[objIndex] = updatedObject
+                            }
                             document.processedObjectsDuringDrag.insert(childShapeId)
                             document.changeNotifier.notifyObjectChanged(parentObjectId)
                         }
@@ -487,8 +493,7 @@ struct LayersPanel: View {
             }
         case .object(let layerIndex, let objectId):
             if !document.processedObjectsDuringDrag.contains(objectId) {
-                if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
-                    let obj = document.unifiedObjects[objIndex]
+                if let obj = document.snapshot.objects[objectId] {
                     var updatedShape: VectorShape?
 
                     switch obj.objectType {
@@ -502,8 +507,11 @@ struct LayersPanel: View {
                             shape: shape,
                             layerIndex: layerIndex
                         )
-                        document.unifiedObjects[objIndex] = updatedObject
-                        document.updateObjectInNewStructure(updatedObject)
+                        document.snapshot.objects[objectId] = updatedObject
+                        // Also update unifiedObjects if it exists there
+                        if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectId }) {
+                            document.unifiedObjects[objIndex] = updatedObject
+                        }
                         document.processedObjectsDuringDrag.insert(objectId)
                         document.changeNotifier.notifyObjectChanged(objectId)
                     }
@@ -511,16 +519,19 @@ struct LayersPanel: View {
             }
         case .childObject(let layerIndex, let parentObjectId, let childShapeId):
             if !document.processedObjectsDuringDrag.contains(childShapeId) {
-                if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == parentObjectId }) {
-                    if case .shape(var parentShape) = document.unifiedObjects[objIndex].objectType {
+                if let parentObj = document.snapshot.objects[parentObjectId] {
+                    if case .shape(var parentShape) = parentObj.objectType {
                         if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
                             parentShape.groupedShapes[childIndex].isLocked.toggle()
                             let updatedObject = VectorObject(
                                 shape: parentShape,
                                 layerIndex: layerIndex,
                             )
-                            document.unifiedObjects[objIndex] = updatedObject
-                            document.updateObjectInNewStructure(updatedObject)
+                            document.snapshot.objects[parentObjectId] = updatedObject
+                            // Also update unifiedObjects if it exists there
+                            if let objIndex = document.unifiedObjects.firstIndex(where: { $0.id == parentObjectId }) {
+                                document.unifiedObjects[objIndex] = updatedObject
+                            }
                             document.processedObjectsDuringDrag.insert(childShapeId)
                             document.changeNotifier.notifyObjectChanged(parentObjectId)
                         }
@@ -689,10 +700,10 @@ if event.keyCode == 126 {
 
         private func selectNextObject(document: VectorDocument) {
             guard let currentLayerIndex = document.selectedLayerIndex,
+                  currentLayerIndex < document.snapshot.layers.count,
                   let firstSelectedId = document.viewState.selectedObjectIDs.first else { return }
-            let layerObjects = Array(document.unifiedObjects
-                .filter { $0.layerIndex == currentLayerIndex }
-                .reversed())
+            let objectIDs = document.snapshot.layers[currentLayerIndex].objectIDs
+            let layerObjects = Array(objectIDs.compactMap { document.snapshot.objects[$0] }.reversed())
 
             if let currentIndex = layerObjects.firstIndex(where: { $0.id == firstSelectedId }) {
                 if currentIndex < layerObjects.count - 1 {
@@ -704,10 +715,10 @@ if event.keyCode == 126 {
 
         private func selectPreviousObject(document: VectorDocument) {
             guard let currentLayerIndex = document.selectedLayerIndex,
+                  currentLayerIndex < document.snapshot.layers.count,
                   let firstSelectedId = document.viewState.selectedObjectIDs.first else { return }
-            let layerObjects = Array(document.unifiedObjects
-                .filter { $0.layerIndex == currentLayerIndex }
-                .reversed())
+            let objectIDs = document.snapshot.layers[currentLayerIndex].objectIDs
+            let layerObjects = Array(objectIDs.compactMap { document.snapshot.objects[$0] }.reversed())
 
             if let currentIndex = layerObjects.firstIndex(where: { $0.id == firstSelectedId }) {
                 if currentIndex > 0 {
