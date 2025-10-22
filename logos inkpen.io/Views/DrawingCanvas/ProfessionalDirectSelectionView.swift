@@ -18,8 +18,8 @@ struct ProfessionalDirectSelectionView: View {
 
     var body: some View {
         ZStack {
-            ForEach(Array(document.unifiedObjects), id: \.id) { unifiedObject in
-                if case .shape(let shape) = unifiedObject.objectType {
+            ForEach(Array(document.snapshot.objects.values), id: \.id) { object in
+                if case .shape(let shape) = object.objectType {
                     if shape.isVisible && selectedObjectIDs.contains(shape.id) {
                         if shape.isGroupContainer {
                             ForEach(shape.groupedShapes.indices, id: \.self) { groupedShapeIndex in
@@ -341,9 +341,8 @@ struct ProfessionalDirectSelectionView: View {
     }
 
     private func getPointLocation(_ pointID: PointID) -> CGPoint? {
-        for unifiedObject in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType {
-                if shape.id == pointID.shapeID {
+        if let object = document.snapshot.objects[pointID.shapeID],
+           case .shape(let shape) = object.objectType {
                     if pointID.elementIndex < shape.path.elements.count {
                         let element = shape.path.elements[pointID.elementIndex]
 
@@ -358,45 +357,14 @@ struct ProfessionalDirectSelectionView: View {
                             return nil
                         }
                     }
-                }
-
-                if shape.isGroupContainer {
-                    if let groupedShape = shape.groupedShapes.first(where: { $0.id == pointID.shapeID }) {
-                        if pointID.elementIndex < groupedShape.path.elements.count {
-                            let element = groupedShape.path.elements[pointID.elementIndex]
-
-                            switch element {
-                            case .move(let to), .line(let to):
-                                return CGPoint(x: to.x, y: to.y)
-                            case .curve(let to, _, _):
-                                return CGPoint(x: to.x, y: to.y)
-                            case .quadCurve(let to, _):
-                                return CGPoint(x: to.x, y: to.y)
-                            case .close:
-                                return nil
-                            }
-                        }
-                    }
-                }
-            }
         }
         return nil
     }
 
     private func getHandleInfo(_ handleID: HandleID) -> (pointLocation: CGPoint, handleLocation: CGPoint)? {
-
-        for unifiedObject in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType {
-                if shape.id == handleID.shapeID {
-                    return getHandleInfoFromShape(shape, handleID: handleID)
-                }
-
-                if shape.isGroupContainer {
-                    if let groupedShape = shape.groupedShapes.first(where: { $0.id == handleID.shapeID }) {
-                        return getHandleInfoFromShape(groupedShape, handleID: handleID)
-                    }
-                }
-            }
+        if let object = document.snapshot.objects[handleID.shapeID],
+           case .shape(let shape) = object.objectType {
+            return getHandleInfoFromShape(shape, handleID: handleID)
         }
         return nil
     }
@@ -454,35 +422,17 @@ struct ProfessionalDirectSelectionView: View {
     }
 
     private func getShapeForHandle(_ handleID: HandleID) -> VectorShape? {
-        for unifiedObject in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType {
-                if shape.id == handleID.shapeID {
-                    return shape
-                }
-
-                if shape.isGroupContainer {
-                    if let groupedShape = shape.groupedShapes.first(where: { $0.id == handleID.shapeID }) {
-                        return groupedShape
-                    }
-                }
-            }
+        if let object = document.snapshot.objects[handleID.shapeID],
+           case .shape(let shape) = object.objectType {
+            return shape
         }
         return nil
     }
 
     private func getShapeForPoint(_ pointID: PointID) -> VectorShape? {
-        for unifiedObject in document.unifiedObjects {
-            if case .shape(let shape) = unifiedObject.objectType {
-                if shape.id == pointID.shapeID {
-                    return shape
-                }
-
-                if shape.isGroupContainer {
-                    if let groupedShape = shape.groupedShapes.first(where: { $0.id == pointID.shapeID }) {
-                        return groupedShape
-                    }
-                }
-            }
+        if let object = document.snapshot.objects[pointID.shapeID],
+           case .shape(let shape) = object.objectType {
+            return shape
         }
         return nil
     }
