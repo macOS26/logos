@@ -31,10 +31,11 @@ struct OptimizedGridView: View {
             let tileSize = actualGridSpacing * CGFloat(majorGridInterval)
 
             // Determine what to show based on zoom
-            let shouldShowMinor = zoomLevel > 0.5
-            // Make lines 25% thicker (was 0.5, now 0.625)
-            let minorLineWidth: CGFloat = zoomLevel <= 0.5 ? 0.625 : 0.625
-            let majorLineWidth: CGFloat = zoomLevel <= 0.5 ? 0.625 : 0.625
+            let shouldShowMinor = zoomLevel > 0.5  // No minor lines at 50% and lower
+            // At 50% and lower: make lines 50% thinner (0.3125 instead of 0.625)
+            // Above 50%: normal thickness (0.625)
+            let minorLineWidth: CGFloat = 0.625
+            let majorLineWidth: CGFloat = zoomLevel <= 0.5 ? 0.3125 : 0.625
 
             // Create separate patterns for minor and major lines
             let (minorPattern, majorPattern) = createTilePatterns(
