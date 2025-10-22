@@ -17,7 +17,11 @@ struct RightPanel: View {
                 case .layers:
                     LayersPanel(document: document, layerPreviewOpacities: $layerPreviewOpacities)
                 case .properties:
-                    StrokeFillPanel(document: document)
+                    StrokeFillPanel(
+                        snapshot: document.snapshot,
+                        selectedObjectIDs: document.viewState.selectedObjectIDs,
+                        document: document
+                    )
                 case .gradient:
                     GradientPanel(document: document)
                 case .color:

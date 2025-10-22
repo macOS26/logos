@@ -2,7 +2,9 @@ import SwiftUI
 import Combine
 
 struct StrokeFillPanel: View {
-    @ObservedObject var document: VectorDocument
+    let snapshot: DocumentSnapshot
+    let selectedObjectIDs: Set<UUID>
+    @ObservedObject var document: VectorDocument  // Keep temporarily for methods that need it
     @Environment(AppState.self) private var appState
     @State private var fillOpacityState: Double = 1.0
     @State private var strokeOpacityState: Double = 1.0
@@ -13,9 +15,9 @@ struct StrokeFillPanel: View {
     @State private var isDragging: Bool = false
 
     private var selectedStrokeColor: VectorColor {
-        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.snapshot.objects[firstSelectedObjectID] {
-            switch unifiedObject.objectType {
+        if let firstSelectedObjectID = selectedObjectIDs.first,
+           let newVectorObject = snapshot.objects[firstSelectedObjectID] {
+            switch newVectorObject.objectType {
             case .text(let shape):
                 return shape.typography?.hasStroke == true ? shape.typography?.strokeColor ?? .clear : .clear
             case .shape(let shape),
@@ -34,9 +36,9 @@ struct StrokeFillPanel: View {
     }
 
     private var selectedFillColor: VectorColor {
-        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.snapshot.objects[firstSelectedObjectID] {
-            switch unifiedObject.objectType {
+        if let firstSelectedObjectID = selectedObjectIDs.first,
+           let newVectorObject = snapshot.objects[firstSelectedObjectID] {
+            switch newVectorObject.objectType {
             case .text(let shape):
                 return shape.typography?.fillColor ?? .black
             case .shape(let shape),
@@ -53,9 +55,9 @@ struct StrokeFillPanel: View {
     }
 
     private var strokeWidth: Double {
-        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.snapshot.objects[ firstSelectedObjectID] {
-            switch unifiedObject.objectType {
+        if let firstSelectedObjectID = selectedObjectIDs.first,
+           let newVectorObject = snapshot.objects[firstSelectedObjectID] {
+            switch newVectorObject.objectType {
             case .text(let shape):
                 return shape.typography?.strokeWidth ?? document.defaultStrokeWidth
             case .shape(let shape),
@@ -70,9 +72,9 @@ struct StrokeFillPanel: View {
     }
 
     private var strokePlacement: StrokePlacement {
-        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.snapshot.objects[ firstSelectedObjectID] {
-            switch unifiedObject.objectType {
+        if let firstSelectedObjectID = selectedObjectIDs.first,
+           let newVectorObject = snapshot.objects[firstSelectedObjectID] {
+            switch newVectorObject.objectType {
             case .text:
                 return document.strokeDefaults.placement
             case .shape(let shape),
@@ -87,9 +89,9 @@ struct StrokeFillPanel: View {
     }
 
     private var fillOpacity: Double {
-        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.snapshot.objects[ firstSelectedObjectID] {
-            switch unifiedObject.objectType {
+        if let firstSelectedObjectID = selectedObjectIDs.first,
+           let newVectorObject = snapshot.objects[firstSelectedObjectID] {
+            switch newVectorObject.objectType {
             case .text(let shape):
                 return shape.typography?.fillOpacity ?? document.defaultFillOpacity
             case .shape(let shape),
@@ -106,9 +108,9 @@ struct StrokeFillPanel: View {
     }
 
     private var strokeOpacity: Double {
-        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.snapshot.objects[ firstSelectedObjectID] {
-            switch unifiedObject.objectType {
+        if let firstSelectedObjectID = selectedObjectIDs.first,
+           let newVectorObject = snapshot.objects[firstSelectedObjectID] {
+            switch newVectorObject.objectType {
             case .text(let shape):
                 return shape.typography?.strokeOpacity ?? document.defaultStrokeOpacity
             case .shape(let shape),
@@ -125,9 +127,9 @@ struct StrokeFillPanel: View {
     }
 
     private var strokeLineJoin: CGLineJoin {
-        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.snapshot.objects[ firstSelectedObjectID] {
-            switch unifiedObject.objectType {
+        if let firstSelectedObjectID = selectedObjectIDs.first,
+           let newVectorObject = snapshot.objects[firstSelectedObjectID] {
+            switch newVectorObject.objectType {
             case .text:
                 return document.strokeDefaults.lineJoin
             case .shape(let shape),
@@ -142,9 +144,9 @@ struct StrokeFillPanel: View {
     }
 
     private var strokeLineCap: CGLineCap {
-        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.snapshot.objects[ firstSelectedObjectID] {
-            switch unifiedObject.objectType {
+        if let firstSelectedObjectID = selectedObjectIDs.first,
+           let newVectorObject = snapshot.objects[firstSelectedObjectID] {
+            switch newVectorObject.objectType {
             case .text:
                 return document.strokeDefaults.lineCap
             case .shape(let shape),
@@ -159,9 +161,9 @@ struct StrokeFillPanel: View {
     }
 
     private var strokeMiterLimit: Double {
-        if let firstSelectedObjectID = document.viewState.selectedObjectIDs.first,
-           let unifiedObject = document.snapshot.objects[ firstSelectedObjectID] {
-            switch unifiedObject.objectType {
+        if let firstSelectedObjectID = selectedObjectIDs.first,
+           let newVectorObject = snapshot.objects[firstSelectedObjectID] {
+            switch newVectorObject.objectType {
             case .text:
                 return document.strokeDefaults.miterLimit
             case .shape(let shape),
@@ -194,9 +196,9 @@ struct StrokeFillPanel: View {
     }
 
     private var selectedImageOpacity: Double {
-        for objectID in document.viewState.selectedObjectIDs {
-            if let unifiedObject = document.snapshot.objects[objectID] {
-                switch unifiedObject.objectType {
+        for objectID in selectedObjectIDs {
+            if let newVectorObject = snapshot.objects[objectID] {
+                switch newVectorObject.objectType {
                 case .text:
                     continue
                 case .shape(let shape),
@@ -587,9 +589,9 @@ struct StrokeFillPanel: View {
     private func updateStrokePlacementLive(_ placement: StrokePlacement) {
         document.strokeDefaults.placement = placement
 
-        for objectID in document.viewState.selectedObjectIDs {
-            if let unifiedObject = document.snapshot.objects[objectID] {
-                switch unifiedObject.objectType {
+        for objectID in selectedObjectIDs {
+            if let newVectorObject = snapshot.objects[objectID] {
+                switch newVectorObject.objectType {
                 case .text:
                     break
                 case .shape(let shape),
