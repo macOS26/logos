@@ -36,201 +36,116 @@ extension VectorDocument {
 
     func bringSelectedToFront() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
+        guard let selectedLayerIndex = selectedLayerIndex, selectedLayerIndex < snapshot.layers.count else { return }
 
-        var affectedObjectIDs: [UUID] = []
-        var oldIndices: [UUID: Int] = [:]
-        var newIndices: [UUID: Int] = [:]
+        let layer = snapshot.layers[selectedLayerIndex]
+        var oldObjectIDs = layer.objectIDs
+        let selectedIDs = viewState.selectedObjectIDs
 
-        for layerIndex in layers.indices {
-            let layerObjects = unifiedObjects.enumerated().filter { $0.element.layerIndex == layerIndex }
-            guard !layerObjects.isEmpty else { continue }
+        // Separate selected and unselected objects
+        let unselectedIDs = oldObjectIDs.filter { !selectedIDs.contains($0) }
+        let selectedObjectIDs = oldObjectIDs.filter { selectedIDs.contains($0) }
 
-            let expandedSelectedIDs = expandSelectionForClippingMasks(viewState.selectedObjectIDs, in: layerObjects.map { $0.element })
-            let selectedIndices = layerObjects.filter { expandedSelectedIDs.contains($0.element.id) }.map { $0.offset }
-            let unselectedIndices = layerObjects.filter { !expandedSelectedIDs.contains($0.element.id) }.map { $0.offset }
+        guard !selectedObjectIDs.isEmpty else { return }
 
-            guard !selectedIndices.isEmpty else { continue }
+        // New order: unselected first, then selected (selected are now on top)
+        let newObjectIDs = unselectedIDs + selectedObjectIDs
 
-            for index in layerObjects.map({ $0.offset }) {
-                let obj = unifiedObjects[index]
-                oldIndices[obj.id] = index
-                affectedObjectIDs.append(obj.id)
-            }
-
-            var removedObjects: [VectorObject] = []
-            for index in selectedIndices.sorted(by: >) {
-                removedObjects.insert(unifiedObjects.remove(at: index), at: 0)
-            }
-
-            if let lastUnselectedIndex = unselectedIndices.max() {
-                var insertionPoint = lastUnselectedIndex - selectedIndices.filter { $0 < lastUnselectedIndex }.count + 1
-                for obj in removedObjects {
-                    unifiedObjects.insert(obj, at: insertionPoint)
-                    insertionPoint += 1
-                }
-            } else {
-                for obj in removedObjects.reversed() {
-                    unifiedObjects.insert(obj, at: layerObjects.first!.offset)
-                }
-            }
-        }
-
-        for id in affectedObjectIDs {
-            if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
-                newIndices[id] = index
-            }
-        }
-
-        let command = ObjectArrangementCommand(
-            affectedObjectIDs: affectedObjectIDs,
-            oldIndices: oldIndices,
-            newIndices: newIndices
+        // Create undo command (it will update both snapshot and layers)
+        let command = LayerObjectOrderCommand(
+            layerIndex: selectedLayerIndex,
+            oldObjectIDs: oldObjectIDs,
+            newObjectIDs: newObjectIDs
         )
         commandManager.execute(command)
     }
 
     func bringSelectedForward() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
+        guard let selectedLayerIndex = selectedLayerIndex, selectedLayerIndex < snapshot.layers.count else { return }
 
-        var affectedObjectIDs: [UUID] = []
-        var oldIndices: [UUID: Int] = [:]
-        var newIndices: [UUID: Int] = [:]
+        let layer = snapshot.layers[selectedLayerIndex]
+        var oldObjectIDs = layer.objectIDs
+        var newObjectIDs = oldObjectIDs
+        let selectedIDs = viewState.selectedObjectIDs
 
-        for layerIndex in layers.indices {
-            let layerObjects = unifiedObjects.enumerated().filter { $0.element.layerIndex == layerIndex }
-            guard !layerObjects.isEmpty else { continue }
-
-            let expandedSelectedIDs = expandSelectionForClippingMasks(viewState.selectedObjectIDs, in: layerObjects.map { $0.element })
-
-            for index in layerObjects.map({ $0.offset }) {
-                let obj = unifiedObjects[index]
-                oldIndices[obj.id] = index
-                affectedObjectIDs.append(obj.id)
-            }
-
-            var tempObjects = unifiedObjects
-            let sortedIndices = layerObjects.map { $0.offset }.sorted(by: >)
-            for index in sortedIndices {
-                let obj = tempObjects[index]
-                if expandedSelectedIDs.contains(obj.id) && index < tempObjects.count - 1 {
-                    let nextObj = tempObjects[index + 1]
-                    if nextObj.layerIndex == layerIndex && !expandedSelectedIDs.contains(nextObj.id) {
-                        tempObjects.swapAt(index, index + 1)
-                    }
-                }
-            }
-
-            for id in affectedObjectIDs {
-                if let index = tempObjects.firstIndex(where: { $0.id == id }) {
-                    newIndices[id] = index
+        // Move each selected object forward by one position (from end to start to avoid conflicts)
+        for i in stride(from: newObjectIDs.count - 2, through: 0, by: -1) {
+            let objectID = newObjectIDs[i]
+            if selectedIDs.contains(objectID) && i < newObjectIDs.count - 1 {
+                let nextID = newObjectIDs[i + 1]
+                // Only swap if next object is not also selected
+                if !selectedIDs.contains(nextID) {
+                    newObjectIDs.swapAt(i, i + 1)
                 }
             }
         }
 
-        let command = ObjectArrangementCommand(
-            affectedObjectIDs: affectedObjectIDs,
-            oldIndices: oldIndices,
-            newIndices: newIndices
+        guard newObjectIDs != oldObjectIDs else { return }
+
+        // Create undo command (it will update both snapshot and layers)
+        let command = LayerObjectOrderCommand(
+            layerIndex: selectedLayerIndex,
+            oldObjectIDs: oldObjectIDs,
+            newObjectIDs: newObjectIDs
         )
         commandManager.execute(command)
     }
 
     func sendSelectedBackward() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
+        guard let selectedLayerIndex = selectedLayerIndex, selectedLayerIndex < snapshot.layers.count else { return }
 
-        var affectedObjectIDs: [UUID] = []
-        var oldIndices: [UUID: Int] = [:]
-        var newIndices: [UUID: Int] = [:]
+        let layer = snapshot.layers[selectedLayerIndex]
+        var oldObjectIDs = layer.objectIDs
+        var newObjectIDs = oldObjectIDs
+        let selectedIDs = viewState.selectedObjectIDs
 
-        for layerIndex in layers.indices {
-            let layerObjects = unifiedObjects.enumerated().filter { $0.element.layerIndex == layerIndex }
-            guard !layerObjects.isEmpty else { continue }
-
-            let expandedSelectedIDs = expandSelectionForClippingMasks(viewState.selectedObjectIDs, in: layerObjects.map { $0.element })
-
-            for index in layerObjects.map({ $0.offset }) {
-                let obj = unifiedObjects[index]
-                oldIndices[obj.id] = index
-                affectedObjectIDs.append(obj.id)
-            }
-
-            var tempObjects = unifiedObjects
-            let sortedIndices = layerObjects.map { $0.offset }.sorted()
-            for index in sortedIndices {
-                let obj = tempObjects[index]
-                if expandedSelectedIDs.contains(obj.id) && index > 0 {
-                    let prevObj = tempObjects[index - 1]
-                    if prevObj.layerIndex == layerIndex && !expandedSelectedIDs.contains(prevObj.id) {
-                        tempObjects.swapAt(index, index - 1)
-                    }
-                }
-            }
-
-            for id in affectedObjectIDs {
-                if let index = tempObjects.firstIndex(where: { $0.id == id }) {
-                    newIndices[id] = index
+        // Move each selected object backward by one position (from start to end to avoid conflicts)
+        for i in 1..<newObjectIDs.count {
+            let objectID = newObjectIDs[i]
+            if selectedIDs.contains(objectID) && i > 0 {
+                let prevID = newObjectIDs[i - 1]
+                // Only swap if previous object is not also selected
+                if !selectedIDs.contains(prevID) {
+                    newObjectIDs.swapAt(i, i - 1)
                 }
             }
         }
 
-        let command = ObjectArrangementCommand(
-            affectedObjectIDs: affectedObjectIDs,
-            oldIndices: oldIndices,
-            newIndices: newIndices
+        guard newObjectIDs != oldObjectIDs else { return }
+
+        // Create undo command (it will update both snapshot and layers)
+        let command = LayerObjectOrderCommand(
+            layerIndex: selectedLayerIndex,
+            oldObjectIDs: oldObjectIDs,
+            newObjectIDs: newObjectIDs
         )
         commandManager.execute(command)
     }
 
     func sendSelectedToBack() {
         guard !viewState.selectedObjectIDs.isEmpty else { return }
+        guard let selectedLayerIndex = selectedLayerIndex, selectedLayerIndex < snapshot.layers.count else { return }
 
-        var affectedObjectIDs: [UUID] = []
-        var oldIndices: [UUID: Int] = [:]
-        var newIndices: [UUID: Int] = [:]
+        let layer = snapshot.layers[selectedLayerIndex]
+        var oldObjectIDs = layer.objectIDs
+        let selectedIDs = viewState.selectedObjectIDs
 
-        for layerIndex in layers.indices {
-            let layerObjects = unifiedObjects.enumerated().filter { $0.element.layerIndex == layerIndex }
-            guard !layerObjects.isEmpty else { continue }
+        // Separate selected and unselected objects
+        let unselectedIDs = oldObjectIDs.filter { !selectedIDs.contains($0) }
+        let selectedObjectIDs = oldObjectIDs.filter { selectedIDs.contains($0) }
 
-            let expandedSelectedIDs = expandSelectionForClippingMasks(viewState.selectedObjectIDs, in: layerObjects.map { $0.element })
-            let selectedIndices = layerObjects.filter { expandedSelectedIDs.contains($0.element.id) }.map { $0.offset }
-            let unselectedIndices = layerObjects.filter { !expandedSelectedIDs.contains($0.element.id) }.map { $0.offset }
+        guard !selectedObjectIDs.isEmpty else { return }
 
-            guard !selectedIndices.isEmpty else { continue }
+        // New order: selected first, then unselected (selected are now at back)
+        let newObjectIDs = selectedObjectIDs + unselectedIDs
 
-            for index in layerObjects.map({ $0.offset }) {
-                let obj = unifiedObjects[index]
-                oldIndices[obj.id] = index
-                affectedObjectIDs.append(obj.id)
-            }
-
-            var removedObjects: [VectorObject] = []
-            for index in selectedIndices.sorted(by: >) {
-                removedObjects.insert(unifiedObjects.remove(at: index), at: 0)
-            }
-
-            if let firstUnselectedIndex = unselectedIndices.min() {
-                let insertionPoint = firstUnselectedIndex
-                for obj in removedObjects.reversed() {
-                    unifiedObjects.insert(obj, at: insertionPoint)
-                }
-            } else {
-                for obj in removedObjects.reversed() {
-                    unifiedObjects.insert(obj, at: layerObjects.first!.offset)
-                }
-            }
-        }
-
-        for id in affectedObjectIDs {
-            if let index = unifiedObjects.firstIndex(where: { $0.id == id }) {
-                newIndices[id] = index
-            }
-        }
-
-        let command = ObjectArrangementCommand(
-            affectedObjectIDs: affectedObjectIDs,
-            oldIndices: oldIndices,
-            newIndices: newIndices
+        // Create undo command (it will update both snapshot and layers)
+        let command = LayerObjectOrderCommand(
+            layerIndex: selectedLayerIndex,
+            oldObjectIDs: oldObjectIDs,
+            newObjectIDs: newObjectIDs
         )
         commandManager.execute(command)
     }
