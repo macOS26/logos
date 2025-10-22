@@ -426,21 +426,31 @@ extension VectorDocument {
     }
 
     func reorderObject(objectId: UUID, targetObjectId: UUID) {
-        guard let sourceIndex = unifiedObjects.firstIndex(where: { $0.id == objectId }),
-              let targetIndex = unifiedObjects.firstIndex(where: { $0.id == targetObjectId }) else {
+        guard let sourceObject = snapshot.objects[objectId],
+              let targetObject = snapshot.objects[targetObjectId] else {
             Log.error("❌ Objects not found for reordering", category: .error)
             return
         }
-
-        let sourceObject = unifiedObjects[sourceIndex]
-        let targetObject = unifiedObjects[targetIndex]
 
         guard sourceObject.layerIndex == targetObject.layerIndex else {
             return
         }
 
-        let object = unifiedObjects.remove(at: sourceIndex)
-        unifiedObjects.insert(object, at: targetIndex)
+        let layerIndex = sourceObject.layerIndex
+        guard layerIndex >= 0 && layerIndex < snapshot.layers.count else { return }
+
+        guard let sourceObjIndex = snapshot.layers[layerIndex].objectIDs.firstIndex(of: objectId) else {
+            return
+        }
+
+        snapshot.layers[layerIndex].objectIDs.remove(at: sourceObjIndex)
+
+        // Recalculate target index after removal
+        if let newTargetIndex = snapshot.layers[layerIndex].objectIDs.firstIndex(of: targetObjectId) {
+            snapshot.layers[layerIndex].objectIDs.insert(objectId, at: newTargetIndex)
+        }
+
+        changeNotifier.notifyLayersChanged()
     }
 
     func moveObjectToTop(objectId: UUID) {
