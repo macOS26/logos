@@ -305,7 +305,11 @@ struct GradientFillSection: View {
     }
 
     private func updateGradientOriginXOptimized(_ newX: Double, applyToShapes: Bool = true, isLiveDrag: Bool) {
-        guard let gradient = currentGradient else { return }
+        print("🟢 updateGradientOriginXOptimized called with newX: \(newX)")
+        guard let gradient = currentGradient else {
+            print("❌ No current gradient for origin X update")
+            return
+        }
 
         switch gradient {
         case .linear(var linear):
@@ -559,14 +563,20 @@ struct GradientFillSection: View {
     }
 
     func applyGradientToSelectedShapes() {
-        guard let newGradient = currentGradient else { return }
+        print("🔵 applyGradientToSelectedShapes called")
+        guard let newGradient = currentGradient else {
+            print("❌ No current gradient")
+            return
+        }
+        print("🔵 Applying gradient to \(selectedObjectIDs.count) selected objects")
 
         // Capture old gradients before applying
         var oldGradients: [UUID: VectorGradient?] = [:]
         var oldOpacities: [UUID: Double] = [:]
 
         for objectID in selectedObjectIDs {
-            if let shape = document.findShape(by: objectID) {
+            if let newVectorObject = snapshot.objects[objectID] {
+                let shape = newVectorObject.shape
                 if let fillStyle = shape.fillStyle, case .gradient(let gradient) = fillStyle.color {
                     oldGradients[objectID] = gradient
                     oldOpacities[objectID] = fillStyle.opacity
@@ -584,7 +594,8 @@ struct GradientFillSection: View {
         var newOpacities: [UUID: Double] = [:]
 
         for objectID in selectedObjectIDs {
-            if let shape = document.findShape(by: objectID) {
+            if let newVectorObject = snapshot.objects[objectID] {
+                let shape = newVectorObject.shape
                 newGradients[objectID] = newGradient
                 newOpacities[objectID] = shape.fillStyle?.opacity ?? 1.0
             }
@@ -606,7 +617,7 @@ struct GradientFillSection: View {
 
         if isLiveDrag {
             for objectID in selectedObjectIDs {
-                if let newVectorObject = document.findObject(by: objectID) {
+                if let newVectorObject = snapshot.objects[objectID] {
                     if case .shape(let shape) = newVectorObject.objectType,
                        let layerIndex = newVectorObject.layerIndex < document.layers.count ? newVectorObject.layerIndex : nil,
                        document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
@@ -619,7 +630,7 @@ struct GradientFillSection: View {
         }
 
         for objectID in selectedObjectIDs {
-            if let newVectorObject = document.findObject(by: objectID) {
+            if let newVectorObject = snapshot.objects[objectID] {
                 switch newVectorObject.objectType {
                 case .shape(let shape),
                      .warp(let shape),
