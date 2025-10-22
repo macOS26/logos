@@ -4,7 +4,8 @@ extension VectorDocument {
     func addShape(_ shape: VectorShape) {
         guard let layerIndex = selectedLayerIndex else { return }
 
-        let obj = VectorObject(shape: shape, layerIndex: layerIndex)
+        let objectType = VectorObject.determineType(for: shape)
+        let obj = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
         let command = AddObjectCommand(object: obj)
         executeCommand(command)
 
@@ -16,7 +17,8 @@ extension VectorDocument {
     func addShapeToFront(_ shape: VectorShape) {
         guard let layerIndex = selectedLayerIndex else { return }
 
-        let obj = VectorObject(shape: shape, layerIndex: layerIndex)
+        let objectType = VectorObject.determineType(for: shape)
+        let obj = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
 
         let command = AddObjectCommand(object: obj)
         executeCommand(command)
@@ -29,7 +31,8 @@ extension VectorDocument {
     func addShape(_ shape: VectorShape, to layerIndex: Int) {
         guard layerIndex >= 0 && layerIndex < layers.count else { return }
 
-        let obj = VectorObject(shape: shape, layerIndex: layerIndex)
+        let objectType = VectorObject.determineType(for: shape)
+        let obj = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
         let command = AddObjectCommand(object: obj)
         executeCommand(command)
     }
