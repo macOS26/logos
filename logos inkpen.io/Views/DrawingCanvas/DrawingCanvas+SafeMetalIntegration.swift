@@ -5,40 +5,40 @@ import MetalKit
 
 extension DrawingCanvas {
 
-    @ViewBuilder
-    internal func optionalMetalAcceleratedOverlay(geometry: GeometryProxy) -> some View {
-        SafeMetalView(performanceMonitor: metalPerformanceMonitor) { cgContext, size in
-            renderCanvasWithMetal(cgContext: cgContext, size: size, geometry: geometry)
-            if let preview = brushPreviewPath {
-                cgContext.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 0))
-                cgContext.setStrokeColor(CGColor(red: 0, green: 0, blue: 0, alpha: 0))
-                let cgPath = CGMutablePath()
-                for e in preview.elements {
-                    switch e {
-                    case .move(let to):
-                        cgPath.move(to: transformPointToView(to.cgPoint, geometry: geometry))
-                    case .line(let to):
-                        cgPath.addLine(to: transformPointToView(to.cgPoint, geometry: geometry))
-                    case .curve(let to, let c1, let c2):
-                        cgPath.addCurve(to: transformPointToView(to.cgPoint, geometry: geometry),
-                                        control1: transformPointToView(c1.cgPoint, geometry: geometry),
-                                        control2: transformPointToView(c2.cgPoint, geometry: geometry))
-                    case .quadCurve(let to, let c):
-                        cgPath.addQuadCurve(to: transformPointToView(to.cgPoint, geometry: geometry),
-                                            control: transformPointToView(c.cgPoint, geometry: geometry))
-                    case .close:
-                        if !cgPath.isEmpty {
-                            cgPath.closeSubpath()
-                        }
-                    }
-                }
-                cgContext.addPath(cgPath)
-                cgContext.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 0.0))
-                cgContext.fillPath()
-            }
-        }
-        .allowsHitTesting(true)
-    }
+//    @ViewBuilder
+//    internal func optionalMetalAcceleratedOverlay(geometry: GeometryProxy) -> some View {
+//        SafeMetalView(performanceMonitor: metalPerformanceMonitor) { cgContext, size in
+//            renderCanvasWithMetal(cgContext: cgContext, size: size, geometry: geometry)
+//            if let preview = brushPreviewPath {
+//                cgContext.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 0))
+//                cgContext.setStrokeColor(CGColor(red: 0, green: 0, blue: 0, alpha: 0))
+//                let cgPath = CGMutablePath()
+//                for e in preview.elements {
+//                    switch e {
+//                    case .move(let to):
+//                        cgPath.move(to: transformPointToView(to.cgPoint, geometry: geometry))
+//                    case .line(let to):
+//                        cgPath.addLine(to: transformPointToView(to.cgPoint, geometry: geometry))
+//                    case .curve(let to, let c1, let c2):
+//                        cgPath.addCurve(to: transformPointToView(to.cgPoint, geometry: geometry),
+//                                        control1: transformPointToView(c1.cgPoint, geometry: geometry),
+//                                        control2: transformPointToView(c2.cgPoint, geometry: geometry))
+//                    case .quadCurve(let to, let c):
+//                        cgPath.addQuadCurve(to: transformPointToView(to.cgPoint, geometry: geometry),
+//                                            control: transformPointToView(c.cgPoint, geometry: geometry))
+//                    case .close:
+//                        if !cgPath.isEmpty {
+//                            cgPath.closeSubpath()
+//                        }
+//                    }
+//                }
+//                cgContext.addPath(cgPath)
+//                cgContext.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 0.0))
+//                cgContext.fillPath()
+//            }
+//        }
+//        .allowsHitTesting(true)
+//    }
 
     private func renderCanvasWithMetal(cgContext: CGContext, size: CGSize, geometry: GeometryProxy) {
 
@@ -158,50 +158,50 @@ extension DrawingCanvas {
     }
 }
 
-extension DrawingCanvas {
-    @ViewBuilder
-    private func performanceOverlay() -> some View {
-        IsolatedPerformanceOverlay(
-            monitor: metalPerformanceMonitor,
-            document: document
-        )
-    }
-
-    private func countActiveDrawElements() -> Int {
-        var count = 0
-
-        count += document.unifiedObjects.compactMap { unifiedObject -> VectorShape? in
-            if case .shape(let shape) = unifiedObject.objectType {
-                return shape.isVisible ? shape : nil
-            }
-            return nil
-        }.count
-
-        count += document.unifiedObjects.filter { unifiedObject in
-            if case .text(let shape) = unifiedObject.objectType {
-                return shape.isVisible
-            }
-            return false
-        }.count
-
-        if currentPath != nil && isDrawing {
-            count += 1
-        }
-
-        if !document.viewState.selectedObjectIDs.isEmpty {
-            count += document.viewState.selectedObjectIDs.count * 8
-        }
-
-        return count
-    }
-}
+//extension DrawingCanvas {
+//    @ViewBuilder
+//    private func performanceOverlay() -> some View {
+//        IsolatedPerformanceOverlay(
+//            monitor: metalPerformanceMonitor,
+//            document: document
+//        )
+//    }
+//
+//    private func countActiveDrawElements() -> Int {
+//        var count = 0
+//
+//        count += document.unifiedObjects.compactMap { unifiedObject -> VectorShape? in
+//            if case .shape(let shape) = unifiedObject.objectType {
+//                return shape.isVisible ? shape : nil
+//            }
+//            return nil
+//        }.count
+//
+//        count += document.unifiedObjects.filter { unifiedObject in
+//            if case .text(let shape) = unifiedObject.objectType {
+//                return shape.isVisible
+//            }
+//            return false
+//        }.count
+//
+//        if currentPath != nil && isDrawing {
+//            count += 1
+//        }
+//
+//        if !document.viewState.selectedObjectIDs.isEmpty {
+//            count += document.viewState.selectedObjectIDs.count * 8
+//        }
+//
+//        return count
+//    }
+//}
 
 extension DrawingCanvas {
 
     @ViewBuilder
     internal func enhancedCanvasMainContent(geometry: GeometryProxy) -> some View {
         ZStack {
-            optionalMetalAcceleratedOverlay(geometry: geometry)
+            //optionalMetalAcceleratedOverlay(geometry: geometry)
 
             canvasBaseContent(geometry: geometry)
 
@@ -215,9 +215,9 @@ extension DrawingCanvas {
                 canvasOffset: document.viewState.canvasOffset
             )
 
-            if appState.showPerformanceOverlay {
-                performanceOverlay()
-            }
+//            if appState.showPerformanceOverlay {
+//                performanceOverlay()
+//            }
         }
         .onAppear {
             setupCanvas()
@@ -391,49 +391,49 @@ extension DrawingCanvas {
     }
 }
 
-// Simple performance overlay using Canvas for no SwiftUI interference
-private struct IsolatedPerformanceOverlay: View {
-    var monitor: PerformanceMonitor
-    let document: VectorDocument
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 0.5)) { _ in
-            Canvas { context, size in
-                let totalObjects = document.unifiedObjects.count
-                let visibleLayers = document.layers.filter { $0.isVisible }.count
-
-                let padding: CGFloat = 16
-                let boxPadding: CGFloat = 8
-                let lineHeight: CGFloat = 14
-                let fontSize: CGFloat = 10
-
-                let texts = [
-                    "FPS: \(Int(monitor.fps))",
-                    "\(monitor.renderingMode)",
-                    "Device: \(monitor.metalDeviceName)",
-                    "Memory: \(String(format: "%.1f", monitor.memoryUsage)) MB",
-                    "Objects: \(totalObjects)",
-                    "Layers: \(visibleLayers)/\(document.layers.count)"
-                ]
-
-                let boxWidth: CGFloat = 200
-                let boxHeight = CGFloat(texts.count) * lineHeight + boxPadding * 2
-
-                // Draw background box
-                let boxRect = CGRect(x: padding, y: padding, width: boxWidth, height: boxHeight)
-                context.fill(Path(roundedRect: boxRect, cornerRadius: 6), with: .color(.black.opacity(0.75)))
-
-                // Draw text
-                for (index, text) in texts.enumerated() {
-                    let yPos = padding + boxPadding + CGFloat(index) * lineHeight
-                    context.draw(Text(text)
-                        .font(.system(size: fontSize, design: .monospaced))
-                        .foregroundColor(.green),
-                        at: CGPoint(x: padding + boxPadding, y: yPos),
-                        anchor: .topLeading)
-                }
-            }
-            .allowsHitTesting(false)
-        }
-    }
-}
+//// Simple performance overlay using Canvas for no SwiftUI interference
+//private struct IsolatedPerformanceOverlay: View {
+//   // var monitor: PerformanceMonitor
+//    let document: VectorDocument
+//
+//    var body: some View {
+//        TimelineView(.animation(minimumInterval: 0.5)) { _ in
+//            Canvas { context, size in
+//                let totalObjects = document.unifiedObjects.count
+//                let visibleLayers = document.layers.filter { $0.isVisible }.count
+//
+//                let padding: CGFloat = 16
+//                let boxPadding: CGFloat = 8
+//                let lineHeight: CGFloat = 14
+//                let fontSize: CGFloat = 10
+//
+//                let texts = [
+//                    "FPS: \(Int(monitor.fps))",
+//                    "\(monitor.renderingMode)",
+//                    "Device: \(monitor.metalDeviceName)",
+//                    "Memory: \(String(format: "%.1f", monitor.memoryUsage)) MB",
+//                    "Objects: \(totalObjects)",
+//                    "Layers: \(visibleLayers)/\(document.layers.count)"
+//                ]
+//
+//                let boxWidth: CGFloat = 200
+//                let boxHeight = CGFloat(texts.count) * lineHeight + boxPadding * 2
+//
+//                // Draw background box
+//                let boxRect = CGRect(x: padding, y: padding, width: boxWidth, height: boxHeight)
+//                context.fill(Path(roundedRect: boxRect, cornerRadius: 6), with: .color(.black.opacity(0.75)))
+//
+//                // Draw text
+//                for (index, text) in texts.enumerated() {
+//                    let yPos = padding + boxPadding + CGFloat(index) * lineHeight
+//                    context.draw(Text(text)
+//                        .font(.system(size: fontSize, design: .monospaced))
+//                        .foregroundColor(.green),
+//                        at: CGPoint(x: padding + boxPadding, y: yPos),
+//                        anchor: .topLeading)
+//                }
+//            }
+//            .allowsHitTesting(false)
+//        }
+//    }
+//}
