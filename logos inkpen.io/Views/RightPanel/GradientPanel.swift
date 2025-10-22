@@ -3,11 +3,18 @@ import AppKit
 import Combine
 
 struct GradientPanel: View {
-    @ObservedObject var document: VectorDocument
+    let snapshot: DocumentSnapshot
+    let selectedObjectIDs: Set<UUID>
+    @ObservedObject var document: VectorDocument  // Keep temporarily for methods
+
     var body: some View {
         ScrollView {
             VStack() {
-                GradientFillSection(document: document)
+                GradientFillSection(
+                    snapshot: snapshot,
+                    selectedObjectIDs: selectedObjectIDs,
+                    document: document
+                )
                 Spacer()
             }
         }
@@ -15,7 +22,9 @@ struct GradientPanel: View {
 }
 
 struct GradientFillSection: View {
-    @ObservedObject var document: VectorDocument
+    let snapshot: DocumentSnapshot
+    let selectedObjectIDs: Set<UUID>
+    @ObservedObject var document: VectorDocument  // Keep temporarily for methods
     @Environment(AppState.self) private var appState
     @State private var gradientType: GradientType = .linear
     @State private var currentGradient: VectorGradient? = nil
@@ -34,10 +43,12 @@ struct GradientFillSection: View {
         case radial = "Radial"
     }
 
-    init(document: VectorDocument) {
+    init(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, document: VectorDocument) {
+        self.snapshot = snapshot
+        self.selectedObjectIDs = selectedObjectIDs
         self.document = document
 
-        if let selectedGradient = Self.getSelectedShapeGradient(document: document) {
+        if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, document: document) {
             _currentGradient = State(initialValue: selectedGradient)
             switch selectedGradient {
             case .linear(let linear):
@@ -137,7 +148,7 @@ struct GradientFillSection: View {
         .padding()
         .background(Color.ui.semiTransparentControlBackground)
         .cornerRadius(12)
-        .onChange(of: document.viewState.selectedObjectIDs) { _, _ in updateSelectedGradient() }
+        .onChange(of: selectedObjectIDs) { _, _ in updateSelectedGradient() }
         .onChange(of: document.selectedLayerIndex) { _, _ in updateSelectedGradient() }
         .onReceive(document.objectWillChange) { _ in
             if editingGradientStopId == nil && !isEditingAngle {
@@ -203,7 +214,7 @@ struct GradientFillSection: View {
 
     private func updateSelectedGradient() {
 
-        if let selectedGradient = Self.getSelectedShapeGradient(document: document) {
+        if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, document: document) {
             currentGradient = selectedGradient
             switch selectedGradient {
             case .linear(let linear):
@@ -221,7 +232,7 @@ struct GradientFillSection: View {
 
     private func updateSelectedGradientDisplay() {
 
-        if let selectedGradient = Self.getSelectedShapeGradient(document: document) {
+        if let selectedGradient = Self.getSelectedShapeGradient(snapshot: snapshot, selectedObjectIDs: selectedObjectIDs, document: document) {
             currentGradient = selectedGradient
             switch selectedGradient {
             case .linear(let linear):
@@ -526,7 +537,7 @@ struct GradientFillSection: View {
         var oldOpacities: [UUID: Double] = [:]
         var newOpacities: [UUID: Double] = [:]
 
-        for objectID in document.viewState.selectedObjectIDs {
+        for objectID in selectedObjectIDs {
             if let shape = document.findShape(by: objectID) {
                 oldGradients[objectID] = oldGradient
                 newGradients[objectID] = newGradient
@@ -537,7 +548,7 @@ struct GradientFillSection: View {
         }
 
         let command = GradientCommand(
-            objectIDs: Array(document.viewState.selectedObjectIDs),
+            objectIDs: Array(selectedObjectIDs),
             target: .fill,
             oldGradients: oldGradients,
             newGradients: newGradients,
@@ -554,7 +565,7 @@ struct GradientFillSection: View {
         var oldGradients: [UUID: VectorGradient?] = [:]
         var oldOpacities: [UUID: Double] = [:]
 
-        for objectID in document.viewState.selectedObjectIDs {
+        for objectID in selectedObjectIDs {
             if let shape = document.findShape(by: objectID) {
                 if let fillStyle = shape.fillStyle, case .gradient(let gradient) = fillStyle.color {
                     oldGradients[objectID] = gradient
@@ -572,7 +583,7 @@ struct GradientFillSection: View {
         var newGradients: [UUID: VectorGradient?] = [:]
         var newOpacities: [UUID: Double] = [:]
 
-        for objectID in document.viewState.selectedObjectIDs {
+        for objectID in selectedObjectIDs {
             if let shape = document.findShape(by: objectID) {
                 newGradients[objectID] = newGradient
                 newOpacities[objectID] = shape.fillStyle?.opacity ?? 1.0
@@ -580,7 +591,7 @@ struct GradientFillSection: View {
         }
 
         let command = GradientCommand(
-            objectIDs: Array(document.viewState.selectedObjectIDs),
+            objectIDs: Array(selectedObjectIDs),
             target: .fill,
             oldGradients: oldGradients,
             newGradients: newGradients,
@@ -594,10 +605,10 @@ struct GradientFillSection: View {
         guard let gradient = currentGradient else { return }
 
         if isLiveDrag {
-            for objectID in document.viewState.selectedObjectIDs {
-                if let unifiedObject = document.findObject(by: objectID) {
-                    if case .shape(let shape) = unifiedObject.objectType,
-                       let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+            for objectID in selectedObjectIDs {
+                if let newVectorObject = document.findObject(by: objectID) {
+                    if case .shape(let shape) = newVectorObject.objectType,
+                       let layerIndex = newVectorObject.layerIndex < document.layers.count ? newVectorObject.layerIndex : nil,
                        document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
 
                         document.updateShapeGradientInUnified(id: shape.id, gradient: gradient, target: document.viewState.activeColorTarget)
@@ -607,15 +618,15 @@ struct GradientFillSection: View {
             return
         }
 
-        for objectID in document.viewState.selectedObjectIDs {
-            if let unifiedObject = document.findObject(by: objectID) {
-                switch unifiedObject.objectType {
+        for objectID in selectedObjectIDs {
+            if let newVectorObject = document.findObject(by: objectID) {
+                switch newVectorObject.objectType {
                 case .shape(let shape),
                      .warp(let shape),
                      .group(let shape),
                      .clipGroup(let shape),
                      .clipMask(let shape):
-                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil {
+                    if let layerIndex = newVectorObject.layerIndex < document.layers.count ? newVectorObject.layerIndex : nil {
                         let shapes = document.getShapesForLayer(layerIndex)
                         if let shapeIndex = shapes.firstIndex(where: { $0.id == shape.id }),
                            let currentShape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
@@ -647,8 +658,8 @@ struct GradientFillSection: View {
 
     }
 
-    static func getSelectedShapeGradient(document: VectorDocument) -> VectorGradient? {
-        let activeShapes = document.getActiveShapes()
+    static func getSelectedShapeGradient(snapshot: DocumentSnapshot, selectedObjectIDs: Set<UUID>, document: VectorDocument) -> VectorGradient? {
+        let activeShapes = document.getActiveShapes()  // Keep using document method for now
         guard let firstShape = activeShapes.first,
               let fillStyle = firstShape.fillStyle,
               case .gradient(let gradient) = fillStyle.color else {
@@ -792,7 +803,7 @@ struct GradientFillSection: View {
             }
         }
 
-        guard let firstSelectedID = document.viewState.selectedObjectIDs.first else {
+        guard let firstSelectedID = selectedObjectIDs.first else {
             return .black
         }
 

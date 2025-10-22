@@ -23,7 +23,11 @@ struct RightPanel: View {
                         document: document
                     )
                 case .gradient:
-                    GradientPanel(document: document)
+                    GradientPanel(
+                        snapshot: document.snapshot,
+                        selectedObjectIDs: document.viewState.selectedObjectIDs,
+                        document: document
+                    )
                 case .color:
                     ColorPanel(document: document)
                 case .pathOps:
