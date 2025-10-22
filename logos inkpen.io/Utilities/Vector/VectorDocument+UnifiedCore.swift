@@ -23,7 +23,8 @@ extension VectorDocument {
             }
             return false
         }) {
-            unifiedObjects[index] = VectorObject(shape: shape, layerIndex: layerIndex)
+            let objectType = VectorObject.determineType(for: shape)
+            unifiedObjects[index] = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
             changeNotifier.notifyObjectChanged(shape.id)
         }
     }
@@ -37,27 +38,27 @@ extension VectorDocument {
             switch object.objectType {
             case .text(var shape):
                 update(&shape)
-                updatedObject = VectorObject(shape: shape, layerIndex: layerIndex)
+                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .text(shape))
 
             case .shape(var shape):
                 update(&shape)
-                updatedObject = VectorObject(shape: shape, layerIndex: layerIndex)
+                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .shape(shape))
 
             case .warp(var shape):
                 update(&shape)
-                updatedObject = VectorObject(shape: shape, layerIndex: layerIndex)
+                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .warp(shape))
 
             case .group(var shape):
                 update(&shape)
-                updatedObject = VectorObject(shape: shape, layerIndex: layerIndex)
+                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .group(shape))
 
             case .clipGroup(var shape):
                 update(&shape)
-                updatedObject = VectorObject(shape: shape, layerIndex: layerIndex)
+                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .clipGroup(shape))
 
             case .clipMask(var shape):
                 update(&shape)
-                updatedObject = VectorObject(shape: shape, layerIndex: layerIndex)
+                updatedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: .clipMask(shape))
             }
 
             // Update snapshot
@@ -87,7 +88,16 @@ extension VectorDocument {
                         groupShape.groupedShapes[childIndex] = childShape
 
                         let layerIndex = unifiedObjects[groupIndex].layerIndex
-                        let updatedObject = VectorObject(shape: groupShape, layerIndex: layerIndex)
+                        // Preserve the existing group type (group or clipGroup)
+                        let objectType = unifiedObjects[groupIndex].objectType
+                        let updatedType: VectorObject.ObjectType
+                        switch objectType {
+                        case .clipGroup:
+                            updatedType = .clipGroup(groupShape)
+                        default:
+                            updatedType = .group(groupShape)
+                        }
+                        let updatedObject = VectorObject(id: groupShape.id, layerIndex: layerIndex, objectType: updatedType)
                         unifiedObjects[groupIndex] = updatedObject
                         unifiedObjectIndexCache[groupShape.id] = groupIndex
 
@@ -131,7 +141,8 @@ extension VectorDocument {
             return
         }
 
-        let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex)
+        let objectType = VectorObject.determineType(for: shape)
+        let unifiedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
 
         // Remove existing if it exists
         if snapshot.objects[shape.id] != nil {
@@ -183,13 +194,15 @@ extension VectorDocument {
 
         if isUndoRedoOperation {
             if findObject(by: shape.id) != nil {
-                let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex)
+                let objectType = VectorObject.determineType(for: shape)
+                let unifiedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
                 unifiedObjects.append(unifiedObject)
                 return
             }
         }
 
-        let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex)
+        let objectType = VectorObject.determineType(for: shape)
+        let unifiedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
         unifiedObjects.append(unifiedObject)
     }
 
@@ -218,7 +231,8 @@ extension VectorDocument {
             }
         }
 
-        let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex)
+        let objectType = VectorObject.determineType(for: shape)
+        let unifiedObject = VectorObject(id: shape.id, layerIndex: layerIndex, objectType: objectType)
         if let insertIndex = insertIndex {
             unifiedObjects.insert(unifiedObject, at: insertIndex)
         } else {
@@ -245,13 +259,13 @@ extension VectorDocument {
 
         if isUndoRedoOperation {
             if findObject(by: text.id) != nil {
-                let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex)
+                let unifiedObject = VectorObject(id: textShape.id, layerIndex: layerIndex, objectType: .text(textShape))
                 unifiedObjects.append(unifiedObject)
                 return
             }
         }
 
-        let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex)
+        let unifiedObject = VectorObject(id: textShape.id, layerIndex: layerIndex, objectType: .text(textShape))
         unifiedObjects.append(unifiedObject)
 
     }

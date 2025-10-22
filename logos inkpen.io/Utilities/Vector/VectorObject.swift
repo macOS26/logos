@@ -21,24 +21,28 @@ struct VectorObject: Identifiable, Hashable {
         self.objectType = objectType
     }
 
+    // Helper to determine object type from shape properties
+    static func determineType(for shape: VectorShape) -> ObjectType {
+        if shape.typography != nil {
+            return .text(shape)
+        } else if shape.isClippingPath {
+            return .clipMask(shape)
+        } else if shape.isClippingGroup {
+            return .clipGroup(shape)
+        } else if shape.isGroup && !shape.groupedShapes.isEmpty {
+            return .group(shape)
+        } else if shape.isWarpObject {
+            return .warp(shape)
+        } else {
+            return .shape(shape)
+        }
+    }
+
     // Legacy initializer - kept for compatibility, will be removed later
     init(shape: VectorShape, layerIndex: Int) {
         self.id = shape.id
         self.layerIndex = layerIndex
-
-        if shape.typography != nil {
-            self.objectType = .text(shape)
-        } else if shape.isClippingPath {
-            self.objectType = .clipMask(shape)
-        } else if shape.isClippingGroup {
-            self.objectType = .clipGroup(shape)
-        } else if shape.isGroup && !shape.groupedShapes.isEmpty {
-            self.objectType = .group(shape)
-        } else if shape.isWarpObject {
-            self.objectType = .warp(shape)
-        } else {
-            self.objectType = .shape(shape)
-        }
+        self.objectType = VectorObject.determineType(for: shape)
     }
 
     var isVisible: Bool {
