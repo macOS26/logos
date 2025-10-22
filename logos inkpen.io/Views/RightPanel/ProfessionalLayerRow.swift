@@ -367,6 +367,7 @@ struct ProfessionalLayerRow: View {
                 return true
 
             case .vectorObject(let vectorObj):
+                print("🎯 Drop on layer '\(layer.name)' (index: \(layerIndex))")
                 if document.viewState.selectedObjectIDs.contains(vectorObj.objectId) && document.viewState.selectedObjectIDs.count > 1 {
                     document.moveObjectsToLayer(objectIds: Array(document.viewState.selectedObjectIDs), targetLayerIndex: layerIndex)
                 } else {

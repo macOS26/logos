@@ -267,17 +267,16 @@ extension VectorDocument {
     }
 
     func moveObjectToLayer(objectId: UUID, targetLayerIndex: Int) {
-        guard let objectIndex = unifiedObjects.firstIndex(where: { $0.id == objectId }) else {
+        guard let object = snapshot.objects[objectId] else {
             Log.error("❌ Object not found for layer move: \(objectId)", category: .error)
             return
         }
 
-        guard targetLayerIndex >= 0 && targetLayerIndex < layers.count else {
+        guard targetLayerIndex >= 0 && targetLayerIndex < snapshot.layers.count else {
             Log.error("❌ Invalid target layer index: \(targetLayerIndex)", category: .error)
             return
         }
 
-        let object = unifiedObjects[objectIndex]
         let sourceLayerIndex = object.layerIndex
 
         if sourceLayerIndex == targetLayerIndex {
@@ -293,7 +292,7 @@ extension VectorDocument {
     }
 
     func moveObjectsToLayer(objectIds: [UUID], targetLayerIndex: Int) {
-        guard targetLayerIndex >= 0 && targetLayerIndex < layers.count else {
+        guard targetLayerIndex >= 0 && targetLayerIndex < snapshot.layers.count else {
             Log.error("❌ Invalid target layer index: \(targetLayerIndex)", category: .error)
             return
         }
@@ -301,11 +300,10 @@ extension VectorDocument {
         var moves: [(objectID: UUID, oldLayerIndex: Int, newLayerIndex: Int)] = []
 
         for objectId in objectIds {
-            guard let objectIndex = unifiedObjects.firstIndex(where: { $0.id == objectId }) else {
+            guard let object = snapshot.objects[objectId] else {
                 continue
             }
 
-            let object = unifiedObjects[objectIndex]
             let sourceLayerIndex = object.layerIndex
 
             if sourceLayerIndex != targetLayerIndex {

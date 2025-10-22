@@ -25,10 +25,12 @@ class MoveObjectToLayerCommand: BaseCommand {
 
     private func applyMove(objectID: UUID, toLayerIndex: Int, document: VectorDocument) {
         guard let object = document.snapshot.objects[objectID] else {
+            print("❌ MoveObjectToLayer: Object not found: \(objectID)")
             return
         }
 
         let oldLayerIndex = object.layerIndex
+        print("📦 Moving object from layer \(oldLayerIndex) to layer \(toLayerIndex)")
 
         // Remove from old layer's objectIDs
         if oldLayerIndex >= 0 && oldLayerIndex < document.snapshot.layers.count {
