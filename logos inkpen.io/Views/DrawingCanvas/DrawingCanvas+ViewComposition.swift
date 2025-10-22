@@ -185,7 +185,7 @@ extension DrawingCanvas {
                 )
 
                 if document.gridSettings.showGrid, document.settings.gridSpacing > 0 {
-                    GridView(
+                    OptimizedGridView(
                         gridSpacing: document.settings.gridSpacing,
                         canvasSize: document.settings.sizeInPoints,
                         unit: document.settings.unit,
