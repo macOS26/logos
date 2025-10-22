@@ -24,6 +24,16 @@ class DeleteObjectCommand: BaseCommand {
         }
 
         document.unifiedObjects.removeAll { idsToRemove.contains($0.id) }
+
+        // CRITICAL FIX: Remove from snapshot.objects dictionary
+        for id in idsToRemove {
+            document.snapshot.objects.removeValue(forKey: id)
+
+            // Also remove from layer's objectIDs array
+            for index in document.snapshot.layers.indices {
+                document.snapshot.layers[index].objectIDs.removeAll { $0 == id }
+            }
+        }
     }
 
     override func undo(on document: VectorDocument) {
@@ -32,6 +42,17 @@ class DeleteObjectCommand: BaseCommand {
                 document.unifiedObjects.insert(obj, at: index)
             } else {
                 document.unifiedObjects.append(obj)
+            }
+
+            // Restore to snapshot.objects dictionary
+            document.snapshot.objects[obj.id] = obj
+
+            // Restore to appropriate layer's objectIDs array
+            let layerIndex = obj.layerIndex
+            if layerIndex < document.snapshot.layers.count {
+                if !document.snapshot.layers[layerIndex].objectIDs.contains(obj.id) {
+                    document.snapshot.layers[layerIndex].objectIDs.append(obj.id)
+                }
             }
         }
     }
