@@ -252,8 +252,8 @@ struct LayerCanvasView: View {
         // Render fill
         if viewMode == .color, let fillStyle = shape.fillStyle {
             if let gradient = fillStyle.gradient {
-                // Use CGImage for gradient rendering
-                renderGradientToContext(gradient: gradient, path: transformedPath, isStroke: false, strokeStyle: nil, in: &ctx)
+                // Use CGImage for gradient rendering - pass fillStyle for opacity
+                renderGradientToContext(gradient: gradient, path: transformedPath, isStroke: false, strokeStyle: nil, fillStyle: fillStyle, in: &ctx)
             } else if fillStyle.color != .clear {
                 ctx.fill(Path(transformedPath), with: .color(fillStyle.color.color.opacity(fillStyle.opacity)))
             }
@@ -320,10 +320,17 @@ struct LayerCanvasView: View {
         }
     }
 
-    private func renderGradientToContext(gradient: VectorGradient, path: CGPath, isStroke: Bool, strokeStyle: StrokeStyle?, in context: inout GraphicsContext) {
+    private func renderGradientToContext(gradient: VectorGradient, path: CGPath, isStroke: Bool, strokeStyle: StrokeStyle?, fillStyle: FillStyle? = nil, in context: inout GraphicsContext) {
         // Paint gradient directly to CGContext (like we do for CoreText)
         context.withCGContext { cgContext in
             cgContext.saveGState()
+
+            // Apply opacity based on whether this is a fill or stroke gradient
+            if !isStroke, let fillStyle = fillStyle {
+                cgContext.setAlpha(CGFloat(fillStyle.opacity))
+            } else if isStroke, let strokeStyle = strokeStyle {
+                cgContext.setAlpha(CGFloat(strokeStyle.opacity))
+            }
 
             // Create stroked path if needed
             let finalPath: CGPath
