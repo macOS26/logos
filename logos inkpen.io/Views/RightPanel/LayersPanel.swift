@@ -445,10 +445,12 @@ struct LayersPanel: View {
                     }
 
                     if let shape = updatedShape {
-                        document.unifiedObjects[objIndex] = VectorObject(
+                        let updatedObject = VectorObject(
                             shape: shape,
                             layerIndex: layerIndex
                         )
+                        document.unifiedObjects[objIndex] = updatedObject
+                        document.updateObjectInNewStructure(updatedObject)
                         document.processedObjectsDuringDrag.insert(objectId)
                         document.changeNotifier.notifyObjectChanged(objectId)
                     }
@@ -460,10 +462,12 @@ struct LayersPanel: View {
                     if case .shape(var parentShape) = document.unifiedObjects[objIndex].objectType {
                         if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
                             parentShape.groupedShapes[childIndex].isVisible.toggle()
-                            document.unifiedObjects[objIndex] = VectorObject(
+                            let updatedObject = VectorObject(
                                 shape: parentShape,
                                 layerIndex: layerIndex,
                             )
+                            document.unifiedObjects[objIndex] = updatedObject
+                            document.updateObjectInNewStructure(updatedObject)
                             document.processedObjectsDuringDrag.insert(childShapeId)
                             document.changeNotifier.notifyObjectChanged(parentObjectId)
                         }
@@ -494,10 +498,12 @@ struct LayersPanel: View {
                     }
 
                     if let shape = updatedShape {
-                        document.unifiedObjects[objIndex] = VectorObject(
+                        let updatedObject = VectorObject(
                             shape: shape,
                             layerIndex: layerIndex
                         )
+                        document.unifiedObjects[objIndex] = updatedObject
+                        document.updateObjectInNewStructure(updatedObject)
                         document.processedObjectsDuringDrag.insert(objectId)
                         document.changeNotifier.notifyObjectChanged(objectId)
                     }
@@ -509,10 +515,12 @@ struct LayersPanel: View {
                     if case .shape(var parentShape) = document.unifiedObjects[objIndex].objectType {
                         if let childIndex = parentShape.groupedShapes.firstIndex(where: { $0.id == childShapeId }) {
                             parentShape.groupedShapes[childIndex].isLocked.toggle()
-                            document.unifiedObjects[objIndex] = VectorObject(
+                            let updatedObject = VectorObject(
                                 shape: parentShape,
                                 layerIndex: layerIndex,
                             )
+                            document.unifiedObjects[objIndex] = updatedObject
+                            document.updateObjectInNewStructure(updatedObject)
                             document.processedObjectsDuringDrag.insert(childShapeId)
                             document.changeNotifier.notifyObjectChanged(parentObjectId)
                         }
