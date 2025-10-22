@@ -160,10 +160,10 @@ struct OptimizedGridCanvasView: View {
     var body: some View {
         Canvas { context, size in
             // Determine grid visibility based on zoom
-            // At 50% and lower, only show major lines
+            // At 50% and lower, only show major lines at 1px
             let shouldShowMinor = zoomLevel > 0.5
             let minorLineWidth: CGFloat = 0.5
-            let majorLineWidth: CGFloat = zoomLevel <= 0.5 ? minorLineWidth : 1.0
+            let majorLineWidth: CGFloat = 1.0
 
             // Get cached paths
             let paths = GridPathCache.shared.getPaths(
@@ -177,8 +177,13 @@ struct OptimizedGridCanvasView: View {
             // Smart line width scaling
             let adjustedMinorWidth: CGFloat
             let adjustedMajorWidth: CGFloat
-            if zoomLevel < 1.0 {
-                // Zoomed out - scale down to prevent thick lines
+
+            if zoomLevel <= 0.5 {
+                // At 50% and lower - major lines at exactly 1px, no scaling
+                adjustedMinorWidth = minorLineWidth  // Won't be used anyway
+                adjustedMajorWidth = 1.0  // Exactly 1px
+            } else if zoomLevel < 1.0 {
+                // Between 50% and 100% - scale down to prevent thick lines
                 adjustedMinorWidth = minorLineWidth / zoomLevel
                 adjustedMajorWidth = majorLineWidth / zoomLevel
             } else {
