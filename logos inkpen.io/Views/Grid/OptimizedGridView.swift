@@ -1,6 +1,6 @@
 import SwiftUI
 
-// Simplified grid - single Canvas view, no subviews
+// Symbol-based grid using tiled pattern for memory efficiency
 struct OptimizedGridView: View {
     let gridSpacing: CGFloat
     let canvasSize: CGSize
@@ -27,91 +27,120 @@ struct OptimizedGridView: View {
             let actualGridSpacing = baseSpacing * spacingMultiplier
             let majorGridInterval = 4
 
-            // Determine grid visibility based on zoom
-            // At 50% and lower, only show major lines at 0.5px
+            // Create a single tile size (4x4 grid cells)
+            let tileSize = actualGridSpacing * CGFloat(majorGridInterval)
+
+            // Determine what to show based on zoom
             let shouldShowMinor = zoomLevel > 0.5
-            let minorLineWidth: CGFloat = 0.5
-            let majorLineWidth: CGFloat = 1.0
+            let lineWidth: CGFloat = zoomLevel <= 0.5 ? 0.5 : 0.5
 
-            // Smart line width scaling
-            let adjustedMinorWidth: CGFloat
-            let adjustedMajorWidth: CGFloat
-
-            if zoomLevel <= 0.5 {
-                // At 50% and lower - major lines at exactly 0.5px, no scaling
-                adjustedMinorWidth = minorLineWidth  // Won't be used anyway
-                adjustedMajorWidth = 0.5  // Exactly 0.5px
-            } else if zoomLevel < 1.0 {
-                // Between 50% and 100% - scale down to prevent thick lines
-                adjustedMinorWidth = minorLineWidth / zoomLevel
-                adjustedMajorWidth = majorLineWidth / zoomLevel
-            } else {
-                // Zoomed in - use minimum to keep visible
-                adjustedMinorWidth = max(minorLineWidth / zoomLevel, minorLineWidth * 0.75)
-                adjustedMajorWidth = max(majorLineWidth / zoomLevel, majorLineWidth * 0.75)
-            }
-
-            // Build grid paths
-            var minorPath = Path()
-            var majorPath = Path()
-
-            let gridSteps = Int(ceil(max(canvasSize.width, canvasSize.height) / actualGridSpacing)) + 1
-
-            // Draw vertical lines
-            for i in 0...gridSteps {
-                let x = CGFloat(i) * actualGridSpacing
-                if x <= canvasSize.width {
-                    let transformedX = x * zoomLevel + canvasOffset.x
-                    let startY = canvasOffset.y
-                    let endY = canvasSize.height * zoomLevel + canvasOffset.y
-
-                    if i % majorGridInterval == 0 {
-                        // Major line
-                        majorPath.move(to: CGPoint(x: transformedX, y: startY))
-                        majorPath.addLine(to: CGPoint(x: transformedX, y: endY))
-                    } else {
-                        // Minor line
-                        minorPath.move(to: CGPoint(x: transformedX, y: startY))
-                        minorPath.addLine(to: CGPoint(x: transformedX, y: endY))
-                    }
-                }
-            }
-
-            // Draw horizontal lines
-            for i in 0...gridSteps {
-                let y = CGFloat(i) * actualGridSpacing
-                if y <= canvasSize.height {
-                    let transformedY = y * zoomLevel + canvasOffset.y
-                    let startX = canvasOffset.x
-                    let endX = canvasSize.width * zoomLevel + canvasOffset.x
-
-                    if i % majorGridInterval == 0 {
-                        // Major line
-                        majorPath.move(to: CGPoint(x: startX, y: transformedY))
-                        majorPath.addLine(to: CGPoint(x: endX, y: transformedY))
-                    } else {
-                        // Minor line
-                        minorPath.move(to: CGPoint(x: startX, y: transformedY))
-                        minorPath.addLine(to: CGPoint(x: endX, y: transformedY))
-                    }
-                }
-            }
-
-            // Draw minor grid lines (if visible at this zoom)
-            if shouldShowMinor {
-                context.stroke(
-                    minorPath,
-                    with: .color(.gray.opacity(0.3)),
-                    lineWidth: adjustedMinorWidth
-                )
-            }
-
-            // Draw major grid lines
-            context.stroke(
-                majorPath,
-                with: .color(.gray.opacity(0.4)),
-                lineWidth: adjustedMajorWidth
+            // Create the tile pattern path once (this is our "symbol")
+            let tilePattern = createTilePattern(
+                tileSize: tileSize,
+                gridSpacing: actualGridSpacing,
+                majorInterval: majorGridInterval,
+                showMinor: shouldShowMinor
             )
+
+            // Calculate visible tile range
+            let visibleStartX = max(0, -canvasOffset.x / zoomLevel)
+            let visibleEndX = min(canvasSize.width, (size.width - canvasOffset.x) / zoomLevel)
+            let visibleStartY = max(0, -canvasOffset.y / zoomLevel)
+            let visibleEndY = min(canvasSize.height, (size.height - canvasOffset.y) / zoomLevel)
+
+            let tileStartX = Int(floor(visibleStartX / tileSize))
+            let tileEndX = Int(ceil(visibleEndX / tileSize))
+            let tileStartY = Int(floor(visibleStartY / tileSize))
+            let tileEndY = Int(ceil(visibleEndY / tileSize))
+
+            // Draw grid using the tile pattern as a reusable "symbol"
+            // Only draw visible tiles, reusing the same pattern
+            for tileX in tileStartX...tileEndX {
+                for tileY in tileStartY...tileEndY {
+                    let x = CGFloat(tileX) * tileSize
+                    let y = CGFloat(tileY) * tileSize
+
+                    // Check if tile is within canvas bounds
+                    if x < canvasSize.width && y < canvasSize.height {
+                        // Transform and draw the tile pattern
+                        var transform = CGAffineTransform.identity
+                        transform = transform.translatedBy(
+                            x: x * zoomLevel + canvasOffset.x,
+                            y: y * zoomLevel + canvasOffset.y
+                        )
+                        transform = transform.scaledBy(x: zoomLevel, y: zoomLevel)
+
+                        // Reuse the same tile pattern - this is the "symbol"
+                        let transformedTile = tilePattern.applying(transform)
+
+                        context.stroke(
+                            transformedTile,
+                            with: .color(.gray.opacity(shouldShowMinor ? 0.3 : 0.4)),
+                            lineWidth: lineWidth
+                        )
+                    }
+                }
+            }
+
+            // Draw origin lines (left and top edges) if visible
+            var originPath = Path()
+
+            // Left edge (x = 0)
+            if canvasOffset.x >= 0 && canvasOffset.x <= size.width {
+                originPath.move(to: CGPoint(x: canvasOffset.x, y: canvasOffset.y))
+                originPath.addLine(to: CGPoint(
+                    x: canvasOffset.x,
+                    y: min(size.height, canvasSize.height * zoomLevel + canvasOffset.y)
+                ))
+            }
+
+            // Top edge (y = 0)
+            if canvasOffset.y >= 0 && canvasOffset.y <= size.height {
+                originPath.move(to: CGPoint(x: canvasOffset.x, y: canvasOffset.y))
+                originPath.addLine(to: CGPoint(
+                    x: min(size.width, canvasSize.width * zoomLevel + canvasOffset.x),
+                    y: canvasOffset.y
+                ))
+            }
+
+            if !originPath.isEmpty {
+                context.stroke(originPath, with: .color(.gray.opacity(0.4)), lineWidth: lineWidth)
+            }
         }
+    }
+
+    // Creates the tile pattern that acts as our reusable "symbol"
+    private func createTilePattern(
+        tileSize: CGFloat,
+        gridSpacing: CGFloat,
+        majorInterval: Int,
+        showMinor: Bool
+    ) -> Path {
+        var path = Path()
+
+        // Draw minor grid lines within the tile (if needed)
+        if showMinor {
+            for i in 1..<majorInterval {
+                let offset = CGFloat(i) * gridSpacing
+
+                // Vertical minor lines
+                path.move(to: CGPoint(x: offset, y: 0))
+                path.addLine(to: CGPoint(x: offset, y: tileSize))
+
+                // Horizontal minor lines
+                path.move(to: CGPoint(x: 0, y: offset))
+                path.addLine(to: CGPoint(x: tileSize, y: offset))
+            }
+        }
+
+        // Draw major lines at tile edges (right and bottom)
+        // These connect with adjacent tiles to form continuous major grid
+        path.move(to: CGPoint(x: tileSize, y: 0))
+        path.addLine(to: CGPoint(x: tileSize, y: tileSize))
+
+        path.move(to: CGPoint(x: 0, y: tileSize))
+        path.addLine(to: CGPoint(x: tileSize, y: tileSize))
+
+        return path
     }
 }
