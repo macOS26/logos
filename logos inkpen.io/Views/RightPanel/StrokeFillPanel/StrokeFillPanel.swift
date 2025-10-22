@@ -245,33 +245,7 @@ struct StrokeFillPanel: View {
                             if isEditing {
                                 // No need for index map when using snapshot directly
                             } else {
-                                var oldShapes: [UUID: VectorShape] = [:]
-                                var objectIDs: [UUID] = []
-                                let activeShapeIDs = document.getActiveShapeIDs()
-                                for shapeID in activeShapeIDs {
-                                    if let shape = document.findShape(by: shapeID) {
-                                        oldShapes[shapeID] = shape
-                                        objectIDs.append(shapeID)
-                                    }
-                                }
-
-                                document.defaultFillOpacity = fillOpacityState
-                                updateFillOpacityLive(fillOpacityState, isEditing: false)
-                                for objectID in document.viewState.selectedObjectIDs {
-                                    document.clearTextPreviewTypography(id: objectID)
-                                }
-
-                                var newShapes: [UUID: VectorShape] = [:]
-                                for shapeID in objectIDs {
-                                    if let shape = document.findShape(by: shapeID) {
-                                        newShapes[shapeID] = shape
-                                    }
-                                }
-
-                                if !objectIDs.isEmpty {
-                                    let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
-                                    document.commandManager.execute(command)
-                                }
+                                PaintSelectionOperations.shared.handleFillOpacityEditingComplete(fillOpacityState, document: document)
                             }
                         }
                     )
@@ -323,90 +297,21 @@ struct StrokeFillPanel: View {
                             if isEditing {
                                 // No need for index map when using snapshot directly
                             } else {
-                                var oldShapes: [UUID: VectorShape] = [:]
-                                var objectIDs: [UUID] = []
-                                let activeShapeIDs = document.getActiveShapeIDs()
-                                for shapeID in activeShapeIDs {
-                                    if let shape = document.findShape(by: shapeID) {
-                                        oldShapes[shapeID] = shape
-                                        objectIDs.append(shapeID)
-                                    }
-                                }
-
-                                document.defaultStrokeWidth = strokeWidthState
-                                updateStrokeWidthLive(strokeWidthState, isEditing: false)
-
-                                var newShapes: [UUID: VectorShape] = [:]
-                                for shapeID in objectIDs {
-                                    if let shape = document.findShape(by: shapeID) {
-                                        newShapes[shapeID] = shape
-                                    }
-                                }
-
-                                if !objectIDs.isEmpty {
-                                    let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
-                                    document.commandManager.execute(command)
-                                }
+                                PaintSelectionOperations.shared.handleStrokeWidthEditingComplete(strokeWidthState, document: document)
                             }
                         },
                         onStrokeOpacityEditingChanged: { isEditing in
                             if isEditing {
                                 // No need for index map when using snapshot directly
                             } else {
-                                var oldShapes: [UUID: VectorShape] = [:]
-                                var objectIDs: [UUID] = []
-                                let activeShapeIDs = document.getActiveShapeIDs()
-                                for shapeID in activeShapeIDs {
-                                    if let shape = document.findShape(by: shapeID) {
-                                        oldShapes[shapeID] = shape
-                                        objectIDs.append(shapeID)
-                                    }
-                                }
-
-                                document.defaultStrokeOpacity = strokeOpacityState
-                                updateStrokeOpacityLive(strokeOpacityState, isEditing: false)
-
-                                var newShapes: [UUID: VectorShape] = [:]
-                                for shapeID in objectIDs {
-                                    if let shape = document.findShape(by: shapeID) {
-                                        newShapes[shapeID] = shape
-                                    }
-                                }
-
-                                if !objectIDs.isEmpty {
-                                    let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
-                                    document.commandManager.execute(command)
-                                }
+                                PaintSelectionOperations.shared.handleStrokeOpacityEditingComplete(strokeOpacityState, document: document)
                             }
                         },
                         onMiterLimitEditingChanged: { isEditing in
                             if isEditing {
                                 // No need for index map when using snapshot directly
                             } else {
-                                var oldShapes: [UUID: VectorShape] = [:]
-                                var objectIDs: [UUID] = []
-                                let activeShapeIDs = document.getActiveShapeIDs()
-                                for shapeID in activeShapeIDs {
-                                    if let shape = document.findShape(by: shapeID) {
-                                        oldShapes[shapeID] = shape
-                                        objectIDs.append(shapeID)
-                                    }
-                                }
-
-                                document.strokeDefaults.miterLimit = strokeMiterLimitState
-                                updateStrokeMiterLimit(strokeMiterLimitState)
-
-                                var newShapes: [UUID: VectorShape] = [:]
-                                for shapeID in objectIDs {
-                                    if let shape = document.findShape(by: shapeID) {
-                                        newShapes[shapeID] = shape
-                                    }
-                                }
-
-                                if !objectIDs.isEmpty {
-                                    let command = ShapeModificationCommand(objectIDs: objectIDs, oldShapes: oldShapes, newShapes: newShapes)
-                                    document.commandManager.execute(command)
-                                }
+                                PaintSelectionOperations.shared.handleMiterLimitEditingComplete(strokeMiterLimitState, document: document)
                             }
                         }
                     )
@@ -502,38 +407,7 @@ struct StrokeFillPanel: View {
     }
 
     private func updateFillOpacity(_ opacity: Double) {
-        document.defaultFillOpacity = opacity
-
-        var oldOpacities: [UUID: Double] = [:]
-        var newOpacities: [UUID: Double] = [:]
-
-        for objectID in document.viewState.selectedObjectIDs {
-            if let obj = document.snapshot.objects[objectID] {
-                switch obj.objectType {
-                case .text(let shape):
-                    oldOpacities[objectID] = shape.typography?.fillOpacity ?? 1.0
-                    document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
-                    newOpacities[objectID] = opacity
-                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                    oldOpacities[objectID] = shape.fillStyle?.opacity ?? 1.0
-                    if let layerIndex = obj.layerIndex < document.layers.count ? obj.layerIndex : nil,
-                       document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
-                        document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
-                    }
-                    newOpacities[objectID] = opacity
-                }
-            }
-        }
-
-        if !oldOpacities.isEmpty {
-            let command = OpacityCommand(
-                objectIDs: Array(document.viewState.selectedObjectIDs),
-                target: .fill,
-                oldOpacities: oldOpacities,
-                newOpacities: newOpacities
-            )
-            document.executeCommand(command)
-        }
+        PaintSelectionOperations.shared.updateFillOpacity(opacity, document: document)
     }
 
     private func updateFillOpacityDirectNoUndo(_ opacity: Double) {
@@ -549,41 +423,15 @@ struct StrokeFillPanel: View {
     }
 
     private func updateFillOpacityLive(_ opacity: Double, isEditing: Bool) {
-        for objectID in document.viewState.selectedObjectIDs {
-            guard let object = document.snapshot.objects[objectID] else { continue }
-            switch object.objectType {
-            case .text(let shape):
-                document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                document.updateShapeFillOpacityInUnified(id: shape.id, opacity: opacity)
-            }
-        }
+        PaintSelectionOperations.shared.updateFillOpacityLive(opacity, document: document, isEditing: isEditing)
     }
 
     private func updateStrokeOpacityLive(_ opacity: Double, isEditing: Bool) {
-        for objectID in document.viewState.selectedObjectIDs {
-            guard let object = document.snapshot.objects[objectID] else { continue }
-            switch object.objectType {
-            case .text:
-                break
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                document.updateShapeStrokeOpacityInUnified(id: shape.id, opacity: opacity)
-            }
-        }
+        PaintSelectionOperations.shared.updateStrokeOpacityLive(opacity, document: document, isEditing: isEditing)
     }
 
     private func updateStrokeWidthLive(_ width: Double, isEditing: Bool) {
-        for objectID in document.viewState.selectedObjectIDs {
-            guard let object = document.snapshot.objects[objectID] else { continue }
-            switch object.objectType {
-            case .text(let shape):
-                if shape.typography?.hasStroke == true {
-                    document.updateTextStrokeWidthInUnified(id: shape.id, width: width)
-                }
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                document.updateShapeStrokeWidthInUnified(id: shape.id, width: width)
-            }
-        }
+        PaintSelectionOperations.shared.updateStrokeWidthLive(width, document: document, isEditing: isEditing)
     }
 
     private func updateStrokePlacementLive(_ placement: StrokePlacement) {
@@ -606,326 +454,49 @@ struct StrokeFillPanel: View {
     }
 
     private func updateStrokeWidth(_ width: Double) {
-        document.defaultStrokeWidth = width
-
-        var oldWidths: [UUID: Double] = [:]
-        var newWidths: [UUID: Double] = [:]
-
-        for objectID in document.viewState.selectedObjectIDs {
-            if let obj = document.snapshot.objects[objectID] {
-                switch obj.objectType {
-                case .text(let shape):
-                    oldWidths[objectID] = shape.typography?.strokeWidth ?? 1.0
-                    document.updateTextStrokeWidthInUnified(id: shape.id, width: width)
-                    newWidths[objectID] = width
-                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                    oldWidths[objectID] = shape.strokeStyle?.width ?? 1.0
-                    if let layerIndex = obj.layerIndex < document.layers.count ? obj.layerIndex : nil,
-                       document.getShapesForLayer(layerIndex).contains(where: { $0.id == shape.id }) {
-                        document.updateShapeStrokeWidthInUnified(id: shape.id, width: width)
-                    }
-                    newWidths[objectID] = width
-                }
-            }
-        }
-
-        if !oldWidths.isEmpty {
-            let command = StrokeWidthCommand(
-                objectIDs: Array(document.viewState.selectedObjectIDs),
-                oldWidths: oldWidths,
-                newWidths: newWidths
-            )
-            document.executeCommand(command)
-        }
+        // This method is called when slider finishes editing - handled in onStrokeWidthEditingChanged
+        // The actual update is done via PaintSelectionOperations in that callback
     }
 
     private func updateStrokeWidthDirectNoUndo(_ width: Double) {
-        for objectID in document.viewState.selectedObjectIDs {
-            guard let object = document.snapshot.objects[objectID] else { continue }
-            switch object.objectType {
-            case .text(let shape):
-                document.updateTextStrokeWidthInUnified(id: shape.id, width: width)
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                document.updateShapeStrokeWidthInUnified(id: shape.id, width: width)
-            }
-        }
+        PaintSelectionOperations.shared.updateStrokeWidthLive(width, document: document, isEditing: false)
     }
 
     private func updateStrokePlacement(_ placement: StrokePlacement) {
-        document.strokeDefaults.placement = placement
-        let activeShapeIDs = document.getActiveShapeIDs()
-        if activeShapeIDs.isEmpty {
-            return
-        }
-
-        var oldPlacements: [UUID: StrokePlacement] = [:]
-        var newPlacements: [UUID: StrokePlacement] = [:]
-
-        for shapeID in activeShapeIDs {
-            if let obj = document.snapshot.objects[shapeID] {
-                switch obj.objectType {
-                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                    oldPlacements[shapeID] = shape.strokeStyle?.placement ?? .center
-                    newPlacements[shapeID] = placement
-                case .text:
-                    continue
-                }
-            }
-        }
-
-        if !oldPlacements.isEmpty {
-            let command = StrokePropertiesCommand(
-                objectIDs: Array(activeShapeIDs),
-                placement: oldPlacements,
-                new: newPlacements
-            )
-            document.executeCommand(command)
-        }
-
-        for shapeID in activeShapeIDs {
-            document.updateShapeStrokePlacementInUnified(id: shapeID, placement: placement)
-        }
+        PaintSelectionOperations.shared.updateStrokePlacement(placement, document: document)
     }
 
     private func updateStrokeOpacity(_ opacity: Double) {
-        document.defaultStrokeOpacity = opacity
-
-        let activeShapeIDs = document.getActiveShapeIDs()
-        if !activeShapeIDs.isEmpty {
-            var oldOpacities: [UUID: Double] = [:]
-            var newOpacities: [UUID: Double] = [:]
-
-            for shapeID in activeShapeIDs {
-                if let obj = document.snapshot.objects[shapeID] {
-                    switch obj.objectType {
-                    case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                        oldOpacities[shapeID] = shape.strokeStyle?.opacity ?? 1.0
-                        newOpacities[shapeID] = opacity
-                    case .text:
-                        continue
-                    }
-                }
-            }
-
-            let command = OpacityCommand(
-                objectIDs: Array(activeShapeIDs),
-                target: .stroke,
-                oldOpacities: oldOpacities,
-                newOpacities: newOpacities
-            )
-            document.executeCommand(command)
-
-            for shapeID in activeShapeIDs {
-                document.updateShapeStrokeOpacityInUnified(id: shapeID, opacity: opacity)
-            }
-        }
+        // This method is called when slider finishes editing - handled in onStrokeOpacityEditingChanged
+        // The actual update is done via PaintSelectionOperations in that callback
     }
 
     private func updateStrokeOpacityDirectNoUndo(_ opacity: Double) {
-        for objectID in document.viewState.selectedObjectIDs {
-            guard let object = document.snapshot.objects[objectID] else { continue }
-            switch object.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                document.updateShapeStrokeOpacityInUnified(id: shape.id, opacity: opacity)
-            case .text:
-                continue
-            }
-        }
+        PaintSelectionOperations.shared.updateStrokeOpacityLive(opacity, document: document, isEditing: false)
     }
 
     private func updateStrokeLineJoin(_ lineJoin: CGLineJoin) {
-        document.strokeDefaults.lineJoin = lineJoin
-
-        let activeShapeIDs = document.getActiveShapeIDs()
-        if !activeShapeIDs.isEmpty {
-            var oldLineJoins: [UUID: CGLineJoin] = [:]
-            var newLineJoins: [UUID: CGLineJoin] = [:]
-
-            for shapeID in activeShapeIDs {
-                if let obj = document.snapshot.objects[shapeID] {
-                    switch obj.objectType {
-                    case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                        oldLineJoins[shapeID] = shape.strokeStyle?.lineJoin.cgLineJoin ?? .miter
-                        newLineJoins[shapeID] = lineJoin
-                    case .text:
-                        continue
-                    }
-                }
-            }
-
-            if !oldLineJoins.isEmpty {
-                let command = StrokePropertiesCommand(
-                    objectIDs: Array(activeShapeIDs),
-                    lineJoin: oldLineJoins,
-                    new: newLineJoins
-                )
-                document.executeCommand(command)
-            }
-
-            for shapeID in activeShapeIDs {
-                document.updateShapeStrokeLineJoinInUnified(id: shapeID, lineJoin: lineJoin)
-            }
-        }
+        PaintSelectionOperations.shared.updateStrokeLineJoin(lineJoin, document: document)
     }
 
     private func updateStrokeLineCap(_ lineCap: CGLineCap) {
-        document.strokeDefaults.lineCap = lineCap
-
-        let activeShapeIDs = document.getActiveShapeIDs()
-        if !activeShapeIDs.isEmpty {
-            var oldLineCaps: [UUID: CGLineCap] = [:]
-            var newLineCaps: [UUID: CGLineCap] = [:]
-
-            for shapeID in activeShapeIDs {
-                if let obj = document.snapshot.objects[shapeID] {
-                    switch obj.objectType {
-                    case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                        oldLineCaps[shapeID] = shape.strokeStyle?.lineCap.cgLineCap ?? .butt
-                        newLineCaps[shapeID] = lineCap
-                    case .text:
-                        continue
-                    }
-                }
-            }
-
-            if !oldLineCaps.isEmpty {
-                let command = StrokePropertiesCommand(
-                    objectIDs: Array(activeShapeIDs),
-                    lineCap: oldLineCaps,
-                    new: newLineCaps
-                )
-                document.executeCommand(command)
-            }
-
-            for shapeID in activeShapeIDs {
-                document.updateShapeStrokeLineCapInUnified(id: shapeID, lineCap: lineCap)
-            }
-        }
+        PaintSelectionOperations.shared.updateStrokeLineCap(lineCap, document: document)
     }
 
     private func updateStrokeMiterLimit(_ miterLimit: Double) {
-        document.strokeDefaults.miterLimit = miterLimit
-
-        let activeShapeIDs = document.getActiveShapeIDs()
-        if !activeShapeIDs.isEmpty {
-            var oldMiterLimits: [UUID: Double] = [:]
-            var newMiterLimits: [UUID: Double] = [:]
-
-            for shapeID in activeShapeIDs {
-                if let obj = document.snapshot.objects[shapeID] {
-                    switch obj.objectType {
-                    case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                        oldMiterLimits[shapeID] = shape.strokeStyle?.miterLimit ?? 10.0
-                        newMiterLimits[shapeID] = miterLimit
-                    case .text:
-                        continue
-                    }
-                }
-            }
-
-            if !oldMiterLimits.isEmpty {
-                let command = StrokePropertiesCommand(
-                    objectIDs: Array(activeShapeIDs),
-                    miterLimit: oldMiterLimits,
-                    new: newMiterLimits
-                )
-                document.executeCommand(command)
-            }
-
-            for shapeID in activeShapeIDs {
-                document.updateShapeStrokeMiterLimitInUnified(id: shapeID, miterLimit: miterLimit)
-            }
-        }
+        PaintSelectionOperations.shared.updateStrokeMiterLimit(miterLimit, document: document)
     }
 
     private func updateStrokeMiterLimitDirectNoUndo(_ miterLimit: Double) {
-        for objectID in document.viewState.selectedObjectIDs {
-            guard let object = document.snapshot.objects[objectID] else { continue }
-            switch object.objectType {
-            case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                document.updateShapeStrokeMiterLimitInUnified(id: shape.id, miterLimit: miterLimit)
-            case .text:
-                continue
-            }
-        }
+        PaintSelectionOperations.shared.updateStrokeMiterLimitDirectNoUndo(miterLimit, document: document)
     }
 
     private func updateImageOpacity(_ opacity: Double) {
-        guard let layerIndex = document.selectedLayerIndex else { return }
-
-        var oldOpacities: [UUID: Double] = [:]
-        var newOpacities: [UUID: Double] = [:]
-
-        for shapeID in document.viewState.selectedObjectIDs {
-            if let obj = document.snapshot.objects[shapeID] {
-                switch obj.objectType {
-                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                    oldOpacities[shapeID] = shape.opacity
-                    newOpacities[shapeID] = opacity
-                case .text:
-                    continue
-                }
-            }
-        }
-
-        if !oldOpacities.isEmpty {
-            let command = StrokePropertiesCommand(
-                objectIDs: Array(document.viewState.selectedObjectIDs),
-                imageOpacity: oldOpacities,
-                new: newOpacities
-            )
-            document.executeCommand(command)
-        }
-
-        for shapeID in document.viewState.selectedObjectIDs {
-            let shapes = document.getShapesForLayer(layerIndex)
-            if let shapeIndex = shapes.firstIndex(where: { $0.id == shapeID }),
-               let shape = document.getShapeAtIndex(layerIndex: layerIndex, shapeIndex: shapeIndex) {
-                if ImageContentRegistry.containsImage(shape, in: document) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
-                    document.updateShapeOpacityInUnified(id: shape.id, opacity: opacity)
-                }
-            }
-        }
+        PaintSelectionOperations.shared.updateImageOpacity(opacity, document: document)
     }
 
     private func applyFillToSelectedShapes() {
-        let activeShapeIDs = document.getActiveShapeIDs()
-        if activeShapeIDs.isEmpty { return }
-
-        var oldColors: [UUID: VectorColor] = [:]
-        var newColors: [UUID: VectorColor] = [:]
-        var oldOpacities: [UUID: Double] = [:]
-        var newOpacities: [UUID: Double] = [:]
-
-        for shapeID in activeShapeIDs {
-            if let obj = document.snapshot.objects[shapeID] {
-                switch obj.objectType {
-                case .shape(let shape), .warp(let shape), .group(let shape), .clipGroup(let shape), .clipMask(let shape):
-                    oldColors[shapeID] = shape.fillStyle?.color ?? .black
-                    newColors[shapeID] = selectedFillColor
-                    oldOpacities[shapeID] = shape.fillStyle?.opacity ?? 1.0
-                    newOpacities[shapeID] = fillOpacity
-                case .text:
-                    continue
-                }
-            }
-        }
-
-        if !oldColors.isEmpty {
-            let command = ChangeColorCommand(
-                objectIDs: Array(activeShapeIDs),
-                target: .fill,
-                oldColors: oldColors,
-                newColors: newColors,
-                oldOpacities: oldOpacities,
-                newOpacities: newOpacities
-            )
-            document.executeCommand(command)
-        }
-
-        for shapeID in activeShapeIDs {
-            document.createFillStyleInUnified(id: shapeID, color: selectedFillColor, opacity: fillOpacity)
-        }
+        PaintSelectionOperations.shared.applyFillToSelectedShapes(fillColor: selectedFillColor, fillOpacity: fillOpacity, document: document)
     }
 
 }

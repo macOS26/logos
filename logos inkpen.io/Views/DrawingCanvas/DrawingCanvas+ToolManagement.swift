@@ -73,9 +73,9 @@ extension DrawingCanvas {
     private func handleSelectionConversion(from oldTool: DrawingTool, to newTool: DrawingTool) {
 
         if newTool == .selection {
-            if !directSelectedShapeIDs.isEmpty {
-                document.viewState.selectedObjectIDs = directSelectedShapeIDs
-                directSelectedShapeIDs.removeAll()
+            if !selectedObjectIDs.isEmpty {
+                document.viewState.selectedObjectIDs = selectedObjectIDs
+                selectedObjectIDs.removeAll()
                 selectedPoints.removeAll()
                 selectedHandles.removeAll()
                 syncDirectSelectionWithDocument()
@@ -84,7 +84,7 @@ extension DrawingCanvas {
 
         else if newTool == .directSelection {
             if !document.viewState.selectedObjectIDs.isEmpty {
-                directSelectedShapeIDs = document.viewState.selectedObjectIDs
+                selectedObjectIDs = document.viewState.selectedObjectIDs
                 syncDirectSelectionWithDocument()
             }
             else if oldTool == .convertAnchorPoint || oldTool == .penPlusMinus {
@@ -95,7 +95,7 @@ extension DrawingCanvas {
 
         else if newTool == .convertAnchorPoint || newTool == .penPlusMinus {
             if !document.viewState.selectedObjectIDs.isEmpty {
-                directSelectedShapeIDs = document.viewState.selectedObjectIDs
+                selectedObjectIDs = document.viewState.selectedObjectIDs
                 syncDirectSelectionWithDocument()
             }
         }
@@ -103,7 +103,7 @@ extension DrawingCanvas {
         else if (oldTool == .directSelection || oldTool == .convertAnchorPoint || oldTool == .penPlusMinus) &&
                  newTool != .selection && newTool != .directSelection && newTool != .convertAnchorPoint && newTool != .penPlusMinus {
             document.viewState.selectedObjectIDs.removeAll()
-            directSelectedShapeIDs.removeAll()
+            selectedObjectIDs.removeAll()
             selectedPoints.removeAll()
             selectedHandles.removeAll()
             syncDirectSelectionWithDocument()

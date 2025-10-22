@@ -2,7 +2,7 @@ import SwiftUI
 import Combine
 extension DrawingCanvas {
     internal func handleDirectSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
-        if selectedPoints.isEmpty && selectedHandles.isEmpty && !directSelectedShapeIDs.isEmpty {
+        if selectedPoints.isEmpty && selectedHandles.isEmpty && !selectedObjectIDs.isEmpty {
             handleDirectSelectionShapeDrag(value: value, geometry: geometry)
             return
         }
@@ -13,7 +13,7 @@ extension DrawingCanvas {
             let tolerance: Double = screenTolerance / document.viewState.zoomLevel
             var foundPointOrHandle = false
 
-            if !directSelectedShapeIDs.isEmpty {
+            if !selectedObjectIDs.isEmpty {
                 foundPointOrHandle = selectIndividualAnchorPointOrHandle(at: canvasLocation, tolerance: tolerance)
             }
 
@@ -21,7 +21,7 @@ extension DrawingCanvas {
                 if directSelectWholeShape(at: canvasLocation) {
                     foundPointOrHandle = selectIndividualAnchorPointOrHandle(at: canvasLocation, tolerance: tolerance)
 
-                    if !foundPointOrHandle && !directSelectedShapeIDs.isEmpty {
+                    if !foundPointOrHandle && !selectedObjectIDs.isEmpty {
                         handleDirectSelectionShapeDrag(value: value, geometry: geometry)
                         return
                     }
@@ -142,7 +142,7 @@ extension DrawingCanvas {
         if !isDraggingDirectSelectedShapes {
             isDraggingDirectSelectedShapes = true
 
-            document.viewState.selectedObjectIDs = directSelectedShapeIDs
+            document.viewState.selectedObjectIDs = selectedObjectIDs
 
             startSelectionDrag()
             selectionDragStart = value.startLocation

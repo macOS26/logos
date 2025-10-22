@@ -136,7 +136,7 @@ extension DrawingCanvas {
                 selectedPoints: selectedPoints,
                 selectedHandles: selectedHandles,
                 visibleHandles: visibleHandles,
-                directSelectedShapeIDs: directSelectedShapeIDs,
+                selectedObjectIDs: selectedObjectIDs,
                 geometry: geometry,
                 coincidentPointTolerance: coincidentPointTolerance
             )

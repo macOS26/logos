@@ -574,7 +574,7 @@ extension DrawingCanvas {
                     if layer.isLocked || shape.isLocked {
                         selectedPoints.removeAll()
                         selectedHandles.removeAll()
-                        directSelectedShapeIDs.removeAll()
+                        selectedObjectIDs.removeAll()
                         syncDirectSelectionWithDocument()
                         return
                     }
@@ -582,9 +582,9 @@ extension DrawingCanvas {
                     document.viewState.selectedObjectIDs.removeAll()
                     selectedPoints.removeAll()
                     selectedHandles.removeAll()
-                    directSelectedShapeIDs.removeAll()
+                    selectedObjectIDs.removeAll()
 
-                    directSelectedShapeIDs.insert(shape.id)
+                    selectedObjectIDs.insert(shape.id)
                     syncDirectSelectionWithDocument()
 
                     return
@@ -594,7 +594,7 @@ extension DrawingCanvas {
 
         selectedPoints.removeAll()
         selectedHandles.removeAll()
-        directSelectedShapeIDs.removeAll()
+        selectedObjectIDs.removeAll()
         syncDirectSelectionWithDocument()
     }
 
@@ -602,9 +602,8 @@ extension DrawingCanvas {
         document.viewState.selectedObjectIDs.removeAll()
         selectedPoints.removeAll()
         selectedHandles.removeAll()
-        directSelectedShapeIDs.removeAll()
-
-        directSelectedShapeIDs.insert(shapeID)
+        selectedObjectIDs.removeAll()
+        selectedObjectIDs.insert(shapeID)
         syncDirectSelectionWithDocument()
 
         let pointID = PointID(

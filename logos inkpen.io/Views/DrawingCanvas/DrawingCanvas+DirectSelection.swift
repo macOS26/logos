@@ -4,7 +4,7 @@ import Combine
 extension DrawingCanvas {
 
     internal func selectIndividualAnchorPointOrHandle(at location: CGPoint, tolerance: Double) -> Bool {
-        for shapeID in directSelectedShapeIDs {
+        for shapeID in selectedObjectIDs {
             if let unifiedObject = document.findObject(by: shapeID),
                case .shape(let shape) = unifiedObject.objectType {
                 let layerIndex = unifiedObject.layerIndex
@@ -12,7 +12,7 @@ extension DrawingCanvas {
 
                     if layer.isLocked || shape.isLocked {
 
-                        directSelectedShapeIDs.removeAll()
+                        selectedObjectIDs.removeAll()
                         selectedPoints.removeAll()
                         selectedHandles.removeAll()
                         syncDirectSelectionWithDocument()
@@ -368,15 +368,15 @@ extension DrawingCanvas {
                 if isHit {
                     if layer.isLocked || shape.isLocked {
 
-                        directSelectedShapeIDs.removeAll()
+                        selectedObjectIDs.removeAll()
                         selectedPoints.removeAll()
                         selectedHandles.removeAll()
                         syncDirectSelectionWithDocument()
                         return true
                     }
 
-                    directSelectedShapeIDs.removeAll()
-                    directSelectedShapeIDs.insert(shape.id)
+                    selectedObjectIDs.removeAll()
+                    selectedObjectIDs.insert(shape.id)
                     selectedPoints.removeAll()
                     selectedHandles.removeAll()
                     syncDirectSelectionWithDocument()
@@ -395,7 +395,7 @@ extension DrawingCanvas {
         let tolerance: Double = screenTolerance / document.viewState.zoomLevel
         var foundSelection = false
 
-        if !directSelectedShapeIDs.isEmpty {
+        if !selectedObjectIDs.isEmpty {
             foundSelection = selectIndividualAnchorPointOrHandle(at: location, tolerance: tolerance)
         }
 
@@ -408,7 +408,7 @@ extension DrawingCanvas {
             selectedPoints.removeAll()
             selectedHandles.removeAll()
             visibleHandles.removeAll()
-            directSelectedShapeIDs.removeAll()
+            selectedObjectIDs.removeAll()
             syncDirectSelectionWithDocument()
         }
     }

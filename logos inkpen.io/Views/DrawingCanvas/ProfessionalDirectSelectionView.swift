@@ -5,12 +5,12 @@ struct ProfessionalDirectSelectionView: View {
     let selectedPoints: Set<PointID>
     let selectedHandles: Set<HandleID>
     let visibleHandles: Set<HandleID>
-    let directSelectedShapeIDs: Set<UUID>
+    let selectedObjectIDs: Set<UUID>
     let geometry: GeometryProxy
     let coincidentPointTolerance: Double
 
     private var dragOffset: CGPoint {
-        if document.currentDragOffset != .zero && !directSelectedShapeIDs.isEmpty && selectedPoints.isEmpty && selectedHandles.isEmpty {
+        if document.currentDragOffset != .zero && !selectedObjectIDs.isEmpty && selectedPoints.isEmpty && selectedHandles.isEmpty {
             return document.currentDragOffset
         }
         return .zero
@@ -20,7 +20,7 @@ struct ProfessionalDirectSelectionView: View {
         ZStack {
             ForEach(Array(document.unifiedObjects), id: \.id) { unifiedObject in
                 if case .shape(let shape) = unifiedObject.objectType {
-                    if shape.isVisible && directSelectedShapeIDs.contains(shape.id) {
+                    if shape.isVisible && selectedObjectIDs.contains(shape.id) {
                         if shape.isGroupContainer {
                             ForEach(shape.groupedShapes.indices, id: \.self) { groupedShapeIndex in
                                 let groupedShape = shape.groupedShapes[groupedShapeIndex]

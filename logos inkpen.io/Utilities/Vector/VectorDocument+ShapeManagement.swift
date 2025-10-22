@@ -158,8 +158,8 @@ extension VectorDocument {
 
     func getActiveShapeIDs() -> Set<UUID> {
         if viewState.currentTool == .directSelection || viewState.currentTool == .convertAnchorPoint || viewState.currentTool == .penPlusMinus,
-           !directSelectedShapeIDs.isEmpty {
-            return directSelectedShapeIDs
+           !viewState.selectedObjectIDs.isEmpty {
+            return viewState.selectedObjectIDs
         }
 
         return viewState.selectedObjectIDs

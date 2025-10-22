@@ -1,18 +1,18 @@
 import SwiftUI
 import Combine
 
-class VectorDocument: ObservableObject, Codable {
+final class VectorDocument: ObservableObject, Codable {
     // MARK: - New Structure
-    @Published var snapshot: DocumentSnapshot = DocumentSnapshot()
+    var snapshot: DocumentSnapshot = DocumentSnapshot()
 
     // MARK: - Legacy Structure (to be migrated)
     // View-only state (doesn't trigger document saves)
-    @Published var viewState: DocumentViewState = DocumentViewState()
+    var viewState: DocumentViewState = DocumentViewState()
     @Published var settings: DocumentSettings
     var layers: [VectorLayer] = []
     var layerIndex: Int = 0
     var selectedLayerIndex: Int?
-    var directSelectedShapeIDs: Set<UUID> = []
+    
     @Published var documentColorDefaults: ColorDefaults = ColorDefaults() {
         didSet {
             
@@ -36,7 +36,7 @@ class VectorDocument: ObservableObject, Codable {
     var activeLayerIndexDuringDrag: Int? = nil
 
     var isHandleScalingActive = false
-    @Published var unifiedObjects: [VectorObject] = [] {
+    var unifiedObjects: [VectorObject] = [] {
         didSet {
             // Only trigger full refresh when objects are added/removed
             if oldValue.count != unifiedObjects.count {
@@ -208,7 +208,6 @@ class VectorDocument: ObservableObject, Codable {
 
         selectedLayerIndex = try? container.decodeIfPresent(Int.self, forKey: .selectedLayerIndex)
         viewState.selectedObjectIDs = (try? container.decodeIfPresent(Set<UUID>.self, forKey: .selectedObjectIDs)) ?? []
-        directSelectedShapeIDs = []
         isHandleScalingActive = false
 
         viewState.currentTool = decodedCurrentTool

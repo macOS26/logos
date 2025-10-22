@@ -62,6 +62,23 @@ class CurrentSelection {
 
         return selectedShapes
     }
+    
+    /// Get selected shapes (extracts shapes from VectorObjects)
+    func getSelectedText(from snapshot: DocumentSnapshot? = nil, selectedObjectIDs: Set<UUID>? = nil) -> [UUID: VectorShape] {
+        let actualSnapshot = snapshot ?? self.snapshot
+        let actualSelectedIDs = selectedObjectIDs ?? self.viewState.selectedObjectIDs
+
+        var selectedShapes: [UUID: VectorShape] = [:]
+
+        for objectID in actualSelectedIDs {
+            if let object = actualSnapshot.objects[objectID] {
+                selectedShapes[objectID] = object.shape
+            }
+        }
+
+        return selectedShapes
+    }
+
 
     /// Create updated VectorObject with modified shape
     /// Returns new VectorObject that can be assigned back to the snapshot

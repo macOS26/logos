@@ -57,7 +57,7 @@ extension DrawingCanvas {
                 let isAlreadySelected = document.viewState.selectedObjectIDs.contains(shape.id)
                 if isAlreadySelected {
                     document.viewState.currentTool = .directSelection
-                    directSelectedShapeIDs = [shape.id]
+                    selectedObjectIDs = [shape.id]
                     selectedPoints.removeAll()
                     selectedHandles.removeAll()
                     syncDirectSelectionWithDocument()
@@ -115,7 +115,7 @@ extension DrawingCanvas {
 
                 selectedPoints.removeAll()
                 selectedHandles.removeAll()
-                directSelectedShapeIDs.removeAll()
+                selectedObjectIDs.removeAll()
 
                 return
             } else if clickedShape != nil {
@@ -124,7 +124,7 @@ extension DrawingCanvas {
 
         selectedPoints.removeAll()
         selectedHandles.removeAll()
-        directSelectedShapeIDs.removeAll()
+        selectedObjectIDs.removeAll()
         syncDirectSelectionWithDocument()
         isCornerRadiusEditMode = false
 
@@ -236,7 +236,7 @@ extension DrawingCanvas {
 
                 selectedPoints.removeAll()
                 selectedHandles.removeAll()
-                directSelectedShapeIDs.removeAll()
+                selectedObjectIDs.removeAll()
                 syncDirectSelectionWithDocument()
                 isCornerRadiusEditMode = false
             }
