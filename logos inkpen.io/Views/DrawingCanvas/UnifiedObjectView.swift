@@ -199,28 +199,14 @@ struct CanvasBackgroundView: View {
 }
 
 struct LayerCanvasView: View {
-    let cacheKey: String
-    let objects: [VectorObject]
+    let objectsToRender: [(shape: VectorShape, isSelected: Bool)]
     let zoomLevel: Double
     let canvasOffset: CGPoint
-    let selectedObjectIDs: Set<UUID>
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
 
     var body: some View {
         Canvas { context, size in
-            // Get filtered objects from cache (computed outside view)
-            let viewport = ViewportCalculator.calculateViewportBounds(
-                size: size,
-                canvasOffset: canvasOffset,
-                zoomLevel: zoomLevel
-            )
-            let objectsToRender = RenderCache.shared.getFilteredObjects(
-                key: cacheKey,
-                objects: objects,
-                viewport: viewport,
-                selectedObjectIDs: selectedObjectIDs
-            )
 
             // Apply canvas transform ONCE to entire context (O(1))
             var transformedContext = context
@@ -559,6 +545,7 @@ struct IsolatedLayerView: View {
     let selectedObjectData: [UUID: VectorObject]  // Full data of selected objects
 
     @State private var cachedImage: NSImage?
+    @State private var filteredObjects: [(shape: VectorShape, isSelected: Bool)] = []
 
     // Track if this layer has selection
     private var hasSelection: Bool {
@@ -569,14 +556,24 @@ struct IsolatedLayerView: View {
         ZStack {
             // Render paths using Canvas (gradients and text still use SwiftUI)
             LayerCanvasView(
-                cacheKey: layerID.uuidString,
-                objects: objects,
+                objectsToRender: filteredObjects,
                 zoomLevel: zoomLevel,
                 canvasOffset: canvasOffset,
-                selectedObjectIDs: selectedObjectIDs,
                 viewMode: viewMode,
                 dragPreviewDelta: dragPreviewDelta
             )
+            .onAppear {
+                updateFilteredObjects()
+            }
+            .onChange(of: objects.count) { _ in
+                updateFilteredObjects()
+            }
+            .onChange(of: zoomLevel) { _ in
+                updateFilteredObjects()
+            }
+            .onChange(of: canvasOffset) { _ in
+                updateFilteredObjects()
+            }
 
             // For text editor only - filter .text objects first
             ForEach(objects.filter { object in
@@ -601,6 +598,19 @@ struct IsolatedLayerView: View {
         }
         .opacity(layerOpacity)
         .blendMode(layerBlendMode.swiftUIBlendMode)
+    }
+
+    private func updateFilteredObjects() {
+        // Get viewport from window size - this is a workaround since we can't get geometry here
+        // The cache will handle the actual filtering
+        let viewport = CGRect(x: -10000, y: -10000, width: 20000, height: 20000) // Large viewport as fallback
+
+        filteredObjects = RenderCache.shared.getFilteredObjects(
+            key: layerID.uuidString,
+            objects: objects,
+            viewport: viewport,
+            selectedObjectIDs: selectedObjectIDs
+        )
     }
 
     private func renderLayerToCache() {
