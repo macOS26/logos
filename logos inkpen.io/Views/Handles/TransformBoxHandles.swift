@@ -361,14 +361,20 @@ struct TransformBoxHandles: View {
     }
 
     private func endScaling() {
+        print("🟢 END SCALING for shape \(shape.id)")
         isScaling = false
         document.isHandleScalingActive = false
         document.viewState.scalePreviewDimensions = .zero
 
-        guard let oldObj = document.snapshot.objects[shape.id] else { return }
+        guard let oldObj = document.snapshot.objects[shape.id] else {
+            print("🔴 Cannot find shape \(shape.id) in snapshot.objects")
+            return
+        }
         let oldShape = oldObj.shape
+        print("🟢 Found old shape in snapshot, transform: \(oldShape.transform)")
 
         if oldShape.typography != nil {
+            print("🟢 Processing text box transform")
             // Text boxes: resize areaSize and textPosition
             let scaleX = sqrt(previewTransform.a * previewTransform.a + previewTransform.c * previewTransform.c)
             let scaleY = sqrt(previewTransform.b * previewTransform.b + previewTransform.d * previewTransform.d)
@@ -386,73 +392,92 @@ struct TransformBoxHandles: View {
                 document.updateTextPositionInUnified(id: oldShape.id, position: newPosition)
             }
         } else {
+            print("🟢 Processing regular shape transform, previewTransform: \(previewTransform)")
             // Regular shapes: apply transform to path coordinates
-            document.updateEntireShapeInUnified(id: shape.id) { s in
-                s.transform = previewTransform
-            }
             applyTransformToPath(shapeID: shape.id, transform: previewTransform)
+            print("🟢 Applied transform to path")
         }
         previewTransform = .identity
 
         document.updateTransformPanelValues()
 
-        guard let newObj = document.snapshot.objects[shape.id] else { return }
+        guard let newObj = document.snapshot.objects[shape.id] else {
+            print("🔴 Cannot find updated shape \(shape.id) in snapshot.objects")
+            return
+        }
         let newShape = newObj.shape
+        print("🟢 Found new shape in snapshot, transform: \(newShape.transform)")
 
+        print("🟢 Creating undo command")
         let command = ShapeModificationCommand(
             objectIDs: [shape.id],
             oldShapes: [shape.id: oldShape],
             newShapes: [shape.id: newShape]
         )
         document.executeCommand(command)
+        print("🟢 Executed undo command")
     }
 
     private func applyTransformToPath(shapeID: UUID, transform: CGAffineTransform) {
+        print("🔵 applyTransformToPath for \(shapeID), transform: \(transform)")
         let t = transform
-        if t.isIdentity { return }
+        if t.isIdentity {
+            print("🔵 Transform is identity, skipping")
+            return
+        }
 
-        guard let targetObj = document.snapshot.objects[shapeID] else { return }
+        guard let targetObj = document.snapshot.objects[shapeID] else {
+            print("🔴 Cannot find shape \(shapeID) in snapshot for path transform")
+            return
+        }
         let targetShape = targetObj.shape
+        print("🔵 Found target shape in snapshot")
 
         if targetShape.typography != nil {
+            print("🔵 Text object, skipping path transform")
             // Text objects don't use path transforms
             return
         }
 
         if targetShape.isGroupContainer {
-            document.updateEntireShapeInUnified(id: shapeID) { shape in
-                var transformedGroupedShapes: [VectorShape] = []
-                for var groupedShape in shape.groupedShapes {
-                    var transformedElements: [PathElement] = []
-                    for element in groupedShape.path.elements {
-                        switch element {
-                        case .move(let to):
-                            transformedElements.append(.move(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
-                        case .line(let to):
-                            transformedElements.append(.line(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
-                        case .curve(let to, let c1, let c2):
-                            transformedElements.append(.curve(
-                                to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
-                                control1: VectorPoint(CGPoint(x: c1.x, y: c1.y).applying(t)),
-                                control2: VectorPoint(CGPoint(x: c2.x, y: c2.y).applying(t))
-                            ))
-                        case .quadCurve(let to, let c):
-                            transformedElements.append(.quadCurve(
-                                to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
-                                control: VectorPoint(CGPoint(x: c.x, y: c.y).applying(t))
-                            ))
-                        case .close:
-                            transformedElements.append(.close)
-                        }
+            print("🔵 Group container, transforming grouped shapes")
+            var updatedShape = targetShape
+            var transformedGroupedShapes: [VectorShape] = []
+            for var groupedShape in updatedShape.groupedShapes {
+                var transformedElements: [PathElement] = []
+                for element in groupedShape.path.elements {
+                    switch element {
+                    case .move(let to):
+                        transformedElements.append(.move(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
+                    case .line(let to):
+                        transformedElements.append(.line(to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t))))
+                    case .curve(let to, let c1, let c2):
+                        transformedElements.append(.curve(
+                            to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
+                            control1: VectorPoint(CGPoint(x: c1.x, y: c1.y).applying(t)),
+                            control2: VectorPoint(CGPoint(x: c2.x, y: c2.y).applying(t))
+                        ))
+                    case .quadCurve(let to, let c):
+                        transformedElements.append(.quadCurve(
+                            to: VectorPoint(CGPoint(x: to.x, y: to.y).applying(t)),
+                            control: VectorPoint(CGPoint(x: c.x, y: c.y).applying(t))
+                        ))
+                    case .close:
+                        transformedElements.append(.close)
                     }
-                    groupedShape.path = VectorPath(elements: transformedElements, isClosed: groupedShape.path.isClosed)
-                    groupedShape.updateBounds()
-                    transformedGroupedShapes.append(groupedShape)
                 }
-                shape.groupedShapes = transformedGroupedShapes
-                shape.transform = .identity
+                groupedShape.path = VectorPath(elements: transformedElements, isClosed: groupedShape.path.isClosed)
+                groupedShape.updateBounds()
+                transformedGroupedShapes.append(groupedShape)
             }
+            updatedShape.groupedShapes = transformedGroupedShapes
+            updatedShape.transform = .identity
+
+            let updatedObject = VectorObject(id: shapeID, layerIndex: targetObj.layerIndex, objectType: VectorObject.determineType(for: updatedShape))
+            document.snapshot.objects[shapeID] = updatedObject
+            print("🔵 Finished group transform")
         } else {
+            print("🔵 Regular shape, transforming path elements")
             var transformedElements: [PathElement] = []
             for element in targetShape.path.elements {
                 switch element {
@@ -476,8 +501,15 @@ struct TransformBoxHandles: View {
                 }
             }
 
-            let newPath = VectorPath(elements: transformedElements, isClosed: targetShape.path.isClosed)
-            document.updateShapeTransformAndPathInUnified(id: shapeID, path: newPath, transform: .identity)
+            var updatedShape = targetShape
+            updatedShape.path = VectorPath(elements: transformedElements, isClosed: targetShape.path.isClosed)
+            updatedShape.transform = .identity
+            updatedShape.updateBounds()
+
+            print("🔵 Updating shape with new path, \(transformedElements.count) elements")
+            let updatedObject = VectorObject(id: shapeID, layerIndex: targetObj.layerIndex, objectType: VectorObject.determineType(for: updatedShape))
+            document.snapshot.objects[shapeID] = updatedObject
+            print("🔵 Finished regular shape transform")
         }
     }
 }
